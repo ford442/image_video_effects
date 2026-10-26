@@ -10,8 +10,8 @@ describe('bundled WGSL libraries', () => {
     expect(BUNDLED_WGSL_LIBRARIES['_prelude.wgsl']).toBe(PRELUDE);
   });
 
-  it('bundles only the prelude', () => {
-    expect(Object.keys(BUNDLED_WGSL_LIBRARIES)).toEqual(['_prelude.wgsl']);
+  it('bundles only the prelude and the f16 helpers (#1512)', () => {
+    expect(Object.keys(BUNDLED_WGSL_LIBRARIES)).toEqual(['_prelude.wgsl', '_half.wgsl']);
   });
 
   it('serves the prelude without calling the fallback', async () => {

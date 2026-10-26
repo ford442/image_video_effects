@@ -137,6 +137,7 @@ export class GraphRunner {
         computeCount: report.executed,
         output: 'writeTex',
         graphReports: [report],
+        composites: [],
       },
       {
         textures: {

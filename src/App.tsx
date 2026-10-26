@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { SlotLayersContext, useSlotLayers } from './hooks/useSlotLayers';
 import { AppShell } from './components/app/AppShell';
 import { AppOverlays } from './components/app/AppOverlays';
 import { DEFAULT_B3HD_SEGMENT_LENGTH, DEFAULT_B3HD_INTERVAL_SECONDS } from './config/appConfig';
@@ -163,6 +164,8 @@ function MainApp() {
         inputSourceRef,
         setStatus,
     });
+    // Chained / parallel + blend / opacity / mask per slot (#1512), shared through context.
+    const slotLayers = useSlotLayers({ rendererRef, rendererReady });
 
     const {
         setMode,
@@ -208,6 +211,8 @@ function MainApp() {
         getShaderDefaults,
         setStatus,
         maxActiveSlots: performanceHud.maxActiveSlots,
+        slotOutputs: slotLayers.slotOutputs,
+        opacityAudio: slotLayers.opacityAudio,
     });
 
     useContentManifest({
@@ -357,6 +362,9 @@ function MainApp() {
         handleLoadImage,
         startWebcam,
         setStatus,
+        slotModes: slotLayers.slotModes,
+        slotOutputs: slotLayers.slotOutputs,
+        applyLayers: slotLayers.applyLayers,
     });
 
     useB3hdMode({
@@ -684,159 +692,161 @@ function MainApp() {
     }, [rendererReady, activeRendererType, renderQualityMode]);
 
     return (
-        <div className="App">
-            <AppShell
-                rendererDiagnostics={rendererDiagnostics}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                showSidebar={showSidebar}
-                setShowSidebar={setShowSidebar}
-                modes={modes}
-                setMode={setMode}
-                activeSlot={activeSlot}
-                setActiveSlot={setActiveSlot}
-                slotParams={slotParams}
-                updateSlotParam={updateSlotParam}
-                slotShaderStatus={slotShaderStatus}
-                shaderCategory={shaderCategory}
-                setShaderCategory={setShaderCategory}
-                handleNewRandomImage={handleNewRandomImage}
-                autoChangeEnabled={autoChangeEnabled}
-                setAutoChangeEnabled={setAutoChangeEnabled}
-                autoChangeDelay={autoChangeDelay}
-                setAutoChangeDelay={setAutoChangeDelay}
-                loadDepthModel={loadDepthModel}
-                isModelLoaded={isModelLoaded}
-                availableModes={availableModes}
-                imageManifest={imageManifest}
-                currentImageUrl={currentImageUrl}
-                handleLoadImage={handleLoadImage}
-                inputSource={inputSource}
-                syncInputSourceToRenderer={syncInputSourceToRenderer}
-                videoList={videoList}
-                selectedVideo={selectedVideo}
-                setSelectedVideo={setSelectedVideo}
-                videoB3hdMode={videoB3hdMode}
-                setVideoB3hdMode={setVideoB3hdMode}
-                b3hdSegmentLength={b3hdSegmentLength}
-                setB3hdSegmentLength={setB3hdSegmentLength}
-                b3hdIntervalSeconds={b3hdIntervalSeconds}
-                setB3hdIntervalSeconds={setB3hdIntervalSeconds}
-                currentSegment={currentSegment}
-                isMuted={isMuted}
-                setIsMuted={setIsMuted}
-                activeGenerativeShader={activeGenerativeShader}
-                setActiveGenerativeShader={setActiveGenerativeShader}
-                fileInputImageRef={fileInputImageRef}
-                fileInputVideoRef={fileInputVideoRef}
-                onLocalFileChange={handleLocalFileChange}
-                isAiVjMode={isAiVjMode}
-                toggleAiVj={toggleAiVj}
-                aiVjStatus={aiVjStatus}
-                aiVjMessage={aiVjMessage}
-                handleGenerateFromVibe={handleGenerateFromVibe}
-                handleUpdateStack={handleUpdateStack}
-                handleUpdateParams={handleUpdateParams}
-                handleRandomizeParams={handleRandomizeParams}
-                handleSavePreset={handleSavePreset}
-                handleTriggerNextTransition={handleTriggerNextTransition}
-                handleArmCrossfade={armCrossfade}
-                handleRandomizeSlot={handleRandomizeSlot}
-                handleSetSlotParam={handleSetSlotParam}
-                handleShareVjSet={handleShareVjSet}
-                handleSaveVjSet={handleSaveVjSet}
-                startAutoTransition={startAutoTransition}
-                stopAutoTransition={stopAutoTransition}
-                isWebcamActive={isWebcamActive}
-                startWebcam={startWebcam}
-                stopWebcam={stopWebcam}
-                webcamError={webcamError}
-                showWebcamShaderSuggestions={showWebcamShaderSuggestions}
-                webcamFunShaders={WEBCAM_FUN_SHADERS}
-                applyWebcamFunShader={applyWebcamFunShader}
-                triggerRoulette={triggerRoulette}
-                triggerRandomizeAllSlots={triggerRandomizeAllSlots}
-                isRouletteActive={isRouletteActive}
-                chaosModeEnabled={chaosModeEnabled}
-                setChaosModeEnabled={setChaosModeEnabled}
-                audioReactiveParams={audioReactiveParams}
-                setAudioReactiveParams={setAudioReactiveParams}
-                audioReactiveAmount={audioReactiveAmount}
-                setAudioReactiveAmount={setAudioReactiveAmount}
-                isRecording={isRecording}
-                recordingCountdown={recordingCountdown}
-                startRecording={startRecording}
-                stopRecording={stopRecording}
-                gpuEncode={gpuEncode}
-                gpuEncodeAvailable={gpuEncodeAvailable}
-                setGpuEncode={setGpuEncode}
-                handleTakeScreenshot={handleTakeScreenshot}
-                setShowShaderScanner={setShowShaderScanner}
-                activeRendererType={activeRendererType}
-                handleSwitchRenderer={handleSwitchRenderer}
-                setShowStorageBrowser={setShowStorageBrowser}
-                copyChainShareLink={copyChainShareLink}
-                applySharedChain={applySharedChain}
-                getCurrentChain={getCurrentChain}
-                rendererRef={rendererRef}
-                mousePosition={mousePosition}
-                setMousePosition={setMousePosition}
-                isMouseDown={isMouseDown}
-                setIsMouseDown={setIsMouseDown}
-                onInitCanvas={onInitCanvas}
-                videoSourceUrl={videoSourceUrl}
-                webgpuCanvasRef={webgpuCanvasRef}
-                videoElementRef={videoElementRef}
-                status={status}
-                generativeShowcaseActive={generativeShowcaseActive}
-                generativeShowcaseLocked={generativeShowcaseLocked}
-                generativeShowcaseDelay={generativeShowcaseDelay}
-                onStartGenerativeShowcase={startGenerativeShowcase}
-                onStopGenerativeShowcase={stopGenerativeShowcase}
-                onSetGenerativeShowcaseDelay={setGenerativeShowcaseDelay}
-                onPreviewImportShader={handlePreviewImportShader}
-                onImportStatus={setStatus}
-                isRendererSwitching={isRendererSwitching}
-                jsFps={jsFps}
-                wasmFps={wasmFps}
-                renderQualityMode={renderQualityMode}
-                onRenderQualityChange={handleRenderQualityChange}
-                sourceAutoExposure={sourceAutoExposure}
-                onSourceAutoExposureChange={handleSourceAutoExposureChange}
-                performanceHud={performanceHud}
-            />
+        <SlotLayersContext.Provider value={slotLayers}>
+            <div className="App">
+                <AppShell
+                    rendererDiagnostics={rendererDiagnostics}
+                    activeTab={activeTab}
+                    setActiveTab={setActiveTab}
+                    showSidebar={showSidebar}
+                    setShowSidebar={setShowSidebar}
+                    modes={modes}
+                    setMode={setMode}
+                    activeSlot={activeSlot}
+                    setActiveSlot={setActiveSlot}
+                    slotParams={slotParams}
+                    updateSlotParam={updateSlotParam}
+                    slotShaderStatus={slotShaderStatus}
+                    shaderCategory={shaderCategory}
+                    setShaderCategory={setShaderCategory}
+                    handleNewRandomImage={handleNewRandomImage}
+                    autoChangeEnabled={autoChangeEnabled}
+                    setAutoChangeEnabled={setAutoChangeEnabled}
+                    autoChangeDelay={autoChangeDelay}
+                    setAutoChangeDelay={setAutoChangeDelay}
+                    loadDepthModel={loadDepthModel}
+                    isModelLoaded={isModelLoaded}
+                    availableModes={availableModes}
+                    imageManifest={imageManifest}
+                    currentImageUrl={currentImageUrl}
+                    handleLoadImage={handleLoadImage}
+                    inputSource={inputSource}
+                    syncInputSourceToRenderer={syncInputSourceToRenderer}
+                    videoList={videoList}
+                    selectedVideo={selectedVideo}
+                    setSelectedVideo={setSelectedVideo}
+                    videoB3hdMode={videoB3hdMode}
+                    setVideoB3hdMode={setVideoB3hdMode}
+                    b3hdSegmentLength={b3hdSegmentLength}
+                    setB3hdSegmentLength={setB3hdSegmentLength}
+                    b3hdIntervalSeconds={b3hdIntervalSeconds}
+                    setB3hdIntervalSeconds={setB3hdIntervalSeconds}
+                    currentSegment={currentSegment}
+                    isMuted={isMuted}
+                    setIsMuted={setIsMuted}
+                    activeGenerativeShader={activeGenerativeShader}
+                    setActiveGenerativeShader={setActiveGenerativeShader}
+                    fileInputImageRef={fileInputImageRef}
+                    fileInputVideoRef={fileInputVideoRef}
+                    onLocalFileChange={handleLocalFileChange}
+                    isAiVjMode={isAiVjMode}
+                    toggleAiVj={toggleAiVj}
+                    aiVjStatus={aiVjStatus}
+                    aiVjMessage={aiVjMessage}
+                    handleGenerateFromVibe={handleGenerateFromVibe}
+                    handleUpdateStack={handleUpdateStack}
+                    handleUpdateParams={handleUpdateParams}
+                    handleRandomizeParams={handleRandomizeParams}
+                    handleSavePreset={handleSavePreset}
+                    handleTriggerNextTransition={handleTriggerNextTransition}
+                    handleArmCrossfade={armCrossfade}
+                    handleRandomizeSlot={handleRandomizeSlot}
+                    handleSetSlotParam={handleSetSlotParam}
+                    handleShareVjSet={handleShareVjSet}
+                    handleSaveVjSet={handleSaveVjSet}
+                    startAutoTransition={startAutoTransition}
+                    stopAutoTransition={stopAutoTransition}
+                    isWebcamActive={isWebcamActive}
+                    startWebcam={startWebcam}
+                    stopWebcam={stopWebcam}
+                    webcamError={webcamError}
+                    showWebcamShaderSuggestions={showWebcamShaderSuggestions}
+                    webcamFunShaders={WEBCAM_FUN_SHADERS}
+                    applyWebcamFunShader={applyWebcamFunShader}
+                    triggerRoulette={triggerRoulette}
+                    triggerRandomizeAllSlots={triggerRandomizeAllSlots}
+                    isRouletteActive={isRouletteActive}
+                    chaosModeEnabled={chaosModeEnabled}
+                    setChaosModeEnabled={setChaosModeEnabled}
+                    audioReactiveParams={audioReactiveParams}
+                    setAudioReactiveParams={setAudioReactiveParams}
+                    audioReactiveAmount={audioReactiveAmount}
+                    setAudioReactiveAmount={setAudioReactiveAmount}
+                    isRecording={isRecording}
+                    recordingCountdown={recordingCountdown}
+                    startRecording={startRecording}
+                    stopRecording={stopRecording}
+                    gpuEncode={gpuEncode}
+                    gpuEncodeAvailable={gpuEncodeAvailable}
+                    setGpuEncode={setGpuEncode}
+                    handleTakeScreenshot={handleTakeScreenshot}
+                    setShowShaderScanner={setShowShaderScanner}
+                    activeRendererType={activeRendererType}
+                    handleSwitchRenderer={handleSwitchRenderer}
+                    setShowStorageBrowser={setShowStorageBrowser}
+                    copyChainShareLink={copyChainShareLink}
+                    applySharedChain={applySharedChain}
+                    getCurrentChain={getCurrentChain}
+                    rendererRef={rendererRef}
+                    mousePosition={mousePosition}
+                    setMousePosition={setMousePosition}
+                    isMouseDown={isMouseDown}
+                    setIsMouseDown={setIsMouseDown}
+                    onInitCanvas={onInitCanvas}
+                    videoSourceUrl={videoSourceUrl}
+                    webgpuCanvasRef={webgpuCanvasRef}
+                    videoElementRef={videoElementRef}
+                    status={status}
+                    generativeShowcaseActive={generativeShowcaseActive}
+                    generativeShowcaseLocked={generativeShowcaseLocked}
+                    generativeShowcaseDelay={generativeShowcaseDelay}
+                    onStartGenerativeShowcase={startGenerativeShowcase}
+                    onStopGenerativeShowcase={stopGenerativeShowcase}
+                    onSetGenerativeShowcaseDelay={setGenerativeShowcaseDelay}
+                    onPreviewImportShader={handlePreviewImportShader}
+                    onImportStatus={setStatus}
+                    isRendererSwitching={isRendererSwitching}
+                    jsFps={jsFps}
+                    wasmFps={wasmFps}
+                    renderQualityMode={renderQualityMode}
+                    onRenderQualityChange={handleRenderQualityChange}
+                    sourceAutoExposure={sourceAutoExposure}
+                    onSourceAutoExposureChange={handleSourceAutoExposureChange}
+                    performanceHud={performanceHud}
+                />
 
-            <AppOverlays
-                rouletteFlashRef={rouletteFlashRef}
-                showConfetti={showConfetti}
-                chaosModeEnabled={chaosModeEnabled}
-                isRecording={isRecording}
-                recordingCountdown={recordingCountdown}
-                showShareModal={showShareModal}
-                setShowShareModal={setShowShareModal}
-                shareableLink={shareableLink}
-                shareVibeText={shareVibeText}
-                setStatus={setStatus}
-                showShaderScanner={showShaderScanner}
-                setShowShaderScanner={setShowShaderScanner}
-                availableModes={availableModes}
-                setMode={setMode}
-                updateSlotParam={updateSlotParam}
-                showStorageBrowser={showStorageBrowser}
-                setShowStorageBrowser={setShowStorageBrowser}
-                storageBrowserTab={storageBrowserTab}
-                activeSlot={activeSlot}
-                handleLoadImage={handleLoadImage}
-                setSelectedVideo={setSelectedVideo}
-                syncInputSourceToRenderer={syncInputSourceToRenderer}
-                setSlotParams={setSlotParams}
-                rendererRef={rendererRef}
-                modes={modes}
-                slotParams={slotParams}
-                inputSource={inputSource}
-                currentImageUrl={currentImageUrl}
-            />
-        </div>
+                <AppOverlays
+                    rouletteFlashRef={rouletteFlashRef}
+                    showConfetti={showConfetti}
+                    chaosModeEnabled={chaosModeEnabled}
+                    isRecording={isRecording}
+                    recordingCountdown={recordingCountdown}
+                    showShareModal={showShareModal}
+                    setShowShareModal={setShowShareModal}
+                    shareableLink={shareableLink}
+                    shareVibeText={shareVibeText}
+                    setStatus={setStatus}
+                    showShaderScanner={showShaderScanner}
+                    setShowShaderScanner={setShowShaderScanner}
+                    availableModes={availableModes}
+                    setMode={setMode}
+                    updateSlotParam={updateSlotParam}
+                    showStorageBrowser={showStorageBrowser}
+                    setShowStorageBrowser={setShowStorageBrowser}
+                    storageBrowserTab={storageBrowserTab}
+                    activeSlot={activeSlot}
+                    handleLoadImage={handleLoadImage}
+                    setSelectedVideo={setSelectedVideo}
+                    syncInputSourceToRenderer={syncInputSourceToRenderer}
+                    setSlotParams={setSlotParams}
+                    rendererRef={rendererRef}
+                    modes={modes}
+                    slotParams={slotParams}
+                    inputSource={inputSource}
+                    currentImageUrl={currentImageUrl}
+                />
+            </div>
+        </SlotLayersContext.Provider>
     );
 }
 

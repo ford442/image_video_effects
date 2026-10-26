@@ -30,6 +30,7 @@ Mirrors C++ `ADAPTER_ATTEMPT_LADDER` / `src/renderer/webgpuDevicePolicy.ts`:
 2. Undefined preference  
 3. LowPower  
 4. Undefined + `forceFallbackAdapter`
+5. Compatibility: `featureLevel: 'compatibility'` (TS only, #1512). Android GL ES and older Chromebooks get an adapter here. `?feature_level=compatibility` runs only this rung. See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md#compatibility-rung).
 
 Per attempt stages: `requestAdapter` → `contract` → `requestDevice` → `getContext` → `configure` → `probePipeline`.
 
@@ -47,6 +48,12 @@ Typed in `src/types/webgpuProbe.d.ts` / `WebGpuProbeSerializable`:
 | `failedStage` / `lastError` | Top-level failure summary |
 | `adapterSummary` / `adapterAttemptLabel` | Success (or partial) adapter identity |
 | `backend` | `'webgpu'` or `'wasm'` |
+| `featureLevel` / `compat` | `'core'` or `'compatibility'`; `compat: true` when the device validates in compatibility mode (#1512) |
+| `shaderF16` / `bgra8unormStorage` / `float32Blendable` / `dualSourceBlending` | Capability tier 2 features the device was **granted** |
+| `limitsTiers` | Every limits tier the granted limits reach: `base`, `deep-workgroup`, `big-buffer` |
+| `canvasFormat` | Applied swapchain format: the preferred one, or `rgba16float` on an HDR canvas |
+| `storagePresent` | The present writes the bgra8unorm swapchain from a compute pass |
+| `canvasCopySrc` / `canvasColorSpace` / `canvasToneMapping` / `canvasColorFallback` | Canvas opt-ins, see [DEVICE_FEATURES.md](./DEVICE_FEATURES.md#canvas-configure-contract) |
 
 GPU handles live only on the internal handoff object and are **stripped** before publish.
 

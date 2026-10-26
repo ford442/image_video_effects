@@ -15,6 +15,7 @@ import {
   readGpuUncapturedErrors,
   startStaticServer,
   stopStaticServer,
+  waitForBootDefaultShader,
 } from './helpers/rendererHarness';
 
 const PORT = 3465;
@@ -44,6 +45,7 @@ async function boot(page: Page, mode: Mode): Promise<void> {
   );
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
+  await waitForBootDefaultShader(page); // or Liquid replaces plasma in slot 0
   await page.evaluate(async () => {
     const api = (window as any).__pixelocity__;
     api.setInputSource('generative');

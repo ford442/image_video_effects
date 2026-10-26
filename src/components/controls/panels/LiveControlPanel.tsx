@@ -55,6 +55,7 @@ function describeAction(action: ControlAction): string {
         return `Slot ${action.slot + 1} → ${label}`;
     }
     if (action.type === 'randomizeSlot') return `Randomize slot ${action.slot + 1}`;
+    if (action.type === 'setSlotOpacity') return `Slot ${action.slot + 1} → Opacity`;
     return action.type.replace(/([A-Z])/g, ' $1').toLowerCase();
 }
 
@@ -212,7 +213,7 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
                                         const type = e.target.value as ControlAction['type'];
                                         if (type === 'setSlotParam') {
                                             setPendingAction({ type, slot: pendingSlot, param: pendingParam });
-                                        } else if (type === 'randomizeSlot') {
+                                        } else if (type === 'randomizeSlot' || type === 'setSlotOpacity') {
                                             setPendingAction({ type, slot: pendingSlot });
                                         } else {
                                             setPendingAction({ type } as ControlAction);
@@ -221,13 +222,14 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
                                 >
                                     <option value="setSlotParam">Set Slot Parameter</option>
                                     <option value="randomizeSlot">Randomize Slot</option>
+                                    <option value="setSlotOpacity">Slot Opacity (layer)</option>
                                     <option value="randomizeAll">Randomize All Slots</option>
                                     <option value="triggerTransition">Trigger Transition</option>
                                     <option value="toggleAutoTransition">Toggle Auto Transition</option>
                                 </select>
                             </label>
 
-                            {(pendingAction.type === 'setSlotParam' || pendingAction.type === 'randomizeSlot') && (
+                            {(pendingAction.type === 'setSlotParam' || pendingAction.type === 'randomizeSlot' || pendingAction.type === 'setSlotOpacity') && (
                                 <label style={{ fontSize: '12px', display: 'block', marginBottom: '6px' }}>
                                     Slot
                                     <select
@@ -239,7 +241,7 @@ export const LiveControlPanel: React.FC<LiveControlPanelProps> = ({
                                             setPendingSlot(slot);
                                             if (pendingAction.type === 'setSlotParam') {
                                                 setPendingAction({ ...pendingAction, slot });
-                                            } else if (pendingAction.type === 'randomizeSlot') {
+                                            } else if (pendingAction.type === 'randomizeSlot' || pendingAction.type === 'setSlotOpacity') {
                                                 setPendingAction({ ...pendingAction, slot });
                                             }
                                         }}

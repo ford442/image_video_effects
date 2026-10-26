@@ -67,7 +67,7 @@ The Lab no longer guesses which entries use the sim ring. `tools/naga_wasm` has 
 
 ### Not in this slice
 
-Inline WGSL / params editing (CodeMirror 6 + naga diagnostics), one draft per slot, drafts in project files (#1438) and device-loss restore (#1430), "Save as shader" registration, and Part B (HDR `rgba16float`, `shader-f16`, `bgra8unorm-storage`, `featureLevel: 'compatibility'`, `float32-blendable`) remain open on #1451.
+Inline WGSL / params editing (CodeMirror 6 + naga diagnostics), one draft per slot, drafts in project files (#1438) and device-loss restore (#1430), "Save as shader" registration, remain open on #1451. Part B (HDR `rgba16float`, `shader-f16`, `bgra8unorm-storage`, `featureLevel: 'compatibility'`, `float32-blendable`) moved to #1512 and is documented in [DEVICE_FEATURES.md](./DEVICE_FEATURES.md#capability-tier-2-1512-typescript-only).
 
 ## Installing an export
 

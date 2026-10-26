@@ -20,6 +20,7 @@ const KIND_COLORS: Record<Exclude<PassKind, 'compute'>, string> = {
   input: '#3b82f6',
   chores: '#a855f7',
   resample: '#0ea5e9',
+  composite: '#84cc16',
 };
 
 const SLOT_COLORS = ['#f59e0b', '#ef4444', '#22c55e', '#ec4899', '#eab308', '#f97316'];

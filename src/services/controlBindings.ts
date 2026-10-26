@@ -24,6 +24,8 @@ export interface ControlTrigger {
 export type ControlAction =
   | { type: 'setSlotParam'; slot: number; param: string }
   | { type: 'randomizeSlot'; slot: number }
+  /** The slot's compositor opacity (#1512), 0..1 from the control value. */
+  | { type: 'setSlotOpacity'; slot: number }
   | { type: 'randomizeAll' }
   | { type: 'triggerTransition' }
   | { type: 'toggleAutoTransition' };
@@ -40,6 +42,7 @@ export interface ControlBinding {
 export interface LiveActionsHandle {
   setSlotParam: (slot: number, param: string, value: number) => void;
   randomizeSlot: (slot: number) => void;
+  setSlotOpacity: (slot: number, value: number) => void;
   randomizeAll: () => void;
   triggerTransition: () => void;
   toggleAutoTransition: () => void;
@@ -84,10 +87,11 @@ function normalizeBinding(binding: ControlBinding): ControlBinding {
         },
       };
     case 'randomizeSlot':
+    case 'setSlotOpacity':
       return {
         trigger,
         action: {
-          type: 'randomizeSlot',
+          type: binding.action.type,
           slot: Math.max(0, Math.min(MAX_SLOT_INDEX, Math.floor(binding.action.slot))),
         },
       };
@@ -148,6 +152,10 @@ export class ControlBindingRegistry {
         if (event.value > 0) {
           handle.randomizeSlot(action.slot);
         }
+        break;
+      case 'setSlotOpacity':
+        // Continuous, like a param: every value change moves the fader.
+        handle.setSlotOpacity(action.slot, event.value);
         break;
       case 'randomizeAll':
         if (event.value > 0) {
@@ -250,6 +258,7 @@ function isValidControlBinding(value: unknown): value is ControlBinding {
     case 'setSlotParam':
       return typeof action.slot === 'number' && typeof action.param === 'string';
     case 'randomizeSlot':
+    case 'setSlotOpacity':
       return typeof action.slot === 'number';
     case 'randomizeAll':
     case 'triggerTransition':

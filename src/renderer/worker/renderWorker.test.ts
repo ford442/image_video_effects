@@ -33,6 +33,7 @@ import { getShaderCompileService } from '../../utils/shaderCompileService';
 import { isCanvasTransferred, WorkerWebGPUBackend } from './WorkerWebGPUBackend';
 import type { WebGpuProbeResult } from '../webgpuBootProbe';
 import type { DeviceLossInfo } from '../Renderer';
+import { DEFAULT_SLOT_OUTPUT } from '../slotOutput';
 
 const CONFIG = { width: 256, height: 256, agentCount: 0 };
 
@@ -63,7 +64,11 @@ function fakeRenderer() {
     setSlotShader: record('setSlotShader'),
     setSlotEnabled: record('setSlotEnabled'),
     setSlotMode: record('setSlotMode'),
-    getSlotState: () => ({ shaderId: null, enabled: false, mode: 'chained' as const }),
+    setSlotOutput: record('setSlotOutput'),
+    getSlotState: () => ({ shaderId: null, enabled: false, mode: 'chained' as const, output: { ...DEFAULT_SLOT_OUTPUT } }),
+    getCompositorStats: () => ({ layers: 2, masks: 1, textureMiB: 4, composites: 7, error: null, warnings: [] }),
+    setHdrPresent: record('setHdrPresent'),
+    getHdrPresent: () => ({ paperWhiteNits: 203, peakNits: 1000 }),
     setInputSource: record('setInputSource'),
     updateDepthMap: record('updateDepthMap'),
     setTransferredVideo: record('setTransferredVideo'),
@@ -570,11 +575,31 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     await backend.destroy();
   });
 
+  it('coalesces slot output changes (opacity automation) into one frameInput per frame', async () => {
+    const { backend, fake } = await backendWithWorker();
+    await flushPorts();
+    fake.calls.length = 0;
+    backend.setSlotOutput(1, { mode: 'blend', blend: 'screen' });
+    for (let i = 0; i <= 10; i++) backend.setSlotOutput(1, { opacity: i / 10 });
+    expect(backend.getSlotOutput(1)).toMatchObject({ mode: 'blend', blend: 'screen', opacity: 1 });
+    backend.flush();
+    await flushPorts();
+    const outputCalls = fake.calls.filter(([n]) => n === 'setSlotOutput');
+    expect(outputCalls).toHaveLength(1);
+    expect(outputCalls[0]![1]).toEqual([1, { ...DEFAULT_SLOT_OUTPUT, mode: 'blend', blend: 'screen', opacity: 1 }]);
+    // A shader change keeps the output, like the in-thread renderer.
+    backend.setSlotShader(1, 'plasma');
+    expect(backend.getSlotState(1)?.output).toMatchObject({ blend: 'screen' });
+    await backend.destroy();
+  });
+
   it('serves synchronous getters from the optimistic shadow and the worker snapshot', async () => {
     const { backend } = await backendWithWorker();
     backend.setSlotShader(2, 'plasma');
     backend.setSlotMode(2, 'parallel');
-    expect(backend.getSlotState(2)).toEqual({ shaderId: 'plasma', enabled: true, mode: 'parallel' });
+    expect(backend.getSlotState(2)).toEqual({
+      shaderId: 'plasma', enabled: true, mode: 'parallel', output: { ...DEFAULT_SLOT_OUTPUT },
+    });
     // Deliver a snapshot directly (the host's interval is effectively off here).
     (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
       type: 'snapshot',
@@ -589,11 +614,13 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
         resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
         gpuErrors: ['oops'],
         liveGpuDevices: 1,
+        compositor: { layers: 2, masks: 0, textureMiB: 8, composites: 3, error: null, warnings: [] },
         inputChannel: 'postMessage',
         input: { mouse: [0.5, 0.5], mouseDown: false, audio: [0, 0, 0], slot0: [0.5, 0.5, 0.5, 0.5] },
       },
     });
     expect(backend.getFPS()).toBe(42);
+    expect(backend.getCompositorStats()).toMatchObject({ layers: 2, textureMiB: 8, composites: 3 });
     expect(backend.getGPUTimings().totalTime).toBe(3);
     expect(backend.getFrameStats().submitsLastFrame).toBe(1);
     expect(backend.isShaderCached('warm-one')).toBe(true);
@@ -802,6 +829,7 @@ function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean, cac
       colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
       resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
       gpuErrors: [], liveGpuDevices: 1, inputChannel: 'postMessage',
+      compositor: { layers: 0, masks: 0, textureMiB: 0, composites: 0, error: null, warnings: [] },
       input: { mouse: [0.5, 0.5], mouseDown: false, audio: [0, 0, 0], slot0: [0.5, 0.5, 0.5, 0.5] },
     },
   });

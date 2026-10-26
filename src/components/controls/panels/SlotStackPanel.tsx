@@ -1,8 +1,13 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { RenderMode } from '../../../renderer/types';
 import { ShaderMegaMenu } from '../../ShaderMegaMenu';
 import type { ShaderMegaMenuOption } from '../../ShaderMegaMenu';
 import { ShaderGallery } from '../../ShaderGallery';
+import { useSlotLayersContext } from '../../../hooks/useSlotLayers';
+import { DEFAULT_SLOT_OUTPUT } from '../../../renderer/slotOutput';
+
+// Blend / opacity / mask row (#1512): a lazy chunk so the main bundle keeps its budget.
+const SlotLayerStrip = lazy(() => import(/* webpackChunkName: "layer-strip" */ './SlotLayerStrip'));
 
 export interface SlotStackPanelProps {
     modes: RenderMode[];
@@ -24,6 +29,8 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
     maxActiveSlots = 6,
 }) => {
     const [galleryOpenFor, setGalleryOpenFor] = useState<number | null>(null);
+    const layers = useSlotLayersContext();
+    const hasShader = (m: RenderMode | undefined) => !!m && m !== 'none';
 
     return (
         <>
@@ -106,6 +113,22 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
                                     🖼️
                                 </button>
                             </div>
+                            {layers && hasShader(mode) && (
+                                <Suspense fallback={null}>
+                                    <SlotLayerStrip
+                                        slotIndex={i}
+                                        maskSlots={modes
+                                            .map((m, j) => (j !== i && j < maxActiveSlots && hasShader(m) ? j : -1))
+                                            .filter((j) => j >= 0)}
+                                        mode={layers.slotModes[i] ?? 'chained'}
+                                        output={layers.slotOutputs[i] ?? DEFAULT_SLOT_OUTPUT}
+                                        opacityAudio={layers.opacityAudio[i] ?? null}
+                                        onModeChange={(m) => layers.setSlotMode(i, m)}
+                                        onOutputChange={(patch) => layers.setSlotOutput(i, patch)}
+                                        onOpacityAudioChange={(band) => layers.setOpacityAudio(i, band)}
+                                    />
+                                </Suspense>
+                            )}
                         </div>
                     );
                 })}
