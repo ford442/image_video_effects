@@ -15,6 +15,7 @@ import {
   readGpuUncapturedErrors,
   startStaticServer,
   stopStaticServer,
+  waitForBootDefaultShader,
 } from './helpers/rendererHarness';
 
 const PORT = 3465;
@@ -44,15 +45,7 @@ async function boot(page: Page, mode: Mode): Promise<void> {
   );
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
-  // The app's boot effect puts its default shader (Liquid, an image effect that reads back
-  // near-black under generative input) in slot 0 once the shader lists load. Plasma set
-  // before that is overwritten, so wait for it first. Tolerant: a build without it never lands one.
-  await page
-    .waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
-      timeout: 60_000,
-      polling: 250,
-    })
-    .catch(() => undefined);
+  await waitForBootDefaultShader(page); // or Liquid replaces plasma in slot 0
   await page.evaluate(async () => {
     const api = (window as any).__pixelocity__;
     api.setInputSource('generative');

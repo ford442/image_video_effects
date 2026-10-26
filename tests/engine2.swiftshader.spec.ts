@@ -17,6 +17,7 @@ import {
   readGpuUncapturedErrors,
   startStaticServer,
   stopStaticServer,
+  waitForBootDefaultShader,
 } from './helpers/rendererHarness';
 
 const PORT = 3462;
@@ -64,6 +65,7 @@ async function boot(page: Page, mode: Mode = 'main'): Promise<void> {
   );
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
+  await waitForBootDefaultShader(page); // or Liquid replaces a stack's slot 0
 }
 
 async function loadStack(page: Page, ids: string[], input: 'generative' | 'image' | 'video' | 'webcam' = 'generative') {
