@@ -21,6 +21,7 @@ import { useLiveControl } from './hooks/useLiveControl';
 import { useOscControl } from './hooks/useOscControl';
 import { useSetRecorder } from '../../hooks/useSetRecorder';
 import { useProjectFile } from '../../hooks/useProjectFile';
+import { useSlotLayersContext } from '../../hooks/useSlotLayers';
 import { useCoordinateNavigation } from './hooks/useCoordinateNavigation';
 import { useShaderMenuOptions } from './hooks/useShaderMenuOptions';
 import { useAiVjAutoTransition } from './hooks/useAiVjAutoTransition';
@@ -152,6 +153,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         : undefined;
     const [studioOpen, setStudioOpen] = usePersistedToggle('vj.studio', true);
     const [filterQuery, setFilterQuery] = useState('');
+    // Slot layering (#1512): opacity is a binding / OSC target and part of the project chain.
+    const slotLayers = useSlotLayersContext();
 
     const {
         coordMap,
@@ -171,6 +174,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         setAutoTransitionEnabled: autoTransition.setAutoTransitionEnabled,
         onSetSlotParam,
         onRandomizeSlot,
+        onSetSlotOpacity: slotLayers?.setSlotOpacity,
         onRandomizeAllSlots,
         onTriggerNextTransition,
         onStartAutoTransition,
@@ -186,6 +190,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         availableModes,
         setMode,
         onSetSlotParam,
+        onSetSlotOpacity: slotLayers?.setSlotOpacity,
         onTriggerNextTransition,
         setAudioReactiveAmount,
     });
@@ -194,6 +199,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     const projectFile = useProjectFile({
         modes,
         slotParams,
+        slotModes: slotLayers?.slotModes,
+        slotOutputs: slotLayers?.slotOutputs,
         activeSlot,
         inputSource,
         currentImageUrl,

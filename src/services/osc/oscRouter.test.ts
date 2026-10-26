@@ -52,9 +52,11 @@ describe('dispatchOscMessage', () => {
       setSlotParam: vi.fn(),
       triggerTransition: vi.fn(),
       setSlotShader: vi.fn(),
+      setSlotOpacity: vi.fn(),
       setAudioAmount: vi.fn(),
     };
     dispatchOscMessage(msg('/pixelocity/slot/3/param/w', 0.5), handle);
+    dispatchOscMessage(msg('/pixelocity/slot/2/opacity', 1.5), handle);
     dispatchOscMessage(msg('/pixelocity/slot/0/shader', 'none'), handle);
     dispatchOscMessage(msg('/pixelocity/transition', 1), handle);
     dispatchOscMessage(msg('/pixelocity/audio/amount', 0.25), handle);
@@ -62,12 +64,14 @@ describe('dispatchOscMessage', () => {
     expect(handle.setSlotShader).toHaveBeenCalledWith(0, 'none');
     expect(handle.triggerTransition).toHaveBeenCalledTimes(1);
     expect(handle.setAudioAmount).toHaveBeenCalledWith(0.25);
+    expect(handle.setSlotOpacity).toHaveBeenCalledWith(2, 1);
   });
 });
 
 describe('transition cues', () => {
   const makeHandle = (): OscActionsHandle => ({
     setSlotParam: vi.fn(),
+    setSlotOpacity: vi.fn(),
     triggerTransition: vi.fn(),
     setSlotShader: vi.fn(),
     setAudioAmount: vi.fn(),

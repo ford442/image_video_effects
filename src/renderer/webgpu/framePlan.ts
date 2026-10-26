@@ -398,7 +398,7 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
     } else if (layerCopies.length > 0) {
       // Only `replace` outputs encoded after all: today's last-one-wins, without the copies.
       const drop = new Set<FrameOp>(layerCopies);
-      for (let k = ops.length - 1; k >= 0; k--) if (drop.has(ops[k]!)) ops.splice(k, 1);
+      ops.splice(0, ops.length, ...ops.filter((op) => !drop.has(op)));
     }
     ops.push({ kind: 'copy', from: 'writeTex', to: 'readTex' });
     pushFeedback(ops, getFeedbackCopyOrder(

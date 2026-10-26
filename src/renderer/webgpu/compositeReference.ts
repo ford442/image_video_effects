@@ -12,7 +12,7 @@ import { KEY_SOFTNESS } from './compositor';
 
 export type Rgba = [number, number, number, number];
 
-const luma = (c: Rgba | number[]) => 0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!;
+const luma = ([r, g, b]: readonly number[]) => 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smoothstep = (e0: number, e1: number, x: number) => {
   const t = clamp01((x - e0) / (e1 - e0));
@@ -85,11 +85,8 @@ export function compositePixel(
     } else if (l.blend === 'depth-key') {
       a *= smoothstep(l.keyThreshold - KEY_SOFTNESS, l.keyThreshold + KEY_SOFTNESS, depth);
     }
-    const mixed = [0, 1, 2].map((c) => {
-      const b = acc[c]!;
-      return b + (blendChannel(l.blend, b, src[c]!) - b) * a;
-    });
-    acc = [mixed[0]!, mixed[1]!, mixed[2]!, acc[3] + (src[3] - acc[3]) * a];
+    const mix = (b: number, s: number) => b + (blendChannel(l.blend, b, s) - b) * a;
+    acc = [mix(acc[0], src[0]), mix(acc[1], src[1]), mix(acc[2], src[2]), acc[3] + (src[3] - acc[3]) * a];
   }
   return acc;
 }

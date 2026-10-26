@@ -17,6 +17,8 @@ export interface UseOscControlOptions {
     availableModes: ShaderEntry[];
     setMode: (index: number, mode: RenderMode) => void;
     onSetSlotParam?: (slot: number, param: string, value: number) => void;
+    /** Compositor opacity of a slot, 0..1 (#1512). */
+    onSetSlotOpacity?: (slot: number, value: number) => void;
     onTriggerNextTransition?: (options?: TriggerTransitionOptions) => Promise<void> | void;
     setAudioReactiveAmount?: (amount: number) => void;
 }
@@ -48,6 +50,7 @@ export function useOscControl({
     availableModes,
     setMode,
     onSetSlotParam,
+    onSetSlotOpacity,
     onTriggerNextTransition,
     setAudioReactiveAmount,
 }: UseOscControlOptions): UseOscControlReturn {
@@ -66,6 +69,9 @@ export function useOscControl({
     const handle: OscActionsHandle = {
         setSlotParam: (slot, param, value) => {
             if (slot < modes.length) onSetSlotParam?.(slot, param, value);
+        },
+        setSlotOpacity: (slot, value) => {
+            if (slot < modes.length) onSetSlotOpacity?.(slot, value);
         },
         setSlotShader: (slot, shaderId) => {
             if (slot >= modes.length) return;

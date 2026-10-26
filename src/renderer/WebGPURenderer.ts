@@ -868,10 +868,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
    * Takes effect on the next frame; only parallel slots composite. Returns the result.
    */
   setSlotOutput(index: number, patch: Partial<SlotOutput>): SlotOutput | null {
-    if (!checkPhysicalSlotIndex('WebGPURenderer', index)) return null;
-    const next = patchSlotOutput(this.slotOutputs[index], patch);
-    const target = this.slotOutputs[index]!;
-    Object.assign(target, next);
+    const target = this.slotOutputs[index];
+    if (!checkPhysicalSlotIndex('WebGPURenderer', index) || !target) return null;
+    // In place: the slot objects hold this output by reference, like their params.
+    Object.assign(target, patchSlotOutput(target, patch));
     return { ...target };
   }
 

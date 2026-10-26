@@ -147,8 +147,7 @@ export function packCompositeParams(plan: CompositeGroupPlan): ArrayBuffer {
   const f32 = new Float32Array(buf);
   const count = Math.min(plan.layers.length, MAX_COMPOSITE_LAYERS);
   u32[0] = count;
-  for (let i = 0; i < count; i++) {
-    const l = plan.layers[i]!;
+  plan.layers.slice(0, count).forEach((l, i) => {
     const o = 4 + i * 8;
     u32[o] = KIND_CODE[l.kind];
     u32[o + 1] = Math.max(0, BLEND_MODES.indexOf(l.blend));
@@ -157,7 +156,7 @@ export function packCompositeParams(plan: CompositeGroupPlan): ArrayBuffer {
     f32[o + 4] = l.opacity;
     f32[o + 5] = l.keyThreshold;
     f32[o + 6] = KEY_SOFTNESS;
-  }
+  });
   return buf;
 }
 
@@ -247,6 +246,29 @@ interface MaskTarget {
   featherV: GPUBindGroup | null;
 }
 
+/** Everything one composite needs, resolved (and null-checked) once per group. */
+interface CompositorGpu {
+  device: GPUDevice;
+  depth: GPUTexture;
+  layers: GPUTexture;
+  /** Built for one internal colour format; rebuilt when it changes. */
+  pipelines: CompositorPipelines;
+  compositeParams: GPUBuffer;
+  /** Mask params at k×256, feather H at (6+k)×256, feather V at (12+k)×256. */
+  sliceParams: GPUBuffer;
+}
+
+interface CompositorPipelines {
+  format: InternalColorFormat;
+  composite: GPUComputePipeline;
+  compositeLayout: GPUBindGroupLayout;
+  mask: GPURenderPipeline;
+  maskLayout: GPUBindGroupLayout;
+  feather: GPURenderPipeline;
+  featherLayout: GPUBindGroupLayout;
+  sampler: GPUSampler;
+}
+
 export class SlotCompositor implements FrameCompositor {
   private device: GPUDevice | null = null;
   private colorFormat: InternalColorFormat = 'rgba32float';
@@ -254,21 +276,13 @@ export class SlotCompositor implements FrameCompositor {
   private height = 0;
   private depthTex: GPUTexture | null = null;
 
-  private compositePipeline: GPUComputePipeline | null = null;
-  private compositeLayout: GPUBindGroupLayout | null = null;
-  private maskPipeline: GPURenderPipeline | null = null;
-  private maskLayout: GPUBindGroupLayout | null = null;
-  private featherPipeline: GPURenderPipeline | null = null;
-  private featherLayout: GPUBindGroupLayout | null = null;
-  private linearSampler: GPUSampler | null = null;
-
+  private pipelines: CompositorPipelines | null = null;
   private layerTex: GPUTexture | null = null;
   private layerCount = 0;
   private readonly masks: Array<MaskTarget | null> = Array.from({ length: MAX_COMPOSITE_LAYERS }, () => null);
   private scratch: GPUTexture | null = null;
   private whiteMask: GPUTexture | null = null;
   private compositeParams: GPUBuffer | null = null;
-  /** Mask params at k×256, feather H at (6+k)×256, feather V at (12+k)×256. */
   private sliceParams: GPUBuffer | null = null;
 
   private compositeBindGroup: GPUBindGroup | null = null;
@@ -286,10 +300,8 @@ export class SlotCompositor implements FrameCompositor {
       this.destroy();
       this.device = a.device;
     }
-    if (a.colorFormat !== this.colorFormat || !this.compositePipeline) {
+    if (a.colorFormat !== this.colorFormat) {
       this.colorFormat = a.colorFormat;
-      this.compositePipeline = null;
-      this.compositeBindGroup = null;
       this.releaseLayers();
     }
     if (a.scaledW !== this.width || a.scaledH !== this.height) {
@@ -301,8 +313,7 @@ export class SlotCompositor implements FrameCompositor {
     }
     if (a.depthTex !== this.depthTex) {
       this.depthTex = a.depthTex;
-      this.compositeBindGroup = null;
-      for (const m of this.masks) if (m) m.bindGroup = null;
+      this.dropBindGroups();
     }
   }
 
@@ -314,18 +325,13 @@ export class SlotCompositor implements FrameCompositor {
 
   destroy(): void {
     this.releaseTextures();
-    for (const b of [this.compositeParams, this.sliceParams]) b?.destroy();
+    this.compositeParams?.destroy();
+    this.sliceParams?.destroy();
     this.whiteMask?.destroy();
     this.compositeParams = null;
     this.sliceParams = null;
     this.whiteMask = null;
-    this.compositePipeline = null;
-    this.compositeLayout = null;
-    this.maskPipeline = null;
-    this.maskLayout = null;
-    this.featherPipeline = null;
-    this.featherLayout = null;
-    this.linearSampler = null;
+    this.pipelines = null;
     this.compositeBindGroup = null;
     this.device = null;
     this.depthTex = null;
@@ -336,11 +342,10 @@ export class SlotCompositor implements FrameCompositor {
 
   stats(): CompositorStats {
     const maskCount = this.masks.filter(Boolean).length;
-    const bytes = this.layerTex
-      ? compositorTextureBytes(this.width, this.height, this.colorFormat, this.layerCount, maskCount, !!this.scratch)
-      : compositorTextureBytes(this.width, this.height, this.colorFormat, 0, maskCount, !!this.scratch);
+    const layers = this.layerTex ? this.layerCount : 0;
+    const bytes = compositorTextureBytes(this.width, this.height, this.colorFormat, layers, maskCount, !!this.scratch);
     return {
-      layers: this.layerTex ? this.layerCount : 0,
+      layers,
       masks: maskCount,
       textureMiB: Math.round((bytes / (1024 * 1024)) * 10) / 10,
       composites: this.composites,
@@ -373,24 +378,22 @@ export class SlotCompositor implements FrameCompositor {
     out: GPUTexture,
     profile?: PassProfiler,
   ): boolean {
-    const device = this.device;
-    if (!device || !this.available || !this.depthTex) return false;
-    const layers = this.ensureLayers(plan.layerCount);
-    if (!layers || !this.ensurePipelines(device) || !this.ensureBuffers(device)) return false;
+    const gpu = this.resolveGpu(plan.layerCount);
+    if (!gpu) return false;
     this.warnings = plan.warnings;
 
     for (const layer of plan.layers) {
       if (!layer.mask) continue;
-      const target = this.ensureMask(device, layer.layer);
+      const target = this.ensureMask(gpu.device, layer.layer);
       if (!target) return false;
-      this.encodeMask(device, encoder, target, layer.layer, layer.mask, profile);
+      this.encodeMask(gpu, encoder, target, layer.layer, layer.mask, profile);
     }
 
-    device.queue.writeBuffer(this.compositeParams!, 0, packCompositeParams(plan));
-    const bindGroup = this.getCompositeBindGroup(device, base, out, layers);
+    gpu.device.queue.writeBuffer(gpu.compositeParams, 0, packCompositeParams(plan));
+    const bindGroup = this.getCompositeBindGroup(gpu, base, out);
     const stamps = profile?.('composite');
     const pass = encoder.beginComputePass(stamps ? { label: 'composite', timestampWrites: stamps } : { label: 'composite' });
-    pass.setPipeline(this.compositePipeline!);
+    pass.setPipeline(gpu.pipelines.composite);
     pass.setBindGroup(0, bindGroup);
     pass.dispatchWorkgroups(
       Math.ceil(this.width / COMPOSITE_WORKGROUP),
@@ -402,27 +405,46 @@ export class SlotCompositor implements FrameCompositor {
     return true;
   }
 
+  private resolveGpu(layerCount: number): CompositorGpu | null {
+    const device = this.device;
+    const depth = this.depthTex;
+    if (!device || !depth || !this.available) return null;
+    const layers = this.ensureLayers(layerCount);
+    const pipelines = this.ensurePipelines(device);
+    if (!layers || !pipelines) return null;
+    this.compositeParams ??= device.createBuffer({
+      label: 'compositor-params',
+      size: COMPOSITE_PARAMS_BYTES,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    this.sliceParams ??= device.createBuffer({
+      label: 'compositor-slice-params',
+      size: 3 * MAX_COMPOSITE_LAYERS * PARAM_SLICE_BYTES,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+    return { device, depth, layers, pipelines, compositeParams: this.compositeParams, sliceParams: this.sliceParams };
+  }
+
   private encodeMask(
-    device: GPUDevice,
+    gpu: CompositorGpu,
     encoder: GPUCommandEncoder,
     target: MaskTarget,
     layer: number,
     mask: MaskDraw,
     profile?: PassProfiler,
   ): void {
-    device.queue.writeBuffer(this.sliceParams!, target.paramsOffset, packMaskParams(mask));
-    if (!target.bindGroup) {
-      target.bindGroup = device.createBindGroup({
-        label: `compositor-mask-${layer}`,
-        layout: this.maskLayout!,
-        entries: [
-          { binding: 0, resource: this.layerTex!.createView({ dimension: '2d-array' }) },
-          { binding: 1, resource: this.depthTex!.createView() },
-          { binding: 2, resource: { buffer: this.sliceParams!, offset: target.paramsOffset, size: 16 } },
-        ],
-      });
-    }
-    this.drawFullScreen(encoder, this.maskPipeline!, target.bindGroup, target.view, `mask-${layer}`, profile);
+    const { device, pipelines, sliceParams } = gpu;
+    device.queue.writeBuffer(sliceParams, target.paramsOffset, packMaskParams(mask));
+    target.bindGroup ??= device.createBindGroup({
+      label: `compositor-mask-${layer}`,
+      layout: pipelines.maskLayout,
+      entries: [
+        { binding: 0, resource: gpu.layers.createView({ dimension: '2d-array' }) },
+        { binding: 1, resource: gpu.depth.createView() },
+        { binding: 2, resource: { buffer: sliceParams, offset: target.paramsOffset, size: 16 } },
+      ],
+    });
+    this.drawFullScreen(encoder, pipelines.mask, target.bindGroup, target.view, `mask-${layer}`, profile);
 
     const radius = featherRadiusPx(mask.feather);
     if (radius <= 0) return;
@@ -430,23 +452,21 @@ export class SlotCompositor implements FrameCompositor {
     if (!scratch) return;
     const hOffset = (MAX_COMPOSITE_LAYERS + layer) * PARAM_SLICE_BYTES;
     const vOffset = (2 * MAX_COMPOSITE_LAYERS + layer) * PARAM_SLICE_BYTES;
-    device.queue.writeBuffer(this.sliceParams!, hOffset, packFeatherParams(true, radius, this.width, this.height));
-    device.queue.writeBuffer(this.sliceParams!, vOffset, packFeatherParams(false, radius, this.width, this.height));
-    if (!target.featherH || !target.featherV) {
-      const featherGroup = (src: GPUTexture, offset: number, label: string) => device.createBindGroup({
-        label,
-        layout: this.featherLayout!,
-        entries: [
-          { binding: 0, resource: src.createView() },
-          { binding: 1, resource: this.linearSampler! },
-          { binding: 2, resource: { buffer: this.sliceParams!, offset, size: 16 } },
-        ],
-      });
-      target.featherH = featherGroup(target.texture, hOffset, `compositor-feather-h-${layer}`);
-      target.featherV = featherGroup(scratch, vOffset, `compositor-feather-v-${layer}`);
-    }
-    this.drawFullScreen(encoder, this.featherPipeline!, target.featherH, scratch.createView(), `feather-h-${layer}`, profile);
-    this.drawFullScreen(encoder, this.featherPipeline!, target.featherV, target.view, `feather-v-${layer}`, profile);
+    device.queue.writeBuffer(sliceParams, hOffset, packFeatherParams(true, radius, this.width, this.height));
+    device.queue.writeBuffer(sliceParams, vOffset, packFeatherParams(false, radius, this.width, this.height));
+    const featherGroup = (src: GPUTexture, offset: number, label: string) => device.createBindGroup({
+      label,
+      layout: pipelines.featherLayout,
+      entries: [
+        { binding: 0, resource: src.createView() },
+        { binding: 1, resource: pipelines.sampler },
+        { binding: 2, resource: { buffer: sliceParams, offset, size: 16 } },
+      ],
+    });
+    target.featherH ??= featherGroup(target.texture, hOffset, `compositor-feather-h-${layer}`);
+    target.featherV ??= featherGroup(scratch, vOffset, `compositor-feather-v-${layer}`);
+    this.drawFullScreen(encoder, pipelines.feather, target.featherH, scratch.createView(), `feather-h-${layer}`, profile);
+    this.drawFullScreen(encoder, pipelines.feather, target.featherV, target.view, `feather-v-${layer}`, profile);
   }
 
   private drawFullScreen(
@@ -478,127 +498,38 @@ export class SlotCompositor implements FrameCompositor {
     return id;
   }
 
-  private getCompositeBindGroup(device: GPUDevice, base: GPUTexture, out: GPUTexture, layers: GPUTexture): GPUBindGroup {
-    const white = this.ensureWhiteMask(device);
+  private getCompositeBindGroup(gpu: CompositorGpu, base: GPUTexture, out: GPUTexture): GPUBindGroup {
+    const white = this.ensureWhiteMask(gpu.device);
     const maskTex = this.masks.map((m) => m?.texture ?? white);
-    const key = [base, out, layers, this.depthTex!, ...maskTex].map((t) => this.textureId(t)).join(',');
+    const key = [base, out, gpu.layers, gpu.depth, ...maskTex].map((t) => this.textureId(t)).join(',');
     if (this.compositeBindGroup && key === this.compositeBindKey) return this.compositeBindGroup;
-    this.compositeBindGroup = device.createBindGroup({
+    this.compositeBindGroup = gpu.device.createBindGroup({
       label: 'compositor-composite',
-      layout: this.compositeLayout!,
+      layout: gpu.pipelines.compositeLayout,
       entries: [
         { binding: 0, resource: base.createView() },
-        { binding: 1, resource: layers.createView({ dimension: '2d-array' }) },
+        { binding: 1, resource: gpu.layers.createView({ dimension: '2d-array' }) },
         ...maskTex.map((t, i) => ({ binding: 2 + i, resource: t.createView() })),
-        { binding: 8, resource: this.depthTex!.createView() },
+        { binding: 8, resource: gpu.depth.createView() },
         { binding: 9, resource: out.createView() },
-        { binding: 10, resource: { buffer: this.compositeParams!, offset: 0, size: COMPOSITE_PARAMS_BYTES } },
+        { binding: 10, resource: { buffer: gpu.compositeParams, offset: 0, size: COMPOSITE_PARAMS_BYTES } },
       ],
     });
     this.compositeBindKey = key;
     return this.compositeBindGroup;
   }
 
-  private ensurePipelines(device: GPUDevice): boolean {
-    if (this.compositePipeline && this.maskPipeline && this.featherPipeline) return true;
+  private ensurePipelines(device: GPUDevice): CompositorPipelines | null {
+    if (this.pipelines?.format === this.colorFormat) return this.pipelines;
+    this.dropBindGroups();
     try {
-      if (!this.compositePipeline) {
-        const sampled = (binding: number, viewDimension: GPUTextureViewDimension = '2d'): GPUBindGroupLayoutEntry => ({
-          binding,
-          visibility: GPUShaderStage.COMPUTE,
-          texture: { sampleType: 'unfilterable-float', viewDimension },
-        });
-        this.compositeLayout = device.createBindGroupLayout({
-          label: 'compositor-composite-BGL',
-          entries: [
-            sampled(0),
-            sampled(1, '2d-array'),
-            ...Array.from({ length: MAX_COMPOSITE_LAYERS }, (_, i) => sampled(2 + i)),
-            sampled(8),
-            {
-              binding: 9,
-              visibility: GPUShaderStage.COMPUTE,
-              storageTexture: { access: 'write-only', format: this.colorFormat },
-            },
-            { binding: 10, visibility: GPUShaderStage.COMPUTE, buffer: { type: 'uniform' } },
-          ],
-        });
-        const module = device.createShaderModule({
-          label: 'compositor-composite',
-          code: rewriteWgslStorageFormats(COMPOSITE_WGSL, this.colorFormat),
-        });
-        this.compositePipeline = device.createComputePipeline({
-          label: `compositor-composite-${this.colorFormat}`,
-          layout: device.createPipelineLayout({ bindGroupLayouts: [this.compositeLayout] }),
-          compute: { module, entryPoint: 'main' },
-        });
-      }
-      if (!this.maskPipeline) {
-        this.maskLayout = device.createBindGroupLayout({
-          label: 'compositor-mask-BGL',
-          entries: [
-            { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float', viewDimension: '2d-array' } },
-            { binding: 1, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'unfilterable-float' } },
-            { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
-          ],
-        });
-        const module = device.createShaderModule({ label: 'compositor-mask', code: MASK_WGSL });
-        this.maskPipeline = device.createRenderPipeline({
-          label: 'compositor-mask',
-          layout: device.createPipelineLayout({ bindGroupLayouts: [this.maskLayout] }),
-          vertex: { module, entryPoint: 'vs' },
-          fragment: { module, entryPoint: 'fs', targets: [{ format: MASK_FORMAT }] },
-          primitive: { topology: 'triangle-list' },
-        });
-      }
-      if (!this.featherPipeline) {
-        this.featherLayout = device.createBindGroupLayout({
-          label: 'compositor-feather-BGL',
-          entries: [
-            { binding: 0, visibility: GPUShaderStage.FRAGMENT, texture: { sampleType: 'float' } },
-            { binding: 1, visibility: GPUShaderStage.FRAGMENT, sampler: { type: 'filtering' } },
-            { binding: 2, visibility: GPUShaderStage.FRAGMENT, buffer: { type: 'uniform' } },
-          ],
-        });
-        const module = device.createShaderModule({ label: 'compositor-feather', code: FEATHER_WGSL });
-        this.featherPipeline = device.createRenderPipeline({
-          label: 'compositor-feather',
-          layout: device.createPipelineLayout({ bindGroupLayouts: [this.featherLayout] }),
-          vertex: { module, entryPoint: 'vs' },
-          fragment: { module, entryPoint: 'fs', targets: [{ format: MASK_FORMAT }] },
-          primitive: { topology: 'triangle-list' },
-        });
-        this.linearSampler = device.createSampler({
-          label: 'compositor-feather-sampler',
-          magFilter: 'linear',
-          minFilter: 'linear',
-          addressModeU: 'clamp-to-edge',
-          addressModeV: 'clamp-to-edge',
-        });
-      }
-      return true;
+      this.pipelines = createCompositorPipelines(device, this.colorFormat);
+      return this.pipelines;
     } catch (e) {
       this.error = `compositor pipelines: ${e instanceof Error ? e.message : String(e)}`;
-      return false;
+      this.pipelines = null;
+      return null;
     }
-  }
-
-  private ensureBuffers(device: GPUDevice): boolean {
-    if (!this.compositeParams) {
-      this.compositeParams = device.createBuffer({
-        label: 'compositor-params',
-        size: COMPOSITE_PARAMS_BYTES,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-    }
-    if (!this.sliceParams) {
-      this.sliceParams = device.createBuffer({
-        label: 'compositor-slice-params',
-        size: 3 * MAX_COMPOSITE_LAYERS * PARAM_SLICE_BYTES,
-        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
-      });
-    }
-    return true;
   }
 
   /**
@@ -649,8 +580,7 @@ export class SlotCompositor implements FrameCompositor {
   }
 
   private ensureScratch(device: GPUDevice): GPUTexture | null {
-    if (this.scratch) return this.scratch;
-    this.scratch = this.allocate(device, () => device.createTexture({
+    this.scratch ??= this.allocate(device, () => device.createTexture({
       label: 'compositor-mask-scratch',
       size: [this.width, this.height],
       format: MASK_FORMAT,
@@ -667,7 +597,7 @@ export class SlotCompositor implements FrameCompositor {
       format: MASK_FORMAT,
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
     });
-    device.queue.writeTexture({ texture }, new Uint8Array([255, 0, 0, 0]), { bytesPerRow: 256 }, [1, 1]);
+    device.queue.writeTexture({ texture }, new Uint8Array([255]), { bytesPerRow: 1 }, [1, 1]);
     this.whiteMask = texture;
     return texture;
   }
@@ -691,14 +621,22 @@ export class SlotCompositor implements FrameCompositor {
     return texture;
   }
 
+  /** Every cached bind group references textures; any of them changing invalidates them. */
+  private dropBindGroups(): void {
+    this.compositeBindGroup = null;
+    for (const m of this.masks) {
+      if (!m) continue;
+      m.bindGroup = null;
+      m.featherH = null;
+      m.featherV = null;
+    }
+  }
+
   private releaseLayers(): void {
     this.layerTex?.destroy();
     this.layerTex = null;
     this.layerCount = 0;
-    this.compositeBindGroup = null;
-    for (const m of this.masks) {
-      if (m) m.bindGroup = null;
-    }
+    this.dropBindGroups();
   }
 
   private releaseMasks(): void {
@@ -710,4 +648,81 @@ export class SlotCompositor implements FrameCompositor {
     this.scratch = null;
     this.compositeBindGroup = null;
   }
+}
+
+/** The three compositor pipelines for one internal colour format (throws on a device error). */
+function createCompositorPipelines(device: GPUDevice, format: InternalColorFormat): CompositorPipelines {
+  const sampled = (
+    binding: number,
+    visibility: GPUShaderStageFlags,
+    viewDimension: GPUTextureViewDimension = '2d',
+    sampleType: GPUTextureSampleType = 'unfilterable-float',
+  ): GPUBindGroupLayoutEntry => ({ binding, visibility, texture: { sampleType, viewDimension } });
+  const uniform = (binding: number, visibility: GPUShaderStageFlags): GPUBindGroupLayoutEntry => ({
+    binding, visibility, buffer: { type: 'uniform' },
+  });
+  const C = GPUShaderStage.COMPUTE;
+  const F = GPUShaderStage.FRAGMENT;
+
+  const compositeLayout = device.createBindGroupLayout({
+    label: 'compositor-composite-BGL',
+    entries: [
+      sampled(0, C),
+      sampled(1, C, '2d-array'),
+      ...Array.from({ length: MAX_COMPOSITE_LAYERS }, (_, i) => sampled(2 + i, C)),
+      sampled(8, C),
+      { binding: 9, visibility: C, storageTexture: { access: 'write-only', format } },
+      uniform(10, C),
+    ],
+  });
+  const composite = device.createComputePipeline({
+    label: `compositor-composite-${format}`,
+    layout: device.createPipelineLayout({ bindGroupLayouts: [compositeLayout] }),
+    compute: {
+      module: device.createShaderModule({
+        label: 'compositor-composite',
+        code: rewriteWgslStorageFormats(COMPOSITE_WGSL, format),
+      }),
+      entryPoint: 'main',
+    },
+  });
+
+  const fullScreen = (label: string, code: string, layout: GPUBindGroupLayout) => {
+    const module = device.createShaderModule({ label, code });
+    return device.createRenderPipeline({
+      label,
+      layout: device.createPipelineLayout({ bindGroupLayouts: [layout] }),
+      vertex: { module, entryPoint: 'vs' },
+      fragment: { module, entryPoint: 'fs', targets: [{ format: MASK_FORMAT }] },
+      primitive: { topology: 'triangle-list' },
+    });
+  };
+  const maskLayout = device.createBindGroupLayout({
+    label: 'compositor-mask-BGL',
+    entries: [sampled(0, F, '2d-array'), sampled(1, F), uniform(2, F)],
+  });
+  const featherLayout = device.createBindGroupLayout({
+    label: 'compositor-feather-BGL',
+    entries: [
+      sampled(0, F, '2d', 'float'),
+      { binding: 1, visibility: F, sampler: { type: 'filtering' } },
+      uniform(2, F),
+    ],
+  });
+  return {
+    format,
+    composite,
+    compositeLayout,
+    mask: fullScreen('compositor-mask', MASK_WGSL, maskLayout),
+    maskLayout,
+    feather: fullScreen('compositor-feather', FEATHER_WGSL, featherLayout),
+    featherLayout,
+    sampler: device.createSampler({
+      label: 'compositor-feather-sampler',
+      magFilter: 'linear',
+      minFilter: 'linear',
+      addressModeU: 'clamp-to-edge',
+      addressModeV: 'clamp-to-edge',
+    }),
+  };
 }
