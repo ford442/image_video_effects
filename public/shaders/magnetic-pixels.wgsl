@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: dipole field-line loops (flux-function isolines); N/S pole lobes, hold to freeze + flip; soft pole glow
+//  Upgraded: 2026-10-05, 2026-10-26
+//  Ideas: dipole field-line loops; N/S pole lobes; soft pole glow; magnetic equator; filing grains
 //  A packing: ACES display RGBA; texel (0,0) = (dipole phase, last time, 0, 1) state, read back via exact C load
 // ═══════════════════════════════════════════════════════════════════
 
@@ -141,6 +141,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lobeW = smoothstep(0.15, 0.9, abs(cosTheta)) * smoothstep(0.02, 0.45, Bsoft) * (0.35 + 0.35 * metallic);
   var combined = filingColor * filingTint * mix(vec3<f32>(1.0), lobeTint, lobeW) + sheen;
 
+  // ── Idea: magnetic equator ─────────────────────────────────────
+  // The seam between the N and S lobes, where m·r crosses zero.
+  let equator = exp(-cosTheta * cosTheta * 14.0) * smoothstep(0.04, 0.35, rLen) * smoothstep(0.02, 0.28, Bsoft);
+  combined = combined * (1.0 - equator * 0.5);
+
+  // ── Idea: filing grains ────────────────────────────────────────
+  // Gaps along the moment so the warp reads as filings. Metallic
+  // still scales the sheen, and now the grain pitch.
+  let parallel = dot(rVec, mHat);
+  let grainFreq = mix(18.0, 64.0, metallic);
+  let grain = smoothstep(0.46, 0.08, abs(fract(parallel * grainFreq) - 0.5));
+  let grainGate = smoothstep(0.05, 0.30, Bsoft);
+  combined = combined * mix(1.0, 0.58 + 0.42 * grain, grainGate * 0.8);
+
   // Idea 1: field-line loops — isolines of the flux function, drawn as thin dark
   // lines, anti-aliased by the local pixel spacing and faded where they crowd.
   let lineScale = 6.0 * fieldRadius;
@@ -163,7 +177,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Alpha = field alignment confidence × depth
   let alignmentConf = smoothstep(0.0, 0.3, Bmag) * alignment;
-  let alpha = clamp(alignmentConf * depth + 0.25, 0.0, 1.0);
+  let alpha = clamp(alignmentConf * depth + 0.25 + equator * 0.08, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(tonemapped, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

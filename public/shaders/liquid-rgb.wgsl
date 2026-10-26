@@ -3,7 +3,9 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  Upgraded: 2026-08-15, 2026-10-26
+//  Ideas: vortex eye wall; wavelength memory
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -35,6 +37,22 @@ fn complexVortexField(p: vec2<f32>, time: f32, turb: f32) -> vec2<f32> {
     vel += vec2<f32>(-delta.y, delta.x) * (gamma / (6.28318 * r2));
   }
   return vel * 0.004;
+}
+
+// Tangential speed of r/(r²+0.04) peaks at r = 0.2. Same four centers.
+fn vortexEye(p: vec2<f32>, time: f32) -> f32 {
+  let centers = array<vec2<f32>, 4>(
+    vec2<f32>(0.35 * cos(time * 0.45), 0.25 * sin(time * 0.55)),
+    vec2<f32>(-0.4 * sin(time * 0.38), 0.3 * cos(time * 0.42)),
+    vec2<f32>(0.28 * sin(time * 0.62), -0.35 * cos(time * 0.51)),
+    vec2<f32>(-0.32 * cos(time * 0.53), -0.28 * sin(time * 0.67))
+  );
+  var eye = 0.0;
+  for (var k = 0; k < 4; k = k + 1) {
+    let band = (length(p - centers[k]) - 0.2) / 0.018;
+    eye = max(eye, exp(-band * band));
+  }
+  return eye;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -139,8 +157,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let specular = causticHue * causticPotential * (0.15 + audio.z * 0.45) + fresnel * vec3<f32>(0.08, 0.16, 0.24) + vec3<f32>(0.95, 0.2 + audio.y * 0.35, 0.72) * seam * 0.18;
   rgb += specular;
 
+  // ── Idea: vortex eye wall ──────────────────────────────────────
+  let eye = vortexEye(pAspect, time);
+  rgb = rgb + vec3<f32>(0.85, 0.92, 1.0) * eye * (0.10 + turbulence * 0.12);
+
+  // ── Idea: wavelength memory ────────────────────────────────────
+  // Separation already splits the paths. It splits the history the
+  // same way. At 0, red, green, and blue share one mix.
   let feedbackMix = clamp((0.08 + viscosity * 0.22) * history.a, 0.04, 0.35);
-  rgb = mix(rgb, history.rgb, feedbackMix);
+  let histMax = vec2<i32>(resolution) - vec2<i32>(1);
+  let histR = textureLoad(dataTextureC, clamp(vec2<i32>(floor(uvR * resolution)), vec2<i32>(0), histMax), 0);
+  let histB = textureLoad(dataTextureC, clamp(vec2<i32>(floor(uvB * resolution)), vec2<i32>(0), histMax), 0);
+  let lead = clamp(separation, 0.0, 1.0);
+  rgb = vec3<f32>(
+    mix(rgb.r, histR.r, feedbackMix * mix(1.0, 0.68, lead)),
+    mix(rgb.g, history.g, feedbackMix),
+    mix(rgb.b, histB.b, min(feedbackMix * mix(1.0, 1.22, lead), 0.5))
+  );
   rgb = acesToneMapping(rgb);
 
   let sourceAlpha = max(sampleR.a, max(sampleG.a, sampleB.a));

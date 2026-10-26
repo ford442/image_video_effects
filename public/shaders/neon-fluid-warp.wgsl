@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: viscous wake (pointer velocity from the (0,0) prev-mouse texel stretches the lens behind the motion, relaxing with liquidity); meniscus highlight (Blinn specular on the force-gradient normal of the lens rim); viscous hold (held pointer slows the runner/caustic clock by liquidity)
+//  Upgraded: 2026-10-05, 2026-10-26
+//  Ideas: viscous wake; meniscus highlight; viscous hold; speed-thinned rim (§12.2C); jet crest
 //  A packing: linear pre-ACES RGBA (14% exact-C history); (0,0) = prev mouse xy, last time, sentinel -7; (1,0) = wake velocity xy, viscous clock, sentinel -7
 //  Motion: viscous curl jets + neon edge runners
 // ═══════════════════════════════════════════════════════════════════
@@ -123,7 +123,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hist = finite3(textureLoad(dataTextureC, coord, 0).rgb);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
 
-  let edge = 1.0 - smoothstep(0.0, 0.11 + treble * 0.03, abs(dist - radius * 0.8));
+  // ── Idea: speed-thinned rim (§12.2C) ───────────────────────────
+  // w = w0 / (1 + k|v|). A still pointer keeps the old width.
+  let rimWidth = (0.11 + treble * 0.03) / (1.0 + wakeMag * 3.5);
+  let edge = 1.0 - smoothstep(0.0, max(rimWidth, 0.02), abs(dist - radius * 0.8));
   let runner = pow(max(0.0, sin(atan2(distVec.y, distVec.x) * 7.0 - viscousClock * (6.0 + bass * 3.0)) * 0.5 + 0.5), 6.0)
     * edge * (0.65 + mids * 0.3);
   let glowFactor = force * (1.0 - force) * 4.0;
@@ -148,6 +151,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr = hdr + neon * glowFactor * glowIntensity * luma * (3.0 + bass);
   hdr = hdr + vec3<f32>(0.42, 0.75, 1.0) * edge * glowIntensity * (0.7 + treble);
   hdr = hdr + vec3<f32>(1.0, 0.82, 0.46) * (caustic * 0.45 + runner * 0.85 + click * 0.4);
+  // ── Idea: jet crest ────────────────────────────────────────────
+  // The curl jet's sine already displaces. Its peak is a bright thread.
+  let jetCrest = pow(max(sin(jetPhase), 0.0), 10.0) * force * (0.3 + liquidity);
+  hdr = hdr + neon * jetCrest * (0.22 + glowIntensity * 0.35);
   hdr = hdr + vec3<f32>(0.85, 0.95, 1.0) * meniscus * 1.3;
   hdr = mix(hdr, hist, 0.14 * (1.0 - force));
   hdr = hdr * mix(1.0, 0.68, smoothstep(0.46, 1.0, length(uv - vec2<f32>(0.5)) * 1.414));

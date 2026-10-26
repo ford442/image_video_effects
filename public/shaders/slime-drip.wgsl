@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: anisotropic gravity stretch; exact-C drip hang
+//  Upgraded: 2026-09-08, 2026-10-26
+//  Ideas: anisotropic gravity stretch; exact-C drip hang; toe bead (§12.2D); neck pinch
 //  A packing: raw fields (drip, thickness, tint_mask, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -114,6 +114,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse_dist = distance((uv - mouse) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0));
     let wipe = smoothstep(0.2, 0.0, mouse_dist);
     let drip = max(dripFresh, prevField.r * 0.84 * (1.0 - wipe));
+    let coord = vec2<i32>(global_id.xy);
+    let dimsI = vec2<i32>(resolution) - vec2<i32>(1);
+    let dripL = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), dimsI), 0).r;
+    let dripR = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), dimsI), 0).r;
+    let dripBelow = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), dimsI), 0).r;
+    // ── Idea: toe bead (§12.2D) ──────────────────────────────────
+    // The drip is thicker than the pixel below it: the hanging toe.
+    let toe = smoothstep(0.04, 0.28, drip - dripBelow) * drip * (1.0 - wipe);
+    // ── Idea: neck pinch ─────────────────────────────────────────
+    // A horizontal ridge in the stored drip is the strand. Viscosity
+    // narrows the tint there.
+    let neck = max(drip - 0.5 * (dripL + dripR), 0.0);
 
     // Distortion
     let y_offset = drip * 0.1 * amount;
@@ -125,11 +137,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var baseColor = textureSampleLevel(readTexture, u_sampler, sample_uv, 0.0);
 
     // Calculate slime properties
-    let slimeThickness = calculateSlimeThickness(drip * amount, viscosity);
+    let slimeThickness = calculateSlimeThickness(drip * amount, viscosity) + toe * 0.2;
     
     // Slime Color (mucus green with organic tint)
     let tint_color = vec4<f32>(0.15, 0.85, 0.25, 1.0);
-    let tint_mask = drip * amount * (1.0 - wipe);
+    let tint_mask = drip * amount * (1.0 - wipe) * mix(1.0, 0.55 + 0.45 * smoothstep(0.0, 0.22, neck), viscosity);
     
     // Apply mucus SSS to tint color
     let lightDir = normalize(vec3<f32>(0.5, 0.8, 0.3));
@@ -145,6 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let specular = 0.3 * tint_mask * (0.5 + 0.5 * sin(uv.y * 100.0 + time * (2.0 + mids * 1.5)));
         finalColor += vec3<f32>(specular);
     }
+    finalColor = finalColor + vec3<f32>(0.72, 0.95, 0.62) * toe * (0.18 + 0.12 * (1.0 - viscosity));
 
     // Calculate final alpha
     let finalAlpha = calculateSlimeAlpha(drip, slimeThickness, viscosity);
