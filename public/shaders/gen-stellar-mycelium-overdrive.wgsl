@@ -20,7 +20,7 @@ fn rotate(a: f32) -> mat2x2<f32> {
 fn map(pos: vec3<f32>) -> f32 {
     var p = pos;
     // Basic structure
-    let density = u.custom.x; // Density
+    let density = u.zoom_params.x; // Density
 
     // Add distortion based on mouse
     if (u.zoom_config.w > 0.5) {
@@ -50,7 +50,7 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let resolution = vec2<f32>(f32(u.resolution.x), f32(u.resolution.y));
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
@@ -60,9 +60,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var uv = (fragCoord - 0.5 * resolution) / resolution.y;
-    let pulse_speed = u.custom.y;
-    let glow_intensity = u.custom.z;
-    let color_shift = u.custom.w;
+    let pulse_speed = u.zoom_params.y;
+    let glow_intensity = u.zoom_params.z;
+    let color_shift = u.zoom_params.w;
 
     // Audio reactivity
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
