@@ -51,6 +51,8 @@ export type HostedRenderer = Pick<
   | 'setSlotOutput'
   | 'getSlotState'
   | 'getCompositorStats'
+  | 'setHdrPresent'
+  | 'getHdrPresent'
   | 'setInputSource'
   | 'updateDepthMap'
   | 'setTransferredVideo'
@@ -189,6 +191,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     scalableNodes: r.getScalableNodes(),
     slots: Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState(i)),
     compositor: r.getCompositorStats(),
+    hdrPresent: r.getHdrPresent(),
     graphReport: r.getLastGraphReport(),
     chores: r.getGpuChoresBreadcrumbs(),
     cachedShaderIds: r.getPipelineCacheStats().cachedIds,
@@ -262,6 +265,9 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     }),
     setAdaptiveQuality: ({ enabled, targetFps }) => withRenderer((r) => r.setAdaptiveQuality(enabled, targetFps)),
     setSourceAutoExposure: ({ enabled }) => withRenderer((r) => r.setSourceAutoExposure(enabled)),
+    setHdrPresent: ({ settings }) => withRenderer((r) => {
+      r.setHdrPresent(settings);
+    }),
     applyTestRenderState: ({ state }) => withRenderer((r) => r.applyTestRenderState(state)),
     setCanvasCopySrc: ({ enabled }) => withRenderer((r) => {
       r.setCanvasCopySrc(enabled);

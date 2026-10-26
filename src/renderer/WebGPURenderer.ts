@@ -15,9 +15,11 @@ import {
   attachUncapturedErrorRouter,
   buildCanvasConfigureOptions,
   CORE_TIER2,
-  type CanvasConfigureOptIns,
+  isHdrCanvas,
+  type CanvasColorOptInsState,
   type DeviceTier2,
 } from './webgpu/device';
+import { HdrPresent, StoragePresent, type HdrPresentSettings, type PresentVariant } from './webgpu/presentVariants';
 import { WebGPUResourcePool } from './webgpu/resources';
 import { WebGPUPipelineModule, createComputeBindGroup } from './webgpu/pipeline';
 import {
@@ -114,10 +116,20 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   readonly renderThread: 'main' | 'worker' = 'main';
   private device: GPUDevice | null = null;
   private context: GPUCanvasContext | null = null;
+  /** The live swapchain format (rgba16float for the HDR canvas, #1512). */
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
+  /** getPreferredCanvasFormat() (or ?canvas_format=): what every SDR configure uses. */
+  private preferredCanvasFormat: GPUTextureFormat = 'bgra8unorm';
+  /** Boot probe accepted STORAGE_BINDING on the swapchain (bgra8unorm-storage, #1512). */
+  private storagePresentSupported = false;
+  private readonly hdrPresent = new HdrPresent();
+  private readonly storagePresent = new StoragePresent(() => this.device);
+  /** Test hook: read presented texels back from the next frame (needs a COPY_SRC canvas). */
+  private texelProbe: { points: Array<[number, number]>; resolve: (texels: number[][] | null) => void } | null = null;
+  private texelReadback: { buffer: GPUBuffer; format: GPUTextureFormat; count: number; resolve: (texels: number[][] | null) => void } | null = null;
   private canvasCopySrcSupported = false;
   private canvasCopySrcActive = false;
-  private canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'> = {};
+  private canvasColorOptIns: CanvasColorOptInsState = {};
   private canvasColorRequested = false;
   private canvasColorFallback: CanvasColorFallbackReason | undefined;
 
@@ -250,6 +262,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       instrumentDevice(outcome.device);
       this.context = outcome.context;
       this.canvasFormat = outcome.canvasFormat;
+      this.preferredCanvasFormat = outcome.preferredCanvasFormat ?? outcome.canvasFormat;
+      this.storagePresentSupported = outcome.storagePresent ?? false;
       this.canvasCopySrcSupported = outcome.canvasCopySrc ?? false;
       this.canvasCopySrcActive = false;
       this.canvasColorOptIns = outcome.canvasColorOptIns ?? {};
@@ -509,7 +523,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (this.canvasCopySrcActive === enabled) return true;
     try {
       this.context.configure(buildCanvasConfigureOptions(
-        this.device, this.canvasFormat, { ...this.canvasColorOptIns, copySrc: enabled },
+        this.device, this.preferredCanvasFormat,
+        { ...this.canvasColorOptIns, copySrc: enabled, storagePresent: this.storagePresentConfigured() },
       ));
       this.canvasCopySrcActive = enabled;
       return true;
@@ -534,17 +549,25 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       applied: this.canvasColorOptIns,
       colorSpace: this.canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
       toneMapping: this.canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
+      format: this.canvasFormat,
       ...(this.canvasColorFallback ? { reason: this.canvasColorFallback } : {}),
     });
     if (!this.device || !this.context) return { ...current(), deferred: true };
     if (this.canvasCopySrcActive) return { ...current(), deferred: true };
     const result = await negotiateCanvasColor(
-      this.device, this.context, this.canvasFormat, requested, this.canvasCopySrcActive,
+      this.device, this.context, this.preferredCanvasFormat, requested,
+      { copySrc: this.canvasCopySrcActive, storagePresent: this.storagePresentSupported },
     );
     this.canvasColorOptIns = result.applied;
     this.canvasColorRequested = enabled;
     this.canvasColorFallback = result.reason;
-    updateWebGpuProbeColor(result);
+    const format = result.format ?? this.preferredCanvasFormat;
+    if (format !== this.canvasFormat) {
+      // HDR on / off swaps the swapchain format: the present pipelines follow it.
+      this.canvasFormat = format;
+      if (this.blitReadTex) this.pipeline.setupBlitPipelines(this.device, format, this.blitReadTex, this.colorFormat);
+    }
+    updateWebGpuProbeColor(result, this.storagePresentConfigured());
     return result;
   }
 
@@ -554,6 +577,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       colorSpace: this.canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
       toneMapping: this.canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
       copySrc: this.canvasCopySrcActive,
+      format: this.canvasFormat,
+      storagePresent: this.storagePresentConfigured(),
       ...(this.canvasColorFallback ? { fallbackReason: this.canvasColorFallback } : {}),
     };
   }
@@ -620,6 +645,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   encodePostFxChores(encoder: GPUCommandEncoder): void {
     this.gpuChores.encodeReadback(encoder);
+    // After the present: the swapchain texture holds this frame's picture.
+    this.encodeTexelProbe(encoder);
   }
 
   afterFrameSubmitChores(): void {
@@ -767,6 +794,93 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Layer / mask memory, pass count and unresolved-mask warnings, for diagnostics. */
   getCompositorStats(): CompositorStats {
     return this.compositor.stats();
+  }
+
+  /** The swapchain carries STORAGE_BINDING and is bgra8unorm: the compute present runs. */
+  private storagePresentConfigured(): boolean {
+    return this.storagePresentSupported && !isHdrCanvas(this.canvasColorOptIns) && this.canvasFormat === 'bgra8unorm';
+  }
+
+  /** HDR present on the rgba16float canvas, the compute present on a bgra8unorm one, else null (frame-plan hook). */
+  getPresentVariant(): PresentVariant | null {
+    const device = this.device;
+    if (!device) return null;
+    if (isHdrCanvas(this.canvasColorOptIns) && this.canvasFormat === 'rgba16float') {
+      return this.hdrPresent.get(device, this.pipeline.blitBindGroupLayout, this.canvasFormat);
+    }
+    return this.storagePresentConfigured() ? this.storagePresent.variant : null;
+  }
+
+  /** Paper white / peak of the HDR present (nits). Kept across HDR on / off. */
+  setHdrPresent(settings: Partial<HdrPresentSettings>): HdrPresentSettings {
+    return this.hdrPresent.setSettings(settings);
+  }
+
+  getHdrPresent(): HdrPresentSettings {
+    return this.hdrPresent.getSettings();
+  }
+
+  /** Compute presents encoded so far (0 when the render-pass blit presents). */
+  getStoragePresentCount(): number {
+    return this.storagePresent.presents;
+  }
+
+  /**
+   * Test hook (?testMode=1, page thread): the next presented frame's texels at normalized
+   * `points`, as floats (RGBA). rgba16float canvases keep values above 1.0, which is how
+   * the HDR present is checked without an HDR display. Needs setCanvasCopySrc(true).
+   */
+  readPresentedTexels(points: Array<[number, number]>): Promise<number[][] | null> {
+    if (!this.initialized || !this.canvasCopySrcActive || this.texelProbe || points.length === 0) {
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+      this.texelProbe = { points, resolve };
+    });
+  }
+
+  private encodeTexelProbe(encoder: GPUCommandEncoder): void {
+    const probe = this.texelProbe;
+    const device = this.device;
+    if (!probe || !device || !this.context) return;
+    this.texelProbe = null;
+    let texture: GPUTexture;
+    try {
+      texture = this.context.getCurrentTexture();
+    } catch {
+      probe.resolve(null);
+      return;
+    }
+    const buffer = device.createBuffer({
+      label: 'presentedTexels',
+      size: 256 * probe.points.length,
+      usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+    });
+    probe.points.forEach(([u, v], i) => {
+      const x = Math.min(texture.width - 1, Math.max(0, Math.floor(u * texture.width)));
+      const y = Math.min(texture.height - 1, Math.max(0, Math.floor(v * texture.height)));
+      encoder.copyTextureToBuffer(
+        { texture, origin: [x, y, 0] },
+        { buffer, offset: i * 256, bytesPerRow: 256 },
+        [1, 1, 1],
+      );
+    });
+    this.texelReadback = { buffer, format: texture.format, count: probe.points.length, resolve: probe.resolve };
+  }
+
+  private resolveTexelReadback(): void {
+    const readback = this.texelReadback;
+    if (!readback) return;
+    this.texelReadback = null;
+    void readback.buffer.mapAsync(GPUMapMode.READ).then(() => {
+      const bytes = new Uint8Array(readback.buffer.getMappedRange().slice(0));
+      readback.buffer.unmap();
+      readback.buffer.destroy();
+      readback.resolve(Array.from({ length: readback.count }, (_, i) => decodeTexel(bytes, i * 256, readback.format)));
+    }, () => {
+      readback.buffer.destroy();
+      readback.resolve(null);
+    });
   }
 
   /** Opt-in graph nodes of the bound slots, with their floor and current scale. */
@@ -1095,6 +1209,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       nodeScale: r.nodeScale.bind(r),
       getIslands: r.getIslands.bind(r),
       getCompositor: r.getCompositor.bind(r),
+      getPresentVariant: r.getPresentVariant.bind(r),
       encodePreFxChores: r.encodePreFxChores.bind(r),
       encodePostFxChores: r.encodePostFxChores.bind(r),
       afterFrameSubmitChores: r.afterFrameSubmitChores.bind(r),
@@ -1164,6 +1279,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Frame-loop hook after queue.submit: release the frame's VideoFrame, serve frame grabs. */
   afterFrameSubmit(): void {
     this.videoIngest.afterSubmit();
+    this.resolveTexelReadback();
     if (this.frameGrabs.length > 0) this.resolveFrameGrabs();
   }
 
@@ -1395,6 +1511,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.warmup = null;
     this.islands.destroy();
     this.compositor.destroy();
+    this.hdrPresent.release();
+    this.storagePresent.release();
+    this.texelProbe?.resolve(null);
+    this.texelProbe = null;
+    this.texelReadback?.resolve(null);
+    this.texelReadback = null;
     this.frameRenderer.releasePresentHold();
     this.nodeScales.clear();
     this.videoIngest.detach();
@@ -1430,4 +1552,23 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     if (!awaitLost) return undefined;
     return lost.then(() => undefined).catch(() => undefined);
   }
+}
+
+function halfToFloat(h: number): number {
+  const sign = h & 0x8000 ? -1 : 1;
+  const exp = (h >> 10) & 0x1f;
+  const mant = h & 0x3ff;
+  if (exp === 0) return sign * mant * 2 ** -24;
+  if (exp === 31) return mant ? Number.NaN : sign * Number.POSITIVE_INFINITY;
+  return sign * (1 + mant / 1024) * 2 ** (exp - 15);
+}
+
+/** One texel of a copyTextureToBuffer row as RGBA floats (rgba16float / bgra8unorm / rgba8unorm). */
+function decodeTexel(bytes: Uint8Array, offset: number, format: GPUTextureFormat): number[] {
+  if (format === 'rgba16float') {
+    const view = new DataView(bytes.buffer, bytes.byteOffset + offset, 8);
+    return [0, 2, 4, 6].map((o) => halfToFloat(view.getUint16(o, true)));
+  }
+  const px = Array.from(bytes.subarray(offset, offset + 4), (b) => b / 255);
+  return format === 'bgra8unorm' ? [px[2] ?? 0, px[1] ?? 0, px[0] ?? 0, px[3] ?? 0] : px;
 }

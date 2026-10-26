@@ -37,6 +37,8 @@ export type WebGPUBackendApi = Pick<
   | 'setSlotOutput'
   | 'getSlotOutput'
   | 'getCompositorStats'
+  | 'setHdrPresent'
+  | 'getHdrPresent'
   | 'setSlotParams'
   | 'updateSlotParams'
   | 'addRipple'

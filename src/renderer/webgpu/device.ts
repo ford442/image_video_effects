@@ -18,7 +18,12 @@ export interface WebGPUDeviceInitResult {
   ok: true;
   device: GPUDevice;
   context: GPUCanvasContext;
+  /** The applied swapchain format (rgba16float for the HDR canvas). */
   canvasFormat: GPUTextureFormat;
+  /** The preferred format every SDR configure uses (#1512). */
+  preferredCanvasFormat: GPUTextureFormat;
+  /** The swapchain was accepted with STORAGE_BINDING for the compute present (#1512). */
+  storagePresent: boolean;
   canvasW: number;
   canvasH: number;
   supportsSubgroups: boolean;
@@ -31,7 +36,7 @@ export interface WebGPUDeviceInitResult {
   adapterAttemptLabel: string | null;
   /** Probe result: swapchain accepts COPY_SRC (enables canvas → VideoFrame capture). */
   canvasCopySrc: boolean;
-  canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  canvasColorOptIns: CanvasColorOptInsState;
   canvasColorFallback?: CanvasColorFallbackReason;
   /** Removes the boot probe's log-only uncapturederror listener (see WebGpuProbeHandoff). */
   detachUncapturedLog?: () => void;
@@ -76,6 +81,8 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     device: handoff.device,
     context: handoff.context,
     canvasFormat: handoff.canvasFormat,
+    preferredCanvasFormat: handoff.preferredCanvasFormat ?? handoff.canvasFormat,
+    storagePresent: handoff.storagePresent ?? false,
     canvasW: handoff.canvasW,
     canvasH: handoff.canvasH,
     supportsSubgroups: handoff.supportsSubgroups,
@@ -166,6 +173,39 @@ export interface CanvasConfigureOptIns {
   displayP3?: boolean;
   /** Request toneMapping { mode: 'extended' } (display-p3 opt-in + HDR display only). */
   extendedToneMapping?: boolean;
+  /**
+   * Swap the canvas format for rgba16float (#1512, optIn.hdrCanvas). Honored only together
+   * with displayP3 + extendedToneMapping: extended tone mapping is inert on an 8-bit canvas.
+   */
+  hdrCanvas?: boolean;
+  /** Add STORAGE_BINDING so the present can write a bgra8unorm swapchain from compute (#1512). */
+  storagePresent?: boolean;
+}
+
+/** The colour opt-ins a renderer remembers and re-applies on every configure. */
+export type CanvasColorOptInsState = Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping' | 'hdrCanvas'>;
+
+/** True when these opt-ins put the swapchain in rgba16float (the HDR canvas). */
+export function isHdrCanvas(optIns: CanvasConfigureOptIns): boolean {
+  return !!(optIns.displayP3 && optIns.extendedToneMapping && optIns.hdrCanvas);
+}
+
+/** The swapchain format a configure with these opt-ins produces (preferred unless HDR). */
+export function effectiveCanvasFormat(preferred: GPUTextureFormat, optIns: CanvasConfigureOptIns = {}): GPUTextureFormat {
+  return isHdrCanvas(optIns) ? (canvasConfigureContract.optIn.hdrCanvas.format as GPUTextureFormat) : preferred;
+}
+
+/** `?canvas_format=bgra8unorm|rgba8unorm` overrides getPreferredCanvasFormat() (tests, storage present). */
+export function resolveCanvasFormatOverride(search: string): GPUTextureFormat | null {
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  const v = params.get('canvas_format');
+  return v === 'bgra8unorm' || v === 'rgba8unorm' ? v : null;
+}
+
+/** `?storage_present=0` keeps the render-pass present even where storage present is possible. */
+export function storagePresentDisabledByUrl(search: string): boolean {
+  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+  return params.get(canvasConfigureContract.optIn.storagePresent.urlParam) === '0';
 }
 
 /** One canvas capability per canvas_configure.json optIn entry (shared with C++ canvas_configure.h). */
@@ -190,21 +230,23 @@ function textureUsageBits(names: readonly string[]): GPUTextureUsageFlags {
  * Canvas context configure options (parity with WASM JS_CreateSurfaceFromCanvas).
  * Values come from src/contracts/canvas_configure.json. The default path writes
  * only alphaMode + usage; colorSpace/toneMapping stay browser defaults (srgb /
- * standard) unless explicitly opted in.
+ * standard) unless explicitly opted in. `format` is the preferred format; the
+ * hdrCanvas opt-in swaps it for the contract's rgba16float (effectiveCanvasFormat).
  */
 export function buildCanvasConfigureOptions(
   device: GPUDevice,
   format: GPUTextureFormat,
   optIns: CanvasConfigureOptIns = {},
 ): GPUCanvasConfiguration {
-  const usageNames = optIns.copySrc
-    ? canvasConfigureContract.optIn.copySrc.usage
-    : canvasConfigureContract.usage;
+  const usageNames = [
+    ...(optIns.copySrc ? canvasConfigureContract.optIn.copySrc.usage : canvasConfigureContract.usage),
+    ...(optIns.storagePresent ? canvasConfigureContract.optIn.storagePresent.usage : []),
+  ];
   const config: GPUCanvasConfiguration = {
     device,
-    format,
+    format: effectiveCanvasFormat(format, { ...optIns, hdrCanvas: !!optIns.hdrCanvas }),
     alphaMode: canvasConfigureContract.alphaMode as GPUCanvasAlphaMode,
-    usage: textureUsageBits(usageNames),
+    usage: textureUsageBits([...new Set(usageNames)]),
   };
   if (optIns.displayP3) {
     config.colorSpace = canvasConfigureContract.optIn.displayP3.colorSpace as PredefinedColorSpace;

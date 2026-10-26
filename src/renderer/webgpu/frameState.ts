@@ -22,6 +22,7 @@ import { SIM_HASH_HEAD_BYTES } from './simHash';
 import { ShaderSlot } from './webgpuConstants';
 import type { FrameIslands } from './framePlan';
 import type { FrameCompositor } from './compositor';
+import type { PresentVariant } from './presentVariants';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
@@ -92,6 +93,8 @@ export interface WebGPUFrameState {
   getIslands?: () => FrameIslands | null;
   /** Layer compositor for this frame, or null when no parallel slot composites (#1512). */
   getCompositor?: () => FrameCompositor | null;
+  /** HDR or storage present for this frame, or null for the standard blit (#1512). */
+  getPresentVariant?: () => PresentVariant | null;
 
   ripples: Ripple[];
   mouseX: number;
@@ -184,6 +187,7 @@ export interface WebGPUFrameHost {
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   getIslands?: () => FrameIslands | null;
   getCompositor?: () => FrameCompositor | null;
+  getPresentVariant?: () => PresentVariant | null;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -267,6 +271,7 @@ export interface FrameContext {
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   getIslands?: () => FrameIslands | null;
   getCompositor?: () => FrameCompositor | null;
+  getPresentVariant?: () => PresentVariant | null;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
@@ -369,6 +374,7 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     nodeScale: (slot, nodeId) => d.nodeScale?.(slot, nodeId) ?? 1,
     getIslands: () => d.getIslands?.() ?? null,
     getCompositor: () => d.getCompositor?.() ?? null,
+    getPresentVariant: () => d.getPresentVariant?.() ?? null,
     get ripples() { return d.ripples; },
     get mouseX() { return d.mouseX; },
     get mouseYShader() { return d.mouseYShader; },
@@ -465,6 +471,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     nodeScale: (slot, nodeId) => h.nodeScale?.(slot, nodeId) ?? 1,
     getIslands: () => h.getIslands?.() ?? null,
     getCompositor: () => h.getCompositor?.() ?? null,
+    getPresentVariant: () => h.getPresentVariant?.() ?? null,
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },

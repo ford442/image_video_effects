@@ -241,6 +241,9 @@ export function useTestHarness({
                     manager.setSlotOutput(index, patch),
                 getCompositorStats: () => manager.getCompositorStats(),
                 getRenderStateReplay: () => manager.getRenderStateReplay(),
+                /** HDR present (#1512): nits, and float texels of the next presented frame (?renderer=main). */
+                setHdrPresent: (settings: Parameters<typeof manager.setHdrPresent>[0]) => manager.setHdrPresent(settings),
+                readPresentedTexels: (points: Array<[number, number]>) => manager.readPresentedTexels(points),
                 /** DPT depth map stand-in (canvas-sized row-major floats, near = 1). */
                 updateDepthMap: (data: number[], width: number, height: number) =>
                     manager.updateDepthMap(Float32Array.from(data), width, height),

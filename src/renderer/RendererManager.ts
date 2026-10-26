@@ -63,6 +63,20 @@ import type { DisplayP3Result } from './webgpuBootProbe';
 import { CrossfadeArm, slotIdentityChanged } from './crossfadeArm';
 import { DEFAULT_SLOT_OUTPUT, isDefaultSlotOutput, patchSlotOutput, type SlotOutput } from './slotOutput';
 import type { CompositorStats } from './webgpu/compositor';
+import type { HdrPresentSettings } from './webgpu/presentVariants';
+
+function hdrPresentFromUrl(): Partial<HdrPresentSettings> | null {
+  if (typeof window === 'undefined') return null;
+  const params = new URLSearchParams(window.location.search);
+  const read = (key: string) => {
+    const v = Number(params.get(key));
+    return params.has(key) && Number.isFinite(v) ? v : undefined;
+  };
+  const paperWhiteNits = read('paper_white');
+  const peakNits = read('peak_nits');
+  if (paperWhiteNits === undefined && peakNits === undefined) return null;
+  return { ...(paperWhiteNits !== undefined ? { paperWhiteNits } : {}), ...(peakNits !== undefined ? { peakNits } : {}) };
+}
 
 /** Ripples younger than this are re-added on the rebuilt backend after a device loss. */
 export const RIPPLE_REPLAY_WINDOW_MS = 4000;
@@ -140,6 +154,8 @@ export class RendererManager {
   private pendingNodeScales: Record<string, number> = {};
   /** Ripples captured at the loss, re-added after recovery. */
   private pendingRipples: Array<[number, number]> = [];
+  /** HDR present nits (#1512); null = the backend default. `?paper_white=` / `?peak_nits=` seed it. */
+  private hdrPresent: Partial<HdrPresentSettings> | null = hdrPresentFromUrl();
   private readonly config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
   private webGpuHandoff: WebGpuProbeHandoff | undefined;
@@ -497,6 +513,23 @@ export class RendererManager {
       r.updateDepthMap(data.slice(), width, height);
     }
     if (this.sourceAutoExposure !== null) r.setSourceAutoExposure(this.sourceAutoExposure);
+    if (this.hdrPresent) r.setHdrPresent(this.hdrPresent);
+  }
+
+  /** Paper white / peak (nits) of the HDR present, used while the canvas is rgba16float (#1512). */
+  setHdrPresent(settings: Partial<HdrPresentSettings>): HdrPresentSettings | null {
+    this.hdrPresent = { ...(this.hdrPresent ?? {}), ...settings };
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) ? r.setHdrPresent(this.hdrPresent) : null;
+  }
+
+  /**
+   * Test hook (?testMode=1): texels of the next presented frame as floats. Page-thread
+   * TS backend only (?renderer=main) and only while the canvas carries COPY_SRC.
+   */
+  readPresentedTexels(points: Array<[number, number]>): Promise<number[][] | null> {
+    const r = this.currentRenderer;
+    return r instanceof WebGPURenderer ? r.readPresentedTexels(points) : Promise.resolve(null);
   }
 
   /** What a device-loss recovery will (or did) replay beyond the shader stack, for tests and diagnostics. */

@@ -33,6 +33,7 @@ import { snapNodeScale } from '../webgpu/nodeScale';
 import type { SlotMode } from '../webgpu/webgpuConstants';
 import { DEFAULT_SLOT_OUTPUT, patchSlotOutput, type SlotOutput } from '../slotOutput';
 import type { CompositorStats } from '../webgpu/compositor';
+import { DEFAULT_HDR_PRESENT, normalizeHdrPresent, type HdrPresentSettings } from '../webgpu/presentVariants';
 import type { WebGPUBackendApi } from '../webgpuBackendApi';
 import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
 import {
@@ -124,6 +125,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }));
   /** Slots whose compositor output changed since the last flush. */
   private readonly dirtyOutputs = new Set<number>();
+  private hdrPresent: HdrPresentSettings = { ...DEFAULT_HDR_PRESENT };
   private readonly slotParams: [number, number, number, number][] = Array.from(
     { length: PHYSICAL_SLOT_LIMIT },
     (): [number, number, number, number] => [0.5, 0.5, 0.5, 0.5],
@@ -535,6 +537,17 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   getSlotOutput(index: number): SlotOutput | null {
     const output = this.slots[index]?.output;
     return output ? { ...output } : null;
+  }
+
+  /** Optimistic: the worker clamps the same way (presentVariants.normalizeHdrPresent). */
+  setHdrPresent(settings: Partial<HdrPresentSettings>): HdrPresentSettings {
+    this.hdrPresent = normalizeHdrPresent({ ...this.hdrPresent, ...settings });
+    this.client?.send({ type: 'setHdrPresent', settings: this.hdrPresent });
+    return { ...this.hdrPresent };
+  }
+
+  getHdrPresent(): HdrPresentSettings {
+    return { ...this.hdrPresent };
   }
 
   getCompositorStats(): CompositorStats {

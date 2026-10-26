@@ -29,6 +29,7 @@ import type { CanvasConfigureOptIns } from '../webgpu/device';
 import type { SlotMode } from '../webgpu/webgpuConstants';
 import type { SlotOutput } from '../slotOutput';
 import type { CompositorStats } from '../webgpu/compositor';
+import type { HdrPresentSettings } from '../webgpu/presentVariants';
 import type { CanvasColorState, DisplayP3Result, WebGpuProbeSerializable } from '../webgpuBootProbe';
 
 /** What the worker scope supports (sent once, before init). */
@@ -89,6 +90,8 @@ export type RenderCommand =
   | { type: 'setSourceAutoExposure'; enabled: boolean }
   | { type: 'applyTestRenderState'; state: TestRenderState }
   | { type: 'setCanvasCopySrc'; enabled: boolean }
+  /** HDR present paper white / peak in nits (#1512). */
+  | { type: 'setHdrPresent'; settings: Partial<HdrPresentSettings> }
   /**
    * Cue crossfade: freeze the last presented picture and dissolve it into the frames that
    * follow over `durationMs` (the hold and the mix both live on the worker's device). The
@@ -187,6 +190,8 @@ export interface RenderSnapshot {
   slots: Array<{ shaderId: string | null; enabled: boolean; mode: SlotMode; output: SlotOutput } | null>;
   /** Layer compositor memory / passes / warnings (#1512). */
   compositor: CompositorStats;
+  /** HDR present settings (#1512). */
+  hdrPresent?: HdrPresentSettings;
   graphReport: GraphRunReport | null;
   chores: GpuChoresBreadcrumbs;
   cachedShaderIds: string[];
@@ -239,6 +244,7 @@ export const RENDER_COMMAND_TYPES = [
   'setSourceAutoExposure',
   'applyTestRenderState',
   'setCanvasCopySrc',
+  'setHdrPresent',
   'startCrossfade',
   'warmShaders',
   'simulateDeviceLoss',

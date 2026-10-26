@@ -105,7 +105,16 @@ export class WebGPUPresenter {
     // The mix is applied after the pipeline choice below: a cue changes what is blended in,
     // never which orientation the live frame uses.
     const mix = this.hold.presentBinding(state, currentTexture);
+    const generative = state.inputSource === 'generative';
+    // HDR (rgba16float canvas) or the bgra8unorm compute present (#1512); a cue mix wins.
+    const variant = mix ? null : state.getPresentVariant?.() ?? null;
     const timestampWrites = profilePass(state.timestampRuntime, { kind: 'present', label: 'present' });
+    if (variant?.kind === 'storage'
+      && variant.encode(encoder, state.blitReadTex, currentTexture, generative, timestampWrites)) {
+      if (state.device) this.presented = { device: state.device, generative };
+      return true;
+    }
+    const hdr = variant?.kind === 'hdr' ? variant : null;
     const pass = encoder.beginRenderPass({
       colorAttachments: [
         {
@@ -117,9 +126,10 @@ export class WebGPUPresenter {
       ],
       ...(timestampWrites ? { timestampWrites } : {}),
     });
+    const pipelines = mix ?? hdr;
     pass.setPipeline(
-      mix
-        ? selectPresentPipeline(state.inputSource, mix.standard, mix.generative)
+      pipelines
+        ? selectPresentPipeline(state.inputSource, pipelines.standard, pipelines.generative)
         : selectPresentPipeline(
             state.inputSource,
             state.blitPipeline,
@@ -128,10 +138,11 @@ export class WebGPUPresenter {
     );
     pass.setBindGroup(0, state.blitBindGroup);
     if (mix) pass.setBindGroup(1, mix.bindGroup);
+    else if (hdr) pass.setBindGroup(1, hdr.bindGroup);
     pass.draw(3);
     pass.end();
     if (state.device) {
-      this.presented = { device: state.device, generative: state.inputSource === 'generative' };
+      this.presented = { device: state.device, generative };
     }
     return true;
   }

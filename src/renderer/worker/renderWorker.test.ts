@@ -67,6 +67,8 @@ function fakeRenderer() {
     setSlotOutput: record('setSlotOutput'),
     getSlotState: () => ({ shaderId: null, enabled: false, mode: 'chained' as const, output: { ...DEFAULT_SLOT_OUTPUT } }),
     getCompositorStats: () => ({ layers: 2, masks: 1, textureMiB: 4, composites: 7, error: null, warnings: [] }),
+    setHdrPresent: record('setHdrPresent'),
+    getHdrPresent: () => ({ paperWhiteNits: 203, peakNits: 1000 }),
     setInputSource: record('setInputSource'),
     updateDepthMap: record('updateDepthMap'),
     setTransferredVideo: record('setTransferredVideo'),
