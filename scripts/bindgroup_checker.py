@@ -59,6 +59,8 @@ TEMPLATE_FILES = [
     # functions with no bindings.
     "_prelude.wgsl",
     "_hash.wgsl",
+    # Half-precision helpers (#1512): functions and aliases, no bindings.
+    "_half.wgsl",
     "_template_canonical_compute.wgsl",
     "_template_shared_memory.wgsl",
     "_template_workgroup_atomics.wgsl",

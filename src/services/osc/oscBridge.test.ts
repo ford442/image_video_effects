@@ -37,7 +37,7 @@ describe('OscBridge', () => {
   afterEach(() => vi.useRealTimers());
 
   const make = () => {
-    const handle = { setSlotParam: vi.fn(), triggerTransition: vi.fn(), setSlotShader: vi.fn(), setAudioAmount: vi.fn() };
+    const handle = { setSlotParam: vi.fn(), setSlotOpacity: vi.fn(), triggerTransition: vi.fn(), setSlotShader: vi.fn(), setAudioAmount: vi.fn() };
     const statuses: OscBridgeStatus[] = [];
     const bridge = new OscBridge({
       url: 'ws://relay',

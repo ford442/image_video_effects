@@ -4,36 +4,19 @@
 //  Features: generative, reaction-diffusion, organic-pulses, glow,
 //            fbm-noise, audio-reactive, mouse-activation, depth-aware,
 //            phosphor-trail feedback, kick-triggered mega-pulse, upgraded-rgba
-//  Upgraded: 2026-09-27
-//  Ideas: recovery trough behind each sine ring; biphasic cyan/magenta spike
-//  A packing: unmapped phosphor trail RGB in A; ACES on writeTexture
+//  Upgraded: 2026-09-27, 2026-10-25
+//  Ideas: recovery trough behind each sine ring; biphasic cyan/magenta spike; heterogeneous conduction — the fbm tissue substrate advances/retards each ring's phase so wavefronts crinkle (§12.1 t3); fast-conduction fibres — a damped pulse runs outward from the nearest pulse centre along the vein network (§12.1 t2/t7)
+//  A packing: unmapped phosphor trail RGB in A (texel (0,0) instead carries the kick state: r = bass envelope, g = kick stamp or -1, b = sentinel -0.6875); ACES on writeTexture
+//  HEAD fixes: kick mega-pulse (colour/field weights tempered 0.8->0.5, 1.5->0.9 once it actually fired) was dead and its ring used pow(negative, 2.0) = NaN inside the radius (extraBuffer[133/134] are re-uploaded as zero every frame, so the ring showed only in the first 2.5 s, never on a kick); vein network was invisible (veinGlow peaks at vein~0 but veinMask needs vein>0.55: product ~1e-6)
 //  Agent 4a — Phase A shader upgrade swarm
 //  Interactivist pass (batch 14): fixed mouse reads to engine
 //  convention (zoom_config.yz = position, .w = down), added honest
 //  dataTextureC phosphor-trail feedback, and a kick-transient
-//  mega-pulse driven by a smoothed bass envelope in extraBuffer.
+//  mega-pulse driven by a smoothed bass envelope (now stored in texel (0,0) of A).
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=unused, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=PulseCount, y=Speed, z=PulseWidth, w=HueShift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=PulseCount, y=Speed, z=PulseWidth, w=HueShift
 
 // ── Chunk: hash12 (from gen_grid.wgsl / chunk-library) ────────────
 fn hash12(p: vec2<f32>) -> f32 {
@@ -79,9 +62,11 @@ fn glow(dist: f32, radius: f32, intensity: f32) -> f32 {
 
 // Reaction-diffusion wave kernel: sum of decaying radial pulses.
 // Returns (amplitude, raw sine). Trailing half of the sine is the recovery trough.
-fn rdPulse(p: vec2<f32>, center: vec2<f32>, time: f32, speed: f32, width: f32) -> vec2<f32> {
+fn rdPulse(p: vec2<f32>, center: vec2<f32>, time: f32, speed: f32, width: f32, tissue: f32) -> vec2<f32> {
     let d = length(p - center);
-    let phase = d * 8.0 - time * speed * 4.0;
+    // ── Idea 1: heterogeneous conduction. `tissue` (substrate fbm - 0.5) shifts the
+    // wave phase, so the front runs ahead through fast tissue and lags in slow.
+    let phase = d * 8.0 - time * speed * 4.0 + tissue * 4.5;
     let sine = sin(phase);
     var wave = sine * 0.5 + 0.5;
     let envelope = exp(-d * d * 2.0) * (1.0 - smoothstep(0.0, 1.5, d));
@@ -107,7 +92,9 @@ fn megaPulse(p: vec2<f32>, age: f32, speed: f32, width: f32) -> f32 {
     if (age < 0.0 || age > 2.5) { return 0.0; }
     let radius = age * (0.55 + speed * 0.45);
     let d = length(p);
-    let ring = exp(-pow((d - radius) * (5.0 + width * 8.0), 2.0));
+    // pow(negative, 2.0) is undefined in WGSL (NaN inside the ring radius): square directly.
+    let ringX = (d - radius) * (5.0 + width * 8.0);
+    let ring = exp(-ringX * ringX);
     let afterglow = glow(d, 0.2 + width, 0.6) * exp(-age * 4.0);
     let fade = exp(-age * 1.8);
     return (ring + afterglow) * fade;
@@ -146,24 +133,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseDown = step(0.5, u.zoom_config.w);
 
     // ── Kick transient detector (persistent state) ─────────────────
-    // extraBuffer[133] = smoothed bass envelope
-    // extraBuffer[134] = time of last kick trigger
-    // Only invocation (0,0) integrates the envelope to avoid races.
-    var bassEnv = extraBuffer[133];
-    var lastKick = extraBuffer[134];
-    if (gid.x == 0u && gid.y == 0u) {
+    // State lives in texel (0,0) of C/A, NOT extraBuffer: extraBuffer is re-uploaded
+    // as zero every frame, so HEAD's envelope/lastKick never persisted.
+    //   r = smoothed bass envelope, g = kick stamp fract(time/64) or -1, b = sentinel.
+    // A foreign A (previous shader) fails the sentinel and starts the state fresh.
+    let isState = gid.x == 0u && gid.y == 0u;
+    let st = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let stOk = abs(st.b + 0.6875) < 0.001;
+    var bassEnv = select(0.0, st.r, stOk);
+    var kickStamp = select(-1.0, st.g, stOk);
+    let ageOld = select(1000.0, fract(time / 64.0 - kickStamp) * 64.0, kickStamp >= 0.0);
+    if (isState) {
         // Fast attack / slow release envelope follower.
         let attack = select(0.04, 0.35, bass > bassEnv);
         bassEnv = mix(bassEnv, bass, attack);
         // Kick = bass pokes above its own envelope by a threshold,
         // with a ~0.3 s retrigger gap so it doesn't machine-gun.
-        if (bass > bassEnv * 1.25 + 0.12 && time - lastKick > 0.3) {
-            lastKick = time;
+        if (bass > bassEnv * 1.25 + 0.12 && ageOld > 0.3) {
+            kickStamp = fract(time / 64.0);
+        } else if (ageOld > 3.0) {
+            // Clear once the ring has died so the 64 s stamp wrap cannot resurrect it.
+            kickStamp = -1.0;
         }
-        extraBuffer[133] = bassEnv;
-        extraBuffer[134] = lastKick;
     }
-    let kickAge = time - lastKick;
+    let kickAge = select(1000.0, fract(time / 64.0 - kickStamp) * 64.0, kickStamp >= 0.0);
     let mega = megaPulse(p, kickAge, speed, pulseWidth);
 
     // Organic noise substrate
@@ -183,6 +176,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         vec2<f32>(0.3, -0.35)
     );
 
+    let tissue = substrate - 0.5;
+    var dMin = 10.0; // distance to the nearest active pulse centre (drives the fast fibres)
     let nCenters = i32(pulseCount);
     for (var i = 0; i < 5; i = i + 1) {
         if (i >= nCenters) { break; }
@@ -192,7 +187,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             cos(time * 0.13 + fi * 1.5) * 0.1
         );
         let center = baseCenters[i] + offset;
-        let pulse = rdPulse(p, center, time + fi, speed, pulseWidth * 0.25);
+        dMin = min(dMin, length(p - center));
+        let pulse = rdPulse(p, center, time + fi, speed, pulseWidth * 0.25, tissue);
         let amp = pulse.x * (1.0 + bass * 0.5);
         pulseField += amp;
         let rising = smoothstep(-0.15, 0.55, pulse.y);
@@ -201,7 +197,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // Mouse pulse when active (now at the real cursor position)
-    let mousePulse = rdPulse(p, mouse, time, speed * 1.5, pulseWidth * 0.2);
+    dMin = select(dMin, min(dMin, length(p - mouse)), mouseDown > 0.5);
+    let mousePulse = rdPulse(p, mouse, time, speed * 1.5, pulseWidth * 0.2, tissue);
     let mouseAmp = mousePulse.x * mouseDown * 2.0;
     pulseField += mouseAmp;
     let mouseRising = smoothstep(-0.15, 0.55, mousePulse.y);
@@ -209,7 +206,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     fallW += mouseAmp * (1.0 - mouseRising);
 
     // Kick mega-pulse rides on top of the organic pulse field
-    pulseField += mega * (1.5 + bass);
+    pulseField += mega * (0.9 + bass * 0.5);
 
     // Vein network driven by noise
     let vein = abs(substrate - 0.5) * 2.0;
@@ -242,8 +239,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let cyan = mix(vec3<f32>(0.15, 0.85, 0.95), pulseColor, 0.35);
     let magenta = mix(vec3<f32>(0.9, 0.18, 0.55), pulseColor, hueShift * 0.4);
     col += cyan * riseW + magenta * fallW;
-    col += bioColor * veinGlow * veinMask;
-    col += megaColor * mega * 0.8;
+    // The vein network is the thin iso-line of the substrate (vein ~ 0); HEAD
+    // multiplied by veinMask (needs vein > 0.55) which zeroed it out.
+    col += bioColor * veinGlow * 0.35;
+    // ── Idea 2: fast-conduction fibres. Excitation outruns the local spots along
+    // the veins: a damped travelling pulse (decays with distance from the nearest
+    // pulse centre) rides the network across the whole frame.
+    let fibreWave = pow(max(sin(dMin * 9.0 - time * speed * 3.0), 0.0), 6.0) * exp(-dMin * 1.3);
+    col += pulseColor * veinGlow * fibreWave * (0.9 + treble * 0.6);
+    col += megaColor * mega * 0.5;
 
     // Sparkle along high-energy ridges
     let sparkle = step(1.0 - treble * 0.4, hash12(floor(p * 40.0) + vec2<f32>(time * 2.0, 0.0)));
@@ -257,7 +261,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Blend with the previous frame via dataTextureC so pulses leave
     // fading trails: ~0.9 decay, ~0.1 injection (Pulse Width widens
     // the injection), accumulated trail clamped pre-tint at ~1.2.
-    let prevFrame = textureLoad(dataTextureC, coord, 0).rgb;
+    let prevFrame = select(textureLoad(dataTextureC, coord, 0).rgb, vec3<f32>(0.0), isState);
     let trailDecay = 0.9;
     let inject = mix(0.07, 0.14, pulseWidth / 0.4);
     var trail = prevFrame * trailDecay + col * inject;
@@ -268,7 +272,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let coverage = clamp(0.18 + pulseField * 0.7 + veinMask * 0.2 + mega * 0.35, 0.0, 0.98);
     let shown = clamp(trail * trailTint, vec3<f32>(0.0), vec3<f32>(1.6));
-    textureStore(dataTextureA, coord, vec4<f32>(trail, coverage));
+    // Texel (0,0) carries the kick state instead of its trail (one pixel).
+    textureStore(dataTextureA, coord, select(vec4<f32>(trail, coverage), vec4<f32>(bassEnv, kickStamp, -0.6875, 1.0), isState));
     textureStore(writeTexture, coord, vec4<f32>(acesToneMap(shown), coverage));
     textureStore(writeDepthTexture, coord, vec4<f32>(clamp(pulseField * 0.45 + mega * 0.35, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

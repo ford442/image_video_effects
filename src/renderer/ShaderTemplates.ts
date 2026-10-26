@@ -78,7 +78,7 @@ fn fs(in: VSOut) -> @location(0) vec4f {
 }
 `;
 
-const makeBlitWGSL = (flipY: boolean, holdMix = false) => /* wgsl */ `
+const makeBlitWGSL = (flipY: boolean, holdMix = false, hdr = false) => /* wgsl */ `
 struct VSOut {
   @builtin(position) pos : vec4f,
   @location(0)       uv  : vec2f,
@@ -110,6 +110,26 @@ struct HoldMix {
 }
 @group(1) @binding(0) var holdTex: texture_2d<f32>;
 @group(1) @binding(1) var<uniform> holdMix: HoldMix;
+` : ''}${hdr ? `
+// HDR present (#1512, canvas_configure.json optIn.hdrCanvas): an rgba16float display-p3
+// canvas with extended tone mapping, where 1.0 is SDR white. Scene linear light is scaled
+// by paperWhite (paper-white nits / SDR reference nits) and values above 1.0 roll off
+// towards peak (peak nits / SDR reference nits) instead of clamping.
+struct PresentParams {
+  paperWhite : f32,
+  peak       : f32,
+  pad0       : f32,
+  pad1       : f32,
+}
+@group(1) @binding(0) var<uniform> present: PresentParams;
+
+// Identity up to 1.0; above it a C1 exponential shoulder that never exceeds peak.
+fn hdrShoulder(x: vec3f, peak: f32) -> vec3f {
+  let h = max(peak - 1.0, 0.0);
+  if (h <= 0.0) { return min(x, vec3f(1.0)); }
+  let over = max(x - vec3f(1.0), vec3f(0.0));
+  return select(vec3f(1.0) + h * (vec3f(1.0) - exp(-over / h)), x, x <= vec3f(1.0));
+}
 ` : ''}
 fn tap(p: vec2i, maxP: vec2i) -> vec4f {
   return textureLoad(src, clamp(p, vec2i(0), maxP), 0);
@@ -131,8 +151,10 @@ fn fs(in: VSOut) -> @location(0) vec4f {
     mix(tap(p0 + vec2i(0, 1), maxP), tap(p0 + vec2i(1, 1), maxP), f.x),
     f.y,
   );
-  // Gamma encode: linear → sRGB (γ = 2.2 approximation)
-  let rgb   = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));
+${hdr ? `  // Extended range: the same γ 2.2 encode, without the 1.0 clamp.
+  let lin   = hdrShoulder(max(c.rgb, vec3f(0.0)) * present.paperWhite, present.peak);
+  let rgb   = pow(lin, vec3f(1.0 / 2.2));` : `  // Gamma encode: linear → sRGB (γ = 2.2 approximation)
+  let rgb   = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));`}
 ${holdMix ? `  // The hold is the canvas as last presented: same size, same pixel, no flip.
   let hdim = vec2i(textureDimensions(holdTex));
   let held = textureLoad(holdTex, clamp(vec2i(in.pos.xy), vec2i(0), hdim - vec2i(1)), 0).rgb;
@@ -160,3 +182,45 @@ export const GENERATIVE_BLIT_WGSL = makeBlitWGSL(false);
  */
 export const BLIT_MIX_WGSL = makeBlitWGSL(true, true);
 export const GENERATIVE_BLIT_MIX_WGSL = makeBlitWGSL(false, true);
+
+/** The HDR present (rgba16float canvas, #1512): no 1.0 clamp, paper white + peak roll-off at group 1. */
+export const HDR_BLIT_WGSL = makeBlitWGSL(true, false, true);
+export const HDR_GENERATIVE_BLIT_WGSL = makeBlitWGSL(false, false, true);
+
+/**
+ * Storage present (#1512, canvas_configure.json optIn.storagePresent): the blit as one
+ * compute pass writing a bgra8unorm swapchain directly (bgra8unorm-storage). Same
+ * sampling, orientation and γ 2.2 encode as BLIT_WGSL / GENERATIVE_BLIT_WGSL.
+ */
+const makeStoragePresentWGSL = (flipY: boolean) => /* wgsl */ `
+@group(0) @binding(0) var src: texture_2d<f32>;
+@group(0) @binding(1) var dst: texture_storage_2d<bgra8unorm, write>;
+
+fn tap(p: vec2i, maxP: vec2i) -> vec4f {
+  return textureLoad(src, clamp(p, vec2i(0), maxP), 0);
+}
+
+@compute @workgroup_size(8, 8, 1)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+  let out = textureDimensions(dst);
+  if (gid.x >= out.x || gid.y >= out.y) { return; }
+  var uv = (vec2f(gid.xy) + 0.5) / vec2f(out);
+  ${flipY ? '' : 'uv.y = 1.0 - uv.y; // generative output is authored Y-up'}
+  let dim  = vec2i(textureDimensions(src));
+  let p    = uv * vec2f(dim) - 0.5;
+  let base = floor(p);
+  let f    = p - base;
+  let p0   = vec2i(base);
+  let maxP = dim - vec2i(1);
+  let c = mix(
+    mix(tap(p0, maxP), tap(p0 + vec2i(1, 0), maxP), f.x),
+    mix(tap(p0 + vec2i(0, 1), maxP), tap(p0 + vec2i(1, 1), maxP), f.x),
+    f.y,
+  );
+  let rgb = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));
+  textureStore(dst, vec2i(gid.xy), vec4f(rgb, 1.0));
+}
+`;
+
+export const STORAGE_PRESENT_WGSL = makeStoragePresentWGSL(true);
+export const GENERATIVE_STORAGE_PRESENT_WGSL = makeStoragePresentWGSL(false);

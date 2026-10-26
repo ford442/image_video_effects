@@ -166,6 +166,8 @@ export class WebGPUFrameRenderer {
 
     const slotPlan = buildFrameSlotDispatchPlan(state);
     if (slotPlan.enabledCount === 0) {
+      // Nothing composites, so this frees the compositor's layer / mask textures (#1512).
+      state.getCompositor?.();
       // No effects: still refresh readTex from the (possibly video) source.
       this.presenter.encodeInputCopy(state, encoder);
       state.blitReadTex = state.readTex;

@@ -27,6 +27,9 @@ import type { InputSource } from '../types';
 import type { FrameStats } from '../webgpu/deviceCounters';
 import type { CanvasConfigureOptIns } from '../webgpu/device';
 import type { SlotMode } from '../webgpu/webgpuConstants';
+import type { SlotOutput } from '../slotOutput';
+import type { CompositorStats } from '../webgpu/compositor';
+import type { HdrPresentSettings } from '../webgpu/presentVariants';
 import type { CanvasColorState, DisplayP3Result, WebGpuProbeSerializable } from '../webgpuBootProbe';
 
 /** What the worker scope supports (sent once, before init). */
@@ -59,6 +62,8 @@ export interface FrameInput {
   bins?: Float32Array;
   /** [slotIndex, p1, p2, p3, p4] for every slot whose params changed. */
   slotParams?: Array<[number, number, number, number, number]>;
+  /** [slotIndex, output] for every slot whose compositor output changed (#1512; last one wins). */
+  slotOutputs?: Array<[number, SlotOutput]>;
   /** Ripples added since the last flush (stamped with the worker's clock). */
   ripples?: Array<[number, number]>;
   clearRipples?: boolean;
@@ -85,6 +90,8 @@ export type RenderCommand =
   | { type: 'setSourceAutoExposure'; enabled: boolean }
   | { type: 'applyTestRenderState'; state: TestRenderState }
   | { type: 'setCanvasCopySrc'; enabled: boolean }
+  /** HDR present paper white / peak in nits (#1512). */
+  | { type: 'setHdrPresent'; settings: Partial<HdrPresentSettings> }
   /**
    * Cue crossfade: freeze the last presented picture and dissolve it into the frames that
    * follow over `durationMs` (the hold and the mix both live on the worker's device). The
@@ -120,6 +127,11 @@ export type RenderRpc =
       colorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
       /** Absolute app root; relative fetches in the worker resolve against it. */
       appBaseUrl: string;
+      /**
+       * The page's `location.search`: probe flags a worker cannot see (#1512:
+       * `?feature_level=compatibility`, `?canvas_format=`, `?storage_present=0`).
+       */
+      pageSearch?: string;
       /** SharedArrayBuffer input ring (inputRing.ts) when both sides are cross-origin isolated. */
       inputRing?: SharedArrayBuffer;
       /**
@@ -175,7 +187,11 @@ export interface RenderSnapshot {
   video: VideoIngestStats;
   nodeScales: Record<string, number>;
   scalableNodes: Array<{ slot: number; nodeId: string; minScale: number; scale: number }>;
-  slots: Array<{ shaderId: string | null; enabled: boolean; mode: SlotMode } | null>;
+  slots: Array<{ shaderId: string | null; enabled: boolean; mode: SlotMode; output: SlotOutput } | null>;
+  /** Layer compositor memory / passes / warnings (#1512). */
+  compositor: CompositorStats;
+  /** HDR present settings (#1512). */
+  hdrPresent?: HdrPresentSettings;
   graphReport: GraphRunReport | null;
   chores: GpuChoresBreadcrumbs;
   cachedShaderIds: string[];
@@ -228,6 +244,7 @@ export const RENDER_COMMAND_TYPES = [
   'setSourceAutoExposure',
   'applyTestRenderState',
   'setCanvasCopySrc',
+  'setHdrPresent',
   'startCrossfade',
   'warmShaders',
   'simulateDeviceLoss',

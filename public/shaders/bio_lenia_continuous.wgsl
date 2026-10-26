@@ -12,28 +12,19 @@
 //    - Click seed bombs from the ripples[] ring buffer (species-B colonies)
 //  
 //  Target: 4.7★ rating
+//
+//  Upgraded: 2026-10-25
+//  Ideas: isotropic 9-point Laplacian diffusion on both species (§12.2D); metabolic growth
+//         rim — the growth value g, already computed, lights advancing fronts and dims
+//         starving cores (§12.1 tactic 3)
+//  HEAD fixes: single-pixel spores always died (growth(≈0) = -1) → soft noisy spore blobs where
+//         the neighbourhood is empty; growth window re-centred (the old 0.25/0.018 default was
+//         dead or froze into stamps in a numpy port); inherited-C sentinel in A.b
+//  A packing: raw sim state — A.r species A, A.g species B, A.b = 0.4375 "I wrote this" marker,
+//         A.a = 1. Display (ACES) is on writeTexture only.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -63,14 +54,19 @@ fn growth(neighborhood: f32, growthCenter: f32, growthWidth: f32) -> f32 {
     return bell(neighborhood, growthCenter, growthWidth) * 2.0 - 1.0;
 }
 
-// Sample previous state of species A (red channel of packed feedback)
-fn sampleState(uv: vec2<f32>, tex: texture_2d<f32>) -> f32 {
-    return textureSampleLevel(tex, non_filtering_sampler, uv, 0.0).r;
+// Marker in A.b: a shader switch leaves the PREVIOUS shader's A in C (alpha 1, arbitrary rgb);
+// without the marker that would be read as Lenia state.
+const MARK: f32 = 0.4375;
+
+// Previous state of one texel: (species A, species B), exact load, zero when C is foreign.
+fn loadState(c: vec2<i32>, dims: vec2<i32>) -> vec2<f32> {
+    let v = textureLoad(dataTextureC, clamp(c, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+    let own = select(0.0, 1.0, abs(v.b - MARK) < 0.002);
+    return v.rg * own;
 }
 
-// Sample previous state of species B (green channel of packed feedback)
-fn sampleStateB(uv: vec2<f32>, tex: texture_2d<f32>) -> f32 {
-    return textureSampleLevel(tex, non_filtering_sampler, uv, 0.0).g;
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Pseudo-random
@@ -130,12 +126,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let uv = vec2<f32>(global_id.xy) / resolution;
     let time = u.config.x;
-    let invRes = 1.0 / resolution;
+    let dims = vec2<i32>(resolution);
     
     // ── Parameters (slider contract: zoom_params.x/y/z/w) ───────────────────
     let radius = 5.0 + u.zoom_params.x * 15.0;           // 5-20 pixel radius
-    let growthCenter = 0.15 + u.zoom_params.y * 0.25;    // 0.15-0.4
-    let growthWidth = 0.01 + u.zoom_params.z * 0.04;     // 0.01-0.05
+    // Re-centred so the saved defaults (0.4 / 0.2) land in the living window (μ≈0.15, σ≈0.028);
+    // the old 0.15+0.25y / 0.01+0.04z mapping put them at μ 0.25, σ 0.018, where every blob died.
+    let growthCenter = 0.07 + u.zoom_params.y * 0.2;     // 0.07-0.27
+    let growthWidth = 0.02 + u.zoom_params.z * 0.04;     // 0.02-0.06
     let dt = 0.1 + u.zoom_params.w * 0.2;                // 0.1-0.3 time step
     
     // Species B: same bell() family, tuned to a smaller, hungrier niche
@@ -155,14 +153,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let growthCenterA = growthCenter + (audioMids - 0.5) * 0.08 * season;
     
     // ── Sample current state from dataTextureC (feedback) ───────────────────
-    let currentState = sampleState(uv, dataTextureC);
-    let currentStateB = sampleStateB(uv, dataTextureC);
+    let cur = loadState(coord, dims);
+    let currentState = cur.x;
+    let currentStateB = cur.y;
     
     // ── Neighborhood integral (O(r^2) kernel loop - expensive by design) ────
     var neighborhood = 0.0;
     var neighborhoodB = 0.0;
     var kernelSum = 0.0;
     var kernelSumB = 0.0;
+    // ── Idea 1: isotropic 9-point Laplacian taps (§12.2D), gathered from the loop's own loads ──
+    var nbrA = 0.0;
+    var nbrB = 0.0;
     let r = i32(radius);
     
     for (var dy: i32 = -r; dy <= r; dy = dy + 1) {
@@ -172,14 +174,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 continue;
             }
             
-            let sampleUV = uv + vec2<f32>(f32(dx), f32(dy)) * invRes;
+            // One exact load feeds both species (was two samples per tap)
+            let tap = loadState(coord + vec2<i32>(dx, dy), dims);
             let k = kernel(d, radius);
-            neighborhood += sampleState(sampleUV, dataTextureC) * k;
+            neighborhood += tap.x * k;
             kernelSum += k;
             // Species B shares the sample tap, weighted by its own kernel
             let kB = kernel(d, radiusB);
-            neighborhoodB += sampleStateB(sampleUV, dataTextureC) * kB;
+            neighborhoodB += tap.y * kB;
             kernelSumB += kB;
+            // edges 0.2, corners 0.05, centre 0 (centre subtracted below)
+            let man = abs(dx) + abs(dy);
+            let w9 = select(0.0, select(0.05, 0.2, man == 1), man >= 1 && abs(dx) <= 1 && abs(dy) <= 1);
+            nbrA += tap.x * w9;
+            nbrB += tap.y * w9;
         }
     }
     
@@ -196,7 +204,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gB = growth(neighborhoodB, growthCenterB, growthWidthB);
     
     // Update species A (primary state layout preserved verbatim)
-    var newState = currentState + dt * g;
+    // Idea 1: diffusion lets fronts creep and keeps blobs from freezing into saturated stamps
+    let lapA = nbrA - currentState;
+    let lapB = nbrB - currentStateB;
+    var newState = currentState + dt * g + 0.5 * lapA;
     newState = clamp(newState, 0.0, 1.0);
     
     // Species B update: dense A colonies inhibit B (resource competition),
@@ -204,7 +215,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inhibition = smoothStep(0.45, 0.85, currentState) * 0.35;
     let fertilize = smoothStep(0.05, 0.25, currentState)
                   * (1.0 - smoothStep(0.25, 0.5, currentState)) * 0.15;
-    var newStateB = currentStateB + dtB * (gB - inhibition + fertilize);
+    var newStateB = currentStateB + dtB * (gB - inhibition + fertilize) + 0.5 * lapB;
     newStateB = clamp(newStateB, 0.0, 1.0);
     
     // Dense B also grazes A back a touch, so fronts visibly swap territory
@@ -235,12 +246,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     
-    // ── Random seeding if very dead (mids boost spore rain) ─────────────────
-    if (newState < 0.01 && rand(uv + time) < 0.001 * (1.0 + audioMids)) {
-        newState = rand(uv + time * 2.0);
-    }
-    if (newStateB < 0.01 && rand(uv * 1.7 - time) < 0.0004 * (1.0 + audioMids)) {
-        newStateB = rand(uv - time * 1.3);
+    // ── Spore rain (mids boost): soft noisy blobs where the neighbourhood is empty ───────
+    // HEAD dropped single pixels; growth(≈0) = -1 killed every one, so nothing ever ignited.
+    let px = vec2<f32>(coord);
+    for (var sp = 0; sp < 2; sp = sp + 1) {
+        let isB = sp == 1;
+        let sR = select(radius, radiusB, isB);
+        let cell = 2.6 * sR;
+        let cxy = floor(px / cell) + select(0.0, 17.0, isB);
+        let phase = time / 3.0 + rand(cxy + vec2<f32>(5.0, 2.0));
+        let ep = floor(phase);
+        let thr = select(0.3, 0.6, isB) - 0.15 * audioMids;
+        let fire = rand(cxy + vec2<f32>(ep * 13.1, -ep * 7.7)) > thr && fract(phase) < 0.05;
+        let jit = vec2<f32>(rand(cxy + vec2<f32>(ep, 3.0)), rand(cxy + vec2<f32>(1.0, ep)));
+        let sd = length(px - (cxy - select(0.0, 17.0, isB) + 0.25 + 0.5 * jit) * cell) / (cell * 0.32);
+        let kf = 1.6 / sR;
+        let sn = 0.5 + 0.25 * (sin(px.x * kf * 1.3 + ep * 1.7 + sin(px.y * kf * 0.9))
+                             + sin(px.y * kf * 1.1 - ep * 2.3 + sin(px.x * kf * 0.7)));
+        let blob = clamp(sn * (1.0 - sd * sd) * 1.2, 0.0, 1.0);
+        let empty = select(neighborhood, neighborhoodB, isB) < 0.03;
+        let put = select(0.0, blob, fire && sd < 1.0 && empty);
+        newState = select(newState, max(newState, put), !isB);
+        newStateB = select(max(newStateB, put), newStateB, !isB);
     }
     
     // ── Color mapping: two species blended by local dominance ───────────────
@@ -255,12 +282,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += vec3<f32>(0.4, 0.8, 0.3) * glow;
     color += vec3<f32>(0.5, 0.3, 0.9) * glowB;
     
+    // ── Idea 2: metabolic rim — g (growth) is already computed and was thrown away after the
+    // update. Advancing fronts (g > 0 on living cells) glow; starving cores (g < 0) dim.
+    let live = smoothStep(0.05, 0.3, max(newState, newStateB));
+    let gm = select(g, gB, newStateB > newState);
+    color += vec3<f32>(0.25, 0.9, 0.45) * smoothStep(0.0, 0.6, gm) * live * 0.35;
+    color *= 1.0 - 0.3 * smoothStep(0.0, 0.8, -gm) * live;
+
     // Tone map (display only - sim state below is never tonemapped)
-    color = color / (1.0 + color);
+    color = acesToneMap(max(color, vec3<f32>(0.0)));
+    let coverage = max(newState, newStateB);
     
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+    textureStore(writeTexture, coord, vec4<f32>(color, mix(0.55, 1.0, coverage)));
     textureStore(writeDepthTexture, coord, vec4<f32>(max(newState, newStateB), 0.0, 0.0, 1.0));
     
-    // Store state for next frame: A in .r (contract), B in .g (new species)
-    textureStore(dataTextureA, coord, vec4<f32>(newState, newStateB, 0.0, 1.0));
+    // Store state for next frame: A in .r (contract), B in .g, MARK in .b (sentinel)
+    textureStore(dataTextureA, coord, vec4<f32>(newState, newStateB, MARK, 1.0));
 }

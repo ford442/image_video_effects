@@ -140,6 +140,7 @@ export function compileSlotPlan(state: WebGPUFrameState, plan: FrameSlotDispatch
     maxPassesPerFrame: state.maxPassesPerFrame,
     framePassBudget: state.framePassBudget,
     nodeScale: state.nodeScale,
+    compositing: !!state.getCompositor?.(),
   });
 }
 
@@ -171,6 +172,7 @@ export function dispatchFrameSlots(
       scaledW: state.scaledW,
       scaledH: state.scaledH,
       islands: state.getIslands?.() ?? null,
+      compositor: state.getCompositor?.() ?? null,
     },
     {
       beforeSlot,
@@ -189,6 +191,9 @@ export function dispatchFrameSlots(
         : undefined,
       profileResample: timing.supportsTimestampQuery
         ? (label) => profilePass(timing, { kind: 'resample', label })
+        : undefined,
+      profileComposite: timing.supportsTimestampQuery
+        ? (label) => profilePass(timing, { kind: 'composite', label })
         : undefined,
     },
   );

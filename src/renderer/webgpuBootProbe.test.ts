@@ -403,19 +403,37 @@ describe('negotiateCanvasColor', () => {
     expect(r.reason).toBeUndefined();
   });
 
-  it('never reports extended tone mapping as applied on an 8-bit canvas (inert there)', async () => {
+  it('negotiates extended tone mapping on an rgba16float HDR canvas, never on the 8-bit one (#1512)', async () => {
     const context = makeMockContext();
-    // The browser would happily accept and echo the mode; it still does nothing on bgra8unorm.
-    Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
-    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
-    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard', reason: 'unsupported-extended-tone-mapping' });
-    expect(configs(context).some((c) => (c as { toneMapping?: unknown }).toneMapping !== undefined
-      && (c as { toneMapping: { mode: string } }).toneMapping.mode === 'extended')).toBe(false);
+    Object.assign(context, {
+      getConfiguration: () => ({ format: 'rgba16float', colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }),
+    });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true }, { storagePresent: true });
+    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'extended', format: 'rgba16float' });
+    expect(r.applied).toMatchObject({ hdrCanvas: true });
+    const extended = configs(context).filter((c) => (c as { toneMapping?: { mode: string } }).toneMapping?.mode === 'extended');
+    expect(extended.length).toBeGreaterThan(0);
+    for (const c of extended) {
+      expect(c.format).toBe('rgba16float');
+      // The compute present is bgra8unorm-only: an HDR canvas never asks for STORAGE_BINDING.
+      expect(c.usage & 0x08).toBe(0);
+    }
+  });
+
+  it('steps down to the preferred 8-bit p3 canvas when the HDR canvas is rejected', async () => {
+    const context = makeMockContext();
+    (context.configure as Mock).mockImplementation((c: GPUCanvasConfiguration) => {
+      if (c.format === 'rgba16float') throw new Error('no float16 swapchain');
+    });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true }, { storagePresent: true });
+    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard', format: 'bgra8unorm', reason: 'unsupported-extended-tone-mapping' });
+    // Back on bgra8unorm the storage-present usage is kept.
+    expect(configs(context).slice(-1)[0].usage & 0x08).toBe(0x08);
   });
 
   it('steps down to p3/standard when extended tone mapping is rejected', async () => {
     const context = makeMockContext();
-    Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'standard' } }) });
+    Object.assign(context, { getConfiguration: () => ({ format: 'rgba16float', colorSpace: 'display-p3', toneMapping: { mode: 'standard' } }) });
     const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
     expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard', reason: 'unsupported-extended-tone-mapping' });
   });

@@ -4,6 +4,7 @@
 //
 //    /pixelocity/slot/{0-5}/param/{x|y|z|w}   f   slider value 0..1
 //    /pixelocity/slot/{0-5}/shader            s   shader id ("none" clears)
+//    /pixelocity/slot/{0-5}/opacity           f   compositor opacity 0..1 (#1512)
 //    /pixelocity/transition                   s?  fire the next transition; "crossfade"
 //                                                 dissolves a shader change from the
 //                                                 picture on screen (bare = hard cut)
@@ -29,11 +30,12 @@ const PARAM_KEYS: Record<string, 'zoomParam1' | 'zoomParam2' | 'zoomParam3' | 'z
 export type OscAction =
   | { type: 'setSlotParam'; slot: number; param: string; value: number }
   | { type: 'setSlotShader'; slot: number; shaderId: string }
+  | { type: 'setSlotOpacity'; slot: number; value: number }
   | { type: 'triggerTransition'; name?: string }
   | { type: 'setAudioAmount'; value: number };
 
 /** What the router drives; setSlotParam reuses the MIDI handle. */
-export interface OscActionsHandle extends Pick<LiveActionsHandle, 'setSlotParam'> {
+export interface OscActionsHandle extends Pick<LiveActionsHandle, 'setSlotParam' | 'setSlotOpacity'> {
   setSlotShader: (slot: number, shaderId: string) => void;
   /** Called with the cue name only when the message carried one; a bare trigger passes nothing. */
   triggerTransition: (name?: string) => void;
@@ -69,6 +71,11 @@ export function routeOscMessage(msg: OscMessage): OscAction | null {
       if (!param || value === null) return null;
       return { type: 'setSlotParam', slot, param, value: clamp01(value) };
     }
+    if (parts[3] === 'opacity' && parts.length === 4) {
+      const value = numericArg(msg.args);
+      if (value === null) return null;
+      return { type: 'setSlotOpacity', slot, value: clamp01(value) };
+    }
     if (parts[3] === 'shader' && parts.length === 4) {
       const id = msg.args[0];
       if (typeof id !== 'string' || id.length === 0 || id.length > 128) return null;
@@ -101,6 +108,7 @@ export function dispatchOscMessage(msg: OscMessage, handle: OscActionsHandle): O
   switch (action.type) {
     case 'setSlotParam': handle.setSlotParam(action.slot, action.param, action.value); break;
     case 'setSlotShader': handle.setSlotShader(action.slot, action.shaderId); break;
+    case 'setSlotOpacity': handle.setSlotOpacity(action.slot, action.value); break;
     case 'triggerTransition':
       // A bare message keeps today's call exactly (existing bindings must not start fading).
       if (action.name) handle.triggerTransition(action.name);

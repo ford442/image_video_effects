@@ -5,14 +5,14 @@
 // The WASM canvas configure (JS_CreateSurfaceFromCanvas, JS_ProbeCanvasCopySrc,
 // ConfigureSurface in device.cpp) reads these; TS buildCanvasConfigureOptions()
 // reads the same JSON.
-// WASM capabilities: copySrc. TS-only: displayP3, extendedToneMapping.
+// WASM capabilities: copySrc. TS-only: displayP3, extendedToneMapping, hdrCanvas, storagePresent.
 #pragma once
 
 #include <webgpu/webgpu.h>
 
 namespace canvas_configure {
 
-inline constexpr int kContractVersion = 3;
+inline constexpr int kContractVersion = 4;
 
 // Default path.
 inline constexpr WGPUTextureUsage kUsage = WGPUTextureUsage_RenderAttachment;
@@ -25,5 +25,6 @@ inline constexpr WGPUTextureUsage kCopySrcUsage = WGPUTextureUsage_RenderAttachm
 
 static_assert(WGPUTextureUsage_RenderAttachment == 0x10, "GPUTextureUsage.RENDER_ATTACHMENT bit");
 static_assert(WGPUTextureUsage_CopySrc == 0x1, "GPUTextureUsage.COPY_SRC bit");
+static_assert(WGPUTextureUsage_StorageBinding == 0x8, "GPUTextureUsage.STORAGE_BINDING bit");
 
 }  // namespace canvas_configure
