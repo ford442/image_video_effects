@@ -3,31 +3,12 @@
 //  Category: simulation
 //  Features: mouse-driven, audio-reactive, temporal-trail, depth-glow, chromatic-tendril, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: food anastomosis between luma peaks; streamer veins along packed drift
+//  Upgraded: 2026-09-12, 2026-10-25
+//  Ideas: food anastomosis between luma peaks; streamer veins along packed drift; substrate-gated decay; chemotaxis confidence
 //  A packing: raw (trail, food, drift.x, drift.y)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
@@ -109,6 +90,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let chemPacket = exp(-pow((chemPhase - 0.5) / 0.12, 2.0)) * smoothstep(0.01, 0.20, length(gradFood));
 
     var deposit = max(food - 0.25, 0.0) * foodGain;
+    // ── Idea: chemotaxis confidence ──
+    // Deposit thickens where the drift already points up the food gradient.
+    let foodDir = gradFood / max(length(gradFood), 0.001);
+    let align = clamp(dot(foodDir, drift), 0.0, 1.0);
+    deposit = deposit + align * foodGain * 0.4 * smoothstep(0.02, 0.22, length(gradFood));
 
     let mousePos = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
@@ -133,7 +119,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let islandBridge = max(min(foodL, foodR) - food, 0.0) + max(min(foodU, foodD) - food, 0.0);
     deposit += islandBridge * foodGain * 0.45;
 
-    var nextTrail = max(max(blur * decay, aheadTrail * follow), advectedTrail * (0.55 + follow * 0.35)) + deposit;
+    // ── Idea: substrate-gated decay ──
+    // Off the video's bright food the trail evaporates faster. Decay's slider role is unchanged on food.
+    let foodStarve = 1.0 - smoothstep(0.05, 0.38, food);
+    let decayLocal = mix(decay, decay * 0.86, foodStarve);
+    var nextTrail = max(max(blur * decayLocal, aheadTrail * follow), advectedTrail * (0.55 + follow * 0.35)) + deposit;
     nextTrail = clamp(nextTrail, 0.0, 1.0);
 
     textureStore(dataTextureA, coord, vec4<f32>(nextTrail, food, drift.x * 0.5 + 0.5, drift.y * 0.5 + 0.5));

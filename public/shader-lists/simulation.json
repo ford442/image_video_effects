@@ -1199,7 +1199,9 @@
       "simulation",
       "procedural",
       "volumetric",
-      "spiral-galaxy"
+      "spiral-galaxy",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

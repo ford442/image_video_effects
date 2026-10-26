@@ -1,6 +1,6 @@
 // Ring Shell — circular halo/donut burst fireworks
-// Upgraded: 2026-10-10
-// Ideas: Saturn tilt (inclined ellipse); empty core (no inner jewels); per-shell roll of the ring axis; far-side dimming of the back half
+// Upgraded: 2026-10-25
+// Ideas: Saturn tilt (inclined ellipse); empty core (no inner jewels); per-shell roll of the ring axis; far-side dimming of the back half; Cassini division; ring spokes
 // A packing: ACES display RGBA
 #include "_prelude.wgsl"
 
@@ -127,7 +127,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let tilt = 0.48;
         let flat = vec2<f32>(cos(ang), sin(ang) * tilt);
         let radial = vec2<f32>(flat.x * rollC - flat.y * rollS, flat.x * rollS + flat.y * rollC);
-        let ringPos = center + radial*expand;
+        // ── Idea: Cassini division — Thickness opens a dark gap between two ringlets ──
+        let ringlet = select(1.0 - thick * 1.7, 1.0 + thick * 1.7, js > 0.5);
+        let ringPos = center + radial * expand * ringlet;
         let vel = radial*(0.15 + js*0.1) + vec2<f32>(0.0, -0.05);
         let sp = sparkPos(ringPos, vel, bAge*0.3, 0.7 + bAge*0.2);
 
@@ -137,7 +139,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         // Idea 4 — far side: the back half of the inclined ring is dimmer and smaller.
         let farSide = smoothstep(-0.25, 0.45, sin(ang));
-        let sideGain = mix(1.25, 0.45, farSide);
+        // ── Idea: ring spokes — slow dark lanes rotating around this shell ──
+        let spokeWave = clamp(0.5 + 0.5 * sin(ang * 5.0 + time * 0.35 + si), 0.0, 1.0);
+        let spoke = spokeWave * spokeWave * spokeWave;
+        let sideGain = mix(1.25, 0.45, farSide) * mix(0.42, 1.0, spoke);
 
         // main ring spark (Thickness also widens the glow kernel)
         let onRing = softGlow(uv, sp, (0.005 + js*0.003) * (0.75 + thick*3.0) * mix(1.0, 0.7, farSide), fade*energy*1.4*sideGain) * onHalo;

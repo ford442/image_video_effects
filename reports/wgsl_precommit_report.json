@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-10-19T11:50:40.313474",
+  "timestamp": "2026-10-26T05:49:03.840163",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 8,
-  "passed": 8,
+  "total": 10,
+  "passed": 10,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -13,7 +13,7 @@
   "prelude_violations": 0,
   "results": [
     {
-      "file": "public/shaders/bitonic-sort.wgsl",
+      "file": "public/shaders/ambient-liquid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -30,7 +30,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/cyber-organic.wgsl",
+      "file": "public/shaders/gen_reaction_diffusion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -47,7 +47,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/data-slicer.wgsl",
+      "file": "public/shaders/hybrid-particle-fluid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -64,7 +64,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-biomechanical-hive-julia.wgsl",
+      "file": "public/shaders/ink-bleed.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -81,7 +81,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/lenia-on-video.wgsl",
+      "file": "public/shaders/lava-lamp-blobs.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -98,7 +98,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/mosaic-reveal.wgsl",
+      "file": "public/shaders/liquid-optimized.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -115,7 +115,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/sim-slime-mold-growth-em.wgsl",
+      "file": "public/shaders/magnetic-interference.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,41 @@
       "ok": true
     },
     {
-      "file": "public/shaders/vinyl-scratch.wgsl",
+      "file": "public/shaders/quantum-foam.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "prelude_errors": [],
+      "prelude_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/tornado-vortex.wgsl",
+      "skipped": false,
+      "skip_reason": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
+      "bindgroup_status": "compatible",
+      "bindgroup_errors": [],
+      "workgroup_errors": [],
+      "workgroup_warnings": [],
+      "workgroup_grace": false,
+      "extrabuffer_violations": [],
+      "prelude_errors": [],
+      "prelude_warnings": [],
+      "ok": true
+    },
+    {
+      "file": "public/shaders/vortex.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

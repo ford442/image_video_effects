@@ -5,7 +5,9 @@
 //            bounded-click-ripples, audio-reactive, per-band-fft,
 //            anisotropic-diffusion, paper-fibre, chromatic-aberration,
 //            depth-aware, upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 60)
+//  Upgraded: 2026-08-23, 2026-10-26
+//  Ideas: wet-edge bead (§12.2C); paper granulation (§12.2C)
+//  A packing: raw ink in A.r and A.a; ACES on display only
 // ═══════════════════════════════════════════════════════════════════════════════
 //  BUG FIXED IN THIS PASS — filtered reads of a float32 texture. All five reads
 //  of the ink field went through `non_filtering_sampler`:
@@ -37,26 +39,8 @@
 //       Clicks drop bounded ink splats through the ripple queue.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=InkHue, y=SpreadSpeed, z=FadeSpeed, w=Density
-  ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparisonSampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=InkHue, y=SpreadSpeed, z=FadeSpeed, w=Density
 
 // Helper for hue to rgb
 fn hue2rgb(p: f32, q: f32, t: f32) -> f32 {
@@ -217,6 +201,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var current_ink = mix(prev_ink, average, clamp(wickRate, 0.0, 0.9));
   current_ink = min(current_ink + new_ink_add + splat, 1.0);
 
+  // ── Idea 1: wet-edge bead (§12.2C) ──────────────────────────────────
+  // Pigment concentrates where the ink gradient is steep and the wash is
+  // neither empty nor solid. Spread Speed still owns how fast it runs.
+  let inkGrad = length(vec2<f32>(e - w, n - s));
+  let wetEdge = clamp(inkGrad * 1.8, 0.0, 1.0) * current_ink * (1.0 - current_ink);
+  current_ink = min(current_ink + wetEdge * spread_speed * 0.55, 1.0);
+
   // 4. Fade
   current_ink *= (1.0 - fade_speed * 0.01);
   if (current_ink < 0.001) { current_ink = 0.0; }
@@ -228,16 +219,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let video_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   let ink_color_rgb = hslToRgb(ink_hue, 0.8, 0.25);
   
-  // Paper texture affects absorption
-  let paper_tex = paperTexture(uv);
-  
+  // Paper texture affects absorption (paper_tex computed with the granulation).
+
   // INK DENSITY → ALPHA MAPPING
   // Ink concentration determines opacity
   // - High ink density = thick layer = opaque (alpha ~ 0.9-1.0)
   // - Low ink density = thin wash = semi-transparent (alpha ~ 0.3-0.6)
   // - No ink = paper visible (alpha ~ 0.0)
   
-  let ink_thickness = current_ink * density; // 0-1 range
+  // ── Idea 2: paper granulation (§12.2C) ─────────────────────────────
+  // Thin, watery washes lose pigment on the peaks of the existing paper hash
+  // and keep it in the pits. Thick ink (high density, high coverage) stays smooth.
+  // The stored field above is the ungranulated diffusion state.
+  let paper_tex = paperTexture(uv);
+  let grainN = clamp((paper_tex - 0.9) / 0.1, 0.0, 1.0);
+  let wash = (1.0 - smoothstep(0.35, 0.85, current_ink)) * (1.0 - density);
+  let granInk = current_ink * (1.0 - wash * grainN * 0.75);
+  let ink_thickness = max(granInk, 0.0) * density; // 0-1 range
   
   // Dilution factor: more water (lower density) = more transparent
   let dilution = 1.0 - density * 0.5;
@@ -264,6 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   final_rgb = mix(paper_color, final_rgb, ink_alpha);
   
   final_rgb += vec3<f32>(0.25, 0.12, 0.35) * splat * 0.6;
+  final_rgb = mix(final_rgb, final_rgb * vec3<f32>(0.55, 0.48, 0.5), clamp(wetEdge * 3.0, 0.0, 1.0));
   final_rgb = acesFilm(final_rgb);
   textureStore(writeTexture, coord, vec4<f32>(final_rgb, clamp(ink_alpha, 0.0, 1.0)));
 

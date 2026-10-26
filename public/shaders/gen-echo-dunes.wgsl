@@ -6,8 +6,8 @@
 //            ridge-sdf-shadows, sunset-palette
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-10
-//  Ideas: leeward slipface shade; along-wind sand streaks; crest saltation; avalanche tongue
+//  Upgraded: 2026-10-25
+//  Ideas: leeward slipface shade; along-wind sand streaks; crest saltation; avalanche tongue; stoss ripples; cornice lip
 //  A packing: HDR display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -166,6 +166,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea: crest saltation — grains only on the ridge crest.
   let crest = pow(sat(0.5 + 0.5 * ridgeA), 10.0);
   color = color + vec3<f32>(1.0, 0.92, 0.62) * crest * shimmer * 0.28 * horizon;
+  // ── Idea: stoss ripples — fine ridges on the windward face only ──
+  let stoss = sat(cos(ridgePhase));
+  let stossRipple = pow(abs(sin(warpedP.x * duneScale * 22.0 + time * windSpeed * 1.7)), 8.0);
+  color = color + vec3<f32>(0.85, 0.62, 0.28) * stossRipple * stoss * (1.0 - slipface) * 0.18 * horizon;
+  // ── Idea: cornice — bright lip where the crest becomes the slipface ──
+  let cornice = crest * smoothstep(0.2, 0.55, slipface) * (1.0 - smoothstep(0.55, 0.9, slipface));
+  color = color + vec3<f32>(1.0, 0.92, 0.72) * cornice * 0.4 * horizon;
   // Idea: avalanche tongue — a darker grainflow down the existing slipface.
   let tongue = slipface * smoothstep(0.62, 0.9, noise2(warpedP * vec2<f32>(2.5, 14.0) + vec2<f32>(time * windSpeed, 0.0)));
   color = color * (1.0 - tongue * 0.38 * horizon);

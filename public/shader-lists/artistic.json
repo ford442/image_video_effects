@@ -119,7 +119,7 @@
     "category": "artistic",
     "type": "compute",
     "url": "shaders/ambient-liquid.wgsl",
-    "description": "Curl-advected liquid with a REAL Gray-Scott reaction-diffusion system: U and V concentrations carried in dataTextureA, a five-tap Laplacian from exact textureLoad fetches, and feed/kill rates driven per FFT band so different frequencies push the system between spot, stripe and mitosis regimes. The V concentration raises local surface tension and pulls the metaball isosurface inward. Fixes a shader that advertised reaction-diffusion while its grayScott() was four sine waves with no state at all.",
+    "description": "Curl-advected liquid with a REAL Gray-Scott reaction-diffusion system: U and V concentrations carried in dataTextureA, an isotropic 9-point Laplacian from exact textureLoad fetches, and feed/kill rates driven per FFT band so different frequencies push the system between spot, stripe and mitosis regimes. Spent substrate leaves a darker pool under live V. The V concentration raises local surface tension and pulls the metaball isosurface inward. Fixes a shader that advertised reaction-diffusion while its grayScott() was four sine waves with no state at all.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",

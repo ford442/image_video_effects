@@ -4,8 +4,8 @@
 //  Features: persistent-state, mouse-driven, click-seeded, audio-reactive,
 //            upgraded-rgba, semantic-alpha, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: tip screening; growth-front sheen; dendrite twin; electrolyte meniscus
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: tip screening; growth-front sheen; dendrite twin; electrolyte meniscus; annealing grain; current crowding
 //  A packing: raw deposit, depletion, oxidation, activity
 //  Prior: 2026-08-23 persistent DLA, electrodes, oxidation age, tip activity
 // ═══════════════════════════════════════════════════════════════════
@@ -157,6 +157,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   metal += vec3<f32>(0.98, 0.8, 0.48) * twin * 0.4;
   metal += vec3<f32>(1.2, 0.72, 0.28) * activity * (0.3 + bass * 0.5);
   metal += vec3<f32>(1.0, 0.9, 0.62) * spark * (0.6 + treble * 2.0);
+  // ── Idea: annealing grain ──
+  // Old copper breaks into facets. The cell hash is stable; oxidation owns the strength.
+  let grainCell = floor(uv * (16.0 + oxidation * 36.0));
+  let facet = smoothstep(0.32, 0.82, hash22(grainCell).x) * oxidation * deposit;
+  metal = mix(metal, metal * vec3<f32>(0.62, 0.88, 0.78), clamp(facet * 0.7, 0.0, 0.7));
+  // ── Idea: current crowding ──
+  // Fresh tips that are still exposed (the screening term) run hotter than buried metal.
+  metal += vec3<f32>(1.2, 0.78, 0.36) * activity * exposed * (0.35 + bass * 0.25);
   var electrolyteColor = vec3<f32>(0.008, 0.018, 0.025) + vec3<f32>(0.02, 0.08, 0.09) * depletion;
   // Idea: electrolyte meniscus — wet line where depletion is half full, off the metal.
   let meniscus = exp(-abs(depletion - 0.42) * 14.0) * (1.0 - smoothstep(0.15, 0.65, deposit));

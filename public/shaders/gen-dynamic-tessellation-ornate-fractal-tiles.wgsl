@@ -4,8 +4,8 @@
 //  Features: audio-reactive, fractal, tiled, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-10-10
-//  Ideas: corner rosettes; equipotential contours
+//  Upgraded: 2026-10-25
+//  Ideas: corner rosettes; equipotential contours; recessed grout joint; filigree ribs
 //  A packing: HDR in A; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
@@ -119,6 +119,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea: corner rosettes — an ornament inside each corner the grout already frames.
     let rosette = exp(-length(abs(tile_local) - vec2<f32>(0.72)) * 16.0);
     col += warm * rosette * (0.35 + treble * 0.25);
+    // ── Idea: recessed joint — a groove just outside the grout highlight ──
+    let joint = smoothstep(0.18, 0.06, min(1.0 - abs(tile_local.x), 1.0 - abs(tile_local.y)));
+    col *= 1.0 - joint * (1.0 - grout) * 0.42;
+    // ── Idea: filigree ribs joining the corner rosettes ──
+    let diag = abs(abs(tile_local.x) - abs(tile_local.y));
+    let rib = exp(-diag * 22.0) * smoothstep(0.15, 0.45, max(abs(tile_local.x), abs(tile_local.y)));
+    col += warm * rib * (0.22 + mids * 0.15) * (1.0 - grout);
     // Idea: equipotential contours of this tile's own iteration count.
     let contourPhase = min(fract(f_val * 4.0), 1.0 - fract(f_val * 4.0));
     let contour = (1.0 - smoothstep(0.0, 0.06, contourPhase)) * (1.0 - grout);

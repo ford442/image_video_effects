@@ -4,30 +4,13 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-04-15
-//  Upgraded: 2026-05-23
-//  Batch 58C: 16x16, mouse shear, click bursts, textureLoad history
+//  Upgraded: 2026-10-26
+//  Ideas: necked Voronoi walls; bubble memory from C luma
+//  A packing: linear display RGBA in A; ACES on writeTexture
+//  Kept: 2026-05-23 mouse shear, click bursts, textureLoad history
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI:    f32 = 3.14159265358979323846;
 const TAU:   f32 = 6.28318530717958647692;
@@ -171,6 +154,11 @@ fn spectralPower(color: vec3<f32>, pattern: f32) -> vec3<f32> {
     return mix(lowPass, highPass, pattern) + bandPass * pattern * 0.1;
 }
 
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -232,6 +220,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cell = voronoi(uv * foamScale + totalWarp * 2.0 + bandJitter, time);
     let cellPattern = 1.0 - smoothstep(0.0, 0.08, cell.x);
     let cellBoundary = smoothstep(0.08, 0.12, cell.y - cell.x);
+    // ── Idea 1: necked Voronoi walls ────────────────────────────────────
+    // F2−F1 is the wall thickness. The thinnest walls flare, and depth creases.
+    let wallGap = max(cell.y - cell.x, 0.0);
+    let neck = exp(-wallGap * 24.0);
     let cellInterior = fbm(uv * foamScale * 5.0 + cell.z * 2.0, time, max(octaveCount - 2, 2));
     let hybridPattern = mix(cellInterior, cellPattern, cellBoundary);
     
@@ -260,16 +252,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
     let dispersedColor = vec3<f32>(r, g, b);
     
-    let emission = smoothstep(emissionThreshold, 1.0, cellBoundary * pattern * luminance);
+    let emission = smoothstep(emissionThreshold, 1.0, max(cellBoundary, neck) * pattern * luminance);
     let plasmaColor = hsv2rgb(fract(time * 0.05 + pattern + cell.z), 0.9, 1.0);
-    let emissiveColor = mix(dispersedColor, plasmaColor, emission * 0.5);
+    let emissiveColor = mix(dispersedColor, plasmaColor, clamp(emission * 0.5 + neck * 0.4 * pattern, 0.0, 1.0));
     
     let history = textureLoad(dataTextureC, pixel, 0).rgb;
     let flowDirection = normalize(totalWarp + curl + vec2<f32>(0.001));
     let anisotropicFactor = 1.0 - abs(dot(flowDirection, normalize(uv - 0.5 + vec2<f32>(0.001)))) * 0.3;
     let anisotropicBlend = mix(emissiveColor, history, diffusionRate * anisotropicFactor);
-    
-    let spectralColor = spectralPower(anisotropicBlend, pattern);
+    // ── Idea 2: bubble memory ───────────────────────────────────────────
+    // A cell center that was bright last frame holds its plasma color.
+    // Scale (diffusionRate) is still how hard history is kept.
+    let histLuma = dot(history, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let heldCell = smoothstep(0.48, 0.86, histLuma) * cellPattern;
+    let remembered = mix(anisotropicBlend, max(anisotropicBlend, plasmaColor * 0.9), heldCell * diffusionRate);
+
+    let spectralColor = spectralPower(remembered, pattern);
     
     var finalColor = mix(srcColor, spectralColor, globalIntensity);
 
@@ -284,9 +282,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = finalColor + plasmaColor * clickBurst * 0.35;
     
     let lumaOut = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alphaOut = clamp(0.4 + lumaOut * 0.3 + globalIntensity * 0.3 + bass * 0.1 + clickBurst * 0.1, 0.0, 1.0);
-    
-    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alphaOut));
-    textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alphaOut));
-    textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let alphaOut = clamp(0.4 + lumaOut * 0.3 + globalIntensity * 0.3 + bass * 0.1 + clickBurst * 0.1 + neck * 0.12, 0.0, 1.0);
+
+    let linearOut = max(finalColor, vec3<f32>(0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(acesFilm(linearOut), alphaOut));
+    // Linear display in A: the next frame reads C as the history blend.
+    textureStore(dataTextureA, pixel, vec4<f32>(linearOut, alphaOut));
+    textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(depth + neck * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

@@ -8326,7 +8326,8 @@
       "depth-aware",
       "mouse-driven",
       "temporal",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba"
     ],
     "params": [
       {

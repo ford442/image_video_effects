@@ -3,33 +3,15 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, aces-tone-map, temporal-feedback
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-10-25
 //  Ideas: per-facet static refraction offset (each kaleidoscope segment samples
 //         a slightly different angle, like a cut gem's facets); treble sparkle
-//         locked to petal edges instead of the generic screen-space star field
+//         locked to petal edges instead of the generic screen-space star field;
+//         Cauchy dispersion along the facet offset (§12.2F); culet pit
 //  A packing: raw HDR display RGBA history (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rotate(a: f32) -> mat2x2<f32> {
     let c = cos(a);
@@ -104,7 +86,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Sample original image through the folded coordinate (technique 2: image-into-mandala)
     let sampleUV = clamp(kFaceted * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-    let folded = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let foldedG = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    // ── Idea: Cauchy dispersion (§12.2F) along the existing facet offset ──
+    let facetDir = vec2<f32>(cos(facetHash * 6.28318530718), sin(facetHash * 6.28318530718));
+    let uvR = clamp((k + facetDir * facetOffset * 1.55) * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp((k + facetDir * facetOffset * 0.55) * 0.5 + vec2<f32>(0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0);
+    let sampB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
+    let folded = vec4<f32>(sampR.r, foldedG.g, sampB.b, foldedG.a);
 
     // Radial crystalline facets (technique 3: SDF petals)
     let r = length(k);
@@ -143,6 +132,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rgb += crystalColor * petalSDF * 0.6;
     rgb += crystalColor * ring * 0.35 * (1.0 + mids * 0.5);
     rgb += vec3<f32>(0.35, 0.5, 0.75) * bloom;
+    // ── Idea: culet — dark pit where the pavilion facets meet, inside the bloom ──
+    let culet = exp(-r * r / 0.0022);
+    rgb *= 1.0 - culet * 0.62;
+    rgb += crystalCold * culet * culet * 0.22;
 
     // Sparkle stars
     let starSeed = hash21(floor(k * 60.0));

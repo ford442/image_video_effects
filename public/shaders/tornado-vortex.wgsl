@@ -1,29 +1,19 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Tornado Vortex
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-26
+//  Ideas: clear eye; breakdown bulb
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 // tornado-vortex.wgsl — Interactivist upgrade (Batch 16)
 // Rankine vortex with OkLab mixing, blackbody lightning, volumetric fog.
 // Radial inflow / vertical updraft now actually advect debris (dead physics
 // activated). Clicks spawn decaying satellite vortices via ripples[].
 // Per-bin treble FFT drives lightning branch count so strikes follow hi-hats.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -119,11 +109,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let angle = atan2(p.y, p.x);
 
   // Rankine vortex
-  let coreRadius = 0.04 * (1.0 + mids * 0.5);
+  // ── Idea 2: breakdown bulb ─────────────────────────────────────────
+  // A strong funnel swells at mid-height. Intensity still owns the circulation.
+  let midH = uv.y - 0.42;
+  let bulb = exp(-(midH * midH) / 0.028) * intensity;
+  let coreRadius = 0.04 * (1.0 + mids * 0.5) * (1.0 + 0.9 * bulb);
   let circulation = 0.15 * intensity * (1.0 + bass * 0.4);
   let vTheta = select(circulation / (6.28318530718 * dist), circulation * dist / (6.28318530718 * coreRadius * coreRadius), dist > coreRadius);
   let vRadial = -0.02 * intensity * smoothstep(0.3, 0.0, dist);
-  let vVertical = 0.1 * intensity * smoothstep(-0.3, 0.4, uv.y) * smoothstep(0.0, 0.1, dist);
+  let vVertical = 0.1 * intensity * smoothstep(-0.3, 0.4, uv.y) * smoothstep(0.0, 0.1, dist) * (1.0 - 0.85 * bulb);
 
   // Interactivist: clicks spawn satellite vortices with decaying circulation.
   // Each ripple lives ~2s, spinning its own mini-funnel and tugging the main
@@ -150,7 +144,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Volumetric fog density (Beer-Lambert)
-  let fogDensity = exp(-dist * 3.0) * 0.15 * intensity;
+  // ── Idea 1: clear eye ──────────────────────────────────────────────
+  // Fog used to be densest on axis. Suppress it inside the Rankine core.
+  let eye = 1.0 - smoothstep(coreRadius * 0.3, coreRadius, dist);
+  let fogDensity = exp(-dist * 3.0) * 0.15 * intensity * (1.0 - 0.88 * eye);
 
   var color = vec3<f32>(0.02, 0.03, 0.06);
   var debrisDensity = 0.0;

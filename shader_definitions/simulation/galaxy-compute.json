@@ -37,10 +37,46 @@
     "simulation",
     "procedural",
     "volumetric",
-    "spiral-galaxy"
+    "spiral-galaxy",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Gravity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Damping",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Star Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Pattern Opacity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }
