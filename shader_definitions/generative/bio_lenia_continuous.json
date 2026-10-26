@@ -14,7 +14,8 @@
     "feedback-loop",
     "mouse-spawn",
     "audio-reactive",
-    "continuous-ca"
+    "continuous-ca",
+  "upgraded-rgba"
   ],
   "params": [
     {
