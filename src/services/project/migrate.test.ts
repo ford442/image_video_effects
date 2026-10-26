@@ -77,6 +77,25 @@ describe('project file migration', () => {
     expect(smuggled.project?.chain.slots[0]).toEqual({ shaderId: 'demo' });
   });
 
+  it('keeps layer outputs on v0 input from this build (bare chain, VJ-set export)', () => {
+    const layered: SharedChain = {
+      v: 1,
+      slots: [
+        { shaderId: 'demo', mode: 'parallel' },
+        { shaderId: 'over', mode: 'parallel', b: 'screen', o: 0.5, m: '~luma', f: 0.25 },
+      ],
+    };
+    const expected = { ...DEFAULT_SLOT_OUTPUT, mode: 'blend', blend: 'screen', opacity: 0.5, mask: 'luma', maskInvert: true, feather: 0.25 };
+    for (const raw of [layered, buildVjSetExport('Layered', layered)]) {
+      const migrated = migrateProjectFile(JSON.parse(JSON.stringify(raw)), fixedNow);
+      expect(migrated.project?.chain.slots[1]).toMatchObject({ b: 'screen', o: 0.5, m: '~luma', f: 0.25 });
+      const validated = validateProjectFile(migrated.project);
+      expect(validated.ok).toBe(true);
+      if (!validated.ok) return;
+      expect(expandSharedChain(validated.project.chain).slotOutputs[1]).toEqual(expected);
+    }
+  });
+
   it('returns null with a reason for an unknown project version', () => {
     const migrated = migrateProjectFile({ schemaVersion: 99 });
     expect(migrated.project).toBeNull();

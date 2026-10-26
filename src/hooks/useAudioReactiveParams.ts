@@ -132,6 +132,22 @@ export function useAudioReactiveParams({
         return () => cancelAnimationFrame(rafId);
     }, [audioReactiveParams, updateAudioReactiveParams]);
 
+    // Turning audio off leaves each banded layer at its last gated opacity (on the renderer and
+    // in the manager's replay cache): put the fader value back, once, on that transition.
+    const layerRef = useRef({ slotOutputs, opacityAudio });
+    layerRef.current = { slotOutputs, opacityAudio };
+    const wasReactiveRef = useRef(false);
+    useEffect(() => {
+        const was = wasReactiveRef.current;
+        wasReactiveRef.current = audioReactiveParams;
+        if (audioReactiveParams || !was) return;
+        const manager = rendererRef.current;
+        const { slotOutputs: outputs, opacityAudio: bands } = layerRef.current;
+        bands?.forEach((band, slot) => {
+            if (band) manager?.setSlotOutput(slot, { opacity: outputs?.[slot]?.opacity ?? 1 });
+        });
+    }, [audioReactiveParams, rendererRef]);
+
     useEffect(() => {
         if (audioReactiveParams) {
             void startAudioAnalyzer();

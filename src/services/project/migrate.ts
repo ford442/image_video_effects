@@ -32,9 +32,13 @@ const COMPOSITOR_SLOT_KEYS = ['b', 'o', 'm', 'f', 'k'];
  * v1 → v2 (#1512): the envelope is unchanged and every v1 slot is a `replace` slot, so
  * the step only bumps the version. A v1 slot never had compositor keys (its validator
  * rejected them); any that appear anyway are dropped rather than trusted.
+ *
+ * `stripCompositorKeys: false` is for v0 input lifted through v1: a bare SharedChain or
+ * VJ-set export from this build carries the keys legitimately (chain URLs, `.vjset.json`),
+ * and the v2 validator sanitizes them like any other v2 chain.
  */
-export function migrateV1ToV2(v1: ProjectFileV1): ProjectFile {
-  const chain = isRecord(v1.chain) && Array.isArray(v1.chain.slots)
+export function migrateV1ToV2(v1: ProjectFileV1, stripCompositorKeys = true): ProjectFile {
+  const chain = stripCompositorKeys && isRecord(v1.chain) && Array.isArray(v1.chain.slots)
     ? {
         ...v1.chain,
         slots: v1.chain.slots.map((slot) => {
@@ -71,7 +75,7 @@ export function migrateProjectFile(
 
   // v0 SharedChain: the chain's own `v` remains untouched inside the envelope.
   if (typeof raw.v === 'number' && Array.isArray(raw.slots)) {
-    return { project: migrateV1ToV2(makeV1(raw as unknown as SharedChain, now().toISOString())) };
+    return { project: migrateV1ToV2(makeV1(raw as unknown as SharedChain, now().toISOString()), false) };
   }
 
   // v0 VJ set export: preserve the entire payload for recorder playback while
@@ -86,7 +90,7 @@ export function migrateProjectFile(
     );
     if (parsed.bindings) project.audio = { mappings: parsed.bindings };
     project.timeline = parsed;
-    return { project: migrateV1ToV2(project) };
+    return { project: migrateV1ToV2(project, false) };
   }
 
   return { project: null, reason: 'Unrecognized project file or legacy export format' };
