@@ -37,6 +37,22 @@ interface AutoDJOptions {
 }
 
 // --- The AI VJ Director Class ---
+/** Resolve true after `ms`, or false as soon as `signal` aborts (the timer is cleared). */
+function abortableDelay(ms: number, signal?: AbortSignal): Promise<boolean> {
+  if (signal?.aborted) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve(false);
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve(true);
+    }, ms);
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
 export class Alucinate {
   // Manifests & Suggestions
   private imageManifest: ImageRecord[] = [];
@@ -79,6 +95,15 @@ export class Alucinate {
   private presetCursor = 0;
   /** The transition being built was fired with { crossfade: true } (OSC cue, button). */
   private crossfadeRequested = false;
+  /** Aborted by stop(): cancels the run's pending timers (scene-change delay, image swap). */
+  private runAbort: AbortController | null = null;
+  /**
+   * Bumped by every start/stopAutoTransition. An async start that resumes after a newer
+   * start or a stop sees a stale token and bails instead of opening the mic or a rAF loop.
+   */
+  private autoTransitionGen = 0;
+  /** Generation that last connected the shared audio graph (only it may dispose it). */
+  private audioOwnerGen = 0;
 
   constructor(
     onNextImage: (url: string) => void,
@@ -219,6 +244,8 @@ export class Alucinate {
     }
     console.log('Starting Alucinate loop...');
     this.isRunning = true;
+    this.runAbort?.abort();
+    this.runAbort = new AbortController();
     void this.runCycle(); 
     this.loopInterval = window.setInterval(() => this.runCycle(), 25000);
     return true;
@@ -229,6 +256,8 @@ export class Alucinate {
     console.log('Stopping Alucinate loop.');
     this.stopAutoTransition();
     this.isRunning = false;
+    this.runAbort?.abort();
+    this.runAbort = null;
     clearInterval(this.loopInterval);
     this.loopInterval = null;
     if (this.status === 'generating') {
@@ -283,6 +312,7 @@ export class Alucinate {
   }
 
   private async runCycleOnce() {
+    const signal = this.runAbort?.signal;
 
     const { currentImage } = this.getCurrentState();
     if (!currentImage || !currentImage.url) {
@@ -330,8 +360,7 @@ export class Alucinate {
             if (random) this.onUpdateStack([random.id, 'none', 'none']);
         }
         
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        if (!this.isRunning) return;
+        if (!(await abortableDelay(2000, signal)) || !this.isRunning) return;
 
         this.setStatus('generating', 'Dreaming up the next scene...');
         // Use the first shader in the stack for context
@@ -347,12 +376,10 @@ export class Alucinate {
 
         const nextImage = this.findBestMatchingImage(nextTheme, currentImage.url);
         
-        setTimeout(() => {
-            if (this.isRunning) {
-                this.onNextImage(nextImage.url);
-                this.setStatus('ready', 'Visuals updated. Enjoy the vibe.');
-            }
-        }, 5000);
+        if (await abortableDelay(5000, signal) && this.isRunning) {
+            this.onNextImage(nextImage.url);
+            this.setStatus('ready', 'Visuals updated. Enjoy the vibe.');
+        }
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -513,8 +540,10 @@ Your Selection:
   public async startAutoTransition(config: AutoTransitionConfig): Promise<boolean> {
     if (this.activeShaderIds.length === 0) return false;
     this.stopAutoTransition();
+    const gen = ++this.autoTransitionGen;
 
     const catalog = await this.getCatalog();
+    if (gen !== this.autoTransitionGen) return false;
     const schema = this.buildTransitionSchema(this.activeShaderIds, catalog);
     if (schema.length === 0) return false;
     const activeSignature = this.shaderSignature(this.activeShaderIds);
@@ -524,40 +553,55 @@ Your Selection:
       : this.buildDefaultsFromSchema(schema);
     const baseline = this.sanitizeParamsToSchema(baselineSource, schema);
 
-    this.autoTransitionConfig = {
+    const autoConfig: AutoTransitionConfig = {
       mode: 'randomize',
       beatInput: 'mic',
       ...config,
     };
 
-    this.transitionOrchestrator = new TransitionOrchestrator({
-      source: this.autoTransitionConfig.source,
-      intervalMs: this.autoTransitionConfig.intervalMs,
-      durationMs: this.autoTransitionConfig.durationMs,
-    });
+    // Connect the audio source before anything starts running, so a stop or a newer start
+    // during the (permission-prompting) await leaves nothing behind.
+    let analyser: AnalyserNode | null = null;
+    if (autoConfig.source === 'beat') {
+      this.audioOwnerGen = gen;
+      analyser = await connectSource(autoConfig.beatInput || 'mic', autoConfig.mediaElement);
+      if (gen !== this.autoTransitionGen) {
+        // Superseded: close the mic we just opened unless a newer run already claimed it.
+        if (this.audioOwnerGen === gen) void disposeAudioGraph();
+        return false;
+      }
+    }
 
-    this.transitionOrchestrator.setTargetFactory(async () => this.buildTransitionTarget(this.autoTransitionConfig!));
-    this.transitionOrchestrator.start({
+    this.autoTransitionConfig = autoConfig;
+    const orchestrator = new TransitionOrchestrator({
+      source: autoConfig.source,
+      intervalMs: autoConfig.intervalMs,
+      durationMs: autoConfig.durationMs,
+    });
+    this.transitionOrchestrator = orchestrator;
+
+    orchestrator.setTargetFactory(async () => this.buildTransitionTarget(autoConfig));
+    orchestrator.start({
       params: baseline,
       schema,
       shaderSignature: activeSignature,
     });
 
-    if (this.autoTransitionConfig.source === 'beat') {
-      const analyser = await connectSource(this.autoTransitionConfig.beatInput || 'mic', this.autoTransitionConfig.mediaElement);
+    if (analyser) {
       this.beatDetector = new BeatDetector(analyser, (timestamp) => {
-        this.transitionOrchestrator?.enqueueBeat(timestamp);
+        orchestrator.enqueueBeat(timestamp);
       });
       this.beatDetector.start();
     }
 
     this.transitionRafId = requestAnimationFrame((ts) => {
-      void this.transitionLoop(ts);
+      void this.transitionLoop(ts, gen);
     });
     return true;
   }
 
   public stopAutoTransition() {
+    this.autoTransitionGen++;
     if (this.transitionOrchestrator?.getState() === 'TRANSITIONING') {
       this.currentParams = this.transitionOrchestrator.getCurrentParams();
       this.currentParamsSignature = this.transitionOrchestrator.getShaderSignature();
@@ -595,12 +639,15 @@ Your Selection:
     return this.transitionOrchestrator.trigger(target);
   }
 
-  private async transitionLoop(now: number) {
-    if (!this.transitionOrchestrator) return;
-    const result = await this.transitionOrchestrator.update(now);
+  private async transitionLoop(now: number, gen: number) {
+    const orchestrator = this.transitionOrchestrator;
+    if (!orchestrator || gen !== this.autoTransitionGen) return;
+    const result = await orchestrator.update(now);
+    // A stop or restart while update() was pending: this loop is orphaned, end it.
+    if (gen !== this.autoTransitionGen) return;
     if (result?.params) {
       this.currentParams = result.params.map((p) => ({ ...p }));
-      this.currentParamsSignature = this.transitionOrchestrator.getShaderSignature();
+      this.currentParamsSignature = orchestrator.getShaderSignature();
       if (this.onApplyParamsDirect) {
         this.onApplyParamsDirect(result.params);
       }
@@ -608,9 +655,8 @@ Your Selection:
         this.onUpdateParams(result.params);
       }
     }
-    if (!this.transitionOrchestrator) return;
     this.transitionRafId = requestAnimationFrame((ts) => {
-      void this.transitionLoop(ts);
+      void this.transitionLoop(ts, gen);
     });
   }
 

@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "description": "The shared @group(0) compute bind group (bindings 0–13) every shader gets from _prelude.wgsl. One contract for both renderers: TS createComputeBindGroupLayout (src/renderer/webgpu/pipeline.ts) builds its layout from this JSON, and the C++ renderer gets the generated wasm_renderer/bind_group0.h. Regenerate with `npm run gen:bind-group0`; `verify:device-policy` fails when the header is stale. Until wasm_renderer/pipeline.cpp includes that header (it needs a pinned-emsdk rebuild of public/wasm/), verify:device-policy checks that its hand-written kComputeBindings table mirrors this JSON binding for binding. sampledColor is format-dependent: 'float' (filterable) unless the internal colour format is rgba32float on a device without float32-filterable. sampledDepth is always unfilterable-float, so shaders must read readDepthTexture with non_filtering_sampler or textureLoad, never u_sampler.",
+  "group": 0,
+  "cpp": {
+    "header": "wasm_renderer/bind_group0.h"
+  },
+  "kinds": {
+    "filteringSampler": "sampler, type filtering",
+    "nonFilteringSampler": "sampler, type non-filtering",
+    "comparisonSampler": "sampler, type comparison",
+    "sampledColor": "texture_2d<f32> in the internal colour format",
+    "sampledColorArray": "texture_2d_array<f32> in the internal colour format",
+    "sampledDepth": "texture_2d<f32>, r32float, unfilterable-float",
+    "storageColor": "texture_storage_2d<internal colour format, write>",
+    "storageDepth": "texture_storage_2d<r32float, write>",
+    "uniformBuffer": "var<uniform>",
+    "storageBuffer": "var<storage, read_write>",
+    "readOnlyStorageBuffer": "var<storage, read>"
+  },
+  "bindings": [
+    { "binding": 0, "name": "u_sampler", "kind": "filteringSampler", "resource": "FilteringSampler" },
+    { "binding": 1, "name": "readTexture", "kind": "sampledColor", "resource": "Input" },
+    { "binding": 2, "name": "writeTexture", "kind": "storageColor", "resource": "Output" },
+    { "binding": 3, "name": "u", "kind": "uniformBuffer", "resource": "Uniforms" },
+    { "binding": 4, "name": "readDepthTexture", "kind": "sampledDepth", "resource": "DepthRead" },
+    { "binding": 5, "name": "non_filtering_sampler", "kind": "nonFilteringSampler", "resource": "NonFilteringSampler" },
+    { "binding": 6, "name": "writeDepthTexture", "kind": "storageDepth", "resource": "DepthWrite" },
+    { "binding": 7, "name": "dataTextureA", "kind": "storageColor", "resource": "DataA" },
+    { "binding": 8, "name": "dataTextureB", "kind": "storageColor", "resource": "DataB" },
+    { "binding": 9, "name": "dataTextureC", "kind": "sampledColor", "resource": "DataC" },
+    { "binding": 10, "name": "extraBuffer", "kind": "storageBuffer", "resource": "Extra" },
+    { "binding": 11, "name": "comparison_sampler", "kind": "comparisonSampler", "resource": "ComparisonSampler" },
+    { "binding": 12, "name": "plasmaBuffer", "kind": "readOnlyStorageBuffer", "resource": "Plasma" },
+    { "binding": 13, "name": "historyTexture", "kind": "sampledColorArray", "resource": "History" }
+  ]
+}

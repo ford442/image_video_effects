@@ -604,6 +604,17 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     await backend.destroy();
   });
 
+  it('drops shaders the worker LRU evicted (snapshot replaces, never merges)', async () => {
+    const { backend } = await backendWithWorker();
+    deliverSnapshot(backend, true, ['a', 'b']);
+    expect(backend.isShaderCached('a')).toBe(true);
+    deliverSnapshot(backend, true, ['b', 'c']);
+    expect(backend.isShaderCached('a')).toBe(false);
+    expect(backend.isShaderCached('b')).toBe(true);
+    expect(backend.isShaderCached('c')).toBe(true);
+    await backend.destroy();
+  });
+
   it('gives every proxy a fresh device generation and stamps it on everything it sends', async () => {
     const first = await backendWithWorker();
     const second = await backendWithWorker();
@@ -779,7 +790,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
   });
 });
 
-function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): void {
+function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean, cachedShaderIds: string[] = []): void {
   (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
     type: 'snapshot',
     snapshot: {
@@ -787,7 +798,7 @@ function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): vo
       passTimings: [], timing: { source: 'wall-clock', periodNs: 1, profiledPasses: 0, overflow: 0 },
       frameStats: { submitsLastFrame: 1, bindGroupsLastFrame: 0, framesRendered: 1 },
       video: { ingestPath: 'none', framesIngested: 0, droppedFrames: 0, missedFrames: 0, queueDepth: 0 },
-      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds: [],
+      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds,
       colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
       resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
       gpuErrors: [], liveGpuDevices: 1, inputChannel: 'postMessage',

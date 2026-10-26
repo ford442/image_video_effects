@@ -1,6 +1,18 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from '../syncTypes';
+import type { LocalMediaHandler, LocalMediaKind } from './useLocalMediaUpload';
+
+/** Validate a CMD_UPLOAD_FILE payload ({ name, type, mimeType, data: ArrayBuffer }). */
+export function parseUploadPayload(
+    payload: unknown,
+): { type: LocalMediaKind; mimeType: string; data: ArrayBuffer } | null {
+    if (!payload || typeof payload !== 'object') return null;
+    const p = payload as { type?: unknown; mimeType?: unknown; data?: unknown };
+    if (p.type !== 'image' && p.type !== 'video') return null;
+    if (!(p.data instanceof ArrayBuffer)) return null;
+    return { type: p.type, mimeType: typeof p.mimeType === 'string' ? p.mimeType : '', data: p.data };
+}
 
 export interface UseRemoteSyncOptions {
     modes: RenderMode[];
@@ -30,6 +42,8 @@ export interface UseRemoteSyncOptions {
     handleRandomizeSlot?: (slot: number) => void;
     triggerRandomizeAllSlots?: () => void;
     triggerRoulette?: () => void;
+    /** CMD_UPLOAD_FILE from the remote: load the sent file (useLocalMediaLoader). */
+    handleUploadedFile?: LocalMediaHandler;
 }
 
 export function useRemoteSync({
@@ -59,6 +73,7 @@ export function useRemoteSync({
     handleRandomizeSlot,
     triggerRandomizeAllSlots,
     triggerRoulette,
+    handleUploadedFile,
 }: UseRemoteSyncOptions): void {
     const channelRef = useRef<BroadcastChannel | null>(null);
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -72,6 +87,8 @@ export function useRemoteSync({
     triggerRandomizeAllSlotsRef.current = triggerRandomizeAllSlots;
     const triggerRouletteRef = useRef(triggerRoulette);
     triggerRouletteRef.current = triggerRoulette;
+    const handleUploadedFileRef = useRef(handleUploadedFile);
+    handleUploadedFileRef.current = handleUploadedFile;
     const setModeRef = useRef(setMode);
     setModeRef.current = setMode;
     const setActiveSlotRef = useRef(setActiveSlot);
@@ -184,7 +201,14 @@ export function useRemoteSync({
                     handleRandomizeSlotRef.current?.(0);
                 }
             } else if (msg.type === 'CMD_UPLOAD_FILE') {
-                // File upload from remote - handle if needed
+                const upload = parseUploadPayload(msg.payload);
+                if (!upload) {
+                    console.warn('[RemoteSync] CMD_UPLOAD_FILE missing/invalid payload');
+                } else {
+                    const blob = new Blob([upload.data], { type: upload.mimeType });
+                    void Promise.resolve(handleUploadedFileRef.current?.(blob, upload.type))
+                        .catch((err: unknown) => console.error('[RemoteSync] uploaded file failed to load:', err));
+                }
             }
         };
 

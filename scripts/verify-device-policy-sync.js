@@ -197,8 +197,68 @@ function verifyLimitsHeader() {
   }
 }
 
+// wasm_renderer/bind_group0.h is generated from bind_group0.json; pipeline.cpp
+// must include it and TS pipeline.ts must build its layout from the same JSON.
+// readDepthTexture is unfilterable-float in both renderers, so no shader may
+// sample it through the filtering u_sampler (compiles under one, fails the other).
+function verifyBindGroup0() {
+  const gen = require('./gen-bind-group0-header.js');
+  const bg0 = gen.loadContract();
+  const headerFile = gen.headerPath(bg0);
+  let want = '';
+  try {
+    want = gen.renderHeader(bg0);
+  } catch (e) {
+    fail(e.message);
+  }
+  const have = fs.existsSync(headerFile) ? fs.readFileSync(headerFile, 'utf8') : '';
+  if (have !== want) fail(`${bg0.cpp.header} is stale or missing; run: npm run gen:bind-group0`);
+  // pipeline.cpp still carries its own kComputeBindings table until it switches to
+  // bind_group0.h (needs a pinned-emsdk rebuild of public/wasm/). Until then the hand
+  // table must mirror the contract binding for binding.
+  const pipelineCpp = fs.readFileSync(path.join(ROOT, 'wasm_renderer/pipeline.cpp'), 'utf8');
+  if (!/#include "bind_group0\.h"/.test(pipelineCpp)) {
+    const legacyKind = {
+      FilteringSampler: 'filteringSampler', NonFilteringSampler: 'nonFilteringSampler',
+      ComparisonSampler: 'comparisonSampler', SampledRgba: 'sampledColor',
+      SampledRgbaArray: 'sampledColorArray', SampledR32: 'sampledDepth', StorageRgba: 'storageColor',
+      StorageR32: 'storageDepth', UniformBuffer: 'uniformBuffer', StorageBuffer: 'storageBuffer',
+      ReadOnlyStorageBuffer: 'readOnlyStorageBuffer',
+    };
+    const rows = [...pipelineCpp.matchAll(/\{\s*(\d+),\s*BindingKind::(\w+),\s*BindingResource::(\w+)\s*\}/g)];
+    if (rows.length !== bg0.bindings.length) {
+      fail(`pipeline.cpp kComputeBindings has ${rows.length} rows; bind_group0.json has ${bg0.bindings.length}`);
+    }
+    for (const [, binding, kind, resource] of rows) {
+      const want = bg0.bindings[Number(binding)];
+      if (!want || legacyKind[kind] !== want.kind || resource !== want.resource) {
+        fail(`pipeline.cpp kComputeBindings binding ${binding} (${kind}, ${resource}) does not match bind_group0.json`);
+      }
+    }
+  }
+  const pipelineTs = fs.readFileSync(path.join(ROOT, 'src/renderer/webgpu/pipeline.ts'), 'utf8');
+  if (!pipelineTs.includes("contracts/bind_group0.json'") || !pipelineTs.includes('bindGroup0Contract.bindings.map')) {
+    fail('src/renderer/webgpu/pipeline.ts must build computeBGL from src/contracts/bind_group0.json');
+  }
+  const depthNames = bg0.bindings.filter((b) => b.kind === 'sampledDepth').map((b) => b.name);
+  const filteringNames = bg0.bindings.filter((b) => b.kind === 'filteringSampler').map((b) => b.name);
+  const re = new RegExp(
+    `textureSample\\w*\\(\\s*(${depthNames.join('|')})\\s*,\\s*(${filteringNames.join('|')})\\b`,
+  );
+  const shaderDir = path.join(ROOT, 'public/shaders');
+  for (const f of fs.readdirSync(shaderDir)) {
+    if (!f.endsWith('.wgsl')) continue;
+    const src = stripWgslComments(fs.readFileSync(path.join(shaderDir, f), 'utf8'));
+    const m = src.match(re);
+    if (m) {
+      fail(`public/shaders/${f}: samples ${m[1]} (unfilterable-float) with filtering ${m[2]}; use non_filtering_sampler or textureLoad`);
+    }
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
   verifyLimitsHeader();
+  verifyBindGroup0();
   verifyDeepWorkgroupLimits();
   verifyBufferSizeLimits();
 }

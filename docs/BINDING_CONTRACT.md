@@ -35,6 +35,14 @@ The standalone `?validator` page has no renderer, so its probe device stays loca
 
 ## Bind group layout (group 0)
 
+Machine-readable source of truth: [`src/contracts/bind_group0.json`](../src/contracts/bind_group0.json).
+The TS layout (`createComputeBindGroupLayout`) is built from it and `wasm_renderer/bind_group0.h`
+is generated from it (`npm run gen:bind-group0`, checked by `verify:device-policy`).
+Sample types: bindings 1/9/13 are filterable unless the internal format is `rgba32float` on a
+device without `float32-filterable`; binding 4 (`readDepthTexture`) is **always
+unfilterable-float** — read it with `non_filtering_sampler` or `textureLoad`, never `u_sampler`
+(`verify:device-policy` fails a shader that does).
+
 | Binding | WGSL name | Type | Access |
 |---------|-----------|------|--------|
 | 0 | `readSampler` | sampler | filtering |

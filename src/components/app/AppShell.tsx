@@ -1,4 +1,5 @@
-import React, { RefObject, Suspense, lazy } from 'react';
+import React, { ChangeEvent, RefObject, Suspense, lazy } from 'react';
+import type { LocalMediaKind } from '../../hooks/useLocalMediaUpload';
 import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
@@ -58,6 +59,8 @@ export interface AppShellProps {
     setActiveGenerativeShader: (id: string) => void;
     fileInputImageRef: RefObject<HTMLInputElement | null>;
     fileInputVideoRef: RefObject<HTMLInputElement | null>;
+    /** Change handler for the hidden upload inputs (useLocalMediaUpload). */
+    onLocalFileChange: (e: ChangeEvent<HTMLInputElement>, kind: LocalMediaKind) => void;
     isAiVjMode: boolean;
     toggleAiVj: () => void;
     aiVjStatus: AIStatus;
@@ -196,6 +199,7 @@ export function AppShell(props: AppShellProps) {
         setActiveGenerativeShader,
         fileInputImageRef,
         fileInputVideoRef,
+        onLocalFileChange,
         isAiVjMode,
         toggleAiVj,
         aiVjStatus,
@@ -497,8 +501,8 @@ export function AppShell(props: AppShellProps) {
                 </main>
             </div>
             )}
-            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={() => {}} />
-            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={() => {}} />
+            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={(e) => onLocalFileChange(e, 'image')} data-testid="upload-image-input" />
+            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={(e) => onLocalFileChange(e, 'video')} data-testid="upload-video-input" />
         </>
     );
 }
