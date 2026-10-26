@@ -698,7 +698,9 @@
     {
       "filename": "2026-10-21_stellar-mycelium-overdrive.md",
       "title": "Stellar Mycelium Overdrive",
-      "added": "2026-10-21T15:42:11.213865"
+      "added": "2026-10-21T15:42:11.213865",
+      "status": "completed",
+      "completed_at": "2026-10-26T08:14:20.312637"
     }
   ],
   "current": null,
