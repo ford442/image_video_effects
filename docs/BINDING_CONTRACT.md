@@ -35,6 +35,14 @@ The standalone `?validator` page has no renderer, so its probe device stays loca
 
 ## Bind group layout (group 0)
 
+Machine-readable source of truth: [`src/contracts/bind_group0.json`](../src/contracts/bind_group0.json).
+The TS layout (`createComputeBindGroupLayout`) is built from it and `wasm_renderer/bind_group0.h`
+is generated from it (`npm run gen:bind-group0`, checked by `verify:device-policy`).
+Sample types: bindings 1/9/13 are filterable unless the internal format is `rgba32float` on a
+device without `float32-filterable`; binding 4 (`readDepthTexture`) is **always
+unfilterable-float** — read it with `non_filtering_sampler` or `textureLoad`, never `u_sampler`
+(`verify:device-policy` fails a shader that does).
+
 | Binding | WGSL name | Type | Access |
 |---------|-----------|------|--------|
 | 0 | `readSampler` | sampler | filtering |
@@ -153,6 +161,44 @@ Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storag
 
 Flagship: `dla-crystals` (`dla-walkers` over simState → `dla-render` over pixels).
 
+### Spatial hash (`simHash`, optional binding 3)
+
+Agents that have to find *other agents* (flocking, photon binning) cannot scan 65,536 `vec4`s per invocation, and a texture grid is the wrong structure for them. `bind_group1.json` v2 adds one optional binding, off unless the shader definition asks (`"simRing": { "stateCount": 65536, "spatialHash": true }`):
+
+| Binding | Name | Type |
+|--------:|------|------|
+| 3 | `simHash` | `var<storage, read_write> simHash: array<atomic<u32>>` — `HASH_CELLS` (16384) cell heads, then one `next` link per agent |
+
+- **Layout:** shaders that declare binding 3 get a second group-1 layout (4 bindings). Every other group-1 shader keeps today's three, and a ring that nobody asked a hash of (DLA) never allocates it. `simParams` stays 16 bytes: the grid width is the contract constant `HASH_GRID = 128`, not a field.
+- **Grid:** fixed 128 × 128 cells over the working-size domain (`u.config.zw`, the pixel space DLA already uses). `cell = floor(xy / resolution * 128)`, id `= cy * 128 + cx`. An empty head is `0xFFFFFFFFu`. An agent is hashed iff its `simState.xy` is finite and inside `[0, resolution)`: **park dead agents at `xy < 0`**.
+- **Build:** the planner (not the author) inserts it, only when some graph node reads the `simHash` role: a `copyBufferToBuffer` of a pre-filled `0xFFFFFFFF` buffer over the heads (`clearBuffer` can only zero-fill), then one `@workgroup_size(64)` scatter, `next[i] = atomicExchange(head[cell], i)`. It runs once per frame before the first reader and again only after a later `simState` write makes the chain stale. The scatter is a compute pass: it counts toward `maxPassesPerFrame`, the frame pass budget and the timestamp profile.
+- **Reading:** `simIndex` is the snapshot of `simState` (the existing barrier); the hash is not a copy. Read neighbour positions from `simIndex` and walk a cell by following `next` from its head, **with a hard visit cap** (8 or 16) so a crowded cell cannot hang the frame. `public/shaders/_sim_hash.wgsl` carries the constants and `hashCell` / `hashCellId` / `hashWrap` / `hashCellSize`; `verify:device-policy` keeps them equal to the contract.
+
+```wgsl
+#include "_prelude.wgsl"
+#include "_sim_hash.wgsl"
+// ... SimParams, then the four @group(1) declarations (see the header of _sim_hash.wgsl)
+
+let cell = hashCell(pos, res);
+for (var dy = -1; dy <= 1; dy = dy + 1) {
+  for (var dx = -1; dx <= 1; dx = dx + 1) {
+    var j = atomicLoad(&simHash[hashCellId(hashWrap(cell + vec2<i32>(dx, dy)))]);
+    for (var k = 0u; k < 8u && j != HASH_EMPTY; k = k + 1u) {
+      let q = bitcast<vec4<f32>>(vec4<u32>(simIndex[j * 4u], simIndex[j * 4u + 1u], simIndex[j * 4u + 2u], simIndex[j * 4u + 3u]));
+      // ... q.xy is the neighbour's position ...
+      j = atomicLoad(&simHash[HASH_NEXT + j]);
+    }
+  }
+}
+```
+
+- **Limits:** a hash shader sees the two group-0 storage buffers plus `simState`, `simIndex` and `simHash` = 5, under the WebGPU base limit of 8. `spatialHash.group1RequiredLimits` in the contract carries it; it is checked against `device.limits` when the first hash pipeline compiles. `MINIMUM_COMPUTE_LIMITS` and the catalog-wide device request are untouched.
+- **OOM:** the hash is part of each ladder rung (heads fixed, links scale with `stateCount`), so a step-down rebuilds it at the smaller count. There is no separate ladder.
+- **Gates:** a definition that sets `spatialHash` must have a graph node that reads `simHash` in an entry that declares binding 3, and a graph that reads or declares it without the flag fails `npm run verify:device-policy`.
+- **WASM:** unchanged. The bridge refuses `@group(1)` WGSL before `LoadShader`; `pipeline.cpp` is not touched.
+
+Flagships: `murmuration` (steering through the hash) and `photon-bins` (wavelength-binned photons gathered per pixel).
+
 ### Runtime format tiers (#1008)
 
 WGSL sources remain authored as **rgba32float** canonical. At pipeline compile the host rewrites bindings 2/7/8 for non-ultra tiers. See [`docs/FORMAT_TIERS.md`](FORMAT_TIERS.md).
@@ -179,6 +225,14 @@ Both backends validate adapter limits before device creation and request explici
 | `maxComputeWorkgroupSizeY` | 16 | Standard workgroup |
 | `maxComputeInvocationsPerWorkgroup` | 256 | Deep-workgroup shaders need ≥ 1024 at runtime |
 
+This table is the C++ mirror (`webgpu_limits.h`, `CheckLimit`) and is unchanged. The TypeScript device request no longer restates it (#1512). The device is probed into **limits tiers** (`webgpu_limits.json` `limitsTiers`, `webgpuProbe.limitsTiers`):
+
+- `base`: this table, with `maxTextureDimension2D` checked at 4096.
+- `deep-workgroup`: 32×32 / 1024 invocations.
+- `big-buffer`: `maxBufferSize ≥ 1 GiB`.
+
+`buildRequiredLimits` requests a `base` value only when it exceeds the spec default of the adapter's feature level. A core device requests none of them; a compatibility device requests 256 invocations and up to 8192 2D. See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md#limits-tiers).
+
 ### Canonical dispatch
 
 The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both TypeScript (`parseWorkgroupSize`) and C++ WASM (`ParseWorkgroupSize`) fall back to **16×16** — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
@@ -193,7 +247,7 @@ Documented exceptions in that contract:
 
 | Concern | TypeScript | C++ WASM |
 |---------|------------|----------|
-| Adapter ladder | `ADAPTER_ATTEMPT_LADDER` (consumed by `runWebGpuBootProbe`) | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` |
+| Adapter ladder | `ADAPTER_ATTEMPT_LADDER` (consumed by `runWebGpuBootProbe`); a fifth, compatibility rung is TS-only | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` (the four core rungs) |
 | Limit validation | `assertAdapterMeetsContract` | `CheckLimit` table in `device.cpp` |
 | Device limits | `buildRequiredLimits` | `requiredLimits` on `wgpuAdapterRequestDevice` |
 | Buffer-size limits (`bufferSizeLimits`) | `buildRequiredLimits` requests the adapter value | not mirrored (`cppMirror: false`, WASM R&D freeze) |
@@ -208,6 +262,7 @@ See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md) for canvas configure and timestam
 | `float32-filterable` | Requested when adapter supports | Logged only | rgba32float texture sampling on bindings 1/9/13 |
 | `timestamp-query` | Requested when adapter supports; ring-buffered readback in `WebGPUTiming.ts` / `frame.ts` | Requested when available | GPU timing — `available`/`gpu-timestamp` only after valid readback (`hasRealGpuTimings`) |
 | `subgroups` | Requested when available (for WGSL `enable subgroups` shaders) | N/A | **Not used** — `-sg.wgsl` file variants were removed 2026-07-26 |
+| `shader-f16`, `bgra8unorm-storage`, `float32-blendable`, `dual-source-blending` | Capability tier 2 (#1512): requested when offered, recorded in `webgpuProbe` | N/A | `// @requires f16` variants, the compute present; see DEVICE_FEATURES.md |
 
 ### WASM surface notes
 

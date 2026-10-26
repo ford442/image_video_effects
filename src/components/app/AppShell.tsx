@@ -1,10 +1,11 @@
-import React, { RefObject, Suspense, lazy } from 'react';
+import React, { ChangeEvent, RefObject, Suspense, lazy } from 'react';
+import type { LocalMediaKind } from '../../hooks/useLocalMediaUpload';
 import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
 import { RendererManager, RendererType } from '../../renderer/RendererManager';
 import { isWasmForcedByURL } from '../../renderer/rendererUrl';
-import type { AIStatus, AutoTransitionConfig, ImageRecord } from '../../types/aiVj';
+import type { AIStatus, AutoTransitionConfig, ImageRecord, TriggerTransitionOptions } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
@@ -58,6 +59,8 @@ export interface AppShellProps {
     setActiveGenerativeShader: (id: string) => void;
     fileInputImageRef: RefObject<HTMLInputElement | null>;
     fileInputVideoRef: RefObject<HTMLInputElement | null>;
+    /** Change handler for the hidden upload inputs (useLocalMediaUpload). */
+    onLocalFileChange: (e: ChangeEvent<HTMLInputElement>, kind: LocalMediaKind) => void;
     isAiVjMode: boolean;
     toggleAiVj: () => void;
     aiVjStatus: AIStatus;
@@ -67,7 +70,8 @@ export interface AppShellProps {
     handleUpdateParams: (paramsList: Record<string, number>[]) => void;
     handleRandomizeParams: () => void;
     handleSavePreset: (name: string) => void;
-    handleTriggerNextTransition: () => void;
+    handleTriggerNextTransition: (options?: TriggerTransitionOptions) => void;
+    handleArmCrossfade?: (durationMs: number) => void;
     handleRandomizeSlot: (slot: number) => void;
     handleSetSlotParam: (slot: number, param: string, value: number) => void;
     handleShareVjSet: () => void;
@@ -195,6 +199,7 @@ export function AppShell(props: AppShellProps) {
         setActiveGenerativeShader,
         fileInputImageRef,
         fileInputVideoRef,
+        onLocalFileChange,
         isAiVjMode,
         toggleAiVj,
         aiVjStatus,
@@ -205,6 +210,7 @@ export function AppShell(props: AppShellProps) {
         handleRandomizeParams,
         handleSavePreset,
         handleTriggerNextTransition,
+        handleArmCrossfade,
         handleRandomizeSlot,
         handleSetSlotParam,
         handleShareVjSet,
@@ -374,6 +380,7 @@ export function AppShell(props: AppShellProps) {
                         onRandomizeParams={handleRandomizeParams}
                         onSavePreset={handleSavePreset}
                         onTriggerNextTransition={handleTriggerNextTransition}
+                        onArmCrossfade={handleArmCrossfade}
                         onRandomizeSlot={handleRandomizeSlot}
                         onSetSlotParam={handleSetSlotParam}
                         onShareVjSet={handleShareVjSet}
@@ -494,8 +501,8 @@ export function AppShell(props: AppShellProps) {
                 </main>
             </div>
             )}
-            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={() => {}} />
-            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={() => {}} />
+            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={(e) => onLocalFileChange(e, 'image')} data-testid="upload-image-input" />
+            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={(e) => onLocalFileChange(e, 'video')} data-testid="upload-video-input" />
         </>
     );
 }

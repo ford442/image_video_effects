@@ -407,7 +407,8 @@
       "feedback-loop",
       "mouse-spawn",
       "audio-reactive",
-      "continuous-ca"
+      "continuous-ca",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1012,7 +1013,8 @@
       "chromatic-dispersion",
       "fbm-veins",
       "mineral-growth",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -10097,7 +10099,8 @@
     ],
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -23369,7 +23372,8 @@
     "url": "shaders/gen-quantum-coral-reef.wgsl",
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -26643,54 +26647,61 @@
   },
   {
     "id": "gen-stellar-mycelium-overdrive",
+    "name": "Stellar Mycelium Overdrive",
     "description": "A hyper-organic network of glowing stardust mycelium that dynamically branches, pulses with cosmic energy, and responds to gravity wells.",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "cosmic",
+      "mycelium",
+      "sdf",
+      "bioluminescent"
+    ],
     "url": "shaders/gen-stellar-mycelium-overdrive.wgsl",
-    "type": "compute",
     "workgroup_size": [
       16,
       16,
       1
     ],
-    "name": "Stellar Mycelium Overdrive",
-    "category": "generative",
     "params": [
       {
-        "default": 1,
+        "name": "Density",
         "min": 0.1,
         "max": 5,
+        "default": 1,
         "step": 0.1,
-        "id": "p1",
         "mapping": "zoom_params.x",
-        "name": "Density"
+        "id": "density"
       },
       {
-        "default": 1,
+        "name": "Pulse Speed",
         "min": 0,
         "max": 3,
+        "default": 1,
         "step": 0.1,
-        "id": "p2",
         "mapping": "zoom_params.y",
-        "name": "Pulse Speed"
+        "id": "pulse-speed"
       },
       {
-        "default": 2,
+        "name": "Glow Intensity",
         "min": 0,
         "max": 5,
+        "default": 2,
         "step": 0.1,
-        "id": "p3",
         "mapping": "zoom_params.z",
-        "name": "Glow Intensity"
+        "id": "glow-intensity"
       },
       {
-        "default": 0.5,
+        "name": "Color Shift",
         "min": 0,
         "max": 1,
+        "default": 0.5,
         "step": 0.05,
-        "id": "p4",
         "mapping": "zoom_params.w",
-        "name": "Color Shift"
+        "id": "color-shift"
       }
-    ]
+    ],
+    "audioReactive": true
   },
   {
     "name": "Stellar Plasma-Ouroboros",

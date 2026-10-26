@@ -14,6 +14,7 @@ import {
   GraphDispatchDomain,
   GraphNodeDef,
   GraphRole,
+  graphUsesSimHash,
   graphUsesSimRing,
   MAX_REPEAT,
   MultipassGraphDef,
@@ -30,6 +31,8 @@ export const EDITABLE_WRITE_ROLES = ['color', 'dataA', 'dataB'] as const;
 /** Added while the draft uses the group-1 sim ring (bind_group1.json; simIndex is barrier-written only). */
 export const SIM_READ_ROLES = ['simState', 'simIndex'] as const;
 export const SIM_WRITE_ROLES = ['simState'] as const;
+/** Offered only while the draft asks for the spatial hash (the planner builds it; nodes only read it). */
+export const SIM_HASH_READ_ROLES = ['simHash'] as const;
 
 export type RoleSide = 'reads' | 'writes';
 
@@ -138,16 +141,26 @@ export function isSimRingDraft(draft: GraphDraft): boolean {
   return graphUsesSimRing(draft.graph) || draft.envelope.simRing !== undefined;
 }
 
+/** True when the draft's `simRing` asks for the optional spatial hash (bind_group1.json `spatialHash`). */
+export function simHashRequested(draft: GraphDraft): boolean {
+  const raw = draft.envelope.simRing;
+  return isRecord(raw) && raw.spatialHash === true;
+}
+
 /**
- * The ring size the draft asks for, as the renderer consumes a definition's
- * `simRing` field (only `stateCount`). Null when the draft does not use the ring;
- * a sim draft without an explicit count gets the contract default.
+ * The ring the draft asks for, as the renderer consumes a definition's
+ * `simRing` field (`stateCount`, and `spatialHash` when set). Null when the draft
+ * does not use the ring; a sim draft without an explicit count gets the contract
+ * default.
  */
 export function simRingRequest(draft: GraphDraft): RuntimeSimRingRequest | null {
   if (!isSimRingDraft(draft)) return null;
   const raw = draft.envelope.simRing;
   const count = isRecord(raw) && typeof raw.stateCount === 'number' && raw.stateCount > 0 ? raw.stateCount : undefined;
-  return { stateCount: count ?? SIM_RING_DEFAULT_STATE_COUNT };
+  return {
+    stateCount: count ?? SIM_RING_DEFAULT_STATE_COUNT,
+    ...(simHashRequested(draft) || graphUsesSimHash(draft.graph) ? { spatialHash: true } : {}),
+  };
 }
 
 /** Sizes the editor offers: the contract's OOM ladder (the ring allocates the largest rung that fits). */
@@ -177,7 +190,9 @@ export function uniqueNodeId(nodes: readonly GraphNodeDef[], entry: string, igno
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 function withGraph(draft: GraphDraft, nodes: GraphNodeDef[], maxPassesPerFrame = draft.graph.maxPassesPerFrame): GraphDraft {
-  return { ...draft, graph: { maxPassesPerFrame, nodes } };
+  const next = { ...draft, graph: { maxPassesPerFrame, nodes } };
+  // A node that reads simHash is a promise the hash exists: the definition must ask for it.
+  return graphUsesSimHash(next.graph) && isSimRingDraft(next) && !simHashRequested(next) ? setSpatialHash(next, true) : next;
 }
 
 function replaceNode(draft: GraphDraft, index: number, node: GraphNodeDef): GraphDraft {
@@ -293,7 +308,11 @@ export function setNodeId(draft: GraphDraft, index: number, id: string): GraphDr
 /** Roles the editor offers on one side: the texture roles, plus the sim roles while the ring is on. */
 export function editableRoles(draft: GraphDraft, side: RoleSide): readonly GraphRole[] {
   const sim = isSimRingDraft(draft);
-  if (side === 'reads') return sim ? [...EDITABLE_READ_ROLES, ...SIM_READ_ROLES] : EDITABLE_READ_ROLES;
+  if (side === 'reads') {
+    if (!sim) return EDITABLE_READ_ROLES;
+    const hash = simHashRequested(draft) || graphUsesSimHash(draft.graph);
+    return [...EDITABLE_READ_ROLES, ...SIM_READ_ROLES, ...(hash ? SIM_HASH_READ_ROLES : [])];
+  }
   return sim ? [...EDITABLE_WRITE_ROLES, ...SIM_WRITE_ROLES] : EDITABLE_WRITE_ROLES;
 }
 
@@ -359,6 +378,24 @@ export function setSimRing(draft: GraphDraft, enabled: boolean, stateCount?: num
   const fallback = typeof base.stateCount === 'number' ? base.stateCount : SIM_RING_DEFAULT_STATE_COUNT;
   const count = stateCount !== undefined && SIM_STATE_COUNT_CHOICES.includes(stateCount) ? stateCount : fallback;
   return { ...draft, envelope: { ...rest, simRing: { ...base, stateCount: count } } };
+}
+
+/**
+ * Ask for (or drop) the sim ring's spatial hash. On turns the ring on first; off is
+ * refused while a node still reads the simHash role. Kept apart from the ring size so
+ * a plain ring (DLA) never carries a `spatialHash` key.
+ */
+export function setSpatialHash(draft: GraphDraft, enabled: boolean): GraphDraft {
+  if (!enabled) {
+    if (graphUsesSimHash(draft.graph) || !simHashRequested(draft)) return draft;
+    const { spatialHash: _s, ...rest } = draft.envelope.simRing as Record<string, unknown>;
+    return { ...draft, envelope: { ...draft.envelope, simRing: rest } };
+  }
+  const ringed = isRecord(draft.envelope.simRing) ? draft : setSimRing(draft, true);
+  return {
+    ...ringed,
+    envelope: { ...ringed.envelope, simRing: { ...(ringed.envelope.simRing as Record<string, unknown>), spatialHash: true } },
+  };
 }
 
 export function setMaxPasses(draft: GraphDraft, maxPassesPerFrame: number): GraphDraft {
@@ -429,6 +466,8 @@ export interface TemplateEntry {
   params?: unknown[];
   features?: string[];
   requiresRgba32Float?: boolean;
+  /** The definition's sim-ring request (stateCount, spatialHash, …), carried into the draft. */
+  simRing?: unknown;
 }
 
 /** Start from a registered graph (e.g. `wave-tank`), copying its catalog fields when known. */
@@ -442,6 +481,7 @@ export function draftFromRegistryGraph(
   if (entry?.description) envelope.description = entry.description;
   if (entry?.params?.length) envelope.params = cloneJson(entry.params);
   if (entry?.requiresRgba32Float !== undefined) envelope.requiresRgba32Float = entry.requiresRgba32Float;
+  if (isRecord(entry?.simRing)) envelope.simRing = cloneJson(entry.simRing);
   if (entry?.features?.length) envelope.features = [...entry.features];
   if (entry?.tags?.length) envelope.tags = [...entry.tags];
   return {

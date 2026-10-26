@@ -48,6 +48,8 @@ WGSL sources in `public/shaders/` stay authored as **`rgba32float`** canonical. 
 
 **`compat` (`rgba8unorm`) — Phase 2.** Many shaders use HDR, negative intermediates, and alpha > 1. Not enabled in the initial rollout.
 
+**Not to be confused with the WebGPU compatibility feature level** (#1512): a device from the `Compatibility` adapter rung (Android GL ES, older Chromebooks) keeps the float tiers above. `resolveColorFormat` prefers `rgba16float` on such a device (`DeviceFormatCapabilities.compat`), because float32 filtering is rare there and the working pool halves. FP32-required shaders still pin `rgba32float`. See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md#compatibility-rung).
+
 ## Physics / precision guard
 
 Shaders that need full FP32 storage (reaction-diffusion concentrations, fluid state, wave sims) may declare:
