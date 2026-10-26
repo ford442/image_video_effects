@@ -82,6 +82,8 @@ import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
 import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScale';
 import type { FrameIslands } from './webgpu/framePlan';
+import { SlotCompositor, outputComposites, type CompositorStats, type FrameCompositor } from './webgpu/compositor';
+import { DEFAULT_SLOT_OUTPUT, normalizeSlotOutput, patchSlotOutput, type SlotOutput } from './slotOutput';
 import type { TransferredVideoFrames, VideoIngestStats } from './media/videoFramePump';
 import { VideoIngest } from './media/videoIngest';
 import { compileCheckWgsl } from './webgpu/compileCheck';
@@ -131,8 +133,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Per-slot zoom_params; slot objects hold these arrays by reference. */
   private slotZoomParams: number[][] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => [0.5, 0.5, 0.5, 0.5]);
 
+  /** Per-slot compositor output (#1512); survives shader changes like the params do. */
+  private slotOutputs: SlotOutput[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => ({ ...DEFAULT_SLOT_OUTPUT }));
+
   private slots: ShaderSlot[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => ({
     shaderId: null, enabled: false, mode: 'chained' as SlotMode, params: this.slotZoomParams[i],
+    output: this.slotOutputs[i],
   }));
 
   private currentTime = 0;
@@ -191,6 +197,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private warmup: ShaderWarmupQueue | null = null;
   /** Scratch resources for opt-in graph nodes running below full size. */
   private readonly islands = new NodeScaleIslands();
+  /** Layer compositor for parallel groups with blend / mask outputs (#1512). */
+  private readonly compositor = new SlotCompositor();
   /** Demoted opt-in graph nodes: `${slot}:${nodeId}` → scale (< 1). */
   private readonly nodeScales = new Map<string, number>();
   /** The canvas this renderer presents to (an OffscreenCanvas in the render worker). */
@@ -726,6 +734,33 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     return this.islands;
   }
 
+  /**
+   * The compositor while an enabled parallel slot blends or masks (frame-plan hook);
+   * frees its layer textures otherwise. Null also when its allocation failed.
+   */
+  getCompositor(): FrameCompositor | null {
+    const wanted = this.slots.some(
+      (slot) => slot.enabled && !!slot.shaderId && slot.mode === 'parallel' && outputComposites(slot.output),
+    );
+    if (!wanted || !this.device) {
+      this.compositor.releaseTextures();
+      return null;
+    }
+    this.compositor.attach({
+      device: this.device,
+      colorFormat: this.colorFormat,
+      scaledW: this.scaledW,
+      scaledH: this.scaledH,
+      depthTex: this.resources.depthRead,
+    });
+    return this.compositor.available ? this.compositor : null;
+  }
+
+  /** Layer / mask memory, pass count and unresolved-mask warnings, for diagnostics. */
+  getCompositorStats(): CompositorStats {
+    return this.compositor.stats();
+  }
+
   /** Opt-in graph nodes of the bound slots, with their floor and current scale. */
   getScalableNodes(): Array<{ slot: number; nodeId: string; minScale: number; scale: number }> {
     const nodes: Array<{ slot: number; nodeId: string; minScale: number; scale: number }> = [];
@@ -782,9 +817,13 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   setActiveShader(id: string): void {
     if (this.slots[0]?.shaderId !== id) this.rearmSimRingFor(id);
     for (let i = 0; i < PHYSICAL_SLOT_LIMIT; i++) this.clearNodeScales(i);
-    this.slots[0] = { shaderId: id, enabled: true, mode: 'chained', params: this.slotZoomParams[0] };
+    this.slots[0] = {
+      shaderId: id, enabled: true, mode: 'chained', params: this.slotZoomParams[0], output: this.slotOutputs[0],
+    };
     for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) {
-      this.slots[i] = { shaderId: null, enabled: false, mode: 'chained', params: this.slotZoomParams[i] };
+      this.slots[i] = {
+        shaderId: null, enabled: false, mode: 'chained', params: this.slotZoomParams[i], output: this.slotOutputs[i],
+      };
     }
   }
 
@@ -795,7 +834,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.rearmSimRingFor(id);
       this.clearNodeScales(index);
     }
-    this.slots[index] = { shaderId: id, enabled: !!id, mode, params: this.slotZoomParams[index] };
+    this.slots[index] = {
+      shaderId: id, enabled: !!id, mode, params: this.slotZoomParams[index], output: this.slotOutputs[index],
+    };
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
@@ -815,11 +856,28 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     return this.slots[index]?.mode ?? null;
   }
 
-  getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode } | null {
+  getSlotState(index: number): { shaderId: string | null; enabled: boolean; mode: SlotMode; output: SlotOutput } | null {
     if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return null;
     const slot = this.slots[index];
     if (!slot) return null;
-    return { shaderId: slot.shaderId, enabled: slot.enabled, mode: slot.mode };
+    return { shaderId: slot.shaderId, enabled: slot.enabled, mode: slot.mode, output: normalizeSlotOutput(slot.output) };
+  }
+
+  /**
+   * Merge `patch` into slot `index`'s compositor output (blend mode, opacity, mask…).
+   * Takes effect on the next frame; only parallel slots composite. Returns the result.
+   */
+  setSlotOutput(index: number, patch: Partial<SlotOutput>): SlotOutput | null {
+    if (!checkPhysicalSlotIndex('WebGPURenderer', index)) return null;
+    const next = patchSlotOutput(this.slotOutputs[index], patch);
+    const target = this.slotOutputs[index]!;
+    Object.assign(target, next);
+    return { ...target };
+  }
+
+  getSlotOutput(index: number): SlotOutput | null {
+    const output = this.slotOutputs[index];
+    return output ? { ...output } : null;
   }
 
   addRipple(x: number, y: number): void {
@@ -1028,6 +1086,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       adaptQualityIfNeeded: r.adaptQualityIfNeeded.bind(r),
       nodeScale: r.nodeScale.bind(r),
       getIslands: r.getIslands.bind(r),
+      getCompositor: r.getCompositor.bind(r),
       encodePreFxChores: r.encodePreFxChores.bind(r),
       encodePostFxChores: r.encodePostFxChores.bind(r),
       afterFrameSubmitChores: r.afterFrameSubmitChores.bind(r),
@@ -1327,6 +1386,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.warmup?.stop();
     this.warmup = null;
     this.islands.destroy();
+    this.compositor.destroy();
     this.frameRenderer.releasePresentHold();
     this.nodeScales.clear();
     this.videoIngest.detach();

@@ -1,3 +1,4 @@
+import { DEFAULT_SLOT_OUTPUT } from '../renderer/slotOutput';
 import type { Mock, MockInstance, Mocked } from 'vitest';
 import { RendererManager } from '../renderer/RendererManager';
 import { WebGPURenderer } from '../renderer/WebGPURenderer';
@@ -1059,6 +1060,7 @@ describe('RendererManager device-loss recovery', () => {
       Object.assign(r, {
         backendKind: 'webgpu',
         setRuntimeGraph: vi.fn(),
+        getNodeScales: vi.fn(() => ({})),
         setResolutionScale: vi.fn(),
         setAdaptiveQuality: vi.fn(),
         setMaxPassesPerFrame: vi.fn(),
@@ -1084,6 +1086,62 @@ describe('RendererManager device-loss recovery', () => {
     expect(setGraph.mock.invocationCallOrder[0]).toBeLessThan((second.loadShader as Mock).mock.invocationCallOrder[0]!);
     expect(setGraph.mock.invocationCallOrder[0]).toBeLessThan((second.setSlotShader as Mock).mock.invocationCallOrder[0]!);
     clearRuntimeGraphs();
+  });
+
+  it('restores compositor outputs, depth map, auto-exposure, node scales and live ripples (#1512)', async () => {
+    const webgpuSurface = () => ({
+      backendKind: 'webgpu',
+      setSlotOutput: vi.fn(),
+      updateDepthMap: vi.fn(),
+      setSourceAutoExposure: vi.fn(),
+      setNodeScale: vi.fn((_slot: number, _node: string, scale: number) => scale),
+      getNodeScales: vi.fn(() => ({})),
+      setResolutionScale: vi.fn(),
+      setAdaptiveQuality: vi.fn(),
+      setMaxPassesPerFrame: vi.fn(),
+      setFramePassBudget: vi.fn(),
+      setColorFormat: vi.fn(),
+      setRuntimeGraph: vi.fn(),
+    });
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    Object.assign(first, webgpuSurface());
+    Object.assign(second, webgpuSurface());
+    const screen = { ...DEFAULT_SLOT_OUTPUT, mode: 'blend' as const, blend: 'screen' as const, opacity: 0.5 };
+    (first as unknown as { getSlotState: Mock }).getSlotState = vi.fn((i: number) => {
+      if (i === 0) return { shaderId: 'rain', enabled: true, mode: 'chained', output: { ...DEFAULT_SLOT_OUTPUT } };
+      if (i === 1) return { shaderId: 'plasma', enabled: true, mode: 'parallel', output: screen };
+      return { shaderId: null, enabled: false, mode: 'chained' };
+    });
+    (first as unknown as { getNodeScales: Mock }).getNodeScales = vi.fn(() => ({ '1:tensor': 0.5 }));
+    const { manager, statuses } = await bootWith(first);
+    await manager.loadShader('plasma', '/plasma.wgsl');
+    // Mask from slot 2, set through the manager (survives even if the backend forgot it).
+    manager.setSlotOutput(2, { mode: 'mask' });
+    expect((first as unknown as { setSlotOutput: Mock }).setSlotOutput).toHaveBeenCalledWith(2, expect.objectContaining({ mode: 'mask' }));
+    const depth = new Float32Array([0.1, 0.9, 0.5, 0.3]);
+    manager.updateDepthMap(depth, 2, 2);
+    manager.setSourceAutoExposure(true);
+    manager.addRipple(0.25, 0.75);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
+
+    first.fatal!('lost', loss());
+    await vi.waitFor(() => expect(statuses).toEqual(['lost', 'recovering', 'idle']));
+
+    const setOutput = (second as unknown as { setSlotOutput: Mock }).setSlotOutput;
+    expect(setOutput).toHaveBeenCalledWith(1, screen);
+    expect(setOutput).toHaveBeenCalledWith(2, expect.objectContaining({ mode: 'mask' }));
+    expect(setOutput.mock.calls.map(([i]) => i)).not.toContain(0); // defaults are not re-sent
+    const depthCall = (second as unknown as { updateDepthMap: Mock }).updateDepthMap.mock.calls[0]!;
+    expect(Array.from(depthCall[0] as Float32Array)).toEqual(Array.from(depth));
+    expect(depthCall.slice(1)).toEqual([2, 2]);
+    expect((second as unknown as { setSourceAutoExposure: Mock }).setSourceAutoExposure).toHaveBeenCalledWith(true);
+    const setScale = (second as unknown as { setNodeScale: Mock }).setNodeScale;
+    expect(setScale).toHaveBeenCalledWith(1, 'tensor', 0.5);
+    // Node scales go in after the stack is bound (a scale only applies to a bound graph node).
+    expect(setScale.mock.invocationCallOrder[0]).toBeGreaterThan((second.setSlotShader as Mock).mock.invocationCallOrder.at(-1)!);
+    expect(second.addRipple).toHaveBeenCalledWith(0.25, 0.75);
+    expect(manager.getSlotOutput(1)).toEqual(screen);
   });
 
   it('a non-loss fatal error keeps the existing backend-failure path', async () => {

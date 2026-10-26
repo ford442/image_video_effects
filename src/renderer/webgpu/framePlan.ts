@@ -9,6 +9,9 @@
  * Order reproduces the pre-IR dispatch exactly: parallel slots → writeTex→readTex
  * → feedback; then each chained slot followed by its copy + feedback.
  * docs/BINDING_CONTRACT.md freezes the feedback order (B → C, then A → C).
+ *
+ * A parallel group with a non-`replace` slot output (#1512) also gets a `layerCopy`
+ * after each slot and one `composite` before the writeTex→readTex copy (compositor.ts).
  */
 
 import type { GraphRunReport, GraphSimRingBindings } from '../GraphRunner';
@@ -25,6 +28,14 @@ import type { FrameSlotDispatchPlan, SlotDispatchPlan } from './slotDispatch';
 import type { SlotTimingMode } from './WebGPUTiming';
 import type { ShaderSlot } from './webgpuConstants';
 import { IslandRole, PassProfiler, snapNodeScale } from './nodeScale';
+import {
+  MAX_COMPOSITE_LAYERS,
+  outputComposites,
+  planCompositeGroup,
+  type CompositeGroupPlan,
+  type FrameCompositor,
+} from './compositor';
+import type { SlotOutput } from '../slotOutput';
 
 export type FeedbackCopySource = 'dataTexB' | 'dataTexA';
 
@@ -78,7 +89,17 @@ export type FrameOp =
   | { kind: 'simBarrier' }
   /** Scaled island around one opt-in node dispatch (see nodeScale.ts). */
   | { kind: 'islandEnter'; scale: number }
-  | { kind: 'islandExit'; scale: number; writes: IslandRole[] };
+  | { kind: 'islandExit'; scale: number; writes: IslandRole[] }
+  /** Keep a composited parallel slot's output: writeTex → layer `layer` of `layerCount`. */
+  | LayerCopyOp
+  /** Masks + one compute pass: the group's layers over readTex, into writeTex. */
+  | { kind: 'composite'; plan: CompositeGroupPlan };
+
+export interface LayerCopyOp {
+  kind: 'layerCopy';
+  layer: number;
+  layerCount: number;
+}
 
 export interface FramePlan {
   ops: FrameOp[];
@@ -87,6 +108,8 @@ export interface FramePlan {
   output: 'readTex' | 'writeTex';
   /** One report per graph slot, in encode order. */
   graphReports: GraphRunReport[];
+  /** One plan per composited parallel group (empty when every output is `replace`). */
+  composites: CompositeGroupPlan[];
 }
 
 export interface FramePlanContext {
@@ -105,6 +128,8 @@ export interface FramePlanContext {
   framePassBudget: number;
   /** Requested scale for an opt-in graph node (1 when absent / not demoted). */
   nodeScale?: (slotIndex: number, nodeId: string) => number;
+  /** A compositor can run this frame; false keeps every parallel group last-one-wins. */
+  compositing?: boolean;
   warn?: (message: string) => void;
 }
 
@@ -348,8 +373,33 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
     }
   };
 
-  plan.parallel.forEach((slotPlan, i) => compileSlot(slotPlan, 'parallel', i));
+  // Layers are only the slots that encoded a pass: a slot whose pipeline is missing
+  // left writeTex as the previous slot wrote it, and must not be blended twice.
+  const wantsComposite = !!ctx.compositing && plan.parallel.some((p) => outputComposites(p.slot.output));
+  const groupSlots: Array<{ slotIndex: number; output?: SlotOutput }> = [];
+  const layerCopies: LayerCopyOp[] = [];
+  plan.parallel.forEach((slotPlan, i) => {
+    const computeBefore = countCompute(ops);
+    compileSlot(slotPlan, 'parallel', i);
+    if (!wantsComposite || countCompute(ops) === computeBefore || groupSlots.length >= MAX_COMPOSITE_LAYERS) return;
+    const copy: LayerCopyOp = { kind: 'layerCopy', layer: groupSlots.length, layerCount: 0 };
+    ops.push(copy);
+    layerCopies.push(copy);
+    groupSlots.push({ slotIndex: slotPlan.slotIndex, output: slotPlan.slot.output });
+  });
+  const composites: CompositeGroupPlan[] = [];
   if (plan.parallel.length > 0) {
+    const composite = wantsComposite ? planCompositeGroup(groupSlots) : null;
+    if (composite) {
+      for (const copy of layerCopies) copy.layerCount = composite.layerCount;
+      for (const warning of composite.warnings) warnOnce(ctx, `composite:${warning}`, `[Compositor] ${warning}`);
+      ops.push({ kind: 'composite', plan: composite });
+      composites.push(composite);
+    } else if (layerCopies.length > 0) {
+      // Only `replace` outputs encoded after all: today's last-one-wins, without the copies.
+      const drop = new Set<FrameOp>(layerCopies);
+      for (let k = ops.length - 1; k >= 0; k--) if (drop.has(ops[k]!)) ops.splice(k, 1);
+    }
     ops.push({ kind: 'copy', from: 'writeTex', to: 'readTex' });
     pushFeedback(ops, getFeedbackCopyOrder(
       plan.anyReadsDataC,
@@ -366,10 +416,15 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
 
   return {
     ops,
-    computeCount: ops.reduce((n, op) => n + (op.kind === 'compute' ? 1 : 0), 0),
+    computeCount: countCompute(ops),
     output: singleChained ? 'writeTex' : 'readTex',
     graphReports,
+    composites,
   };
+}
+
+function countCompute(ops: readonly FrameOp[]): number {
+  return ops.reduce((n, op) => n + (op.kind === 'compute' ? 1 : 0), 0);
 }
 
 /** What the executor needs to run a scaled island (implemented by NodeScaleIslands). */
@@ -388,6 +443,8 @@ export interface FrameExecResources {
   scaledH: number;
   /** Absent → opt-in nodes run at full size. */
   islands?: FrameIslands | null;
+  /** Absent → `layerCopy` / `composite` ops are skipped (last one wins). */
+  compositor?: FrameCompositor | null;
 }
 
 export interface FrameExecHooks {
@@ -403,6 +460,8 @@ export interface FrameExecHooks {
   ) => GPUComputePassTimestampWrites | undefined;
   /** Stamps for island resample passes. */
   profileResample?: PassProfiler;
+  /** Stamps for compositor mask / feather / composite passes. */
+  profileComposite?: PassProfiler;
 }
 
 export interface FrameExecResult {
@@ -428,6 +487,8 @@ export function executeFramePlan(
   };
   let computeIndex = 0;
   let activeIsland: number | null = null;
+  // A layer that could not be kept would composite stale texels: skip that group's pass.
+  let layersOk = true;
 
   for (const op of plan.ops) {
     switch (op.kind) {
@@ -455,6 +516,17 @@ export function executeFramePlan(
       case 'islandExit':
         if (activeIsland === op.scale) res.islands?.encodeExit(encoder, op.scale, op.writes, hooks.profileResample);
         activeIsland = null;
+        break;
+      case 'layerCopy':
+        layersOk = !!res.compositor?.encodeLayerCopy(encoder, res.textures.writeTex, op.layer, op.layerCount) && layersOk;
+        break;
+      case 'composite':
+        if (layersOk && res.compositor) {
+          res.compositor.encodeComposite(
+            encoder, op.plan, res.textures.readTex, res.textures.writeTex, hooks.profileComposite,
+          );
+        }
+        layersOk = true;
         break;
       case 'compute': {
         if (op.dispatch === 'simHashBuild') {

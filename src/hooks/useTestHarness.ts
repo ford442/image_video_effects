@@ -235,6 +235,15 @@ export function useTestHarness({
                     manager.updateAudioFrequencyBins(bins);
                 },
                 getSlotState: (index: number) => manager.getSlotState(index),
+                /** Layer compositor (#1512): chained/parallel, blend / opacity / mask per slot. */
+                setSlotMode: (index: number, mode: 'chained' | 'parallel') => manager.setSlotMode(index, mode),
+                setSlotOutput: (index: number, patch: Parameters<typeof manager.setSlotOutput>[1]) =>
+                    manager.setSlotOutput(index, patch),
+                getCompositorStats: () => manager.getCompositorStats(),
+                getRenderStateReplay: () => manager.getRenderStateReplay(),
+                /** DPT depth map stand-in (canvas-sized row-major floats, near = 1). */
+                updateDepthMap: (data: number[], width: number, height: number) =>
+                    manager.updateDepthMap(Float32Array.from(data), width, height),
                 getPerformanceStatus: () => manager.getPerformanceStatus(),
                 releaseFp32Requirement: (id: string) => manager.releaseFp32Requirement(id),
                 getGPUTimings: () => manager.getGPUTimings(),

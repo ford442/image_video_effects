@@ -48,7 +48,9 @@ export type HostedRenderer = Pick<
   | 'setSlotShader'
   | 'setSlotEnabled'
   | 'setSlotMode'
+  | 'setSlotOutput'
   | 'getSlotState'
+  | 'getCompositorStats'
   | 'setInputSource'
   | 'updateDepthMap'
   | 'setTransferredVideo'
@@ -157,6 +159,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     if (input.audio) r.updateAudioData(input.audio[0], input.audio[1], input.audio[2]);
     if (input.bins) r.updateAudioFrequencyBins(input.bins);
     for (const [slot, p1, p2, p3, p4] of input.slotParams ?? []) r.setSlotParams(slot, p1, p2, p3, p4);
+    for (const [slot, output] of input.slotOutputs ?? []) r.setSlotOutput(slot, output);
     if (input.clearRipples) r.clearRipples();
     for (const [x, y] of input.ripples ?? []) r.addRipple(x, y);
     if (input.videoStats) video?.setUpstreamStats(input.videoStats);
@@ -185,6 +188,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     nodeScales: r.getNodeScales(),
     scalableNodes: r.getScalableNodes(),
     slots: Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState(i)),
+    compositor: r.getCompositorStats(),
     graphReport: r.getLastGraphReport(),
     chores: r.getGpuChoresBreadcrumbs(),
     cachedShaderIds: r.getPipelineCacheStats().cachedIds,

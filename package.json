@@ -35,6 +35,7 @@
     "gen:canvas-configure": "node scripts/gen-canvas-configure-header.js",
     "gen:webgpu-limits": "node scripts/gen-webgpu-limits-header.js",
     "gen:bind-group0": "node scripts/gen-bind-group0-header.js",
+    "gen:compositor-wgsl": "node scripts/gen-compositor-wgsl.mjs",
     "wasm:validate": "node scripts/validate_wasm_artifacts.js",
     "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
     "test:wasm:unit": "vitest run WASM",

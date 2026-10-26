@@ -27,6 +27,8 @@ import type { InputSource } from '../types';
 import type { FrameStats } from '../webgpu/deviceCounters';
 import type { CanvasConfigureOptIns } from '../webgpu/device';
 import type { SlotMode } from '../webgpu/webgpuConstants';
+import type { SlotOutput } from '../slotOutput';
+import type { CompositorStats } from '../webgpu/compositor';
 import type { CanvasColorState, DisplayP3Result, WebGpuProbeSerializable } from '../webgpuBootProbe';
 
 /** What the worker scope supports (sent once, before init). */
@@ -59,6 +61,8 @@ export interface FrameInput {
   bins?: Float32Array;
   /** [slotIndex, p1, p2, p3, p4] for every slot whose params changed. */
   slotParams?: Array<[number, number, number, number, number]>;
+  /** [slotIndex, output] for every slot whose compositor output changed (#1512; last one wins). */
+  slotOutputs?: Array<[number, SlotOutput]>;
   /** Ripples added since the last flush (stamped with the worker's clock). */
   ripples?: Array<[number, number]>;
   clearRipples?: boolean;
@@ -175,7 +179,9 @@ export interface RenderSnapshot {
   video: VideoIngestStats;
   nodeScales: Record<string, number>;
   scalableNodes: Array<{ slot: number; nodeId: string; minScale: number; scale: number }>;
-  slots: Array<{ shaderId: string | null; enabled: boolean; mode: SlotMode } | null>;
+  slots: Array<{ shaderId: string | null; enabled: boolean; mode: SlotMode; output: SlotOutput } | null>;
+  /** Layer compositor memory / passes / warnings (#1512). */
+  compositor: CompositorStats;
   graphReport: GraphRunReport | null;
   chores: GpuChoresBreadcrumbs;
   cachedShaderIds: string[];

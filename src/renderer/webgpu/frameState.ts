@@ -21,6 +21,7 @@ import type { SimRing } from './simRing';
 import { SIM_HASH_HEAD_BYTES } from './simHash';
 import { ShaderSlot } from './webgpuConstants';
 import type { FrameIslands } from './framePlan';
+import type { FrameCompositor } from './compositor';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
@@ -89,6 +90,8 @@ export interface WebGPUFrameState {
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   /** Scaled-island resources, or null when no node is demoted. */
   getIslands?: () => FrameIslands | null;
+  /** Layer compositor for this frame, or null when no parallel slot composites (#1512). */
+  getCompositor?: () => FrameCompositor | null;
 
   ripples: Ripple[];
   mouseX: number;
@@ -180,6 +183,7 @@ export interface WebGPUFrameHost {
   framePassBudget: number;
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   getIslands?: () => FrameIslands | null;
+  getCompositor?: () => FrameCompositor | null;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -262,6 +266,7 @@ export interface FrameContext {
   framePassBudget: number;
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   getIslands?: () => FrameIslands | null;
+  getCompositor?: () => FrameCompositor | null;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
@@ -363,6 +368,7 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     get framePassBudget() { return d.framePassBudget; },
     nodeScale: (slot, nodeId) => d.nodeScale?.(slot, nodeId) ?? 1,
     getIslands: () => d.getIslands?.() ?? null,
+    getCompositor: () => d.getCompositor?.() ?? null,
     get ripples() { return d.ripples; },
     get mouseX() { return d.mouseX; },
     get mouseYShader() { return d.mouseYShader; },
@@ -458,6 +464,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get framePassBudget() { return h.framePassBudget; },
     nodeScale: (slot, nodeId) => h.nodeScale?.(slot, nodeId) ?? 1,
     getIslands: () => h.getIslands?.() ?? null,
+    getCompositor: () => h.getCompositor?.() ?? null,
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },
