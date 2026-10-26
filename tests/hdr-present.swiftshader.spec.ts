@@ -1,5 +1,6 @@
 /**
- * The two present variants of capability tier 2 (#1512 Part A) on a software WebGPU device.
+ * The two present variants of capability tier 2 (#1512 Part A) on SwiftShader and, through
+ * the `gpu` Playwright project, on the hardware runner (docs/GPU_RUNNER.md).
  *
  * HDR present: with extended tone mapping negotiated the canvas becomes an rgba16float
  * display-p3 swapchain and the present keeps values above 1.0 (paper white / peak roll-off
@@ -15,7 +16,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { startStaticServer, stopStaticServer } from './helpers/rendererHarness';
+import { annotateBootAdapter, startStaticServer, stopStaticServer } from './helpers/rendererHarness';
 import { hdrShoulder } from '../src/renderer/webgpu/presentVariants';
 
 const PORT = 3475;
@@ -39,6 +40,7 @@ async function boot(page: Page, query: string): Promise<any> {
   );
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
+  await annotateBootAdapter(page, test.info());
   await page
     .waitForFunction(() => !!(window as any).__pixelocity__.getSlotState?.(0)?.shaderId, null, { timeout: 60_000 })
     .catch(() => undefined);
@@ -73,7 +75,7 @@ async function texels(page: Page, points: Array<[number, number]>): Promise<numb
 
 const encode = (linear: number) => Math.pow(linear, 1 / 2.2);
 
-test.describe('present variants on SwiftShader', () => {
+test.describe('present variants', () => {
   test.describe.configure({ timeout: 300_000 });
 
   test('HDR canvas: rgba16float display-p3, highlights above 1.0 reach the swapchain', async ({ page }) => {

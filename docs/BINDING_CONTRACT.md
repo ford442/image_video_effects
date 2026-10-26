@@ -225,6 +225,14 @@ Both backends validate adapter limits before device creation and request explici
 | `maxComputeWorkgroupSizeY` | 16 | Standard workgroup |
 | `maxComputeInvocationsPerWorkgroup` | 256 | Deep-workgroup shaders need ≥ 1024 at runtime |
 
+This table is the C++ mirror (`webgpu_limits.h`, `CheckLimit`) and is unchanged. The TypeScript device request no longer restates it (#1512). The device is probed into **limits tiers** (`webgpu_limits.json` `limitsTiers`, `webgpuProbe.limitsTiers`):
+
+- `base`: this table, with `maxTextureDimension2D` checked at 4096.
+- `deep-workgroup`: 32×32 / 1024 invocations.
+- `big-buffer`: `maxBufferSize ≥ 1 GiB`.
+
+`buildRequiredLimits` requests a `base` value only when it exceeds the spec default of the adapter's feature level. A core device requests none of them; a compatibility device requests 256 invocations and up to 8192 2D. See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md#limits-tiers).
+
 ### Canonical dispatch
 
 The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both TypeScript (`parseWorkgroupSize`) and C++ WASM (`ParseWorkgroupSize`) fall back to **16×16** — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
@@ -239,7 +247,7 @@ Documented exceptions in that contract:
 
 | Concern | TypeScript | C++ WASM |
 |---------|------------|----------|
-| Adapter ladder | `ADAPTER_ATTEMPT_LADDER` (consumed by `runWebGpuBootProbe`) | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` |
+| Adapter ladder | `ADAPTER_ATTEMPT_LADDER` (consumed by `runWebGpuBootProbe`); a fifth, compatibility rung is TS-only | `ADAPTER_ATTEMPT_LADDER` in `device.cpp` (the four core rungs) |
 | Limit validation | `assertAdapterMeetsContract` | `CheckLimit` table in `device.cpp` |
 | Device limits | `buildRequiredLimits` | `requiredLimits` on `wgpuAdapterRequestDevice` |
 | Buffer-size limits (`bufferSizeLimits`) | `buildRequiredLimits` requests the adapter value | not mirrored (`cppMirror: false`, WASM R&D freeze) |
@@ -254,6 +262,7 @@ See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md) for canvas configure and timestam
 | `float32-filterable` | Requested when adapter supports | Logged only | rgba32float texture sampling on bindings 1/9/13 |
 | `timestamp-query` | Requested when adapter supports; ring-buffered readback in `WebGPUTiming.ts` / `frame.ts` | Requested when available | GPU timing — `available`/`gpu-timestamp` only after valid readback (`hasRealGpuTimings`) |
 | `subgroups` | Requested when available (for WGSL `enable subgroups` shaders) | N/A | **Not used** — `-sg.wgsl` file variants were removed 2026-07-26 |
+| `shader-f16`, `bgra8unorm-storage`, `float32-blendable`, `dual-source-blending` | Capability tier 2 (#1512): requested when offered, recorded in `webgpuProbe` | N/A | `// @requires f16` variants, the compute present; see DEVICE_FEATURES.md |
 
 ### WASM surface notes
 

@@ -21,6 +21,7 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import sharp from 'sharp';
 import {
+  annotateBootAdapter,
   diffFrames,
   startStaticServer,
   stopStaticServer,
@@ -63,6 +64,7 @@ async function boot(page: Page): Promise<void> {
   );
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
+  await annotateBootAdapter(page, test.info());
   // Let the app's default slot-0 shader land before the fixtures replace it.
   await page
     .waitForFunction(() => !!(window as any).__pixelocity__.getSlotState?.(0)?.shaderId, null, { timeout: 60_000 })

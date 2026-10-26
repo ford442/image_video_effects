@@ -11,6 +11,8 @@
  * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2`.
  */
 import { expect, test, type Page } from '@playwright/test';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import sharp from 'sharp';
 import {
   installGpuUncapturedErrorHook,
@@ -27,6 +29,9 @@ const STACK6 = ['rgb-split-glitch', 'kaleidoscope', 'vortex', 'chroma-lens', 'ch
 
 type Mode = 'main' | 'worker';
 const MODES: Mode[] = ['main', 'worker'];
+
+const fixture = (name: string) =>
+  `data:text/plain;base64,${readFileSync(resolve(__dirname, 'fixtures/compositor', `${name}.wgsl`)).toString('base64')}`;
 
 test.beforeAll(async () => {
   await startStaticServer(PORT, { isolated: process.env.PX_ISOLATED === '1' });
@@ -142,6 +147,21 @@ async function thumbnailStats(page: Page, size = 64, attempts = 4) {
   return best;
 }
 
+/** A 16×16 RGBA readback of the presented frame. */
+async function rawThumbnail(page: Page): Promise<Buffer> {
+  const png: string | null = await page.evaluate(() => (window as any).__pixelocity__.captureThumbnailPng(16));
+  expect(png, 'captureThumbnailPng returned null').toBeTruthy();
+  const b64 = png!.includes(',') ? png!.split(',')[1] ?? '' : png!;
+  return sharp(Buffer.from(b64, 'base64')).ensureAlpha().raw().toBuffer();
+}
+
+function maxAbsDiff(a: Buffer, b: Buffer): number {
+  if (a.length !== b.length) return 255;
+  let max = 0;
+  for (let i = 0; i < a.length; i++) max = Math.max(max, Math.abs(a[i]! - b[i]!));
+  return max;
+}
+
 /** Page + current render worker: exactly one GPUDevice once the old one's `lost` settled. */
 async function expectOneLiveDevice(page: Page): Promise<void> {
   await page.waitForFunction(
@@ -213,6 +233,54 @@ test.describe('device-loss recovery on SwiftShader WebGPU', () => {
       expect(slot3Mode).toBe('parallel');
       const after = await framesRendered(page);
       await waitForFramesAbove(page, after + 2);
+      expect(await gpuErrors(page, mode)).toEqual([]);
+      await expectOneLiveDevice(page);
+    });
+  }
+
+  for (const mode of MODES) {
+    test(`compositor layering, the depth map and HDR present settings survive a loss [${mode}]`, async ({ page }) => {
+      await boot(page, mode);
+      // Two parallel gradients, slot 1 screened at 50 % through a depth mask (#1512 Part B).
+      const ok = await page.evaluate(async (urls) => {
+        const api = (window as any).__pixelocity__;
+        api.overrideSlotCap(6);
+        api.setRenderScale(0.25);
+        api.setInputSource('generative');
+        const loaded = [await api.loadShader('golden-grad-a', urls.a), await api.loadShader('golden-grad-b', urls.b)];
+        for (let i = 2; i < 6; i++) api.setSlotShader(i, '');
+        api.setSlotShader(0, 'golden-grad-a');
+        api.setSlotShader(1, 'golden-grad-b');
+        api.setSlotMode(0, 'parallel');
+        api.setSlotMode(1, 'parallel');
+        api.setSlotOutput(1, { mode: 'blend', blend: 'screen', opacity: 0.5, mask: 'depth' });
+        const canvas = document.querySelector('canvas') as HTMLCanvasElement | null;
+        const w = canvas?.width || 1024;
+        const h = canvas?.height || 1024;
+        const depth = new Array<number>(w * h);
+        for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) depth[y * w + x] = x < w / 2 ? 0.2 : 0.9;
+        api.updateDepthMap(depth, w, h);
+        api.setHdrPresent({ paperWhiteNits: 300 });
+        return loaded.every(Boolean);
+      }, { a: fixture('golden-grad-a'), b: fixture('golden-grad-b') });
+      expect(ok).toBe(true);
+      const compositor = () => page.evaluate(() => (window as any).__pixelocity__.getCompositorStats());
+      await expect.poll(compositor, { timeout: 60_000 }).toMatchObject({ layers: 2, masks: 1, error: null });
+      await waitForFramesAbove(page, (await framesRendered(page)) + 3);
+      const before = await rawThumbnail(page);
+
+      expect(await page.evaluate(() => (window as any).__pixelocity__.simulateDeviceLoss())).toBe(true);
+      await waitForRecovery(page, 'idle', 1);
+
+      // The rebuilt backend has the layering (its own compositor), the depth map (a depth mask
+      // without it is empty, so the right half would lose the screen) and the HDR settings.
+      await expect.poll(compositor, { timeout: 60_000 }).toMatchObject({ layers: 2, masks: 1, error: null });
+      const hdr = await page.evaluate(() => (window as any).__pixelocity__.renderer.getDiagnostics()?.webgpu?.hdrPresent);
+      expect(hdr).toMatchObject({ paperWhiteNits: 300 });
+      expect(await page.evaluate(() => (window as any).__pixelocity__.getRenderStateReplay().depthMap)).toBeTruthy();
+      await expect
+        .poll(async () => maxAbsDiff(before, await rawThumbnail(page)), { timeout: 90_000, intervals: [500] })
+        .toBeLessThanOrEqual(4);
       expect(await gpuErrors(page, mode)).toEqual([]);
       await expectOneLiveDevice(page);
     });

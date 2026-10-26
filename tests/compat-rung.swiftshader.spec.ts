@@ -13,6 +13,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import sharp from 'sharp';
 import {
+  annotateBootAdapter,
   installGpuUncapturedErrorHook,
   readGpuUncapturedErrors,
   startStaticServer,
@@ -71,7 +72,7 @@ async function show(page: Page, shaderId: string, source: 'image' | 'generative'
   }, { id: shaderId, src: source });
 }
 
-test.describe('compatibility rung on SwiftShader', () => {
+test.describe('compatibility rung', () => {
   test.describe.configure({ timeout: 300_000 });
 
   for (const mode of ['worker', 'main'] as const) {
@@ -79,6 +80,7 @@ test.describe('compatibility rung on SwiftShader', () => {
       await boot(page, mode);
       const probe = await page.evaluate(() => (window as any).webgpuProbe);
       expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
+      await annotateBootAdapter(page, test.info());
       expect(probe).toMatchObject({ compat: true, featureLevel: 'compatibility', adapterAttemptLabel: 'Compatibility' });
       expect(probe.attempts.map((a: { label: string }) => a.label)).toEqual(['Compatibility']);
       // 256 invocations were requested above the compat default of 128.

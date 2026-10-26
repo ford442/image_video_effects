@@ -5,7 +5,7 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { release } from 'os';
 import { resolve } from 'path';
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type TestInfo } from '@playwright/test';
 import type { ParityShaderCase } from '../fixtures/parityMatrix';
 import type { BenchmarkStats } from '../../src/utils/benchmarkStats';
 import { computeSpeedup, type SpeedupMetric } from '../../src/utils/benchmarkSpeedup';
@@ -384,6 +384,34 @@ export async function assertGpuAdapter(page: Page): Promise<string> {
   if (!probe.found) throw new Error(`no GPU adapter (${probe.summary})`);
   if (probe.fallback || probe.vendor === 'google') {
     throw new Error(`software GPU adapter, not a real GPU (${probe.summary})`);
+  }
+  return probe.summary;
+}
+
+/** Playwright project that runs the `*.swiftshader.spec.ts` suites on a hardware GPU (#1512 Part C). */
+export const GPU_PROJECT = 'gpu';
+
+/**
+ * Record the adapter the app booted on as a test annotation (it lands in the report and
+ * the GPU runner's job summary). On the `gpu` project a software adapter fails the test:
+ * a SwiftShader pass there is not evidence for the hardware rows.
+ */
+export async function annotateBootAdapter(page: Page, testInfo: TestInfo): Promise<string> {
+  const probe = await page.evaluate(() => {
+    const p = (window as any).webgpuProbe ?? {};
+    return {
+      summary: String(p.adapterSummary ?? ''),
+      gpuType: String(p.formatCapabilities?.adapterGpuType ?? 'unknown'),
+      features: [p.shaderF16 && 'shader-f16', p.bgra8unormStorage && 'bgra8unorm-storage', p.compat && 'compat']
+        .filter(Boolean)
+        .join(', '),
+    };
+  });
+  const description = `${probe.summary || 'unknown adapter'} (${probe.gpuType}${probe.features ? `; ${probe.features}` : ''})`;
+  testInfo.annotations.push({ type: 'adapter', description });
+  const software = probe.gpuType === 'cpu' || /swiftshader|llvmpipe|lavapipe|warp/i.test(probe.summary);
+  if (testInfo.project.name === GPU_PROJECT && software) {
+    throw new Error(`software adapter on the ${GPU_PROJECT} project, not a hardware GPU: ${probe.summary}`);
   }
   return probe.summary;
 }
