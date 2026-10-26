@@ -3,6 +3,7 @@ import Controls from './components/Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { RemoteControlHeader } from './RemoteControlHeader';
+import { useLocalMediaUpload, type LocalMediaKind } from './hooks/useLocalMediaUpload';
 import { isRemoteChromeHidden, writeRemoteChromeParam } from './utils/remoteChrome';
 
 // Default State (matches App.tsx defaults roughly, but will be overwritten by sync)
@@ -223,22 +224,17 @@ const RemoteApp: React.FC = () => {
     };
 
     // File Uploads
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Read file
+    // Same picker handler as the main app; the remote forwards the bytes to it.
+    const forwardUpload = useCallback(async (file: Blob, type: LocalMediaKind) => {
         const buffer = await file.arrayBuffer();
         sendMessage('CMD_UPLOAD_FILE', {
-            name: file.name,
-            type: type,
+            name: file instanceof File ? file.name : 'upload',
+            type,
             mimeType: file.type,
             data: buffer
         });
-
-        // Reset input
-        e.target.value = '';
-    };
+    }, [sendMessage]);
+    const { handleFileChange: handleFileUpload } = useLocalMediaUpload(forwardUpload);
 
     if (!connected) {
         return (
