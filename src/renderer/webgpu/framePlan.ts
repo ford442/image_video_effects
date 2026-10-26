@@ -18,7 +18,9 @@ import {
   graphPlanErrors,
   graphRequestedPasses,
   MultipassGraphDef,
+  SIM_HASH_BUILD_ENTRY,
 } from '../multipassGraph';
+import { SIM_HASH_WORKGROUP_SIZE_X } from './simHash';
 import type { FrameSlotDispatchPlan, SlotDispatchPlan } from './slotDispatch';
 import type { SlotTimingMode } from './WebGPUTiming';
 import type { ShaderSlot } from './webgpuConstants';
@@ -57,9 +59,12 @@ export interface ComputeOp {
   workgroup: { x: number; y: number };
   nodeId?: string;
   iteration?: number;
-  dispatch: 'pixels' | 'simState';
+  /** `simHashBuild` is the planner's scatter pass: it resets the heads, then binds only its own group. */
+  dispatch: 'pixels' | 'simState' | 'simHashBuild';
   /** Bind the group-1 sim ring for this pass. */
   bindSimRing: boolean;
+  /** Bind the 4-binding group-1 layout (the entry declares simHash). Implies bindSimRing. */
+  bindSimHash: boolean;
   /** Requested resolution scale (< 1 only inside an island of an opt-in node). */
   scale: number;
 }
@@ -88,6 +93,10 @@ export interface FramePlanContext {
   getPipeline(id: string): GPUComputePipeline | undefined;
   getWorkgroupSize(id: string): { x: number; y: number };
   usesSimRing(id: string): boolean;
+  /** True when the entry's pipeline was built against the 4-binding (simHash) group-1 layout. */
+  usesSimHash?(id: string): boolean;
+  /** The compiled scatter pass, or null before the first simHash shader compiled. */
+  getSimHashBuildPipeline?(): GPUComputePipeline | null;
   /** Armed sim ring, or null when none is allocated. */
   simRing: GraphSimRingBindings | null;
   /** Per-graph pass cap from the render-quality policy. */
@@ -168,6 +177,12 @@ function compileChain(
       warnOnce(ctx, `ring:${shaderId}`, `[WebGPURenderer] "${shaderId}" needs the sim ring but none is armed — skipped`);
       continue;
     }
+    // Only graphs rebuild the hash, so a chain step reads whatever the last graph left in it.
+    const bindSimHash = bindSimRing && !!ctx.usesSimHash?.(shaderId);
+    if (bindSimHash && !ctx.simRing?.hash) {
+      warnOnce(ctx, `hash:${shaderId}`, `[WebGPURenderer] "${shaderId}" needs the sim hash but none is armed — skipped`);
+      continue;
+    }
     ops.push({
       kind: 'compute',
       label: `${mode}-${shaderId}`,
@@ -179,6 +194,7 @@ function compileChain(
       workgroup: ctx.getWorkgroupSize(shaderId),
       dispatch: 'pixels',
       bindSimRing,
+      bindSimHash,
       scale: 1,
     });
   }
@@ -229,6 +245,36 @@ export function compileGraphOps(
         ops.push({ kind: 'copy', from: copy.from === 'dataA' ? 'dataTexA' : 'dataTexB', to: 'dataTexC' });
       }
     }
+    if (dispatch.dispatch === 'simHashBuild') {
+      // The scatter pass is planner-owned, so its pipeline comes from the context, not the shader cache.
+      const buildPipeline = ctx.getSimHashBuildPipeline?.() ?? null;
+      if (!buildPipeline || !ctx.simRing?.hash) {
+        warnOnce(
+          ctx,
+          `hash-build:${shaderId ?? ''}`,
+          `[GraphRunner] ${SIM_HASH_BUILD_ENTRY} needs the sim hash but none is armed — skipped`,
+        );
+        continue;
+      }
+      ops.push({
+        kind: 'compute',
+        label: `graph-${dispatch.nodeId}-${dispatch.iteration}`,
+        mode,
+        slotIndex,
+        shaderId: shaderId ?? dispatch.entry,
+        entry: dispatch.entry,
+        pipeline: buildPipeline,
+        workgroup: { x: SIM_HASH_WORKGROUP_SIZE_X, y: 1 },
+        nodeId: dispatch.nodeId,
+        iteration: dispatch.iteration,
+        dispatch: 'simHashBuild',
+        bindSimRing: false,
+        bindSimHash: false,
+        scale: 1,
+      });
+      executed++;
+      continue;
+    }
     const pipeline = ctx.getPipeline(dispatch.entry);
     if (!pipeline) {
       warnOnce(ctx, `missing:${dispatch.entry}`, `[GraphRunner] Pipeline missing for "${dispatch.entry}"`);
@@ -237,6 +283,11 @@ export function compileGraphOps(
     const needsRing = ctx.usesSimRing(dispatch.entry) || dispatch.dispatch === 'simState';
     if (needsRing && (!ctx.simRing || ctx.simRing.stateCount === 0)) {
       warnOnce(ctx, `ring:${dispatch.entry}`, `[GraphRunner] "${dispatch.entry}" needs the sim ring but none is armed — skipped`);
+      continue;
+    }
+    const bindSimHash = needsRing && ctx.usesSimRing(dispatch.entry) && !!ctx.usesSimHash?.(dispatch.entry);
+    if (bindSimHash && !ctx.simRing?.hash) {
+      warnOnce(ctx, `hash:${dispatch.entry}`, `[GraphRunner] "${dispatch.entry}" needs the sim hash but none is armed — skipped`);
       continue;
     }
     const scale = dispatch.scalable && dispatch.dispatch === 'pixels'
@@ -259,6 +310,7 @@ export function compileGraphOps(
       iteration: dispatch.iteration,
       dispatch: dispatch.dispatch,
       bindSimRing: needsRing && ctx.usesSimRing(dispatch.entry),
+      bindSimHash,
       scale,
     });
     if (scale < 1) ops.push({ kind: 'islandExit', scale, writes });
@@ -405,6 +457,21 @@ export function executeFramePlan(
         activeIsland = null;
         break;
       case 'compute': {
+        if (op.dispatch === 'simHashBuild') {
+          const ring = res.simRing;
+          const hash = ring?.hash;
+          if (!ring || !hash) break;
+          const stamps = hooks.timestampWrites?.(op, computeIndex, plan.computeCount, 1);
+          computeIndex++;
+          // Heads back to empty (the links need no reset: a dead agent is never reached), then scatter.
+          encoder.copyBufferToBuffer(hash.emptyBuffer, 0, hash.buffer, 0, hash.headBytes);
+          const buildPass = encoder.beginComputePass(stamps ? { label: op.label, timestampWrites: stamps } : { label: op.label });
+          buildPass.setPipeline(op.pipeline);
+          buildPass.setBindGroup(0, hash.buildBindGroup);
+          buildPass.dispatchWorkgroups(Math.ceil(ring.stateCount / Math.max(1, op.workgroup.x)), 1, 1);
+          buildPass.end();
+          break;
+        }
         const island = op.scale < 1 && activeIsland === op.scale ? res.islands ?? null : null;
         const bindGroup = island?.bindGroup(op.scale) ?? null;
         const size = island?.size(op.scale) ?? null;
@@ -417,7 +484,9 @@ export function executeFramePlan(
         pass.setPipeline(op.pipeline);
         pass.setBindGroup(0, scaled && bindGroup ? bindGroup : res.computeBindGroup);
         const ring = res.simRing;
-        if (op.bindSimRing && ring) pass.setBindGroup(1, ring.bindGroup);
+        if (op.bindSimRing && ring) {
+          pass.setBindGroup(1, op.bindSimHash && ring.hash ? ring.hash.bindGroup : ring.bindGroup);
+        }
         if (op.dispatch === 'simState' && ring) {
           pass.dispatchWorkgroups(Math.ceil(ring.stateCount / Math.max(1, op.workgroup.x)), 1, 1);
         } else {
