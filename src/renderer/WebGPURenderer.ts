@@ -72,8 +72,9 @@ import {
 } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { declaresBindGroup1, SimRing } from './webgpu/simRing';
+import { armSimRingFor } from './webgpu/simRingArm';
 import { rewriteWgslStorageFormats } from './wgslFormatRewrite';
-import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
+import { resolveGraphForShader, resolveSimHashRequest, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 import { graphUsesSimRing, type MultipassGraphDef } from './multipassGraph';
 import { setRuntimeGraph as setRuntimeGraphOverlay, type RuntimeSimRingRequest } from './runtimeGraphs';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
@@ -670,8 +671,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.device, this.pipeline.pipelineLayout, id, url,
     );
     if (ok && this.device && this.pipeline.shaderManager.usesSimRing(id)) {
-      const layout = this.pipeline.simRingBindGroupLayout;
-      if (!layout || !(await this.simRing.ensure(this.device, layout, resolveSimRingRequest(id)))) {
+      const armed = await armSimRingFor(
+        this.device, this.pipeline, this.simRing, id, resolveSimRingRequest(id), resolveSimHashRequest(id),
+      );
+      if (!armed) {
         console.warn(`[WebGPU] "${id}" declares @group(1) but the sim ring could not be armed`);
         return false;
       }

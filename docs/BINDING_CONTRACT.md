@@ -153,6 +153,44 @@ Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storag
 
 Flagship: `dla-crystals` (`dla-walkers` over simState → `dla-render` over pixels).
 
+### Spatial hash (`simHash`, optional binding 3)
+
+Agents that have to find *other agents* (flocking, photon binning) cannot scan 65,536 `vec4`s per invocation, and a texture grid is the wrong structure for them. `bind_group1.json` v2 adds one optional binding, off unless the shader definition asks (`"simRing": { "stateCount": 65536, "spatialHash": true }`):
+
+| Binding | Name | Type |
+|--------:|------|------|
+| 3 | `simHash` | `var<storage, read_write> simHash: array<atomic<u32>>` — `HASH_CELLS` (16384) cell heads, then one `next` link per agent |
+
+- **Layout:** shaders that declare binding 3 get a second group-1 layout (4 bindings). Every other group-1 shader keeps today's three, and a ring that nobody asked a hash of (DLA) never allocates it. `simParams` stays 16 bytes: the grid width is the contract constant `HASH_GRID = 128`, not a field.
+- **Grid:** fixed 128 × 128 cells over the working-size domain (`u.config.zw`, the pixel space DLA already uses). `cell = floor(xy / resolution * 128)`, id `= cy * 128 + cx`. An empty head is `0xFFFFFFFFu`. An agent is hashed iff its `simState.xy` is finite and inside `[0, resolution)`: **park dead agents at `xy < 0`**.
+- **Build:** the planner (not the author) inserts it, only when some graph node reads the `simHash` role: a `copyBufferToBuffer` of a pre-filled `0xFFFFFFFF` buffer over the heads (`clearBuffer` can only zero-fill), then one `@workgroup_size(64)` scatter, `next[i] = atomicExchange(head[cell], i)`. It runs once per frame before the first reader and again only after a later `simState` write makes the chain stale. The scatter is a compute pass: it counts toward `maxPassesPerFrame`, the frame pass budget and the timestamp profile.
+- **Reading:** `simIndex` is the snapshot of `simState` (the existing barrier); the hash is not a copy. Read neighbour positions from `simIndex` and walk a cell by following `next` from its head, **with a hard visit cap** (8 or 16) so a crowded cell cannot hang the frame. `public/shaders/_sim_hash.wgsl` carries the constants and `hashCell` / `hashCellId` / `hashWrap` / `hashCellSize`; `verify:device-policy` keeps them equal to the contract.
+
+```wgsl
+#include "_prelude.wgsl"
+#include "_sim_hash.wgsl"
+// ... SimParams, then the four @group(1) declarations (see the header of _sim_hash.wgsl)
+
+let cell = hashCell(pos, res);
+for (var dy = -1; dy <= 1; dy = dy + 1) {
+  for (var dx = -1; dx <= 1; dx = dx + 1) {
+    var j = atomicLoad(&simHash[hashCellId(hashWrap(cell + vec2<i32>(dx, dy)))]);
+    for (var k = 0u; k < 8u && j != HASH_EMPTY; k = k + 1u) {
+      let q = bitcast<vec4<f32>>(vec4<u32>(simIndex[j * 4u], simIndex[j * 4u + 1u], simIndex[j * 4u + 2u], simIndex[j * 4u + 3u]));
+      // ... q.xy is the neighbour's position ...
+      j = atomicLoad(&simHash[HASH_NEXT + j]);
+    }
+  }
+}
+```
+
+- **Limits:** a hash shader sees the two group-0 storage buffers plus `simState`, `simIndex` and `simHash` = 5, under the WebGPU base limit of 8. `spatialHash.group1RequiredLimits` in the contract carries it; it is checked against `device.limits` when the first hash pipeline compiles. `MINIMUM_COMPUTE_LIMITS` and the catalog-wide device request are untouched.
+- **OOM:** the hash is part of each ladder rung (heads fixed, links scale with `stateCount`), so a step-down rebuilds it at the smaller count. There is no separate ladder.
+- **Gates:** a definition that sets `spatialHash` must have a graph node that reads `simHash` in an entry that declares binding 3, and a graph that reads or declares it without the flag fails `npm run verify:device-policy`.
+- **WASM:** unchanged. The bridge refuses `@group(1)` WGSL before `LoadShader`; `pipeline.cpp` is not touched.
+
+Flagships: `murmuration` (steering through the hash) and `photon-bins` (wavelength-binned photons gathered per pixel).
+
 ### Runtime format tiers (#1008)
 
 WGSL sources remain authored as **rgba32float** canonical. At pipeline compile the host rewrites bindings 2/7/8 for non-ultra tiers. See [`docs/FORMAT_TIERS.md`](FORMAT_TIERS.md).

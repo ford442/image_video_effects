@@ -18,6 +18,7 @@ import {
 import { WebGPUTimestampQueries } from './WebGPUTiming';
 import type { GraphSimRingBindings } from '../GraphRunner';
 import type { SimRing } from './simRing';
+import { SIM_HASH_HEAD_BYTES } from './simHash';
 import { ShaderSlot } from './webgpuConstants';
 import type { FrameIslands } from './framePlan';
 
@@ -64,6 +65,10 @@ export interface WebGPUFrameState {
   getBindingUsage: (id: string) => ShaderBindingUsage;
   /** True when `id` was compiled against the group-1 sim-ring layout. */
   usesSimRing: (id: string) => boolean;
+  /** True when `id` was compiled against the 4-binding (simHash) group-1 layout. */
+  usesSimHash: (id: string) => boolean;
+  /** The compiled simHash scatter pass, or null before a hash shader compiled. */
+  getSimHashBuildPipeline: () => GPUComputePipeline | null;
   /** Armed sim ring bindings, or null when no ring is allocated. */
   getSimRing: () => GraphSimRingBindings | null;
   /** Upload simParams and advance the ring frame counter (once per frame). */
@@ -158,6 +163,7 @@ export interface WebGPUFrameHost {
   slots: ShaderSlot[];
   shaderManager: WebGPUShaderManager;
   getSimRing: () => GraphSimRingBindings | null;
+  getSimHashBuildPipeline: () => GPUComputePipeline | null;
   writeSimRingParams: () => void;
   getTextureSet: () => WebGPUTextureSet;
   getBufferSet: () => WebGPUBufferSet;
@@ -269,8 +275,21 @@ export interface FrameContext {
 function simRingBindings(ring: SimRing | undefined): GraphSimRingBindings | null {
   const bindGroup = ring?.getBindGroup();
   if (!ring || !bindGroup || !ring.stateBuffer || !ring.indexBuffer) return null;
+  const hashBuffers = ring.getHashBuffers();
+  const hashBindGroup = ring.getHashBindGroup();
+  const hashBuildBindGroup = ring.getHashBuildBindGroup();
   return {
     bindGroup,
+    hash:
+      hashBuffers && hashBindGroup && hashBuildBindGroup
+        ? {
+            bindGroup: hashBindGroup,
+            buildBindGroup: hashBuildBindGroup,
+            buffer: hashBuffers.hashBuffer,
+            emptyBuffer: hashBuffers.emptyBuffer,
+            headBytes: SIM_HASH_HEAD_BYTES,
+          }
+        : null,
     stateBuffer: ring.stateBuffer,
     indexBuffer: ring.indexBuffer,
     stateCount: ring.stateCount,
@@ -322,8 +341,9 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     get slots() { return d.slots; },
     get shaderManager() { return d.pipeline.shaderManager; },
     getSimRing: () => simRingBindings(d.simRing),
+    getSimHashBuildPipeline: () => d.pipeline.getSimHashBuildResources()?.pipeline ?? null,
     writeSimRingParams: () => {
-      if (d.device && d.simRing?.allocated) d.simRing.writeParams(d.device.queue);
+      if (d.device && d.simRing?.allocated) d.simRing.writeParams(d.device.queue, d.scaledW, d.scaledH);
     },
     getTextureSet: () => d.resources.getTextureSet(),
     getBufferSet: () => d.resources.getBufferSet(),
@@ -426,6 +446,8 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     hasPipeline: (id) => h.shaderManager.hasPipeline(id),
     getBindingUsage: (id) => h.shaderManager.getBindingUsage(id),
     usesSimRing: (id) => h.shaderManager.usesSimRing(id),
+    usesSimHash: (id) => h.shaderManager.usesSimHash(id),
+    getSimHashBuildPipeline: () => h.getSimHashBuildPipeline(),
     getSimRing: () => h.getSimRing(),
     writeSimRingParams: () => h.writeSimRingParams(),
     createBindGroupForPass: (read, write) => h.createBindGroupForPass(read, write),
