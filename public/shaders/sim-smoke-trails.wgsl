@@ -3,31 +3,12 @@
 //  Category: simulation
 //  Features: simulation, volumetric-smoke, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: vorticity confinement; altitude cooling
+//  Upgraded: 2026-09-09, 2026-10-26
+//  Ideas: vorticity confinement; altitude cooling; dense settling (§12.2D Boussinesq); lateral entrainment
 //  A packing: density, temp, vel.xy (raw). Display ACES RGB.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -89,6 +70,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let buoyancy = smokeTemp * riseSpeed * 0.01;
     velY += buoyancy;
+    // ── Idea: dense settling (§12.2D Boussinesq) — cool smoke sinks on the same Rise slider
+    velY -= smokeDensity * (1.0 - smokeTemp) * riseSpeed * 0.008;
 
     let curl = curlNoise(uv * 3.0 + time * 0.1);
     velX += curl.x * turbulence * 0.01;
@@ -110,6 +93,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // 2D N × omega (out of plane) → in-plane force
     velX += nGrad.y * vort * 0.015 * turbulence;
     velY += -nGrad.x * vort * 0.015 * turbulence;
+    // ── Idea: lateral entrainment — velocity steps toward the denser neighbor
+    velX += (right.r - left.r) * turbulence * 0.025;
+    velY += (down.r - up.r) * turbulence * 0.025;
 
     let advPx = pixel - vec2<i32>(vec2<f32>(velX, velY) * 3.0);
     let advectedSmoke = stateAt(advPx, dims);

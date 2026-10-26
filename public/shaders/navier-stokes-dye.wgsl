@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Navier-Stokes Dye Injection
 //  Category: simulation
-//  Features: dye-advection, vorticity-confinement, audio-reactive, mouse-source
+//  Features: dye-advection, vorticity-confinement, audio-reactive, mouse-source, upgraded-rgba
+//  Upgraded: 2026-10-05, 2026-10-26
+//  Ideas: velocity streaks along the jet; vortex eye where curl is high and speed is low
 //  Rescue: 2026-10-05 — HEAD stored velocity in A and then overwrote the same texel with
 //          colour (last store wins), so next frame read colour as velocity; nothing was
 //          advected; the palette was plasmaBuffer[1..255], which the runtime never writes
@@ -54,6 +56,10 @@ fn divAt(c: vec2<i32>) -> f32 {
 
 fn palette(t: f32) -> vec3<f32> {
     return 0.5 + 0.5 * cos(6.28318 * (t + vec3<f32>(0.0, 0.33, 0.67)));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -144,9 +150,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let saturation = clamp(length(vel) / pxScale * 0.15, 0.0, 1.0);
     var dyed = mix(src.rgb, src.rgb * (0.6 + dyeColor * 0.8), saturation);
     dyed = mix(dyed, dyeColor, clamp(dye, 0.0, 1.0) * (0.75 + 0.2 * bass));
-    let finalAlpha = mix(src.a, 1.0, clamp((saturation + dye) * 0.7, 0.0, 1.0));
+    // ── Idea: velocity streaks — the photo a few pixels upstream, tinted by the dye. Display only.
+    let speedPx = length(vel);
+    let dir = vel / max(speedPx, 1e-4);
+    let span = clamp(speedPx / max(pxScale, 0.001), 0.0, 6.0);
+    let backUV = clamp(uv - dir * span / resolution, vec2<f32>(0.0), vec2<f32>(1.0));
+    let backSrc = textureSampleLevel(readTexture, u_sampler, backUV, 0.0).rgb;
+    dyed = mix(dyed, backSrc * (0.55 + dyeColor * 0.8), clamp(span / 6.0, 0.0, 1.0) * dye * 0.55);
+    // ── Idea: vortex eye — high curl and low speed cools the core. Display only.
+    let eye = smoothstep(0.45, 1.8, abs(curl)) * (1.0 - smoothstep(0.15, 1.6, speedPx / max(pxScale, 0.001)));
+    dyed = mix(dyed, dyed * vec3<f32>(0.58, 0.68, 0.82), eye * (0.25 + turbulence * 0.55));
+    let finalAlpha = mix(src.a, clamp(0.35 + saturation * 0.4 + dye * 0.45, 0.0, 1.0), clamp((saturation + dye) * 0.7, 0.0, 1.0));
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    textureStore(writeTexture, coord, vec4<f32>(dyed, finalAlpha));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(max(dyed, vec3<f32>(0.0))), finalAlpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

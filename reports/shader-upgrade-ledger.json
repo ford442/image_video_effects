@@ -367,8 +367,17 @@
       "history": []
     },
     "ferrofluid-em": {
-      "hash": "8e78fadd5fc17f69",
-      "history": []
+      "hash": "f9136a9b426f219e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "f9136a9b426f219e",
+          "prev_hash": "8e78fadd5fc17f69",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "fire-smoke-volumetric-fog": {
       "hash": "a51d3932ce62a899",
@@ -1234,8 +1243,17 @@
       "history": []
     },
     "navier-stokes-dye": {
-      "hash": "02e0e1cb08bd8c93",
-      "history": []
+      "hash": "f978f9745589f7f6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "f978f9745589f7f6",
+          "prev_hash": "02e0e1cb08bd8c93",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "nebulous-dream": {
       "hash": "c6cc3ff6996efcb6",
@@ -1597,8 +1615,17 @@
       "history": []
     },
     "fluid-grid": {
-      "hash": "e07d78d7af7ba1ae",
-      "history": []
+      "hash": "e3c702d7ab5b121c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "e3c702d7ab5b121c",
+          "prev_hash": "e07d78d7af7ba1ae",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "fractal-glass-distort": {
       "hash": "24f32eeedd902ce1",
@@ -3891,7 +3918,7 @@
       ]
     },
     "gen-ferrofluid-monolith": {
-      "hash": "e8085d451e7b1f2c",
+      "hash": "5ea1f3fd06afe8eb",
       "history": [
         {
           "event": "upgraded",
@@ -3900,6 +3927,14 @@
           "prev_hash": "0f45d0cb63c496b8",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "5ea1f3fd06afe8eb",
+          "prev_hash": "e8085d451e7b1f2c",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
         }
       ]
     },
@@ -7231,8 +7266,17 @@
       "history": []
     },
     "gen-wave-equation": {
-      "hash": "d3c83cd03959fa6d",
-      "history": []
+      "hash": "e1bf4abeaed0dc3a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "e1bf4abeaed0dc3a",
+          "prev_hash": "d3c83cd03959fa6d",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "generative-psy-swirls": {
       "hash": "699c87088e3da26a",
@@ -9206,7 +9250,7 @@
       "history": []
     },
     "particle-disperse": {
-      "hash": "a1936d957f9f6ed4",
+      "hash": "62997beacb5ccdd2",
       "history": [
         {
           "event": "upgraded",
@@ -9215,6 +9259,14 @@
           "prev_hash": "2f1e1b6cc93ae520",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "62997beacb5ccdd2",
+          "prev_hash": "a1936d957f9f6ed4",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
         }
       ]
     },
@@ -9795,8 +9847,17 @@
       "history": []
     },
     "liquid-metal": {
-      "hash": "7a4fb7fa642d6c26",
-      "history": []
+      "hash": "c7104b065f444ee3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "c7104b065f444ee3",
+          "prev_hash": "7a4fb7fa642d6c26",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "liquid-mirror": {
       "hash": "a7aabc874cb72de1",
@@ -10379,8 +10440,17 @@
       "history": []
     },
     "alpha-fluid-simulation-paint": {
-      "hash": "6b4deaaeeac1c449",
-      "history": []
+      "hash": "e90ea790005ffda5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "e90ea790005ffda5",
+          "prev_hash": "6b4deaaeeac1c449",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "alpha-multi-state-ecosystem": {
       "hash": "74c0d976a68a2010",
@@ -10688,8 +10758,17 @@
       "history": []
     },
     "sim-ink-diffusion": {
-      "hash": "d326b44069c8b8f2",
-      "history": []
+      "hash": "fd39278afe541547",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "fd39278afe541547",
+          "prev_hash": "d326b44069c8b8f2",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "sim-sand-dunes-rgba": {
       "hash": "4d42b4fa59d182c8",
@@ -10713,12 +10792,30 @@
       ]
     },
     "sim-slime-mold-growth": {
-      "hash": "6d5dc6ec60b14937",
-      "history": []
+      "hash": "15eef2ce7bf077c1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "15eef2ce7bf077c1",
+          "prev_hash": "6d5dc6ec60b14937",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "sim-smoke-trails": {
-      "hash": "97b86f9e3e81f51f",
-      "history": []
+      "hash": "e4d65e25afa1a7ff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "e4d65e25afa1a7ff",
+          "prev_hash": "97b86f9e3e81f51f",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "sim-volumetric-fake": {
       "hash": "efe4b26a498afeb3",
@@ -10738,8 +10835,17 @@
       ]
     },
     "spec-runge-kutta-advection": {
-      "hash": "5a2705601bd1c0ea",
-      "history": []
+      "hash": "ac045fc99b3b3061",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "ac045fc99b3b3061",
+          "prev_hash": "5a2705601bd1c0ea",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "split-flap-display": {
       "hash": "d2e3f477af56c9ed",

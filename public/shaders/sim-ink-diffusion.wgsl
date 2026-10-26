@@ -3,31 +3,12 @@
 //  Category: simulation
 //  Features: simulation, reaction-diffusion, multi-channel, paper-texture, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: anisotropic paper laplacian; coffee-ring pile-up
+//  Upgraded: 2026-09-09, 2026-10-26
+//  Ideas: anisotropic paper laplacian; coffee-ring pile-up; paper granulation (§12.2C); chromatographic split along the fibre
 //  A packing: raw U.rgb + V in A.a
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -155,16 +136,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         mix(newU.g, (newU.r + newU.b) * 0.5, colorMixing * 0.3),
         mix(newU.b, (newU.r + newU.g) * 0.5, colorMixing * 0.3)
     );
+    // ── Idea: chromatographic split — G and B are read further along the fibre. Stored U stays put.
+    let sep = fiber * colorMixing * 6.0;
+    let shiftG = loadC(id + vec2<i32>(i32(round(sep.x)), i32(round(sep.y))), resolution).g;
+    let shiftB = loadC(id + vec2<i32>(i32(round(sep.x * 1.7)), i32(round(sep.y * 1.7))), resolution).b;
+    let mixAmt = clamp(colorMixing, 0.0, 1.0);
+    let splitU = vec3<f32>(mixedU.r, mix(mixedU.g, shiftG, mixAmt), mix(mixedU.b, shiftB, mixAmt));
 
     let inkColor = vec3<f32>(
-        mixedU.r * 0.1 + mixedU.g * 0.05 + mixedU.b * 0.3,
-        mixedU.r * 0.05 + mixedU.g * 0.1 + mixedU.b * 0.1,
-        mixedU.r * 0.3 + mixedU.g * 0.1 + mixedU.b * 0.05
+        splitU.r * 0.1 + splitU.g * 0.05 + splitU.b * 0.3,
+        splitU.r * 0.05 + splitU.g * 0.1 + splitU.b * 0.1,
+        splitU.r * 0.3 + splitU.g * 0.1 + splitU.b * 0.05
     );
     let paperColor = vec3<f32>(0.95, 0.92, 0.85) * paper;
-    let inkDensity = length(mixedU);
+    let inkDensity = length(newU);
     var color = mix(paperColor, inkColor, inkDensity);
     color *= 0.98 + hash12(uv * 500.0) * 0.04;
+    // ── Idea: paper granulation (§12.2C) — thin ink settles into the paper pits
+    let thin = 1.0 - smoothstep(0.12, 0.55, inkDensity);
+    color = color * mix(1.0, clamp(paper, 0.75, 1.15), thin);
     color = mix(color, inkColor * 0.55, ring * 0.35 * (1.0 + mids * 0.2));
     color = acesToneMap(color);
 
