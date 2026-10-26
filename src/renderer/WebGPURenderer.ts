@@ -14,7 +14,9 @@ import {
   attachDeviceLostHandler,
   attachUncapturedErrorRouter,
   buildCanvasConfigureOptions,
+  CORE_TIER2,
   type CanvasConfigureOptIns,
+  type DeviceTier2,
 } from './webgpu/device';
 import { WebGPUResourcePool } from './webgpu/resources';
 import { WebGPUPipelineModule, createComputeBindGroup } from './webgpu/pipeline';
@@ -74,6 +76,7 @@ import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { declaresBindGroup1, SimRing } from './webgpu/simRing';
 import { armSimRingFor } from './webgpu/simRingArm';
 import { rewriteWgslStorageFormats } from './wgslFormatRewrite';
+import { applyF16Variant } from './wgslF16';
 import { resolveGraphForShader, resolveSimHashRequest, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 import { graphUsesSimRing, type MultipassGraphDef } from './multipassGraph';
 import { setRuntimeGraph as setRuntimeGraphOverlay, type RuntimeSimRingRequest } from './runtimeGraphs';
@@ -182,6 +185,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private adapterIdentity: AdapterIdentity = UNKNOWN_ADAPTER_IDENTITY;
   private unregisterCompileService: (() => void) | null = null;
   private formatCapabilities = DEFAULT_FORMAT_CAPABILITIES;
+  /** Capability tier 2 of the live device (#1512): feature level, granted features, limits tiers. */
+  private tier2: DeviceTier2 = CORE_TIER2;
   private releasingDevice = false;
   private detachUncapturedErrors: (() => void) | null = null;
   /** Set by simulateDeviceLoss(): the next 'destroyed' of this device counts as a loss. */
@@ -220,6 +225,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   getSupportsSubgroups(): boolean { return this.supportsSubgroups; }
   getColorFormat(): InternalColorFormat { return this.colorFormat; }
   getFormatCapabilities(): DeviceFormatCapabilities { return this.formatCapabilities; }
+  getDeviceTier2(): DeviceTier2 { return { ...this.tier2, limitsTiers: [...this.tier2.limitsTiers] }; }
   getHistoryLayers(): number { return this.resources.historyLayers; }
   getWorkingSizeCap(): number { return this.workingSizeCap; }
 
@@ -258,6 +264,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.adapterSummary = outcome.adapterSummary ?? '';
       this.adapterAttemptLabel = outcome.adapterAttemptLabel ?? null;
       this.adapterIdentity = outcome.adapterIdentity ?? UNKNOWN_ADAPTER_IDENTITY;
+      this.tier2 = outcome.tier2 ?? CORE_TIER2;
+      this.pipeline.shaderManager.setShaderF16(this.tier2.shaderF16);
 
       const device = outcome.device;
       attachDeviceLostHandler(device, outcome.context, (details) => {
@@ -1192,7 +1200,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     // As loadShader compiles it: storage formats rewritten to the active tier, then checked
     // against the catalog layout, so "compiles but does not fit the bind group" fails here too.
     // @group(1) sim-ring shaders need the two-group layout; those get the module check only.
-    const compiled = rewriteWgslStorageFormats(code, this.colorFormat);
+    const compiled = rewriteWgslStorageFormats(applyF16Variant(code, this.tier2.shaderF16), this.colorFormat);
     const layout = declaresBindGroup1(code) ? undefined : this.pipeline.pipelineLayout;
     return compileCheckWgsl(this.device, id, compiled, { layout });
   }

@@ -198,6 +198,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
         config: this.config,
         colorOptIns: resolveCanvasColorOptIns(undefined, undefined, loadDisplayP3()),
         appBaseUrl: absoluteUrl('.'),
+        ...(typeof location !== 'undefined' && location.search ? { pageSearch: location.search } : {}),
         generation: this.deviceGeneration,
         ...(ringBuffer ? { inputRing: ringBuffer } : {}),
       });

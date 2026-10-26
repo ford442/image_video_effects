@@ -76,6 +76,8 @@ async function tryHistoryAlloc(
       size: { width: size, height: size, depthOrArrayLayers: layers },
       format,
       usage: historyUsage(),
+      // Same descriptor as the real ring (resources.ts): a 2d-array binding, also in compat mode.
+      textureBindingViewDimension: '2d-array',
     }),
   );
   const tex = scoped.value;

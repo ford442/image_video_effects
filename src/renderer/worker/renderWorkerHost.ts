@@ -279,12 +279,17 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   };
 
   const rpcs: RpcHandlers = {
-    init: async ({ canvas, config, colorOptIns, appBaseUrl, inputRing: ringBuffer, generation: initGeneration }) => {
+    init: async ({ canvas, config, colorOptIns, appBaseUrl, pageSearch, inputRing: ringBuffer, generation: initGeneration }) => {
       // One renderer (one GPUDevice) per worker: recovery spawns a new worker.
       if (renderer || lostRenderer) throw new Error('render worker is already initialized');
       generation = initGeneration ?? null;
       deps.setFetchBase(appBaseUrl);
-      const probe = await deps.runProbe(canvas, config.width, config.height, { colorOptIns });
+      const probe = await deps.runProbe(
+        canvas,
+        config.width,
+        config.height,
+        pageSearch ? { colorOptIns, search: pageSearch } : { colorOptIns },
+      );
       const breadcrumb = deps.toBreadcrumb(probe);
       if (!probe.ok || !probe.handoff) {
         return { ok: false, probe: breadcrumb, lastInitError: probe.lastError ?? 'WebGPU boot probe failed' };

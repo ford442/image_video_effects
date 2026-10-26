@@ -15,6 +15,7 @@ import type { InternalColorFormat } from '../../config/formatPolicy';
 import bindGroup0Contract from '../../contracts/bind_group0.json';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
+import { applyF16Variant } from '../wgslF16';
 import { HISTORY_DEPTH } from './webgpuConstants';
 import { PIPELINE_CACHE_LIMIT, PipelineLru } from './pipelineCache';
 import {
@@ -66,6 +67,18 @@ export class WebGPUShaderManager {
   private workgroupSizes = new Map<string, { x: number; y: number }>();
   private bindingUsages = new Map<string, ShaderBindingUsage>();
   private colorFormat: InternalColorFormat = 'rgba32float';
+  /** The device was granted shader-f16: `// @requires f16` shaders compile their f16 variant. */
+  private shaderF16 = false;
+
+  setShaderF16(enabled: boolean): void {
+    if (this.shaderF16 === enabled) return;
+    this.shaderF16 = enabled;
+    this.clear();
+  }
+
+  getShaderF16(): boolean {
+    return this.shaderF16;
+  }
 
   setColorFormat(format: InternalColorFormat): void {
     if (this.colorFormat === format) return;
@@ -161,8 +174,10 @@ export class WebGPUShaderManager {
     device: GPUDevice,
     pipelineLayout: GPUPipelineLayout,
     id: string,
-    wgsl: string,
+    source: string,
   ): Promise<boolean> {
+    // f16 variant first (#1512): everything below sees exactly what the GPU compiles.
+    const wgsl = applyF16Variant(source, this.shaderF16);
     // Opt-in @group(1): only shaders that declare it get the two-layout pipeline.
     // Everything else keeps the single group-0 layout it has always used.
     let layout = pipelineLayout;

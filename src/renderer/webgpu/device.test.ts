@@ -320,8 +320,9 @@ describe('initializeWebGPUDevice', () => {
     expect(adapter.requestDevice).toHaveBeenCalledWith(
       expect.objectContaining({
         requiredFeatures: ['float32-filterable', 'timestamp-query'],
-        requiredLimits: expect.objectContaining({
-          maxBindingsPerBindGroup: 14,
+        // A core adapter: no base limit restates a spec default (#1512 limits tiers).
+        requiredLimits: expect.not.objectContaining({
+          maxBindingsPerBindGroup: expect.anything(),
           maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE,
         }),
       }),

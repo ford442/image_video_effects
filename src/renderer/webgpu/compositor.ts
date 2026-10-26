@@ -549,7 +549,7 @@ export class SlotCompositor implements FrameCompositor {
       usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST,
       // Compatibility mode binds a texture only with the view dimension it was created for.
       textureBindingViewDimension: '2d-array',
-    } as GPUTextureDescriptor));
+    }));
     if (!texture) return null;
     this.layerTex = texture;
     this.layerCount = count;

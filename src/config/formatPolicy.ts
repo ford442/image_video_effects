@@ -22,6 +22,11 @@ export interface DeviceFormatCapabilities {
   supportsFloat16Array: boolean;
   hasFloat32Filterable: boolean;
   hasFloat32Blendable: boolean;
+  /**
+   * The device validates in compatibility mode (#1512 compat rung). Such devices (GL ES)
+   * prefer rgba16float: float32 filtering is rare there and the working pool halves.
+   */
+  compat?: boolean;
 }
 
 export const ULTRA_COLOR_FORMAT: InternalColorFormat = 'rgba32float';
@@ -117,6 +122,8 @@ export interface FormatProbeOptions {
   isMobile?: boolean;
   /** Boot-probe GPUDevice — same requestDevice; never a second device. */
   device?: GPUDevice | null;
+  /** The device came from the compatibility rung (see isCompatibilityDevice). */
+  compat?: boolean;
 }
 
 /**
@@ -177,6 +184,7 @@ export async function probeFormatCapabilities(
     supportsFloat16Array: float16,
     hasFloat32Filterable,
     hasFloat32Blendable,
+    ...(options.compat ? { compat: true } : {}),
   };
 }
 
@@ -201,7 +209,7 @@ export function resolveColorFormat(
 ): InternalColorFormat {
   // rgba32float sampled through the filtering `u_sampler` needs float32-filterable; without it
   // every shader that filters readTexture fails validation, so prefer rgba16float when legal.
-  if (!caps.hasFloat32Filterable && canUseRgba16Float(caps)) {
+  if ((!caps.hasFloat32Filterable || caps.compat) && canUseRgba16Float(caps)) {
     return BALANCED_COLOR_FORMAT;
   }
   if (mode === 'ultra') {

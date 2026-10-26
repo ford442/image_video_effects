@@ -104,6 +104,9 @@ export function createTextures(
         GPUTextureUsage.STORAGE_BINDING |
         GPUTextureUsage.COPY_DST |
         GPUTextureUsage.COPY_SRC,
+      // Binding 13 is a 2d-array view. Compatibility mode binds a texture only with the view
+      // dimension it was created for, and a 1-layer texture would default to '2d' (#1512).
+      textureBindingViewDimension: '2d-array',
     }));
 
     const sourceTex = track(device.createTexture({

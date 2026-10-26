@@ -6,21 +6,27 @@
 import { loadDisplayP3 } from '../services/displayP3';
 import { reportError, getBrowserWarning } from './ErrorHandling';
 import {
-  ADAPTER_ATTEMPT_LADDER,
   assertAdapterMeetsContract,
   buildRequiredLimits,
+  isCompatibilityDevice,
   meetsDeepWorkgroupLimits,
   formatAdapterLimitsSummary,
   logAdapterFeatures,
+  resolveAdapterLadder,
+  resolveLimitsTiers,
   type AdapterAttempt,
+  type FeatureLevel,
+  type LimitsTier,
 } from './webgpuDevicePolicy';
 import {
   appendAdapterSummaryFields,
   buildCanvasConfigureOptions,
   collectOptionalDeviceFeatures,
+  readDeviceTier2,
   resolveCanvasColorOptIns,
   resolveSubgroupFeatureName,
   type CanvasConfigureOptIns,
+  type DeviceTier2,
 } from './webgpu/device';
 import {
   AdapterGpuType,
@@ -55,6 +61,8 @@ export type WebGpuProbeAttempt = {
   label: string;
   powerPreference?: GPUPowerPreference;
   forceFallbackAdapter: boolean;
+  /** Set on the compatibility rung (#1512). */
+  featureLevel?: FeatureLevel;
   adapterPresent: boolean;
   adapterInfo?: WebGpuProbeAdapterInfo;
   limitsSummary?: string;
@@ -90,6 +98,8 @@ export type WebGpuProbeHandoff = {
    * adopts the device and installs its own routed listener.
    */
   detachUncapturedLog?: () => void;
+  /** Capability tier 2 (#1512); absent on handoffs built before it existed (treated as core). */
+  tier2?: DeviceTier2;
 };
 
 export type WebGpuProbeSerializable = {
@@ -113,6 +123,18 @@ export type WebGpuProbeSerializable = {
   canvasToneMapping?: 'standard' | 'extended';
   /** Why the requested display-p3 / extended tone mapping was narrowed (absent when honored). */
   canvasColorFallback?: CanvasColorFallbackReason;
+  /** Applied canvas format: getPreferredCanvasFormat(), or rgba16float for an HDR canvas (#1512). */
+  canvasFormat?: GPUTextureFormat;
+  /** Capability tier 2 (#1512): the feature level the device runs at and its granted features. */
+  featureLevel?: FeatureLevel;
+  /** The device came from the compatibility rung and validates as compat. */
+  compat?: boolean;
+  shaderF16?: boolean;
+  bgra8unormStorage?: boolean;
+  float32Blendable?: boolean;
+  dualSourceBlending?: boolean;
+  /** Every limits tier the granted device limits reach (webgpu_limits.json limitsTiers). */
+  limitsTiers?: LimitsTier[];
   /**
    * Colour tag of the most recent WebCodecs recording: 'display-p3' when its WebM
    * Colour element was rewritten to P3 primaries, 'encoder-default' when the file
@@ -423,6 +445,13 @@ export interface WebGpuProbeOptions {
    * passes the main thread's answer.
    */
   colorOptIns?: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  /**
+   * The page's `location.search` for probe flags (#1512): `?feature_level=compatibility`
+   * starts at the compat rung, `?canvas_format=bgra8unorm|rgba8unorm` overrides the
+   * preferred canvas format, `?storage_present=0` keeps the render-pass present. Defaults
+   * to this realm's location; the render worker passes the page's.
+   */
+  search?: string;
 }
 
 export async function runWebGpuBootProbe(
@@ -450,12 +479,15 @@ export async function runWebGpuBootProbe(
   const canvasH = canvas.height || configHeight;
   const maxCanvasDim = Math.max(canvasW, canvasH, 1);
 
-  for (const attempt of ADAPTER_ATTEMPT_LADDER) {
+  const search = probeOptions.search ?? (typeof location !== 'undefined' ? location.search : '');
+  const ladder: readonly AdapterAttempt[] = resolveAdapterLadder(search);
+  for (const attempt of ladder) {
     const record: WebGpuProbeAttempt = {
       label: attempt.label,
       powerPreference: attempt.powerPreference,
       forceFallbackAdapter: attempt.forceFallbackAdapter,
       adapterPresent: false,
+      ...(attempt.featureLevel ? { featureLevel: attempt.featureLevel } : {}),
     };
 
     const options: GPURequestAdapterOptions = {
@@ -464,6 +496,7 @@ export async function runWebGpuBootProbe(
     if (attempt.powerPreference !== undefined) {
       options.powerPreference = attempt.powerPreference;
     }
+    if (attempt.featureLevel) options.featureLevel = attempt.featureLevel;
 
     let adapter: GPUAdapter | null = null;
     try {
@@ -507,7 +540,7 @@ export async function runWebGpuBootProbe(
       device = await adapter.requestDevice({
         label: 'PixelocityDevice',
         requiredFeatures: wantFeatures,
-        requiredLimits: buildRequiredLimits(maxCanvasDim, adapter.limits),
+        requiredLimits: buildRequiredLimits(maxCanvasDim, adapter.limits, attempt.featureLevel ?? 'core'),
       });
       trackLiveDevice(device);
     } catch (e) {
@@ -580,6 +613,7 @@ export async function runWebGpuBootProbe(
       formatCapabilities = await probeFormatCapabilities(adapter, {
         isMobile: isMobileDevice(),
         device,
+        compat: isCompatibilityDevice(device, attempt.featureLevel),
       });
     } catch (e) {
       record.error = e instanceof Error ? e.message : String(e);
@@ -599,6 +633,12 @@ export async function runWebGpuBootProbe(
     attempts.push(record);
 
     const supportsSubgroups = !!(subgroupFeatureName && device.features.has(subgroupFeatureName));
+    const tier2 = readDeviceTier2(
+      device,
+      attempt.featureLevel ?? 'core',
+      isCompatibilityDevice(device, attempt.featureLevel),
+      resolveLimitsTiers(device.limits),
+    );
     // Granted device limits, not the adapter's: those are what shaders run under.
     const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
     const adapterIdentity = readAdapterIdentity(adapter);
@@ -615,6 +655,9 @@ export async function runWebGpuBootProbe(
       + ` float16Array=${formatCapabilities.supportsFloat16Array ? 'yes' : 'no'}`
       + ` f32filter=${formatCapabilities.hasFloat32Filterable ? 'yes' : 'no'}`
       + ` f32blend=${formatCapabilities.hasFloat32Blendable ? 'yes' : 'no'}`
+      + ` | tier2: level=${tier2.compat ? 'compatibility' : 'core'} f16=${tier2.shaderF16 ? 'yes' : 'no'}`
+      + ` bgra8storage=${tier2.bgra8unormStorage ? 'yes' : 'no'} dualSource=${tier2.dualSourceBlending ? 'yes' : 'no'}`
+      + ` limitsTiers=${tier2.limitsTiers.join(',') || 'none'}`
       + ` | canvas: copySrc=${canvasCopySrc ? 'yes' : 'no'}`
       + ` colorSpace=${canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb'}`
       + ` toneMapping=${canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard'}`;
@@ -638,6 +681,14 @@ export async function runWebGpuBootProbe(
       canvasColorSpace: canvasColorOptIns.displayP3 ? 'display-p3' : 'srgb',
       canvasToneMapping: canvasColorOptIns.extendedToneMapping ? 'extended' : 'standard',
       ...(canvasColorFallback ? { canvasColorFallback } : {}),
+      canvasFormat,
+      featureLevel: tier2.compat ? 'compatibility' : 'core',
+      compat: tier2.compat,
+      shaderF16: tier2.shaderF16,
+      bgra8unormStorage: tier2.bgra8unormStorage,
+      float32Blendable: tier2.float32Blendable,
+      dualSourceBlending: tier2.dualSourceBlending,
+      limitsTiers: tier2.limitsTiers,
       formatCapabilities,
     });
     serializable.ok = true;
@@ -662,6 +713,7 @@ export async function runWebGpuBootProbe(
         canvasColorOptIns,
         canvasColorFallback,
         detachUncapturedLog,
+        tier2,
       },
     };
   }
@@ -672,7 +724,7 @@ export async function runWebGpuBootProbe(
     last?.error && lastStage !== 'requestAdapter'
       ? last.error
       : 'Failed to obtain a WebGPU adapter after all fallback attempts ' +
-        '(HighPerformance/Undefined/LowPower/forceFallbackAdapter).';
+        `(${ladder.map((a) => a.label).join('/')}).`;
   reportError({ type: 'webgpu-unavailable', message: lastError, recoverable: false });
   console.warn('[WebGPU Probe]', lastError);
 

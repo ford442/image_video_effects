@@ -11,6 +11,8 @@ import { publishWebGpuProbe, runWebGpuBootProbe } from '../webgpuBootProbe';
 import { AdapterGpuType, DeviceFormatCapabilities } from '../../config/formatPolicy';
 import type { AdapterIdentity } from '../../config/adapterIdentity';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
+import optionalFeaturesContract from '../../contracts/webgpu_optional_features.json';
+import type { FeatureLevel, LimitsTier } from '../webgpuDevicePolicy';
 
 export interface WebGPUDeviceInitResult {
   ok: true;
@@ -33,7 +35,31 @@ export interface WebGPUDeviceInitResult {
   canvasColorFallback?: CanvasColorFallbackReason;
   /** Removes the boot probe's log-only uncapturederror listener (see WebGpuProbeHandoff). */
   detachUncapturedLog?: () => void;
+  /** Capability tier 2 (#1512): what the device was actually granted. */
+  tier2: DeviceTier2;
 }
+
+/** Capability tier 2 (#1512): optional features, feature level and limits tiers of the live device. */
+export interface DeviceTier2 {
+  featureLevel: FeatureLevel;
+  /** Created under compatibility validation (the compat rung). */
+  compat: boolean;
+  shaderF16: boolean;
+  bgra8unormStorage: boolean;
+  float32Blendable: boolean;
+  dualSourceBlending: boolean;
+  limitsTiers: LimitsTier[];
+}
+
+export const CORE_TIER2: DeviceTier2 = {
+  featureLevel: 'core',
+  compat: false,
+  shaderF16: false,
+  bgra8unormStorage: false,
+  float32Blendable: false,
+  dualSourceBlending: false,
+  limitsTiers: [],
+};
 
 export interface WebGPUDeviceInitFailure {
   ok: false;
@@ -64,8 +90,15 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     canvasColorOptIns: handoff.canvasColorOptIns,
     canvasColorFallback: handoff.canvasColorFallback,
     detachUncapturedLog: handoff.detachUncapturedLog,
+    tier2: handoff.tier2 ?? CORE_TIER2,
   };
 }
+
+/**
+ * Capability tier 2 (#1512), requested after the C++-mirrored three when the adapter offers
+ * them. TS only (webgpu_optional_features.json tier2; the WASM backend stays frozen).
+ */
+export const TIER2_OPTIONAL_FEATURES = optionalFeaturesContract.tier2.requestOrder as readonly GPUFeatureName[];
 
 /** Pixelocity optional features requested when the adapter offers them. */
 const PIXELOCITY_OPTIONAL_FEATURES = [
@@ -73,11 +106,12 @@ const PIXELOCITY_OPTIONAL_FEATURES = [
   'timestamp-query',
   'subgroups',
   'chromium-experimental-subgroups',
+  ...TIER2_OPTIONAL_FEATURES,
 ] as const;
 
 /**
  * Collect optional device features to request (mirrors wasm_renderer/device.cpp order).
- * timestamp-query is always-on when available (#1007 / #1030).
+ * timestamp-query is always-on when available (#1007 / #1030). The tier-2 features follow.
  */
 export function collectOptionalDeviceFeatures(adapter: GPUAdapter): GPUFeatureName[] {
   const features: GPUFeatureName[] = [];
@@ -91,7 +125,29 @@ export function collectOptionalDeviceFeatures(adapter: GPUAdapter): GPUFeatureNa
   if (subgroupFeatureName) {
     features.push(subgroupFeatureName);
   }
+  for (const feature of TIER2_OPTIONAL_FEATURES) {
+    if (adapter.features.has(feature)) features.push(feature);
+  }
   return features;
+}
+
+/** What the device was granted of tier 2 (granted, not offered: a device only has what it asked for). */
+export function readDeviceTier2(
+  device: GPUDevice,
+  featureLevel: FeatureLevel,
+  compat: boolean,
+  limitsTiers: LimitsTier[],
+): DeviceTier2 {
+  const has = (name: string) => device.features.has(name as GPUFeatureName);
+  return {
+    featureLevel,
+    compat,
+    shaderF16: has('shader-f16'),
+    bgra8unormStorage: has('bgra8unorm-storage'),
+    float32Blendable: has('float32-blendable'),
+    dualSourceBlending: has('dual-source-blending'),
+    limitsTiers,
+  };
 }
 
 /** Compact diagnostics string for enabled Pixelocity-requested features. */

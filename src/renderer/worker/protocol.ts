@@ -124,6 +124,11 @@ export type RenderRpc =
       colorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
       /** Absolute app root; relative fetches in the worker resolve against it. */
       appBaseUrl: string;
+      /**
+       * The page's `location.search`: probe flags a worker cannot see (#1512:
+       * `?feature_level=compatibility`, `?canvas_format=`, `?storage_present=0`).
+       */
+      pageSearch?: string;
       /** SharedArrayBuffer input ring (inputRing.ts) when both sides are cross-origin isolated. */
       inputRing?: SharedArrayBuffer;
       /**
