@@ -18,8 +18,8 @@ name: GPU_REQUIRED (manual)
 # #1512 Part C: `engine2` runs every *.swiftshader.spec.ts suite on the hardware device
 # (Playwright project `gpu`), `compositor-golden` the layer-compositor golden frames, HDR /
 # storage present and compat-rung specs in both render threads. `compositor-golden-swiftshader`
-# is the same fixtures on SwiftShader and runs on any hosted runner. Runner setup:
-# docs/GPU_RUNNER.md.
+# is the same fixtures on SwiftShader; it always runs on ubuntu-latest, whatever runner_label
+# says. Runner setup: docs/GPU_RUNNER.md.
 
 on:
   workflow_dispatch:
@@ -52,11 +52,15 @@ jobs:
   gpu-bench:
     # Falls back to ubuntu-latest so the workflow stays syntactically runnable;
     # on a GPU-less runner the specs write a stub report and skip unless strict.
-    runs-on: ${{ inputs.runner_label || 'ubuntu-latest' }}
+    # The SwiftShader suite needs no GPU, so it never waits for the `gpu` runner.
+    runs-on: ${{ inputs.suite == 'compositor-golden-swiftshader' && 'ubuntu-latest' || inputs.runner_label || 'ubuntu-latest' }}
     timeout-minutes: 60
 
     steps:
+      # The suites run repository code (Playwright specs): keep the token out of .git/config.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

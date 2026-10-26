@@ -10,7 +10,7 @@ GitHub-hosted runners have no GPU adapter, and the Cloud VM only has SwiftShader
 |---|---|---|
 | `engine2` | `npm run test:engine2:gpu` | Every `tests/*.swiftshader.spec.ts` suite on the hardware device: engine2, device loss, isolation, validation scopes, Display P3, cue crossfade, Graph Lab, sim hash, the WASM measurement specs, plus the three below |
 | `compositor-golden` | `npm run test:golden:gpu`, then the golden spec again with `PX_RENDER_THREAD=main` | Layer-compositor golden frames, HDR and storage present, the compat rung |
-| `compositor-golden-swiftshader` | `npm run test:golden` (+ `PX_RENDER_THREAD=main`) | The same fixtures on SwiftShader. Runs on `ubuntu-latest`, so no hardware is needed |
+| `compositor-golden-swiftshader` | `npm run test:golden` (+ `PX_RENDER_THREAD=main`) | The same fixtures on SwiftShader. Always runs on `ubuntu-latest` (the job ignores `runner_label` for this suite), so no hardware is needed |
 | `format-tier-bench`, `wasm-benchmark`, `renderer-parity`, `wasm-encode-parity` | (unchanged) | The #1357 benches |
 
 The Playwright project `gpu` (`playwright.config.ts`) runs the `*.swiftshader.spec.ts` files with the hardware launch flags from `src/utils/gpuLaunchArgs.ts` (`--use-webgpu-adapter=default`, and Vulkan + ANGLE on Linux) and the full Chromium build (`channel: 'chromium'`; headless-shell disables GPU compositing). Specs that call `annotateBootAdapter` (`tests/helpers/rendererHarness.ts`) do two things:

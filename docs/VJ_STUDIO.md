@@ -97,7 +97,7 @@ Project schema v2 is an envelope around the existing formats, not another shader
 - Unknown shader ids become empty slots with a warning. A source that is not in the current media catalog becomes `none` with a relink warning.
 - Media bytes, `data:`/`blob:` URLs, camera or microphone permission state, device/track handles, transient GPU objects, and adaptive render-scale telemetry are never saved. Webcam projects save only the source choice and ask the browser for permission again when applied.
 
-The contract is [`src/contracts/project_file.json`](../src/contracts/project_file.json) (JSON Schema draft 2020-12). Project migrations are explicit one-version steps (`src/project/migrate.ts`):
+The contract is [`src/contracts/project_file.json`](../src/contracts/project_file.json) (JSON Schema draft 2020-12). Project migrations are explicit one-version steps (`src/services/project/migrate.ts`):
 
 - Version 0 compatibility accepts a bare `SharedChain` or an existing v1 `.vjset.json` and lifts it into project v1.
 - v1 → v2 (`migrateV1ToV2`) drops any compositor keys a v1 file could not have meant, so a v1 project opens exactly as before, every layer on *Replace*.
