@@ -3,9 +3,9 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, advanced-alpha, semantic-alpha
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: per-layer neon edges (4-tap central difference at each layer's mirrored UV, hue = colorShift + layerDepth*0.25); inward bass pulse (phase time*pulseSpeed*4 - layerDepth*TAU); centre proximity gain 1 + 2*exp(-d^2/0.05)
-//  A packing: ACES display RGBA (HEAD wrote no A)
+//  Upgraded: 2026-10-05, 2026-10-19
+//  Ideas: per-layer neon edges (4-tap central difference at each layer's mirrored UV, hue = colorShift + layerDepth*0.25); inward bass pulse (phase time*pulseSpeed*4 - layerDepth*TAU); centre proximity gain 1 + 2*exp(-d^2/0.05); plasma-core whitening (gradient excess over edgeHi -> white-hot tube core); discharge striations travelling along the tube axis (perp of the edge gradient) at the Pulse Speed clock; phosphor afterglow (exact C load, neon residue decays and is kept with max)
+//  A packing: ACES display RGBA (HEAD wrote no A); C read back as display colour (Idea 6)
 // ═══════════════════════════════════════════════════════════════════
 // Five mirrored (ping-pong) zoom layers centred on the pointer. Each layer is
 // zoomed by 1 + fract(zoom_time*layerSpeed)*4, drifted by a 0.015 noise flow,
@@ -187,9 +187,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lumR = luma(textureSampleLevel(readTexture, u_sampler, mirroredUV + vec2<f32>(ps.x, 0.0), 0.0).rgb);
     let lumT = luma(textureSampleLevel(readTexture, u_sampler, mirroredUV - vec2<f32>(0.0, ps.y), 0.0).rgb);
     let lumB = luma(textureSampleLevel(readTexture, u_sampler, mirroredUV + vec2<f32>(0.0, ps.y), 0.0).rgb);
-    let grad = length(vec2<f32>(lumR - lumL, lumB - lumT));
+    let gradVec = vec2<f32>(lumR - lumL, lumB - lumT);
+    let grad = length(gradVec);
     let layerEdge = smoothstep(edgeLo, edgeHi, grad);
-    let edgeHue = hsv2rgb(colorShift + layerDepth * 0.2, 0.85, 1.0);
+    var edgeHue = hsv2rgb(colorShift + layerDepth * 0.2, 0.85, 1.0);
+
+    // ── Idea 4: plasma-core whitening ──
+    // A neon tube's gas column is so dense at its axis that it reads white-hot;
+    // the saturated gas colour lives in the glass glow around it. How far the
+    // edge gradient overshoots edgeHi is the tube's current density.
+    let coreHeat = smoothstep(1.4, 3.0, grad / max(edgeHi, 1e-3));
+    edgeHue = mix(edgeHue, vec3<f32>(1.0, 0.97, 0.92) * 1.25, coreHeat * 0.65);
+
+    // ── Idea 5: discharge striations ──
+    // A low-pressure glow discharge shows bright/dark bands along the positive
+    // column. The tube axis is the perpendicular of the gradient the edge test
+    // already measured; bands travel along it on the Pulse Speed clock.
+    let tubeAxis = vec2<f32>(-gradVec.y, gradVec.x) / max(grad, 1e-5);
+    let alongTube = dot(mirroredUV * resolution, tubeAxis);
+    let striation = 0.62 + 0.38 * cos(alongTube * 0.45 - time * (1.0 + pulseSpeed * 6.0) + layerDepth * 2.0);
 
     // IDEA 2: inward pulse — sin(wt - k*depth) crests move toward increasing depth,
     // so the glow runs from the viewer into the tunnel; bass raises the amplitude.
@@ -197,7 +213,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pulseAmp = (0.4 + 0.6 * pulse) * (1.0 + bass);
 
     accumulatedColor += sampleColor * weight;
-    accumulatedEdge += edgeHue * layerEdge * pulseAmp * weight;
+    accumulatedEdge += edgeHue * layerEdge * pulseAmp * striation * weight;
     accumulatedDepth += sampleDepth * weight;
     totalWeight += weight;
   }
@@ -222,7 +238,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fogColor = vec3<f32>(0.02, 0.05, 0.1);
   let outColor = mix(finalColor, fogColor, 1.0 - fog);
 
-  let display = aces(outColor);
+  var display = aces(outColor);
+
+  // ── Idea 6: phosphor afterglow ──
+  // Phosphor-coated tubes keep glowing after the drive drops. Last frame's display
+  // (exact C load; A stores display RGBA) minus this frame's un-lit base is the neon
+  // residue; it decays at a fixed rate and is kept with max(), so pulse troughs and
+  // zooming tunnel edges leave short glowing tails instead of snapping off.
+  let prevDisplay = textureLoad(dataTextureC, coord, 0).rgb;
+  let baseDisplay = aces(mix(baseColor, fogColor, 1.0 - fog));
+  let neonResidue = max(prevDisplay - baseDisplay, vec3<f32>(0.0)) * 0.86;
+  display = clamp(max(display, baseDisplay + neonResidue), vec3<f32>(0.0), vec3<f32>(1.0));
   let alpha = calculateAdvancedAlpha(display, uv, baseDepth, depthGrad, volumetricAlpha);
   let result = vec4<f32>(display, alpha);
 

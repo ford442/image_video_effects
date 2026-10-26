@@ -1,3 +1,4 @@
+import { DEFAULT_SLOT_OUTPUT } from '../renderer/slotOutput';
 import type { Mock, MockInstance, Mocked } from 'vitest';
 import { RendererManager } from '../renderer/RendererManager';
 import { WebGPURenderer } from '../renderer/WebGPURenderer';
@@ -1059,6 +1060,7 @@ describe('RendererManager device-loss recovery', () => {
       Object.assign(r, {
         backendKind: 'webgpu',
         setRuntimeGraph: vi.fn(),
+        getNodeScales: vi.fn(() => ({})),
         setResolutionScale: vi.fn(),
         setAdaptiveQuality: vi.fn(),
         setMaxPassesPerFrame: vi.fn(),
@@ -1084,6 +1086,62 @@ describe('RendererManager device-loss recovery', () => {
     expect(setGraph.mock.invocationCallOrder[0]).toBeLessThan((second.loadShader as Mock).mock.invocationCallOrder[0]!);
     expect(setGraph.mock.invocationCallOrder[0]).toBeLessThan((second.setSlotShader as Mock).mock.invocationCallOrder[0]!);
     clearRuntimeGraphs();
+  });
+
+  it('restores compositor outputs, depth map, auto-exposure, node scales and live ripples (#1512)', async () => {
+    const webgpuSurface = () => ({
+      backendKind: 'webgpu',
+      setSlotOutput: vi.fn(),
+      updateDepthMap: vi.fn(),
+      setSourceAutoExposure: vi.fn(),
+      setNodeScale: vi.fn((_slot: number, _node: string, scale: number) => scale),
+      getNodeScales: vi.fn(() => ({})),
+      setResolutionScale: vi.fn(),
+      setAdaptiveQuality: vi.fn(),
+      setMaxPassesPerFrame: vi.fn(),
+      setFramePassBudget: vi.fn(),
+      setColorFormat: vi.fn(),
+      setRuntimeGraph: vi.fn(),
+    });
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    Object.assign(first, webgpuSurface());
+    Object.assign(second, webgpuSurface());
+    const screen = { ...DEFAULT_SLOT_OUTPUT, mode: 'blend' as const, blend: 'screen' as const, opacity: 0.5 };
+    (first as unknown as { getSlotState: Mock }).getSlotState = vi.fn((i: number) => {
+      if (i === 0) return { shaderId: 'rain', enabled: true, mode: 'chained', output: { ...DEFAULT_SLOT_OUTPUT } };
+      if (i === 1) return { shaderId: 'plasma', enabled: true, mode: 'parallel', output: screen };
+      return { shaderId: null, enabled: false, mode: 'chained' };
+    });
+    (first as unknown as { getNodeScales: Mock }).getNodeScales = vi.fn(() => ({ '1:tensor': 0.5 }));
+    const { manager, statuses } = await bootWith(first);
+    await manager.loadShader('plasma', '/plasma.wgsl');
+    // Mask from slot 2, set through the manager (survives even if the backend forgot it).
+    manager.setSlotOutput(2, { mode: 'mask' });
+    expect((first as unknown as { setSlotOutput: Mock }).setSlotOutput).toHaveBeenCalledWith(2, expect.objectContaining({ mode: 'mask' }));
+    const depth = new Float32Array([0.1, 0.9, 0.5, 0.3]);
+    manager.updateDepthMap(depth, 2, 2);
+    manager.setSourceAutoExposure(true);
+    manager.addRipple(0.25, 0.75);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
+
+    first.fatal!('lost', loss());
+    await vi.waitFor(() => expect(statuses).toEqual(['lost', 'recovering', 'idle']));
+
+    const setOutput = (second as unknown as { setSlotOutput: Mock }).setSlotOutput;
+    expect(setOutput).toHaveBeenCalledWith(1, screen);
+    expect(setOutput).toHaveBeenCalledWith(2, expect.objectContaining({ mode: 'mask' }));
+    expect(setOutput.mock.calls.map(([i]) => i)).not.toContain(0); // defaults are not re-sent
+    const depthCall = (second as unknown as { updateDepthMap: Mock }).updateDepthMap.mock.calls[0]!;
+    expect(Array.from(depthCall[0] as Float32Array)).toEqual(Array.from(depth));
+    expect(depthCall.slice(1)).toEqual([2, 2]);
+    expect((second as unknown as { setSourceAutoExposure: Mock }).setSourceAutoExposure).toHaveBeenCalledWith(true);
+    const setScale = (second as unknown as { setNodeScale: Mock }).setNodeScale;
+    expect(setScale).toHaveBeenCalledWith(1, 'tensor', 0.5);
+    // Node scales go in after the stack is bound (a scale only applies to a bound graph node).
+    expect(setScale.mock.invocationCallOrder[0]).toBeGreaterThan((second.setSlotShader as Mock).mock.invocationCallOrder.at(-1)!);
+    expect(second.addRipple).toHaveBeenCalledWith(0.25, 0.75);
+    expect(manager.getSlotOutput(1)).toEqual(screen);
   });
 
   it('a non-loss fatal error keeps the existing backend-failure path', async () => {
@@ -1120,5 +1178,172 @@ describe('RendererManager device-loss recovery', () => {
     await settle();
     expect(statuses).toEqual([]);
     expect(await manager.recoverFromDeviceLoss()).toBe(false);
+  });
+});
+
+describe('RendererManager cue crossfade', () => {
+  let canvas: HTMLCanvasElement;
+
+  beforeEach(() => {
+    canvas = document.createElement('canvas');
+    vi.clearAllMocks();
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  type Slot = { shaderId: string | null; enabled: boolean; mode: 'chained' | 'parallel' };
+
+  /** A TS backend whose slot state follows what the manager forwards, like the worker proxy's shadow. */
+  function webgpuBackend() {
+    const slots = new Map<number, Slot>();
+    const r = makeMockWebGPU();
+    Object.assign(r, {
+      backendKind: 'webgpu',
+      startCrossfade: vi.fn(() => true),
+      setFatalErrorHandler: vi.fn(),
+      setResolutionScale: vi.fn(),
+      setAdaptiveQuality: vi.fn(),
+      setMaxPassesPerFrame: vi.fn(),
+      setFramePassBudget: vi.fn(),
+      setColorFormat: vi.fn(),
+      getSlotState: vi.fn((i: number) => slots.get(i) ?? null),
+    });
+    (r.setSlotShader as Mock).mockImplementation((i: number, id: string) => {
+      slots.set(i, { shaderId: id || null, enabled: !!id, mode: slots.get(i)?.mode ?? 'chained' });
+    });
+    (r.setSlotMode as Mock).mockImplementation((i: number, mode: Slot['mode']) => {
+      const slot = slots.get(i);
+      if (slot) slots.set(i, { ...slot, mode });
+    });
+    (r.setActiveShader as Mock).mockImplementation((id: string) => {
+      slots.clear();
+      slots.set(0, { shaderId: id, enabled: true, mode: 'chained' });
+    });
+    return r as typeof r & { startCrossfade: Mock };
+  }
+
+  async function boot(backend = webgpuBackend()) {
+    (WebGPURenderer as Mock).mockImplementation(() => backend);
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    expect(await manager.init(canvas)).toBe(true);
+    return { manager, backend };
+  }
+
+  it('never fires unless a cue is armed', async () => {
+    const { manager, backend } = await boot();
+    manager.setSlotShader(0, 'a');
+    manager.setSlotShader(0, 'b');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+  });
+
+  it('fires once, with the armed duration, on the first change of what a slot renders', async () => {
+    const { manager, backend } = await boot();
+    manager.setSlotShader(0, 'a');
+    expect(manager.armCrossfade(2000)).toBe(true);
+
+    manager.setSlotShader(1, 'b');
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(1);
+    expect(backend.startCrossfade).toHaveBeenCalledWith(2000);
+    // The cue is sent before the change it covers, so the worker holds the old picture first.
+    expect(backend.startCrossfade.mock.invocationCallOrder[0]).toBeLessThan(
+      (backend.setSlotShader as Mock).mock.invocationCallOrder.at(-1)!,
+    );
+
+    // Hold once, then ramp: the rest of the same recall lands inside the cue.
+    manager.setSlotShader(2, 'c');
+    manager.setSlotShader(0, 'z');
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(1);
+  });
+
+  it('param-only moves never fire it and leave it armed for the real change', async () => {
+    const { manager, backend } = await boot();
+    manager.setSlotShader(0, 'a');
+    manager.armCrossfade(1500);
+
+    manager.updateSlotParams({ zoomParam1: 0.9 }, 0);
+    manager.setSlotParams(0, 0.1, 0.2, 0.3, 0.4);
+    manager.syncAllSlotParams([defaultSlotParams]);
+    manager.setSlotShader(0, 'a'); // re-binding the same shader is not a change
+    manager.setSlotShader(3, ''); // clearing an empty slot is not a change
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+
+    manager.setSlotShader(0, 'b');
+    expect(backend.startCrossfade).toHaveBeenCalledWith(1500);
+  });
+
+  it('a chained / parallel flip fires it for a slot that renders, not for an empty one', async () => {
+    const { manager, backend } = await boot();
+    manager.setSlotShader(0, 'a');
+    manager.armCrossfade(1000);
+
+    manager.setSlotMode(4, 'parallel');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+    manager.setSlotMode(0, 'chained');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+    manager.setSlotMode(0, 'parallel');
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(1);
+  });
+
+  it('setActiveShader fires when it swaps slot 0 or clears other slots, not when nothing changes', async () => {
+    const { manager, backend } = await boot();
+    manager.setActiveShader('a');
+    manager.armCrossfade(1000);
+    manager.setActiveShader('a');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+    manager.setActiveShader('b');
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(1);
+
+    manager.setSlotShader(1, 'c');
+    manager.armCrossfade(1000);
+    manager.setActiveShader('b'); // slot 0 unchanged, but slot 1 goes dark
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(2);
+  });
+
+  it('a duration of 0 is today\'s hard cut: it does not arm and disarms a pending cue', async () => {
+    const { manager, backend } = await boot();
+    manager.armCrossfade(2000);
+    expect(manager.armCrossfade(0)).toBe(false);
+    manager.setSlotShader(0, 'a');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+  });
+
+  it('a cue that never sees its stack expires instead of firing on a later edit', async () => {
+    const { manager, backend } = await boot();
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    manager.armCrossfade(2000);
+    now += 60_000;
+    manager.setSlotShader(0, 'a');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+    now += 1;
+    manager.setSlotShader(0, 'b');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+  });
+
+  it('?renderer=wasm ignores the hold and cuts', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({ init: vi.fn().mockResolvedValue(false), destroy: vi.fn() }));
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    expect(await manager.switchRenderer('wasm')).toBe(true);
+
+    expect(manager.armCrossfade(2000)).toBe(false);
+    manager.setSlotShader(0, 'rain');
+    manager.setSlotShader(0, 'snow');
+    manager.setSlotMode(0, 'parallel');
+    expect(wasm.setSlotShader).toHaveBeenCalledWith(0, 'snow');
+    expect(wasm).not.toHaveProperty('startCrossfade');
+  });
+
+  it('?renderer=js ignores the hold and cuts', async () => {
+    (WebGPURenderer as Mock).mockImplementation(() => ({ init: vi.fn().mockResolvedValue(false), destroy: vi.fn() }));
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    expect(await manager.switchRenderer('js')).toBe(true);
+    expect(manager.armCrossfade(2000)).toBe(false);
+    expect(() => manager.setSlotShader(0, 'rain')).not.toThrow();
   });
 });

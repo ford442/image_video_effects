@@ -5,8 +5,8 @@
 //           upgraded-rgba, aces-tone-map, temporal-feedback, gravity-wells,
 //           mouse-attractors, feedback-accumulation, chromatic-aberration
 // Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-// Upgraded: 2026-10-10
-// Ideas: anastomosis bridges; septal rings; click thickening; hyphal medulla; spitzenkörper tip
+// Upgraded: 2026-10-10, 2026-10-25
+// Ideas: anastomosis bridges; septal rings; click thickening; hyphal medulla; spitzenkörper tip; fold-generation orbit trap (§12.2E); damped resonance ring-down from the pointer (§12.2D)
 // A packing: ACES display RGBA
 // Kept: 2026-06-28 gravity well and feedback accumulation
 // ----------------------------------------------------------------
@@ -29,6 +29,11 @@ const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 
 // --- SHADER LOGIC ---
+
+// Idea 1 state: the KIFS loop in map() leaves its orbit trap + dominant fold generation here;
+// main() reads them after one map() call at the hit point.
+var<private> g_trap: f32 = 1e9;
+var<private> g_gen: f32 = 0.0;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -76,10 +81,17 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
     p.z += repulseRing * u.zoom_params.w;
 
     // Domain repetition
-    p = (fract(p / u.zoom_params.x + 0.5) - 0.5) * u.zoom_params.x;
+    // HEAD fix: Repetition/BranchSize at their 0.5 defaults gave period 0.5 vs radius 0.5 —
+    // all of space was solid (flat teal frame). Slider roles kept, ranges rescaled.
+    let period = mix(1.6, 6.0, clamp(u.zoom_params.x, 0.0, 1.0));
+    let branchR = mix(0.04, 0.2, clamp(u.zoom_params.y, 0.0, 1.0));
+    p = (fract(p / period + 0.5) - 0.5) * period;
 
     var d = 100.0;
     var prevBranch = 100.0;
+    var trap = 1e9;
+    var bestBranch = 1e9;
+    var bestGen = 0.0;
 
     // Branching KIFS with audio-reactive angle
     let bassAngle = plasmaBuffer[0].x * 0.3;
@@ -94,7 +106,13 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
 
         // Septal rings: periodic constrictions along the existing hypha.
         let septal = 0.5 + 0.5 * sin(p.y * 36.0 + p.z * 8.0);
-        let branch = length(p.xy) - u.zoom_params.y * (1.0 - f32(i)*0.2) + septal * 0.018;
+        let branch = length(p.xy) - branchR * (1.0 - f32(i)*0.2) + septal * 0.018;
+        // ── Idea 1: orbit trap — distance of the folded point to the fold origin, and
+        // which fold generation owns the nearest branch (old cord vs young tip).
+        trap = min(trap, length(p));
+        let owns = select(0.0, 1.0, branch < bestBranch);
+        bestBranch = min(bestBranch, branch);
+        bestGen = mix(bestGen, f32(i), owns);
         d = smin(d, branch, 0.2);
         // Anastomosis: a wider blend fuses successive fold branches.
         if (i > 0) {
@@ -102,6 +120,12 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
         }
         prevBranch = branch;
     }
+
+    // HEAD fix: the stacked smin blends (k 0.2 / 0.55 / 0.35) each pull d down by up to k/4;
+    // that bias swelled every tube into solid space. Give the radius back.
+    d += 0.17;
+    g_trap = trap;
+    g_gen = bestGen;
 
     // Click inoculation thickens hyphae near the ripple for its lifetime.
     let rippleCount = min(u32(u.config.y), 8u);
@@ -147,7 +171,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 0.0, -3.0 + time * 0.5);
+    // HEAD fix: x=y=0 lies on the fold-symmetry planes, i.e. inside a hypha — every ray started
+    // at d<0 and returned t=0. Drift the eye off-axis, scaled to the repetition period.
+    let eyeOff = mix(1.6, 6.0, clamp(u.zoom_params.x, 0.0, 1.0)) * 0.13;
+    var ro = vec3<f32>(eyeOff * 0.8, eyeOff * 0.55, -3.0 + time * 0.5);
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Mouse Rotation (Y-flipped: screen-top = +Y/up)
@@ -179,21 +206,36 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         t += d * 0.7;
     }
 
-    var col = vec3<f32>(0.0);
+    var col = vec3<f32>(0.01, 0.0, 0.025) * (0.6 + 0.4 * uv.y);
     var hit = 0.0;
     var glow = 0.0;
 
-    if (t < max_t) {
+    // HEAD fix: a ray that exhausts its 80 steps short of 20 units used to count as a hit and
+    // painted one flat colour; require convergence.
+    if (t < max_t && d < 0.02) {
         hit = 1.0;
         let p = ro + rd * t;
         let n = calcNormal(p, time);
 
         // Base color based on hue slider — TAU constant
-        let base_col = 0.5 + 0.5 * cos(TAU * (u.zoom_params.z + vec3<f32>(0.0, 0.33, 0.67)));
+        let base_col0 = 0.5 + 0.5 * cos(TAU * (u.zoom_params.z + vec3<f32>(0.0, 0.33, 0.67)));
+        // ── Idea 1 (cont.): map() at the hit leaves g_trap/g_gen. Old cords (gen 0) are pale and
+        // dense, young tips (gen 3) stay saturated; trap veins thread through each hypha.
+        _ = map(p, time);
+        let gen01 = g_gen / 3.0;
+        let vein = exp(-g_trap * 3.2);
+        let base_col = mix(mix(base_col0, vec3<f32>(0.78, 0.74, 0.66), 0.35 * (1.0 - gen01)), base_col0 * 1.3, gen01 * 0.5) * (0.85 + 0.45 * vein);
 
         // Bioluminescent Glow — bass-driven from plasmaBuffer
         let pulse = sin(p.z * 5.0 - time * u.zoom_params.w) * 0.5 + 0.5;
-        glow = pow(pulse, 4.0) * (0.5 + bass * 2.0);
+        // ── Idea 2: damped ring-down — the pointer is the resonance source; each ring is a
+        // damped travelling wave (cos phase, exp envelope) that rides the pulse already travelling
+        // along z, so the web visibly rings outward from where it is touched.
+        let mouseW = vec3<f32>((u.zoom_config.y - 0.5) * 8.0, (u.zoom_config.z - 0.5) * 8.0, 0.0);
+        let rd2 = length(p.xy - mouseW.xy);
+        let ringdown = 0.5 + 0.5 * cos(rd2 * 3.0 - time * (1.0 + u.zoom_params.w * 3.0));
+        let ringEnv = exp(-rd2 * 0.28);
+        glow = pow(pulse, 4.0) * (0.5 + bass * 2.0) * (1.0 + 1.4 * ringEnv * ringdown * ringdown);
 
         col = base_col * (0.2 + glow);
         // Idea: medulla — darker core where the view looks through the tube middle.

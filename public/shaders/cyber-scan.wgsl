@@ -7,6 +7,11 @@
 //               pass and linger in the trail
 //            2. range readout — tick marks along the primary beam, each as long as the
 //               depth at its row, like a scanner's live depth profile
+//            3. LIDAR return intensity — beam emission scaled by albedo × cos(incidence)
+//               from the depth normal; grazing silhouettes give no-return gaps
+//            4. P7 phosphor trail — the C afterimage decays per channel (blue fastest,
+//               green slowest), so it turns yellow-green as it fades
+//  Upgraded: 2026-10-19
 //  A packing: ACES display RGBA (HEAD stored a pre-decayed smear, so C only faded to
 //  black and the trail slider darkened the image).
 // ═══════════════════════════════════════════════════════════════════
@@ -152,7 +157,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Temporal scan: exact load from C
     let prev = textureLoad(dataTextureC, pixel, 0);
-    let smear = mix(prev.rgb * 0.85, vec3<f32>(0.0), 0.15);
+    // Idea 4: P7 phosphor. A scope's two-component phosphor flashes blue-white
+    // and dies fast, while the yellow-green component persists. HEAD decayed all
+    // channels by 0.7225; the per-channel rates keep a similar mean.
+    let smear = prev.rgb * vec3<f32>(0.78, 0.84, 0.52);
 
     var clickBurst = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -203,7 +211,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chromaSource = vec3<f32>(r, g, b);
     var rgb = mix(chromaSource, scanColor, totalIntensity * 0.5);
     rgb = mix(rgb, smear, totalTrail * 0.3);
-    rgb = rgb + scanColor * totalIntensity * 0.8 * depthColorize;
+    // Idea 3: LIDAR return intensity. A return is albedo × cos(incidence):
+    // surfaces facing the scanner answer bright, grazing silhouettes give dark
+    // no-return gaps. Normal from depth central differences.
+    let maxPx = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
+    let dL = textureLoad(readDepthTexture, clamp(pixel - vec2<i32>(1, 0), vec2<i32>(0), maxPx), 0).r;
+    let dR = textureLoad(readDepthTexture, clamp(pixel + vec2<i32>(1, 0), vec2<i32>(0), maxPx), 0).r;
+    let dU = textureLoad(readDepthTexture, clamp(pixel - vec2<i32>(0, 1), vec2<i32>(0), maxPx), 0).r;
+    let dD = textureLoad(readDepthTexture, clamp(pixel + vec2<i32>(0, 1), vec2<i32>(0), maxPx), 0).r;
+    let surfN = normalize(vec3<f32>((dL - dR) * 60.0, (dU - dD) * 60.0, 1.0));
+    let lidarReturn = clamp((0.35 + 0.65 * luma) * surfN.z, 0.0, 1.0);
+    rgb = rgb + scanColor * totalIntensity * 0.8 * depthColorize * mix(0.3, 1.4, lidarReturn);
 
     // Add holographic lines
     rgb = rgb + vec3<f32>(0.1, 0.9, 1.0) * holoLines * intensity * (0.2 + treble * 0.3);

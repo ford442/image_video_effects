@@ -1,5 +1,5 @@
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
-import type { AIStatus, AutoTransitionConfig } from '../../types/aiVj';
+import type { AIStatus, AutoTransitionConfig, TriggerTransitionOptions } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import type { SharedChain } from '../../services/layerChainShare';
 import type { RenderQualityMode } from '../../config/performancePolicy';
@@ -100,7 +100,9 @@ export interface ControlsProps {
     onCopyChainShareLink?: () => void;
     onApplySharedChain?: (chain: SharedChain) => void;
     getCurrentChain?: () => SharedChain | null;
-    onTriggerNextTransition?: () => Promise<void> | void;
+    onTriggerNextTransition?: (options?: TriggerTransitionOptions) => Promise<void> | void;
+    /** Arm the renderer's cue crossfade for the next shader-stack change (VJ set recall). */
+    onArmCrossfade?: (durationMs: number) => void;
     onRandomizeSlot?: (slot: number) => void;
     onSetSlotParam?: (slot: number, param: string, value: number) => void;
     renderQualityMode?: RenderQualityMode;

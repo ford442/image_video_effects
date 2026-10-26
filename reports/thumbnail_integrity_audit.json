@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-10-05T19:42:50.408580Z",
-  "scanned": 1287,
-  "png_fingerprint": "c772f73ca4218f9471e06b2dcc89e20199d5aa7bdb37304c5754c49fc85965ee",
-  "flagged": 22,
+  "generated_at": "2026-10-20T08:35:54.175200Z",
+  "scanned": 1292,
+  "png_fingerprint": "38b30609da59054900da94a9bddef7df8e5c1ff5a413cf6bf149c05fb2a45599",
+  "flagged": 21,
   "summary": {
-    "black_frame": 17,
+    "black_frame": 16,
     "flat_frame": 5
   },
   "entries": [
@@ -20,20 +20,6 @@
         "meanG": 0.5141426834408499,
         "meanB": 0.3611419677731741,
         "maxChannelStd": 0.009349357385395279
-      }
-    },
-    {
-      "id": "bubble-chamber",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0,
-        "maxChannelStd": 0.0
       }
     },
     {

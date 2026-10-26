@@ -5460,7 +5460,8 @@
     "features": [
       "mouse-driven",
       "raymarched",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8132,6 +8133,7 @@
       "gabor-texture",
       "volumetric",
       "randomization-safe",
+      "upgraded-rgba",
       "mouse-driven"
     ],
     "params": [
@@ -8196,6 +8198,7 @@
       "neural-patterns",
       "volumetric",
       "randomization-safe",
+      "upgraded-rgba",
       "audio-reactive",
       "audio-driven"
     ],

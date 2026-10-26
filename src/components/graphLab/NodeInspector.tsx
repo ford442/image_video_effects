@@ -13,6 +13,7 @@ const ROLE_HELP: Record<string, string> = {
   dataC: 'Previous frame / handoff copy (binding 9)',
   simState: 'Sim ring agent state (@group(1) binding 0)',
   simIndex: 'Read-only simState snapshot (@group(1) binding 1, written by the barrier)',
+  simHash: 'Spatial hash over simState (@group(1) binding 3, rebuilt by the planner before the first reader)',
 };
 
 const SCALE_CHOICES = (NODE_SCALE_LEVELS as readonly number[]).filter((n) => n < 1);

@@ -14,6 +14,12 @@ name: GPU_REQUIRED (manual)
 # The produced report lands in reports/format-tier-bench-<date>.md — commit it, then
 # fill in the "Hardware" and "Go / no-go" sections by hand (adapter model, driver,
 # thermal state, discrete vs integrated).
+#
+# #1512 Part C: `engine2` runs every *.swiftshader.spec.ts suite on the hardware device
+# (Playwright project `gpu`), `compositor-golden` the layer-compositor golden frames, HDR /
+# storage present and compat-rung specs in both render threads. `compositor-golden-swiftshader`
+# is the same fixtures on SwiftShader; it always runs on ubuntu-latest, whatever runner_label
+# says. Runner setup: docs/GPU_RUNNER.md.
 
 on:
   workflow_dispatch:
@@ -27,6 +33,9 @@ on:
           - wasm-benchmark
           - renderer-parity
           - wasm-encode-parity
+          - engine2
+          - compositor-golden
+          - compositor-golden-swiftshader
       runner_label:
         description: Runner label with a real GPU (self-hosted)
         type: string
@@ -43,11 +52,15 @@ jobs:
   gpu-bench:
     # Falls back to ubuntu-latest so the workflow stays syntactically runnable;
     # on a GPU-less runner the specs write a stub report and skip unless strict.
-    runs-on: ${{ inputs.runner_label || 'ubuntu-latest' }}
+    # The SwiftShader suite needs no GPU, so it never waits for the `gpu` runner.
+    runs-on: ${{ inputs.suite == 'compositor-golden-swiftshader' && 'ubuntu-latest' || inputs.runner_label || 'ubuntu-latest' }}
     timeout-minutes: 60
 
     steps:
+      # The suites run repository code (Playwright specs): keep the token out of .git/config.
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -57,6 +70,8 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL_SKIP: 'true'
 
       - name: Build production app
         run: npm run build
@@ -72,6 +87,10 @@ jobs:
           echo "Suite:  ${{ inputs.suite }}"
           echo "Strict: ${{ inputs.strict }}"
           echo "A null / software adapter means these numbers are NOT product evidence."
+
+      # Fails a strict run on a missing or software adapter before any suite runs.
+      - name: Check WebGPU adapter
+        run: npm run gpu:adapter-check -- ${{ inputs.suite == 'compositor-golden-swiftshader' && '--software' || (inputs.strict && '--strict' || '') }}
 
       - name: Run format tier bench
         if: inputs.suite == 'format-tier-bench'
@@ -101,6 +120,28 @@ jobs:
           CI: true
           WASM_GPU_TESTS: ${{ inputs.strict && '1' || '0' }}
 
+      - name: Run engine2 suites on the hardware device
+        if: inputs.suite == 'engine2'
+        run: npm run test:engine2:gpu
+        env:
+          CI: true
+
+      - name: Run compositor golden frames (hardware, both render threads)
+        if: inputs.suite == 'compositor-golden'
+        run: |
+          npm run test:golden:gpu
+          PX_RENDER_THREAD=main npx playwright test tests/compositor-golden.swiftshader.spec.ts --project=gpu
+        env:
+          CI: true
+
+      - name: Run compositor golden frames (SwiftShader, both render threads)
+        if: inputs.suite == 'compositor-golden-swiftshader'
+        run: |
+          npm run test:golden
+          PX_RENDER_THREAD=main npx playwright test tests/compositor-golden.swiftshader.spec.ts --project=swiftshader
+        env:
+          CI: true
+
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -111,6 +152,8 @@ jobs:
             test-results/format-tier-bench.json
             test-results/wasm-benchmark-report.json
             test-results/wasm-encode-parity-report.json
+            test-results/gpu-adapter.json
+            test-results/compositor-golden/
             playwright-report/
           retention-days: 30
           if-no-files-found: warn

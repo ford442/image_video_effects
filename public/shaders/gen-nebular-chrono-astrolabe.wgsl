@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-14
-//  Ideas: Keplerian rete gearing (each ring's angular rate ∝ a^-3/2, inner circles sweep fastest); Strömgren-stratified nebular emission (O III teal inner zone ionised by the hot core, H-alpha red outer shell)
+//  Upgraded: 2026-09-14, 2026-10-19
+//  Ideas: Keplerian rete gearing (each ring's angular rate ∝ a^-3/2, inner circles sweep fastest); Strömgren-stratified nebular emission (O III teal inner zone ionised by the hot core, H-alpha red outer shell); engraved limb graduations (5°/30° ticks on each rete ring, read from the ring-local azimuth so the scale turns with the gearing); march-count crevice occlusion (§12.2E step-count AO, march-count form)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse uv, .w = mouse down
-    zoom_params: vec4<f32>,  // .x = Rotation Speed, .y = Complexity, .z = Glow Intensity, .w = Gravity Well Strength
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Rotation Speed, .y = Complexity, .z = Glow Intensity, .w = Gravity Well Strength
 
 // Per-invocation state set once in main (sprung mouse + clamped audio),
 // so map() never touches extraBuffer or unclamped plasma values.
@@ -35,6 +17,10 @@ var<private> g_bass: f32;
 var<private> g_mids: f32;
 var<private> g_treble: f32;
 var<private> g_held: f32;
+// Idea 3: ring-local azimuth of the rete ring that last won map().
+var<private> g_ringAz: f32;
+// Idea 4: iteration count of the primary march.
+var<private> g_steps: f32;
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -119,7 +105,11 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         let a1 = rot2D(t*0.5*kepler+bass*0.4+fi*0.5)*pr.yz; pr.y=a1.x; pr.z=a1.y;
         let a2 = rot2D(t*0.2*u.zoom_params.x*kepler+fi*1.2)*pr.xz; pr.x=a2.x; pr.z=a2.y;
         let ring = sdTorus(pr, vec2<f32>(a, 0.05+fi*0.02+bass*0.02));
-        if (ring < d) { d = smin(d, ring, 0.1+fi*0.05); mat_id = 2.0+fi*0.5; }
+        if (ring < d) {
+            d = smin(d, ring, 0.1+fi*0.05); mat_id = 2.0+fi*0.5;
+            // ── Idea 3 (capture): the limb azimuth in this ring's own geared frame ──
+            g_ringAz = atan2(pr.z, pr.x);
+        }
     }
     // Satellite (the rete's pointer) also obeys a Keplerian period at a≈3.
     let satRate = 0.3 * pow(1.5 / 3.0, 1.5) * 2.0;
@@ -132,13 +122,16 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
     let bass = g_bass;
     var dO = 0.0; var mat = 0.0; var glow = 0.0;
+    var steps = 0.0;
     let nd = 0.15+u.zoom_params.z*0.1;
     for (var i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * dO; let dS = map(p);
         dO += max(dS.x * 0.8, 0.002); mat = dS.y;
         glow += max(0.0, 0.05-dS.x)*u.zoom_params.z*(1.0+bass*0.5);
+        steps += 1.0;
         if (dO > MAX_DIST || abs(dS.x) < SURF_DIST) { break; }
     }
+    g_steps = steps;
     return vec4<f32>(dO, mat, glow, beer(dO, nd));
 }
 
@@ -164,7 +157,8 @@ fn sampleNebula(ro: vec3<f32>, rd: vec3<f32>) -> vec4<f32> {
         let oiii = vec3<f32>(0.05, 0.62, 0.55);
         let halpha = vec3<f32>(0.62, 0.07, 0.16);
         let hbeta = vec3<f32>(0.10, 0.28, 0.55);
-        let shell = exp(-pow((r - stromgren) * 1.3, 2.0));
+        let sd = (r - stromgren) * 1.3;
+        let shell = exp(-sd * sd);
         let emission = mix(halpha * (0.6 + 0.4 * shell) + hbeta * 0.25, oiii, ion) * (0.7 + treble * 0.4);
         let lineCol = mix(tint, emission, 0.55);
         nebula += lineCol * cloud * (0.08 + treble * 0.025) * (1.0 + shell * 0.6);
@@ -220,8 +214,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let l = normalize(vec3<f32>(1.0, 2.0, -1.0)); let diff = max(dot(n, l), 0.0);
         let v = -rd; let fres = fresnel(max(dot(n, v), 0.0), vec3<f32>(0.04, 0.08, 0.12));
         if (mat == 1.0) { col = vec3<f32>(0.2,0.8,1.0)*diff+vec3<f32>(0.0,0.4,0.8)*0.5+fres*(0.5+bass*0.5); }
-        else if (mat >= 2.0 && mat < 5.0) { let rc = vec3<f32>(1.0,0.8,0.2)*(1.0-(mat-2.0)*0.2); col = rc*diff+vec3<f32>(0.8,0.4,0.0)*0.5+fres*(0.3+mids*0.3); }
+        else if (mat >= 2.0 && mat < 5.0) {
+            let rc = vec3<f32>(1.0,0.8,0.2)*(1.0-(mat-2.0)*0.2);
+            // ── Idea 3: engraved limb graduations ──
+            // A real astrolabe limb is cut with a degree scale. 72 minor ticks (5°)
+            // and 12 major ticks (30°) are read from the ring-local azimuth map()
+            // already computes, so the scale turns with each ring's Keplerian gear.
+            // Grooves darken the brass; major ticks catch a gilded fresnel glint.
+            let azN = g_ringAz / TAU;
+            let minorM = 1.0 - abs(fract(azN * 72.0) - 0.5) * 2.0;
+            let majorM = 1.0 - abs(fract(azN * 12.0) - 0.5) * 2.0;
+            let minorTick = smoothstep(0.82, 0.94, minorM);
+            let majorTick = smoothstep(0.955, 0.985, majorM);
+            let groove = max(minorTick * 0.55, majorTick);
+            let brass = rc * (1.0 - groove * 0.6);
+            col = brass*diff+vec3<f32>(0.8,0.4,0.0)*0.5*(1.0 - groove * 0.45)+fres*(0.3+mids*0.3);
+            col += vec3<f32>(1.0, 0.85, 0.45) * majorTick * (0.25 + fres.y * 2.0) * (0.6 + 0.4 * u.zoom_params.z);
+        }
         else if (mat == 5.0) { col = vec3<f32>(0.9,0.95,1.0)*diff+fres*0.8; }
+        // ── Idea 4: march-count crevice occlusion (§12.2E step-count AO) ──
+        // The marcher slows (more, shorter steps) where rings smin into the core,
+        // where rings cross and at grazing silhouettes. That work count is free
+        // occlusion: those crevices darken without any extra map() taps.
+        let occl = clamp(1.0 - smoothstep(18.0, f32(MAX_STEPS) * 0.8, g_steps) * 0.55, 0.45, 1.0);
+        col *= occl;
         coverage = 0.85;
     } else { col = vec3<f32>(0.01, 0.02, 0.05); }
     let neb = sampleNebula(ro, rd);

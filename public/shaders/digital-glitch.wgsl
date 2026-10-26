@@ -2,6 +2,10 @@
 //  Digital Glitch — Composer batch cyber/digital/glitch
 //  Bit corruption, temporal error mask via exact C load, capped ripple
 //  bursts, spring cursor, held intensifies corruption, ACES + semantic alpha.
+//  Upgraded: 2026-10-19
+//  Ideas: error infection (mask spreads from C neighbours); refresh cycle
+//         (bit decay restored by a sweeping refresh line); stuck bus lines
+//  A packing: (errorMask, luma, intensity, alpha) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -150,9 +154,11 @@ fn propagateError(color: vec3<f32>, uv: vec2<f32>, readTex: texture_2d<f32>,
     return corruptedColor;
 }
 
-fn applyDigitalDecay(color: vec3<f32>, decayRate: f32, time: f32, uv: vec2<f32>) -> vec3<f32> {
+// `age` is seconds since this row's last refresh (Idea 2); HEAD used raw
+// `time`, so after ~15 s at full decay the picture was 1-bit forever.
+fn applyDigitalDecay(color: vec3<f32>, decayRate: f32, age: f32, time: f32, uv: vec2<f32>) -> vec3<f32> {
     let baseBits = 8.0;
-    let timeDecay = time * decayRate * 0.5;
+    let timeDecay = age * decayRate * 1.5;
     let spatialDecay = hash21(floor(uv * 32.0) + time * 0.1) * decayRate * 2.0;
     let targetBits = max(1.0, baseBits - timeDecay - spatialDecay);
     let bits = u32(targetBits);
@@ -227,6 +233,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     effectiveIntensity = clamp(effectiveIntensity * select(1.0, 1.35, held), 0.0, 1.0);
 
     let prevMask = textureLoad(dataTextureC, texelCoord, 0).r;
+
+    // ── Idea 1: error infection. A neighbour 3 px away that carried more error
+    // last frame infects this pixel, so corruption fronts grow outward frame by
+    // frame (Error Propagation) and recede once the source stops.
+    let maxTexel = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
+    let nbMask = max(
+        max(textureLoad(dataTextureC, clamp(texelCoord + vec2<i32>(3, 0), vec2<i32>(0), maxTexel), 0).r,
+            textureLoad(dataTextureC, clamp(texelCoord - vec2<i32>(3, 0), vec2<i32>(0), maxTexel), 0).r),
+        max(textureLoad(dataTextureC, clamp(texelCoord + vec2<i32>(0, 3), vec2<i32>(0), maxTexel), 0).r,
+            textureLoad(dataTextureC, clamp(texelCoord - vec2<i32>(0, 3), vec2<i32>(0), maxTexel), 0).r));
+    let infection = max(nbMask - prevMask - 0.02, 0.0) * errorPropagation * 1.5;
     var rippleBurst = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var ri = 0u; ri < rippleCount; ri = ri + 1u) {
@@ -237,7 +254,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             rippleBurst += smoothstep(0.12, 0.0, rDist) * (1.0 - age);
         }
     }
-    effectiveIntensity = clamp(effectiveIntensity + rippleBurst * 0.4 + prevMask * 0.15, 0.0, 1.0);
+    effectiveIntensity = clamp(effectiveIntensity + rippleBurst * 0.4 + prevMask * 0.15 + infection, 0.0, 1.0);
     
     let blockSize = mix(8.0, 64.0, effectiveIntensity);
     let blockCoord = floor(uv * blockSize);
@@ -260,6 +277,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let pixelSeed = hash33(vec3<f32>(uv * 1000.0, time));
     let corruptionMask = getCorruptionMask(uv, time, blockSeed, effectiveIntensity);
+
+    // ── Idea 3: stuck bus lines. A data line stuck high or low forces the same
+    // bit in every byte that crosses it: a few 24 px column groups (re-rolled
+    // every 2.5 s, more of them at higher intensity) pin one high-order bit.
+    let busGroup = floor(uv.x * resolution.x / 24.0);
+    let busSlot = floor(time * 0.4);
+    let busStuck = hash21(vec2<f32>(busGroup, busSlot)) < effectiveIntensity * 0.12;
+    let busBit = 1u << (4u + u32(hash21(vec2<f32>(busGroup + 0.5, busSlot + 3.0)) * 4.0) % 4u);
+    let busHigh = hash21(vec2<f32>(busGroup + 9.1, busSlot)) > 0.5;
     
     for (var channel: i32 = 0; channel < 3; channel = channel + 1) {
         var byteVal = floatToByte(color[channel]);
@@ -279,12 +305,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let temporalSeed = hash21(uv + vec2<f32>(floor(time * 2.0)));
         let temporalCondition = step(temporalSeed, effectiveIntensity * 0.15);
         byteVal = select(byteVal, bitRotateRight(byteVal, u32(temporalSeed * 8.0)), temporalCondition > 0.0);
+
+        let stuckVal = select(byteVal & ~busBit, byteVal | busBit, busHigh) & 0xFFu;
+        byteVal = select(byteVal, stuckVal, busStuck);
         
         color[channel] = byteToFloat(byteVal);
     }
     
     color = propagateError(color, displacedUV, readTexture, resolution, errorPropagation, time);
-    color = applyDigitalDecay(color, decayRate, time, uv);
+    // ── Idea 2: refresh cycle. Each row decays for one refresh period (shorter
+    // at higher Decay Rate), then a refresh line sweeping down restores full
+    // bit depth and leaves a faint bright scanline as it passes.
+    let refreshPeriod = mix(14.0, 4.0, decayRate);
+    let rowPhase = fract(time / refreshPeriod - uv.y);
+    let rowAge = rowPhase * refreshPeriod;
+    color = applyDigitalDecay(color, decayRate, rowAge, time, uv);
+    let refreshLine = exp(-rowAge * 40.0) * decayRate;
+    color = color + vec3<f32>(0.25, 0.35, 0.3) * refreshLine;
     
     let chromaStrength = effectiveIntensity * 0.03;
     let rOffset = vec2<f32>(chromaStrength * (1.0 + sin(time * 2.0) * 0.5), 0.0);

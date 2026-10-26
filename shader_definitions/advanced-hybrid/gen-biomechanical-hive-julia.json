@@ -15,7 +15,8 @@
   "features": [
     "mouse-driven",
     "raymarched",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {

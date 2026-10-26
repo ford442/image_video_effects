@@ -1,9 +1,9 @@
 {
   "description": "Canvas swapchain configure capabilities: the one source that TS buildCanvasConfigureOptions() and the WASM path (JS_CreateSurfaceFromCanvas, JS_ProbeCanvasCopySrc, ConfigureSurface() in device.cpp) both read. TS imports this JSON; C++ includes wasm_renderer/canvas_configure.h, generated from it by `npm run gen:canvas-configure` (verify:device-policy fails when the header is stale or device.cpp hardcodes a contracted value). WASM keeps BOTH configures: JS (opaque + usage) then C++ (width/height + Fifo). Format is always navigator.gpu.getPreferredCanvasFormat(). colorSpace/toneMapping defaults are the browser defaults and are not written explicitly on the default path. Each optIn entry is one capability; its `backends` lists the renderers that implement it, and the WASM configure may only touch keys of capabilities that list \"wasm\". `requires` names a capability that must also be on.",
-  "version": 3,
+  "version": 4,
   "alphaMode": "opaque",
   "usage": ["RENDER_ATTACHMENT"],
-  "usageBits": { "COPY_SRC": 1, "RENDER_ATTACHMENT": 16 },
+  "usageBits": { "COPY_SRC": 1, "STORAGE_BINDING": 8, "RENDER_ATTACHMENT": 16 },
   "presentModeWasm": "fifo",
   "colorSpace": "srgb",
   "toneMapping": "standard",
@@ -31,6 +31,25 @@
       "backends": ["ts"],
       "configureKeys": ["toneMapping"],
       "requires": "displayP3"
+    },
+    "hdrCanvas": {
+      "format": "rgba16float",
+      "probeFlag": "canvasFormat",
+      "presentParams": { "sdrReferenceNits": 203, "defaultPaperWhiteNits": 203, "defaultPeakNits": 1000 },
+      "note": "v4 (#1512): extended tone mapping only changes anything on a float16 swapchain, so when it is negotiated the canvas is configured as rgba16float (display-p3) and the present pipelines are re-specialised to that format. The HDR present scales scene linear light by paperWhiteNits / sdrReferenceNits and rolls values above 1.0 off towards peakNits / sdrReferenceNits instead of clamping (setHdrPresent). A cue crossfade presents through the SDR mix for its duration. window.webgpuProbe.canvasFormat reports the applied format.",
+      "backends": ["ts"],
+      "configureKeys": ["format"],
+      "requires": "extendedToneMapping"
+    },
+    "storagePresent": {
+      "usage": ["RENDER_ATTACHMENT", "STORAGE_BINDING"],
+      "format": "bgra8unorm",
+      "requiresFeature": "bgra8unorm-storage",
+      "urlParam": "storage_present",
+      "probeFlag": "storagePresent",
+      "note": "v4 (#1512): with the bgra8unorm-storage feature and a bgra8unorm canvas, the swapchain also takes STORAGE_BINDING and the present is one compute pass writing it directly; the render-pass blit is skipped (it still runs while a cue crossfade mixes the hold). Probed fail-soft at boot inside a validation scope; ?storage_present=0 keeps the render pass; ?canvas_format=bgra8unorm forces the format where the preferred one is rgba8unorm (Linux / Android).",
+      "backends": ["ts"],
+      "configureKeys": ["usage"]
     }
   },
   "cpp": {
@@ -38,7 +57,8 @@
     "surfaceConfigureFunction": "ConfigureSurface",
     "usageEnums": {
       "RENDER_ATTACHMENT": "WGPUTextureUsage_RenderAttachment",
-      "COPY_SRC": "WGPUTextureUsage_CopySrc"
+      "COPY_SRC": "WGPUTextureUsage_CopySrc",
+      "STORAGE_BINDING": "WGPUTextureUsage_StorageBinding"
     },
     "alphaModeEnums": {
       "opaque": "WGPUCompositeAlphaMode_Opaque"

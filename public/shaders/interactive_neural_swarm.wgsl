@@ -1,5 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  interactive_neural_swarm.wgsl - Neural Network Swarm Visualization (Batch 18)
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-10-19
+//  Ideas: myelinated axons with saltatory node hops; synaptic bouton arrival flare;
+//         dendritic spines breathing with activation
+//  A packing: ACES display RGB + max activation in A.a (C unused)
 //
 //  Role: Interactivist
 //  Techniques:
@@ -25,30 +31,14 @@
 //  Target: 4.8★ rating
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const MAX_NEURONS: i32 = 40;
 const CONNECTION_RADIUS: f32 = 0.15;
+const TAU: f32 = 6.28318530718;
+const MYELIN_NODES: f32 = 6.0;     // [idea 1] nodes of Ranvier per axon
+const SPINE_COUNT: i32 = 5;        // [idea 3] dendritic spines per soma
 
 // extraBuffer safe zone [133..255]: spring-dampered mouse attractor state
 const ATTRACT_X: i32 = 133;
@@ -113,6 +103,18 @@ fn signalWave(uv: vec2<f32>, source: vec2<f32>, time: f32, speed: f32) -> f32 {
     let wave = sin(dist * 30.0 - time * speed * 5.0);
     let envelope = smoothstep(0.4, 0.0, dist) * smoothstep(0.0, 0.05, dist);
     return wave * envelope;
+}
+
+// Distance to segment a->b, returns (distance, h along segment)
+fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+    return vec2<f32>(length(pa - ba * h), h);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn glow(uv: vec2<f32>, center: vec2<f32>, intensity: f32, radius: f32) -> f32 {
@@ -245,6 +247,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color += neuronColor * halo;
         proximityField += neuronGlow * (0.5 + activation) + halo;
 
+        // [idea 3] Dendritic spines: short tapered spokes at hashed angles that
+        // reach further as the neuron activates (dendrites "listening").
+        let spineLen = glowRadius * (2.2 + activation * 1.6);
+        let spineSeed = hash2(vec2<f32>(f32(i) * 7.31, 2.9)) * TAU;
+        for (var k: i32 = 0; k < SPINE_COUNT; k = k + 1) {
+            let a = spineSeed + f32(k) * TAU / f32(SPINE_COUNT) + sin(time * 0.7 + f32(k) * 1.9 + f32(i)) * 0.25;
+            let tip = pos + vec2<f32>(cos(a), sin(a)) * spineLen;
+            let sd = segDist(uv, pos, tip);
+            let width = mix(0.0026, 0.0006, sd.y);
+            let spine = smoothstep(width, 0.0, sd.x) * smoothstep(0.25, 0.45, sd.y);
+            color += neuronColor * spine * (0.25 + activation * 0.35);
+            proximityField += spine * 0.2;
+        }
+
         // Draw connections to nearby neurons (O(N^2) pairing preserved)
         for (var j: i32 = i + 1; j < activeNeurons; j = j + 1) {
             let pos2 = getNeuronPos(j, time, mousePos);
@@ -275,6 +291,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 color += connectionColor * connectionGlow * 0.3;
                 color += vec3<f32>(1.0, 0.9, 0.7) * signalGlow * 0.5 * (0.5 + bass);
                 proximityField += (connectionGlow + signalGlow) * 0.5;
+
+                // [idea 1] Myelin sheath: beads at the nodes of Ranvier. The
+                // spike hops node to node (saltatory conduction) rather than
+                // gliding: hopPhase advances continuously, the lit node steps.
+                let nodeIdx = round(h * MYELIN_NODES);
+                let nodePos = pos + ba * (nodeIdx / MYELIN_NODES);
+                let nodeD = length(uv - nodePos);
+                let nodeBead = smoothstep(0.0045, 0.0, nodeD) * strength;
+                let hopPhase = fract(time * signalSpeed * 0.45 + hash2(vec2<f32>(f32(i), f32(j))));
+                let hopIdx = floor(hopPhase * (MYELIN_NODES + 1.0));
+                let hopLit = select(0.0, 1.0, nodeIdx == hopIdx) * webBoost;
+                color += connectionColor * nodeBead * 0.35;
+                color += vec3<f32>(1.0, 0.95, 0.8) * smoothstep(0.009, 0.0, nodeD) * hopLit * strength * (0.6 + bass * 0.5);
+
+                // [idea 2] Synaptic bouton: terminal knob just short of the
+                // receiving soma that flares as the spike reaches the last node.
+                let boutonPos = pos + ba * 0.9;
+                let boutonD = length(uv - boutonPos);
+                let arrival = select(0.0, 1.0, hopIdx >= MYELIN_NODES) * (1.0 - fract(hopPhase * (MYELIN_NODES + 1.0)));
+                let bouton = smoothstep(0.006, 0.0, boutonD) * strength;
+                let flare = glow(uv, boutonPos, arrival * strength, glowRadius * 0.6);
+                color += mix(connectionColor, vec3<f32>(1.0, 0.85, 0.95), 0.5) * (bouton * 0.4 + flare * 0.9);
+                proximityField += nodeBead * 0.3 + hopLit * nodeBead + flare * 0.5;
             }
         }
     }
@@ -283,8 +322,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let networkPulse = sin(time * 0.5) * 0.5 + 0.5;
     color *= 1.0 + networkPulse * networkDensity * 0.3;
 
-    // Tone mapping + vignette
-    color = color / (1.0 + color);
+    // Tone mapping (ACES on display) + vignette
+    color = acesToneMap(color * 0.9);
     color *= 1.0 - length(uv - 0.5) * 0.3;
 
     // ── Honest depth: derived from neuron proximity / signal strength ─────
@@ -294,7 +333,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let signalField = clamp(proximityField * 0.6 + maxActivation * 0.4 + rippleWave * 0.3, 0.0, 1.0);
     let depth = mix(inDepth, 0.15 + (1.0 - signalField) * 0.55, clamp(signalField * 2.0, 0.0, 1.0));
 
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+    // Semantic alpha: network coverage (somas, axons, spines, wavefronts)
+    let alpha = clamp(0.15 + signalField * 0.85, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
     // dataTextureA: color + activation/field stats for downstream layers

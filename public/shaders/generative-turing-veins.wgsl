@@ -15,29 +15,16 @@
 //    Feed Rate       -> Gray-Scott feed, striped-vein regime (0.03-0.07)
 //    Vein Glow       -> bioluminescent gain on vein ridges
 //  Plus: bass radial nutrient pulse on feed, click-seeded activator
-//  colonies (rising edge tracked in extraBuffer[133], colony state [6..8]).
+//  colonies (rising edge tracked in extraBuffer[133], colony state [134..136]).
+//  Upgraded: 2026-10-19
+//  Ideas: isotropic 9-point RD stencil (§12.2D Isotropic 9-point Laplacian);
+//         reaction-front sprouting tips (a*b^2 promoted, lights growing vein tips);
+//         flow-driven vessel remodelling (exact C luma re-feeds lit vessels)
+//  A packing: linear colour history RGB (pre-ACES, clamped 0..2) + semantic alpha;
+//             C read back as colour. ACES on writeTexture only.
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -90,24 +77,45 @@ fn inhibitorField(p: vec2<f32>) -> f32 {
   return fbm(p * 0.5 + vec2<f32>(11.3, 7.9), 3);
 }
 
-// One explicit Gray-Scott step with a 5-point Laplacian whose reach is the
+// ── Idea 1: isotropic 9-point RD stencil (§12.2D) ──
+// The 5-point Laplacian (mean of 4 - centre) is axis-biased, so veins
+// favoured 0/90 degrees. The Mehrstellen 9-point stencil
+// (4*edges + diagonals - 20*centre)/24 has the same h^2 coefficient (0.25)
+// as the old mean-of-4 form, so the Primary Scale -> diffusion relation is
+// unchanged; only the directional bias goes.
+fn lapActivator(p: vec2<f32>, r: f32, c: f32) -> f32 {
+  let edges = activatorField(p + vec2<f32>(r, 0.0)) + activatorField(p - vec2<f32>(r, 0.0))
+            + activatorField(p + vec2<f32>(0.0, r)) + activatorField(p - vec2<f32>(0.0, r));
+  let diags = activatorField(p + vec2<f32>(r, r)) + activatorField(p + vec2<f32>(-r, r))
+            + activatorField(p + vec2<f32>(r, -r)) + activatorField(p - vec2<f32>(r, r));
+  return (4.0 * edges + diags - 20.0 * c) / 24.0;
+}
+
+fn lapInhibitor(p: vec2<f32>, r: f32, c: f32) -> f32 {
+  let edges = inhibitorField(p + vec2<f32>(r, 0.0)) + inhibitorField(p - vec2<f32>(r, 0.0))
+            + inhibitorField(p + vec2<f32>(0.0, r)) + inhibitorField(p - vec2<f32>(0.0, r));
+  let diags = inhibitorField(p + vec2<f32>(r, r)) + inhibitorField(p + vec2<f32>(-r, r))
+            + inhibitorField(p + vec2<f32>(r, -r)) + inhibitorField(p - vec2<f32>(r, r));
+  return (4.0 * edges + diags - 20.0 * c) / 24.0;
+}
+
+// One explicit Gray-Scott step with a Laplacian whose reach is the
 // kernel radius. Activator/inhibitor are clamped to [0,1] after the update
 // so the explicit scheme can never blow up, no matter the slider state.
-fn turing_pattern(uv: vec2<f32>, time: f32, scale: f32, feed: f32, kernelRadius: f32) -> vec2<f32> {
+// Returns (a, b, reaction) — z is the a*b^2 growth term (Idea 2).
+fn turing_pattern(uv: vec2<f32>, time: f32, scale: f32, feed: f32, kernelRadius: f32) -> vec3<f32> {
   let p = uv * scale + vec2<f32>(time * 0.1, time * 0.07);
   var a = activatorField(p);
   var b = inhibitorField(p);
   let r = max(kernelRadius, 0.02);
-  let lapA = (activatorField(p + vec2<f32>(r, 0.0)) + activatorField(p - vec2<f32>(r, 0.0))
-            + activatorField(p + vec2<f32>(0.0, r)) + activatorField(p - vec2<f32>(0.0, r))) * 0.25 - a;
-  let lapB = (inhibitorField(p + vec2<f32>(r, 0.0)) + inhibitorField(p - vec2<f32>(r, 0.0))
-            + inhibitorField(p + vec2<f32>(0.0, r)) + inhibitorField(p - vec2<f32>(0.0, r))) * 0.25 - b;
+  let lapA = lapActivator(p, r, a);
+  let lapB = lapInhibitor(p, r, b);
   let f = clamp(feed, FEED_MIN, FEED_MAX);
   let k = KILL_BASE;
   let reaction = a * b * b;
   a = a + (lapA * 0.6 - reaction + f * (1.0 - a)) * 0.9;
   b = b + (lapB * 0.3 + reaction - (f + k) * b) * 0.9;
-  return clamp(vec2<f32>(a, b), vec2<f32>(0.0), vec2<f32>(1.0));
+  return vec3<f32>(clamp(vec2<f32>(a, b), vec2<f32>(0.0), vec2<f32>(1.0)), reaction);
 }
 
 // Three coupled RD layers. The kernel radius comes from the Primary Scale
@@ -120,7 +128,8 @@ fn multi_scale_turing(uv: vec2<f32>, time: f32, secScale: f32, feed: f32, kernel
   let coarse = clamp((p1.x * p2.y + p1.y * p2.x) * 2.0, 0.0, 1.0);
   let fine = clamp((p2.x * p3.y + p2.y * p3.x) * 2.5, 0.0, 1.0);
   let micro = clamp(abs(p3.x - p3.y) * 3.0, 0.0, 1.0);
-  return vec4<f32>(coarse, fine, micro, feed);
+  // .w was an unused echo of `feed`; it now carries the coarse+fine reaction rate (Idea 2).
+  return vec4<f32>(coarse, fine, micro, p1.z + p2.z * 0.6);
 }
 
 fn veinThickness(uv: vec2<f32>, veins: f32, time: f32) -> f32 {
@@ -180,7 +189,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ── Click seeding: rising edge of mouse-down (tracked in
   //    extraBuffer[133]; [0..4] are engine-reserved) plants a gaussian
-  //    activator colony that persists for a few seconds via [6..8]. ──
+  //    activator colony that persists for a few seconds via [134..136]. ──
   let mouseDown = u.zoom_config.w > 0.5;
   let wasDown = extraBuffer[133] > 0.5;
   let clickEdge = f32(mouseDown) * (1.0 - f32(wasDown));
@@ -206,6 +215,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var veinsRaw = scales.x * 0.55 + scales.y * 0.35 + scales.z * 0.15;
   // The planted colony injects activator: new veins nucleate around clicks.
   veinsRaw = clamp(veinsRaw + colonySeed * 0.8, 0.0, 1.0);
+
+  // ── Idea 3: flow-driven vessel remodelling ──
+  // Vessels that carried flow persist, unused ones regress. Last frame's vessel
+  // luminance (exact C load, colour history) re-feeds a little activator where the
+  // network was already lit, in proportion to the vein that is already there.
+  let prevC = textureLoad(dataTextureC, coord, 0);
+  let prevFlow = smoothstep(0.25, 1.1, dot(prevC.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)));
+  veinsRaw = clamp(veinsRaw + prevFlow * veinsRaw * 0.18, 0.0, 1.0);
   let veinMask = veinThickness(warpedUV, veinsRaw, time);
   // Ridge mask: bright spine between the activator/inhibitor flanks.
   let veinRidge = smoothstep(0.3, 0.7, veinsRaw) * (1.0 - smoothstep(0.7, 1.0, abs(veinsRaw - 0.5) * 2.0));
@@ -230,15 +247,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Fresh colonies flash bright cyan-green at the click point.
   final_rgb = final_rgb + colonySeed * vec3<f32>(0.3, 0.9, 0.7) * (0.5 + bioGain);
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-  final_rgb = mix(final_rgb, prev * 0.9, 0.05 + bass * 0.02);
+  // ── Idea 2: reaction-front sprouting tips ──
+  // Gray-Scott growth happens where a*b^2 peaks: the advancing fronts and tips
+  // of veins. The reaction rate the step already computed (scales.w) is
+  // normalised (top ~quartile of a*b^2, typical 0.6..3) and gated to the vein ridge, lighting sprouting tips in the
+  // activator green; gain rides Vein Glow (bioGain).
+  let sprout = smoothstep(1.6, 2.6, scales.w) * veinMask * (0.35 + veinRidge * 0.65);
+  final_rgb = final_rgb + sprout * vec3<f32>(0.35, 1.0, 0.6) * (0.25 + bioGain * 0.35);
+
+  // History blend (exact load, see Idea 3). (Idea 3) Lit ridges hold their past a
+  // little longer, so established vessels change slowly while new branches fade in.
+  let prev = prevC.rgb;
+  let holdRidge = prevFlow * veinRidge * 0.12;
+  final_rgb = mix(final_rgb, prev * 0.9, 0.05 + bass * 0.02 + holdRidge);
 
   final_rgb = clamp(final_rgb, vec3<f32>(0.0), vec3<f32>(2.0));
 
   // Semantic alpha: opacity follows vein intensity + glow, not a constant.
   let alpha = clamp(0.45 + veinMask * 0.35 + veinRidge * bioGain * 0.2, 0.0, 1.0);
 
-  textureStore(writeTexture, coord, vec4(final_rgb, alpha));
+  // Display: ACES on the clamped linear colour; A keeps the linear history C reads.
+  let display = clamp((final_rgb * (2.51 * final_rgb + 0.03)) / (final_rgb * (2.43 * final_rgb + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+  textureStore(writeTexture, coord, vec4(display, alpha));
   textureStore(dataTextureA, coord, vec4(final_rgb, alpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+  // Truthful relief: vessels stand proud of the dark tissue.
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(veinMask * 0.6 + veinRidge * 0.4, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

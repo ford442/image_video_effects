@@ -9,6 +9,7 @@
     "gabor-texture",
     "volumetric",
     "randomization-safe",
+    "upgraded-rgba",
     "mouse-driven"
   ],
   "params": [

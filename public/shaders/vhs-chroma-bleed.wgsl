@@ -3,8 +3,9 @@
 //  Category: image
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: colour-under bandwidth (7-tap Y/C split, delayed chroma plane); cross-colour rainbow crawl; chroma loss in dropout rows
+//  Upgraded: 2026-10-19
+//  Ideas: colour-under bandwidth (7-tap Y/C split, delayed chroma plane); cross-colour rainbow crawl; chroma loss in dropout rows;
+//         head-switching band (bottom-of-frame shear + line noise); luma peaking (VCR sharpness halo on Y only)
 //  A packing: ACES display RGB + source alpha (no C read)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -174,8 +175,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let drift = sin(uv.y * 20.0 + time * driftSpeed * 5.0) * 0.005 * depthScatter;
     let bleed = (dropOut * 0.02) + bleedStrength * (0.02 + drift) * depthScatter;
 
+    // ── IDEA 4: head-switching band ──
+    // Where the drum hands over from one video head to the other, the last lines of every
+    // field lose horizontal sync: the bottom ~2.5% of the frame shears sideways, more toward
+    // the very bottom, re-jittered every field (~30/s). Scales with jitterAmt (the Noise
+    // slider, zoom_params.y).
+    let headZone = smoothstep(0.975, 1.0, uv.y);
+    let headRow = floor(uv.y * resolution.y);
+    let headJit = 0.6 + 0.4 * hash21(vec2<f32>(floor(time * 30.0), headRow * 0.13));
+    let headSkew = headZone * headZone * (0.012 + jitterAmt * 0.04) * headJit;
+
     // Tape tracking error
-    let trackingOffset = tapeTracking(uv, time, jitterAmt, bass);
+    let trackingOffset = tapeTracking(uv, time, jitterAmt, bass) + headSkew;
 
     // Time-varying VHS chromatic aberration
     let vhsCA = vhsChromatic(uv, time, 1.0 + bass * 0.5);
@@ -201,7 +212,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Y and CbCr, replace the chroma with a 7-tap horizontal box of the source taken to the
     // RIGHT of the luma position (delay + tap spacing both scale with Bleed Width), and keep
     // the sharp Y. Colour then spills past every vertical edge like a real Y/C tape.
-    let ownYcc = rgbToYcc(rgb);
+    var ownYcc = rgbToYcc(rgb);
+
+    // ── IDEA 5: luma peaking ──
+    // A VCR's playback "sharpness" is a peaking filter on Y alone: Y + k·(Y − mean of the
+    // neighbours 1.5 px either side), which rings a bright/dark halo on edges while the
+    // colour-under chroma below stays soft.
+    let peakStep = vec2<f32>(1.5 * texel.x, 0.0);
+    let yLeft = rgbToYcc(textureSampleLevel(readTexture, u_sampler, clamp(gOff - peakStep, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb).x;
+    let yRight = rgbToYcc(textureSampleLevel(readTexture, u_sampler, clamp(gOff + peakStep, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb).x;
+    ownYcc.x = ownYcc.x + 0.7 * (ownYcc.x - 0.5 * (yLeft + yRight));
     let chromaDelay = (2.5 + bleedStrength * 1.5) * bleedWidth * texel.x;
     let tapStep = (1.4 + bleedWidth * 1.2) * texel.x;
     var chromaSum = vec2<f32>(0.0);
@@ -245,6 +265,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Temporal film grain (Noise slider scales it: default 0.2 → HEAD's 0.08) ──
     let grain = vhsGrain(vec2<f32>(global_id.xy), time, treble);
     rgb = rgb + grain * jitterAmt * 0.4;
+    // Idea 4: the switching lines also carry line noise.
+    rgb = rgb + vec3<f32>((hash21(vec2<f32>(f32(global_id.x) * 0.37, headRow + floor(time * 30.0))) - 0.5) * headZone * 0.35);
 
     // ── Scanlines ──
     let scan = vhsScanlines(uv.y, time, scanlineIntensity);

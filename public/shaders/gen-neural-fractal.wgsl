@@ -3,11 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: dendritic arborization stalk-trap with advancing growth cone; activation-saturation firing-rate glow; inhibitory surround ring that suppresses over-fired branch pockets; Hebbian potentiation memory that reinforces repeatedly active dendritic corridors through feedback
+//  Upgraded: 2026-09-14, 2026-10-19
+//  Ideas: dendritic arborization stalk-trap with advancing growth cone; activation-saturation firing-rate glow; inhibitory surround ring that suppresses over-fired branch pockets; Hebbian potentiation memory that reinforces repeatedly active dendritic corridors through feedback; nodes of Ranvier with saltatory (node-hopping) conduction along the dendrite; axo-somatic synaptic boutons that flash after a synaptic delay
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
+const TAU_N: f32 = 6.28318530718;
 // zoom_params: .x = Zoom Level, .y = Color Cycling, .z = Iteration Depth, .w = Mutation Factor
 
 // --- Color Science: OkLab ---
@@ -174,6 +175,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1: dendritic stalk trap (distance to activation axes) + branch order
     var dendTrap = 1000.0;
     var dendIter = 0;
+    // Ideas 5/6: what the trap minimum also knew — position along the stalk, distance to soma 2
+    var dendAlong = 0.0;
+    var dendSoma2 = 1000.0;
     // Idea 2: saturated activations = "fired" neurons
     var fireCount = 0.0;
     for (iter = 0; iter < iterations; iter++) {
@@ -186,7 +190,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         minZ = min(minZ, abs(z));
         sumZ = sumZ + z;
         let stalk = min(abs(z.x - 0.5), abs(z.y));
-        if (stalk < dendTrap) { dendTrap = stalk; dendIter = iter; }
+        if (stalk < dendTrap) {
+            dendTrap = stalk; dendIter = iter;
+            // along-stalk coordinate: z.y on the x=0.5 stalk, z.x on the y=0 stalk
+            dendAlong = select(z.x, z.y, abs(z.x - 0.5) < abs(z.y));
+            dendSoma2 = d2;
+        }
         if (max(abs(z.x), abs(z.y)) > 0.9) { fireCount += 1.0; }
         if (length(z) > 10.0) { break; }
     }
@@ -229,8 +238,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fireGlow = firing * (0.08 + spikeTrain * (0.15 + treble * 0.35) + stimulus * 0.2);
     col += oklab_mix(vec3<f32>(0.2, 0.8, 1.0), vec3<f32>(1.0, 0.3, 0.8), spikeTrain) * fireGlow;
     // IDEA 3: inhibitory surround suppresses branch pockets around over-active loci.
-    let inhibitoryRing = exp(-pow((dendTrap - 0.08) * 22.0, 2.0)) * smoothstep(0.2, 0.8, fireRate);
+    let inhibOff = (dendTrap - 0.08) * 22.0;
+    let inhibitoryRing = exp(-inhibOff * inhibOff) * smoothstep(0.2, 0.8, fireRate);
     col = col * (1.0 - inhibitoryRing * 0.22) + vec3<f32>(0.15, 0.42, 1.0) * inhibitoryRing * 0.09;
+    // ── Idea 5: nodes of Ranvier / saltatory conduction ──
+    // Beads at fixed spacing along the stalk coordinate recorded at the trap minimum;
+    // myelin dims the sheath between nodes, and the impulse lights one node at a time
+    // (the node index is quantised, so the light hops node to node instead of gliding).
+    let nodeCoord = dendAlong * 7.0 + f32(dendIter) * 0.37;
+    let nodeIdx = floor(nodeCoord);
+    let nodeOff = fract(nodeCoord) - 0.5;
+    let nodeBead = exp(-nodeOff * nodeOff * 60.0);
+    let hop = 0.5 + 0.5 * cos(TAU_N * (nodeIdx * 0.125 - t * (0.6 + treble * 0.8)));
+    let hopLit = hop * hop * hop * hop * hop * hop * hop * hop;
+    col *= 1.0 - dendrite * (1.0 - nodeBead) * 0.18;
+    let ranvier = dendrite * nodeBead * (0.12 + hopLit * (0.55 + stimulus * 0.3));
+    col += oklab_mix(blackbody(3200.0), vec3<f32>(0.75, 0.95, 1.0), hopLit) * ranvier;
+
+    // ── Idea 6: axo-somatic synaptic boutons with synaptic delay ──
+    // Where a dendrite (at its trap minimum) also lies on soma 2's orbit trap, it ends in a
+    // bouton; the bouton releases on the same spike train as Idea 2, lagged by a fixed delay.
+    let bouton = exp(-dendSoma2 * 9.0) * exp(-dendTrap * dendWidth * 0.35) * grown;
+    let delayed = 0.5 + 0.5 * sin(t * (5.0 + treble * 9.0) + trap1 * 25.0 + trap2 * 13.0 - 1.4);
+    let release = delayed * delayed * delayed * delayed;
+    col += vec3<f32>(1.0, 0.55, 0.85) * bouton * (0.06 + release * (0.35 + mids * 0.25));
+
     // IDEA 4: Hebbian potentiation from exact C feedback: repeatedly active paths persist.
     let hebbian = clamp(firing * 0.7 + dendrite * 0.6, 0.0, 1.0);
     col = mix(col, max(col, prevData.rgb * 0.96), 0.16 * hebbian);
@@ -240,10 +272,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col *= vignette;
 
     // HDR tone mapping with audio boost
-    col = acesToneMap(col * (1.0 + bass * 0.3));
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * (1.0 + bass * 0.3));
 
     // Alpha = neural activation density: orbit-trap glow + dendrite coverage + firing
-    let alpha = clamp(0.12 + (glow1 + glow2) * 0.6 + dendrite * 0.5 + fireGlow * 0.6 + hebbian * 0.18 + (1.0 - iterRatio) * 0.1, 0.0, 1.0) * clamp(vignette + 0.3, 0.0, 1.0);
+    let alpha = clamp(0.12 + (glow1 + glow2) * 0.6 + dendrite * 0.5 + ranvier * 0.3 + bouton * 0.2 + fireGlow * 0.6 + hebbian * 0.18 + (1.0 - iterRatio) * 0.1, 0.0, 1.0) * clamp(vignette + 0.3, 0.0, 1.0);
     let finalColor = vec4<f32>(col, clamp(alpha, 0.0, 1.0));
     let depth = clamp(1.0 - iterRatio * 0.8 - dendrite * 0.1, 0.0, 1.0);
     textureStore(writeTexture, coord, finalColor);

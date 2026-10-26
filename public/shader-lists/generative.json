@@ -407,7 +407,8 @@
       "feedback-loop",
       "mouse-spawn",
       "audio-reactive",
-      "continuous-ca"
+      "continuous-ca",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -793,7 +794,7 @@
     "id": "cosmic-jellyfish",
     "name": "Cosmic Jellyfish",
     "url": "shaders/cosmic-jellyfish.wgsl",
-    "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails.",
+    "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails. Thin bell regions transmit the glow, horseshoe gonads shine through the crown, and eight rhopalia blink around the rim.",
     "tags": [
       "3d",
       "raymarching",
@@ -812,7 +813,8 @@
       "raymarching",
       "bioluminescent",
       "depth-aware",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1011,7 +1013,8 @@
       "chromatic-dispersion",
       "fbm-veins",
       "mineral-growth",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3264,7 +3267,7 @@
       "volumetric",
       "filmic"
     ],
-    "description": "Flowing aurora curtains with silky spectral ribbons, now in HDR with ACES filmic grading, dynamic temperature shifts, split-tone shadows/highlights, Fresnel rim lighting, volumetric god rays, caustic dapples, and depth-layered fog. Reacts to bass, mids, and treble.",
+    "description": "Flowing aurora curtains with silky spectral ribbons, now in HDR with ACES filmic grading, dynamic temperature shifts, split-tone shadows/highlights, Fresnel rim lighting, volumetric god rays, caustic dapples, and depth-layered fog. Reacts to bass, mids, and treble. Fine field-aligned rays flicker inside the curtains and each ribbon carries a nitrogen-pink lower hem.",
     "workgroup_size": [
       16,
       16,
@@ -4093,6 +4096,64 @@
     ],
     "updated": true,
     "category": "generative"
+  },
+  {
+    "id": "gen-bioluminescent-neural-coral-matrix",
+    "name": "Bioluminescent Neural-Coral Matrix",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "neural",
+      "coral",
+      "bioluminescence",
+      "cybernetic",
+      "sdf",
+      "audio-reactive"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "url": "/shaders/gen-bioluminescent-neural-coral-matrix.wgsl",
+    "params": [
+      {
+        "name": "Structure Scale",
+        "default": 2.5,
+        "min": 1,
+        "max": 5,
+        "step": 0.1,
+        "id": "structure_scale",
+        "mapping": "zoom_params.x"
+      },
+      {
+        "name": "Distortion Intensity",
+        "default": 1.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "id": "distortion_intensity",
+        "mapping": "zoom_params.y"
+      },
+      {
+        "name": "Travel Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "id": "travel_speed",
+        "mapping": "zoom_params.z"
+      },
+      {
+        "name": "Bioluminescence",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "id": "bioluminescence",
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-bioluminescent-neural-lattice-weaver",
@@ -6392,7 +6453,7 @@
       "reactive",
       "ambient"
     ],
-    "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions.",
+    "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions. Ancient growth bundles into dark-cored rhizomorph cords and the remembered trail ages toward sepia.",
     "workgroup_size": [
       16,
       16,
@@ -6403,7 +6464,9 @@
     "updated": true,
     "id": "gen-chrono-mycelial-tapestry",
     "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "growth_rate",
@@ -10040,7 +10103,8 @@
     ],
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -23290,6 +23354,71 @@
     ]
   },
   {
+    "name": "Quantum Coral Reef",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "fractal",
+      "bioluminescent",
+      "underwater",
+      "audio-reactive"
+    ],
+    "description": "A mesmerizing, bioluminescent deep-sea ecosystem that grows fractally, responding to unseen quantum currents and user interaction.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": false,
+    "supportsDof": false,
+    "updated": false,
+    "id": "gen-quantum-coral-reef",
+    "url": "shaders/gen-quantum-coral-reef.wgsl",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "zoom_scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "audio_influence",
+        "name": "Audio Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Quantum-Entangled Ferrofluid Engine",
     "category": "generative",
     "tags": [
@@ -23332,7 +23461,7 @@
       "audio-reactive",
       "interactive"
     ],
-    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies. Optimized: 4-tap scalar-potential curl flow, HDR feedback chain, generated depth.",
+    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies. Optimized: 4-tap scalar-potential curl flow, HDR feedback chain, generated depth. Wing blobs carry ocellus eyespots and shed fluorescent scale dust into the drifting trail.",
     "workgroup_size": [
       16,
       16,
@@ -23640,7 +23769,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-organic, microscopic journey through an infinitely growing, glowing fungal network that pulses with data-like energy and branches dynamically based on spatial noise.",
+    "description": "A hyper-organic, microscopic journey through an infinitely growing, glowing fungal network that pulses with data-like energy and branches dynamically based on spatial noise. Clamp-connection hooks bypass each septum and the pulse steps compartment by compartment.",
     "workgroup_size": [
       16,
       16,
@@ -25826,7 +25955,7 @@
   {
     "id": "gen-sentient-void-silk-nebula",
     "name": "Sentient Void-Silk Nebula",
-    "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads.",
+    "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads. Dew beads string along the fibrils and slack regions open into rim-lit void pockets.",
     "category": "generative",
     "url": "shaders/gen-sentient-void-silk-nebula.wgsl",
     "workgroup_size": [
@@ -26521,6 +26650,64 @@
     "description": "A repeated stellar resonance manifold with coherent p/g-mode shells, compression-heated blackbody highlights, nodal dislocation seams, and coronal loop arc curtains driven by audio bands."
   },
   {
+    "id": "gen-stellar-mycelium-overdrive",
+    "name": "Stellar Mycelium Overdrive",
+    "description": "A hyper-organic network of glowing stardust mycelium that dynamically branches, pulses with cosmic energy, and responds to gravity wells.",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "cosmic",
+      "mycelium",
+      "sdf",
+      "bioluminescent"
+    ],
+    "url": "shaders/gen-stellar-mycelium-overdrive.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "name": "Density",
+        "min": 0.1,
+        "max": 5,
+        "default": 1,
+        "step": 0.1,
+        "mapping": "zoom_params.x",
+        "id": "density"
+      },
+      {
+        "name": "Pulse Speed",
+        "min": 0,
+        "max": 3,
+        "default": 1,
+        "step": 0.1,
+        "mapping": "zoom_params.y",
+        "id": "pulse-speed"
+      },
+      {
+        "name": "Glow Intensity",
+        "min": 0,
+        "max": 5,
+        "default": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.z",
+        "id": "glow-intensity"
+      },
+      {
+        "name": "Color Shift",
+        "min": 0,
+        "max": 1,
+        "default": 0.5,
+        "step": 0.05,
+        "mapping": "zoom_params.w",
+        "id": "color-shift"
+      }
+    ],
+    "audioReactive": true
+  },
+  {
     "name": "Stellar Plasma-Ouroboros",
     "category": "generative",
     "tags": [
@@ -27010,6 +27197,69 @@
       "upgraded-rgba",
       "audio-reactive",
       "mouse-driven"
+    ]
+  },
+  {
+    "id": "gen-symbiotic-neuro-lattice",
+    "name": "Symbiotic Neuro-Lattice",
+    "url": "shaders/gen-symbiotic-neuro-lattice.wgsl",
+    "description": "A biomechanical network that pulsates with glowing quantum synaptic energy, weaving organic fluid tendrils with sharp metallic structures.",
+    "tags": [
+      "organic",
+      "network",
+      "cyberpunk",
+      "biotech"
+    ],
+    "features": [
+      "ray-marching",
+      "audio-reactive",
+      "mouse-control",
+      "pbr-shading"
+    ],
+    "params": [
+      {
+        "id": "thickness",
+        "name": "Thickness",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "gravity_strength",
+        "name": "Gravity Strength",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "pulse_frequency",
+        "name": "Pulse Frequency",
+        "default": 2,
+        "min": 0.5,
+        "max": 10,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updated": true,
+    "category": "generative",
+    "workgroup_size": [
+      16,
+      16,
+      1
     ]
   },
   {
@@ -28333,7 +28583,8 @@
       "temporal",
       "semantic-alpha",
       "reaction-diffusion",
-      "biological"
+      "biological",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -28731,7 +28982,7 @@
     "id": "interactive_neural_swarm",
     "name": "Neural Swarm",
     "url": "shaders/interactive_neural_swarm.wgsl",
-    "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns",
+    "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns. Axons are myelinated with saltatory node hops, synaptic boutons flare on arrival, and somas grow dendritic spines.",
     "tags": [
       "neural",
       "network",
@@ -28745,7 +28996,8 @@
       "audio-reactive",
       "agent-based",
       "signal-propagation",
-      "neon"
+      "neon",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -30905,7 +31157,7 @@
     "name": "Supernova Core",
     "category": "generative",
     "url": "shaders/supernova-core.wgsl",
-    "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing.",
+    "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing. Dust light echoes race ahead of the shock, the companion carves a shadow cone in the ejecta, and a reverse shock reignites the RT fingers.",
     "features": [
       "audio-reactive",
       "generative",
@@ -31287,7 +31539,8 @@
       "turing-patterns",
       "depth-aware",
       "biological",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

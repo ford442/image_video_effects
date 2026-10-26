@@ -10,7 +10,8 @@
     "temporal",
     "semantic-alpha",
     "reaction-diffusion",
-    "biological"
+    "biological",
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",

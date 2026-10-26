@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
 //  Cosmic Jellyfish - A majestic, translucent jellyfish in a cosmic void.
 //  Category: generative
-//  Features: 3d, raymarching, bioluminescent, space, organic, calm
+//  Features: 3d, raymarching, bioluminescent, space, organic, calm, upgraded-rgba
+//  Upgraded: 2026-10-19
+//  Ideas: thickness translucency (thin bell transmits glow); horseshoe gonads
+//         glowing through the crown; eight rhopalia beacons in the rim notches
+//  A packing: HDR trail RGB + trail alpha (C read back exactly as the trail)
 //
 //  Upgrade notes (Batch 16):
 //   - The temporal feedback buffer (dataTextureA) is now DISPLAYED:
@@ -16,26 +20,8 @@
 //   - ACES tonemap + hue-preserving clamp tame Glow Intensity up to 5.0.
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // [time, rippleCount, resW, resH]
-  zoom_config: vec4<f32>,  // [time, mouseX, mouseY, mouseDown]
-  zoom_params: vec4<f32>,  // [pulseSpeed, tentacleActivity, hueShift, glowIntensity]
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: [pulseSpeed, tentacleActivity, hueShift, glowIntensity]
 
 // Rotation matrix
 fn rot(a: f32) -> mat2x2<f32> {
@@ -126,6 +112,24 @@ fn map(pIn: vec3<f32>, time: f32) -> f32 {
     }
 
     return smin(smin(bell, fineTentacles, 0.11), oralArms, 0.14);
+}
+
+// [idea 2] Horseshoe gonads: four open torus arcs inside the bell crown
+// (moon-jelly anatomy). Returns emissive density at a point in bell-local space.
+fn gonadDensity(bl: vec3<f32>) -> f32 {
+    var dens = 0.0;
+    for (var k = 0; k < 4; k += 1) {
+        let a = f32(k) * 1.5707963 + 0.785398;
+        let dir = vec2<f32>(cos(a), sin(a));
+        let local = bl - vec3<f32>(dir.x * 0.17, -0.10, dir.y * 0.17);
+        let rh = length(local.xz);
+        let dTorus = length(vec2<f32>(rh - 0.075, local.y));
+        // Open the ring on the side facing the bell axis -> horseshoe.
+        let facing = dot(local.xz / max(rh, 1e-4), -dir);
+        let gap = smoothstep(0.85, 0.45, facing);
+        dens += exp(-dTorus * dTorus * 2600.0) * gap;
+    }
+    return dens;
 }
 
 // Simple hash for stars
@@ -223,6 +227,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         * sin(rd.z * 13.0 - rd.y * 7.0 - time * 0.05);
     col += vec3<f32>(star) + vec3<f32>(0.035, 0.012, 0.075) * dust;
 
+    // Accumulated glow (bioluminescence) via IQ cosine palette
+    // (computed before shading so the bell can transmit it).
+    // Hue Shift slider (zoom_params.z) phases the palette around the
+    // spectrum; default 0.0 lands on a deep bioluminescent blue that
+    // matches the original look.
+    let hue_shift = u.zoom_params.z;
+    let glowColor = max(cosinePalette(
+        hue_shift,
+        vec3<f32>(0.30, 0.40, 0.55),
+        vec3<f32>(0.35, 0.35, 0.45),
+        vec3<f32>(1.00, 1.00, 1.00),
+        vec3<f32>(0.50, 0.33, 0.00)
+    ), vec3<f32>(0.0));
+
     if (hit) {
         var p = ro + rd * t;
         // Simple normal calculation
@@ -242,20 +260,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let base_color = vec3<f32>(0.16, 0.48, 0.82);
         col = base_color * diff * 0.45 + base_color * fresnel * 0.95;
         col += vec3<f32>(0.7, 0.86, 1.15) * ribGlow * (0.18 + plasmaBuffer[0].y * 0.28);
-    }
 
-    // Add accumulated glow (bioluminescence) via IQ cosine palette.
-    // Hue Shift slider (zoom_params.z) phases the palette around the
-    // spectrum; default 0.0 lands on a deep bioluminescent blue that
-    // matches the original look.
-    let hue_shift = u.zoom_params.z;
-    let glowColor = max(cosinePalette(
-        hue_shift,
-        vec3<f32>(0.30, 0.40, 0.55),
-        vec3<f32>(0.35, 0.35, 0.45),
-        vec3<f32>(1.00, 1.00, 1.00),
-        vec3<f32>(0.50, 0.33, 0.00)
-    ), vec3<f32>(0.0));
+        // Bell-local frame (same pointer shift map() applies).
+        let pointer = (u.zoom_config.yz - 0.5) * vec2<f32>(0.55, -0.42);
+        let held = select(0.35, 1.0, u.zoom_config.w > 0.5);
+        let bl = vec3<f32>(p.xy - pointer * held, p.z) - vec3<f32>(0.0, 0.46, 0.0);
+
+        // [idea 1] Thickness translucency: probe a short way inside along the
+        // view ray; where the jelly is thin, the glow colour shines through.
+        let dIn = map(p + rd * 0.09, time);
+        let thickness = clamp(-dIn / 0.09, 0.0, 1.0);
+        let transmit = exp(-thickness * 3.2) * (0.35 + 0.65 * fresnel);
+        col += glowColor * transmit * 0.55 * (0.6 + u.zoom_params.w * 0.25);
+
+        // [idea 2] Horseshoe gonads seen through the bell: three samples along
+        // the continuing ray accumulate their emission, dimmed by thickness.
+        var gonad = 0.0;
+        for (var g = 1; g <= 3; g += 1) {
+            gonad += gonadDensity(bl + rd * (0.11 * f32(g)));
+        }
+        let gonadPulse = 0.75 + 0.25 * sin(time * (0.35 + u.zoom_params.x * 1.8) + 1.2);
+        col += mix(glowColor, vec3<f32>(1.0, 0.55, 0.75), 0.55) * gonad * gonadPulse * (0.45 + 0.4 * transmit);
+
+        // [idea 3] Rhopalia: eight sense-organ beacons in the scallop notches of
+        // the rim, blinking in sequence around the margin.
+        let az = atan2(bl.z, bl.x);
+        let sector = az / 0.785398;
+        let notch = round(sector);
+        let angD = (sector - notch) * 0.785398 * length(bl.xz);
+        let rimBand = exp(-pow((bl.y + 0.22) * 14.0, 2.0));
+        let blink = pow(0.5 + 0.5 * cos(6.2831853 * (time * 0.35 - notch / 8.0)), 6.0);
+        let rhopalium = exp(-angD * angD * 1800.0) * rimBand;
+        col += vec3<f32>(1.0, 0.92, 0.6) * rhopalium * (0.35 + blink * 1.6 + plasmaBuffer[0].z * 0.5);
+    }
 
     let glow_intensity = u.zoom_params.w;
     col += glow * glowColor * glow_intensity * 0.018;

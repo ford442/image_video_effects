@@ -3,8 +3,9 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, hex-grid
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: tile-turn front; grout + tesserae bevel; re-mosaic afterimage from C
+//  Upgraded: 2026-10-05, 2026-10-19
+//  Ideas: tile-turn front; grout + tesserae bevel; re-mosaic afterimage from C;
+//         tessera area-mean colour; hand-set tessera tilt + pointer-view glint
 //  A packing: pre-ACES reveal colour history RGB + .a = 10 + accumulated alpha (<9.5 = empty C)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -166,7 +167,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let tileCenter = centerT / cellSize - conveyor;           // tile centre, screen uv
   let q = tile - centerT;                                   // pixel within tile, ~[-0.5, 0.5]
 
-  var colMosaic = textureSampleLevel(readTexture, non_filtering_sampler, tileCenter, 0.0).rgb;
+  // ── Idea 4: Tessera area-mean colour ─────────────────────────────
+  // A cut tessera carries the mean of the area it replaces, not one texel:
+  // centre + four taps at ±0.25 tile (tile space → screen uv). Kills the
+  // point-sample flicker on video while keeping hard per-tile colour.
+  let tq = 0.25 / cellSize;
+  var colMosaic = textureSampleLevel(readTexture, non_filtering_sampler, tileCenter, 0.0).rgb * 0.2;
+  for (var k = 0; k < 4; k = k + 1) {
+    let o = vec2<f32>(f32(k & 1) * 2.0 - 1.0, f32(k >> 1) * 2.0 - 1.0) * tq;
+    let tuv = clamp(tileCenter + o, vec2<f32>(0.0), vec2<f32>(1.0));
+    colMosaic += textureSampleLevel(readTexture, non_filtering_sampler, tuv, 0.0).rgb * 0.2;
+  }
   var colFull = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
@@ -242,6 +253,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bevelLit = dot(q / max(length(q), 1e-3), vec2<f32>(-0.7071, -0.7071));
   color = color * (1.0 + bevelBand * bevelLit * 0.12 * mosaicSide);
   color = mix(color, color * 0.35 + vec3<f32>(0.02), grout * 0.5 * mosaicSide);
+
+  // ── Idea 5: Hand-set tessera tilt + pointer-view glint ───────────
+  // Smalti are pressed into the bed at slight random tilts, so each one
+  // catches the light differently. Per-tile normal from the tile id; the
+  // eye sits over the pointer, so moving it makes the field sparkle the
+  // way a wall mosaic does as you walk past. Mosaic side only.
+  let tilt = (vec2<f32>(hash21(centerT + vec2<f32>(11.3, 2.9)),
+                        hash21(centerT + vec2<f32>(5.1, 17.7))) - 0.5) * 0.7;
+  let tN = normalize(vec3<f32>(tilt, 1.0));
+  let lightDir = normalize(vec3<f32>(-0.5, -0.5, 0.7));
+  let viewDir = normalize(vec3<f32>((mouse - uv01) * aspectVec * 0.8, 1.0));
+  let halfV = normalize(lightDir + viewDir);
+  let facet = clamp(dot(tN, lightDir) / lightDir.z, 0.75, 1.2);   // 1.0 for an untilted tile
+  let glint = pow(max(dot(tN, halfV), 0.0), 90.0) * (1.0 - grout);
+  color = mix(color, color * facet + vec3<f32>(glint * (0.35 + treble * 0.4)), mosaicSide);
 
   // Audio-reactive blackbody rim glow
   let temp = 2200.0 + treble * 5500.0 + mids * 1200.0;

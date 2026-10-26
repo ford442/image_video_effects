@@ -17,10 +17,12 @@ import {
   setRepeat,
   setScalable,
   setSimRing,
+  setSpatialHash,
+  simHashRequested,
   toggleRole,
 } from '../../graphLab/graphDraft';
 import type { EntryPorts, PortInference } from '../../graphLab/portInference';
-import { graphUsesSimRing, GraphRole } from '../../renderer/multipassGraph';
+import { graphUsesSimHash, graphUsesSimRing, GraphRole } from '../../renderer/multipassGraph';
 import type { RendererManager } from '../../renderer/RendererManager';
 import type { ShaderEntry } from '../../renderer/types';
 import { AnalysisTabs } from './AnalysisTabs';
@@ -319,6 +321,9 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
         <SimRingSection
           request={simRing}
           locked={graphUsesSimRing(draft.graph)}
+          hash={simHashRequested(draft)}
+          hashLocked={graphUsesSimHash(draft.graph)}
+          onHash={(on) => setDraft((d) => setSpatialHash(d, on))}
           simEntries={simEntries}
           onToggle={(on) => setDraft((d) => setSimRing(d, on))}
           onStateCount={(n) => setDraft((d) => setSimRing(d, true, n))}
