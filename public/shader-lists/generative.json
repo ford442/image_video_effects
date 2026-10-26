@@ -1665,6 +1665,11 @@
       "iridescent",
       "dark"
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "p1",

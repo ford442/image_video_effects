@@ -6568,7 +6568,8 @@
     "url": "shaders/mouse-fluid-coupling.wgsl",
     "features": [
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "description": "The mouse drags a viscous fluid over the image, creating vortex streets and color absorption. Click ripples inject fluid bursts.",
     "params": [

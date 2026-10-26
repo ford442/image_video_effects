@@ -11,7 +11,8 @@
     "temporal",
     "navier-stokes",
     "fluid-coupling",
-    "randomization-safe"
+    "randomization-safe",
+    "audio-reactive"
   ],
   "params": [
     {

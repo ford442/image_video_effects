@@ -595,8 +595,17 @@
       ]
     },
     "hyper-tensor-fluid": {
-      "hash": "629e12c5f8cf7f4e",
-      "history": []
+      "hash": "5354791ba7a56fa2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "5354791ba7a56fa2",
+          "prev_hash": "629e12c5f8cf7f4e",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "hyperbolic-dreamweaver-julia": {
       "hash": "7de5eaac65b4932d",
@@ -611,8 +620,17 @@
       "history": []
     },
     "ink-bleed-fluid": {
-      "hash": "5f9e00a8498507df",
-      "history": []
+      "hash": "23aac22b485506d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "23aac22b485506d2",
+          "prev_hash": "5f9e00a8498507df",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "ink-dispersion-guided": {
       "hash": "34880d1d8ab3cb86",
@@ -1718,12 +1736,30 @@
       "history": []
     },
     "liquid-swirl": {
-      "hash": "fe53cb44721c0c63",
-      "history": []
+      "hash": "752b4988b6bdfc16",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "752b4988b6bdfc16",
+          "prev_hash": "fe53cb44721c0c63",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "liquid-warp-interactive": {
-      "hash": "ccc413ac0fc5e1b1",
-      "history": []
+      "hash": "f272933fbe9a1526",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "f272933fbe9a1526",
+          "prev_hash": "ccc413ac0fc5e1b1",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "log-polar-droste": {
       "hash": "809ec149bbec65b8",
@@ -8044,8 +8080,17 @@
       ]
     },
     "honey-melt": {
-      "hash": "70627c97c1e2baee",
-      "history": []
+      "hash": "2a8bd46301fa7724",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "2a8bd46301fa7724",
+          "prev_hash": "70627c97c1e2baee",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "kintsugi-repair": {
       "hash": "63f3c6849ab5101e",
@@ -8613,8 +8658,17 @@
       "history": []
     },
     "ferrofluid": {
-      "hash": "9a95bb085b0daf95",
-      "history": []
+      "hash": "0620547ff1ec4c8f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "0620547ff1ec4c8f",
+          "prev_hash": "9a95bb085b0daf95",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "fiber-optic-weave": {
       "hash": "b785d8ae6ce4793a",
@@ -8988,7 +9042,7 @@
       "history": []
     },
     "magnetic-ring": {
-      "hash": "8bc245e9b0625fec",
+      "hash": "16854b7b80d20c53",
       "history": [
         {
           "event": "upgraded",
@@ -8997,6 +9051,14 @@
           "prev_hash": "1290b66e42534630",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "16854b7b80d20c53",
+          "prev_hash": "8bc245e9b0625fec",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
         }
       ]
     },
@@ -9051,8 +9113,17 @@
       ]
     },
     "mouse-fluid-coupling": {
-      "hash": "a4aef4bbd1600066",
-      "history": []
+      "hash": "29fbe393c0f64a6f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "29fbe393c0f64a6f",
+          "prev_hash": "a4aef4bbd1600066",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "mouse-gravity": {
       "hash": "19085ebf0212c091",
@@ -9953,8 +10024,17 @@
       "history": []
     },
     "liquid-tensor-vortex": {
-      "hash": "c4d0caa61a998680",
-      "history": []
+      "hash": "636e2e1f27290c21",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "636e2e1f27290c21",
+          "prev_hash": "c4d0caa61a998680",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "liquid-v1": {
       "hash": "a500ade44fabed15",
@@ -10007,8 +10087,17 @@
       "history": []
     },
     "rain-ripples": {
-      "hash": "b8a1514fb044448c",
-      "history": []
+      "hash": "7777f4d808486137",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "7777f4d808486137",
+          "prev_hash": "b8a1514fb044448c",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "viscous-drag": {
       "hash": "929a5afff32f7537",
@@ -10733,8 +10822,17 @@
       "history": []
     },
     "sim-fluid-feedback-coupled": {
-      "hash": "b8aac38525ac354b",
-      "history": []
+      "hash": "e5f1f04ffff01fea",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "e5f1f04ffff01fea",
+          "prev_hash": "b8aac38525ac354b",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "sim-fluid-feedback-field": {
       "hash": "803efa73b6e8de06",
@@ -11275,6 +11373,18 @@
           "hash": "9214f40e60534b0a",
           "commit": "5c5183cd",
           "note": "2026-10-18 argon4/batch-04: two native ideas each"
+        }
+      ]
+    },
+    "gen-abyssal-ferrofluid-singularity": {
+      "hash": "899333d01258f734",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "899333d01258f734",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
         }
       ]
     }

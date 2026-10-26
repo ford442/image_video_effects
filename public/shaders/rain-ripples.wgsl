@@ -1,9 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Rain Ripples  (RETRY expanded upgrade)
+//  Rain Ripples
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba,
 //            depth-aware, aces-tone-map, fbm-micro-ripples,
 //            voronoi-raindrops, caustics, thin-film-interference
+//  Upgraded: 2026-10-26
+//  Ideas: dispersive ring train (§12.2D); Worthington jet
+//  A packing: ACES display RGBA; A stores pre-ACES HDR
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -140,6 +143,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let distDecay = max(0.0, 1.0 - dist * 2.0);
         let amplitude = profile * decay * distDecay * 0.03 * (1.0 + bass * 0.4) * waveMask * rippleMask;
         totalDisplacement -= (diff / dist) * amplitude;
+        // ── Idea 1: dispersive ring train (§12.2D) ──────────────────
+        // Longer gravity waves outrun shorter ones. Two slower, narrower
+        // fronts trail the primary ring. Detail (p4) reveals the train.
+        let radiusSlow = radius * 0.62;
+        let widthSlow = waveWidth * 0.62;
+        let trailSlow = cos((dist - radiusSlow) / max(widthSlow, 0.001) * TAU)
+                      * smoothstep(widthSlow, 0.0, abs(dist - radiusSlow));
+        let radiusShort = radius * 0.38;
+        let widthShort = waveWidth * 0.40;
+        let trailShort = cos((dist - radiusShort) / max(widthShort, 0.001) * TAU)
+                       * smoothstep(widthShort, 0.0, abs(dist - radiusShort));
+        let train = (trailSlow * 0.45 + trailShort * 0.22) * decay * distDecay
+                  * 0.03 * (1.0 + bass * 0.4) * rippleMask * p4;
+        totalDisplacement -= (diff / dist) * train;
     }
     totalDisplacement += micro;
 
@@ -154,6 +171,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let highlight = smoothstep(0.0005, 0.002, dispMag);
     let spec = vec3<f32>(0.12, 0.14, 0.18) * highlight * (1.0 + treble);
     color = vec4<f32>(color.rgb + spec, color.a);
+
+    // ── Idea 2: Worthington jet ────────────────────────────────────
+    // The drop the Voronoi cell already tracks rebounds as a bright
+    // bead at the impact, phased by the cell id. Scale (p3) owns it.
+    let jet = exp(-cell.x * cell.x * 220.0) * pow(max(sin(time * 6.0 + cell.y * TAU), 0.0), 6.0);
+    color = vec4<f32>(color.rgb + vec3<f32>(0.90, 0.95, 1.0) * jet * p3 * 0.42, color.a);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let fog = exp(-depth * 2.0 * (1.0 - p1));
