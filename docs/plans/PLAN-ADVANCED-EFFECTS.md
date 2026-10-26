@@ -2,7 +2,7 @@
 
 > **Epic agent kit (swarm-ready):** [`swarm-tasks/advanced-physics/README.md`](../../swarm-tasks/advanced-physics/README.md)  
 > **Multipass sim contract:** [`swarm-tasks/advanced-physics/MULTIPASS_SIM_CONTRACT.md`](../../swarm-tasks/advanced-physics/MULTIPASS_SIM_CONTRACT.md)  
-> **Dependency:** Tier C effects blocked on multipass graph runner (#929). Tier A/B ship now.
+> **Dependency:** none. The multipass graph runner (#929) shipped as `GraphRunner` / the frame planner (see [`docs/MULTIPASS_GRAPH.md`](../MULTIPASS_GRAPH.md)); Tier C effects are authored as graphs, not blocked on a runner. Do not rebuild it.
 
 This plan collects concrete implementation steps for a set of advanced shader effects and simulation systems. Each section gives architectural notes, implementation steps, suggestions for shader-level parameters (these map to `u.zoom_params` or `extraBuffer`), performance guidance, and testing checkpoints.
 

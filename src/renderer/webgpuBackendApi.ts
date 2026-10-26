@@ -71,6 +71,7 @@ export type WebGPUBackendApi = Pick<
   | 'benchmarkUncapped'
   | 'supportsCanvasCopySrc'
   | 'setCanvasCopySrc'
+  | 'startCrossfade'
   | 'getAdapterSummary'
   | 'getAdapterAttemptLabel'
   | 'getLastGraphReport'

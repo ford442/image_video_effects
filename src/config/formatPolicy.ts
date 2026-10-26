@@ -199,6 +199,11 @@ export function resolveColorFormat(
   mode: RenderQualityMode,
   caps: DeviceFormatCapabilities = DEFAULT_FORMAT_CAPABILITIES,
 ): InternalColorFormat {
+  // rgba32float sampled through the filtering `u_sampler` needs float32-filterable; without it
+  // every shader that filters readTexture fails validation, so prefer rgba16float when legal.
+  if (!caps.hasFloat32Filterable && canUseRgba16Float(caps)) {
+    return BALANCED_COLOR_FORMAT;
+  }
   if (mode === 'ultra') {
     return ULTRA_COLOR_FORMAT;
   }

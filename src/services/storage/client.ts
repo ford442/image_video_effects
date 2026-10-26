@@ -7,7 +7,7 @@ import {
   SHADER_FILES_BASE_URL,
   STATIC_NGINX_URL,
   STORAGE_VPS_URL,
-  STORAGE_WEBHOOK_SECRET,
+  STORAGE_SIGN_URL,
 } from '../../config/appConfig';
 import * as assets from './assets';
 import { OperationTracker } from './operations';
@@ -54,7 +54,7 @@ export class StorageClient {
     this.config = {
       webhookUrl: config?.webhookUrl ?? STORAGE_VPS_URL,
       staticUrl: config?.staticUrl ?? STATIC_NGINX_URL,
-      secret: config?.secret ?? STORAGE_WEBHOOK_SECRET,
+      signUrl: config?.signUrl ?? STORAGE_SIGN_URL,
       apiUrl: config?.apiUrl ?? API_BASE_URL,
       shaderFilesBaseUrl: config?.shaderFilesBaseUrl ?? SHADER_FILES_BASE_URL,
     };

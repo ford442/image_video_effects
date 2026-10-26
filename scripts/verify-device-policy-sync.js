@@ -197,8 +197,68 @@ function verifyLimitsHeader() {
   }
 }
 
+// wasm_renderer/bind_group0.h is generated from bind_group0.json; pipeline.cpp
+// must include it and TS pipeline.ts must build its layout from the same JSON.
+// readDepthTexture is unfilterable-float in both renderers, so no shader may
+// sample it through the filtering u_sampler (compiles under one, fails the other).
+function verifyBindGroup0() {
+  const gen = require('./gen-bind-group0-header.js');
+  const bg0 = gen.loadContract();
+  const headerFile = gen.headerPath(bg0);
+  let want = '';
+  try {
+    want = gen.renderHeader(bg0);
+  } catch (e) {
+    fail(e.message);
+  }
+  const have = fs.existsSync(headerFile) ? fs.readFileSync(headerFile, 'utf8') : '';
+  if (have !== want) fail(`${bg0.cpp.header} is stale or missing; run: npm run gen:bind-group0`);
+  // pipeline.cpp still carries its own kComputeBindings table until it switches to
+  // bind_group0.h (needs a pinned-emsdk rebuild of public/wasm/). Until then the hand
+  // table must mirror the contract binding for binding.
+  const pipelineCpp = fs.readFileSync(path.join(ROOT, 'wasm_renderer/pipeline.cpp'), 'utf8');
+  if (!/#include "bind_group0\.h"/.test(pipelineCpp)) {
+    const legacyKind = {
+      FilteringSampler: 'filteringSampler', NonFilteringSampler: 'nonFilteringSampler',
+      ComparisonSampler: 'comparisonSampler', SampledRgba: 'sampledColor',
+      SampledRgbaArray: 'sampledColorArray', SampledR32: 'sampledDepth', StorageRgba: 'storageColor',
+      StorageR32: 'storageDepth', UniformBuffer: 'uniformBuffer', StorageBuffer: 'storageBuffer',
+      ReadOnlyStorageBuffer: 'readOnlyStorageBuffer',
+    };
+    const rows = [...pipelineCpp.matchAll(/\{\s*(\d+),\s*BindingKind::(\w+),\s*BindingResource::(\w+)\s*\}/g)];
+    if (rows.length !== bg0.bindings.length) {
+      fail(`pipeline.cpp kComputeBindings has ${rows.length} rows; bind_group0.json has ${bg0.bindings.length}`);
+    }
+    for (const [, binding, kind, resource] of rows) {
+      const want = bg0.bindings[Number(binding)];
+      if (!want || legacyKind[kind] !== want.kind || resource !== want.resource) {
+        fail(`pipeline.cpp kComputeBindings binding ${binding} (${kind}, ${resource}) does not match bind_group0.json`);
+      }
+    }
+  }
+  const pipelineTs = fs.readFileSync(path.join(ROOT, 'src/renderer/webgpu/pipeline.ts'), 'utf8');
+  if (!pipelineTs.includes("contracts/bind_group0.json'") || !pipelineTs.includes('bindGroup0Contract.bindings.map')) {
+    fail('src/renderer/webgpu/pipeline.ts must build computeBGL from src/contracts/bind_group0.json');
+  }
+  const depthNames = bg0.bindings.filter((b) => b.kind === 'sampledDepth').map((b) => b.name);
+  const filteringNames = bg0.bindings.filter((b) => b.kind === 'filteringSampler').map((b) => b.name);
+  const re = new RegExp(
+    `textureSample\\w*\\(\\s*(${depthNames.join('|')})\\s*,\\s*(${filteringNames.join('|')})\\b`,
+  );
+  const shaderDir = path.join(ROOT, 'public/shaders');
+  for (const f of fs.readdirSync(shaderDir)) {
+    if (!f.endsWith('.wgsl')) continue;
+    const src = stripWgslComments(fs.readFileSync(path.join(shaderDir, f), 'utf8'));
+    const m = src.match(re);
+    if (m) {
+      fail(`public/shaders/${f}: samples ${m[1]} (unfilterable-float) with filtering ${m[2]}; use non_filtering_sampler or textureLoad`);
+    }
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
   verifyLimitsHeader();
+  verifyBindGroup0();
   verifyDeepWorkgroupLimits();
   verifyBufferSizeLimits();
 }
@@ -1065,6 +1125,11 @@ function verifySlotLimits() {
  * policy ↔ WASM refusal. The group-1 limits must never leak into the
  * catalog-wide requiredLimits, and the C++ pipeline stays group-0 only.
  */
+/** Drop // and block comments so a commented-out declaration does not count. */
+function stripWgslComments(wgsl) {
+  return wgsl.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+}
+
 function verifyBindGroup1() {
   const contractPath = path.join(ROOT, 'src/contracts/bind_group1.json');
   const c = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
@@ -1074,6 +1139,7 @@ function verifyBindGroup1() {
     { binding: 2, name: 'simParams', bufferType: 'uniform' },
   ];
   if (c.group !== 1) fail('bind_group1.json group must be 1');
+  if (c.version !== 2) fail('bind_group1.json version must be 2 (adds the optional spatialHash binding)');
   if (!Array.isArray(c.bindings) || c.bindings.length !== expected.length) {
     fail(`bind_group1.json must declare exactly ${expected.length} bindings`);
     return;
@@ -1124,6 +1190,60 @@ function verifyBindGroup1() {
     fail(`${tsFile} createSimRingPipelineLayout must be [group0, group1]`);
   }
 
+  // Optional spatial hash (binding 3): contract shape, TS layout, WGSL helper constants.
+  const h = c.spatialHash || {};
+  if (h.binding !== 3 || h.name !== 'simHash' || h.bufferType !== 'storage') {
+    fail('bind_group1.json spatialHash must be binding 3 simHash (storage)');
+  }
+  if (h.wgsl !== 'var<storage, read_write> simHash: array<atomic<u32>>') {
+    fail('bind_group1.json spatialHash.wgsl must be `var<storage, read_write> simHash: array<atomic<u32>>`');
+  }
+  if (h.gridWidth !== 128 || h.gridHeight !== 128) fail('spatialHash grid must be 128 × 128');
+  if (h.cellCount !== h.gridWidth * h.gridHeight) fail('spatialHash.cellCount must be gridWidth × gridHeight');
+  if (h.headsOffset !== 0 || h.nextOffset !== h.cellCount) {
+    fail('spatialHash layout must be heads at 0, then one `next` per agent at cellCount');
+  }
+  if (h.emptyHead !== 0xffffffff) fail('spatialHash.emptyHead must be 0xFFFFFFFF');
+  if (JSON.stringify(h.visitCap) !== '[8,16]') fail('spatialHash.visitCap must be [8, 16]');
+  if (h.build?.countsAsPass !== true) fail('spatialHash.build.countsAsPass must be true (the scatter is a counted pass)');
+  const hashLimits = h.group1RequiredLimits || {};
+  for (const [key, need] of Object.entries(hashLimits)) {
+    if (!(key in (c.webgpuBaseLimits || {}))) fail(`webgpuBaseLimits missing ${key}`);
+    else if (need > c.webgpuBaseLimits[key]) fail(`spatialHash.group1RequiredLimits.${key}=${need} exceeds WebGPU base ${c.webgpuBaseLimits[key]}`);
+    if (need < (c.group1RequiredLimits?.[key] ?? 0)) fail(`spatialHash.group1RequiredLimits.${key} must not be below the base ring's`);
+  }
+  if (hashLimits.maxStorageBuffersPerShaderStage !== (c.group1RequiredLimits?.maxStorageBuffersPerShaderStage ?? 0) + 1) {
+    fail('spatialHash needs exactly one more storage buffer than the base ring (simHash)');
+  }
+  const hashBgl = ts.match(/export function createSimRingHashBindGroupLayout[\s\S]*?\n\}/);
+  if (!hashBgl) {
+    fail(`${tsFile} must export createSimRingHashBindGroupLayout`);
+  } else {
+    const hashEntries = [...hashBgl[0].matchAll(/\{\s*binding:\s*([\w_]+)[^}]*buffer:\s*\{\s*type:\s*'([a-z-]+)'\s*\}/g)];
+    const want = [...expected.map((e) => [String(e.binding), e.bufferType]), ['SIM_HASH_BINDING', 'storage']];
+    if (hashEntries.length !== want.length || hashEntries.some((m, i) => m[1] !== want[i][0] || m[2] !== want[i][1])) {
+      fail(`${tsFile} createSimRingHashBindGroupLayout must be bindings 0–2 as the base ring plus SIM_HASH_BINDING 'storage'`);
+    }
+  }
+  const hashTs = fs.readFileSync(path.join(ROOT, 'src/renderer/webgpu/simHash.ts'), 'utf8');
+  if (!/import bindGroup1Contract from '..\/..\/contracts\/bind_group1\.json'/.test(hashTs)) {
+    fail('src/renderer/webgpu/simHash.ts must import bind_group1.json (grid and offsets come from the contract)');
+  }
+  const helperFile = 'public/shaders/_sim_hash.wgsl';
+  const helper = stripWgslComments(fs.readFileSync(path.join(ROOT, helperFile), 'utf8'));
+  const wgslConst = (name) => {
+    const m = helper.match(new RegExp(`const\\s+${name}\\s*:\\s*u32\\s*=\\s*(0x[0-9A-Fa-f]+|\\d+)u\\s*;`));
+    return m ? Number(m[1]) : null;
+  };
+  for (const [name, want] of [
+    ['HASH_GRID', h.gridWidth],
+    ['HASH_CELLS', h.cellCount],
+    ['HASH_NEXT', h.nextOffset],
+    ['HASH_EMPTY', h.emptyHead],
+  ]) {
+    if (wgslConst(name) !== want) fail(`${helperFile} const ${name} must equal bind_group1.json spatialHash (${want})`);
+  }
+
   // OOM ladder discipline.
   const ladder = c.oom?.ladder || [];
   if (ladder.join(',') !== '65536,32768,16384,4096') fail('sim-ring OOM ladder must be 65536 → 32768 → 16384 → 4096');
@@ -1163,14 +1283,44 @@ function verifyBindGroup1() {
   }
 
   // Definitions that opt into the ring must dispatch at least one simState node.
+  // simRing.spatialHash is the same kind of promise: the graph has to read the simHash role (so the
+  // planner builds it) in an entry that declares binding 3, and nothing may read it without asking.
+  const entryDeclaresHash = (entry) => {
+    const file = path.join(ROOT, 'public/shaders', `${entry}.wgsl`);
+    if (!fs.existsSync(file)) return null;
+    return /@group\(\s*1\s*\)\s*@binding\(\s*3\s*\)/.test(stripWgslComments(fs.readFileSync(file, 'utf8')));
+  };
   const defsDir = path.join(ROOT, 'shader_definitions');
   const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.json') ? [path.join(dir, e.name)] : []);
   for (const file of walk(defsDir)) {
     let def;
     try { def = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { continue; }
+    const rel = path.relative(ROOT, file);
+    const graphNodes = def.multipass?.graph?.nodes || [];
+    const hashReaders = graphNodes.filter((n) => (n.reads || []).includes('simHash'));
+    const declaring = graphNodes.filter((n) => entryDeclaresHash(n.entry) === true);
+    if (!def.simRing?.spatialHash && (hashReaders.length > 0 || declaring.length > 0)) {
+      fail(`${rel} reads or declares simHash but simRing.spatialHash is not set`);
+    }
     if (!def.simRing) continue;
-    const nodes = def.multipass?.graph?.nodes || [];
+    if (def.simRing.spatialHash !== undefined && typeof def.simRing.spatialHash !== 'boolean') {
+      fail(`${rel} simRing.spatialHash must be a boolean`);
+    }
+    if (def.simRing.spatialHash === true) {
+      if (hashReaders.length === 0) {
+        fail(`${rel} sets simRing.spatialHash but no graph node reads the simHash role`);
+      }
+      for (const n of hashReaders) {
+        if (entryDeclaresHash(n.entry) === false) {
+          fail(`${rel} node ${n.id} reads simHash but ${n.entry}.wgsl does not declare @group(1) @binding(3) simHash`);
+        }
+      }
+      if (hashReaders.length > 0 && !hashReaders.some((n) => entryDeclaresHash(n.entry) !== false)) {
+        fail(`${rel} sets simRing.spatialHash but never reads the binding`);
+      }
+    }
+    const nodes = graphNodes;
     if (!nodes.some((n) => n.dispatch === 'simState')) {
       fail(`${path.relative(ROOT, file)} declares simRing but no graph node dispatches simState`);
     }

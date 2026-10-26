@@ -23,7 +23,9 @@ beforeAll(() => {
 
 describe('formatPolicy', () => {
   it('maps ultra to rgba32float and balanced/battery to rgba16float', () => {
-    expect(resolveColorFormat('ultra')).toBe('rgba32float');
+    expect(
+      resolveColorFormat('ultra', { ...DEFAULT_FORMAT_CAPABILITIES, hasFloat32Filterable: true }),
+    ).toBe('rgba32float');
     expect(resolveColorFormat('balanced')).toBe('rgba16float');
     expect(resolveColorFormat('battery')).toBe('rgba16float');
   });
@@ -35,6 +37,7 @@ describe('formatPolicy', () => {
         adapterGpuType: 'discrete',
         isMobile: false,
         supportsRgba32FloatStorage: true,
+        hasFloat32Filterable: true,
       }),
     ).toBe('rgba32float');
 
@@ -54,6 +57,21 @@ describe('formatPolicy', () => {
         isMobile: false,
       }),
     ).toBe('rgba16float');
+  });
+
+  it('demotes ultra/auto to rgba16float without float32-filterable (filtering u_sampler)', () => {
+    const noFilt = {
+      ...DEFAULT_FORMAT_CAPABILITIES,
+      adapterGpuType: 'discrete' as const,
+      supportsRgba32FloatStorage: true,
+      hasFloat32Filterable: false,
+    };
+    expect(resolveColorFormat('ultra', noFilt)).toBe('rgba16float');
+    expect(resolveColorFormat('auto', noFilt)).toBe('rgba16float');
+    // No legal FP16 path → stays FP32 (the BGL then reports unfilterable-float).
+    expect(
+      resolveColorFormat('ultra', { ...noFilt, supportsFloat16Array: false }),
+    ).toBe('rgba32float');
   });
 
   it('fail-softs balanced/battery to FP32 without Float16Array or FP16 storage', () => {

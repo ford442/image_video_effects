@@ -72,6 +72,15 @@ jobs:
       env:
         SKIP_WASM_BUILD: '1'
 
+    - name: Client bundle carries no server secrets
+      # The storage webhook HMAC secret once shipped in the bundle (REACT_APP_WEBHOOK_SECRET);
+      # signing is server-side now (storage_manager /api/storage/sign-webhook).
+      run: |
+        if grep -rlE --exclude='*.map' "REACT_APP_WEBHOOK_SECRET|your-webhook-secret-here|WEBHOOK_SECRET" build/; then
+          echo "::error::A webhook secret (or its env name) is in build/"
+          exit 1
+        fi
+
     - name: Verify catalog count SoT
       run: npm run verify:catalog-counts
 
