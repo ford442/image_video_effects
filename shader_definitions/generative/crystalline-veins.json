@@ -10,8 +10,7 @@
     "chromatic-dispersion",
     "fbm-veins",
     "mineral-growth",
-    "mouse-driven",
-    "upgraded-rgba"
+    "mouse-driven"
   ],
   "params": [
     {

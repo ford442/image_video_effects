@@ -16,11 +16,10 @@ import {
 import {
   PROJECT_APP_NAME,
   PROJECT_FILE_SCHEMA_VERSION,
-  type ProjectFile,
+  type ProjectFileV1,
   type ProjectSource,
   type ProjectValidationResult,
 } from './types';
-import { BLEND_MODES, isMaskSource } from '../../renderer/slotOutput';
 
 const TOP_LEVEL_KEYS = ['schemaVersion', 'app', 'createdAt', 'chain', 'activeSlot', 'source', 'render', 'audio', 'timeline'];
 const SLOT_PARAM_KEYS: Array<keyof SlotParams> = [
@@ -61,36 +60,6 @@ export function isSafeProjectRef(value: unknown): value is string {
     && !FORBIDDEN_REF.test(value.trim());
 }
 
-const OUTPUT_KEYS = ['b', 'o', 'm', 'f', 'k'] as const;
-const OUTPUT_B_VALUES = new Set<string>([...BLEND_MODES, 'mask']);
-
-/** v2 compositor fields (#1512): b / o / m / f / k, all optional; see layerChainShare.ts. */
-function validateSlotOutputFields(
-  raw: Record<string, unknown>,
-  slot: SharedChainSlot,
-  path: string,
-  errors: string[],
-): void {
-  if (raw.b !== undefined) {
-    if (typeof raw.b !== 'string' || !OUTPUT_B_VALUES.has(raw.b)) errors.push(`${path}.b must be a blend mode or "mask"`);
-    else slot.b = raw.b;
-  }
-  for (const key of ['o', 'f', 'k'] as const) {
-    const value = raw[key];
-    if (value === undefined) continue;
-    if (!isFiniteNumber(value) || value < 0 || value > 1) errors.push(`${path}.${key} must be a number from 0 to 1`);
-    else slot[key] = value;
-  }
-  if (raw.m !== undefined) {
-    const m = typeof raw.m === 'string' && raw.m.startsWith('~') ? raw.m.slice(1) : raw.m;
-    if (typeof raw.m !== 'string' || m === 'none' || !isMaskSource(m, MAX_SHARED_SLOTS)) {
-      errors.push(`${path}.m must be luma, depth or slot0-slot${MAX_SHARED_SLOTS - 1} (optionally ~ inverted)`);
-    } else {
-      slot.m = raw.m;
-    }
-  }
-}
-
 function validateChain(raw: unknown, path: string, errors: string[]): SharedChain | null {
   if (!isRecord(raw)) {
     errors.push(`${path} must be an object`);
@@ -113,7 +82,7 @@ function validateChain(raw: unknown, path: string, errors: string[]): SharedChai
       errors.push(`${slotPath} must be an object`);
       return;
     }
-    checkExtraKeys(slotRaw, ['shaderId', 'params', 'enabled', 'mode', ...OUTPUT_KEYS], slotPath, errors);
+    checkExtraKeys(slotRaw, ['shaderId', 'params', 'enabled', 'mode'], slotPath, errors);
     if (slotRaw.shaderId !== null && typeof slotRaw.shaderId !== 'string') {
       errors.push(`${slotPath}.shaderId must be a string or null`);
       return;
@@ -148,7 +117,6 @@ function validateChain(raw: unknown, path: string, errors: string[]): SharedChai
         slot.mode = slotRaw.mode;
       }
     }
-    validateSlotOutputFields(slotRaw, slot, slotPath, errors);
     slots.push(slot);
   });
 
@@ -219,7 +187,7 @@ function validateBinding(raw: unknown, path: string, errors: string[]): raw is C
     if (typeof raw.action.param !== 'string' || !raw.action.param || raw.action.param.length > 128) {
       errors.push(`${path}.action.param must be 1-128 characters`);
     }
-  } else if (type === 'randomizeSlot' || type === 'setSlotOpacity') {
+  } else if (type === 'randomizeSlot') {
     checkExtraKeys(raw.action, ['type', 'slot'], `${path}.action`, errors);
     if (!Number.isInteger(raw.action.slot) || Number(raw.action.slot) < 0 || Number(raw.action.slot) >= MAX_SHARED_SLOTS) {
       errors.push(`${path}.action.slot must be an integer from 0 to ${MAX_SHARED_SLOTS - 1}`);
@@ -344,7 +312,7 @@ export function validateProjectFile(raw: unknown): ProjectValidationResult {
   }
   const source = validateSource(raw.source, errors);
 
-  const render: ProjectFile['render'] = {};
+  const render: ProjectFileV1['render'] = {};
   if (raw.render === undefined) {
     errors.push('project.render must be an object');
   } else if (!isRecord(raw.render)) {
@@ -367,7 +335,7 @@ export function validateProjectFile(raw: unknown): ProjectValidationResult {
     }
   }
 
-  let audio: ProjectFile['audio'];
+  let audio: ProjectFileV1['audio'];
   if (raw.audio !== undefined) {
     if (!isRecord(raw.audio)) {
       errors.push('project.audio must be an object');
@@ -380,7 +348,7 @@ export function validateProjectFile(raw: unknown): ProjectValidationResult {
   const timeline = validateVjSetExport(raw.timeline, errors);
 
   if (errors.length > 0 || !chain || !source) return { ok: false, errors };
-  const project: ProjectFile = {
+  const project: ProjectFileV1 = {
     schemaVersion: PROJECT_FILE_SCHEMA_VERSION,
     app: { name: PROJECT_APP_NAME, version: appVersion },
     createdAt,

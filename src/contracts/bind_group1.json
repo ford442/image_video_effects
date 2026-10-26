@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "description": "Opt-in @group(1) sim ring: an indexable storage-buffer ring for particles / walkers / photons. Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storage textures), so persistent agents live here instead of in extraBuffer or plasmaBuffer. Shaders that never declare @group(1) keep the single-layout pipeline. Keep in sync with src/renderer/webgpu/simRing.ts (createSimRingBindGroupLayout) — enforced by `npm run verify:device-policy`. Version 2 adds the optional spatialHash binding (3, simHash), off unless a shader definition sets simRing.spatialHash.",
+  "version": 1,
+  "description": "Opt-in @group(1) sim ring: an indexable storage-buffer ring for particles / walkers / photons. Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storage textures), so persistent agents live here instead of in extraBuffer or plasmaBuffer. Shaders that never declare @group(1) keep the single-layout pipeline. Keep in sync with src/renderer/webgpu/simRing.ts (createSimRingBindGroupLayout) — enforced by `npm run verify:device-policy`.",
   "group": 1,
   "bindings": [
     {
@@ -25,12 +25,7 @@
       "bufferType": "uniform",
       "wgsl": "var<uniform> simParams: SimParams",
       "sizeBytes": 16,
-      "fields": [
-        "stateCount",
-        "indexCount",
-        "frame",
-        "truncated"
-      ],
+      "fields": ["stateCount", "indexCount", "frame", "truncated"],
       "note": "All u32. stateCount = allocated vec4 elements; indexCount = stateCount * 4; frame = frames since the ring was (re)armed; truncated = 1 when the OOM ladder allocated fewer elements than requested."
     }
   ],
@@ -41,16 +36,9 @@
     "twinOf": "dataA → dataC"
   },
   "dispatch": {
-    "domains": [
-      "pixels",
-      "simState"
-    ],
+    "domains": ["pixels", "simState"],
     "default": "pixels",
-    "simStateWorkgroupSize": [
-      64,
-      1,
-      1
-    ]
+    "simStateWorkgroupSize": [64, 1, 1]
   },
   "group1RequiredLimits": {
     "maxStorageBuffersPerShaderStage": 4,
@@ -63,54 +51,12 @@
     "maxBindGroups": 4
   },
   "oom": {
-    "ladder": [
-      65536,
-      32768,
-      16384,
-      4096
-    ],
+    "ladder": [65536, 32768, 16384, 4096],
     "sessionStorageKey": "px_simring_oom_cap",
     "defaultStateCount": 65536
   },
   "wasm": {
     "policy": "refuse",
     "note": "WASM_BACKEND_POLICY.md feature freeze: the C++ pipeline keeps bindGroupLayoutCount = 1 and src/wasm/bridge/shader.ts refuses @group(1) WGSL before LoadShader (logged skip, never an emdawn abort)."
-  },
-  "spatialHash": {
-    "binding": 3,
-    "name": "simHash",
-    "bufferType": "storage",
-    "wgsl": "var<storage, read_write> simHash: array<atomic<u32>>",
-    "optIn": "simRing.spatialHash",
-    "note": "Optional. One buffer: `cellCount` cell heads, then one `next` link per agent. Shaders that declare it use a second group-1 layout (4 bindings); shaders that do not keep the 3-binding layout, and a ring nobody asked a hash of never allocates it. Rebuilt by the frame planner (copy a pre-filled 0xFFFFFFFF buffer over the heads, then one scatter compute pass) only when some graph node reads the simHash role.",
-    "gridWidth": 128,
-    "gridHeight": 128,
-    "cellCount": 16384,
-    "headsOffset": 0,
-    "nextOffset": 16384,
-    "emptyHead": 4294967295,
-    "visitCap": [
-      8,
-      16
-    ],
-    "domain": "Working-size pixel space (config.zw), the space DLA already uses. cell = floor(xy / resolution * 128), x fastest: cellId = cy * 128 + cx.",
-    "alive": "An agent is hashed iff its simState.xy is finite and inside [0, resolution). Park dead agents at xy < 0.",
-    "build": {
-      "clear": "copyBufferToBuffer of a constant emptyHead-filled buffer over the heads (clearBuffer only zero-fills)",
-      "scatter": "each alive agent i: simHash[nextOffset + i] = atomicExchange(&simHash[cellId], i)",
-      "workgroupSize": [
-        64,
-        1,
-        1
-      ],
-      "countsAsPass": true,
-      "trigger": "graph role `simHash` read by a node; once per frame until a simState write makes the chain stale"
-    },
-    "group1RequiredLimits": {
-      "maxStorageBuffersPerShaderStage": 5,
-      "maxUniformBuffersPerShaderStage": 2,
-      "maxBindGroups": 2
-    },
-    "limitsNote": "group 0 contributes 2 storage buffers (extraBuffer, plasmaBuffer) + simState + simIndex + simHash = 5, under the WebGPU base limit of 8. Checked against device.limits when the first hash pipeline compiles; never added to MINIMUM_COMPUTE_LIMITS."
   }
 }

@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pixelocity.app/contracts/project_file.v2.schema.json",
+  "$id": "https://pixelocity.app/contracts/project_file.v1.schema.json",
   "title": "Pixelocity project file",
-  "description": "A user-owned, local project file for the recoverable parts of a Pixelocity VJ session. v2 (#1512) adds per-slot compositor output fields to chain slots (b blend mode or mask, o opacity, m mask source, f feather, k key threshold) and the setSlotOpacity binding action; src/services/project/migrate.ts lifts v1 files.",
+  "description": "A user-owned, local project file for the recoverable parts of a Pixelocity VJ session.",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "app", "createdAt", "chain", "activeSlot", "source", "render"],
   "properties": {
-    "schemaVersion": { "const": 2 },
+    "schemaVersion": { "const": 1 },
     "app": {
       "type": "object",
       "additionalProperties": false,
@@ -49,12 +49,7 @@
         "shaderId": { "type": ["string", "null"], "maxLength": 128 },
         "params": { "$ref": "#/$defs/slotParams" },
         "enabled": { "type": "boolean" },
-        "mode": { "enum": ["chained", "parallel"] },
-        "b": { "enum": ["normal", "add", "screen", "multiply", "overlay", "soft-light", "difference", "luma-key", "depth-key", "mask"] },
-        "o": { "type": "number", "minimum": 0, "maximum": 1 },
-        "m": { "type": "string", "pattern": "^~?(luma|depth|slot[0-5])$" },
-        "f": { "type": "number", "minimum": 0, "maximum": 1 },
-        "k": { "type": "number", "minimum": 0, "maximum": 1 }
+        "mode": { "enum": ["chained", "parallel"] }
       }
     },
     "sharedChain": {
@@ -130,7 +125,7 @@
           "additionalProperties": false,
           "required": ["type", "slot"],
           "properties": {
-            "type": { "enum": ["randomizeSlot", "setSlotOpacity"] },
+            "type": { "const": "randomizeSlot" },
             "slot": { "type": "integer", "minimum": 0, "maximum": 5 }
           }
         },

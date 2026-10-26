@@ -8,8 +8,26 @@
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-#include "_prelude.wgsl"
-// zoom_params: x=Dust Density, y=Flow Speed, z=Glow Radius, w=Hue Shift
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Dust Density, y=Flow Speed, z=Glow Radius, w=Hue Shift
+  ripples: array<vec4<f32>, 50>,
+};
 
 const DISPLAY_EXPOSURE: f32 = 1.2;
 
@@ -145,9 +163,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Depth-aware parallax: gradient of the input frame's depth pushes
     // the dust field so motes drift around foreground silhouettes.
     let texel = vec2<f32>(1.0) / res;
-    let depthC = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let depthDX = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r - depthC;
-    let depthDY = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r - depthC;
+    let depthC = textureSampleLevel(readDepthTexture, u_sampler, uv, 0.0).r;
+    let depthDX = textureSampleLevel(readDepthTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r - depthC;
+    let depthDY = textureSampleLevel(readDepthTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r - depthC;
     let depthGrad = vec2<f32>(depthDX, depthDY);
     // Dust Density also sets how strongly motes skirt silhouettes.
     let pDust = p + depthGrad * mix(0.5, 2.5, densityNorm);

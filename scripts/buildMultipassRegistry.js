@@ -26,10 +26,7 @@ function scanDefinitions(dir, registry, graphRegistry, simRingRegistry) {
           graphRegistry[json.id] = json.multipass.graph;
         }
         if (json.simRing) {
-          simRingRegistry[json.id] = {
-            stateCount: json.simRing.stateCount,
-            ...(json.simRing.spatialHash === true ? { spatialHash: true } : {}),
-          };
+          simRingRegistry[json.id] = { stateCount: json.simRing.stateCount };
         }
         if (json.multipass?.pass !== undefined) {
           registry[json.id] = {
@@ -51,7 +48,7 @@ function renderRegistrySource(registry, graphRegistry, simRingRegistry) {
     `// Do not edit manually — re-run the script instead.`,
     ``,
     `import type { MultipassGraphDef } from './multipassGraph';`,
-    `import { getRuntimeGraph, getRuntimeSimHashRequest, getRuntimeSimRingRequest } from './runtimeGraphs';`,
+    `import { getRuntimeGraph, getRuntimeSimRingRequest } from './runtimeGraphs';`,
     ``,
     `export interface MultipassInfo {`,
     `  pass: number;`,
@@ -64,7 +61,7 @@ function renderRegistrySource(registry, graphRegistry, simRingRegistry) {
     `export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = ${JSON.stringify(graphRegistry, null, 2)};`,
     ``,
     `/** Opt-in @group(1) sim-ring requests (shader_definitions \`simRing\` field). */`,
-    `export const SIM_RING_REGISTRY: Record<string, { stateCount: number; spatialHash?: boolean }> = ${JSON.stringify(simRingRegistry, null, 2)};`,
+    `export const SIM_RING_REGISTRY: Record<string, { stateCount: number }> = ${JSON.stringify(simRingRegistry, null, 2)};`,
     ``,
     `/** Get the next shader in a multipass chain, if any. */`,
     `export function getNextPass(shaderId: string): string | null {`,
@@ -127,20 +124,6 @@ function renderRegistrySource(registry, graphRegistry, simRingRegistry) {
     `    if (GRAPH_REGISTRY[ownerId]?.nodes.some((n) => n.entry === shaderId)) return req.stateCount;`,
     `  }`,
     `  return undefined;`,
-    `}`,
-    ``,
-    `/**`,
-    ` * Whether the shader id (or one of its graph entries) asked for the sim ring's spatial hash`,
-    ` * (\`simRing.spatialHash\`, bind_group1.json \`spatialHash\`). Off unless the definition sets it.`,
-    ` */`,
-    `export function resolveSimHashRequest(shaderId: string): boolean {`,
-    `  const runtime = getRuntimeSimHashRequest(shaderId);`,
-    `  if (runtime !== undefined) return runtime;`,
-    `  if (SIM_RING_REGISTRY[shaderId]) return SIM_RING_REGISTRY[shaderId].spatialHash === true;`,
-    `  for (const [ownerId, req] of Object.entries(SIM_RING_REGISTRY)) {`,
-    `    if (GRAPH_REGISTRY[ownerId]?.nodes.some((n) => n.entry === shaderId)) return req.spatialHash === true;`,
-    `  }`,
-    `  return false;`,
     `}`,
     ``,
   ];

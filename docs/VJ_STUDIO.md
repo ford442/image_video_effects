@@ -14,7 +14,7 @@ VJ Studio is the unified control surface for live visual performance in Pixeloci
 | Section | What it does |
 |---------|----------------|
 | **Active slots** | Jump between slots; shows shader id per slot |
-| **Transitions** | Auto-transition timer or audio beat (requires AI VJ mode for some paths); a duration above 0 dissolves a shader change ([Cue crossfade](#cue-crossfade)) |
+| **Transitions** | Auto-transition timer or audio beat (requires AI VJ mode for some paths) |
 | **MIDI & keyboard** | Map hardware CCs, notes, or keys to params and actions |
 | **OSC** | Opt-in bridge for live desks (TouchOSC, Max, Resolume…) via a local relay |
 | **Audio-reactive** | Drive parameter motion from microphone / audio analysis on every active slot |
@@ -31,8 +31,6 @@ VJ Studio is the unified control surface for live visual performance in Pixeloci
 
 Bindings persist in `localStorage` (`vj_control_bindings`). Bindings can target slots 1–6 (the physical slot cap in `src/contracts/slot_limits.json`).
 
-**Layer opacity (#1512):** a binding can target **Slot Opacity (layer)** (`setSlotOpacity`) instead of a slider. A knob or fader then sets that slot's compositor opacity from 0 to 1. It only shows in a parallel group where the slot blends ([PARALLEL_SLOTS.md](PARALLEL_SLOTS.md#layer-compositor-1512)).
-
 **Channels:** every binding id includes the MIDI channel (`ch1/cc7` ≠ `ch2/cc7`), so two controllers on different channels never collide.
 
 **14-bit faders:** enable **14-bit CC (MSB/LSB pairs)** under MIDI & keyboard to pair CC 0–31 with CC 32–63 (16 384 steps instead of 128). The coarse MSB still fires on its own, so 7-bit gear keeps working; leave the toggle off if your controller uses CC 32–63 as independent knobs.
@@ -45,7 +43,6 @@ Toggle **Audio-reactive parameters** (or press `A`; `[` / `]` change the amount)
 - **Generative** shaders map their four params to bass / mid / treble / overall (from `params[].audio`, else by position).
 - **Simulation, interactive-mouse and graph** shaders are driven only for params that declare `audio` in their JSON (`"audio": "bass"` or `{ "fft": 12 }`) — graphs without metadata are left alone.
 - **Hands win:** grabbing a slider, arming 🎛 MIDI learn on it, or moving a mapped MIDI CC / OSC fader freezes audio on that param. On release, audio resumes *around the value you left it at* instead of snapping back to the shader default.
-- **Layer opacity** can follow a band too: pick ♪ bass / mid / treble / overall in a slot's layer strip. While audio reactivity is on, the band gates the opacity fader, renderer side only, so the fader keeps its value.
 - The analyser spectrum still reaches WGSL as `plasmaBuffer[0].xyz` and FFT bins in `extraBuffer[5..132]` (engine-owned; shaders must not store state there).
 
 ## OSC
@@ -66,8 +63,7 @@ Browsers cannot receive UDP, so OSC goes through a tiny relay in `storage_manage
 |---------|------|--------|
 | `/pixelocity/slot/{0-5}/param/{x\|y\|z\|w}` | `f` (0–1; `i` / `T` / `F` accepted) | Set slider 1–4 of that slot (clamped). Freezes host audio on it briefly. |
 | `/pixelocity/slot/{0-5}/shader` | `s` | Load a shader id into the slot (`none` clears; unknown ids are ignored) |
-| `/pixelocity/slot/{0-5}/opacity` | `f` (0–1) | The slot's layer-compositor opacity (#1512) |
-| `/pixelocity/transition` | optional `s` / `f` | Fire the next transition (a `0` — button release — is ignored). Bare, it cuts exactly as a MIDI binding does; with the string `crossfade` a shader change dissolves ([Cue crossfade](#cue-crossfade)) |
+| `/pixelocity/transition` | optional `s` / `f` | Fire the next transition (a `0` — button release — is ignored) |
 | `/pixelocity/audio/amount` | `f` (0–1) | Host audio-reactive amount |
 
 Slots are 0-based on the wire (slot `0` = "Slot 1" in the UI). Slots beyond the current stack are ignored. Bundles are supported (applied immediately; timetags ignored).
@@ -90,45 +86,14 @@ The OSC decoder ships as a lazy `osc` chunk — it is never in the main bundle (
 
 Use **Export project (.pixelocity.json)** to download a user-owned session file; no account or server is involved. **Import project…** validates the complete file before applying any part of it and lists anything that needs attention.
 
-Project schema v2 is an envelope around the existing formats, not another shader-stack model:
+Project schema v1 is an envelope around the existing formats, not another shader-stack model:
 
-- `chain` embeds `SharedChain` unchanged, including its own `v`, ordered slots, compact params, enabled flags, and chain/parallel modes. Since v2 (#1512) a chain slot can also carry its layer-compositor output, in the same compact keys as chain URLs (`b=`, `o=`, `m=`, `f=`, `k=` below).
+- `chain` embeds `SharedChain` unchanged, including its own `v`, ordered slots, compact params, enabled flags, and chain/parallel modes.
 - The envelope adds the active slot, safe image/video/stream references or generative shader id, render quality, MIDI/keyboard mappings, and an optional embedded `VjSetExportPayload` recording.
 - Unknown shader ids become empty slots with a warning. A source that is not in the current media catalog becomes `none` with a relink warning.
 - Media bytes, `data:`/`blob:` URLs, camera or microphone permission state, device/track handles, transient GPU objects, and adaptive render-scale telemetry are never saved. Webcam projects save only the source choice and ask the browser for permission again when applied.
 
-The contract is [`src/contracts/project_file.json`](../src/contracts/project_file.json) (JSON Schema draft 2020-12). Project migrations are explicit one-version steps (`src/services/project/migrate.ts`):
-
-- Version 0 compatibility accepts a bare `SharedChain` or an existing v1 `.vjset.json` and lifts it into project v1.
-- v1 → v2 (`migrateV1ToV2`) drops any compositor keys a v1 file could not have meant, so a v1 project opens exactly as before, every layer on *Replace*.
-- Unknown future versions are rejected with a reason.
-
-Chain URLs, preset packs, and the older VJ-set export remain separate and backward-compatible.
-
-**Layer outputs in chain URLs and projects.** A slot whose output is not the default adds compact fields, which round-trip through chain URLs and project files:
-
-| Field | Meaning |
-|---|---|
-| `b` | Blend mode, or `mask` for a mask slot |
-| `o` | Opacity, 0–1 |
-| `m` | Mask: `luma`, `depth` or `slot<n>`, with a `~` prefix for inverted |
-| `f` | Feather |
-| `k` | Key threshold |
-
-A malformed field is dropped on its own; the slot is kept. Older builds ignore the fields.
-
-## Cue crossfade
-
-Recalling a saved set used to cut the picture whenever the shader stack changed: sliders eased, shader ids did not. With a duration above 0 the **TypeScript WebGPU renderer** dissolves instead.
-
-- **One frozen image, one mix.** On cue start the renderer copies the last presented color into a single `rgba8unorm` texture at the canvas size (the *hold*). The present pass then mixes it over the live frame: mix 1 shows the hold, mix 0 the new stack, and the ramp is the transition orchestrator's eased progress (`crossfadeMix` in `src/utils/transitionMath.ts`). The mix is a 16-byte uniform on the blit pipeline only, never in the compute `Uniforms` struct, `zoom_params` or `extraBuffer`. Recording grabs the presented frame, so a recording captures the dissolve.
-- **One copy per cue.** A cue during a cue replaces the hold with what is on screen at that moment and restarts the ramp; there is no queue of holds. The texture exists only while the fade runs.
-- **Only a change of shader identity holds.** The first change to a slot's shader id, its enabled state or its chained/parallel mode after a cue is armed sends the single `startCrossfade` command; the rest of that recall lands inside the same fade. Slider moves — randomize transitions, audio, MIDI — keep lerping and never allocate a hold.
-- **Who fires it.** Recalling a chain from the Studio panels (**My VJ sets**, an imported `.vjset.json`, preset packs, the community gallery), the **Next transition ▸** button under *Auto Transition* (a *Cycle Presets* swap), and OSC `/pixelocity/transition crossfade`. A bare `/pixelocity/transition`, MIDI and key *Trigger Transition* bindings, and the timer / beat auto transitions keep cutting. Project files and chain URLs are unchanged: the fade is runtime only.
-- **Duration** is the *Auto Transition → Duration* slider (default 2 s). **0 is a hard cut**, today's behavior.
-- **Where it does not run.** `?renderer=wasm` and `?renderer=js` have no hold and cut (the C++ present path stays frozen). If the hold texture cannot be allocated, that cue cuts: no retry, no drop of the working resolution, and the frame loop keeps running. In the render worker the hold and the mix live on the worker's device; the page sends only the duration (see [`RENDER_WORKER.md`](RENDER_WORKER.md)).
-
-Out of scope: a second live stack rendered in parallel, wipe / luma / shader-authored transitions, and the offline stepped clock and export of #1401 (which will feed the same mix factor).
+The contract is [`src/contracts/project_file.json`](../src/contracts/project_file.json) (JSON Schema draft 2020-12). Project migrations are explicit one-version steps. Version 0 compatibility accepts a bare `SharedChain` or existing v1 `.vjset.json` and lifts it into project v1; unknown future versions are rejected with a reason. Chain URLs, preset packs, and the older VJ-set export remain separate and backward-compatible.
 
 ## Set recorder
 

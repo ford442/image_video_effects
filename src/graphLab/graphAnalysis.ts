@@ -124,7 +124,6 @@ function buildRows(graph: MultipassGraphDef): DependencyRow[] {
       if (role === 'color') return { role, from: 'display target' };
       if (role === 'dataC') return { role, from: dataCSource };
       if (role === 'simState' || role === 'simIndex') return { role, from: 'sim ring' };
-      if (role === 'simHash') return { role, from: 'spatial hash (planner scatter pass)' };
       return { role, from: lastWriter.get(role) ?? 'nothing produces it' };
     });
     for (const role of d.writes) lastWriter.set(role, label);

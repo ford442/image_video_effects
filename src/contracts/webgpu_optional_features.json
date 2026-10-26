@@ -16,10 +16,5 @@
     "timestamp-query": "WGPUFeatureName_TimestampQuery",
     "subgroups": "WGPUFeatureName_Subgroups",
     "chromium-experimental-subgroups": "WGPUFeatureName_ChromiumExperimentalSubgroups"
-  },
-  "tier2": {
-    "requestOrder": ["shader-f16", "bgra8unorm-storage", "float32-blendable", "dual-source-blending"],
-    "cppMirror": false,
-    "note": "Capability tier 2 (#1512), TypeScript only: requested after the three above when the adapter offers them and recorded in window.webgpuProbe (shaderF16, bgra8unormStorage, float32Blendable, dualSourceBlending). shader-f16 enables the `// @requires f16` variant of _half.wgsl; bgra8unorm-storage lets the present pass write a bgra8unorm swapchain from compute; float32-blendable and dual-source-blending are recorded for render-pass blending of float layers (the layer compositor itself is a compute pass and needs neither). The WASM backend is frozen and does not request them."
   }
 }

@@ -10,12 +10,28 @@
 //  Upgraded: 2026-06-07
 //  Upgraded: 2026-07-22 (b13: mids-driven second-order branching,
 //            per-bin spectral tip lighting, luminous growth residue)
-//  Upgraded: 2026-10-25
-//  Ideas: sclerochronology growth bands along every branch (skeleton-fixed, new bands laid at the tip); golden-angle corallite buds along the first-order axis (§12.2E)
-//  A packing: raw sim state (.r bass envelope, .g glow, .b tip energy, .a alpha); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-#include "_prelude.wgsl"
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,
+  zoom_config: vec4<f32>,
+  zoom_params: vec4<f32>,
+  ripples: array<vec4<f32>, 50>,
+};
 
 fn hash21(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -43,7 +59,7 @@ fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
 fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
   let d = wellPos - pos;
   let dist2 = dot(d, d) + 0.01;
-  return d / max(length(d), 1e-4) * strength / dist2;
+  return normalize(d) * strength / dist2;
 }
 
 // Spectral band energy for one branch index. Instead of lighting every tip
@@ -67,7 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
   // Bass envelope lives in feedback .r — SIM STATE, not color. Verbatim.
   let bass = bass_env(prev.r, rawBass, 0.8, 0.15);
 
@@ -90,10 +106,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse gravity well bends coral toward cursor
   let well = gravityWell(uv, u.zoom_config.yz, 0.5 + bass * 0.3);
-  // HEAD displaced by up to 1.5 uv next to the pointer (1/(d^2+0.01)), which shattered
-  // the colony into a swirl of fragments around the idle cursor; cap the bend at 0.05 uv.
-  let wellBend = well * 0.03;
-  let bentUV = uv + wellBend * min(1.0, 0.05 / max(length(wellBend), 1e-5));
+  let bentUV = uv + well * 0.03;
   let bentP = bentUV * density;
   let bentCellId = floor(bentP);
   let bentCellUV = fract(bentP) - 0.5;
@@ -118,8 +131,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let origin = hash22(seed) - 0.5;
 
     let dir = hash22(seed + vec2<f32>(1.0, 0.0)) - 0.5;
-    let dirN = dir / max(length(dir), 1e-3);
-    let perpN = vec2<f32>(-dirN.y, dirN.x);
     let len = 0.2 + hash21(seed + vec2<f32>(2.0, 0.0)) * 0.6;
     let angle = atan2(dir.y, dir.x);
 
@@ -127,26 +138,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let currentLen = len * growth * (1.0 + bass * 0.2) * (1.0 + lumaSpawn);
 
     let toPixel = bentCellUV - origin;
-    let projRaw = dot(toPixel, dirN);
-    let proj = clamp(projRaw, 0.0, currentLen);
-    let closest = origin + dirN * proj;
+    let proj = clamp(dot(toPixel, normalize(dir)), 0.0, currentLen);
+    let closest = origin + normalize(dir) * proj;
     let d = length(bentCellUV - closest);
-    // Density slider also thickens branches: denser colonies grow fleshier limbs.
-    // HEAD base width 0.02 cell units was ~0.5 px at default density, so only the tip
-    // sparkles ever showed; 0.055 makes the branches themselves visible.
-    let branchWidth = 0.055 * (1.0 + u.zoom_params.x * 0.35) * (1.0 - proj / max(currentLen, 0.001));
+    // Density slider also thickens branches: denser colonies grow fleshier limbs
+    let branchWidth = 0.02 * (1.0 + u.zoom_params.x * 0.35) * (1.0 - proj / max(currentLen, 0.001));
     var branch = smoothstep(branchWidth, 0.0, d);
 
     // Per-branch spectral band for tip lighting (see spectralBandEnergy)
     let bandEnergy = spectralBandEnergy(bi);
 
     if (proj > currentLen * 0.5) {
-      let subDirN = vec2<f32>(cos(angle + 0.8), sin(angle + 0.8));
+      let subDir = vec2<f32>(cos(angle + 0.8), sin(angle + 0.8));
       let subLen = currentLen * 0.5;
       let subOrigin = closest;
       let toSub = bentCellUV - subOrigin;
-      let subProj = clamp(dot(toSub, subDirN), 0.0, subLen);
-      let subClosest = subOrigin + subDirN * subProj;
+      let subProj = clamp(dot(toSub, normalize(subDir)), 0.0, subLen);
+      let subClosest = subOrigin + normalize(subDir) * subProj;
       let subD = length(bentCellUV - subClosest);
       let subBranch = smoothstep(branchWidth * 0.7, 0.0, subD);
       branch = max(branch, subBranch * 0.7);
@@ -176,35 +184,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       }
     }
 
-    // ── Idea 1: sclerochronology growth bands (§12.1 t2/t3) ─────────────
-    // Coral skeleton is laid down in density bands as it extends. They are fixed to
-    // the skeleton (proj, not time), so a growing branch leaves new bands behind its tip.
-    let bandPhase = hash21(seed + vec2<f32>(11.0, 4.0)) * 6.2831;
-    let bands = mix(0.7, 1.15, 0.5 + 0.5 * cos(proj * 40.0 + bandPhase));
-    let bandedBranch = branch * bands;
-
-    // ── Idea 2: golden-angle corallite buds (§12.2E) ─────────────────────
-    // Polyp buds sit along the first-order axis at s_k = (k+.5)*spacing; their lateral
-    // offset is the projection of a 137.5 deg turn per bud (phyllotaxis seen side-on),
-    // so they alternate and never line up. Bass swells them. Checks the three buds
-    // nearest the pixel along the axis.
-    let budSpacing = 0.085;
-    let budK0 = floor(projRaw / budSpacing);
-    var bud = 0.0;
-    for (var j = -1; j <= 1; j = j + 1) {
-      let kb = budK0 + f32(j);
-      let sk = (kb + 0.5) * budSpacing;
-      let lateral = 0.048 * sin(kb * 2.39996 + hash21(seed + vec2<f32>(13.0, 2.0)) * 6.2831);
-      let budC = origin + dirN * sk + perpN * lateral;
-      let valid = step(0.0, kb) * step(sk, currentLen * 0.92);
-      let budR = 0.042 * (1.0 - 0.5 * sk / max(len, 0.001)) * (1.0 + bass * 0.3);
-      bud = max(bud, smoothstep(budR, budR * 0.35, length(bentCellUV - budC)) * valid);
-    }
-
     // ── Spectral tip lighting ─────────────────────────────────────────
     // Global treble stays as a floor, but each branch index lights its tip
     // to its own frequency band via plasmaBuffer[1 + bi % 8].
-    let tipDist = length(bentCellUV - (origin + dirN * currentLen));
+    let tipDist = length(bentCellUV - (origin + normalize(dir) * currentLen));
     tipGlow = tipGlow + exp(-tipDist * tipDist * 200.0) * (treble * 0.6 + bandEnergy * 1.4);
 
     // Band energy nudges the hue so different bands bloom different colors
@@ -213,8 +196,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let h = abs(fract(vec3<f32>(hue) + k) * 6.0 - vec3<f32>(3.0));
     let branchColor = clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    color = color + branchColor * bandedBranch * (0.6 + mids * 0.4);
-    color = color + mix(branchColor, vec3<f32>(1.0, 0.97, 0.88), 0.6) * bud * 0.55;
+    color = color + branchColor * branch * (0.6 + mids * 0.4);
     glow = glow + branch;
   }
 
@@ -222,10 +204,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = color + vec3<f32>(0.1, 0.2, 0.15) * textureNoise;
 
   // Temporal accumulation with trail decay
-  // prev.r is the bass envelope (sim state, not luminance): feeding it back as red tinted the
-  // whole frame maroon whenever audio played. Only glow (.g) and tip energy (.b) are light.
-  let prevLight = vec3<f32>(prev.g * 0.6, prev.g, prev.b);
-  color = mix(color, prevLight * 0.94, 0.04 + bass * 0.015);
+  color = mix(color, prev.rgb * 0.94, 0.04 + bass * 0.015);
 
   // ── Luminous growth residue ─────────────────────────────────────────
   // The bass envelope in feedback .r stays EXACTLY as-is (sim-state
@@ -233,7 +212,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ~0.9 decay, clamped pre-tint at ~1.2, so old growth leaves glowing
   // history. Growth Speed slider boosts residue persistence; Color Shift
   // rotates the tint so trails drift hue with the slider.
-  let trailRaw = min(prevLight * 0.9, vec3<f32>(1.2));
+  let trailRaw = min(prev.rgb * 0.9, vec3<f32>(1.2));
   let trailTint = vec3<f32>(
     0.85 + colorShift * 0.35,
     0.9 + mids * 0.15,
