@@ -79,3 +79,21 @@ export function unwrapListResponse<T>(
   }
   throw new Error(`Invalid response format: expected array or { ${key}: [] }`);
 }
+
+/**
+ * Ask storage_manager to sign a webhook payload. The HMAC secret lives only on the server;
+ * the server checks the action and timestamp before signing.
+ */
+export async function requestWebhookSignature(signUrl: string, payload: string): Promise<string> {
+  const response = await fetch(signUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ payload }),
+  });
+  await assertOk(response);
+  const body = (await response.json()) as { signature?: unknown };
+  if (typeof body.signature !== 'string' || !body.signature.startsWith('sha256=')) {
+    throw new Error('Storage signer returned no signature');
+  }
+  return body.signature;
+}

@@ -1,17 +1,17 @@
-import React, { RefObject, Suspense, lazy, useCallback, useEffect, useRef } from 'react';
+import React, { ChangeEvent, RefObject, Suspense, lazy } from 'react';
+import type { LocalMediaKind } from '../../hooks/useLocalMediaUpload';
 import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
 import { RendererManager, RendererType } from '../../renderer/RendererManager';
 import { isWasmForcedByURL } from '../../renderer/rendererUrl';
-import type { AIStatus, AutoTransitionConfig, ImageRecord } from '../../types/aiVj';
+import type { AIStatus, AutoTransitionConfig, ImageRecord, TriggerTransitionOptions } from '../../types/aiVj';
 import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
 import { STORAGE_API_URL } from '../../config/appConfig';
 import { RenderQualityMode } from '../../config/performancePolicy';
 import { isPublicPixelocityHost } from '../../utils/publicHost';
-import { LocalMediaKind, useLocalMediaUpload } from '../../hooks/useLocalMediaUpload';
 
 const LiveStudioTab = lazy(() => import(/* webpackChunkName: "live-studio" */ '../LiveStudioTab'));
 
@@ -59,6 +59,8 @@ export interface AppShellProps {
     setActiveGenerativeShader: (id: string) => void;
     fileInputImageRef: RefObject<HTMLInputElement | null>;
     fileInputVideoRef: RefObject<HTMLInputElement | null>;
+    /** Change handler for the hidden upload inputs (useLocalMediaUpload). */
+    onLocalFileChange: (e: ChangeEvent<HTMLInputElement>, kind: LocalMediaKind) => void;
     isAiVjMode: boolean;
     toggleAiVj: () => void;
     aiVjStatus: AIStatus;
@@ -68,7 +70,8 @@ export interface AppShellProps {
     handleUpdateParams: (paramsList: Record<string, number>[]) => void;
     handleRandomizeParams: () => void;
     handleSavePreset: (name: string) => void;
-    handleTriggerNextTransition: () => void;
+    handleTriggerNextTransition: (options?: TriggerTransitionOptions) => void;
+    handleArmCrossfade?: (durationMs: number) => void;
     handleRandomizeSlot: (slot: number) => void;
     handleSetSlotParam: (slot: number, param: string, value: number) => void;
     handleShareVjSet: () => void;
@@ -196,6 +199,7 @@ export function AppShell(props: AppShellProps) {
         setActiveGenerativeShader,
         fileInputImageRef,
         fileInputVideoRef,
+        onLocalFileChange,
         isAiVjMode,
         toggleAiVj,
         aiVjStatus,
@@ -206,6 +210,7 @@ export function AppShell(props: AppShellProps) {
         handleRandomizeParams,
         handleSavePreset,
         handleTriggerNextTransition,
+        handleArmCrossfade,
         handleRandomizeSlot,
         handleSetSlotParam,
         handleShareVjSet,
@@ -271,27 +276,6 @@ export function AppShell(props: AppShellProps) {
         performanceHud,
         rendererDiagnostics,
     } = props;
-
-    // Local uploads (#1511 bug 1): load the picked file as a blob: URL. The previous URL
-    // of the same kind is revoked once it has been replaced, and the last one on unmount.
-    const uploadedUrlsRef = useRef<Partial<Record<LocalMediaKind, string>>>({});
-    useEffect(() => () => {
-        for (const url of Object.values(uploadedUrlsRef.current)) if (url) URL.revokeObjectURL(url);
-    }, []);
-    const loadLocalMedia = useCallback(async (file: File, kind: LocalMediaKind) => {
-        const url = URL.createObjectURL(file);
-        const previous = uploadedUrlsRef.current[kind];
-        uploadedUrlsRef.current[kind] = url;
-        if (kind === 'image') {
-            syncInputSourceToRenderer('image');
-            await handleLoadImage(url);
-        } else {
-            setSelectedVideo(url);
-            syncInputSourceToRenderer('video');
-        }
-        if (previous) URL.revokeObjectURL(previous);
-    }, [handleLoadImage, setSelectedVideo, syncInputSourceToRenderer]);
-    const { onImageChange, onVideoChange } = useLocalMediaUpload(loadLocalMedia);
 
     const chromeHidden = !showSidebar && activeTab === 'main';
     const showRemoteButton = !isPublicPixelocityHost();
@@ -396,6 +380,7 @@ export function AppShell(props: AppShellProps) {
                         onRandomizeParams={handleRandomizeParams}
                         onSavePreset={handleSavePreset}
                         onTriggerNextTransition={handleTriggerNextTransition}
+                        onArmCrossfade={handleArmCrossfade}
                         onRandomizeSlot={handleRandomizeSlot}
                         onSetSlotParam={handleSetSlotParam}
                         onShareVjSet={handleShareVjSet}
@@ -516,8 +501,8 @@ export function AppShell(props: AppShellProps) {
                 </main>
             </div>
             )}
-            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={onImageChange} data-testid="upload-image-input" />
-            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={onVideoChange} data-testid="upload-video-input" />
+            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={(e) => onLocalFileChange(e, 'image')} data-testid="upload-image-input" />
+            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={(e) => onLocalFileChange(e, 'video')} data-testid="upload-video-input" />
         </>
     );
 }

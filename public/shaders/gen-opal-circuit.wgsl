@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Bragg play-of-colour; Manhattan signal edges; solder-mask windows; bond-wire arcs
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: Bragg play-of-colour; Manhattan signal edges; solder-mask windows; bond-wire arcs; Snell solder-mask parallax (§12.2F) — copper seen through the refracting mask slides against the mask windows with view tilt; plated through-hole vias (§12.1 tactic 5) — annular pad + drilled barrel
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -152,17 +152,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
   let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-  // Bass envelope follower state lives in guarded extraBuffer[133].
-  var prevBass = bass;
-  if (arrayLength(&extraBuffer) > 138u) {
-    prevBass = clamp(extraBuffer[133], 0.0, 1.0);
-  }
-  let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
-  if (gid.x == 0u && gid.y == 0u) {
-    if (arrayLength(&extraBuffer) > 138u) {
-      extraBuffer[133] = smoothBass;
-    }
-  }
+  // HEAD fix: extraBuffer[133] is re-zeroed every frame (it never held the envelope),
+  // so the follower was always mix(0, bass, 0.8) — the same value, stated honestly.
+  let smoothBass = bass_env(0.0, bass, 0.8, 0.15);
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
   let mouseDown = u.zoom_config.w > 0.5;
 
@@ -186,12 +178,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gl = fract(g) - 0.5;
   let rnd = hash21(gc);
 
+  // Idea 1 (Snell parallax, §12.2F): the copper lies under a ~1.5-index solder mask.
+  // Light entering at the view tilt refracts (sinθt = sinθi / 1.5) and meets the copper
+  // laterally offset by thickness·tanθt, so the copper slides against the mask windows
+  // as the view tilts: the mask edge sits on one flank of every trace.
+  let viewTilt = mouse * vec2<f32>(0.45, 0.35) + vec2<f32>(p.x, p.y) * 0.22 + vec2<f32>(treble * 0.08, 0.0);
+  let tiltLen = length(viewTilt);
+  let sinT = sin(min(tiltLen, 1.2)) / 1.5;
+  let tanT = sinT / sqrt(max(1.0 - sinT * sinT, 1e-3));
+  let maskShift = viewTilt / max(tiltLen, 1e-4) * (tanT * 0.45);
+  let glDeep = gl - maskShift;
+
   let hLine = smoothstep(0.09, 0.01, abs(gl.y)) * step(0.35, rnd);
   let vLine = smoothstep(0.09, 0.01, abs(gl.x)) * step(rnd, 0.65);
   let vias = exp(-dot(gl, gl) * 60.0) * step(0.7, rnd);
   let traces = max(max(hLine, vLine), vias);
+  // Copper as actually seen: displaced by the refraction, dimmed where the surface
+  // mask window is shut over it.
+  let hLineD = smoothstep(0.09, 0.01, abs(glDeep.y)) * step(0.35, rnd);
+  let vLineD = smoothstep(0.09, 0.01, abs(glDeep.x)) * step(rnd, 0.65);
+  let viasD = exp(-dot(glDeep, glDeep) * 60.0) * step(0.7, rnd);
+  let copperDeep = max(max(hLineD, vLineD), viasD);
   // Idea: solder-mask windows — green mask between copper, open on traces and vias.
   let maskOpen = max(traces, smoothstep(0.22, 0.12, length(gl)) * step(0.55, rnd));
+  let copper = copperDeep * mix(0.5, 1.0, maskOpen);
   // Idea: bond-wire arc — a gold parabola leaving a via toward the next pad.
   let bx = gl.x + 0.5;
   let bow = 0.28 * bx * (1.0 - bx);
@@ -240,11 +250,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let overshoot = exp(-clockPhase * 18.0) * 0.6;
     busEdge = max(busEdge, (clockHigh * 0.55 + overshoot) * exp(-l1 * 0.06));
   }
-  let busGlow = busEdge * traces;
+  let busGlow = busEdge * copper;
 
-  // Idea 1: Bragg diffraction domains. The viewing angle tilts with the mouse
-  // and treble; bass swells the sphere lattice spacing slightly.
-  let viewTilt = mouse * vec2<f32>(0.45, 0.35) + vec2<f32>(p.x, p.y) * 0.22 + vec2<f32>(treble * 0.08, 0.0);
+  // Bragg diffraction domains. The viewing angle (viewTilt, above) tilts with the
+  // mouse and treble; bass swells the sphere lattice spacing slightly.
   let bragg = braggPlayOfColour(uv * aspectVec * 7.0 + vec2<f32>(3.7, 1.9), viewTilt, time, smoothBass * 0.035);
   let braggFlash = bragg.rgb * bragg.a;
 
@@ -258,9 +267,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var color = vec3<f32>(0.02, 0.02, 0.03) + substrate * 0.35;
   color = mix(color, vec3<f32>(0.012, 0.085, 0.035), (1.0 - maskOpen) * 0.55);
   color += vec3<f32>(0.95, 0.78, 0.28) * bond * bloom * (0.7 + treble * 0.4);
-  color += braggFlash * iridescence * 0.4 * (1.0 - traces * 0.7);
-  color += traceOpal * traces * iridescence;
-  color += vec3<f32>(0.9, 0.95, 1.0) * vias * bloom * (0.5 + treble);
+  color += braggFlash * iridescence * 0.4 * (1.0 - copper * 0.7);
+  color += traceOpal * copper * iridescence;
+  // Idea 2 (plated through-hole, §12.1 tactic 5): the via is an annular copper pad
+  // around a drilled barrel — the glow lives on the ring and the hole shows dark.
+  let viaR = length(gl);
+  let viaOn = step(0.7, rnd);
+  let drill = smoothstep(0.06, 0.04, viaR) * viaOn;
+  let viaRing = smoothstep(0.04, 0.075, viaR) * (1.0 - smoothstep(0.1, 0.14, viaR)) * viaOn;
+  color += vec3<f32>(0.9, 0.95, 1.0) * (vias * (1.0 - drill) * 0.6 + viaRing * 0.9) * bloom * (0.5 + treble);
   color += vec3<f32>(0.2, 0.95, 1.0) * packets * (1.0 + smoothBass) * 1.2;
   color += vec3<f32>(0.6, 0.4, 1.0) * hexEdge * 0.5 * (0.8 + mids * 0.3);
   color += vec3<f32>(1.0, 0.85, 0.45) * busGlow * bloom * (1.1 + bass * 0.4);
@@ -268,13 +283,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Exact temporal feedback from C (last frame's display RGBA).
   let prev = textureLoad(dataTextureC, coord, 0);
   color = mix(color, prev.rgb * 0.92, 0.02 + smoothBass * 0.01);
+  color = mix(color, vec3<f32>(0.004, 0.006, 0.01), drill * 0.92);
 
   color = acesToneMap(color * 1.1);
 
   // Alpha = copper coverage + live signal energy + diffraction flash.
-  let alpha = clamp(0.16 + traces * 0.5 + packets * 0.18 + busGlow * 0.3 + length(braggFlash) * 0.12 + hexEdge * 0.05 + bond * 0.35, 0.0, 1.0);
+  let alpha = clamp(0.16 + copper * 0.5 + packets * 0.18 + busGlow * 0.3 + length(braggFlash) * 0.12 + hexEdge * 0.05 + bond * 0.35, 0.0, 1.0);
   // Depth: copper traces and vias stand proud of the opal substrate.
-  let depth = clamp(0.2 + traces * 0.45 + vias * 0.25, 0.0, 1.0);
+  let depth = clamp(0.2 + copper * 0.45 + vias * 0.25 - drill * 0.3, 0.0, 1.0);
   let finalColor = vec4<f32>(color, alpha);
 
   textureStore(writeTexture, coord, finalColor);

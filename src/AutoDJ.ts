@@ -14,6 +14,7 @@ import type {
   ImageCaptionPipeline,
   LlmEngine,
   AutoTransitionConfig,
+  TriggerTransitionOptions,
 } from './types/aiVj';
 
 export type {
@@ -24,6 +25,7 @@ export type {
   LlmChatCompletion,
   LlmEngine,
   AutoTransitionConfig,
+  TriggerTransitionOptions,
 } from './types/aiVj';
 
 // --- Configuration ---
@@ -35,6 +37,22 @@ interface AutoDJOptions {
 }
 
 // --- The AI VJ Director Class ---
+/** Resolve true after `ms`, or false as soon as `signal` aborts (the timer is cleared). */
+function abortableDelay(ms: number, signal?: AbortSignal): Promise<boolean> {
+  if (signal?.aborted) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve(false);
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve(true);
+    }, ms);
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
 export class Alucinate {
   // Manifests & Suggestions
   private imageManifest: ImageRecord[] = [];
@@ -61,6 +79,11 @@ export class Alucinate {
   private onUpdateStack: (ids: string[]) => void;
   public onUpdateParams?: (params: Record<string, number>[]) => void;
   public onApplyParamsDirect?: (params: Record<string, number>[]) => void;
+  /**
+   * A transition is about to swap the shader stack and asked to dissolve instead of cutting:
+   * arm the renderer's cue crossfade (called before onUpdateStack, with the transition duration).
+   */
+  public onCrossfade?: (durationMs: number) => void;
   public getCurrentState: () => { currentImage: ImageRecord | null, currentShader: ShaderRecord | null };
   private currentParams: Record<string, number>[] = [];
   private currentParamsSignature = '';
@@ -69,15 +92,18 @@ export class Alucinate {
   private transitionRafId: number | null = null;
   private autoTransitionConfig: AutoTransitionConfig | null = null;
   private beatDetector: BeatDetector | null = null;
-  /** Bumped per auto-transition run; async steps and rAF callbacks of older runs bail (#1511 bug 8). */
-  private autoTransitionGeneration = 0;
-  private autoTransitionAbort: AbortController | null = null;
-  /** The current run opened (or is opening) the shared audio graph and owes one dispose. */
-  private autoTransitionOwnsAudio = false;
-  /** connectSource/disposeAudioGraph run strictly in order so a stale connect never races a dispose. */
-  private audioQueue: Promise<unknown> = Promise.resolve();
-  private nextImageTimer: ReturnType<typeof setTimeout> | null = null;
   private presetCursor = 0;
+  private autoTransitionOwnsAudio = false;
+  private audioQueue: Promise<unknown> = Promise.resolve();
+  /** The transition being built was fired with { crossfade: true } (OSC cue, button). */
+  private crossfadeRequested = false;
+  /** Aborted by stop(): cancels the run's pending timers (scene-change delay, image swap). */
+  private runAbort: AbortController | null = null;
+  /**
+   * Bumped by every start/stopAutoTransition. An async start that resumes after a newer
+   * start or a stop sees a stale token and bails instead of opening the mic or a rAF loop.
+   */
+  private autoTransitionGen = 0;
 
   constructor(
     onNextImage: (url: string) => void,
@@ -218,6 +244,8 @@ export class Alucinate {
     }
     console.log('Starting Alucinate loop...');
     this.isRunning = true;
+    this.runAbort?.abort();
+    this.runAbort = new AbortController();
     void this.runCycle(); 
     this.loopInterval = window.setInterval(() => this.runCycle(), 25000);
     return true;
@@ -228,12 +256,10 @@ export class Alucinate {
     console.log('Stopping Alucinate loop.');
     this.stopAutoTransition();
     this.isRunning = false;
+    this.runAbort?.abort();
+    this.runAbort = null;
     clearInterval(this.loopInterval);
     this.loopInterval = null;
-    if (this.nextImageTimer !== null) {
-        clearTimeout(this.nextImageTimer);
-        this.nextImageTimer = null;
-    }
     if (this.status === 'generating') {
         this.setStatus('ready', 'AI VJ stopped.');
     }
@@ -286,6 +312,7 @@ export class Alucinate {
   }
 
   private async runCycleOnce() {
+    const signal = this.runAbort?.signal;
 
     const { currentImage } = this.getCurrentState();
     if (!currentImage || !currentImage.url) {
@@ -333,8 +360,7 @@ export class Alucinate {
             if (random) this.onUpdateStack([random.id, 'none', 'none']);
         }
         
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        if (!this.isRunning) return;
+        if (!(await abortableDelay(2000, signal)) || !this.isRunning) return;
 
         this.setStatus('generating', 'Dreaming up the next scene...');
         // Use the first shader in the stack for context
@@ -350,14 +376,10 @@ export class Alucinate {
 
         const nextImage = this.findBestMatchingImage(nextTheme, currentImage.url);
         
-        if (this.nextImageTimer !== null) clearTimeout(this.nextImageTimer);
-        this.nextImageTimer = setTimeout(() => {
-            this.nextImageTimer = null;
-            if (this.isRunning) {
-                this.onNextImage(nextImage.url);
-                this.setStatus('ready', 'Visuals updated. Enjoy the vibe.');
-            }
-        }, 5000);
+        if (await abortableDelay(5000, signal) && this.isRunning) {
+            this.onNextImage(nextImage.url);
+            this.setStatus('ready', 'Visuals updated. Enjoy the vibe.');
+        }
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -518,13 +540,10 @@ Your Selection:
   public async startAutoTransition(config: AutoTransitionConfig): Promise<boolean> {
     if (this.activeShaderIds.length === 0) return false;
     this.stopAutoTransition();
-    const generation = ++this.autoTransitionGeneration;
-    const abort = new AbortController();
-    this.autoTransitionAbort = abort;
-    const stale = () => abort.signal.aborted || generation !== this.autoTransitionGeneration;
+    const gen = ++this.autoTransitionGen;
 
     const catalog = await this.getCatalog();
-    if (stale()) return false;
+    if (gen !== this.autoTransitionGen) return false;
     const schema = this.buildTransitionSchema(this.activeShaderIds, catalog);
     if (schema.length === 0) return false;
     const activeSignature = this.shaderSignature(this.activeShaderIds);
@@ -534,32 +553,30 @@ Your Selection:
       : this.buildDefaultsFromSchema(schema);
     const baseline = this.sanitizeParamsToSchema(baselineSource, schema);
 
-    const runConfig: AutoTransitionConfig = {
+    const autoConfig: AutoTransitionConfig = {
       mode: 'randomize',
       beatInput: 'mic',
       ...config,
     };
 
-    // Open the audio source before anything starts, so a stop or a newer start
-    // during the await leaves no orchestrator, detector or rAF loop behind.
+    // Connect the audio source before anything starts running, so a stop or a newer start
+    // during the (permission-prompting) await leaves nothing behind.
     let analyser: AnalyserNode | null = null;
-    if (runConfig.source === 'beat') {
+    if (autoConfig.source === 'beat') {
       this.autoTransitionOwnsAudio = true;
-      analyser = await this.enqueueAudio(async () =>
-        stale() ? null : connectSource(runConfig.beatInput || 'mic', runConfig.mediaElement),
-      );
-      // A stale run's graph is disposed by the stop that superseded it (queued after this connect).
-      if (stale() || !analyser) return false;
+      analyser = await this.enqueueAudio(() => connectSource(autoConfig.beatInput || 'mic', autoConfig.mediaElement));
+      if (gen !== this.autoTransitionGen) return false;
     }
 
-    this.autoTransitionConfig = runConfig;
+    this.autoTransitionConfig = autoConfig;
     const orchestrator = new TransitionOrchestrator({
-      source: runConfig.source,
-      intervalMs: runConfig.intervalMs,
-      durationMs: runConfig.durationMs,
+      source: autoConfig.source,
+      intervalMs: autoConfig.intervalMs,
+      durationMs: autoConfig.durationMs,
     });
     this.transitionOrchestrator = orchestrator;
-    orchestrator.setTargetFactory(async () => this.buildTransitionTarget(runConfig));
+
+    orchestrator.setTargetFactory(async () => this.buildTransitionTarget(autoConfig));
     orchestrator.start({
       params: baseline,
       schema,
@@ -568,21 +585,19 @@ Your Selection:
 
     if (analyser) {
       this.beatDetector = new BeatDetector(analyser, (timestamp) => {
-        if (!stale()) orchestrator.enqueueBeat(timestamp);
+        orchestrator.enqueueBeat(timestamp);
       });
       this.beatDetector.start();
     }
 
     this.transitionRafId = requestAnimationFrame((ts) => {
-      void this.transitionLoop(ts, generation);
+      void this.transitionLoop(ts, gen);
     });
     return true;
   }
 
   public stopAutoTransition() {
-    this.autoTransitionGeneration++;
-    this.autoTransitionAbort?.abort();
-    this.autoTransitionAbort = null;
+    this.autoTransitionGen++;
     if (this.transitionOrchestrator?.getState() === 'TRANSITIONING') {
       this.currentParams = this.transitionOrchestrator.getCurrentParams();
       this.currentParamsSignature = this.transitionOrchestrator.getShaderSignature();
@@ -605,26 +620,39 @@ Your Selection:
     }
   }
 
-  private enqueueAudio<T>(op: () => Promise<T>): Promise<T> {
-    const run = this.audioQueue.then(op, op);
-    this.audioQueue = run.catch(() => undefined);
-    return run;
+  private enqueueAudio<T>(operation: () => Promise<T>): Promise<T> {
+    const queued = this.audioQueue.then(operation, operation);
+    this.audioQueue = queued.catch(() => undefined);
+    return queued;
   }
 
-  public async triggerNextTransition(): Promise<boolean> {
+  /**
+   * Fire the next transition by hand. Bare, it behaves exactly as before; with
+   * `{ crossfade: true }` a preset that swaps the shader stack dissolves from the picture on
+   * screen instead of cutting. A param-only transition keeps lerping its sliders either way.
+   */
+  public async triggerNextTransition(options?: TriggerTransitionOptions): Promise<boolean> {
     if (!this.transitionOrchestrator || !this.autoTransitionConfig) return false;
-    const target = await this.buildTransitionTarget(this.autoTransitionConfig);
+    this.crossfadeRequested = !!options?.crossfade;
+    let target;
+    try {
+      target = await this.buildTransitionTarget(this.autoTransitionConfig);
+    } finally {
+      this.crossfadeRequested = false;
+    }
     if (!target) return false;
     return this.transitionOrchestrator.trigger(target);
   }
 
-  private async transitionLoop(now: number, generation: number) {
-    if (!this.transitionOrchestrator || generation !== this.autoTransitionGeneration) return;
-    const result = await this.transitionOrchestrator.update(now);
-    if (generation !== this.autoTransitionGeneration) return;
+  private async transitionLoop(now: number, gen: number) {
+    const orchestrator = this.transitionOrchestrator;
+    if (!orchestrator || gen !== this.autoTransitionGen) return;
+    const result = await orchestrator.update(now);
+    // A stop or restart while update() was pending: this loop is orphaned, end it.
+    if (gen !== this.autoTransitionGen) return;
     if (result?.params) {
       this.currentParams = result.params.map((p) => ({ ...p }));
-      this.currentParamsSignature = this.transitionOrchestrator.getShaderSignature();
+      this.currentParamsSignature = orchestrator.getShaderSignature();
       if (this.onApplyParamsDirect) {
         this.onApplyParamsDirect(result.params);
       }
@@ -632,9 +660,8 @@ Your Selection:
         this.onUpdateParams(result.params);
       }
     }
-    if (!this.transitionOrchestrator || generation !== this.autoTransitionGeneration) return;
     this.transitionRafId = requestAnimationFrame((ts) => {
-      void this.transitionLoop(ts, generation);
+      void this.transitionLoop(ts, gen);
     });
   }
 
@@ -728,6 +755,10 @@ Your Selection:
         this.currentParams = hardPreset.params.map((p) => ({ ...p }));
         const nextSignature = this.shaderSignature(hardPreset.shaderIds);
         this.currentParamsSignature = nextSignature;
+        // The shader identity changes: dissolve from the picture on screen when asked to.
+        // Armed before the stack swap, so the first slot change lands inside the cue.
+        const hold = this.crossfadeRequested ? this.transitionOrchestrator?.requestHold(nextSignature) : null;
+        if (hold) this.onCrossfade?.(hold.durationMs);
         this.onUpdateStack(hardPreset.shaderIds);
         this.onApplyParamsDirect?.(hardPreset.params);
         this.onUpdateParams?.(hardPreset.params);

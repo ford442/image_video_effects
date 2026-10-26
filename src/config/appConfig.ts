@@ -56,9 +56,10 @@ export const SHADER_FILES_URL = process.env.REACT_APP_SHADER_FILES_URL || 'https
 // Override with REACT_APP_SHADER_FILES_BASE_URL for local dev or staging.
 export const SHADER_FILES_BASE_URL = process.env.REACT_APP_SHADER_FILES_BASE_URL || 'https://test.1ink.us/image_video_effects/';
 
-// Webhook writes go through the storage manager's signing proxy; the HMAC key
-// lives only on the server (#1511 bug 2).
-export const STORAGE_WEBHOOK_PROXY_URL = `${STORAGE_API_URL}/api/webhook-proxy`;
+// Webhook payloads are HMAC-signed server-side by storage_manager
+// (POST /api/storage/sign-webhook). Credentials must remain server-side because REACT_APP_*
+// variables are inlined into the client bundle.
+export const STORAGE_SIGN_URL = process.env.REACT_APP_STORAGE_SIGN_URL || `${STORAGE_API_URL}/api/storage/sign-webhook`;
 
 // Google Cloud Storage Bucket
 export const LOCAL_MANIFEST_URL = './image_manifest.json';

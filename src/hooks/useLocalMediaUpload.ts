@@ -1,36 +1,70 @@
-import { useCallback, useRef } from 'react';
-import type { ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, type ChangeEvent } from 'react';
 
 export type LocalMediaKind = 'image' | 'video';
 
-/** Receives the chosen file; App loads it locally, RemoteApp forwards it to the main window. */
-export type LocalMediaLoader = (file: File, kind: LocalMediaKind) => void | Promise<void>;
+/** Receives the picked file. The main app loads it; the remote forwards it to the main app. */
+export type LocalMediaHandler = (file: Blob, kind: LocalMediaKind) => void | Promise<void>;
+export type LocalMediaLoader = LocalMediaHandler;
 
 export interface LocalMediaUploadHandlers {
+    handleFileChange: (event: ChangeEvent<HTMLInputElement>, kind: LocalMediaKind) => void;
     onImageChange: (event: ChangeEvent<HTMLInputElement>) => void;
     onVideoChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }
 
 /**
- * onChange handlers for the hidden `<input type="file">` upload pickers (#1511 bug 1).
- * The input value is reset after each pick so choosing the same file again fires a change.
+ * The hidden `<input type="file">` change handler shared by App and RemoteApp: take the first
+ * picked file, reset the input (so picking the same file again still fires), hand it on.
  */
-export function useLocalMediaUpload(loader: LocalMediaLoader): LocalMediaUploadHandlers {
-    const loaderRef = useRef(loader);
-    loaderRef.current = loader;
-
-    const handle = useCallback((event: ChangeEvent<HTMLInputElement>, kind: LocalMediaKind) => {
-        const input = event.target;
+export function useLocalMediaUpload(onFile: LocalMediaHandler): LocalMediaUploadHandlers {
+    const handleFileChange = useCallback((e: ChangeEvent<HTMLInputElement>, kind: LocalMediaKind) => {
+        const input = e.target;
         const file = input.files?.[0];
         input.value = '';
         if (!file) return;
-        Promise.resolve(loaderRef.current(file, kind)).catch((err) => {
-            console.error(`[Upload] Failed to load ${kind} "${file.name}":`, err);
-        });
+        try {
+            void Promise.resolve(onFile(file, kind))
+                .catch((err: unknown) => console.error(`[LocalMediaUpload] ${kind} upload failed:`, err));
+        } catch (err) {
+            console.error(`[LocalMediaUpload] ${kind} upload failed:`, err);
+        }
+    }, [onFile]);
+
+    const onImageChange = useCallback((e: ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'image'), [handleFileChange]);
+    const onVideoChange = useCallback((e: ChangeEvent<HTMLInputElement>) => handleFileChange(e, 'video'), [handleFileChange]);
+
+    return { handleFileChange, onImageChange, onVideoChange };
+}
+
+export interface UseLocalMediaLoaderOptions {
+    /** Load an image URL into the renderer (blob: URL of the picked file). */
+    onImage: (url: string) => void | Promise<void>;
+    /** Play a video URL as the input source (blob: URL of the picked file). */
+    onVideo: (url: string) => void;
+}
+
+/**
+ * Turns a picked (or remotely sent) file into a blob: URL for the renderer. Each kind keeps
+ * one live URL: the previous one is revoked when a new file of that kind replaces it, and all
+ * are revoked on unmount. The image URL stays alive while current because depth analysis
+ * re-reads it.
+ */
+export function useLocalMediaLoader({ onImage, onVideo }: UseLocalMediaLoaderOptions): LocalMediaHandler {
+    const urls = useRef<Partial<Record<LocalMediaKind, string>>>({});
+
+    useEffect(() => {
+        const live = urls.current;
+        return () => {
+            for (const url of Object.values(live)) if (url) URL.revokeObjectURL(url);
+        };
     }, []);
 
-    const onImageChange = useCallback((event: ChangeEvent<HTMLInputElement>) => handle(event, 'image'), [handle]);
-    const onVideoChange = useCallback((event: ChangeEvent<HTMLInputElement>) => handle(event, 'video'), [handle]);
-
-    return { onImageChange, onVideoChange };
+    return useCallback(async (file: Blob, kind: LocalMediaKind) => {
+        const url = URL.createObjectURL(file);
+        const previous = urls.current[kind];
+        urls.current[kind] = url;
+        if (previous) URL.revokeObjectURL(previous);
+        if (kind === 'image') await onImage(url);
+        else onVideo(url);
+    }, [onImage, onVideo]);
 }

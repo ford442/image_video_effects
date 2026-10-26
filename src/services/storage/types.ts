@@ -176,9 +176,10 @@ export interface HealthResponse {
 }
 
 export interface StorageClientConfig {
-  /** Storage manager signing proxy root; `/image-effects` is appended. */
   webhookUrl: string;
   staticUrl: string;
+  /** storage_manager endpoint that signs webhook payloads server-side. */
+  signUrl: string;
   apiUrl: string;
   shaderFilesBaseUrl: string;
 }

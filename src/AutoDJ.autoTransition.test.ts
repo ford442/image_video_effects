@@ -175,10 +175,10 @@ describe('Alucinate auto-transition races (#1511 bug 8)', () => {
     await flushAsync();
     vi.advanceTimersByTime(2000); // the cycle's settle delay before picking the next image
     await flushAsync();
-    expect(internals.nextImageTimer).not.toBeNull();
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
 
     dj.stop();
-    expect(internals.nextImageTimer).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
     vi.advanceTimersByTime(10_000);
     expect(onNextImage).not.toHaveBeenCalled();
   });

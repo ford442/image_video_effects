@@ -3,8 +3,8 @@ import Controls from './components/Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
 import { RemoteControlHeader } from './RemoteControlHeader';
+import { useLocalMediaUpload, type LocalMediaKind } from './hooks/useLocalMediaUpload';
 import { isRemoteChromeHidden, writeRemoteChromeParam } from './utils/remoteChrome';
-import { useLocalMediaUpload } from './hooks/useLocalMediaUpload';
 
 // Default State (matches App.tsx defaults roughly, but will be overwritten by sync)
 const DEFAULT_SLOT_PARAMS: SlotParams = {
@@ -223,16 +223,18 @@ const RemoteApp: React.FC = () => {
         sendMessage('CMD_SET_MUTED', muted);
     };
 
-    // File Uploads: forward the picked file to the main window (shared hook with App, #1511 bug 1)
-    const { onImageChange, onVideoChange } = useLocalMediaUpload(async (file, type) => {
+    // File Uploads
+    // Same picker handler as the main app; the remote forwards the bytes to it.
+    const forwardUpload = useCallback(async (file: Blob, type: LocalMediaKind) => {
         const buffer = await file.arrayBuffer();
         sendMessage('CMD_UPLOAD_FILE', {
-            name: file.name,
-            type: type,
+            name: file instanceof File ? file.name : 'upload',
+            type,
             mimeType: file.type,
             data: buffer
         });
-    });
+    }, [sendMessage]);
+    const { handleFileChange: handleFileUpload } = useLocalMediaUpload(forwardUpload);
 
     if (!connected) {
         return (
@@ -275,14 +277,14 @@ const RemoteApp: React.FC = () => {
                 accept="image/*"
                 ref={fileInputImageRef}
                 style={{display: 'none'}}
-                onChange={onImageChange}
+                onChange={(e) => handleFileUpload(e, 'image')}
             />
             <input
                 type="file"
                 accept="video/*"
                 ref={fileInputVideoRef}
                 style={{display: 'none'}}
-                onChange={onVideoChange}
+                onChange={(e) => handleFileUpload(e, 'video')}
             />
 
             {/* Scrollable Content Container */}

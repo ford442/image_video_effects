@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: cantilever deflection; pneumatocyst bladders; Vogel streamwise reconfiguration; intercalary meristem pallor
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: cantilever deflection; pneumatocyst bladders; Vogel streamwise reconfiguration; intercalary meristem pallor; Beer-Lambert water column (§12.2F); corrugated blade-margin ruffle
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -162,7 +162,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let strandOffset = ((swayBase + swayHarmonic + fbmSway * 0.6 + current) * (0.25 + mids * 0.2) + surge) * bend
                    + magneticPull * (0.35 + 0.65 * bend);
 
-  let strandDist = abs(laneLocal + strandOffset);
+  // ── Idea 2: corrugated blade margin (§12.1 t5) ──
+  // Giant-kelp blades have ruffled, wavy margins: a travelling lateral corrugation along the
+  // blade, stronger toward the free end, damped when the Vogel reconfiguration flattens the
+  // blade into the current.
+  let ruffleAmp = 0.07 * (0.35 + 0.65 * (1.0 - s)) * reconfig;
+  let ruffle = ruffleAmp * sin(p.y * 38.0 + phase * 2.0 - time * currentSpeed * 0.9);
+  let strandDist = abs(laneLocal + strandOffset + ruffle);
   let rooted = smoothstep(0.0, 0.04, s);
   let strand = smoothstep(0.30 * reconfig, 0.02, strandDist) * organicWidth * rooted;
 
@@ -206,16 +212,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     vec3<f32>(0.0, 0.33, 0.67)
   );
 
-  var color = vec3<f32>(0.01, 0.04, 0.06);
-  color = color + vec3<f32>(0.02, 0.5, 0.32) * strand * (1.0 + smoothBass * 0.1);
-  color = color + vec3<f32>(0.15, 0.95, 0.75) * frond * biolume * (1.0 + mids * 0.15);
+  // ── Idea 1: Beer-Lambert water column (§12.2F) ──
+  // Sunlight reaches a blade through the water above it: T = exp(-sigma*z), per channel,
+  // red absorbed first. Surface at the top of the frame (uv.y = 0), holdfasts sit deep, so the
+  // canopy is warm yellow-green and the stipe bases fall to dim blue-teal. Self-luminous
+  // light (tips, bioluminescent rim, spores, surge) is not attenuated; the absorbed light
+  // returns as a faint blue in-scatter veil in the deep water.
+  let column = 0.08 + 1.5 * uv.y;
+  let trans = exp(-vec3<f32>(0.85, 0.30, 0.11) * column);
+  let veil = vec3<f32>(0.01, 0.05, 0.09) * (1.0 - trans) * (0.35 + 0.65 * uv.y);
+
+  var color = vec3<f32>(0.01, 0.04, 0.06) + veil;
+  color = color + vec3<f32>(0.02, 0.5, 0.32) * trans * strand * (1.0 + smoothBass * 0.1);
+  color = color + vec3<f32>(0.15, 0.95, 0.75) * trans * frond * biolume * (1.0 + mids * 0.15);
   color = color + tipCol * tipGlow * 1.5;
   color = color + vec3<f32>(0.8, 1.0, 0.65) * spores * (0.3 + treble);
   // Bladders: amber-olive translucent body, bioluminescent rim, gas highlight
-  color = mix(color, vec3<f32>(0.32, 0.36, 0.08) + color * 0.3, bulbFill * 0.7);
+  color = mix(color, (vec3<f32>(0.32, 0.36, 0.08) + color * 0.3) * mix(vec3<f32>(1.0), trans, 0.8), bulbFill * 0.7);
   color = color + vec3<f32>(0.3, 1.0, 0.8) * bulbRim * biolume * (0.35 + mids * 0.3);
   color = color + vec3<f32>(1.0, 0.95, 0.75) * bulbSpec * (0.6 + treble * 0.5);
-  color = color + vec3<f32>(0.72, 0.78, 0.32) * meristem * (0.7 + biolume * 0.35);
+  color = color + vec3<f32>(0.72, 0.78, 0.32) * trans * meristem * (0.7 + biolume * 0.35);
   // Surge fronts and magnetic halo
   color = color + vec3<f32>(0.2, 0.55, 0.7) * surgeGlow * (0.5 + bass * 0.5);
   let mouseHalo = exp(-length(p - mouse) * 6.0) * magnetism * 0.25;

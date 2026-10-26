@@ -8,7 +8,9 @@ Backend: `storage_manager/app.py` (FastAPI on VPS, GCS-backed)
 | Env var | Purpose |
 |---------|---------|
 | `REACT_APP_API_BASE_URL` | REST API root (default `https://storage.noahcohn.com`) |
-| `REACT_APP_STORAGE_API_URL` | Storage manager root; webhook writes go to its signing proxy `{root}/api/webhook-proxy` |
+| `REACT_APP_STORAGE_API_URL` | Storage manager root for REST and proxy endpoints |
+| `REACT_APP_STORAGE_VPS_URL` | HMAC webhook root (default `https://storage.noahcohn.com/webhook`) |
+| `REACT_APP_STORAGE_SIGN_URL` | Server-side webhook signer (default `{STORAGE_API_URL}/api/storage/sign-webhook`) |
 | `REACT_APP_STATIC_NGINX_URL` | Static file reads for saved metadata/outputs |
 | `REACT_APP_SHADER_FILES_BASE_URL` | WGSL CDN fallback (default `https://test.1ink.us/image_video_effects/`) |
 
@@ -108,21 +110,29 @@ Streams song/video/audio media.
 
 ---
 
-## Webhook writes (HMAC, signed server-side)
+## Webhook writes (HMAC)
 
-### `POST {STORAGE_API_URL}/api/webhook-proxy/image-effects`
+### `POST /api/storage/sign-webhook` (storage_manager)
 
-The browser sends the **unsigned** body with `Content-Type: application/json`. No secret ships in the
-client bundle (#1511 bug 2). The storage manager signs the raw body with HMAC-SHA256 and forwards it to the
-receiver with `X-Hub-Signature-256: sha256={hex}`. It returns the receiver's status and JSON unchanged.
-A non-2xx response becomes a `StorageHttpError` that carries the proxy's error body.
+The HMAC secret is server-only (`STORAGE_WEBHOOK_SECRET` on storage_manager). It used to be
+inlined into the client bundle as `REACT_APP_WEBHOOK_SECRET`; `vite.config.ts` now refuses to
+inline any `*SECRET*`/`*TOKEN*`/`*PASSWORD*`/`*PRIVATE*` variable and CI greps `build/` for it.
 
-| Server env var (storage_manager) | Purpose |
-|----------------------------------|---------|
-| `WEBHOOK_SECRET` | HMAC-SHA256 key shared with the receiver |
-| `WEBHOOK_RECEIVER_URL` | Full receiver URL, e.g. `https://storage.noahcohn.com/webhook/image-effects` |
+**Body:** `{ "payload": "<the exact JSON string about to be posted to the webhook>" }`
+**Response 200:** `{ "signature": "sha256={hex}" }`
 
-If either is unset, the proxy answers `503`. If the receiver is unreachable, it answers `502`.
+Refuses (400) an action outside the list below, a missing name, or a `timestamp` older than
+`WEBHOOK_SIGN_MAX_AGE_SECONDS` (default 300); 403 for an `Origin` outside
+`WEBHOOK_SIGN_ALLOWED_ORIGINS`; 503 when no secret is configured.
+
+The storage manager also exposes `POST /api/webhook-proxy/image-effects`, which signs the raw
+request body with `WEBHOOK_SECRET` and forwards it to `WEBHOOK_RECEIVER_URL`. It returns the
+receiver's status and response; missing configuration returns 503 and an unreachable receiver
+returns 502.
+
+### `POST {webhookUrl}/image-effects`
+
+**Headers:** `Content-Type: application/json`, `X-Hub-Signature-256: sha256={hex}` (from the signer above)
 
 **Body**
 

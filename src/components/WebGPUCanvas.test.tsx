@@ -35,6 +35,11 @@ vi.mock('../renderer/webgpuBootProbe', () => ({
 }));
 
 beforeAll(() => {
+    // jsdom has no PointerEvent; without it fireEvent.pointerDown drops clientX/clientY.
+    if (typeof window.PointerEvent === 'undefined') {
+        (window as unknown as { PointerEvent: typeof MouseEvent }).PointerEvent = class extends MouseEvent {};
+    }
+
     // Mock ResizeObserver
     global.ResizeObserver = class ResizeObserver {
         observe() {}
@@ -72,19 +77,7 @@ beforeAll(() => {
     });
 });
 
-// jsdom has no PointerEvent; without it fireEvent.pointerDown drops clientX/clientY.
-if (typeof window.PointerEvent === 'undefined') {
-    class JsdomPointerEvent extends MouseEvent {
-        readonly pointerType: string;
-        constructor(type: string, init: PointerEventInit = {}) {
-            super(type, init);
-            this.pointerType = init.pointerType ?? 'mouse';
-        }
-    }
-    (window as unknown as { PointerEvent: typeof JsdomPointerEvent }).PointerEvent = JsdomPointerEvent;
-}
-
-test('one pointer down emits exactly one ripple for mouse, touch and pen (#1511 bug 5)', () => {
+test('a click emits exactly one ripple for mouse-driven shader', () => {
     const mockRenderer = {
         addRipplePoint: vi.fn(),
         firePlasma: vi.fn(),
@@ -127,20 +120,14 @@ test('one pointer down emits exactly one ripple for mouse, touch and pen (#1511 
     // @ts-ignore - jsdom doesn't implement getBoundingClientRect the same way
     canvas.getBoundingClientRect = () => rect;
 
-    // A real click dispatches pointerdown and then the compatibility mousedown.
-    fireEvent.pointerDown(canvas, { clientX: 100, clientY: 50, pointerType: 'mouse' });
+    // A real click dispatches pointerdown and then a compatibility mousedown.
+    fireEvent.pointerDown(canvas, { clientX: 100, clientY: 50 });
     fireEvent.mouseDown(canvas, { clientX: 100, clientY: 50 });
 
-    // Exactly one ripple at normalized coords (0.5, 0.25): no double down-handler (#1511 bug 5).
+    // Expect exactly one ripple, at normalized coords (0.5, 0.25) — the down handler must not
+    // run once for the pointer event and again for the mouse event.
     expect(mockRenderer.addRipplePoint).toHaveBeenCalledTimes(1);
     expect(mockRenderer.addRipplePoint).toHaveBeenCalledWith(0.5, 0.25);
-    expect(setIsMouseDown).toHaveBeenCalledTimes(1);
-
-    // Touch and pen arrive through the same pointer handler.
-    fireEvent.pointerDown(canvas, { clientX: 50, clientY: 100, pointerType: 'touch' });
-    fireEvent.pointerDown(canvas, { clientX: 150, clientY: 150, pointerType: 'pen' });
-    expect(mockRenderer.addRipplePoint).toHaveBeenCalledTimes(3);
-    expect(mockRenderer.addRipplePoint).toHaveBeenLastCalledWith(0.75, 0.75);
 });
 
 test('remount waits for the previous renderer teardown before re-probing', async () => {

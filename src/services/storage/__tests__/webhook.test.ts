@@ -1,40 +1,53 @@
+/**
+ * The webhook HMAC secret must never live in the client: webhookSave asks the storage_manager
+ * signer for the signature of the exact body it then posts.
+ */
 import { webhookSave } from '../webhook';
-import { StorageHttpError } from '../http';
 import type { StorageClientConfig } from '../types';
 
-const CONFIG: StorageClientConfig = {
-  webhookUrl: 'https://storage.example/api/webhook-proxy',
-  staticUrl: 'https://static.example',
-  apiUrl: 'https://storage.example',
-  shaderFilesBaseUrl: 'https://cdn.example/',
+const config: StorageClientConfig = {
+  webhookUrl: 'https://vps.test/webhook',
+  staticUrl: 'https://static.test',
+  signUrl: 'https://vps.test/api/storage/sign-webhook',
+  apiUrl: 'https://vps.test',
+  shaderFilesBaseUrl: 'https://cdn.test/',
 };
 
-afterEach(() => vi.unstubAllGlobals());
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+}
 
-describe('webhookSave via the signing proxy (#1511 bug 2)', () => {
-  it('POSTs the unsigned payload to the proxy and resolves the static url', async () => {
-    const fetchMock = vi.fn(async () =>
-      new Response(JSON.stringify({ status: 'success', files: ['image-effects/shaders/a.wgsl'] }), { status: 200 }),
-    );
+describe('webhookSave', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('signs server-side and posts the identical body with that signature', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ signature: 'sha256=abc' }))
+      .mockResolvedValueOnce(jsonResponse({ status: 'success', files: ['image-effects/shaders/x.wgsl'] }));
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await webhookSave(CONFIG, { action: 'save_shader', name: 'a', data: { x: 1 } });
+    const result = await webhookSave(config, { action: 'save_shader', name: 'x', data: { a: 1 } });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('https://storage.example/api/webhook-proxy/image-effects');
-    expect(init.headers).toEqual({ 'Content-Type': 'application/json' });
-    expect(JSON.parse(init.body as string)).toMatchObject({ action: 'save_shader', name: 'a', data: { x: 1 } });
-    expect(result.url).toBe('https://static.example/image-effects/shaders/a.wgsl');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [signUrl, signInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [hookUrl, hookInit] = fetchMock.mock.calls[1] as [string, RequestInit];
+    expect(signUrl).toBe(config.signUrl);
+    expect(hookUrl).toBe('https://vps.test/webhook/image-effects');
+    const signed = (JSON.parse(signInit.body as string) as { payload: string }).payload;
+    expect(hookInit.body).toBe(signed);
+    expect((hookInit.headers as Record<string, string>)['X-Hub-Signature-256']).toBe('sha256=abc');
+    expect(result.url).toContain('x.wgsl');
   });
 
-  it("surfaces the proxy's error body on non-2xx", async () => {
-    vi.stubGlobal('fetch', vi.fn(async () =>
-      new Response('{"detail":"Webhook proxy is not configured"}', { status: 503, statusText: 'Service Unavailable' }),
-    ));
+  it('does not post to the webhook when the signer refuses', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({ detail: 'Action not allowed' }, 400));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(webhookSave(config, { action: 'save_shader', name: 'x', data: {} })).rejects.toThrow();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
 
-    const err = await webhookSave(CONFIG, { action: 'save_shader', name: 'a', data: {} }).catch((e: unknown) => e);
-    expect(err).toBeInstanceOf(StorageHttpError);
-    expect(String((err as Error).message)).toContain('Webhook proxy is not configured');
+  it('the client config has no secret field', async () => {
+    const appConfig = await import('../../../config/appConfig');
+    expect(Object.keys(appConfig).some((k) => /SECRET/i.test(k))).toBe(false);
   });
 });

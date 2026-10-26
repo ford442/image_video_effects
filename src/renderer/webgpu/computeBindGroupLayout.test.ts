@@ -1,68 +1,79 @@
 /**
- * #1511 bug 3: the compute BGL's color bindings take their sample type from the
- * texture format, so a device without 'float32-filterable' keeps the catalog's
- * readTexture + filtering u_sampler pairs valid on rgba16float.
+ * Bind group 0 is generated from one contract (src/contracts/bind_group0.json) for TS and C++,
+ * and the colour bindings' sample type follows the texture format: rgba16float is always
+ * filterable, so a device without `float32-filterable` must not demote it to unfilterable-float
+ * (that breaks every shader that samples readTexture through the filtering u_sampler).
  */
-import { createComputeBindGroupLayout } from './pipeline';
-import { DEFAULT_FORMAT_CAPABILITIES, resolveColorFormat } from '../../config/formatPolicy';
-import type { RenderQualityMode } from '../../config/performancePolicy';
+import bindGroup0Contract from '../../contracts/bind_group0.json';
+import { colorSampleType, createComputeBindGroupLayout } from './pipeline';
+import { resolveColorFormat, DEFAULT_FORMAT_CAPABILITIES } from '../../config/formatPolicy';
 
-beforeAll(() => {
-  (globalThis as unknown as { GPUShaderStage: Record<string, number> }).GPUShaderStage ??= {
-    VERTEX: 1, FRAGMENT: 2, COMPUTE: 4,
-  };
-});
+const g = globalThis as Record<string, unknown>;
+if (!g.GPUShaderStage) g.GPUShaderStage = { COMPUTE: 4 };
 
-/** A device that was granted no optional features. */
+/** A device that offers no optional features at all. */
 function featurelessDevice() {
   const layouts: GPUBindGroupLayoutDescriptor[] = [];
   const device = {
     features: new Set<string>(),
-    createBindGroupLayout: vi.fn((desc: GPUBindGroupLayoutDescriptor) => {
+    createBindGroupLayout: (desc: GPUBindGroupLayoutDescriptor) => {
       layouts.push(desc);
       return { label: desc.label } as GPUBindGroupLayout;
-    }),
-    createPipelineLayout: vi.fn(() => ({}) as GPUPipelineLayout),
-  } as unknown as GPUDevice;
-  return { device, layouts };
+    },
+    createPipelineLayout: (desc: GPUPipelineLayoutDescriptor) => ({ label: desc.label }) as GPUPipelineLayout,
+  };
+  return { device: device as unknown as GPUDevice, layouts };
 }
 
-function sampleTypes(desc: GPUBindGroupLayoutDescriptor): Record<number, string | undefined> {
-  const out: Record<number, string | undefined> = {};
-  for (const e of desc.entries) if (e.texture) out[e.binding] = e.texture.sampleType;
-  return out;
+function entries(layouts: GPUBindGroupLayoutDescriptor[]): GPUBindGroupLayoutEntry[] {
+  return [...(layouts[0]?.entries ?? [])];
 }
 
-describe('compute bind group layout on a device without float32-filterable', () => {
-  it("uses 'float' for readTexture, dataTextureC and the history array on rgba16float", () => {
+describe('compute bind group 0 layout', () => {
+  it('keeps rgba16float colour bindings filterable without float32-filterable', () => {
     const { device, layouts } = featurelessDevice();
-    createComputeBindGroupLayout(device, device.features.has('float32-filterable'), 'rgba16float');
-    const types = sampleTypes(layouts[0]!);
-    expect(types[1]).toBe('float');
-    expect(types[9]).toBe('float');
-    expect(types[13]).toBe('float');
-    // Depth (r32float) stays unfilterable.
-    expect(types[4]).toBe('unfilterable-float');
+    createComputeBindGroupLayout(device, false, 'rgba16float');
+    const e = entries(layouts);
+    for (const b of [1, 9, 13]) {
+      expect(e[b]?.texture?.sampleType).toBe('float');
+    }
+    expect(e[0]?.sampler?.type).toBe('filtering');
   });
 
-  it("uses 'unfilterable-float' on rgba32float and 'float' once the feature is granted", () => {
+  it('marks rgba32float colour bindings unfilterable only without the feature', () => {
     const { device, layouts } = featurelessDevice();
     createComputeBindGroupLayout(device, false, 'rgba32float');
     createComputeBindGroupLayout(device, true, 'rgba32float');
-    expect(sampleTypes(layouts[0]!)).toMatchObject({ 1: 'unfilterable-float', 9: 'unfilterable-float', 13: 'unfilterable-float', 4: 'unfilterable-float' });
-    expect(sampleTypes(layouts[1]!)).toMatchObject({ 1: 'float', 9: 'float', 13: 'float', 4: 'unfilterable-float' });
+    const without = entries(layouts.slice(0, 1));
+    const withFeat = entries(layouts.slice(1, 2));
+    expect(without[1]?.texture?.sampleType).toBe('unfilterable-float');
+    expect(withFeat[1]?.texture?.sampleType).toBe('float');
+    expect(colorSampleType('rgba16float', false)).toBe('float');
   });
 
-  it('resolveColorFormat never returns rgba32float for such a device', () => {
-    const { device } = featurelessDevice();
-    const caps = {
-      ...DEFAULT_FORMAT_CAPABILITIES,
-      adapterGpuType: 'discrete' as const,
-      supportsRgba32FloatStorage: true,
-      hasFloat32Filterable: device.features.has('float32-filterable'),
-    };
-    for (const mode of ['ultra', 'auto', 'balanced', 'battery'] as RenderQualityMode[]) {
-      expect(resolveColorFormat(mode, caps)).not.toBe('rgba32float');
+  it('never makes depth (binding 4) filterable, matching the C++ layout', () => {
+    for (const hasF32 of [false, true]) {
+      const { device, layouts } = featurelessDevice();
+      createComputeBindGroupLayout(device, hasF32, 'rgba32float');
+      expect(entries(layouts)[4]?.texture?.sampleType).toBe('unfilterable-float');
+    }
+  });
+
+  it('builds every entry from bind_group0.json in binding order', () => {
+    const { device, layouts } = featurelessDevice();
+    createComputeBindGroupLayout(device, false, 'rgba16float');
+    const e = entries(layouts);
+    expect(e.map((x) => x.binding)).toEqual(bindGroup0Contract.bindings.map((b) => b.binding));
+    expect(e[2]?.storageTexture?.format).toBe('rgba16float');
+    expect(e[6]?.storageTexture?.format).toBe('r32float');
+    expect(e[13]?.texture?.viewDimension).toBe('2d-array');
+  });
+
+  it('a feature-less device resolves every quality mode to a filterable format', () => {
+    const caps = { ...DEFAULT_FORMAT_CAPABILITIES, adapterGpuType: 'discrete' as const, supportsRgba32FloatStorage: true };
+    for (const mode of ['ultra', 'auto', 'balanced', 'battery'] as const) {
+      const fmt = resolveColorFormat(mode, caps);
+      expect(colorSampleType(fmt, caps.hasFloat32Filterable)).toBe('float');
     }
   });
 });

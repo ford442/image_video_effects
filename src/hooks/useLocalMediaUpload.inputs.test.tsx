@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { LocalMediaLoader, useLocalMediaUpload } from './useLocalMediaUpload';
+import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { LocalMediaLoader, useLocalMediaLoader, useLocalMediaUpload } from './useLocalMediaUpload';
 
 function Pickers({ loader }: { loader: LocalMediaLoader }) {
     const { onImageChange, onVideoChange } = useLocalMediaUpload(loader);
@@ -22,7 +22,7 @@ function trackValueResets(input: HTMLInputElement): string[] {
     return writes;
 }
 
-describe('useLocalMediaUpload (#1511 bug 1)', () => {
+describe('useLocalMediaUpload input events', () => {
     it('hands each picked file to the loader with its kind and resets the input', () => {
         const loader = vi.fn();
         render(<Pickers loader={loader} />);
@@ -54,5 +54,32 @@ describe('useLocalMediaUpload (#1511 bug 1)', () => {
         fireEvent.change(img, { target: { files: [new File(['x'], 'a.png')] } });
         await vi.waitFor(() => expect(error).toHaveBeenCalled());
         error.mockRestore();
+    });
+});
+
+describe('useLocalMediaLoader', () => {
+    it('creates blob URLs, revokes replaced URLs, and releases live URLs on unmount', async () => {
+        const createObjectURL = vi.fn((file: Blob) => `blob:test/${(file as File).name}`);
+        const revokeObjectURL = vi.fn();
+        Object.assign(URL, { createObjectURL, revokeObjectURL });
+        const onImage = vi.fn();
+        const onVideo = vi.fn();
+        const { result, unmount } = renderHook(() => useLocalMediaLoader({ onImage, onVideo }));
+        const first = new File(['a'], 'first.png');
+        const second = new File(['b'], 'second.png');
+        const video = new File(['c'], 'clip.mp4');
+
+        await act(async () => {
+            await result.current(first, 'image');
+            await result.current(second, 'image');
+            await result.current(video, 'video');
+        });
+
+        expect(onImage).toHaveBeenLastCalledWith('blob:test/second.png');
+        expect(onVideo).toHaveBeenCalledWith('blob:test/clip.mp4');
+        expect(revokeObjectURL).toHaveBeenCalledWith('blob:test/first.png');
+        unmount();
+        expect(revokeObjectURL).toHaveBeenCalledWith('blob:test/second.png');
+        expect(revokeObjectURL).toHaveBeenCalledWith('blob:test/clip.mp4');
     });
 });

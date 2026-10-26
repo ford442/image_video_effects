@@ -33,6 +33,7 @@ import { getShaderCompileService } from '../../utils/shaderCompileService';
 import { isCanvasTransferred, WorkerWebGPUBackend } from './WorkerWebGPUBackend';
 import type { WebGpuProbeResult } from '../webgpuBootProbe';
 import type { DeviceLossInfo } from '../Renderer';
+import { DEFAULT_SLOT_OUTPUT } from '../slotOutput';
 
 const CONFIG = { width: 256, height: 256, agentCount: 0 };
 
@@ -63,7 +64,11 @@ function fakeRenderer() {
     setSlotShader: record('setSlotShader'),
     setSlotEnabled: record('setSlotEnabled'),
     setSlotMode: record('setSlotMode'),
-    getSlotState: () => ({ shaderId: null, enabled: false, mode: 'chained' as const }),
+    setSlotOutput: record('setSlotOutput'),
+    getSlotState: () => ({ shaderId: null, enabled: false, mode: 'chained' as const, output: { ...DEFAULT_SLOT_OUTPUT } }),
+    getCompositorStats: () => ({ layers: 2, masks: 1, textureMiB: 4, composites: 7, error: null, warnings: [] }),
+    setHdrPresent: record('setHdrPresent'),
+    getHdrPresent: () => ({ paperWhiteNits: 203, peakNits: 1000 }),
     setInputSource: record('setInputSource'),
     updateDepthMap: record('updateDepthMap'),
     setTransferredVideo: record('setTransferredVideo'),
@@ -80,6 +85,10 @@ function fakeRenderer() {
     applyTestRenderState: record('applyTestRenderState'),
     setCanvasCopySrc: (...args: unknown[]) => {
       calls.push(['setCanvasCopySrc', args]);
+      return true;
+    },
+    startCrossfade: (...args: unknown[]) => {
+      calls.push(['startCrossfade', args]);
       return true;
     },
     warmShaders: record('warmShaders'),
@@ -233,6 +242,34 @@ describe('render worker host ↔ client', () => {
     expect(getRuntimeGraph('graphlab-draft')).toBeNull();
     expect(hasGraph('graphlab-draft')).toBe(false);
     expect(getRuntimeSimRingRequest('graphlab-draft')).toBeUndefined();
+  });
+
+  it('applies startCrossfade on the worker renderer: the page sends the duration, nothing is read back', async () => {
+    const { mainPort, fake } = setup();
+    const client = await connectRenderWorker(mainPort);
+    await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: 'http://app/' });
+    fake.calls.length = 0;
+    client.send({ type: 'startCrossfade', durationMs: 1500 });
+    await flushPorts();
+    expect(fake.calls).toEqual([['startCrossfade', [1500]]]);
+  });
+
+  it('ignores startCrossfade before init and after the worker lost its device', async () => {
+    const { mainPort, fake, lose } = (() => {
+      const ctx = setup();
+      return { ...ctx, lose: ctx.fake.lose };
+    })();
+    const client = await connectRenderWorker(mainPort);
+    client.send({ type: 'startCrossfade', durationMs: 1000 });
+    await flushPorts();
+    expect(fake.calls.filter(([n]) => n === 'startCrossfade')).toEqual([]);
+
+    await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: 'http://app/' });
+    lose('driver reset');
+    await flushPorts();
+    client.send({ type: 'startCrossfade', durationMs: 1000 });
+    await flushPorts();
+    expect(fake.calls.filter(([n]) => n === 'startCrossfade')).toEqual([]);
   });
 
   it('re-negotiates the canvas color space through the setDisplayP3 RPC', async () => {
@@ -538,11 +575,31 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     await backend.destroy();
   });
 
+  it('coalesces slot output changes (opacity automation) into one frameInput per frame', async () => {
+    const { backend, fake } = await backendWithWorker();
+    await flushPorts();
+    fake.calls.length = 0;
+    backend.setSlotOutput(1, { mode: 'blend', blend: 'screen' });
+    for (let i = 0; i <= 10; i++) backend.setSlotOutput(1, { opacity: i / 10 });
+    expect(backend.getSlotOutput(1)).toMatchObject({ mode: 'blend', blend: 'screen', opacity: 1 });
+    backend.flush();
+    await flushPorts();
+    const outputCalls = fake.calls.filter(([n]) => n === 'setSlotOutput');
+    expect(outputCalls).toHaveLength(1);
+    expect(outputCalls[0]![1]).toEqual([1, { ...DEFAULT_SLOT_OUTPUT, mode: 'blend', blend: 'screen', opacity: 1 }]);
+    // A shader change keeps the output, like the in-thread renderer.
+    backend.setSlotShader(1, 'plasma');
+    expect(backend.getSlotState(1)?.output).toMatchObject({ blend: 'screen' });
+    await backend.destroy();
+  });
+
   it('serves synchronous getters from the optimistic shadow and the worker snapshot', async () => {
     const { backend } = await backendWithWorker();
     backend.setSlotShader(2, 'plasma');
     backend.setSlotMode(2, 'parallel');
-    expect(backend.getSlotState(2)).toEqual({ shaderId: 'plasma', enabled: true, mode: 'parallel' });
+    expect(backend.getSlotState(2)).toEqual({
+      shaderId: 'plasma', enabled: true, mode: 'parallel', output: { ...DEFAULT_SLOT_OUTPUT },
+    });
     // Deliver a snapshot directly (the host's interval is effectively off here).
     (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
       type: 'snapshot',
@@ -557,11 +614,13 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
         resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
         gpuErrors: ['oops'],
         liveGpuDevices: 1,
+        compositor: { layers: 2, masks: 0, textureMiB: 8, composites: 3, error: null, warnings: [] },
         inputChannel: 'postMessage',
         input: { mouse: [0.5, 0.5], mouseDown: false, audio: [0, 0, 0], slot0: [0.5, 0.5, 0.5, 0.5] },
       },
     });
     expect(backend.getFPS()).toBe(42);
+    expect(backend.getCompositorStats()).toMatchObject({ layers: 2, textureMiB: 8, composites: 3 });
     expect(backend.getGPUTimings().totalTime).toBe(3);
     expect(backend.getFrameStats().submitsLastFrame).toBe(1);
     expect(backend.isShaderCached('warm-one')).toBe(true);
@@ -572,19 +631,14 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     await backend.destroy();
   });
 
-  it('replaces the cached-shader set on every snapshot so LRU evictions read as uncached (#1511 bug 7)', async () => {
+  it('drops shaders the worker LRU evicted (snapshot replaces, never merges)', async () => {
     const { backend } = await backendWithWorker();
-    const deliver = (cachedShaderIds: string[]) =>
-      (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
-        type: 'snapshot',
-        snapshot: { initialized: true, cachedShaderIds } as unknown as Extract<RenderEvent, { type: 'snapshot' }>['snapshot'],
-      });
-    deliver(['a', 'b']);
+    deliverSnapshot(backend, true, ['a', 'b']);
     expect(backend.isShaderCached('a')).toBe(true);
-    expect(backend.isShaderCached('b')).toBe(true);
-    deliver(['b']);
+    deliverSnapshot(backend, true, ['b', 'c']);
     expect(backend.isShaderCached('a')).toBe(false);
     expect(backend.isShaderCached('b')).toBe(true);
+    expect(backend.isShaderCached('c')).toBe(true);
     await backend.destroy();
   });
 
@@ -608,6 +662,30 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     expect(second.fake.calls.filter(([n]) => n === 'setSlotShader')).toEqual([['setSlotShader', [3, 'plasma']]]);
     await first.backend.destroy();
     await second.backend.destroy();
+  });
+
+  it('sends startCrossfade to the worker and reports whether it was sent', async () => {
+    const { backend, fake } = await backendWithWorker();
+    await flushPorts();
+    fake.calls.length = 0;
+    expect(backend.startCrossfade(2000)).toBe(true);
+    expect(backend.startCrossfade(0)).toBe(true); // a hard cut still ends a fade in flight
+    expect(backend.startCrossfade(-1)).toBe(false);
+    expect(backend.startCrossfade(Number.NaN)).toBe(false);
+    await flushPorts();
+    expect(fake.calls).toEqual([['startCrossfade', [2000]], ['startCrossfade', [0]]]);
+    await backend.destroy();
+  });
+
+  it('a lost proxy sends no crossfade', async () => {
+    const { backend, fake } = await backendWithWorker();
+    await flushPorts();
+    fake.lose('driver reset');
+    await flushPorts();
+    fake.calls.length = 0;
+    expect(backend.startCrossfade(2000)).toBe(false);
+    await flushPorts();
+    expect(fake.calls).toEqual([]);
   });
 
   it('forwards runtime graphs to the worker as a setRuntimeGraph command', async () => {
@@ -739,7 +817,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
   });
 });
 
-function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): void {
+function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean, cachedShaderIds: string[] = []): void {
   (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
     type: 'snapshot',
     snapshot: {
@@ -747,10 +825,11 @@ function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): vo
       passTimings: [], timing: { source: 'wall-clock', periodNs: 1, profiledPasses: 0, overflow: 0 },
       frameStats: { submitsLastFrame: 1, bindGroupsLastFrame: 0, framesRendered: 1 },
       video: { ingestPath: 'none', framesIngested: 0, droppedFrames: 0, missedFrames: 0, queueDepth: 0 },
-      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds: [],
+      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds,
       colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
       resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
       gpuErrors: [], liveGpuDevices: 1, inputChannel: 'postMessage',
+      compositor: { layers: 0, masks: 0, textureMiB: 0, composites: 0, error: null, warnings: [] },
       input: { mouse: [0.5, 0.5], mouseDown: false, audio: [0, 0, 0], slot0: [0.5, 0.5, 0.5, 0.5] },
     },
   });

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { RenderMode } from '../renderer/types';
 import type { Alucinate } from '../AutoDJ';
-import type { AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord } from '../types/aiVj';
+import type { AIStatus, AutoTransitionConfig, ImageRecord, ShaderRecord, TriggerTransitionOptions } from '../types/aiVj';
 import { ShaderEntry } from '../renderer/types';
 import { savePreset } from '../services/vjPresets';
 import { IMAGE_SUGGESTIONS_URL } from '../app/constants/fallbackContent';
@@ -15,6 +15,8 @@ export interface UseAiVjHandlersOptions {
     handleUpdateStack: (ids: string[]) => void;
     handleUpdateParams: (paramsList: Record<string, number>[]) => void;
     handleApplyParamsDirect: (paramsList: Record<string, number>[]) => void;
+    /** Arm the renderer's cue crossfade for the next shader-stack change (RendererManager.armCrossfade). */
+    armCrossfade?: (durationMs: number) => void;
     setStatus: (status: string) => void;
 }
 
@@ -26,7 +28,7 @@ export interface UseAiVjHandlersReturn {
     toggleAiVj: () => Promise<void>;
     handleGenerateFromVibe: (vibe: string) => Promise<void>;
     handleRandomizeParams: () => Promise<void>;
-    handleTriggerNextTransition: () => Promise<void>;
+    handleTriggerNextTransition: (options?: TriggerTransitionOptions) => Promise<void>;
     handleSavePreset: (name: string) => void;
     startAutoTransition: (config: AutoTransitionConfig) => Promise<boolean>;
     stopAutoTransition: () => void;
@@ -41,6 +43,7 @@ export function useAiVjHandlers({
     handleUpdateStack,
     handleUpdateParams,
     handleApplyParamsDirect,
+    armCrossfade,
     setStatus,
 }: UseAiVjHandlersOptions): UseAiVjHandlersReturn {
     const [aiVj, setAiVj] = useState<Alucinate | null>(null);
@@ -78,6 +81,7 @@ export function useAiVjHandlers({
             );
             vj.onStatusChange = (s, m) => { setAiVjStatus(s); setAiVjMessage(m); };
             vj.onUpdateParams = handleUpdateParams;
+            vj.onCrossfade = (durationMs) => armCrossfade?.(durationMs);
             setAiVj(vj);
             setIsAiVjMode(true);
             await vj.initialize(imageManifest, IMAGE_SUGGESTIONS_URL);
@@ -101,7 +105,7 @@ export function useAiVjHandlers({
                 }
             }
         }
-    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, handleUpdateStack, handleUpdateParams, handleApplyParamsDirect, setStatus]);
+    }, [aiVj, isAiVjMode, availableModes, modes, handleLoadImage, imageManifest, currentImageUrl, handleUpdateStack, handleUpdateParams, handleApplyParamsDirect, armCrossfade, setStatus]);
 
     const handleGenerateFromVibe = useCallback(async (vibe: string) => {
         if (!aiVj) {
@@ -116,9 +120,10 @@ export function useAiVjHandlers({
         await aiVj.randomizeActiveParams();
     }, [aiVj]);
 
-    const handleTriggerNextTransition = useCallback(async () => {
+    const handleTriggerNextTransition = useCallback(async (options?: TriggerTransitionOptions) => {
         if (!aiVj) return;
-        await aiVj.triggerNextTransition();
+        // Bare keeps the exact old call, so existing bindings do not start fading.
+        await (options ? aiVj.triggerNextTransition(options) : aiVj.triggerNextTransition());
     }, [aiVj]);
 
     const handleSavePreset = useCallback((name: string) => {
