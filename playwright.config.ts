@@ -86,6 +86,19 @@ export default defineConfig({
       },
     },
     {
+      // The same *.swiftshader.spec.ts suites on a hardware GPU (#1512 Part C): the
+      // self-hosted runner in docs/GPU_RUNNER.md. annotateBootAdapter fails a test that
+      // lands on a software adapter here, so a green run is hardware evidence.
+      name: 'gpu',
+      testMatch: '**/*.swiftshader.spec.ts',
+      timeout: 120 * 1000,
+      use: {
+        ...desktopChromeNoUa,
+        channel: 'chromium',
+        launchOptions: { args: buildGpuLaunchArgs(process.platform, true, isBenchDevFeaturesEnabled()) },
+      },
+    },
+    {
       // The existing renderer smoke suites on the software device. Run once per
       // render thread: PX_RENDER_THREAD=main|worker (default worker, #1314).
       name: 'swiftshader-smoke',

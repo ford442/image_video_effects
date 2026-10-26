@@ -18,6 +18,8 @@ import {
   setRepeat,
   setScalable,
   setSimRing,
+  setSpatialHash,
+  simHashRequested,
   simRingRequest,
   toggleRole,
   uniqueNodeId,
@@ -219,6 +221,55 @@ describe('graphDraft sim ring', () => {
     expect(toggleRole(on, 0, 'writes', 'simIndex')).toBe(on);
     const reading = toggleRole(on, 0, 'reads', 'simState');
     expect(reading.graph.nodes[0]?.reads).toEqual(['dataC', 'simState']);
+  });
+
+  it('asks for the spatial hash only when told to, and only offers simHash then', () => {
+    const on = setSimRing(waveTank(), true);
+    expect(simHashRequested(on)).toBe(false);
+    expect(editableRoles(on, 'reads')).not.toContain('simHash');
+    expect(editableRoles(on, 'writes')).not.toContain('simHash');
+    expect(simRingRequest(on)).toEqual({ stateCount: 65536 });
+
+    const hashed = setSpatialHash(on, true);
+    expect(simHashRequested(hashed)).toBe(true);
+    expect(hashed.envelope.simRing).toEqual({ stateCount: 65536, spatialHash: true });
+    expect(simRingRequest(hashed)).toEqual({ stateCount: 65536, spatialHash: true });
+    expect(editableRoles(hashed, 'reads')).toEqual(['read', 'dataA', 'dataB', 'dataC', 'simState', 'simIndex', 'simHash']);
+    // simHash is never writable by a node.
+    expect(editableRoles(hashed, 'writes')).not.toContain('simHash');
+    expect(toggleRole(hashed, 0, 'writes', 'simHash')).toBe(hashed);
+    // Turning it on from nothing turns the ring on with it; off removes the key again.
+    expect(simRingRequest(setSpatialHash(waveTank(), true))).toEqual({ stateCount: 65536, spatialHash: true });
+    expect(setSpatialHash(hashed, false).envelope.simRing).toEqual({ stateCount: 65536 });
+  });
+
+  it('cannot drop the hash while a node reads it, and reading it asks for it', () => {
+    const hashed = setSpatialHash(setSimRing(waveTank(), true), true);
+    const reading = toggleRole(hashed, 0, 'reads', 'simHash');
+    expect(reading.graph.nodes[0]?.reads).toContain('simHash');
+    expect(setSpatialHash(reading, false)).toBe(reading);
+    // A sim draft that gains a simHash reader without the flag gets the flag.
+    const unflagged = setSimRing(waveTank(), true);
+    const withReader = addNode(unflagged, 'flock', 0, { reads: ['simHash', 'simIndex'], writes: ['simState'], dispatch: 'simState' });
+    expect(simHashRequested(withReader)).toBe(true);
+    expect(withReader.envelope.simRing).toMatchObject({ spatialHash: true });
+  });
+
+  it('starts from a flagship with its hash request intact and leaves DLA without one', () => {
+    const murmuration = draftFromRegistryGraph('murmuration', GRAPH_REGISTRY.murmuration!, {
+      id: 'murmuration',
+      name: 'Murmuration',
+      simRing: { stateCount: 65536, spatialHash: true },
+    });
+    expect(simRingRequest(murmuration)).toEqual({ stateCount: 65536, spatialHash: true });
+    expect(validateGraph(murmuration.graph)).toEqual([]);
+    const dlaDraft = draftFromRegistryGraph('dla-crystals', GRAPH_REGISTRY['dla-crystals']!, {
+      id: 'dla-crystals',
+      name: 'DLA',
+      simRing: { stateCount: 65536 },
+    });
+    expect(simHashRequested(dlaDraft)).toBe(false);
+    expect(simRingRequest(dlaDraft)).toEqual({ stateCount: 65536 });
   });
 
   it('switches a node to a simState dispatch only with the ring on, dropping scalable', () => {

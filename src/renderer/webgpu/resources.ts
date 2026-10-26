@@ -62,6 +62,8 @@ export function createTextures(
   scaledH: number,
   colorFormat: InternalColorFormat = 'rgba32float',
   historyLayers: number = HISTORY_DEPTH,
+  /** A canvas-sized depthRead to keep instead of allocating an empty one (recreateScaleTextures). */
+  keepDepthRead: GPUTexture | null = null,
 ): WebGPUTextureSet {
   const fullW = canvasW;
   const fullH = canvasH;
@@ -104,6 +106,9 @@ export function createTextures(
         GPUTextureUsage.STORAGE_BINDING |
         GPUTextureUsage.COPY_DST |
         GPUTextureUsage.COPY_SRC,
+      // Binding 13 is a 2d-array view. Compatibility mode binds a texture only with the view
+      // dimension it was created for, and a 1-layer texture would default to '2d' (#1512).
+      textureBindingViewDimension: '2d-array',
     }));
 
     const sourceTex = track(device.createTexture({
@@ -148,7 +153,7 @@ export function createTextures(
       usage: USAGE_STANDARD,
     }));
 
-    const depthRead = track(device.createTexture({
+    const depthRead = keepDepthRead ?? track(device.createTexture({
       label: 'depthRead',
       size: [fullW, fullH],
       format: 'r32float',
@@ -362,9 +367,15 @@ export class WebGPUResourcePool {
     historyLayers: number = this.historyLayers,
   ): WebGPUTextureSet {
     this.colorFormat = colorFormat;
-    this.destroyWorkingTextures();
+    // depthRead is canvas-sized and filled by depth estimation, which runs per image, not per
+    // rescale: a working-size or format change keeps it, texels included (and so does the
+    // device-loss replay, which uploads the depth map before the policy rescales, #1512).
+    const keepDepth = this.depthRead?.width === canvasW && this.depthRead?.height === canvasH
+      ? this.depthRead
+      : null;
+    destroyTextureSet({ ...this.getTextureSet(), ...(keepDepth ? { depthRead: undefined } : {}) });
     const textures = createTextures(
-      device, canvasW, canvasH, scaledW, scaledH, colorFormat, historyLayers,
+      device, canvasW, canvasH, scaledW, scaledH, colorFormat, historyLayers, keepDepth,
     );
     this.applyTextureSet(textures);
     return textures;
@@ -391,6 +402,8 @@ export class WebGPUResourcePool {
    */
   resetForDevice(): void {
     this.destroyWorkingTextures();
+    // recreateScaleTextures keeps a same-sized depthRead: never one from the old device.
+    this.depthRead = undefined as unknown as GPUTexture;
     this.destroyBuffers();
     this.filterSampler = undefined as unknown as GPUSampler;
     this.nearestSampler = undefined as unknown as GPUSampler;

@@ -18,6 +18,8 @@ describe('ControlBindingRegistry', () => {
         calls.push({ method: 'setSlotParam', args: [slot, param, value] }),
       randomizeSlot: (slot: number) =>
         calls.push({ method: 'randomizeSlot', args: [slot] }),
+      setSlotOpacity: (slot: number, value: number) =>
+        calls.push({ method: 'setSlotOpacity', args: [slot, value] }),
       randomizeAll: () => calls.push({ method: 'randomizeAll', args: [] }),
       triggerTransition: () =>
         calls.push({ method: 'triggerTransition', args: [] }),
@@ -42,6 +44,20 @@ describe('ControlBindingRegistry', () => {
     expect(handle.calls).toEqual([
       { method: 'setSlotParam', args: [0, 'zoomParam1', 0.75] },
     ]);
+  });
+
+  test('a MIDI CC fader drives slot opacity continuously (#1512)', () => {
+    const registry = new ControlBindingRegistry();
+    const handle = makeHandle();
+    registry.addBinding({ source: 'midi-cc', id: 'ch1/cc8' }, { type: 'setSlotOpacity', slot: 2 });
+    registry.dispatch({ source: 'midi-cc', id: 'ch1/cc8', value: 0.5 }, handle);
+    registry.dispatch({ source: 'midi-cc', id: 'ch1/cc8', value: 0 }, handle);
+    expect(handle.calls).toEqual([
+      { method: 'setSlotOpacity', args: [2, 0.5] },
+      { method: 'setSlotOpacity', args: [2, 0] },
+    ]);
+    expect(sanitizeBindings([{ trigger: { source: 'midi-cc', id: 'x' }, action: { type: 'setSlotOpacity', slot: 9 } }]))
+      .toEqual([{ trigger: { source: 'midi-cc', id: 'x' }, action: { type: 'setSlotOpacity', slot: 5 } }]);
   });
 
   test('synthetic key event drives triggerTransition on press only', () => {

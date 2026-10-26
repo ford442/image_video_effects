@@ -9,6 +9,9 @@
  * Order reproduces the pre-IR dispatch exactly: parallel slots → writeTex→readTex
  * → feedback; then each chained slot followed by its copy + feedback.
  * docs/BINDING_CONTRACT.md freezes the feedback order (B → C, then A → C).
+ *
+ * A parallel group with a non-`replace` slot output (#1512) also gets a `layerCopy`
+ * after each slot and one `composite` before the writeTex→readTex copy (compositor.ts).
  */
 
 import type { GraphRunReport, GraphSimRingBindings } from '../GraphRunner';
@@ -18,11 +21,21 @@ import {
   graphPlanErrors,
   graphRequestedPasses,
   MultipassGraphDef,
+  SIM_HASH_BUILD_ENTRY,
 } from '../multipassGraph';
+import { SIM_HASH_WORKGROUP_SIZE_X } from './simHash';
 import type { FrameSlotDispatchPlan, SlotDispatchPlan } from './slotDispatch';
 import type { SlotTimingMode } from './WebGPUTiming';
 import type { ShaderSlot } from './webgpuConstants';
 import { IslandRole, PassProfiler, snapNodeScale } from './nodeScale';
+import {
+  MAX_COMPOSITE_LAYERS,
+  outputComposites,
+  planCompositeGroup,
+  type CompositeGroupPlan,
+  type FrameCompositor,
+} from './compositor';
+import type { SlotOutput } from '../slotOutput';
 
 export type FeedbackCopySource = 'dataTexB' | 'dataTexA';
 
@@ -57,9 +70,12 @@ export interface ComputeOp {
   workgroup: { x: number; y: number };
   nodeId?: string;
   iteration?: number;
-  dispatch: 'pixels' | 'simState';
+  /** `simHashBuild` is the planner's scatter pass: it resets the heads, then binds only its own group. */
+  dispatch: 'pixels' | 'simState' | 'simHashBuild';
   /** Bind the group-1 sim ring for this pass. */
   bindSimRing: boolean;
+  /** Bind the 4-binding group-1 layout (the entry declares simHash). Implies bindSimRing. */
+  bindSimHash: boolean;
   /** Requested resolution scale (< 1 only inside an island of an opt-in node). */
   scale: number;
 }
@@ -73,7 +89,17 @@ export type FrameOp =
   | { kind: 'simBarrier' }
   /** Scaled island around one opt-in node dispatch (see nodeScale.ts). */
   | { kind: 'islandEnter'; scale: number }
-  | { kind: 'islandExit'; scale: number; writes: IslandRole[] };
+  | { kind: 'islandExit'; scale: number; writes: IslandRole[] }
+  /** Keep a composited parallel slot's output: writeTex → layer `layer` of `layerCount`. */
+  | LayerCopyOp
+  /** Masks + one compute pass: the group's layers over readTex, into writeTex. */
+  | { kind: 'composite'; plan: CompositeGroupPlan };
+
+export interface LayerCopyOp {
+  kind: 'layerCopy';
+  layer: number;
+  layerCount: number;
+}
 
 export interface FramePlan {
   ops: FrameOp[];
@@ -82,12 +108,18 @@ export interface FramePlan {
   output: 'readTex' | 'writeTex';
   /** One report per graph slot, in encode order. */
   graphReports: GraphRunReport[];
+  /** One plan per composited parallel group (empty when every output is `replace`). */
+  composites: CompositeGroupPlan[];
 }
 
 export interface FramePlanContext {
   getPipeline(id: string): GPUComputePipeline | undefined;
   getWorkgroupSize(id: string): { x: number; y: number };
   usesSimRing(id: string): boolean;
+  /** True when the entry's pipeline was built against the 4-binding (simHash) group-1 layout. */
+  usesSimHash?(id: string): boolean;
+  /** The compiled scatter pass, or null before the first simHash shader compiled. */
+  getSimHashBuildPipeline?(): GPUComputePipeline | null;
   /** Armed sim ring, or null when none is allocated. */
   simRing: GraphSimRingBindings | null;
   /** Per-graph pass cap from the render-quality policy. */
@@ -96,6 +128,8 @@ export interface FramePlanContext {
   framePassBudget: number;
   /** Requested scale for an opt-in graph node (1 when absent / not demoted). */
   nodeScale?: (slotIndex: number, nodeId: string) => number;
+  /** A compositor can run this frame; false keeps every parallel group last-one-wins. */
+  compositing?: boolean;
   warn?: (message: string) => void;
 }
 
@@ -168,6 +202,12 @@ function compileChain(
       warnOnce(ctx, `ring:${shaderId}`, `[WebGPURenderer] "${shaderId}" needs the sim ring but none is armed — skipped`);
       continue;
     }
+    // Only graphs rebuild the hash, so a chain step reads whatever the last graph left in it.
+    const bindSimHash = bindSimRing && !!ctx.usesSimHash?.(shaderId);
+    if (bindSimHash && !ctx.simRing?.hash) {
+      warnOnce(ctx, `hash:${shaderId}`, `[WebGPURenderer] "${shaderId}" needs the sim hash but none is armed — skipped`);
+      continue;
+    }
     ops.push({
       kind: 'compute',
       label: `${mode}-${shaderId}`,
@@ -179,6 +219,7 @@ function compileChain(
       workgroup: ctx.getWorkgroupSize(shaderId),
       dispatch: 'pixels',
       bindSimRing,
+      bindSimHash,
       scale: 1,
     });
   }
@@ -229,6 +270,36 @@ export function compileGraphOps(
         ops.push({ kind: 'copy', from: copy.from === 'dataA' ? 'dataTexA' : 'dataTexB', to: 'dataTexC' });
       }
     }
+    if (dispatch.dispatch === 'simHashBuild') {
+      // The scatter pass is planner-owned, so its pipeline comes from the context, not the shader cache.
+      const buildPipeline = ctx.getSimHashBuildPipeline?.() ?? null;
+      if (!buildPipeline || !ctx.simRing?.hash) {
+        warnOnce(
+          ctx,
+          `hash-build:${shaderId ?? ''}`,
+          `[GraphRunner] ${SIM_HASH_BUILD_ENTRY} needs the sim hash but none is armed — skipped`,
+        );
+        continue;
+      }
+      ops.push({
+        kind: 'compute',
+        label: `graph-${dispatch.nodeId}-${dispatch.iteration}`,
+        mode,
+        slotIndex,
+        shaderId: shaderId ?? dispatch.entry,
+        entry: dispatch.entry,
+        pipeline: buildPipeline,
+        workgroup: { x: SIM_HASH_WORKGROUP_SIZE_X, y: 1 },
+        nodeId: dispatch.nodeId,
+        iteration: dispatch.iteration,
+        dispatch: 'simHashBuild',
+        bindSimRing: false,
+        bindSimHash: false,
+        scale: 1,
+      });
+      executed++;
+      continue;
+    }
     const pipeline = ctx.getPipeline(dispatch.entry);
     if (!pipeline) {
       warnOnce(ctx, `missing:${dispatch.entry}`, `[GraphRunner] Pipeline missing for "${dispatch.entry}"`);
@@ -237,6 +308,11 @@ export function compileGraphOps(
     const needsRing = ctx.usesSimRing(dispatch.entry) || dispatch.dispatch === 'simState';
     if (needsRing && (!ctx.simRing || ctx.simRing.stateCount === 0)) {
       warnOnce(ctx, `ring:${dispatch.entry}`, `[GraphRunner] "${dispatch.entry}" needs the sim ring but none is armed — skipped`);
+      continue;
+    }
+    const bindSimHash = needsRing && ctx.usesSimRing(dispatch.entry) && !!ctx.usesSimHash?.(dispatch.entry);
+    if (bindSimHash && !ctx.simRing?.hash) {
+      warnOnce(ctx, `hash:${dispatch.entry}`, `[GraphRunner] "${dispatch.entry}" needs the sim hash but none is armed — skipped`);
       continue;
     }
     const scale = dispatch.scalable && dispatch.dispatch === 'pixels'
@@ -259,6 +335,7 @@ export function compileGraphOps(
       iteration: dispatch.iteration,
       dispatch: dispatch.dispatch,
       bindSimRing: needsRing && ctx.usesSimRing(dispatch.entry),
+      bindSimHash,
       scale,
     });
     if (scale < 1) ops.push({ kind: 'islandExit', scale, writes });
@@ -296,8 +373,33 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
     }
   };
 
-  plan.parallel.forEach((slotPlan, i) => compileSlot(slotPlan, 'parallel', i));
+  // Layers are only the slots that encoded a pass: a slot whose pipeline is missing
+  // left writeTex as the previous slot wrote it, and must not be blended twice.
+  const wantsComposite = !!ctx.compositing && plan.parallel.some((p) => outputComposites(p.slot.output));
+  const groupSlots: Array<{ slotIndex: number; output?: SlotOutput }> = [];
+  const layerCopies: LayerCopyOp[] = [];
+  plan.parallel.forEach((slotPlan, i) => {
+    const computeBefore = countCompute(ops);
+    compileSlot(slotPlan, 'parallel', i);
+    if (!wantsComposite || countCompute(ops) === computeBefore || groupSlots.length >= MAX_COMPOSITE_LAYERS) return;
+    const copy: LayerCopyOp = { kind: 'layerCopy', layer: groupSlots.length, layerCount: 0 };
+    ops.push(copy);
+    layerCopies.push(copy);
+    groupSlots.push({ slotIndex: slotPlan.slotIndex, output: slotPlan.slot.output });
+  });
+  const composites: CompositeGroupPlan[] = [];
   if (plan.parallel.length > 0) {
+    const composite = wantsComposite ? planCompositeGroup(groupSlots) : null;
+    if (composite) {
+      for (const copy of layerCopies) copy.layerCount = composite.layerCount;
+      for (const warning of composite.warnings) warnOnce(ctx, `composite:${warning}`, `[Compositor] ${warning}`);
+      ops.push({ kind: 'composite', plan: composite });
+      composites.push(composite);
+    } else if (layerCopies.length > 0) {
+      // Only `replace` outputs encoded after all: today's last-one-wins, without the copies.
+      const drop = new Set<FrameOp>(layerCopies);
+      ops.splice(0, ops.length, ...ops.filter((op) => !drop.has(op)));
+    }
     ops.push({ kind: 'copy', from: 'writeTex', to: 'readTex' });
     pushFeedback(ops, getFeedbackCopyOrder(
       plan.anyReadsDataC,
@@ -314,10 +416,15 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
 
   return {
     ops,
-    computeCount: ops.reduce((n, op) => n + (op.kind === 'compute' ? 1 : 0), 0),
+    computeCount: countCompute(ops),
     output: singleChained ? 'writeTex' : 'readTex',
     graphReports,
+    composites,
   };
+}
+
+function countCompute(ops: readonly FrameOp[]): number {
+  return ops.reduce((n, op) => n + (op.kind === 'compute' ? 1 : 0), 0);
 }
 
 /** What the executor needs to run a scaled island (implemented by NodeScaleIslands). */
@@ -336,6 +443,8 @@ export interface FrameExecResources {
   scaledH: number;
   /** Absent → opt-in nodes run at full size. */
   islands?: FrameIslands | null;
+  /** Absent → `layerCopy` / `composite` ops are skipped (last one wins). */
+  compositor?: FrameCompositor | null;
 }
 
 export interface FrameExecHooks {
@@ -351,6 +460,8 @@ export interface FrameExecHooks {
   ) => GPUComputePassTimestampWrites | undefined;
   /** Stamps for island resample passes. */
   profileResample?: PassProfiler;
+  /** Stamps for compositor mask / feather / composite passes. */
+  profileComposite?: PassProfiler;
 }
 
 export interface FrameExecResult {
@@ -376,6 +487,8 @@ export function executeFramePlan(
   };
   let computeIndex = 0;
   let activeIsland: number | null = null;
+  // A layer that could not be kept would composite stale texels: skip that group's pass.
+  let layersOk = true;
 
   for (const op of plan.ops) {
     switch (op.kind) {
@@ -404,7 +517,33 @@ export function executeFramePlan(
         if (activeIsland === op.scale) res.islands?.encodeExit(encoder, op.scale, op.writes, hooks.profileResample);
         activeIsland = null;
         break;
+      case 'layerCopy':
+        layersOk = !!res.compositor?.encodeLayerCopy(encoder, res.textures.writeTex, op.layer, op.layerCount) && layersOk;
+        break;
+      case 'composite':
+        if (layersOk && res.compositor) {
+          res.compositor.encodeComposite(
+            encoder, op.plan, res.textures.readTex, res.textures.writeTex, hooks.profileComposite,
+          );
+        }
+        layersOk = true;
+        break;
       case 'compute': {
+        if (op.dispatch === 'simHashBuild') {
+          const ring = res.simRing;
+          const hash = ring?.hash;
+          if (!ring || !hash) break;
+          const stamps = hooks.timestampWrites?.(op, computeIndex, plan.computeCount, 1);
+          computeIndex++;
+          // Heads back to empty (the links need no reset: a dead agent is never reached), then scatter.
+          encoder.copyBufferToBuffer(hash.emptyBuffer, 0, hash.buffer, 0, hash.headBytes);
+          const buildPass = encoder.beginComputePass(stamps ? { label: op.label, timestampWrites: stamps } : { label: op.label });
+          buildPass.setPipeline(op.pipeline);
+          buildPass.setBindGroup(0, hash.buildBindGroup);
+          buildPass.dispatchWorkgroups(Math.ceil(ring.stateCount / Math.max(1, op.workgroup.x)), 1, 1);
+          buildPass.end();
+          break;
+        }
         const island = op.scale < 1 && activeIsland === op.scale ? res.islands ?? null : null;
         const bindGroup = island?.bindGroup(op.scale) ?? null;
         const size = island?.size(op.scale) ?? null;
@@ -417,7 +556,9 @@ export function executeFramePlan(
         pass.setPipeline(op.pipeline);
         pass.setBindGroup(0, scaled && bindGroup ? bindGroup : res.computeBindGroup);
         const ring = res.simRing;
-        if (op.bindSimRing && ring) pass.setBindGroup(1, ring.bindGroup);
+        if (op.bindSimRing && ring) {
+          pass.setBindGroup(1, op.bindSimHash && ring.hash ? ring.hash.bindGroup : ring.bindGroup);
+        }
         if (op.dispatch === 'simState' && ring) {
           pass.dispatchWorkgroups(Math.ceil(ring.stateCount / Math.max(1, op.workgroup.x)), 1, 1);
         } else {
