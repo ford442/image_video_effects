@@ -45,6 +45,7 @@ describe('useRemoteSync commands', () => {
     triggerRoulette?: () => void;
     updateSlotParam?: (index: number, updates: Record<string, number>) => void;
     handleNewRandomImage?: () => Promise<void>;
+    handleUploadedFile?: (file: Blob, kind: 'image' | 'video') => void;
   }) {
     return renderHook(() =>
       useRemoteSync({
@@ -88,6 +89,38 @@ describe('useRemoteSync commands', () => {
     });
 
     expect(handleRandomizeSlot).toHaveBeenCalledWith(0);
+  });
+
+  it('dispatches CMD_UPLOAD_FILE to handleUploadedFile as a typed Blob', () => {
+    const handleUploadedFile = vi.fn();
+    mountMain({ handleUploadedFile });
+    const data = new Uint8Array([1, 2, 3]).buffer;
+
+    act(() => {
+      MockBroadcastChannel.instances[0]!.onmessage?.({
+        data: { type: 'CMD_UPLOAD_FILE', payload: { name: 'a.png', type: 'image', mimeType: 'image/png', data } },
+      } as MessageEvent);
+    });
+
+    expect(handleUploadedFile).toHaveBeenCalledTimes(1);
+    const [blob, kind] = handleUploadedFile.mock.calls[0]!;
+    expect(kind).toBe('image');
+    expect(blob).toBeInstanceOf(Blob);
+    expect((blob as Blob).type).toBe('image/png');
+    expect((blob as Blob).size).toBe(3);
+  });
+
+  it('ignores CMD_UPLOAD_FILE with an invalid payload', () => {
+    const handleUploadedFile = vi.fn();
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    mountMain({ handleUploadedFile });
+    act(() => {
+      MockBroadcastChannel.instances[0]!.onmessage?.({
+        data: { type: 'CMD_UPLOAD_FILE', payload: { type: 'audio', data: 'nope' } },
+      } as MessageEvent);
+    });
+    expect(handleUploadedFile).not.toHaveBeenCalled();
+    warn.mockRestore();
   });
 
   it('dispatches CMD_ROULETTE to triggerRoulette', () => {

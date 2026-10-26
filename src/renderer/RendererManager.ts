@@ -60,6 +60,7 @@ import { getLiveDeviceCount } from './webgpuBootProbe';
 import { DeviceRecoveryController, type DeviceRecoveryStatus } from './deviceRecovery';
 import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
 import type { DisplayP3Result } from './webgpuBootProbe';
+import { CrossfadeArm, slotIdentityChanged } from './crossfadeArm';
 
 export type { RendererType, RendererInitOptions, WebGpuProbeHandoff };
 export { getRendererTypeFromURL };
@@ -124,6 +125,8 @@ export class RendererManager {
   private destroyed = false;
   private readonly perfState: PerformancePolicyState = createPerformancePolicyState();
   private readonly adaptiveController: AdaptivePerformanceController;
+  /** A cue crossfade waiting for the next shader-stack change (see armCrossfade). */
+  private readonly crossfadeArm = new CrossfadeArm();
 
   constructor(
     config: RendererConfig,
@@ -506,8 +509,14 @@ export class RendererManager {
   async loadShaders(shaders: ShaderEntry[]): Promise<void> {
     return loadShadersForBackend(this.backend(), this.slotPolicy(), this.slotCallbacks(), shaders, this.loadShaderBound);
   }
-  setActiveShader(id: string): void { setActiveShader(this.backend(), id); }
-  setSlotShader(index: number, id: string): void { setSlotShader(this.backend(), this.slotPolicy(), index, id); }
+  setActiveShader(id: string): void {
+    this.fireArmedCrossfade(this.activeShaderChangesPicture(id));
+    setActiveShader(this.backend(), id);
+  }
+  setSlotShader(index: number, id: string): void {
+    this.fireArmedCrossfade(this.slotChangesPicture(index, { shaderId: id || null, enabled: !!id }));
+    setSlotShader(this.backend(), this.slotPolicy(), index, id);
+  }
   setSlotParams(slotIndex: number, p1: number, p2: number, p3: number, p4: number): void {
     setSlotParams(this.backend(), slotIndex, p1, p2, p3, p4);
   }
@@ -533,7 +542,49 @@ export class RendererManager {
       options,
     );
   }
-  setSlotMode(index: number, mode: 'chained' | 'parallel'): void { setSlotMode(this.backend(), index, mode); }
+  setSlotMode(index: number, mode: 'chained' | 'parallel'): void {
+    const before = this.currentRenderer?.getSlotState?.(index) ?? null;
+    // Only a slot that renders something changes the picture when its mode flips.
+    this.fireArmedCrossfade(!!before?.enabled && !!before.shaderId && before.mode !== mode);
+    setSlotMode(this.backend(), index, mode);
+  }
+
+  /**
+   * Arm a cue crossfade: the next change to what a slot renders (shader id, slot enabled,
+   * chained/parallel) dissolves from the picture on screen into the new stack over
+   * `durationMs`, once. Param moves never fire it. A duration of 0 is today's hard cut;
+   * ?renderer=wasm and ?renderer=js have no hold and cut. Returns whether a fade is armed.
+   */
+  armCrossfade(durationMs: number): boolean {
+    if (!isWebGpuBackend(this.shaderRenderer())) {
+      this.crossfadeArm.disarm();
+      return false;
+    }
+    return this.crossfadeArm.arm(durationMs, performance.now());
+  }
+
+  /** Send the single startCrossfade command if a cue is armed and `changes` says the picture will change. */
+  private fireArmedCrossfade(changes: boolean): void {
+    if (!changes || !this.crossfadeArm.isArmed) return;
+    const durationMs = this.crossfadeArm.take(performance.now());
+    const r = this.shaderRenderer();
+    if (durationMs !== null && isWebGpuBackend(r)) r.startCrossfade(durationMs);
+  }
+
+  private slotChangesPicture(index: number, after: { shaderId: string | null; enabled: boolean }): boolean {
+    if (!this.crossfadeArm.isArmed) return false;
+    return slotIdentityChanged(this.currentRenderer?.getSlotState?.(index) ?? null, after);
+  }
+
+  /** setActiveShader binds slot 0 and clears every other slot. */
+  private activeShaderChangesPicture(id: string): boolean {
+    if (!this.crossfadeArm.isArmed) return false;
+    if (this.slotChangesPicture(0, { shaderId: id || null, enabled: !!id })) return true;
+    for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) {
+      if (this.slotChangesPicture(i, { shaderId: null, enabled: false })) return true;
+    }
+    return false;
+  }
   setInputSource(source: InputSource): void {
     this.lastInputSource = source;
     inputBridge.setInputSource(this.currentRenderer, source);

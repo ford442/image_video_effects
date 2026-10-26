@@ -18,9 +18,13 @@ const KNOWN_APP_ENV = [
   'REACT_APP_STORAGE_VPS_HOST',
   'REACT_APP_STORAGE_VPS_PORT',
   'REACT_APP_STORAGE_VPS_URL',
+  'REACT_APP_STORAGE_SIGN_URL',
   'REACT_APP_VERSION',
-  'REACT_APP_WEBHOOK_SECRET',
 ];
+
+// Anything matching this is server-only and is never inlined, even if a .env file sets it
+// as REACT_APP_* (the storage webhook secret once shipped in the bundle that way).
+const SERVER_ONLY_ENV = /SECRET|PASSWORD|PRIVATE|TOKEN/;
 
 // Same cross-origin isolation as production (build.sh .htaccess, #1314), so
 // `npm start` / `vite preview` exercise the SharedArrayBuffer input ring of the render worker.
@@ -33,6 +37,10 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'REACT_APP_');
   const define: Record<string, string> = {};
   for (const key of new Set([...KNOWN_APP_ENV, ...Object.keys(env)])) {
+    if (SERVER_ONLY_ENV.test(key)) {
+      console.warn(`[vite] ${key} looks server-only; not inlining it into the client bundle.`);
+      continue;
+    }
     const value = env[key] ?? process.env[key];
     // Vitest copies `process.env.*` defines onto the real process.env as strings,
     // turning an unset var into the truthy string "undefined". Node has a real

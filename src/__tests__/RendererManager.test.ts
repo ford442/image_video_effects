@@ -1122,3 +1122,170 @@ describe('RendererManager device-loss recovery', () => {
     expect(await manager.recoverFromDeviceLoss()).toBe(false);
   });
 });
+
+describe('RendererManager cue crossfade', () => {
+  let canvas: HTMLCanvasElement;
+
+  beforeEach(() => {
+    canvas = document.createElement('canvas');
+    vi.clearAllMocks();
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
+  });
+
+  afterEach(() => vi.restoreAllMocks());
+
+  type Slot = { shaderId: string | null; enabled: boolean; mode: 'chained' | 'parallel' };
+
+  /** A TS backend whose slot state follows what the manager forwards, like the worker proxy's shadow. */
+  function webgpuBackend() {
+    const slots = new Map<number, Slot>();
+    const r = makeMockWebGPU();
+    Object.assign(r, {
+      backendKind: 'webgpu',
+      startCrossfade: vi.fn(() => true),
+      setFatalErrorHandler: vi.fn(),
+      setResolutionScale: vi.fn(),
+      setAdaptiveQuality: vi.fn(),
+      setMaxPassesPerFrame: vi.fn(),
+      setFramePassBudget: vi.fn(),
+      setColorFormat: vi.fn(),
+      getSlotState: vi.fn((i: number) => slots.get(i) ?? null),
+    });
+    (r.setSlotShader as Mock).mockImplementation((i: number, id: string) => {
+      slots.set(i, { shaderId: id || null, enabled: !!id, mode: slots.get(i)?.mode ?? 'chained' });
+    });
+    (r.setSlotMode as Mock).mockImplementation((i: number, mode: Slot['mode']) => {
+      const slot = slots.get(i);
+      if (slot) slots.set(i, { ...slot, mode });
+    });
+    (r.setActiveShader as Mock).mockImplementation((id: string) => {
+      slots.clear();
+      slots.set(0, { shaderId: id, enabled: true, mode: 'chained' });
+    });
+    return r as typeof r & { startCrossfade: Mock };
+  }
+
+  async function boot(backend = webgpuBackend()) {
+    (WebGPURenderer as Mock).mockImplementation(() => backend);
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    expect(await manager.init(canvas)).toBe(true);
+    return { manager, backend };
+  }
+
+  it('never fires unless a cue is armed', async () => {
+    const { manager, backend } = await boot();
+    manager.setSlotShader(0, 'a');
+    manager.setSlotShader(0, 'b');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+  });
+
+  it('fires once, with the armed duration, on the first change of what a slot renders', async () => {
+    const { manager, backend } = await boot();
+    manager.setSlotShader(0, 'a');
+    expect(manager.armCrossfade(2000)).toBe(true);
+
+    manager.setSlotShader(1, 'b');
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(1);
+    expect(backend.startCrossfade).toHaveBeenCalledWith(2000);
+    // The cue is sent before the change it covers, so the worker holds the old picture first.
+    expect(backend.startCrossfade.mock.invocationCallOrder[0]).toBeLessThan(
+      (backend.setSlotShader as Mock).mock.invocationCallOrder.at(-1)!,
+    );
+
+    // Hold once, then ramp: the rest of the same recall lands inside the cue.
+    manager.setSlotShader(2, 'c');
+    manager.setSlotShader(0, 'z');
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(1);
+  });
+
+  it('param-only moves never fire it and leave it armed for the real change', async () => {
+    const { manager, backend } = await boot();
+    manager.setSlotShader(0, 'a');
+    manager.armCrossfade(1500);
+
+    manager.updateSlotParams({ zoomParam1: 0.9 }, 0);
+    manager.setSlotParams(0, 0.1, 0.2, 0.3, 0.4);
+    manager.syncAllSlotParams([defaultSlotParams]);
+    manager.setSlotShader(0, 'a'); // re-binding the same shader is not a change
+    manager.setSlotShader(3, ''); // clearing an empty slot is not a change
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+
+    manager.setSlotShader(0, 'b');
+    expect(backend.startCrossfade).toHaveBeenCalledWith(1500);
+  });
+
+  it('a chained / parallel flip fires it for a slot that renders, not for an empty one', async () => {
+    const { manager, backend } = await boot();
+    manager.setSlotShader(0, 'a');
+    manager.armCrossfade(1000);
+
+    manager.setSlotMode(4, 'parallel');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+    manager.setSlotMode(0, 'chained');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+    manager.setSlotMode(0, 'parallel');
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(1);
+  });
+
+  it('setActiveShader fires when it swaps slot 0 or clears other slots, not when nothing changes', async () => {
+    const { manager, backend } = await boot();
+    manager.setActiveShader('a');
+    manager.armCrossfade(1000);
+    manager.setActiveShader('a');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+    manager.setActiveShader('b');
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(1);
+
+    manager.setSlotShader(1, 'c');
+    manager.armCrossfade(1000);
+    manager.setActiveShader('b'); // slot 0 unchanged, but slot 1 goes dark
+    expect(backend.startCrossfade).toHaveBeenCalledTimes(2);
+  });
+
+  it('a duration of 0 is today\'s hard cut: it does not arm and disarms a pending cue', async () => {
+    const { manager, backend } = await boot();
+    manager.armCrossfade(2000);
+    expect(manager.armCrossfade(0)).toBe(false);
+    manager.setSlotShader(0, 'a');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+  });
+
+  it('a cue that never sees its stack expires instead of firing on a later edit', async () => {
+    const { manager, backend } = await boot();
+    let now = 1000;
+    vi.spyOn(performance, 'now').mockImplementation(() => now);
+    manager.armCrossfade(2000);
+    now += 60_000;
+    manager.setSlotShader(0, 'a');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+    now += 1;
+    manager.setSlotShader(0, 'b');
+    expect(backend.startCrossfade).not.toHaveBeenCalled();
+  });
+
+  it('?renderer=wasm ignores the hold and cuts', async () => {
+    const wasm = makeMockWASM();
+    (WASMRenderer as Mock).mockImplementation(() => wasm);
+    (WebGPURenderer as Mock).mockImplementation(() => ({ init: vi.fn().mockResolvedValue(false), destroy: vi.fn() }));
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    expect(await manager.switchRenderer('wasm')).toBe(true);
+
+    expect(manager.armCrossfade(2000)).toBe(false);
+    manager.setSlotShader(0, 'rain');
+    manager.setSlotShader(0, 'snow');
+    manager.setSlotMode(0, 'parallel');
+    expect(wasm.setSlotShader).toHaveBeenCalledWith(0, 'snow');
+    expect(wasm).not.toHaveProperty('startCrossfade');
+  });
+
+  it('?renderer=js ignores the hold and cuts', async () => {
+    (WebGPURenderer as Mock).mockImplementation(() => ({ init: vi.fn().mockResolvedValue(false), destroy: vi.fn() }));
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    expect(await manager.switchRenderer('js')).toBe(true);
+    expect(manager.armCrossfade(2000)).toBe(false);
+    expect(() => manager.setSlotShader(0, 'rain')).not.toThrow();
+  });
+});
