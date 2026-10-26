@@ -87,7 +87,8 @@ import type { PassTiming } from './passTimings';
 import { ShaderWarmupQueue, type WarmupEntry } from './webgpu/shaderWarmup';
 import { NodeScaleIslands, nodeScaleKey, snapNodeScale } from './webgpu/nodeScale';
 import type { FrameIslands } from './webgpu/framePlan';
-import { SlotCompositor, outputComposites, type CompositorStats, type FrameCompositor } from './webgpu/compositor';
+import { IDLE_COMPOSITOR_STATS, outputComposites, type CompositorStats, type FrameCompositor } from './webgpu/compositor';
+import type { SlotCompositor } from './webgpu/slotCompositor';
 import { DEFAULT_SLOT_OUTPUT, normalizeSlotOutput, patchSlotOutput, type SlotOutput } from './slotOutput';
 import type { TransferredVideoFrames, VideoIngestStats } from './media/videoFramePump';
 import { VideoIngest } from './media/videoIngest';
@@ -214,8 +215,13 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private warmup: ShaderWarmupQueue | null = null;
   /** Scratch resources for opt-in graph nodes running below full size. */
   private readonly islands = new NodeScaleIslands();
-  /** Layer compositor for parallel groups with blend / mask outputs (#1512). */
-  private readonly compositor = new SlotCompositor();
+  /**
+   * Layer compositor for parallel groups with blend / mask outputs (#1512). Its GPU side is
+   * the lazy `compositor` chunk: null until the first group that composites has loaded it.
+   */
+  private compositor: SlotCompositor | null = null;
+  private compositorLoad: Promise<void> | null = null;
+  private compositorLoadError: string | null = null;
   /** Demoted opt-in graph nodes: `${slot}:${nodeId}` → scale (< 1). */
   private readonly nodeScales = new Map<string, number>();
   /** The canvas this renderer presents to (an OffscreenCanvas in the render worker). */
@@ -778,22 +784,41 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       (slot) => slot.enabled && !!slot.shaderId && slot.mode === 'parallel' && outputComposites(slot.output),
     );
     if (!wanted || !this.device) {
-      this.compositor.releaseTextures();
+      this.compositor?.releaseTextures();
       return null;
     }
-    this.compositor.attach({
+    const compositor = this.compositor;
+    if (!compositor) {
+      this.loadCompositor();
+      return null; // last-one-wins until the chunk is in
+    }
+    compositor.attach({
       device: this.device,
       colorFormat: this.colorFormat,
       scaledW: this.scaledW,
       scaledH: this.scaledH,
       depthTex: this.resources.depthRead,
     });
-    return this.compositor.available ? this.compositor : null;
+    return compositor.available ? compositor : null;
+  }
+
+  /** Fetch the compositor chunk once. A failed load keeps parallel groups on last-one-wins. */
+  private loadCompositor(): void {
+    this.compositorLoad ??= import(/* webpackChunkName: "compositor" */ './webgpu/slotCompositor').then(
+      ({ SlotCompositor }) => {
+        this.compositor = new SlotCompositor();
+      },
+      (e: unknown) => {
+        this.compositorLoadError = `compositor chunk failed to load: ${e instanceof Error ? e.message : String(e)}`;
+        console.warn(`[WebGPU] ${this.compositorLoadError}; parallel groups stay last-one-wins`);
+      },
+    );
   }
 
   /** Layer / mask memory, pass count and unresolved-mask warnings, for diagnostics. */
   getCompositorStats(): CompositorStats {
-    return this.compositor.stats();
+    if (this.compositor) return this.compositor.stats();
+    return { ...IDLE_COMPOSITOR_STATS, warnings: [], error: this.compositorLoadError };
   }
 
   /** The swapchain carries STORAGE_BINDING and is bgra8unorm: the compute present runs. */
@@ -1510,7 +1535,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.warmup?.stop();
     this.warmup = null;
     this.islands.destroy();
-    this.compositor.destroy();
+    this.compositor?.destroy();
     this.hdrPresent.release();
     this.storagePresent.release();
     this.texelProbe?.resolve(null);

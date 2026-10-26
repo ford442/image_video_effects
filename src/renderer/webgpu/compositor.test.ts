@@ -5,12 +5,12 @@ import type { FrameSlotDispatchPlan, SlotDispatchPlan } from './slotDispatch';
 import {
   COMPOSITE_PARAMS_BYTES,
   KEY_SOFTNESS,
-  SlotCompositor,
   featherRadiusPx,
   packCompositeParams,
   packMaskParams,
   planCompositeGroup,
 } from './compositor';
+import { SlotCompositor } from './slotCompositor';
 import { blendChannel, compositePixel, type Rgba } from './compositeReference';
 
 const blend = (patch: Partial<SlotOutput>): SlotOutput => ({ ...DEFAULT_SLOT_OUTPUT, mode: 'blend', ...patch });
