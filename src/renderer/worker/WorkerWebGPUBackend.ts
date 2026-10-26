@@ -128,7 +128,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private video: HTMLVideoElement | null = null;
   private pump: VideoFramePump | null = null;
   private cpuImage: HTMLImageElement | HTMLCanvasElement | null = null;
-  private readonly cachedIds = new Set<string>();
+  private cachedIds = new Set<string>();
   private readonly audio = { bass: 0, mid: 0, treble: 0, freqBins: new Float32Array(FFT_BINS) };
   private lastFrameImage = '';
   /** SAB input ring when the page and the worker are cross-origin isolated (#1314 C3). */
@@ -256,7 +256,9 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       this.snap = event.snapshot;
       // A lost worker never comes back; only a new backend (new worker) renders again.
       this.initialized = !this.lost && event.snapshot.initialized;
-      for (const id of event.snapshot.cachedShaderIds) this.cachedIds.add(id);
+      // Replace, never merge: the worker's pipeline LRU (#1449) evicts, and a merged set would
+      // keep reporting evicted shaders as cached (graphLab runDraft then skips the reload).
+      this.cachedIds = new Set(event.snapshot.cachedShaderIds);
     } else if (event.type === 'error') {
       reportError(event.error);
     } else if (event.type === 'deviceLost') {
