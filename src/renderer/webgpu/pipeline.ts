@@ -12,6 +12,7 @@ import {
   ShaderBindingUsage,
 } from '../ShaderCompilation';
 import type { InternalColorFormat } from '../../config/formatPolicy';
+import bindGroup0Contract from '../../contracts/bind_group0.json';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import { HISTORY_DEPTH } from './webgpuConstants';
@@ -220,36 +221,60 @@ export class WebGPUShaderManager {
   }
 }
 
+type BindGroup0Kind = keyof typeof bindGroup0Contract.kinds;
+
+/** One @group(0) layout entry from src/contracts/bind_group0.json (shared with the C++ header). */
+function bindGroup0Entry(
+  binding: number,
+  kind: BindGroup0Kind,
+  visibility: GPUShaderStageFlags,
+  colorSample: GPUTextureSampleType,
+  colorFormat: InternalColorFormat,
+): GPUBindGroupLayoutEntry {
+  switch (kind) {
+    case 'filteringSampler': return { binding, visibility, sampler: { type: 'filtering' } };
+    case 'nonFilteringSampler': return { binding, visibility, sampler: { type: 'non-filtering' } };
+    case 'comparisonSampler': return { binding, visibility, sampler: { type: 'comparison' } };
+    case 'sampledColor': return { binding, visibility, texture: { sampleType: colorSample } };
+    case 'sampledColorArray':
+      return { binding, visibility, texture: { sampleType: colorSample, viewDimension: '2d-array' } };
+    case 'sampledDepth': return { binding, visibility, texture: { sampleType: 'unfilterable-float' } };
+    case 'storageColor':
+      return { binding, visibility, storageTexture: { access: 'write-only', format: colorFormat } };
+    case 'storageDepth':
+      return { binding, visibility, storageTexture: { access: 'write-only', format: 'r32float' } };
+    case 'uniformBuffer': return { binding, visibility, buffer: { type: 'uniform' } };
+    case 'storageBuffer': return { binding, visibility, buffer: { type: 'storage' } };
+    case 'readOnlyStorageBuffer': return { binding, visibility, buffer: { type: 'read-only-storage' } };
+  }
+}
+
+/**
+ * Sample type for the internal-colour bindings (1, 9, 13). Keyed on the texture format, not the
+ * device feature alone: rgba16float is always filterable, so pairing it with the filtering
+ * `u_sampler` is legal even without `float32-filterable`. Only rgba32float needs the feature.
+ */
+export function colorSampleType(
+  colorFormat: InternalColorFormat,
+  hasF32Filt: boolean,
+): GPUTextureSampleType {
+  if (colorFormat === 'rgba32float' && !hasF32Filt) return 'unfilterable-float';
+  return 'float';
+}
+
 export function createComputeBindGroupLayout(
   device: GPUDevice,
   hasF32Filt: boolean,
   colorFormat: InternalColorFormat = 'rgba32float',
 ): WebGPUComputeLayout {
-  const fST: GPUTextureSampleType = hasF32Filt ? 'float' : 'unfilterable-float';
+  const fST = colorSampleType(colorFormat, hasF32Filt);
   const V = GPUShaderStage.COMPUTE;
 
   const bindGroupLayout = device.createBindGroupLayout({
     label: 'computeBGL',
-    entries: [
-      { binding: 0, visibility: V, sampler: { type: 'filtering' } },
-      { binding: 1, visibility: V, texture: { sampleType: fST } },
-      { binding: 2, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 3, visibility: V, buffer: { type: 'uniform' } },
-      { binding: 4, visibility: V, texture: { sampleType: 'unfilterable-float' } },
-      { binding: 5, visibility: V, sampler: { type: 'non-filtering' } },
-      { binding: 6, visibility: V, storageTexture: { access: 'write-only', format: 'r32float' } },
-      { binding: 7, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 8, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 9, visibility: V, texture: { sampleType: fST } },
-      { binding: 10, visibility: V, buffer: { type: 'storage' } },
-      { binding: 11, visibility: V, sampler: { type: 'comparison' } },
-      { binding: 12, visibility: V, buffer: { type: 'read-only-storage' } },
-      {
-        binding: 13,
-        visibility: V,
-        texture: { sampleType: fST, viewDimension: '2d-array' },
-      },
-    ],
+    entries: bindGroup0Contract.bindings.map(({ binding, kind }) =>
+      bindGroup0Entry(binding, kind as BindGroup0Kind, V, fST, colorFormat),
+    ),
   });
 
   const pipelineLayout = device.createPipelineLayout({
