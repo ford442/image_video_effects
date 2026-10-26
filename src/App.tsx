@@ -32,6 +32,8 @@ import {
     useRecording,
     useRemoteSync,
     useTestHarness,
+    useLocalMediaUpload,
+    useLocalMediaLoader,
 } from './hooks';
 import { useThumbnailManifest } from './hooks/useThumbnailManifest';
 import { useShaderWarmup } from './hooks/useShaderWarmup';
@@ -64,9 +66,15 @@ function MainApp() {
     const [availableModes, setAvailableModes] = useState<ShaderEntry[]>([]);
     const [inputSource, setInputSource] = useState<InputSource>('image');
     const [activeGenerativeShader, setActiveGenerativeShader] = useState<string>('gen-orb');
-    const [videoSourceUrl] = useState<string | undefined>(undefined);
+    // blob: URL of an uploaded video; wins over selectedVideo until a stock video is picked.
+    const [videoSourceUrl, setVideoSourceUrl] = useState<string | undefined>(undefined);
     const [isMuted, setIsMuted] = useState(true);
-    const [selectedVideo, setSelectedVideo] = useState<string>('');
+    const [selectedVideo, setSelectedVideoState] = useState<string>('');
+    // Picking a stock video (UI, remote, B3HD) replaces an uploaded one.
+    const setSelectedVideo = useCallback<React.Dispatch<React.SetStateAction<string>>>((value) => {
+        setVideoSourceUrl(undefined);
+        setSelectedVideoState(value);
+    }, []);
     const [videoB3hdMode, setVideoB3hdMode] = useState(false);
     const [b3hdSegmentLength, setB3hdSegmentLength] = useState(DEFAULT_B3HD_SEGMENT_LENGTH);
     const [b3hdIntervalSeconds, setB3hdIntervalSeconds] = useState(DEFAULT_B3HD_INTERVAL_SECONDS);
@@ -227,6 +235,19 @@ function MainApp() {
         setStatus,
     });
 
+    // "📁 Upload Img" / video upload (and CMD_UPLOAD_FILE from the remote) load through here.
+    const loadUploadedImage = useCallback(async (url: string) => {
+        syncInputSourceToRenderer('image');
+        setStatus('Loading uploaded image...');
+        await handleLoadImage(url);
+    }, [syncInputSourceToRenderer, handleLoadImage]);
+    const playUploadedVideo = useCallback((url: string) => {
+        setVideoSourceUrl(url);
+        syncInputSourceToRenderer('video');
+    }, [syncInputSourceToRenderer]);
+    const loadLocalMedia = useLocalMediaLoader({ onImage: loadUploadedImage, onVideo: playUploadedVideo });
+    const { handleFileChange: handleLocalFileChange } = useLocalMediaUpload(loadLocalMedia);
+
     useShaderBoot({
         rendererReady,
         shadersReady,
@@ -261,6 +282,12 @@ function MainApp() {
         });
     }, [mapShaderParamUpdates, updateSlotParam]);
 
+    // A shader-stack change (set recall, a preset swap) dissolves instead of cutting once this is
+    // armed; param moves never fire it. TS WebGPU only: the manager ignores it on WASM / Canvas2D.
+    const armCrossfade = useCallback((durationMs: number) => {
+        rendererRef.current?.armCrossfade(durationMs);
+    }, []);
+
     const {
         aiVj,
         aiVjStatus,
@@ -282,6 +309,7 @@ function MainApp() {
         handleUpdateStack,
         handleUpdateParams,
         handleApplyParamsDirect,
+        armCrossfade,
         setStatus,
     });
 
@@ -466,6 +494,7 @@ function MainApp() {
         handleRandomizeSlot,
         triggerRandomizeAllSlots,
         triggerRoulette,
+        handleUploadedFile: loadLocalMedia,
     });
 
     useTestHarness({ rendererRef, rendererReady });
@@ -700,6 +729,7 @@ function MainApp() {
                 setActiveGenerativeShader={setActiveGenerativeShader}
                 fileInputImageRef={fileInputImageRef}
                 fileInputVideoRef={fileInputVideoRef}
+                onLocalFileChange={handleLocalFileChange}
                 isAiVjMode={isAiVjMode}
                 toggleAiVj={toggleAiVj}
                 aiVjStatus={aiVjStatus}
@@ -710,6 +740,7 @@ function MainApp() {
                 handleRandomizeParams={handleRandomizeParams}
                 handleSavePreset={handleSavePreset}
                 handleTriggerNextTransition={handleTriggerNextTransition}
+                handleArmCrossfade={armCrossfade}
                 handleRandomizeSlot={handleRandomizeSlot}
                 handleSetSlotParam={handleSetSlotParam}
                 handleShareVjSet={handleShareVjSet}

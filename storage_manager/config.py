@@ -88,3 +88,16 @@ OSC_UDP_HOST = os.environ.get("OSC_UDP_HOST", "127.0.0.1")
 OSC_UDP_PORT = int(os.environ.get("OSC_UDP_PORT", "9000"))
 # Extra browser origins allowed to open the relay socket (comma-separated).
 OSC_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("OSC_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+
+# --- WEBHOOK SIGNING (routes/webhook_sign.py) ---
+# The HMAC secret for the image-effects storage webhook. Server-only: it must never be
+# exposed to the client bundle (it used to be REACT_APP_WEBHOOK_SECRET).
+STORAGE_WEBHOOK_SECRET = os.environ.get("STORAGE_WEBHOOK_SECRET", "")
+WEBHOOK_SIGN_MAX_AGE_SECONDS = int(os.environ.get("WEBHOOK_SIGN_MAX_AGE_SECONDS", "300"))
+WEBHOOK_SIGN_MAX_BYTES = int(os.environ.get("WEBHOOK_SIGN_MAX_BYTES", str(64 * 1024 * 1024)))
+# Explicit origins only: the CORS list above allows "*", which is not good enough to sign for.
+WEBHOOK_SIGN_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("WEBHOOK_SIGN_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+] or [o for o in ALLOWED_ORIGINS if o != "*"]

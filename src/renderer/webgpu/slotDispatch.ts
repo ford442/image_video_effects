@@ -134,6 +134,8 @@ export function compileSlotPlan(state: WebGPUFrameState, plan: FrameSlotDispatch
     getPipeline: state.getPipeline,
     getWorkgroupSize: state.getWorkgroupSize,
     usesSimRing: state.usesSimRing,
+    usesSimHash: state.usesSimHash,
+    getSimHashBuildPipeline: state.getSimHashBuildPipeline,
     simRing: state.getSimRing(),
     maxPassesPerFrame: state.maxPassesPerFrame,
     framePassBudget: state.framePassBudget,

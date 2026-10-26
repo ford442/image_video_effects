@@ -1,8 +1,9 @@
 /**
- * HMAC-signed webhook writes to the VPS storage manager.
+ * HMAC-signed webhook writes to the VPS storage manager. The signature comes from the
+ * storage_manager signer (config.signUrl); the secret never reaches the client.
  */
 
-import { assertOk, generateHmacSignature, resolveStaticUrl } from './http';
+import { assertOk, requestWebhookSignature, resolveStaticUrl } from './http';
 import type {
   EffectConfigPayload,
   ShaderItem,
@@ -23,7 +24,7 @@ export async function webhookSave(
     timestamp: new Date().toISOString(),
   });
 
-  const signature = await generateHmacSignature(payload, config.secret);
+  const signature = await requestWebhookSignature(config.signUrl, payload);
 
   const response = await fetch(`${config.webhookUrl}/image-effects`, {
     method: 'POST',

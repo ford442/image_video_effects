@@ -14,7 +14,7 @@ VJ Studio is the unified control surface for live visual performance in Pixeloci
 | Section | What it does |
 |---------|----------------|
 | **Active slots** | Jump between slots; shows shader id per slot |
-| **Transitions** | Auto-transition timer or audio beat (requires AI VJ mode for some paths) |
+| **Transitions** | Auto-transition timer or audio beat (requires AI VJ mode for some paths); a duration above 0 dissolves a shader change ([Cue crossfade](#cue-crossfade)) |
 | **MIDI & keyboard** | Map hardware CCs, notes, or keys to params and actions |
 | **OSC** | Opt-in bridge for live desks (TouchOSC, Max, Resolume…) via a local relay |
 | **Audio-reactive** | Drive parameter motion from microphone / audio analysis on every active slot |
@@ -63,7 +63,7 @@ Browsers cannot receive UDP, so OSC goes through a tiny relay in `storage_manage
 |---------|------|--------|
 | `/pixelocity/slot/{0-5}/param/{x\|y\|z\|w}` | `f` (0–1; `i` / `T` / `F` accepted) | Set slider 1–4 of that slot (clamped). Freezes host audio on it briefly. |
 | `/pixelocity/slot/{0-5}/shader` | `s` | Load a shader id into the slot (`none` clears; unknown ids are ignored) |
-| `/pixelocity/transition` | optional `s` / `f` | Fire the next transition (a `0` — button release — is ignored) |
+| `/pixelocity/transition` | optional `s` / `f` | Fire the next transition (a `0` — button release — is ignored). Bare, it cuts exactly as a MIDI binding does; with the string `crossfade` a shader change dissolves ([Cue crossfade](#cue-crossfade)) |
 | `/pixelocity/audio/amount` | `f` (0–1) | Host audio-reactive amount |
 
 Slots are 0-based on the wire (slot `0` = "Slot 1" in the UI). Slots beyond the current stack are ignored. Bundles are supported (applied immediately; timetags ignored).
@@ -94,6 +94,19 @@ Project schema v1 is an envelope around the existing formats, not another shader
 - Media bytes, `data:`/`blob:` URLs, camera or microphone permission state, device/track handles, transient GPU objects, and adaptive render-scale telemetry are never saved. Webcam projects save only the source choice and ask the browser for permission again when applied.
 
 The contract is [`src/contracts/project_file.json`](../src/contracts/project_file.json) (JSON Schema draft 2020-12). Project migrations are explicit one-version steps. Version 0 compatibility accepts a bare `SharedChain` or existing v1 `.vjset.json` and lifts it into project v1; unknown future versions are rejected with a reason. Chain URLs, preset packs, and the older VJ-set export remain separate and backward-compatible.
+
+## Cue crossfade
+
+Recalling a saved set used to cut the picture whenever the shader stack changed: sliders eased, shader ids did not. With a duration above 0 the **TypeScript WebGPU renderer** dissolves instead.
+
+- **One frozen image, one mix.** On cue start the renderer copies the last presented color into a single `rgba8unorm` texture at the canvas size (the *hold*). The present pass then mixes it over the live frame: mix 1 shows the hold, mix 0 the new stack, and the ramp is the transition orchestrator's eased progress (`crossfadeMix` in `src/utils/transitionMath.ts`). The mix is a 16-byte uniform on the blit pipeline only, never in the compute `Uniforms` struct, `zoom_params` or `extraBuffer`. Recording grabs the presented frame, so a recording captures the dissolve.
+- **One copy per cue.** A cue during a cue replaces the hold with what is on screen at that moment and restarts the ramp; there is no queue of holds. The texture exists only while the fade runs.
+- **Only a change of shader identity holds.** The first change to a slot's shader id, its enabled state or its chained/parallel mode after a cue is armed sends the single `startCrossfade` command; the rest of that recall lands inside the same fade. Slider moves — randomize transitions, audio, MIDI — keep lerping and never allocate a hold.
+- **Who fires it.** Recalling a chain from the Studio panels (**My VJ sets**, an imported `.vjset.json`, preset packs, the community gallery), the **Next transition ▸** button under *Auto Transition* (a *Cycle Presets* swap), and OSC `/pixelocity/transition crossfade`. A bare `/pixelocity/transition`, MIDI and key *Trigger Transition* bindings, and the timer / beat auto transitions keep cutting. Project files and chain URLs are unchanged: the fade is runtime only.
+- **Duration** is the *Auto Transition → Duration* slider (default 2 s). **0 is a hard cut**, today's behavior.
+- **Where it does not run.** `?renderer=wasm` and `?renderer=js` have no hold and cut (the C++ present path stays frozen). If the hold texture cannot be allocated, that cue cuts: no retry, no drop of the working resolution, and the frame loop keeps running. In the render worker the hold and the mix live on the worker's device; the page sends only the duration (see [`RENDER_WORKER.md`](RENDER_WORKER.md)).
+
+Out of scope: a second live stack rendered in parallel, wipe / luma / shader-authored transitions, and the offline stepped clock and export of #1401 (which will feed the same mix factor).
 
 ## Set recorder
 

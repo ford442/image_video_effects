@@ -72,8 +72,9 @@ import {
 } from './webgpuBootProbe';
 import { allocateWorkingPool, rungsForRequest } from './webgpu/historyTexProbe';
 import { declaresBindGroup1, SimRing } from './webgpu/simRing';
+import { armSimRingFor } from './webgpu/simRingArm';
 import { rewriteWgslStorageFormats } from './wgslFormatRewrite';
-import { resolveGraphForShader, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
+import { resolveGraphForShader, resolveSimHashRequest, resolveSimRingRequest, getGraphEntryIds, resolveMultipassChain } from './multipassRegistry';
 import { graphUsesSimRing, type MultipassGraphDef } from './multipassGraph';
 import { setRuntimeGraph as setRuntimeGraphOverlay, type RuntimeSimRingRequest } from './runtimeGraphs';
 import { instrumentDevice, type FrameStats } from './webgpu/deviceCounters';
@@ -576,6 +577,17 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.gpuChores.setSourceNormalizeEnabled(enabled);
   }
 
+  /**
+   * Cue crossfade: dissolve over `durationMs` from the picture last presented into whatever
+   * the next frames render (the blit lives in webgpu/presentHold.ts). Call it with the
+   * shader-stack change it covers. False when the picture cuts instead: duration 0,
+   * nothing presented yet, or the hold could not be created.
+   */
+  startCrossfade(durationMs: number): boolean {
+    if (!this.frameState || !this.initialized) return false;
+    return this.frameRenderer.startCrossfade(this.frameState, durationMs);
+  }
+
   async captureChoresThumbnailPng(outSize: number): Promise<string | null> {
     // The texture the last frame presented. resources.blitReadTex is always
     // readTex, which holds the *input* for a single chained slot (output → writeTex).
@@ -670,8 +682,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       this.device, this.pipeline.pipelineLayout, id, url,
     );
     if (ok && this.device && this.pipeline.shaderManager.usesSimRing(id)) {
-      const layout = this.pipeline.simRingBindGroupLayout;
-      if (!layout || !(await this.simRing.ensure(this.device, layout, resolveSimRingRequest(id)))) {
+      const armed = await armSimRingFor(
+        this.device, this.pipeline, this.simRing, id, resolveSimRingRequest(id), resolveSimHashRequest(id),
+      );
+      if (!armed) {
         console.warn(`[WebGPU] "${id}" declares @group(1) but the sim ring could not be armed`);
         return false;
       }
@@ -1313,6 +1327,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.warmup?.stop();
     this.warmup = null;
     this.islands.destroy();
+    this.frameRenderer.releasePresentHold();
     this.nodeScales.clear();
     this.videoIngest.detach();
     this.resolveFrameGrabs(null);
