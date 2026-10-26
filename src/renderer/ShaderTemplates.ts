@@ -78,7 +78,7 @@ fn fs(in: VSOut) -> @location(0) vec4f {
 }
 `;
 
-const makeBlitWGSL = (flipY: boolean) => /* wgsl */ `
+const makeBlitWGSL = (flipY: boolean, holdMix = false) => /* wgsl */ `
 struct VSOut {
   @builtin(position) pos : vec4f,
   @location(0)       uv  : vec2f,
@@ -99,7 +99,18 @@ fn vs(@builtin(vertex_index) idx: u32) -> VSOut {
 }
 
 @group(0) @binding(0) var src: texture_2d<f32>;
-
+${holdMix ? `
+// Present-only crossfade (webgpu/presentHold.ts). Group 1 is the frozen previous
+// picture (already gamma-encoded, canvas-sized, canvas orientation) and the mix factor.
+struct HoldMix {
+  amount : f32, // 0 = the new frame, 1 = the hold
+  pad0   : f32,
+  pad1   : f32,
+  pad2   : f32,
+}
+@group(1) @binding(0) var holdTex: texture_2d<f32>;
+@group(1) @binding(1) var<uniform> holdMix: HoldMix;
+` : ''}
 fn tap(p: vec2i, maxP: vec2i) -> vec4f {
   return textureLoad(src, clamp(p, vec2i(0), maxP), 0);
 }
@@ -122,7 +133,10 @@ fn fs(in: VSOut) -> @location(0) vec4f {
   );
   // Gamma encode: linear → sRGB (γ = 2.2 approximation)
   let rgb   = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));
-  return vec4f(rgb, 1.0);
+${holdMix ? `  // The hold is the canvas as last presented: same size, same pixel, no flip.
+  let hdim = vec2i(textureDimensions(holdTex));
+  let held = textureLoad(holdTex, clamp(vec2i(in.pos.xy), vec2i(0), hdim - vec2i(1)), 0).rgb;
+  return vec4f(mix(rgb, held, clamp(holdMix.amount, 0.0, 1.0)), 1.0);` : '  return vec4f(rgb, 1.0);'}
 }
 `;
 
@@ -137,3 +151,12 @@ export const BLIT_WGSL = makeBlitWGSL(true);
  * screen-space Y-up coordinates and should not be vertically flipped at present.
  */
 export const GENERATIVE_BLIT_WGSL = makeBlitWGSL(false);
+
+/**
+ * The blit with the crossfade hold mixed in after the gamma encode: the standard
+ * and Y-up variants are chosen exactly as before (selectPresentPipeline), then the
+ * frozen previous picture is mixed over the result. Present-only; never a catalog
+ * shader and never part of the compute `Uniforms` struct.
+ */
+export const BLIT_MIX_WGSL = makeBlitWGSL(true, true);
+export const GENERATIVE_BLIT_MIX_WGSL = makeBlitWGSL(false, true);

@@ -261,6 +261,12 @@ function MainApp() {
         });
     }, [mapShaderParamUpdates, updateSlotParam]);
 
+    // A shader-stack change (set recall, a preset swap) dissolves instead of cutting once this is
+    // armed; param moves never fire it. TS WebGPU only: the manager ignores it on WASM / Canvas2D.
+    const armCrossfade = useCallback((durationMs: number) => {
+        rendererRef.current?.armCrossfade(durationMs);
+    }, []);
+
     const {
         aiVj,
         aiVjStatus,
@@ -282,6 +288,7 @@ function MainApp() {
         handleUpdateStack,
         handleUpdateParams,
         handleApplyParamsDirect,
+        armCrossfade,
         setStatus,
     });
 
@@ -710,6 +717,7 @@ function MainApp() {
                 handleRandomizeParams={handleRandomizeParams}
                 handleSavePreset={handleSavePreset}
                 handleTriggerNextTransition={handleTriggerNextTransition}
+                handleArmCrossfade={armCrossfade}
                 handleRandomizeSlot={handleRandomizeSlot}
                 handleSetSlotParam={handleSetSlotParam}
                 handleShareVjSet={handleShareVjSet}

@@ -27,6 +27,8 @@ vi.mock('./webgpu/frame', async () => {
     WebGPUFrameRenderer: class {
       startRenderLoop = vi.fn();
       stopRenderLoop = vi.fn();
+      startCrossfade = vi.fn(() => true);
+      releasePresentHold = vi.fn();
     },
   };
 });
@@ -449,6 +451,67 @@ describe('WebGPURenderer lifecycle', () => {
       expect(getRendererDevice()).toBe(next);
       await rebuilt.destroy();
       expect(getRendererDevice()).toBeNull();
+    });
+  });
+
+  describe('cue crossfade', () => {
+    type FrameRendererStub = { startCrossfade: Mock; releasePresentHold: Mock };
+    const frameRendererOf = (wgpu: WebGPURenderer) =>
+      (wgpu as unknown as { frameRenderer: FrameRendererStub }).frameRenderer;
+
+    async function started() {
+      (createFrameState as Mock).mockReturnValue({ maxPassesPerFrame: 12 });
+      const device = makeDevice();
+      (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(device));
+      setupSpy.mockResolvedValueOnce('ok');
+      const wgpu = createWebGpu();
+      await wgpu.init(document.createElement('canvas'));
+      return wgpu;
+    }
+
+    it('is only a setter: it hands the duration and frame state to the frame renderer', async () => {
+      const frameState = { maxPassesPerFrame: 12, tag: 'frame-state' };
+      (createFrameState as Mock).mockReturnValue(frameState);
+      const device = makeDevice();
+      (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(device));
+      setupSpy.mockResolvedValueOnce('ok');
+      const wgpu = createWebGpu();
+      await wgpu.init(document.createElement('canvas'));
+
+      const loop = frameRendererOf(wgpu);
+      expect(wgpu.startCrossfade(2000)).toBe(true);
+      expect(loop.startCrossfade).toHaveBeenCalledWith(frameState, 2000);
+
+      loop.startCrossfade.mockReturnValueOnce(false); // nothing to dissolve from: the picture cuts
+      expect(wgpu.startCrossfade(2000)).toBe(false);
+    });
+
+    it('cuts before init and after the renderer stopped', async () => {
+      const early = createWebGpu();
+      expect(early.startCrossfade(2000)).toBe(false);
+      expect(frameRendererOf(early).startCrossfade).not.toHaveBeenCalled();
+
+      const wgpu = await started();
+      const loop = frameRendererOf(wgpu);
+      (wgpu as unknown as { initialized: boolean }).initialized = false;
+      expect(wgpu.startCrossfade(2000)).toBe(false);
+      expect(loop.startCrossfade).not.toHaveBeenCalled();
+    });
+
+    it('releases the hold when the device is torn down, on destroy and on a runtime loss', async () => {
+      const wgpu = await started();
+      await wgpu.destroy().catch(() => undefined);
+      expect(frameRendererOf(wgpu).releasePresentHold).toHaveBeenCalledTimes(1);
+
+      const lostDevice = makeDevice();
+      (initializeWebGPUDevice as Mock).mockResolvedValueOnce(outcomeFor(lostDevice));
+      setupSpy.mockResolvedValueOnce('ok');
+      const lossy = createWebGpu();
+      await lossy.init(document.createElement('canvas'));
+      lostDevice.loseUnexpectedly();
+      await flush();
+      await lossy.destroy().catch(() => undefined);
+      expect(frameRendererOf(lossy).releasePresentHold).toHaveBeenCalled();
     });
   });
 });

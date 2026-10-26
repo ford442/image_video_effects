@@ -1,4 +1,4 @@
-import { dispatchOscMessage, OscActionsHandle, routeOscMessage } from './oscRouter';
+import { dispatchOscMessage, OscActionsHandle, routeOscMessage, transitionOptionsForCue } from './oscRouter';
 
 const msg = (address: string, ...args: Array<number | string | boolean | null>) => ({ address, args });
 
@@ -62,5 +62,46 @@ describe('dispatchOscMessage', () => {
     expect(handle.setSlotShader).toHaveBeenCalledWith(0, 'none');
     expect(handle.triggerTransition).toHaveBeenCalledTimes(1);
     expect(handle.setAudioAmount).toHaveBeenCalledWith(0.25);
+  });
+});
+
+describe('transition cues', () => {
+  const makeHandle = (): OscActionsHandle => ({
+    setSlotParam: vi.fn(),
+    triggerTransition: vi.fn(),
+    setSlotShader: vi.fn(),
+    setAudioAmount: vi.fn(),
+  });
+
+  it('passes the crossfade cue through to the transition handle', () => {
+    const handle = makeHandle();
+    const action = dispatchOscMessage(msg('/pixelocity/transition', 'crossfade'), handle);
+    expect(action).toEqual({ type: 'triggerTransition', name: 'crossfade' });
+    expect(handle.triggerTransition).toHaveBeenCalledTimes(1);
+    expect(handle.triggerTransition).toHaveBeenCalledWith('crossfade');
+  });
+
+  it('a nameless trigger calls the handle with no argument, exactly as before', () => {
+    const handle = makeHandle();
+    dispatchOscMessage(msg('/pixelocity/transition'), handle);
+    dispatchOscMessage(msg('/pixelocity/transition', 1), handle);
+    expect(handle.triggerTransition).toHaveBeenCalledTimes(2);
+    for (const call of (handle.triggerTransition as ReturnType<typeof vi.fn>).mock.calls) {
+      expect(call).toEqual([]);
+    }
+  });
+
+  it('a button release fires nothing', () => {
+    const handle = makeHandle();
+    expect(dispatchOscMessage(msg('/pixelocity/transition', 0), handle)).toBeNull();
+    expect(handle.triggerTransition).not.toHaveBeenCalled();
+  });
+
+  it('only the crossfade cue asks for a dissolve', () => {
+    expect(transitionOptionsForCue('crossfade')).toEqual({ crossfade: true });
+    expect(transitionOptionsForCue(' CrossFade ')).toEqual({ crossfade: true });
+    expect(transitionOptionsForCue()).toBeUndefined();
+    expect(transitionOptionsForCue('')).toBeUndefined();
+    expect(transitionOptionsForCue('wipe')).toBeUndefined();
   });
 });

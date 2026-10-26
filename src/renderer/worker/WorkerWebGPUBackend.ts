@@ -640,6 +640,17 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     return true;
   }
 
+  /**
+   * Cue crossfade: the worker freezes the picture it last presented and dissolves it into
+   * the next frames. Fire-and-forget; false when nothing was sent (lost, not started). A
+   * duration of 0 is sent too: it is a hard cut that also ends a fade still running.
+   */
+  startCrossfade(durationMs: number): boolean {
+    if (!this.client || this.lost || !Number.isFinite(durationMs) || durationMs < 0) return false;
+    this.client.send({ type: 'startCrossfade', durationMs });
+    return true;
+  }
+
   /** Live Display P3 toggle; the worker re-negotiates on its own device and reports what applied. */
   async setDisplayP3(enabled: boolean, isHdr: boolean): Promise<DisplayP3Result | null> {
     if (!this.client) return null;
