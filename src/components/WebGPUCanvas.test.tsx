@@ -35,6 +35,11 @@ vi.mock('../renderer/webgpuBootProbe', () => ({
 }));
 
 beforeAll(() => {
+    // jsdom has no PointerEvent; without it fireEvent.pointerDown drops clientX/clientY.
+    if (typeof window.PointerEvent === 'undefined') {
+        (window as unknown as { PointerEvent: typeof MouseEvent }).PointerEvent = class extends MouseEvent {};
+    }
+
     // Mock ResizeObserver
     global.ResizeObserver = class ResizeObserver {
         observe() {}
@@ -72,7 +77,7 @@ beforeAll(() => {
     });
 });
 
-test('mouse down emits ripple for mouse-driven shader', () => {
+test('a click emits exactly one ripple for mouse-driven shader', () => {
     const mockRenderer = {
         addRipplePoint: vi.fn(),
         firePlasma: vi.fn(),
@@ -115,9 +120,13 @@ test('mouse down emits ripple for mouse-driven shader', () => {
     // @ts-ignore - jsdom doesn't implement getBoundingClientRect the same way
     canvas.getBoundingClientRect = () => rect;
 
+    // A real click dispatches pointerdown and then a compatibility mousedown.
+    fireEvent.pointerDown(canvas, { clientX: 100, clientY: 50 });
     fireEvent.mouseDown(canvas, { clientX: 100, clientY: 50 });
 
-    // Expect addRipplePoint called with normalized coords (0.5, 0.25)
+    // Expect exactly one ripple, at normalized coords (0.5, 0.25) — the down handler must not
+    // run once for the pointer event and again for the mouse event.
+    expect(mockRenderer.addRipplePoint).toHaveBeenCalledTimes(1);
     expect(mockRenderer.addRipplePoint).toHaveBeenCalledWith(0.5, 0.25);
 });
 
