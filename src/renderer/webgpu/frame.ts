@@ -165,11 +165,14 @@ export class WebGPUFrameRenderer {
 
     this.presenter.encodeInputCopy(state, encoder);
     state.encodePreFxChores?.(encoder);
+    // Direct present (#1512): the single slot writes the swapchain; no blit this frame.
+    const direct = state.prepareDirectPresent?.(slotPlan) ?? null;
     const dispatch = dispatchFrameSlots(
       state,
       encoder,
       slotPlan,
       this.prepareSlotParams(state, [...slotPlan.parallel, ...slotPlan.chained].map((p) => p.slot)),
+      direct,
     );
 
     const historyLayers = state.historyLayers;
@@ -182,8 +185,10 @@ export class WebGPUFrameRenderer {
       );
     }
 
-    this.presenter.updateBlitBindGroup(state);
-    this.presenter.encodePresent(state, encoder);
+    if (!direct) {
+      this.presenter.updateBlitBindGroup(state);
+      this.presenter.encodePresent(state, encoder);
+    }
     state.encodePostFxChores?.(encoder);
     this.presenter.submitFrame(state, encoder);
     state.afterFrameSubmit?.();

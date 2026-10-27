@@ -3,29 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal, relativistic
 //  Complexity: High
-//  Upgraded: 2026-08-16 (Batch 52: Kerr metric frame dragging, Doppler beaming, exact C load, 16x16x1)
+//  Upgraded: 2026-10-27
+//  Ideas: Kerr frame drag; Doppler; photon caustic onto the photon sphere; ISCO lip at 3× horizon
+//  A packing: pre-ACES RGB in A (the trail). ACES on the display write only.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=VortexStrength, y=EventHorizon, z=VoidDarkness, w=AudioReactivity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=VortexStrength, y=EventHorizon, z=VoidDarkness, w=AudioReactivity
 
 fn aces_film(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -119,7 +103,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Warped sampling coordinates
   let warped_angle = angle + frame_drag_twist + gw_pulse;
-  let warped_rel = vec2<f32>(cos(warped_angle), sin(warped_angle)) * dist;
+  // ── Idea: photon caustic — near the ring, the sample radius locks onto the photon sphere.
+  let sample_dist = mix(dist, photon_sphere, clamp(photon_ring, 0.0, 1.0) * 0.65);
+  let warped_rel = vec2<f32>(cos(warped_angle), sin(warped_angle)) * sample_dist;
   let warped_p = mouse_corr + warped_rel;
   let warped_uv = clamp(warped_p / aspect_vec, vec2<f32>(0.001), vec2<f32>(0.999));
 
@@ -136,22 +122,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let thermal_color = blackbody_rgb(t_kelvin) * doppler_factor;
 
   // Accretion disk emission profile
-  let disk_intensity = exp(-dist * 4.5 / horizon_r) * (0.8 + 0.6 * is_down) * (1.0 + bass * 0.4);
+  // ── Idea: ISCO lip — the disk cuts off near 3× the horizon and brightens on that orbit.
+  let isco = horizon_r * 3.0;
+  let disk_cut = smoothstep(isco * 0.9, isco * 1.05, dist);
+  let isco_lip = exp(-abs(dist - isco) / max(horizon_r * 0.08, 0.001));
+  let disk_intensity = exp(-dist * 4.5 / horizon_r) * (0.8 + 0.6 * is_down) * (1.0 + bass * 0.4) * disk_cut;
   let photon_ring_emission = vec3<f32>(1.2, 1.35, 1.6) * photon_ring * (1.5 + treble * 0.8);
 
   var final_color = warped_color * horizon_mask;
   final_color = mix(final_color, thermal_color, clamp(disk_intensity, 0.0, 0.85));
   final_color += photon_ring_emission;
+  final_color += thermal_color * isco_lip * 0.4;
   final_color = mix(final_color, vec3<f32>(0.0), (1.0 - horizon_mask) * darkness);
-  final_color = mix(final_color, prev_state.rgb, 0.12); // smooth temporal history
+  // Trail is pre-ACES colour. The old write stored coordinates and the next frame read them as RGB.
+  let linear_color = final_color;
+  let trailed = mix(linear_color, prev_state.rgb, 0.12);
+  let display_rgb = aces_film(max(trailed, vec3<f32>(0.0)));
 
-  final_color = aces_film(final_color);
-
-  let out_rgba = vec4<f32>(final_color, src_alpha);
-  let out_state = vec4<f32>(warped_rel.x, warped_rel.y, photon_ring, disk_intensity);
+  let out_rgba = vec4<f32>(display_rgb, src_alpha);
   let out_depth = clamp(depth_tex * horizon_mask, 0.0, 1.0);
 
   textureStore(writeTexture, coord, out_rgba);
-  textureStore(dataTextureA, coord, out_state);
+  textureStore(dataTextureA, coord, vec4<f32>(linear_color, src_alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(out_depth, 0.0, 0.0, 0.0));
 }

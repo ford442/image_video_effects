@@ -2,7 +2,7 @@
   "id": "poly-art",
   "name": "Poly Art",
   "url": "shaders/poly-art.wgsl",
-  "description": "Transforms the image into a low-poly Voronoi mosaic. Mouse interaction distorts the grid density.",
+  "description": "Low-poly Voronoi of the photo. Facets shrink where the picture is busy, the pointer tightens the grid, and the crease facing the light picks up a bevel.",
   "params": [
     {
       "id": "size",
@@ -41,5 +41,43 @@
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cell Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Edge Width",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Randomness",
+          "default": 1,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Mouse Influence",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

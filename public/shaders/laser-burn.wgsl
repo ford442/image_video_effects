@@ -5,31 +5,13 @@
 //  Complexity: High
 //  Chunks From: laser-burn, bass_env, temporal-feedback
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-31
-//  Swarm Upgrade: 2026-08-02 (spring-damped beam, click brand stamps,
-//                 per-sector spark bins, honestly-wired sliders)
+//  Upgraded: 2026-05-31, 2026-10-27
+//  Ideas: neighbour heat conduction; oxide lip on the char edge
+//  A packing: raw (char, cooledHeat, ember, alpha). ACES on the display write only.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BeamSize, y=BurnIntensity, z=HealRate, w=HeatGlow
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BeamSize, y=BurnIntensity, z=HealRate, w=HeatGlow
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * .1031);
@@ -39,6 +21,11 @@ fn hash12(p: vec2<f32>) -> f32 {
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+  let c = max(x, vec3<f32>(0.0));
+  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -68,44 +55,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Burn state (SACRED contract) ────────────────────────────────
     // dataTextureC = previous frame state: (charLevel, cooledHeat, emberLevel, burnAlpha)
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+    let coord = vec2<i32>(global_id.xy);
+    let resI = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+    let prev = textureLoad(dataTextureC, coord, 0);
     var charLevel = prev.r;
     var heatLevel = prev.g;
     var emberLevel = prev.b;
 
-    // ── Spring-damped beam (extraBuffer[133..136]) ──────────────────
-    // Heavy critically-damped spring: the beam lags the hand like real
-    // galvanometer hardware, so fast strokes leave long burn streaks.
-    // [133]=posX [134]=posY [135]=velX [136]=velY [137]=initialized — [0..4] reserved,
-    // [5..132] engine FFT, persistent state stays in [133..255] only.
-    let rawMouse = u.zoom_config.yz; // spring target = raw cursor
-    var beamPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var beamVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    // ── Idea 1: heat conduction from the four stored neighbours.
+    let nR = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), resI), 0);
+    let nL = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), resI), 0);
+    let nU = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), resI), 0);
+    let nD = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), resI), 0);
+    let neighHeat = (nR.g + nL.g + nU.g + nD.g) * 0.25;
+    let neighChar = (nR.r + nL.r + nU.r + nD.r) * 0.25;
+    heatLevel = heatLevel + (neighHeat - heatLevel) * 0.12;
 
-    // An explicit flag makes (0,0) a valid cursor position while still
-    // preventing a cold-start streak from the origin.
-    let springInitialized = extraBuffer[137] > 0.5;
-    if (!springInitialized) {
-        beamPos = rawMouse;
-        beamVel = vec2<f32>(0.0, 0.0);
-    }
-
-    // Critically-damped spring, omega ~6: a = w^2*(target-pos) - 2w*vel
-    let springDt = 1.0 / 60.0;
-    let omega = 6.0;
-    let springAccel = omega * omega * (rawMouse - beamPos) - 2.0 * omega * beamVel;
-    beamVel += springAccel * springDt;
-    beamPos += beamVel * springDt;
-
-    // One invocation persists the shared state; all pixels still use the
-    // same locally integrated position for this frame.
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = beamPos.x;
-        extraBuffer[134] = beamPos.y;
-        extraBuffer[135] = beamVel.x;
-        extraBuffer[136] = beamVel.y;
-        extraBuffer[137] = 1.0;
-    }
+    // The CPU clears extraBuffer every frame, so the old spring never left
+    // the pointer. The beam is the cursor.
+    let beamPos = u.zoom_config.yz;
 
     let mouseDown = step(0.5, u.zoom_config.w);
 
@@ -147,6 +115,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     emberLevel = mix(emberLevel, cooledHeat, 0.1);
     emberLevel *= 0.95;
 
+    // ── Idea 2: oxide lip where this char differs from its neighbours.
+    let charEdge = clamp(abs(charLevel - neighChar) * 4.0, 0.0, 1.0);
+    emberLevel = clamp(emberLevel + charEdge * 0.28, 0.0, 1.0);
+
     // ── Per-sector spark showers ────────────────────────────────────
     // Divide the beam zone into 8 angular sectors around the beam
     // center; each sector's spark threshold rides its own FFT bin so
@@ -154,7 +126,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let beamAngle = atan2(dVec.y, dVec.x);
     let sectorF = floor((beamAngle + 3.14159265) / 6.2831853 * 8.0);
     let sector = u32(sectorF) % 8u;
-    let sectorBin = plasmaBuffer[(sector % 8u) + 1u].x;
+    // plasmaBuffer[1..] is never uploaded. Sectors share the live treble band.
+    let sectorBin = treble * fract(sin(f32(sector) * 12.9898) * 43758.5453);
     let sparkChance = hash12(uv * 100.0 + time * 10.0);
     let spark = step(1.0 - sectorBin * 0.3, sparkChance) * inBeam * 0.5;
     emberLevel += spark;
@@ -174,7 +147,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor += sparkColor;
 
     let burnAlpha = clamp(charLevel * 0.6 + cooledHeat * 0.3 + emberLevel * 0.2 + dot(finalColor, vec3<f32>(0.299, 0.587, 0.114)) * 0.2, 0.0, 1.0);
-    let outputColor = vec4<f32>(finalColor, burnAlpha);
+    let outputColor = vec4<f32>(acesFilm(finalColor), burnAlpha);
 
     // State write: (charLevel, cooledHeat, emberLevel, burnAlpha)
     // Raw state only — never tonemap or clamp beyond the clamps above.

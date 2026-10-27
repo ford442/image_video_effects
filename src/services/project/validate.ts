@@ -16,10 +16,14 @@ import {
 import {
   PROJECT_APP_NAME,
   PROJECT_FILE_SCHEMA_VERSION,
-  type ProjectFileV1,
+  type ProjectFile,
   type ProjectSource,
   type ProjectValidationResult,
 } from './types';
+import { compactSlotLayerErrors } from '../../renderer/layerState';
+
+/** Accepted nits for render.hdr (a range any real panel and any sane paper white fit in). */
+export const HDR_NITS_RANGE = { min: 80, max: 10000 } as const;
 
 const TOP_LEVEL_KEYS = ['schemaVersion', 'app', 'createdAt', 'chain', 'activeSlot', 'source', 'render', 'audio', 'timeline'];
 const SLOT_PARAM_KEYS: Array<keyof SlotParams> = [
@@ -82,7 +86,7 @@ function validateChain(raw: unknown, path: string, errors: string[]): SharedChai
       errors.push(`${slotPath} must be an object`);
       return;
     }
-    checkExtraKeys(slotRaw, ['shaderId', 'params', 'enabled', 'mode'], slotPath, errors);
+    checkExtraKeys(slotRaw, ['shaderId', 'params', 'enabled', 'mode', 'b', 'o', 'm', 'k'], slotPath, errors);
     if (slotRaw.shaderId !== null && typeof slotRaw.shaderId !== 'string') {
       errors.push(`${slotPath}.shaderId must be a string or null`);
       return;
@@ -116,6 +120,15 @@ function validateChain(raw: unknown, path: string, errors: string[]): SharedChai
       } else {
         slot.mode = slotRaw.mode;
       }
+    }
+    // Compositor fields (#1512): strict here, unlike chain links which degrade unknown values.
+    const layerErrors = compactSlotLayerErrors(slotRaw, slotPath);
+    errors.push(...layerErrors);
+    if (layerErrors.length === 0) {
+      if (typeof slotRaw.b === 'string') slot.b = slotRaw.b;
+      if (typeof slotRaw.o === 'number') slot.o = slotRaw.o;
+      if (typeof slotRaw.m === 'string') slot.m = slotRaw.m;
+      if (typeof slotRaw.k === 'number') slot.k = slotRaw.k;
     }
     slots.push(slot);
   });
@@ -312,13 +325,13 @@ export function validateProjectFile(raw: unknown): ProjectValidationResult {
   }
   const source = validateSource(raw.source, errors);
 
-  const render: ProjectFileV1['render'] = {};
+  const render: ProjectFile['render'] = {};
   if (raw.render === undefined) {
     errors.push('project.render must be an object');
   } else if (!isRecord(raw.render)) {
     errors.push('project.render must be an object');
   } else {
-    checkExtraKeys(raw.render, ['renderScale', 'quality'], 'project.render', errors);
+    checkExtraKeys(raw.render, ['renderScale', 'quality', 'hdr'], 'project.render', errors);
     if (raw.render.renderScale !== undefined) {
       if (!isFiniteNumber(raw.render.renderScale) || raw.render.renderScale < 0.25 || raw.render.renderScale > 1) {
         errors.push('project.render.renderScale must be between 0.25 and 1');
@@ -333,9 +346,25 @@ export function validateProjectFile(raw: unknown): ProjectValidationResult {
         render.quality = raw.render.quality as RenderQualityMode;
       }
     }
+    if (raw.render.hdr !== undefined) {
+      const hdr = raw.render.hdr;
+      const inRange = (v: unknown) => isFiniteNumber(v) && v >= HDR_NITS_RANGE.min && v <= HDR_NITS_RANGE.max;
+      if (!isRecord(hdr)) {
+        errors.push('project.render.hdr must be an object');
+      } else {
+        checkExtraKeys(hdr, ['paperWhiteNits', 'peakNits'], 'project.render.hdr', errors);
+        if (!inRange(hdr.paperWhiteNits) || !inRange(hdr.peakNits)) {
+          errors.push(`project.render.hdr paperWhiteNits / peakNits must be ${HDR_NITS_RANGE.min}–${HDR_NITS_RANGE.max}`);
+        } else if ((hdr.peakNits as number) < (hdr.paperWhiteNits as number)) {
+          errors.push('project.render.hdr.peakNits must be at least paperWhiteNits');
+        } else {
+          render.hdr = { paperWhiteNits: hdr.paperWhiteNits as number, peakNits: hdr.peakNits as number };
+        }
+      }
+    }
   }
 
-  let audio: ProjectFileV1['audio'];
+  let audio: ProjectFile['audio'];
   if (raw.audio !== undefined) {
     if (!isRecord(raw.audio)) {
       errors.push('project.audio must be an object');
@@ -348,7 +377,7 @@ export function validateProjectFile(raw: unknown): ProjectValidationResult {
   const timeline = validateVjSetExport(raw.timeline, errors);
 
   if (errors.length > 0 || !chain || !source) return { ok: false, errors };
-  const project: ProjectFileV1 = {
+  const project: ProjectFile = {
     schemaVersion: PROJECT_FILE_SCHEMA_VERSION,
     app: { name: PROJECT_APP_NAME, version: appVersion },
     createdAt,

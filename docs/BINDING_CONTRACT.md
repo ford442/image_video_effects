@@ -173,7 +173,21 @@ Both backends validate adapter limits before device creation and request explici
 
 **Error scopes (#1395).** A GPU call whose failure we act on runs through `withErrorScope` / `withValidationScope` / `withOutOfMemoryScope` ([`src/renderer/webgpu/validationScope.ts`](../src/renderer/webgpu/validationScope.ts)), never a hand-rolled `pushErrorScope` block. The scope covers only the callback's synchronous part and is popped before any returned promise is awaited, so frame-loop errors are never captured or hidden. Async creates (`createComputePipelineAsync`) report through their own rejection. Shader compile checks (renderer `compileCheck`, ShaderScanner, ShaderValidator) all go through `compileCheckWgsl` ([`compileCheck.ts`](../src/renderer/webgpu/compileCheck.ts)): the module is scoped, and with the renderer's pipeline layout a shader that compiles but does not fit the bind group is reported too. Nothing in these paths should reach `uncapturederror`; `tests/engine2-validation-scope.swiftshader.spec.ts` checks that.
 
-### Limits table (must match TS ↔ C++)
+### Limits tiers (TS, #1512)
+
+The TS renderer no longer requests limits that only restate the spec defaults. `webgpu_limits.json` `limitsTiers` defines three cumulative tiers; the boot probe validates `base` on every adapter (the compatibility rung included), requests a base limit only where it is above the spec default for the adapter's feature level (`specDefaults.core` / `.compatibility`), and requests the deep-workgroup and buffer-size limits when offered. The probed tier is `window.webgpuProbe.limitsTier`.
+
+| Tier | Limits (beyond the previous tier) | Gates |
+|------|-----------------------------------|-------|
+| `base` | 4096 texture floor (fixed, never canvas-scaled); 14 bindings: 4 storage textures, 4 sampled, 3 samplers, 2 storage buffers, 1 uniform of `sizeof(Uniforms)`; 16×16 / 256 invocations | Device creation |
+| `deep-workgroup` | 32×32 / 1024 invocations | `requiresDeepWorkgroup` shaders |
+| `big-buffer` | `maxBufferSize` ≥ 1 GiB | The 2048 working size (`vramBudget.ts`) |
+
+`resolveLimitsTier()` and `buildRequiredLimits()` live in [`webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts). The tiers are TS-only (`cppMirror.limitsTiers: false`).
+
+### Limits table (C++ mirror)
+
+This is `minimumComputeLimits`, which the frozen C++ backend still checks (`CheckLimit`) and requests through the generated `webgpu_limits.h`. Changing it changes the WASM binary, so it stays as is; the TS renderer validates the tiers above instead.
 
 | Limit | Required | Notes |
 |-------|----------|-------|

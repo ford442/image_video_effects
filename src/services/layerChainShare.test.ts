@@ -10,6 +10,7 @@ import {
     decodeChain,
 } from './layerChainShare';
 import { SlotParams } from '../renderer/types';
+import { defaultSlotLayer, type SlotLayer } from '../renderer/layerState';
 
 function makeParams(overrides: Partial<SlotParams> = {}): SlotParams {
     return { ...DEFAULT_SLOT_PARAMS, ...overrides };
@@ -195,6 +196,53 @@ describe('layerChainShare', () => {
             const encoded = encodeChain({ v: SHARED_CHAIN_VERSION, slots: [{ shaderId: 'liquid-metal' }] });
             const decoded = decodeChain(encoded);
             expect(decoded?.v).toBe(SHARED_CHAIN_VERSION);
+        });
+    });
+
+    describe('compositor fields b / o / m (#1512)', () => {
+        const screen: SlotLayer = {
+            ...defaultSlotLayer(),
+            output: 'blend',
+            blend: 'screen',
+            opacity: 0.5,
+            mask: { source: 'slot', slot: 0, invert: true, feather: 0.25 },
+        };
+
+        it('round-trips blend, opacity and mask through a chain URL', () => {
+            const chain = buildSharedChain(['plasma', 'kaleidoscope'], [makeParams(), makeParams()], {
+                slotModes: ['parallel', 'parallel'],
+                layers: [undefined, screen],
+            });
+            expect(chain.slots[0]).toEqual({ shaderId: 'plasma', mode: 'parallel' });
+            expect(chain.slots[1]).toEqual({ shaderId: 'kaleidoscope', mode: 'parallel', b: 'screen', o: 0.5, m: '!s0~0.25' });
+
+            const decoded = decodeChain(encodeChain(chain));
+            expect(decoded).toEqual(chain);
+            const expanded = expandSharedChain(decoded!);
+            expect(expanded.layers[0]).toEqual(defaultSlotLayer());
+            expect(expanded.layers[1]).toEqual(screen);
+            expect(expanded.slotModes).toEqual(['parallel', 'parallel']);
+        });
+
+        it('keeps links without compositor fields as replace layers', () => {
+            const expanded = expandSharedChain({ v: SHARED_CHAIN_VERSION, slots: [{ shaderId: 'plasma' }] });
+            expect(expanded.layers).toEqual([defaultSlotLayer()]);
+        });
+
+        it('degrades an unknown blend mode from a newer build to replace', () => {
+            const decoded = decodeChain(encodeRaw({ v: 1, slots: [{ shaderId: 'plasma', b: 'hyper-blend', o: 0.3 }] }));
+            expect(decoded).not.toBeNull();
+            expect(expandSharedChain(decoded!).layers[0]).toEqual(defaultSlotLayer());
+        });
+
+        it('drops a slot whose compositor fields have the wrong types', () => {
+            const decoded = decodeChain(encodeRaw({ v: 1, slots: [{ shaderId: 'a', o: 'half' }, { shaderId: 'b' }] }));
+            expect(decoded?.slots).toEqual([{ shaderId: 'b' }]);
+        });
+
+        it('writes no compositor fields for an empty slot', () => {
+            const chain = buildSharedChain(['none'], [makeParams()], { layers: [screen] });
+            expect(chain.slots[0]).toEqual({ shaderId: null });
         });
     });
 });

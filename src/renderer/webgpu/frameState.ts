@@ -19,7 +19,9 @@ import { WebGPUTimestampQueries } from './WebGPUTiming';
 import type { GraphSimRingBindings } from '../GraphRunner';
 import type { SimRing } from './simRing';
 import { ShaderSlot } from './webgpuConstants';
-import type { FrameIslands } from './framePlan';
+import type { FrameCompositor, FrameIslands } from './framePlan';
+import type { DirectPresentFrame } from './directPresent';
+import type { FrameSlotDispatchPlan } from './slotDispatch';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
@@ -45,6 +47,8 @@ export interface WebGPUFrameState {
   computeBindGroup: GPUBindGroup;
   blitBindGroup: GPUBindGroup;
   blitBindGroupLayout: GPUBindGroupLayout;
+  /** Present params uniform (blit binding 1; the HDR tonemap); null before setup. */
+  presentParamsBuf: GPUBuffer | null;
   blitPipeline: GPURenderPipeline;
   generativeBlitPipeline: GPURenderPipeline;
   scaleCopyPipeline: GPURenderPipeline;
@@ -84,6 +88,10 @@ export interface WebGPUFrameState {
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   /** Scaled-island resources, or null when no node is demoted. */
   getIslands?: () => FrameIslands | null;
+  /** Layer compositor bound to this frame's textures (#1512), or null. */
+  getCompositor?: () => FrameCompositor | null;
+  /** Direct present (#1512): the swapchain variant for this frame, or null → normal blit. */
+  prepareDirectPresent?: (plan: FrameSlotDispatchPlan) => DirectPresentFrame | null;
 
   ripples: Ripple[];
   mouseX: number;
@@ -145,6 +153,7 @@ export interface WebGPUFrameHost {
   computeBindGroup: GPUBindGroup;
   blitBindGroup: GPUBindGroup;
   blitBindGroupLayout: GPUBindGroupLayout;
+  presentParamsBuf: GPUBuffer | null;
   blitPipeline: GPURenderPipeline;
   generativeBlitPipeline: GPURenderPipeline;
   scaleCopyPipeline: GPURenderPipeline;
@@ -174,6 +183,8 @@ export interface WebGPUFrameHost {
   framePassBudget: number;
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   getIslands?: () => FrameIslands | null;
+  getCompositor?: () => FrameCompositor | null;
+  prepareDirectPresent?: (plan: FrameSlotDispatchPlan) => DirectPresentFrame | null;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -256,6 +267,8 @@ export interface FrameContext {
   framePassBudget: number;
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   getIslands?: () => FrameIslands | null;
+  getCompositor?: () => FrameCompositor | null;
+  prepareDirectPresent?: (plan: FrameSlotDispatchPlan) => DirectPresentFrame | null;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
@@ -309,6 +322,7 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     get blitBindGroup() { return d.pipeline.blitBindGroup; },
     set blitBindGroup(v) { d.pipeline.blitBindGroup = v; },
     get blitBindGroupLayout() { return d.pipeline.blitBindGroupLayout; },
+    get presentParamsBuf() { return d.pipeline.presentParamsBuf; },
     get blitPipeline() { return d.pipeline.blitPipeline; },
     get generativeBlitPipeline() { return d.pipeline.generativeBlitPipeline; },
     get scaleCopyPipeline() { return d.pipeline.scaleCopyPipeline; },
@@ -343,6 +357,8 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     get framePassBudget() { return d.framePassBudget; },
     nodeScale: (slot, nodeId) => d.nodeScale?.(slot, nodeId) ?? 1,
     getIslands: () => d.getIslands?.() ?? null,
+    getCompositor: () => d.getCompositor?.() ?? null,
+    prepareDirectPresent: (plan) => d.prepareDirectPresent?.(plan) ?? null,
     get ripples() { return d.ripples; },
     get mouseX() { return d.mouseX; },
     get mouseYShader() { return d.mouseYShader; },
@@ -410,6 +426,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get blitBindGroup() { return h.blitBindGroup; },
     set blitBindGroup(v) { h.blitBindGroup = v; },
     get blitBindGroupLayout() { return h.blitBindGroupLayout; },
+    get presentParamsBuf() { return h.presentParamsBuf; },
     get blitPipeline() { return h.blitPipeline; },
     get generativeBlitPipeline() { return h.generativeBlitPipeline; },
     get scaleCopyPipeline() { return h.scaleCopyPipeline; },
@@ -436,6 +453,8 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get framePassBudget() { return h.framePassBudget; },
     nodeScale: (slot, nodeId) => h.nodeScale?.(slot, nodeId) ?? 1,
     getIslands: () => h.getIslands?.() ?? null,
+    getCompositor: () => h.getCompositor?.() ?? null,
+    prepareDirectPresent: (plan) => h.prepareDirectPresent?.(plan) ?? null,
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },

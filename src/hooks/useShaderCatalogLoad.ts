@@ -3,7 +3,11 @@ import { ShaderEntry } from '../renderer/types';
 import { ShaderApi } from '../services/shaderApi';
 import { resolveShaderUrl } from '../utils/resolveShaderUrl';
 import { determineCategory } from '../app/constants/shaderCatalogUtils';
-import { inferRequiresRgba32Float } from '../config/formatPolicy';
+import {
+    catalogExclusionReason,
+    inferRequiresRgba32Float,
+    type DeviceFormatCapabilities,
+} from '../config/formatPolicy';
 
 export interface UseShaderCatalogLoadOptions {
     setAvailableModes: React.Dispatch<React.SetStateAction<ShaderEntry[]>>;
@@ -12,6 +16,8 @@ export interface UseShaderCatalogLoadOptions {
     rendererReady: boolean;
     supportsDeepWorkgroup: boolean;
     availableModes: ShaderEntry[];
+    /** Measured format capabilities once the renderer is ready (#1512 catalog exclusions). */
+    getFormatCapabilities?: () => DeviceFormatCapabilities | undefined;
 }
 
 export function useShaderCatalogLoad({
@@ -21,6 +27,7 @@ export function useShaderCatalogLoad({
     rendererReady,
     supportsDeepWorkgroup,
     availableModes,
+    getFormatCapabilities,
 }: UseShaderCatalogLoadOptions): void {
     useEffect(() => {
         let isMounted = true;
@@ -63,22 +70,26 @@ export function useShaderCatalogLoad({
     }, [setAvailableModes, setShadersReady, setStatus]);
 
     useEffect(() => {
-        if (!rendererReady || supportsDeepWorkgroup) return;
-        const skipped: string[] = [];
+        if (!rendererReady) return;
+        const formatCaps = getFormatCapabilities?.();
+        const skipped: Record<string, string[]> = {};
         const filtered = availableModes.filter(s => {
-            if (s.requiresDeepWorkgroup) {
-                skipped.push(s.id);
-                return false;
-            }
-            return true;
+            // Without measured caps only the deep-workgroup rule can be judged.
+            const reason = formatCaps
+                ? catalogExclusionReason(s, { supportsDeepWorkgroup, formatCaps })
+                : (s.requiresDeepWorkgroup && !supportsDeepWorkgroup ? 'deep-workgroup' : null);
+            if (!reason) return true;
+            (skipped[reason] ??= []).push(s.id);
+            return false;
         });
-        if (skipped.length > 0) {
-            console.log(
-                `[Shaders] ${skipped.length} shader(s) require deep-workgroup (16×16×4) ` +
-                `which is not supported on this GPU — hiding from list: ${skipped.join(', ')}`
-            );
-            setAvailableModes(filtered);
+        const why: Record<string, string> = {
+            'deep-workgroup': 'require deep-workgroup (16×16×4), not supported on this GPU',
+            'rgba32float-storage': 'need rgba32float storage, not available on this device (compat / mobile)',
+        };
+        for (const [reason, ids] of Object.entries(skipped)) {
+            console.log(`[Shaders] ${ids.length} shader(s) ${why[reason] ?? reason} — hiding from list: ${ids.join(', ')}`);
         }
+        if (filtered.length !== availableModes.length) setAvailableModes(filtered);
     // availableModes.length (not the full array) is intentional: we react when the
     // list grows, but filtering reduces length, so subsequent runs are prevented until
     // more shaders are added.  supportsDeepWorkgroup is stable after renderer init.

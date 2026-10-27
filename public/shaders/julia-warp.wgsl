@@ -1,26 +1,9 @@
 // Julia Warp — derivative-aware orbit traps and refractive complex dynamics.
-// A/C stores ACES display RGBA. B is unused.
+// Upgraded: 2026-10-27
+// Ideas: calm interior where the orbit never escapes; distance-estimate contour on the boundary
+// A packing: ACES display RGBA. B is unused.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -114,9 +97,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pointerDelta = (uv - mouse) * aspectVec;
   let pointerLens = exp(-dot(pointerDelta, pointerDelta) * 16.0);
   let refractiveDirection = normalize(vec2<f32>(derivativeDirection.x - derivativeDirection.y, derivativeDirection.x + derivativeDirection.y) + vec2<f32>(0.0001));
-  let displacement = refractiveDirection * intensity * (trapRidge * 0.65 + distanceEstimate * 0.35) * (1.0 + audio.x * 0.3)
+  // ── Idea: a point that never escapes barely displaces, so the lake shows the photo.
+  let escaped = select(0.0, 1.0, escapedAt < f32(maxIterations) - 0.5);
+  let displacement = (refractiveDirection * intensity * (trapRidge * 0.65 + distanceEstimate * 0.35) * (1.0 + audio.x * 0.3)
                    + (pointerDelta / max(length(pointerDelta), 0.0001)) * pointerLens * select(0.006, 0.022, held)
-                   + normalize(pointerDelta + vec2<f32>(0.0001)) * shock * 0.012;
+                   + normalize(pointerDelta + vec2<f32>(0.0001)) * shock * 0.012) * mix(0.22, 1.0, escaped);
   let warpedUV = clamp(uv + displacement / aspectVec, vec2<f32>(0.0), vec2<f32>(1.0));
   let source = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
   let chroma = refractiveDirection / aspectVec * (0.001 + u.zoom_params.x * 0.004 + audio.z * 0.0015);
@@ -128,6 +113,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hdr = vec3<f32>(red, source.g, blue);
   hdr += orbitColor * (trapRidge * 0.85 + axisEngraving * 0.25) * (0.55 + audio.z * 0.5);
   hdr += history.rgb * clamp(0.025 + trapRidge * 0.055, 0.0, 0.095);
+  // ── Idea: the distance estimate already computed draws a dark contour on the boundary.
+  let contour = smoothstep(0.05, 0.0, distanceEstimate) * escaped;
+  hdr = mix(hdr, hdr * 0.16, contour * 0.85);
   let edgeDistance = min(min(warpedUV.x, 1.0 - warpedUV.x), min(warpedUV.y, 1.0 - warpedUV.y));
   let edgeFade = smoothstep(0.0, 0.055, edgeDistance);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r;

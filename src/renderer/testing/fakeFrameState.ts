@@ -70,6 +70,7 @@ export function createFakeFrameState(
     computeBindGroup: { label: 'computeBG' } as unknown as GPUBindGroup,
     blitBindGroup: { label: 'blitBG' } as unknown as GPUBindGroup,
     blitBindGroupLayout: { label: 'blitBGL' } as unknown as GPUBindGroupLayout,
+    presentParamsBuf: fake.buffer('presentParams', 16),
     blitPipeline: { label: 'blitPipeline' } as unknown as GPURenderPipeline,
     generativeBlitPipeline: { label: 'generativeBlitPipeline' } as unknown as GPURenderPipeline,
     scaleCopyPipeline: { label: 'scaleCopyPipeline' } as unknown as GPURenderPipeline,

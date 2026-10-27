@@ -36,6 +36,41 @@ function enumFor(table, key, label) {
   return e;
 }
 
+/**
+ * v4 (#1512) TS-only capabilities, mirrored as constants so a future C++ port
+ * reads the same values (the WASM backend is frozen; nothing in device.cpp uses them yet).
+ */
+function tsOnlyConstants(contract) {
+  const { optIn, cpp } = contract;
+  const out = [];
+  if (optIn.hdrCanvas) {
+    out.push(
+      '// optIn.hdrCanvas (TS only): HDR swapchain format under extended tone mapping.',
+      `inline constexpr WGPUTextureFormat kHdrCanvasFormat = ${enumFor(cpp.formatEnums, optIn.hdrCanvas.format, 'cpp.formatEnums')};`,
+      '',
+    );
+  }
+  if (optIn.storageBinding) {
+    out.push(
+      '// optIn.storageBinding (TS only): direct-to-swapchain present (bgra8unorm-storage).',
+      `inline constexpr WGPUTextureUsage kStorageBindingUsage = ${usageExpr(contract, optIn.storageBinding.usage)};`,
+      `inline constexpr WGPUTextureFormat kStorageBindingFormat = ${enumFor(cpp.formatEnums, optIn.storageBinding.format, 'cpp.formatEnums')};`,
+      '',
+    );
+  }
+  if (contract.hdrToneMap) {
+    const t = contract.hdrToneMap;
+    out.push(
+      '// hdrToneMap: final tonemap of the HDR canvas (nits).',
+      `inline constexpr float kSdrReferenceWhiteNits = ${t.sdrReferenceWhiteNits}.0f;`,
+      `inline constexpr float kPaperWhiteNitsDefault = ${t.paperWhiteNitsDefault}.0f;`,
+      `inline constexpr float kPeakNitsDefault = ${t.peakNitsDefault}.0f;`,
+      '',
+    );
+  }
+  return out;
+}
+
 function renderHeader(contract) {
   const { cpp } = contract;
   const wasmCaps = Object.entries(contract.optIn)
@@ -77,6 +112,7 @@ function renderHeader(contract) {
     '// optIn.copySrc: full swapchain usage while the capture opt-in is on.',
     `inline constexpr WGPUTextureUsage kCopySrcUsage = ${usageExpr(contract, contract.optIn.copySrc.usage)};`,
     '',
+    ...tsOnlyConstants(contract),
     ...bitAsserts,
     '',
     '}  // namespace canvas_configure',

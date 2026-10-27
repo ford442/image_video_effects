@@ -2,7 +2,7 @@
   "id": "oscilloscope-overlay",
   "name": "Oscilloscope Overlay",
   "url": "shaders/oscilloscope-overlay.wgsl",
-  "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position, now with a smoothed bass envelope, treble sparkle, audio-reactive color temperature, HDR tone mapping, and IGN dithering.",
+  "description": "Scope trace of the scanline under the cursor. The beam blanks at the right edge, and last frame's trace ghosts in the phosphor.",
   "params": [
     {
       "id": "amplitude",

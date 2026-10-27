@@ -413,7 +413,7 @@ function verifyCanvasConfigure() {
  * header is generated from the same JSON and must be current.
  */
 function verifyCanvasCapabilities(c, file) {
-  const known = new Set(['usage', 'colorSpace', 'toneMapping']);
+  const known = new Set(['usage', 'colorSpace', 'toneMapping', 'format']);
   const caps = c.optIn || {};
   for (const [name, cap] of Object.entries(caps)) {
     const backends = cap.backends || [];
@@ -440,7 +440,9 @@ function verifyCanvasCapabilities(c, file) {
   const configures = [...cppSrc.matchAll(/ctx\.configure\(\{([\s\S]*?)\}\)/g)].map((m) => m[1]);
   for (const [name, cap] of Object.entries(caps)) {
     if ((cap.backends || []).includes('wasm')) continue;
-    for (const key of (cap.configureKeys || []).filter((k) => k !== 'usage')) {
+    // usage and format are written by every configure (the default path); a TS-only
+    // capability may change their value in TS, but owns no extra key in the WASM configure.
+    for (const key of (cap.configureKeys || []).filter((k) => k !== 'usage' && k !== 'format')) {
       if (configures.some((body) => new RegExp(`\\b${key}\\s*:`).test(body))) {
         fail(`device.cpp ctx.configure sets ${key}, but optIn.${name} does not list backend "wasm"`);
       }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, RefObject } from 'react';
-import { RenderMode, ShaderEntry, InputSource, SlotParams } from '../renderer/types';
+import { RenderMode, ShaderEntry, InputSource, SlotParams, SlotMode } from '../renderer/types';
+import type { SlotLayer } from '../renderer/layerState';
 import type { Alucinate } from '../AutoDJ';
 import { buildCatalog } from '../services/shaderCatalog';
 import { mapVJStackToSharedChain } from '../services/vjToSharedChain';
@@ -31,6 +32,10 @@ export interface UseShareChainOptions {
     handleLoadImage: (url: string) => Promise<void>;
     startWebcam: () => void;
     setStatus: (status: string) => void;
+    /** Per-slot chained/parallel + compositing (#1512); absent → links carry neither. */
+    slotModes?: SlotMode[];
+    slotLayers?: SlotLayer[];
+    applySlotCompositing?: (modes: readonly SlotMode[], layers: readonly SlotLayer[]) => void;
 }
 
 export interface UseShareChainReturn {
@@ -66,6 +71,9 @@ export function useShareChain({
     handleLoadImage,
     startWebcam,
     setStatus,
+    slotModes,
+    slotLayers,
+    applySlotCompositing,
 }: UseShareChainOptions): UseShareChainReturn {
     const [showShareModal, setShowShareModal] = useState(false);
     const [shareableLink, setShareableLink] = useState('');
@@ -180,8 +188,15 @@ export function useShareChain({
     }, [restoreStateFromHash]);
 
     const applySharedChain = useCallback((chain: SharedChain) => {
-        const { modes: sharedModes, slotParams: sharedParams } = expandSharedChain(chain);
+        const {
+            modes: sharedModes,
+            slotParams: sharedParams,
+            slotModes: sharedSlotModes,
+            layers: sharedLayers,
+        } = expandSharedChain(chain);
         const known = availableModesRef.current;
+        // Every slot, so a chain without compositor fields resets old blends to replace.
+        applySlotCompositing?.(sharedSlotModes, sharedLayers);
 
         sharedModes.forEach((shaderId, index) => {
             if (index >= MAX_SHARED_SLOTS) return;
@@ -203,17 +218,22 @@ export function useShareChain({
         });
 
         setStatus('🔗 Shared chain loaded!');
-    }, [setMode, updateSlotParam, availableModesRef, setStatus]);
+    }, [setMode, updateSlotParam, availableModesRef, setStatus, applySlotCompositing]);
+
+    const currentChain = useCallback(
+        () => buildSharedChain(modes, slotParams, { slotModes, layers: slotLayers }),
+        [modes, slotParams, slotModes, slotLayers],
+    );
 
     const generateChainShareLink = useCallback(() => {
-        const chain = buildSharedChain(modes, slotParams);
+        const chain = currentChain();
         const encoded = encodeChain(chain);
         const url = new URL(window.location.href);
         url.search = '';
         url.hash = '';
         url.searchParams.set(SHARE_CHAIN_PARAM, encoded);
         return url.toString();
-    }, [modes, slotParams]);
+    }, [currentChain]);
 
     const copyChainShareLink = useCallback(async () => {
         try {
@@ -280,9 +300,9 @@ export function useShareChain({
     }, [generateShareableLink]);
 
     const getCurrentChain = useCallback((): SharedChain | null => {
-        const chain = buildSharedChain(modes, slotParams);
+        const chain = currentChain();
         return chain.slots.some(s => s.shaderId) ? chain : null;
-    }, [modes, slotParams]);
+    }, [currentChain]);
 
     return {
         showShareModal,

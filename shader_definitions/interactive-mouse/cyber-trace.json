@@ -2,7 +2,7 @@
   "id": "cyber-trace",
   "name": "Cyber Trace",
   "url": "shaders/cyber-trace.wgsl",
-  "description": "A glowing neon trail that follows your mouse cursor and reacts to clicks, overlaid on the video feed.",
+  "description": "Neon trail painted by the pointer. The stamp follows the trail already in history, and the photo darkens in a groove under the line.",
   "features": [
     "mouse-driven",
     "audio-reactive",

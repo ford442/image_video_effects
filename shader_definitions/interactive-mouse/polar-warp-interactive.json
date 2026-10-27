@@ -2,7 +2,7 @@
   "id": "polar-warp-interactive",
   "name": "Polar Warp",
   "url": "shaders/polar-warp-interactive.wgsl",
-  "description": "Recursive liquid polar tunnel bands with interference mandalas, smooth seeded sparkles, held singularity deformation, bounded click spirals, chromatic grading, and truthful A state packed as [bassEnvelope, mouseX, mouseY, alpha].",
+  "description": "Polar tunnel around the pointer with spiral, pinch, and click twist. The power map bleaches where it stretches the photo, and the atan2 branch cut is a dark seam. A stores smoothed bass and the pointer.",
   "updated": true,
   "features": [
     "mouse-driven",

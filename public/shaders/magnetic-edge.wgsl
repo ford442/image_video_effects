@@ -1,27 +1,15 @@
-// Magnetic Edge — anisotropic edge-field attraction with spectral flux trails.
-// A/C stores tone-mapped display RGBA. B is intentionally unused.
-// extraBuffer[133..138] stores the single-writer pointer spring.
+// ═══════════════════════════════════════════════════════════════════
+//  Magnetic Edge
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-27
+//  Ideas: drag-aligned field along the spring velocity; remanence from last frame's edge
+//  A packing: ACES display RGBA (exact C history)
+//  extraBuffer[133..138]: spring position, velocity, previous time, initialized
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -134,7 +122,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let heldGain = select(0.7, 1.8, held);
-  let displacement = (anisotropicField * influence * edge * heldGain + radial * shock * 0.45) * pullStrength;
+  // ── Idea 1: drag-aligned field ──────────────────────────────────
+  // A moving magnet bends the pull toward the spring velocity, and only
+  // on an edge. A still magnet keeps the edge-aligned field.
+  let magSpeed = length(springVel);
+  let velDir = springVel / max(magSpeed, 1e-4);
+  let slip = smoothstep(0.002, 0.05, magSpeed);
+  let dragged = normalize(mix(anisotropicField, velDir, slip * edge * 0.65) + vec2<f32>(1e-5, 0.0));
+  let displacement = (dragged * influence * edge * heldGain + radial * shock * 0.45) * pullStrength;
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   let depthShift = normal * (depth - 0.5) * edge * 0.012;
   let sampleUV = clamp(uv + displacement + depthShift, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -152,7 +147,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hdr = vec3<f32>(red, displaced.g, blue);
   hdr += fluxColor * fluxLines * glowAmount * (0.5 + treble);
   hdr += vec3<f32>(0.05, 0.65, 1.15) * edge * influence * glowAmount * (0.18 + mids * 0.35);
-  hdr = mix(hdr, history.rgb, clamp(0.05 + edge * influence * 0.14, 0.0, 0.22));
+  // ── Idea 2: remanence ───────────────────────────────────────────
+  // Where last frame's edge was lit and the magnet has left, more of
+  // that picture remains. Glow Amount still sets the live flux.
+  let remnant = smoothstep(0.25, 0.7, history.a) * (1.0 - influence);
+  hdr = mix(hdr, history.rgb, clamp(0.05 + edge * influence * 0.14 + remnant * 0.28, 0.0, 0.45));
   let display = aces(max(hdr, vec3<f32>(0.0)));
   let alpha = clamp(center.a * 0.35 + edge * (0.35 + influence * 0.45) + fluxLines * 0.35, 0.0, 1.0);
   let result = vec4<f32>(display, alpha);

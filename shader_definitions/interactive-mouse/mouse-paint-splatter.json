@@ -8,7 +8,7 @@
     "audio-reactive",
     "upgraded-rgba"
   ],
-  "description": "Mouse drags leave colorful paint splatters sampled from the image. Paint spreads, mixes, and dries over time. Click ripples create explosive paint bursts.",
+  "description": "Mouse drags leave colorful paint splatters sampled from the image. Paint spreads, mixes, and dries over time. Click ripples create explosive paint bursts. Fast throws stretch into streaks, and wet rims collect pigment.",
   "params": [
     {
       "id": "splatterSize",

@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, paper-fold, mountain-valley, chromatic-edge, semantic-alpha, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-12
-//  Ideas: Kawasaki buckle wrinkle on unfoldable vertices; sheet print-through at the crease
+//  Upgraded: 2026-10-27
+//  Ideas: Kawasaki buckle; sheet print-through; valley sink and mountain ridge; cast shadow on the open half
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -113,6 +94,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let showThrough = paperOpacity * (1.0 - smoothstep(0.0, 0.09, abs(dist)));
     finalColor = mix(finalColor, ghost.rgb * paperTexture(uv * 3.0), showThrough * 0.42);
     foldAlpha = mix(foldAlpha, ghost.a * paperOpacity, showThrough * 0.35);
+    // ── Idea: the folded flap casts a short shadow onto the open half.
+    let flapShadow = exp(-abs(dist) * 11.0) * shadowStrength;
+    finalColor *= 1.0 - flapShadow * 0.6;
   } else {
     let texColor = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
 
@@ -135,6 +119,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let creaseGlow = bass * 0.12 * smoothstep(0.06, 0.0, abs(dist)) * select(1.0, 2.0, isMouseDown);
     finalColor += vec3<f32>(creaseGlow, creaseGlow * 0.55, creaseGlow * 0.15);
     finalColor *= 1.0 - buckle * 0.12 * (1.0 - smoothstep(0.0, 0.08, abs(dist)));
+  }
+
+  // ── Idea: valley creases sink; mountain creases catch a ridge light. The flag is the existing click phase.
+  let creaseMask = smoothstep(0.055, 0.0, abs(dist));
+  if (mountainValley) {
+    finalColor *= mix(1.0, 0.62, creaseMask);
+  } else {
+    finalColor += vec3<f32>(0.85, 0.78, 0.62) * creaseMask * (0.28 + mids * 0.2);
   }
 
   let layerOrder = smoothstep(0.0, 0.08, abs(dist)) * (0.6 + depth * 0.4);

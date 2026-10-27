@@ -14,7 +14,7 @@ const chain: SharedChain = {
   slots: [
     { shaderId: 'known-a', params: { zoomParam1: 0.2 }, enabled: false, mode: 'parallel' },
     { shaderId: null },
-    { shaderId: 'known-b', params: { ambient: 0.8 } },
+    { shaderId: 'known-b', params: { ambient: 0.8 }, mode: 'parallel', b: 'screen', o: 0.5, m: '!s0~0.25' },
   ],
 };
 
@@ -25,6 +25,7 @@ describe('project file export/import', () => {
       activeSlot: 2,
       source: { kind: 'video', ref: 'videos/demo.mp4' },
       quality: 'balanced',
+      hdr: { paperWhiteNits: 240, peakNits: 1600 },
       audioMappings: [{
         trigger: { source: 'midi-cc', id: 'ch1/cc7' },
         action: { type: 'setSlotParam', slot: 2, param: 'zoomParam1' },

@@ -10,31 +10,12 @@
 //  The image is mapped onto a Poincaré disk. Mouse movement drives
 //  Möbius transformations that scroll the hyperbolic plane. Tiles
 //  become smaller and more numerous toward the disk boundary.
-//  Upgraded: 2026-09-11
-//  Ideas: horocycle rings; tile mortar at angular wrap
+//  Upgraded: 2026-10-27
+//  Ideas: horocycle rings; tile mortar; horocycle gutter; Cauchy split on Boundary Glow (§12.2F)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Complex arithmetic helpers
 fn cMul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
@@ -56,6 +37,12 @@ fn mobiusDisk(z: vec2<f32>, a: vec2<f32>) -> vec2<f32> {
 }
 
 // Hyperbolic distance from origin in Poincaré disk
+fn cauchyScale(bDisp: f32) -> vec3<f32> {
+  let lam2 = vec3<f32>(0.650, 0.550, 0.450) * vec3<f32>(0.650, 0.550, 0.450);
+  let n = vec3<f32>(1.0) + vec3<f32>(bDisp) / lam2;
+  return n / n.y;
+}
+
 fn hyperbolicDistOrigin(z: vec2<f32>) -> f32 {
   let r2 = dot(z, z);
   return 0.5 * log((1.0 + r2 + 0.0001) / (1.0 - r2 + 0.0001));
@@ -126,12 +113,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let hDist = hyperbolicDistOrigin(transformed);
   let magnify = 1.0 + hDist * 0.3;
   let magnifiedUV = clamp((sampleUV - 0.5) * magnify + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
-  var color = textureSampleLevel(readTexture, u_sampler, magnifiedUV, 0.0).rgb;
+  // ── Idea: Cauchy split along the conformal scale. Boundary Glow at 0 leaves red and blue together (§12.2F).
+  let mag = cauchyScale(edgeGlow * 0.035);
+  let pivot = vec2<f32>(0.5);
+  let uvR = clamp((magnifiedUV - pivot) * mag.x + pivot, vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvB = clamp((magnifiedUV - pivot) * mag.z + pivot, vec2<f32>(0.0), vec2<f32>(1.0));
+  var color = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, magnifiedUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+  );
   let srcA = textureSampleLevel(readTexture, u_sampler, magnifiedUV, 0.0).a;
 
   let wrapSeam = abs(fract(atan2(transformed.y, transformed.x) / 6.28318 * tileCount) - 0.5);
   let mortar = 1.0 - smoothstep(0.02, 0.08, wrapSeam);
   color = mix(color, color * 0.35, mortar * 0.65);
+  // ── Idea: horocycle gutter — a radial seam, separate from the angular mortar.
+  let ring = fract(hDist * max(tileCount, 1.0) * 0.42);
+  let ringSeam = smoothstep(0.07, 0.0, ring) + smoothstep(0.93, 1.0, ring);
+  color = mix(color, color * 0.32, clamp(ringSeam, 0.0, 1.0) * 0.75);
   let horo = abs(sin(hDist * 6.0 - time * 1.1));
   color += vec3<f32>(0.25, 0.55, 1.0) * horo * 0.12 * (1.0 - distFromOrigin);
 

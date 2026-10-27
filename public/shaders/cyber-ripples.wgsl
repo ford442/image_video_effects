@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Ripples — Batch 59
-//  Quantized ripples, FBM warp, capped click rings, held tighten,
-//  FFT band shimmer, ACES, exact C trail, semantic alpha.
+//  Cyber Ripples
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-26
+//  Ideas: LED ring steps; block-snapped chroma
+//  A packing: ACES display RGB + bass envelope in A.a
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -148,6 +133,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warp = fbm(uv * 3.5 + time * 0.2 + env) - 0.5;
     let quant = floor(dist * QUANT_STEP) / QUANT_STEP;
     let wave = sin((quant + warp * 0.08) * frequency - time * speed);
+    // ── Idea 1: LED ring steps — the quantized radius keeps a stepped brightness
+    let stepped = floor((wave * 0.5 + 0.5) * 6.0) / 6.0 * 2.0 - 1.0;
+    let waveQ = mix(wave, stepped, 0.8);
 
     let clickPhase = dist * 30.0 - time * 12.0;
     let clickPulse = select(0.0, sin(clickPhase) * exp(-dist * 4.0), mouseDown);
@@ -168,7 +156,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let audioBoost = 1.0 + env * 0.6 + mids * 0.2;
     let strength = (1.0 / (dist * ATTEN_SCALE + 0.5)) * (0.3 + 0.7 * depthAtten) * held;
-    let displacement = dir * (wave + clickPulse * 0.5 + rippleShock) * strength * DISP_AMP * audioBoost;
+    let displacement = dir * (waveQ + clickPulse * 0.5 + rippleShock) * strength * DISP_AMP * audioBoost;
     var displacedUV = uv01 + displacement;
 
     let fbmWarp = vec2<f32>(
@@ -185,16 +173,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let lod = clamp(length(displacement) * res.x * 0.25, 0.0, 2.0);
 
-    let offset = vec2<f32>(aberration * (1.0 + env * 0.5), 0.0);
-    let sR = textureSampleLevel(readTexture, u_sampler, displacedUV + offset, lod);
-    let sB = textureSampleLevel(readTexture, u_sampler, displacedUV - offset, lod);
+    // ── Idea 2: block-snapped chroma — the split lands on the same cells as the pixelation
+    let chroma = aberration * (1.0 + env * 0.5);
+    let cell = max(blockSize, 1.0 / max(res.x, 1.0));
+    let snapped = sign(chroma) * floor(abs(chroma) / cell + 0.5) * cell;
+    let offset = vec2<f32>(mix(chroma, snapped, activePixel), 0.0);
+    let sR = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + offset, vec2<f32>(0.0), vec2<f32>(1.0)), lod);
+    let sB = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - offset, vec2<f32>(0.0), vec2<f32>(1.0)), lod);
     var color = vec3<f32>(sR.r, mix(sR.g, sB.g, 0.5), sB.b);
 
     let lum = luma(color);
 
     let rings = sdfRings(uv, mouseUV, time);
-    let band = min(u32(uv01.x * 8.0), 7u);
-    let bandShimmer = plasmaBuffer[band + 1u].x * 0.25;
+    let band = uv01.x * 8.0;
+    let bandShimmer = treble * (0.5 + 0.5 * sin(time * 2.4 + band)) * 0.25;
     let ringGlow = exp(-rings * 12.0) * (0.15 + env * 0.25 + bandShimmer) * held;
     color = color + audioPalette(dist * 2.0 - time * 0.2, bass, treble) * ringGlow;
     color = color + vec3<f32>(treble * 0.15 * lum + clickPulse * 0.25);

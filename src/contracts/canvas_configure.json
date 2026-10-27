@@ -1,9 +1,9 @@
 {
-  "description": "Canvas swapchain configure capabilities: the one source that TS buildCanvasConfigureOptions() and the WASM path (JS_CreateSurfaceFromCanvas, JS_ProbeCanvasCopySrc, ConfigureSurface() in device.cpp) both read. TS imports this JSON; C++ includes wasm_renderer/canvas_configure.h, generated from it by `npm run gen:canvas-configure` (verify:device-policy fails when the header is stale or device.cpp hardcodes a contracted value). WASM keeps BOTH configures: JS (opaque + usage) then C++ (width/height + Fifo). Format is always navigator.gpu.getPreferredCanvasFormat(). colorSpace/toneMapping defaults are the browser defaults and are not written explicitly on the default path. Each optIn entry is one capability; its `backends` lists the renderers that implement it, and the WASM configure may only touch keys of capabilities that list \"wasm\". `requires` names a capability that must also be on.",
-  "version": 3,
+  "description": "Canvas swapchain configure capabilities: the one source that TS buildCanvasConfigureOptions() and the WASM path (JS_CreateSurfaceFromCanvas, JS_ProbeCanvasCopySrc, ConfigureSurface() in device.cpp) both read. TS imports this JSON; C++ includes wasm_renderer/canvas_configure.h, generated from it by `npm run gen:canvas-configure` (verify:device-policy fails when the header is stale or device.cpp hardcodes a contracted value). WASM keeps BOTH configures: JS (opaque + usage) then C++ (width/height + Fifo). Format is navigator.gpu.getPreferredCanvasFormat() except under optIn.hdrCanvas (TS only). colorSpace/toneMapping defaults are the browser defaults and are not written explicitly on the default path. Each optIn entry is one capability; its `backends` lists the renderers that implement it, and the WASM configure may only touch keys of capabilities that list \"wasm\". `requires` names a capability that must also be on. v4 (#1512): hdrCanvas, storageBinding, hdrToneMap.",
+  "version": 4,
   "alphaMode": "opaque",
   "usage": ["RENDER_ATTACHMENT"],
-  "usageBits": { "COPY_SRC": 1, "RENDER_ATTACHMENT": 16 },
+  "usageBits": { "COPY_SRC": 1, "STORAGE_BINDING": 8, "RENDER_ATTACHMENT": 16 },
   "presentModeWasm": "fifo",
   "colorSpace": "srgb",
   "toneMapping": "standard",
@@ -31,14 +31,44 @@
       "backends": ["ts"],
       "configureKeys": ["toneMapping"],
       "requires": "displayP3"
+    },
+    "hdrCanvas": {
+      "format": "rgba16float",
+      "note": "Real HDR output (#1512): with extended tone mapping the swapchain is rgba16float (an 8-bit swapchain clamps to [0,1], so 'extended' alone shows nothing). Negotiated together with displayP3 + extendedToneMapping; the present pipeline is re-specialised for the format and applies the hdrToneMap tonemap. Falls back to the preferred format (p3 + standard) when rejected.",
+      "backends": ["ts"],
+      "configureKeys": ["format"],
+      "requires": "extendedToneMapping"
+    },
+    "storageBinding": {
+      "usage": ["RENDER_ATTACHMENT", "STORAGE_BINDING"],
+      "format": "bgra8unorm",
+      "requiresFeature": "bgra8unorm-storage",
+      "probeFlag": "canvasStorageBinding",
+      "urlParamDisable": "no_direct_present",
+      "note": "Direct-to-swapchain present (#1512): when the device has bgra8unorm-storage and the preferred format is bgra8unorm, the boot probe tries RENDER_ATTACHMENT|STORAGE_BINDING in a validation scope. When accepted, an eligible final slot writes the swapchain texture as storage and the present blit is skipped (webgpu/directPresent.ts). Kept on the live configure while accepted; copySrc / color renegotiation preserve it.",
+      "backends": ["ts"],
+      "configureKeys": ["usage"]
     }
+  },
+  "hdrToneMap": {
+    "sdrReferenceWhiteNits": 203,
+    "paperWhiteNitsDefault": 203,
+    "peakNitsDefault": 1000,
+    "nitsRange": [80, 10000],
+    "storageKey": "px_hdr_tonemap",
+    "note": "Canvas 1.0 is the display's SDR white, taken as the BT.2408 reference white. The HDR present maps working linear x to canvas exposure·x below 1.0 with a soft shoulder toward headroom = peak / sdrReferenceWhite. Project files carry it as render.hdr."
   },
   "cpp": {
     "jsConfigureFunction": "JS_CreateSurfaceFromCanvas",
     "surfaceConfigureFunction": "ConfigureSurface",
     "usageEnums": {
       "RENDER_ATTACHMENT": "WGPUTextureUsage_RenderAttachment",
-      "COPY_SRC": "WGPUTextureUsage_CopySrc"
+      "COPY_SRC": "WGPUTextureUsage_CopySrc",
+      "STORAGE_BINDING": "WGPUTextureUsage_StorageBinding"
+    },
+    "formatEnums": {
+      "rgba16float": "WGPUTextureFormat_RGBA16Float",
+      "bgra8unorm": "WGPUTextureFormat_BGRA8Unorm"
     },
     "alphaModeEnums": {
       "opaque": "WGPUCompositeAlphaMode_Opaque"

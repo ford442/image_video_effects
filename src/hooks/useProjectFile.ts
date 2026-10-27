@@ -1,6 +1,8 @@
 import { useCallback } from 'react';
 import type { RenderQualityMode } from '../config/performancePolicy';
-import type { InputSource, RenderMode, ShaderEntry, SlotParams } from '../renderer/types';
+import type { InputSource, RenderMode, ShaderEntry, SlotMode, SlotParams } from '../renderer/types';
+import type { SlotLayer } from '../renderer/layerState';
+import type { HdrToneMapSettings } from '../services/hdrOutput';
 import type { VideoRecord } from '../syncTypes';
 import type { ImageRecord } from '../types/aiVj';
 import type { ControlBinding } from '../services/controlBindings';
@@ -22,6 +24,12 @@ import {
 export interface UseProjectFileOptions {
   modes: RenderMode[];
   slotParams: SlotParams[];
+  /** Per-slot chained/parallel + compositing (#1512, project schema v2). */
+  slotModes?: SlotMode[];
+  slotLayers?: SlotLayer[];
+  /** HDR canvas tonemap (render.hdr). */
+  hdrToneMap?: HdrToneMapSettings;
+  setHdrToneMap?: (settings: HdrToneMapSettings) => void;
   activeSlot: number;
   inputSource: InputSource;
   currentImageUrl?: string;
@@ -94,6 +102,7 @@ async function applyPlan(plan: ProjectApplyPlan, options: UseProjectFileOptions)
   options.applySharedChain(plan.chain);
   options.setActiveSlot(plan.activeSlot);
   if (plan.render.quality) options.setRenderQuality?.(plan.render.quality);
+  if (plan.render.hdr) options.setHdrToneMap?.(plan.render.hdr);
   if (plan.audio?.mappings) options.setBindings(plan.audio.mappings);
   if (plan.timeline?.timeline) options.setTimeline(plan.timeline.timeline);
 
@@ -137,7 +146,10 @@ async function applyPlan(plan: ProjectApplyPlan, options: UseProjectFileOptions)
 
 export function useProjectFile(options: UseProjectFileOptions): UseProjectFileReturn {
   const exportProject = useCallback(() => {
-    const chain = buildSharedChain(options.modes, options.slotParams);
+    const chain = buildSharedChain(options.modes, options.slotParams, {
+      slotModes: options.slotModes,
+      layers: options.slotLayers,
+    });
     let timeline: VjSetExportPayload | undefined;
     if (options.timeline && options.recorderState !== 'recording') {
       timeline = buildVjSetExport('Project recording', chain, {
@@ -150,6 +162,7 @@ export function useProjectFile(options: UseProjectFileOptions): UseProjectFileRe
       activeSlot: options.activeSlot,
       source: captureSource(options),
       quality: options.renderQualityMode,
+      hdr: options.hdrToneMap,
       audioMappings: options.bindings,
       timeline,
     });

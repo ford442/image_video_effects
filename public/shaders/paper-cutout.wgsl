@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, click-reactive
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: height-weighted shadows; lit cut edge with far-side rim; hand-cut layer jitter
+//  Upgraded: 2026-10-27
+//  Ideas: height-weighted shadows; lit cut edge; hand-cut jitter; deckle; paper tooth (§12.2C)
 //  A packing: ACES display RGBA (same as writeTexture; C is not read)
 // ═══════════════════════════════════════════════════════════════════
 //  The photo is posterized by luma into stacked paper sheets (brighter = higher).
@@ -13,26 +13,7 @@
 //  so the old multiplier was always 1.0). HEAD's peak limiter is replaced by ACES at
 //  exposure 0.72, which maps display 0.2 -> 0.20 and 0.5 -> 0.50 (upper layers compress).
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var filteringSampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparisonSampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 fn getLuma(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.299, 0.587, 0.114));
@@ -192,8 +173,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lit_edge = step(toward_layer + 0.5, layer_index);
   let far_rim = step(away_layer + 0.5, layer_index);
   let cut_core = vec3<f32>(1.5, 1.46, 1.38);
-  final_color = mix(final_color, cut_core, lit_edge * (0.55 - 0.3 * softness) * (1.0 - shadow));
+  // ── Idea: deckle. The lit core is a torn paper edge, not a straight cut.
+  let deckleN = fract(sin(reg_layer * 127.1 + floor((sheet_uv.x * aspect + sheet_uv.y) * 140.0) * 311.7) * 43758.5453);
+  let torn = lit_edge * (0.42 + 0.58 * deckleN);
+  final_color = mix(final_color, cut_core, torn * (0.55 - 0.3 * softness) * (1.0 - shadow));
   final_color *= 1.0 - far_rim * (0.4 - 0.2 * softness);
+  // ── Idea: paper tooth (§12.2C). Fibre shows in the sheet, more inside the shadow.
+  let tooth = fract(sin(dot(floor(uv * vec2<f32>(dims) * 0.5), vec2<f32>(127.1, 311.7))) * 43758.5453);
+  let toothAmt = (0.045 + shadow * 0.09) * (1.0 - softness * 0.45);
+  final_color = final_color * (1.0 - toothAmt * tooth);
 
   final_color += vec3<f32>(1.0, 0.72, 0.38) * clickEmboss * (0.08 + treble * 0.06);
   // ACES on display RGB; exposure 0.72 keeps the 0.2..0.5 midtones at HEAD's level.
@@ -206,7 +194,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(dataTextureA, coord, finalOut);
 
   // Honest paper relief: brighter/raised layers and click rings sit forward.
-  let depth = textureSampleLevel(readDepthTexture, filteringSampler, uv, 0.0).r;
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthOut = clamp(depth - raisedLuma * 0.04 - clickEmboss * 0.025, 0.0, 1.0);
   textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

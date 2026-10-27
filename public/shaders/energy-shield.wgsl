@@ -5,7 +5,9 @@
 //            audio-reactive, temporal-trail, fresnel-rim, oil-slick,
 //            aces-tone-mapping, semantic-alpha
 //  Complexity: Medium-High
-//  Upgraded: 2026-08-23 Batch 60
+//  Upgraded: 2026-08-23, 2026-10-27
+//  Ideas: facet shade toward the cursor; impact spends the photo
+//  A packing: raw (trail, mouseIntensity, impact, alpha). ACES on the display write only.
 //    - Cap click ripples at 50; exact textureLoad for C trail
 //    - Held hex-grid tighten (scale up + edge sharpen)
 //    - Real FFT: bass pulse, treble crackle on hex edges
@@ -19,26 +21,8 @@
 //    dataTextureC is previous A (engine copy). Exact texel loads only.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=hexScale, y=rippleSpeed, z=impactStrength, w=decay
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=hexScale, y=rippleSpeed, z=impactStrength, w=decay
 
 fn hexDist(p: vec2<f32>) -> f32 {
     let p_abs = abs(p);
@@ -115,7 +99,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (age < 0.0 || age > 3.0) { continue; }
         let rd = length((hexCenterUV - rp.xy) * vec2<f32>(aspect, 1.0));
         let waveR = age * (0.25 + rippleSpeed * 0.08);
-        let band = exp(-pow((rd - waveR) * 22.0, 2.0));
+        let bandDelta = (rd - waveR) * 22.0;
+        let band = exp(-bandDelta * bandDelta);
         let crackle = 0.6 + 0.4 * sin(dot(hexCenter, vec2<f32>(12.9, 7.3)) + time * 8.0);
         let fade = (1.0 - age / 3.0);
         impactFlare = impactFlare + band * crackle * fade * (0.6 + impactStrength);
@@ -133,6 +118,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let glowBase = select(0.40, 0.44, held);
     let glow = smoothstep(glowBase, edgeHi, hexD) * activeHex;
 
+    // ── Idea 1: facet shade. The hex face toward the cursor catches light.
+    let faceN = gv / max(length(gv), 0.001);
+    let toMouse = distVec / max(dist, 0.001);
+    let facet = clamp(dot(faceN, -toMouse), 0.0, 1.0);
+
     // Treble crackle along hex edges
     let edgeCrackle = step(0.92 - treble * 0.08, hash21(hexCenter + time * 17.0))
                     * treble * edge * (0.5 + activeHex);
@@ -144,12 +134,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let color_sample = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
     let color = color_sample.rgb;
 
+    // ── Idea 2: the impact spends the photo under the ring.
+    let photoL = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let spent = clamp(impactFlare * 0.28, 0.0, 0.45);
+    let photo = mix(color, vec3<f32>(photoL), spent);
+
     // Oil-slick iridescent hex edges (not flat cyan)
     let filmPhase = hexD * 6.0 + dist * 8.0 - time * 0.7 + mids * 1.5;
     let oilSlick = 0.5 + 0.5 * cos(filmPhase + vec3<f32>(0.0, 2.094, 4.189));
     let gridColor = mix(vec3<f32>(0.05, 0.55, 0.95), oilSlick, 0.55 + treble * 0.25);
 
-    var finalColor = mix(color, gridColor, glow * 0.85);
+    var finalColor = mix(photo, gridColor, glow * 0.85);
+    finalColor = finalColor + gridColor * facet * edge * (0.12 + mouseIntensity);
     finalColor = finalColor + gridColor * mouseIntensity * 0.2;
     finalColor = finalColor + oilSlick * edgeCrackle * 0.55;
 

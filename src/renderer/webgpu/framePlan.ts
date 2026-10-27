@@ -9,6 +9,12 @@
  * Order reproduces the pre-IR dispatch exactly: parallel slots → writeTex→readTex
  * → feedback; then each chained slot followed by its copy + feedback.
  * docs/BINDING_CONTRACT.md freezes the feedback order (B → C, then A → C).
+ *
+ * Layer compositor (#1512): a parallel group with any non-replace layer
+ * captures each member's output into the layer stack and composites them in
+ * one pass before the group's writeTex→readTex copy; a chained slot with a
+ * non-replace layer composites over its own input the same way. Replace-only
+ * stacks compile to exactly the ops they always did.
  */
 
 import type { GraphRunReport, GraphSimRingBindings } from '../GraphRunner';
@@ -20,6 +26,14 @@ import {
   MultipassGraphDef,
 } from '../multipassGraph';
 import type { FrameSlotDispatchPlan, SlotDispatchPlan } from './slotDispatch';
+import {
+  groupNeedsCompositor,
+  LayerStackBuilder,
+  maskSourceSlots,
+  type CaptureLayerOp,
+  type CompositeOp,
+} from './compositorPlan';
+import { isPassThroughLayer } from '../layerState';
 import type { SlotTimingMode } from './WebGPUTiming';
 import type { ShaderSlot } from './webgpuConstants';
 import { IslandRole, PassProfiler, snapNodeScale } from './nodeScale';
@@ -73,7 +87,11 @@ export type FrameOp =
   | { kind: 'simBarrier' }
   /** Scaled island around one opt-in node dispatch (see nodeScale.ts). */
   | { kind: 'islandEnter'; scale: number }
-  | { kind: 'islandExit'; scale: number; writes: IslandRole[] };
+  | { kind: 'islandExit'; scale: number; writes: IslandRole[] }
+  /** Copy writeTex (a slot's output) into a layer-stack layer (#1512). */
+  | CaptureLayerOp
+  /** Masks + one blend dispatch over captured layers; writes writeTex (#1512). */
+  | CompositeOp;
 
 export interface FramePlan {
   ops: FrameOp[];
@@ -82,6 +100,8 @@ export interface FramePlan {
   output: 'readTex' | 'writeTex';
   /** One report per graph slot, in encode order. */
   graphReports: GraphRunReport[];
+  /** Layer-stack layers the compositor needs this frame (0 = compositor idle). */
+  stackLayers: number;
 }
 
 export interface FramePlanContext {
@@ -283,6 +303,8 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
     ctx.framePassBudget,
   );
   const singleChained = plan.enabledCount === 1 && plan.chained.length === 1;
+  const stack = new LayerStackBuilder();
+  const maskSources = maskSourceSlots(ordered);
 
   const compileSlot = (slotPlan: SlotDispatchPlan, mode: SlotTimingMode, index: number) => {
     ops.push({ kind: 'slotStart', slot: slotPlan.slot, mode });
@@ -295,9 +317,18 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
       compileChain(ops, slotPlan, program.shaderIds, mode, ctx);
     }
   };
+  const capture = (slotPlan: SlotDispatchPlan) => {
+    const op = stack.capture(slotPlan.slotIndex, slotPlan.slot);
+    if (op) ops.push(op);
+  };
 
-  plan.parallel.forEach((slotPlan, i) => compileSlot(slotPlan, 'parallel', i));
+  const compositeParallel = groupNeedsCompositor(plan.parallel);
+  plan.parallel.forEach((slotPlan, i) => {
+    compileSlot(slotPlan, 'parallel', i);
+    if (compositeParallel || maskSources.has(slotPlan.slotIndex)) capture(slotPlan);
+  });
   if (plan.parallel.length > 0) {
+    if (compositeParallel) ops.push(stack.composite('parallel', plan.parallel));
     ops.push({ kind: 'copy', from: 'writeTex', to: 'readTex' });
     pushFeedback(ops, getFeedbackCopyOrder(
       plan.anyReadsDataC,
@@ -308,6 +339,10 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
 
   plan.chained.forEach((slotPlan, i) => {
     compileSlot(slotPlan, 'chained', plan.parallel.length + i);
+    const composites = !isPassThroughLayer(slotPlan.slot.layer);
+    if (composites || maskSources.has(slotPlan.slotIndex)) capture(slotPlan);
+    // Over this slot's own input: readTex still holds it (chained slots read 1, write 2).
+    if (composites && stack.has(slotPlan.slotIndex)) ops.push(stack.composite('chained', [slotPlan]));
     if (!singleChained) ops.push({ kind: 'copy', from: 'writeTex', to: 'readTex' });
     pushFeedback(ops, getFeedbackCopyOrder(plan.anyReadsDataC, slotPlan.writesDataA, slotPlan.writesDataB));
   });
@@ -317,7 +352,20 @@ export function compileFramePlan(plan: FrameSlotDispatchPlan, ctx: FramePlanCont
     computeCount: ops.reduce((n, op) => n + (op.kind === 'compute' ? 1 : 0), 0),
     output: singleChained ? 'writeTex' : 'readTex',
     graphReports,
+    stackLayers: stack.size,
   };
+}
+
+/**
+ * Encodes the compositor ops (implemented by LayerCompositor, compositor.ts).
+ * When absent or not ready, captures and composites are skipped and every
+ * layer renders as replace (the pre-compositor behaviour).
+ */
+export interface FrameCompositor {
+  /** Size the layer stack for this frame; false → skip compositor ops this frame. */
+  prepare(stackLayers: number): boolean;
+  encodeCapture(encoder: GPUCommandEncoder, op: CaptureLayerOp): void;
+  encodeComposite(encoder: GPUCommandEncoder, op: CompositeOp, profile?: PassProfiler): void;
 }
 
 /** What the executor needs to run a scaled island (implemented by NodeScaleIslands). */
@@ -336,6 +384,8 @@ export interface FrameExecResources {
   scaledH: number;
   /** Absent → opt-in nodes run at full size. */
   islands?: FrameIslands | null;
+  /** Absent → layers render as replace (no compositing). */
+  compositor?: FrameCompositor | null;
 }
 
 export interface FrameExecHooks {
@@ -351,6 +401,10 @@ export interface FrameExecHooks {
   ) => GPUComputePassTimestampWrites | undefined;
   /** Stamps for island resample passes. */
   profileResample?: PassProfiler;
+  /** Stamps for compositor mask / feather / blend passes. */
+  profileComposite?: PassProfiler;
+  /** Direct present (#1512): run this op with another pipeline / bind group (the swapchain variant). */
+  computeOverride?: (op: ComputeOp) => { pipeline: GPUComputePipeline; bindGroup: GPUBindGroup } | null;
 }
 
 export interface FrameExecResult {
@@ -376,6 +430,7 @@ export function executeFramePlan(
   };
   let computeIndex = 0;
   let activeIsland: number | null = null;
+  const compositor = plan.stackLayers > 0 && res.compositor?.prepare(plan.stackLayers) ? res.compositor : null;
 
   for (const op of plan.ops) {
     switch (op.kind) {
@@ -404,6 +459,12 @@ export function executeFramePlan(
         if (activeIsland === op.scale) res.islands?.encodeExit(encoder, op.scale, op.writes, hooks.profileResample);
         activeIsland = null;
         break;
+      case 'captureLayer':
+        compositor?.encodeCapture(encoder, op);
+        break;
+      case 'composite':
+        compositor?.encodeComposite(encoder, op, hooks.profileComposite);
+        break;
       case 'compute': {
         const island = op.scale < 1 && activeIsland === op.scale ? res.islands ?? null : null;
         const bindGroup = island?.bindGroup(op.scale) ?? null;
@@ -414,8 +475,9 @@ export function executeFramePlan(
         const pass = encoder.beginComputePass(
           timestampWrites ? { label: op.label, timestampWrites } : { label: op.label },
         );
-        pass.setPipeline(op.pipeline);
-        pass.setBindGroup(0, scaled && bindGroup ? bindGroup : res.computeBindGroup);
+        const override = scaled ? null : hooks.computeOverride?.(op) ?? null;
+        pass.setPipeline(override?.pipeline ?? op.pipeline);
+        pass.setBindGroup(0, override?.bindGroup ?? (scaled && bindGroup ? bindGroup : res.computeBindGroup));
         const ring = res.simRing;
         if (op.bindSimRing && ring) pass.setBindGroup(1, ring.bindGroup);
         if (op.dispatch === 'simState' && ring) {

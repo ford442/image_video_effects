@@ -6,6 +6,7 @@
 
 import type { Mock } from 'vitest';
 import { createPortPair, flushPorts, FakePort } from '../testing/fakePorts';
+import { defaultSlotLayer } from '../layerState';
 import { setRendererErrorHandler } from '../ErrorHandling';
 import { createWaveTankGraph } from '../multipassGraph';
 import { hasGraph } from '../multipassRegistry';
@@ -63,7 +64,11 @@ function fakeRenderer() {
     setSlotShader: record('setSlotShader'),
     setSlotEnabled: record('setSlotEnabled'),
     setSlotMode: record('setSlotMode'),
+    setSlotLayer: record('setSlotLayer'),
     getSlotState: () => ({ shaderId: null, enabled: false, mode: 'chained' as const }),
+    getCompositorStats: () => ({ layers: 0, bytes: 0, compositesLastFrame: 0 }),
+    restoreRipples: record('restoreRipples'),
+    restoreNodeScales: record('restoreNodeScales'),
     setInputSource: record('setInputSource'),
     updateDepthMap: record('updateDepthMap'),
     setTransferredVideo: record('setTransferredVideo'),
@@ -77,6 +82,11 @@ function fakeRenderer() {
     },
     setAdaptiveQuality: record('setAdaptiveQuality'),
     setSourceAutoExposure: record('setSourceAutoExposure'),
+    setHdrToneMap: record('setHdrToneMap'),
+    setShaderF16Enabled: record('setShaderF16Enabled'),
+    setDirectPresentEnabled: record('setDirectPresentEnabled'),
+    getDirectPresentStatus: () => ({ available: false, enabled: true, active: false, reason: 'storage-unavailable' as const }),
+    getShaderPrecisionInfo: () => ({ supported: false, enabled: false, precisions: {} }),
     applyTestRenderState: record('applyTestRenderState'),
     setCanvasCopySrc: (...args: unknown[]) => {
       calls.push(['setCanvasCopySrc', args]);
@@ -542,7 +552,9 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     const { backend } = await backendWithWorker();
     backend.setSlotShader(2, 'plasma');
     backend.setSlotMode(2, 'parallel');
-    expect(backend.getSlotState(2)).toEqual({ shaderId: 'plasma', enabled: true, mode: 'parallel' });
+    expect(backend.getSlotState(2)).toEqual({ shaderId: 'plasma', enabled: true, mode: 'parallel', layer: defaultSlotLayer() });
+    backend.setSlotLayer(2, { ...defaultSlotLayer(), output: 'blend', blend: 'screen', opacity: 0.5 });
+    expect(backend.getSlotLayer(2)).toMatchObject({ output: 'blend', blend: 'screen', opacity: 0.5 });
     // Deliver a snapshot directly (the host's interval is effectively off here).
     (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
       type: 'snapshot',

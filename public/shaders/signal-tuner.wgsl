@@ -3,31 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: off-station snow (Static Noise mixes treble-flickered snow where the wobble is strongest); RF multipath ghost (delayed-path copy offset right by Frequency, fading with tuning influence); detune beat bands (slow moiré bands where the row wobble nears the virtual raster pitch)
+//  Upgraded: 2026-09-28, 2026-10-27
+//  Ideas: off-station snow; RF multipath ghost; detune beat bands; sync bar at the left of the line; chroma swim downward with Static
 //  A packing: pre-ACES linear display RGB + semantic alpha; C read back as that linear colour for the tuning-zone ghost history
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Frequency, y=Interference, z=DriftSpeed, w=Static
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Frequency, y=Interference, z=DriftSpeed, w=Static
 
 const PI: f32 = 3.14159265359;
 // Virtual raster pitch (radians per uv unit) that the row wobble beats against (idea 3).
@@ -118,11 +100,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let finalUV = clamp(uv + displacement + vec2<f32>(noiseVal + beatShift, noiseVal), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let split = audioAmp * influence * 0.5 * (1.0 + treble * 0.25);
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + vec2<f32>(split, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  // ── Idea 2: chroma swim. The existing red/blue split also steps down
+  // as Static rises, the way unlocked colour crawls.
+  let swim = noiseAmt * influence * 3.0 / max(resolution.y, 1.0);
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + vec2<f32>(split, swim), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(finalUV - vec2<f32>(split, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + vec2<f32>(-split, swim), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   let srcAlpha = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).a;
   var color = vec3<f32>(r, g, b);
+
+  // ── Idea 1: sync bar. A bright stub at the left of the row, inside the
+  // tuning zone, stronger as Frequency rises.
+  let syncBar = smoothstep(0.018, 0.0, uv.x) * influence * (0.25 + u.zoom_params.x * 0.75);
+  color = color + vec3<f32>(syncBar);
 
   // IDEA 2 — RF multipath ghost. A delayed reflection arrives a little later than the direct
   // path, so a faint second copy sits to the RIGHT of the picture by a distance set by

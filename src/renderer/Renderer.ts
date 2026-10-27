@@ -1,8 +1,17 @@
 import type { PassTiming } from './passTimings';
 import type { InputSource } from './types';
+import type { SlotLayer } from './layerState';
 
 // Slot execution mode for inter-shader parallelization
 type SlotMode = 'chained' | 'parallel';
+
+/** One slot as a backend reports it; `layer` only on backends with the compositor (#1512). */
+export interface SlotStateSnapshot {
+  shaderId: string | null;
+  enabled: boolean;
+  mode: SlotMode;
+  layer?: SlotLayer;
+}
 
 /** Aggregate zoom-param update (UI slider form). */
 export type SlotZoomParamsUpdate = {
@@ -101,7 +110,9 @@ export interface Renderer {
   // Slot management with parallelization support
   setSlotMode?: (index: number, mode: SlotMode) => void;
   getSlotMode?: (index: number) => SlotMode | null;
-  getSlotState?: (index: number) => { shaderId: string | null; enabled: boolean; mode: SlotMode } | null;
+  getSlotState?: (index: number) => SlotStateSnapshot | null;
+  /** Per-slot compositing (TS WebGPU only; WASM and Canvas2D always replace). */
+  setSlotLayer?: (index: number, layer: SlotLayer) => void;
   getGPUTimings?: () => GPUTimings;
   /** Bench only: pause the frame loop, render `frames` frames without rAF, time to GPU idle. */
   benchmarkUncapped?: (frames: number) => Promise<UncappedBenchResult | null>;

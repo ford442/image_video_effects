@@ -157,6 +157,10 @@ whether the FP32 pin fired, empty `getFormatRewriteWarnings()`).
 
 Priority shaders for ad-hoc comparison: `sim-fluid-feedback-coupled`, `gen-lichen-reaction-diffusion`, `plasma`.
 
+## Compatibility-mode devices (#1512)
+
+Not the rgba8unorm idea below: a device from the adapter ladder's `featureLevel: 'compatibility'` rung (GL ES class, `window.webgpuProbe.compat === true`). `resolveColorFormat` runs it at **rgba16float** whatever tier is asked for (half the bandwidth, and the float storage format every compat backend has). The catalog hides what such a device cannot run (`catalogExclusionReason`): `requiresDeepWorkgroup` shaders when the device lacks the deep-workgroup limits, and FP32-pinned shaders when rgba32float storage is unavailable. The texture rules (a 2d-array's binding view dimension fixed at creation) are in [DEVICE_FEATURES.md](DEVICE_FEATURES.md).
+
 ## `compat` (rgba8unorm) — Phase 2, design only
 
 Not implemented, and **not** to be implemented until the bench above says balanced is

@@ -2,30 +2,12 @@
 //  Slinky Distort - Advanced Alpha
 //  Alpha Mode: Effect Intensity Alpha
 //  Features: advanced-alpha, spiral-distortion, spring-physics, mouse-driven, audio-reactive, upgraded-rgba
-//  Ideas: elastic overshoot echo via dataTextureC; treble compression pulse
-//  A packing: display RGBA (newly read back as C for the overshoot echo)
+//  Upgraded: 2026-10-27
+//  Ideas: hand-tight wraps at the cursor; wire-cylinder shading
+//  A packing: linear display RGBA in A (echo history); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -54,6 +36,10 @@ fn depthLayeredAlpha(uv: vec2<f32>, depthWeight: f32) -> f32 {
 }
 
 // Combined advanced alpha
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn calculateAdvancedAlpha(
     originalUV: vec2<f32>,
     displacedUV: vec2<f32>,
@@ -97,8 +83,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // the coil, briefly bunching and stretching the wraps on treble energy.
     let compression = 1.0 + treble * 0.6 * sin(dist * 8.0 - time * 4.0);
 
+    // ── Idea 1: hand-tight wraps ────────────────────────────────────
+    // Frequency rises toward the cursor and loosens with distance.
+    // Tightness still scales the whole spring. The echo uses the same
+    // local frequency so it stays on the coil.
+    let hand = exp(-dist * 3.2);
+    let localCoils = coils * (1.0 + hand * 1.4);
+
     // Slinky spiral effect
-    let spiralPhase = dist * coils * tightness * compression - time * 2.0;
+    let spiralPhase = dist * localCoils * tightness * compression - time * 2.0;
     let spiralOffset = sin(spiralPhase) * amplitude;
     
     // Create spiral displacement
@@ -119,7 +112,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // phase and read that lagged position back from the previous frame's
     // display history (dataTextureC), so the coil trails a springy afterimage
     // instead of snapping to a single static warp.
-    let laggedPhase = dist * coils * tightness * compression - (time - 0.12) * 2.0;
+    let laggedPhase = dist * localCoils * tightness * compression - (time - 0.12) * 2.0;
     let laggedOffset = sin(laggedPhase) * amplitude;
     let laggedTwist = cos(laggedPhase) * amplitude * bass * 0.8;
     let laggedDisplacement = (normal * laggedOffset + tangent * laggedTwist) * falloff;
@@ -139,6 +132,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     var finalColor = mix(echoedRgb, echoedRgb * colorShift, abs(spiralOffset) * 5.0);
 
+    // ── Idea 2: wire cylinder ───────────────────────────────────────
+    // One side of each wrap darkens. The crest highlight below stays
+    // the bright side of the wire.
+    let wireShade = 0.72 + 0.28 * sin(spiralPhase);
+    finalColor = finalColor * wireShade;
+
     // Bass puts a metallic highlight on the coil crests
     let crest = pow(max(0.0, sin(spiralPhase)), 12.0) * falloff;
     finalColor = finalColor + vec3<f32>(0.8, 0.9, 1.0) * crest * bass * 0.5;
@@ -147,9 +146,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = clamp(calculateAdvancedAlpha(uv, warpedUV, sample.a, u.zoom_params)
                       + crest * bass * 0.25, 0.0, 1.0);
 
-    let outColor = vec4<f32>(finalColor, alpha);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
+    let linearRgb = max(finalColor, vec3<f32>(0.0));
+    let displayRgb = aces_tonemap(linearRgb);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(displayRgb, alpha));
+    // Echo history stays linear so the next frame does not tone-map twice.
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(linearRgb, alpha));
 
     // Depth pass-through with spiral modulation
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r;

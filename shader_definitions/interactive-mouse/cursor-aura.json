@@ -2,7 +2,7 @@
   "id": "cursor-aura",
   "name": "Cursor Aura",
   "url": "shaders/cursor-aura.wgsl",
-  "description": "Glowing aura around cursor with customizable colors, edge detection, and audio-reactive bass pulsing.",
+  "description": "Soft coloured disc around the pointer. The photo under the core darkens, and the feather bleaches toward the glow hue.",
   "params": [
     {
       "id": "size",

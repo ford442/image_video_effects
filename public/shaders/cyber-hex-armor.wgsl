@@ -1,27 +1,9 @@
 // Cyber Hex Armor — articulated plates, beveled seams, and audio-routed circuit traffic.
-// A/C stores tone-mapped display RGBA. B and extraBuffer are unused.
-// Premium mixed-eight upgrade: 2026-08-27.
+// Upgraded: 2026-08-27, 2026-10-27
+// Ideas: gap shadow in the seam; hinge pin on a retracting plate
+// A packing: pre-ACES linear RGB. ACES on the display write only.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -116,20 +98,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let history = historyAt(uv - normalize(p - mouseP + vec2<f32>(0.0001, 0.0)) / aspectVec * clickWave * 0.003, resolution);
-  let alloy = mix(vec3<f32>(0.025, 0.045, 0.07), vec3<f32>(0.13, 0.19, 0.25), bevel + cellJitter * 0.18);
+  // ── Idea 1: the seam is a gap, so it darkens the alloy under the glow.
+  let alloyLit = mix(vec3<f32>(0.025, 0.045, 0.07), vec3<f32>(0.13, 0.19, 0.25), bevel + cellJitter * 0.18);
+  let alloy = alloyLit * (1.0 - seam * 0.42);
   let trafficColor = mix(vec3<f32>(0.05, 1.25, 1.8), vec3<f32>(1.5, 0.15, 0.92), 0.5 + 0.5 * sin(cellJitter * 9.0 + time * 0.2));
   var hdr = mix(source.rgb, alloy, plate * (0.72 - heldRetract * 0.18));
   hdr += vec3<f32>(0.03, 0.78, 1.3) * seam * glowIntensity * (0.35 + bass * 0.28);
   hdr += trafficColor * traffic * glowIntensity * (0.45 + mids * 0.4);
   hdr += vec3<f32>(0.45, 0.78, 1.4) * scan * glowIntensity * (0.08 + treble * 0.18);
+  // ── Idea 2: hinge pin on one flat of a retracting plate.
+  let hinge = exp(-local.x * local.x * 28.0) * platePhase * plate;
+  hdr += vec3<f32>(0.82, 0.9, 0.96) * hinge * glowIntensity * 0.32;
   hdr = mix(hdr, history.rgb, clamp(0.025 + seam * 0.07 + traffic * 0.05, 0.0, 0.12));
-  let display = aces(max(hdr, vec3<f32>(0.0)));
   let armorAlpha = clamp(plate * 0.68 + seam * 0.28 + traffic * 0.25, 0.0, 1.0);
   let alpha = clamp(source.a + (1.0 - source.a) * armorAlpha, 0.0, 1.0);
-  let result = vec4<f32>(display, alpha);
+  let linearOut = vec4<f32>(max(hdr, vec3<f32>(0.0)), alpha);
+  let display = vec4<f32>(aces(linearOut.rgb), alpha);
 
-  textureStore(dataTextureA, coord, result);
-  textureStore(writeTexture, coord, result);
+  textureStore(dataTextureA, coord, linearOut);
+  textureStore(writeTexture, coord, display);
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
