@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarched, volumetric, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: radial time lag (the bloom opens from the centre); sheet-intersection filaments
+//  Upgraded: 2026-10-27
+//  Ideas: phase-slip caustic petals; rotating sepal ribs on sheet intersections
 //  A packing: ACES display RGBA (rgb = toned + gamma-encoded colour, a = density/filament coverage); C not read
 // ═══════════════════════════════════════════════════════════════════
 //  Kept verbatim: 64-step march through the unbounded, domain-warped 3-octave simplex field
@@ -21,26 +21,8 @@
 //  ±2.25*aspect z=2 plane; audio read extraBuffer[133] (always 0); Reinhard -> ACES; alpha
 //  1.0 -> coverage; depth + dataTextureA now written.
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Intensity, .y = Distortion Speed, .z = Bloom Threshold, .w = Hue Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Intensity, .y = Distortion Speed, .z = Bloom Threshold, .w = Hue Shift
 
 const MAX_STEPS = 64;
 const MAX_DIST = 10.0;
@@ -247,6 +229,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accumulatedDensity = 0.0;
     var emissiveGlow = 0.0;
     var filamentGlow = 0.0;
+    var petalGlow = 0.0;
+    var sepalGlow = 0.0;
     var firstHit = MAX_DIST;
 
     let bloomThreshold = u.zoom_params.z;
@@ -273,6 +257,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Idea 2: filament ignition, front-to-back weighted so filaments behind
             // an already-dense sheet stay hidden.
             filamentGlow += m.y * 0.05 * filHeat * max(1.0 - accumulatedDensity, 0.0);
+            let angle = atan2(p.y, p.x + 0.00001);
+            let radius = length(p.xy);
+            let phaseSlip = radius * 4.0 - t * u.zoom_params.y * 0.5;
+            let petals = pow(max(0.5 + 0.5 * cos(angle * 6.0 + phaseSlip), 0.0), 5.0);
+            petalGlow += density * petals * 0.018 * max(1.0 - accumulatedDensity, 0.0);
+            let rib = pow(max(0.5 + 0.5 * cos(angle * 5.0 - t * 0.18 * u.zoom_params.y + radius * 2.0), 0.0), 8.0);
+            sepalGlow += m.y * rib * 0.04 * filHeat * max(1.0 - accumulatedDensity, 0.0);
 
             // Step forward by a small amount to march through the volume
             totalDist += 0.02;
@@ -300,6 +291,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // half a cycle on, pushed toward white-hot.
     let filCol = mix(palette(colorT + 0.5), vec3<f32>(1.0, 0.96, 1.0), 0.45);
     col += filCol * filamentGlow * FIL_GAIN;
+    col += palette(colorT + 0.16) * petalGlow * (1.0 + emissiveGlow);
+    col += filCol * sepalGlow * 2.0;
 
     // Background fade (fog)
     let fog = 1.0 - exp(-0.1 * totalDist);
@@ -310,7 +303,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(1.0 / 2.2));
 
     // Semantic alpha: plasma coverage along the ray plus filament glow.
-    let alpha = clamp(accumulatedDensity * 1.05 + filamentGlow * 0.5, 0.1, 1.0);
+    let alpha = clamp(accumulatedDensity * 1.05 + filamentGlow * 0.5 + petalGlow * 0.2 + sepalGlow * 0.3, 0.1, 1.0);
     // Depth: near = 1 at the first sheet entry, 0 where the ray found nothing.
     let depth = 1.0 - clamp(firstHit / MAX_DIST, 0.0, 1.0);
 

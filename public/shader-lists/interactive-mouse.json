@@ -5440,11 +5440,11 @@
     ],
     "features": [
       "volumetric",
-      "raymarched",
       "depth",
       "fluid",
       "single-pass-multilayer",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
