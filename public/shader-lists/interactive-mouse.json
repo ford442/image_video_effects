@@ -9411,7 +9411,8 @@
       "mouse-driven",
       "depth-aware",
       "haptic-response",
-      "multi-touch-interference"
+      "multi-touch-interference",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

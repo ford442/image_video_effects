@@ -3,32 +3,11 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, chromatic-aberration, magnetic, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
-//  Ideas: iron-filing field-line filaments; bass-driven field surge;
-//         semantic alpha from channel divergence
-//  A packing: display RGBA passthrough (no C history)
+//  Upgraded: 2026-10-27
+//  Ideas: dipole return path for the filings; filing density tracks |B|
+//  A packing: ACES display RGBA (C unread)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ UNIQUE VISUAL IDEA helpers: iron-filing field lines ═══
 fn mrHash(p: vec2<f32>) -> f32 {
@@ -39,6 +18,10 @@ fn mrNoise(p: vec2<f32>) -> f32 {
     let u = f * f * (3.0 - 2.0 * f);
     return mix(mix(mrHash(i), mrHash(i + vec2<f32>(1.0, 0.0)), u.x),
                mix(mrHash(i + vec2<f32>(0.0, 1.0)), mrHash(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -131,15 +114,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // tangential (swirl) components. Iron filings align ALONG that field, so we
     // sample noise compressed perpendicular to the field direction — producing the
     // characteristic dipole field-line filaments of a classroom magnet demo.
-    let fieldDir = normalize(mix(dir, swirlDir, clamp(swirl, 0.0, 1.0)) + vec2<f32>(1e-4));
+    // ── Idea 1: dipole return path ──────────────────────────────────
+    // RGB offsets stay attract / swirl / repel. Filings follow a short
+    // bar, leaving one side of the cursor and entering the other.
+    let bar = vec2<f32>(1.0, 0.0);
+    let mdot = dot(bar, dir);
+    let dipole = (2.0 * mdot * dir - bar) / max(dist * dist, 0.02);
+    let fieldDir = normalize(dipole + vec2<f32>(1e-4, 0.0));
     let fieldPerp = vec2<f32>(-fieldDir.y, fieldDir.x);
-    // Coordinates: stretched along the field, tight across it → thin streaks.
     let along = dot(dVecAspect, fieldDir);
     let across = dot(dVecAspect, fieldPerp);
     let filingUV = vec2<f32>(along * 18.0, across * 90.0);
-    // Animate filings drifting along the field lines (current flowing).
     let flow = mrNoise(filingUV + vec2<f32>(u.config.x * 0.6, 0.0));
-    let filing = pow(abs(sin(across * 120.0 + flow * 6.0)), 6.0);
+    // ── Idea 2: filing density tracks |B| ───────────────────────────
+    // Lines pack up where the field is strong and open at the edge.
+    let lineFreq = mix(48.0, 150.0, clamp(field, 0.0, 1.0));
+    let filing = pow(abs(sin(across * lineFreq + flow * 6.0)), 6.0);
     // Filings only appear inside the field's reach, brightest where it is strong.
     let filingMask = field * smoothstep(0.0, 0.15, strength);
     let filingColor = vec3<f32>(0.55, 0.6, 0.7); // cold iron sheen
@@ -151,8 +141,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let divergence = (length(realOffsetR - realOffsetG) + length(realOffsetG - realOffsetB) + length(realOffsetR - realOffsetB)) / 3.0;
     let alpha = clamp(divergence * 12.0 + filingMask * 0.3, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(outColor, alpha));
+    let display = aces_tonemap(max(outColor, vec3<f32>(0.0)));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(display, alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, alpha));
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
