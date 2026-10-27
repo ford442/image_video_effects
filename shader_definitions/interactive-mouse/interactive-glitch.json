@@ -2,7 +2,7 @@
   "id": "interactive-glitch",
   "name": "Interactive Glitch",
   "url": "shaders/interactive-glitch.wgsl",
-  "description": "Continuously pulsing digital glitch blocks with fast scan tears, held-pointer amplification, real audio, and click-launched corruption fronts.",
+  "description": "Pulsing digital glitch blocks with scan tears, held-pointer amplification, audio, and click-launched fronts. A block that crosses the pulse stays torn until the pulse drops, and the scan packet steps in whole block rows. A.a is that latch.",
   "params": [
     {
       "id": "intensity",

@@ -2,7 +2,7 @@
   "id": "rgb-split-glitch",
   "name": "RGB Split Glitch",
   "url": "shaders/rgb-split-glitch.wgsl",
-  "description": "Splits RGB channels based on mouse proximity.",
+  "description": "4:2:0 composite split: full-res luma, half-res chroma, temporal chroma delay, herringbone alias, and block ringing, stronger near the pointer. Alternate lines grow hanging dots on luma steps, and the herringbone crawls upward with jitter.",
   "params": [
     {
       "id": "split",
@@ -36,7 +36,9 @@
   "features": [
     "mouse-driven",
     "glitch",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
