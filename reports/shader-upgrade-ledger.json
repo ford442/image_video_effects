@@ -8330,20 +8330,56 @@
       "history": []
     },
     "fireworks-depth-parade": {
-      "hash": "bbdf5400c1a8446a",
-      "history": []
+      "hash": "2b52a9b44a36789b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T07:58:32.340Z",
+          "hash": "2b52a9b44a36789b",
+          "prev_hash": "bbdf5400c1a8446a",
+          "commit": "8795b2b",
+          "note": "2026-10-27 image fireworks (Copilot GPT-6.1 Terra): depth, contour, patriotic and portrait ideas"
+        }
+      ]
     },
     "fireworks-edge-ignite": {
-      "hash": "0f53b21b599d20bd",
-      "history": []
+      "hash": "bc8432f68eb3fb96",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T07:58:32.340Z",
+          "hash": "bc8432f68eb3fb96",
+          "prev_hash": "0f53b21b599d20bd",
+          "commit": "8795b2b",
+          "note": "2026-10-27 image fireworks (Copilot GPT-6.1 Terra): depth, contour, patriotic and portrait ideas"
+        }
+      ]
     },
     "fireworks-patriotic-july4": {
-      "hash": "52717a60eafb9386",
-      "history": []
+      "hash": "3a2a21cbcdfce126",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T07:58:32.340Z",
+          "hash": "3a2a21cbcdfce126",
+          "prev_hash": "52717a60eafb9386",
+          "commit": "8795b2b",
+          "note": "2026-10-27 image fireworks (Copilot GPT-6.1 Terra): depth, contour, patriotic and portrait ideas"
+        }
+      ]
     },
     "fireworks-portrait-burst": {
-      "hash": "1e74be506c761a6b",
-      "history": []
+      "hash": "82875b32d448c44b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T07:58:32.340Z",
+          "hash": "82875b32d448c44b",
+          "prev_hash": "1e74be506c761a6b",
+          "commit": "8795b2b",
+          "note": "2026-10-27 image fireworks (Copilot GPT-6.1 Terra): depth, contour, patriotic and portrait ideas"
+        }
+      ]
     },
     "fractal-noise-dissolve": {
       "hash": "8e73e2dd2f4c0b0d",

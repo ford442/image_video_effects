@@ -1,4 +1,7 @@
 // Fireworks Edge Ignite — image contours launch pyrotechnics
+// Upgraded: 2026-10-27
+// Ideas: contour-tangent shell spread; traveling ignition
+// A packing: ACES display RGBA; B: dimmed display/previous-color echo
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
@@ -13,12 +16,15 @@ fn softGlow(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
 fn sampleImg(uv: vec2<f32>) -> vec3<f32> {
   return textureSampleLevel(readTexture, u_sampler, clamp(uv*0.5+0.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 }
-fn edgeAt(uv: vec2<f32>, res: vec2<f32>) -> f32 {
+fn edgeGradient(uv: vec2<f32>, res: vec2<f32>) -> vec2<f32> {
   let e = 2.0/min(res.x,res.y);
   let l0 = dot(sampleImg(uv), vec3<f32>(0.299,0.587,0.114));
   let lx = dot(sampleImg(uv+vec2<f32>(e,0.0)), vec3<f32>(0.299,0.587,0.114));
   let ly = dot(sampleImg(uv+vec2<f32>(0.0,e)), vec3<f32>(0.299,0.587,0.114));
-  return length(vec2<f32>(lx-l0, ly-l0));
+  return vec2<f32>(lx-l0, ly-l0);
+}
+fn edgeAt(uv: vec2<f32>, res: vec2<f32>) -> f32 {
+  return length(edgeGradient(uv, res));
 }
 fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
   return o + v*age - vec2<f32>(0.0, g)*age*age*0.5;
@@ -48,7 +54,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x; let treble = plasmaBuffer[0].z;
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
   let imgCol = sampleImg(uv);
-  let edge = edgeAt(uv, res);
+  let gradient = edgeGradient(uv, res);
+  let edge = length(gradient);
+  let tangent = vec2<f32>(-gradient.y, gradient.x) / max(edge, 0.0001);
   var col = imgCol * (0.45 + edge * boost * 0.3);
 
   // Edge glow along contours
@@ -58,12 +66,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Bass deepens the ambient contour glow so kicks widen the ignition lines.
   col += imgCol * smoothstep(edgeSens*0.5, edgeSens*1.2, edge) * bass * 0.35;
+  let fuse = 0.5 + 0.5 * sin(dot(uv, tangent) * 28.0 - time * 2.5);
+  col += imgCol * boost * smoothstep(edgeSens*0.3, edgeSens, edge) * fuse * 0.3;
 
   for (var s = 0; s < 8; s = s + 1) {
     let si = f32(s); let seed = hash1(si*43.0+1.0);
     let probe = vec2<f32>((seed-0.5)*1.5, (hash1(si*67.0)-0.5)*1.2);
-    let probeEdge = edgeAt(probe, res);
+    let probeGradient = edgeGradient(probe, res);
+    let probeEdge = length(probeGradient);
     if (probeEdge < edgeSens * 0.4) { continue; }
+    let probeTangent = vec2<f32>(-probeGradient.y, probeGradient.x) / max(probeEdge, 0.0001);
     let cycle = 2.5;
     let birth = floor((time*0.6+seed*1.5)/cycle)*cycle-seed*1.5;
     let age = time-birth; if (age < 0.0 || age > 5.0) { continue; }
@@ -74,7 +86,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let n = i32(12.0 + energy*20.0);
       for (var j = 0; j < n; j = j + 1) {
         let ang = f32(j)/f32(n)*TAU + seed;
-        let vel = vec2<f32>(cos(ang), sin(ang)) * (0.25+hash1(f32(j)*2.1)*0.35)*energy;
+        let direction = vec2<f32>(cos(ang), sin(ang));
+        let tangentSpread = 0.65 + 0.35 * abs(dot(direction, probeTangent));
+        let vel = direction * (0.25+hash1(f32(j)*2.1)*0.35)*energy*tangentSpread;
         let sp = sparkPos(probe, vel, bAge, 0.8);
         col += pCol * boost * softGlow(uv, sp, 0.006, smoothstep(4.0,0.2,bAge)*energy);
       }
@@ -149,9 +163,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = mix(prev*trail, col, 0.32);
   col += vec3<f32>(0.65,0.8,1.0)*step(0.986-treble*0.03, hash1(dot(uv,vec2<f32>(73.0,157.0))+time*12.0))*treble*0.6;
   col = acesToneMap(col*1.05);
+  let alpha = clamp(length(col)*1.1+0.15, 0.12, 0.96);
   textureStore(dataTextureB, pixel, vec4<f32>(col*0.5+prev*0.4, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.15, 0.12, 0.96)));
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   // Honest depth: luminance of the tonemapped color pushes sparks and bright
   // contours forward instead of clobbering chain depth with a flat 0.0.
   let depthOut = clamp(dot(col, vec3<f32>(0.299,0.587,0.114)) * 0.9 + edge * 0.2, 0.0, 1.0);

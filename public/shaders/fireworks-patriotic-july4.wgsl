@@ -4,6 +4,9 @@
 //   y Burst Power  : shell energy, spark count, velocity, finale radius (0.35..1.6)
 //   z Stripe Wave  : waving flag-stripe tint amplitude + scroll speed (0..1)
 //   w Sparkle      : star-field density + crackle finale brightness (0.2..1.0)
+// Upgraded: 2026-10-27
+// Ideas: tricolor shell breaks; star diffraction
+// A packing: ACES display RGBA; B: dimmed display/previous-color echo
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
@@ -70,8 +73,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       for (var j = 0; j < n; j = j + 1) {
         let js = hash1(si*47.0+f32(j)*2.9);
         let ang = f32(j)/f32(n)*TAU + js;
-        let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*(0.3+js*0.45)*energy, bAge, 0.85);
-        col += patriotColor(js+time*0.05, patriot, pCol) * softGlow(uv, sp, 0.006, fade*energy*(0.8+treble*0.5));
+        let band = f32(j % 3);
+        let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*(0.32+band*0.12+js*0.05)*energy, bAge, 0.85);
+        col += patriotColor(band/9.0, patriot, pCol) * softGlow(uv, sp, 0.006, fade*energy*(0.8+treble*0.5));
       }
     }
   }
@@ -82,6 +86,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let starPos = (starCell + vec2<f32>(hash1(starH*91.0), hash1(starH*57.0))) / 24.0;
     let twinkle = 0.5 + 0.5 * sin(time * (2.0 + starH * 6.0) + starH * 40.0);
     col += patriotColor(starH, patriot, imgCol) * softGlow(uv, starPos, 0.004, twinkle * sparkle * (1.0 - lum) * 0.7);
+    let starOffset = abs(uv - starPos);
+    let rays = exp(-starOffset.x * 140.0 - starOffset.y * 900.0)
+      + exp(-starOffset.y * 140.0 - starOffset.x * 900.0);
+    col += patriotColor(starH, patriot, imgCol) * rays * twinkle * sparkle * (1.0 - lum) * 0.22;
   }
   // Bass mortar flash: each boom lifts a warm launch glow off the bottom edge
   let mortarIdx = floor(time * (0.75 + bass * 0.15) / 1.8);
@@ -138,9 +146,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   col = mix(prev*0.92, col, 0.33);
   col = acesToneMap(col*1.1);
+  let alpha = clamp(length(col)*1.1+0.14, 0.12, 0.97);
   textureStore(dataTextureB, pixel, vec4<f32>(col*0.5+prev*0.4, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.14, 0.12, 0.97)));
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   // Honest depth: shells and stripes sit forward, dark sky recedes
   textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(dot(col, vec3<f32>(0.299,0.587,0.114)) * 0.9 + stripe * 0.15, 0.0, 1.0)));
 }

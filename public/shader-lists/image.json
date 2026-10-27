@@ -2048,6 +2048,7 @@
       "4th-of-july"
     ],
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
       "temporal",
       "semantic-alpha",
@@ -2108,6 +2109,7 @@
       "4th-of-july"
     ],
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
       "temporal",
       "semantic-alpha",
@@ -2165,6 +2167,7 @@
       "4th-of-july"
     ],
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
       "temporal",
       "semantic-alpha",
@@ -2222,6 +2225,7 @@
       "4th-of-july"
     ],
     "features": [
+      "upgraded-rgba",
       "audio-reactive",
       "temporal",
       "semantic-alpha",
