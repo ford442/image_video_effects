@@ -5,8 +5,10 @@
 //            volumetric-fog, KIFS-fractal, thermal-plasma, ice-refractive,
 //            upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: rime-plate terracing across frozen shells; plasma-tongue lick fronts around hot fracture edges
+//  Upgraded: 2026-10-19
+//  Ideas: rime-plate terracing across frozen shells; plasma-tongue lick fronts around hot fracture edges;
+//         crossed-polar grain mosaic from the KIFS fold signature (§12.2E fold count as material);
+//         plasma core refracted through the ice per channel (§12.2F Cauchy dispersion)
 //  A packing: HDR colour in A (C feedback mixes pre-ACES); ACES only on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
@@ -19,7 +21,10 @@ const PI            : f32 = 3.14159265358979323846;
 const MAX_STEPS     : i32 = 80;
 const MAX_DIST      : f32 = 40.0;
 const SURF_DIST     : f32 = 0.0015;
-const AUDIO_ENV     : u32 = 133u;
+// Idea 6: ice Cauchy index n(λ) = A + B/λ² (λ in nm). Real ice has B ≈ 3.2e3 nm²;
+// B is exaggerated ×6 so the red/blue fringe resolves at canvas scale.
+const ICE_CAUCHY_A  : f32 = 1.3036;
+const ICE_CAUCHY_B  : f32 = 19200.0;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -31,11 +36,6 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 fn rot(a: f32) -> mat2x2<f32> {
   let c = cos(a); let s = sin(a);
   return mat2x2<f32>(c, -s, s, c);
-}
-
-fn bass_env(prev: f32, curr: f32, att: f32, rel: f32) -> f32 {
-  if(curr > prev) { return mix(prev, curr, att); }
-  else { return mix(prev, curr, rel); }
 }
 
 fn hash3(p: vec3<f32>) -> f32 {
@@ -77,21 +77,29 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 // ═══════════════════════════════════════════════════════════════
 //  KIFS FRACTAL
 // ═══════════════════════════════════════════════════════════════
-fn kIFS(p: vec3<f32>, time: f32, complexity: f32) -> f32 {
+// Returns (distance, fold signature). The signature is Idea 5's grain identity.
+// HEAD ran z = abs(z) before the x+y<0 mirror tests, so they could never fire and
+// the "fractal" was the solid cube z = abs(z)*s - (s-1) fills; its length(z)/dr
+// distance was then ~0 everywhere inside, which is the salt-and-pepper hit mask.
+// The Sierpinski-tetrahedron folds now act (abs removed) and the bound is the
+// standard (|z| - 1.5)/dr for that attractor.
+fn kIFS(p: vec3<f32>, time: f32, complexity: f32) -> vec2<f32> {
   var z = p;
   var dr = 1.0;
   let scale = mix(2.0, 2.5, complexity);
   let iterations = i32(mix(4.0, 8.0, complexity));
+  var folds = 0.0;
 
   for(var i = 0; i < iterations; i++) {
-    z = abs(z);
-    if(z.x + z.y < 0.0) { let t = -z.y; z.y = z.x; z.x = t; }
-    if(z.x + z.z < 0.0) { let t = -z.z; z.z = z.x; z.x = t; }
-    if(z.y + z.z < 0.0) { let t = -z.z; z.z = z.y; z.y = t; }
+    // Only the first three generations name a grain, so grains stay facet-sized.
+    let w = select(0.0, f32(i * 8 + 1), i < 3);
+    if(z.x + z.y < 0.0) { let t = -z.y; z.y = -z.x; z.x = t; folds += 1.0 * w; }
+    if(z.x + z.z < 0.0) { let t = -z.z; z.z = -z.x; z.x = t; folds += 2.0 * w; }
+    if(z.y + z.z < 0.0) { let t = -z.z; z.z = -z.y; z.y = t; folds += 4.0 * w; }
     z = z * scale - vec3<f32>(1.0, 1.0, 1.0) * (scale - 1.0);
     dr = dr * scale;
   }
-  return length(z) / abs(dr);
+  return vec2<f32>((length(z) - 1.5) / abs(dr), folds);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -103,6 +111,7 @@ struct MapResult {
   glow: f32,
   iceD: f32,
   plasmaD: f32,
+  folds: f32,
 };
 
 // Idea 1 — hoarfrost dendrites along the same abs-fold seams the KIFS uses.
@@ -126,7 +135,8 @@ fn map(p: vec3<f32>, time: f32, fracture: f32, plasmaHeat: f32,
   let pp = p + vec3<f32>(warp, warp * 0.7, warp * 0.3);
 
   // KIFS ice structure
-  let kDist = kIFS(pp * iceDensity, time, 0.6) * 0.3;
+  let kRes = kIFS(pp * iceDensity, time, 0.6);
+  let kDist = kRes.x / iceDensity * 0.85;
 
   // Plasma core inside
   let plasmaDist = length(pp * 0.4) - 0.3 * plasmaHeat;
@@ -138,7 +148,7 @@ fn map(p: vec3<f32>, time: f32, fracture: f32, plasmaHeat: f32,
   var mat = 0.0;
   if(plasmaDist < kDist) { mat = 1.0; }
 
-  return MapResult(totalDist, mat, plasmaGlow * plasmaHeat, kDist, plasmaDist);
+  return MapResult(totalDist, mat, plasmaGlow * plasmaHeat, kDist, plasmaDist, kRes.y);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, fracture: f32, plasmaHeat: f32,
@@ -170,7 +180,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fragCoord = vec2<f32>(f32(global_id.x), f32(global_id.y));
   if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
 
-  let uv = (fragCoord - 0.5 * res) / res.y;
+  var uv = (fragCoord - 0.5 * res) / res.y;
+  uv.y = -uv.y; // row 0 is the top of the canvas
   let time = u.config.x;
   let bass = plasmaBuffer[0].x;
   let mid = plasmaBuffer[0].y;
@@ -182,15 +193,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let iceDensity = clamp(u.zoom_params.z, 0.1, 3.0);
   let fogThickness = clamp(u.zoom_params.w, 0.0, 1.0);
 
-  // Bass envelope state is bounded to the shared allocation at [133].
-  var bassSmooth = bass;
-  let hasAudioState = arrayLength(&extraBuffer) > AUDIO_ENV;
-  if (hasAudioState) {
-    bassSmooth = bass_env(extraBuffer[AUDIO_ENV], bass, 0.08, 0.02);
-  }
-  if (hasAudioState && global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[AUDIO_ENV] = bassSmooth;
-  }
+  // HEAD smoothed bass through extraBuffer[133], which is re-uploaded as zero every
+  // frame (and raced across threads), so it only ever delivered 0.08·bass.
+  let bassSmooth = bass;
 
   let uv01 = (fragCoord + 0.5) / res;
   let aspect = vec2<f32>(res.x / max(res.y, 1.0), 1.0);
@@ -211,12 +216,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Camera
   let mouseUV = u.zoom_config.yz;
-  let mouseY = mouseUV.y;  // Flip Y: screen top = up
+  let mouseY = 1.0 - mouseUV.y;  // Flip Y: screen top = up
   let camAng = time * 0.1 + mouseUV.x * 0.5;
-  let camDist = 8.0 - held * 1.1 + shock * 0.25;
+  let camDist = 3.4 - held * 0.6 + shock * 0.2;
   let ro = vec3<f32>(
     cos(camAng) * camDist,
-    2.0 + mouseY * 2.0,
+    1.0 + mouseY * 1.6,
     sin(camAng) * camDist
   );
   let ta = vec3<f32>(0.0, 0.0, 0.0);
@@ -242,7 +247,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     glow = res.glow;
     let seam = abs(res.iceD - res.plasmaD);
     sublimationSheath += exp(-seam * (10.0 + fogThickness * 28.0)) * fogThickness * 0.035;
-    if(d < SURF_DIST) { hit = true; break; }
+    if(d < SURF_DIST * max(t, 1.0)) { hit = true; break; }
     if(t > MAX_DIST) { break; }
     t += d * 0.8;
   }
@@ -261,7 +266,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Shading
   var col = vec3<f32>(0.0);
-  if(t < MAX_DIST) {
+  // Idea 6 helper: plasma core radius in world units (plasmaDist = 0.4|p| - 0.3·heat).
+  let coreR = 0.75 * plasmaReactive;
+  let plasmaTint = mix(vec3<f32>(1.0, 0.2, 0.8), vec3<f32>(1.0, 0.8, 0.1), clamp(bassSmooth * 0.8, 0.0, 1.0));
+  if(hit) {
     let p = ro + rd * t;
     let mres = map(p, time, fractureReactive, plasmaReactive, iceDensity, bassSmooth);
     let n = calcNormal(p, time, fractureReactive, plasmaReactive, iceDensity, bassSmooth);
@@ -282,15 +290,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       // Idea 3: rime-plate terracing on frozen shells.
       let plate = 0.5 + 0.5 * sin(length(p) * 26.0 + fbm(p * 4.0) * 5.0 - time * 0.6);
       col += vec3<f32>(0.68, 0.9, 1.0) * pow(max(plate, 0.0), 6.0) * (0.22 + fracture * 0.2);
-      // Chromatic refraction
-      let r_refr = refract(rd, n, 0.95);
-      let g_refr = refract(rd, n, 0.97);
-      let b_refr = refract(rd, n, 0.99);
-      col += vec3<f32>(
-        fbm(p + r_refr * 0.5) * 0.15,
-        fbm(p + g_refr * 0.5) * 0.1,
-        fbm(p + b_refr * 0.5) * 0.08
-      ) * fresnel;
+      // ── Idea 5: crossed-polar grain mosaic (§12.2E fold count as material).
+      // The fold signature names the grain; it sets the c-axis angle φ and the
+      // retardation Γ (nm). Between crossed polarisers a birefringent grain passes
+      // I(λ) = sin²(2φ)·sin²(πΓ/λ), the Michel-Lévy interference colour. Fracture and
+      // bass add strain birefringence.
+      let grainA = fract(mres.folds * 0.6180340);
+      let grainB = fract(mres.folds * 0.3819660 + 0.37);
+      let phi = grainA * PI;
+      let gammaNm = (260.0 + 980.0 * grainB) * (1.0 + fractureReactive * 0.35);
+      let lambda = vec3<f32>(650.0, 550.0, 450.0);
+      let retard = sin(PI * gammaNm / lambda);
+      let mosaic = sin(2.0 * phi) * sin(2.0 * phi) * retard * retard;
+      col = mix(col, mosaic * (0.45 + diff * 0.9) + spec * 0.4, 0.7);
+
+      // ── Idea 6: the plasma core seen through the ice (§12.2F Cauchy dispersion).
+      // Each channel refracts with its own n(λ); the closest approach of the
+      // refracted ray to the core lights that channel, so the core shows in the
+      // facets as a lensed ghost with a red-inside / blue-outside fringe.
+      let nIce = vec3<f32>(ICE_CAUCHY_A) + ICE_CAUCHY_B / (lambda * lambda);
+      var seen = vec3<f32>(0.0);
+      for (var c = 0; c < 3; c = c + 1) {
+        let rr = refract(rd, n, 1.0 / nIce[c]);
+        let sAlong = max(-dot(p, rr), 0.0);
+        let miss = length(p + rr * sAlong);
+        seen[c] = exp(-max(miss - coreR * 0.55, 0.0) * 5.0) * step(0.001, sAlong);
+      }
+      col += plasmaTint * seen * (1.0 - fresnel) * (0.35 + plasmaHeat * 0.55);
     } else {
       // Plasma material
       let plasmaCol = mix(
@@ -308,6 +334,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Distance fade
     col *= exp(-t * 0.03);
+
+  } else {
+    // Idea 6, undeviated: rays slipping through the tetrahedral gaps see the core directly.
+    let sAlong = max(-dot(ro, rd), 0.0);
+    let miss = length(ro + rd * sAlong);
+    col = plasmaTint * exp(-max(miss - coreR * 0.55, 0.0) * 5.0) * (0.35 + plasmaHeat * 0.55);
+    col += vec3<f32>(0.004, 0.012, 0.03); // frozen void
   }
 
   // Add fog and the ice/plasma sublimation sheath
@@ -315,16 +348,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col += vec3<f32>(0.45, 0.82, 1.0) * sublimationSheath;
 
   // Audio flash
-  col += vec3<f32>(0.1, 0.3, 0.5) * bassSmooth * bassSmooth * 0.5;
+  col += vec3<f32>(0.1, 0.3, 0.5) * bassSmooth * bassSmooth * 0.2;
   col += vec3<f32>(0.2, 0.75, 1.0) * shock * (0.35 + treble * 0.8);
   col += vec3<f32>(1.0, 0.22, 0.75) * held * exp(-length((uv01 - u.zoom_config.yz) * aspect) * 7.0) * (0.2 + mid * 0.4);
 
   // Exact temporal feedback in HDR, then ACES display mapping.
   let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
   col = mix(prevCol, col, 0.3);
-  let mapped = acesToneMap(col * 1.15);
+  let mapped = acesToneMap(max(col, vec3<f32>(0.0)) * 1.15);
   let fogEnergy = clamp(length(fogAccum), 0.0, 1.0);
-  let alpha = clamp(select(0.03, 0.72, hit) + fogEnergy * 0.24 + glow * 0.08 + shock * 0.22 + sublimationSheath * 0.12, 0.0, 1.0);
+  // Semantic alpha: the frozen void is an opaque-ish medium (HEAD's 0.03 miss alpha
+  // composited the whole frame as a pale wash), ice/plasma hits are solid.
+  let alpha = clamp(select(0.86, 0.97, hit) + fogEnergy * 0.08 + glow * 0.02 + shock * 0.1 + sublimationSheath * 0.05, 0.0, 1.0);
 
   // Write
   let outCoords = vec2<i32>(global_id.xy);

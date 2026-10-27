@@ -3,31 +3,14 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: leaky integrate-and-fire motes with a sharp action-potential flash and refractory bioluminescent afterglow, click ripples acting as stimulus electrodes that force-fire the motes they cross; axon filaments wiring neighbouring motes that conduct a travelling spike pulse with conduction delay
-//  A packing: ACES display RGBA in A
+//  Upgraded: 2026-10-19
+//  Ideas: leaky integrate-and-fire motes with a sharp action-potential flash and refractory bioluminescent afterglow, click ripples acting as stimulus electrodes that force-fire the motes they cross; axon filaments wiring neighbouring motes that conduct a travelling spike pulse with conduction delay;
+//         synaptic relay (an arriving pulse fires the postsynaptic mote after a synaptic delay -> two-hop cascades); saltatory conduction along myelinated axons (sheath internodes, nodes of Ranvier, node-to-node hops)
+//  A packing: ACES display RGBA in A (comet trail decoded with acesInverse)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Dust Density, y=Flow Speed, z=Glow Radius, w=Hue Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Dust Density, y=Flow Speed, z=Glow Radius, w=Hue Shift
 
 const DISPLAY_EXPOSURE: f32 = 1.2;
 
@@ -104,9 +87,10 @@ fn cellBandEnergy(cellId: vec2<f32>) -> f32 {
     return clamp(energy, 0.0, 1.0);
 }
 
-// Mote centre in grid space (same offset/drift law as the glow layer).
+// Mote centre in grid space. The per-mote drift phase is static (HEAD hashed
+// a continuously moving time, so the phase jumped whenever the hash wrapped).
 fn moteCenter(cellId: vec2<f32>, time: f32, flowSpeed: f32) -> vec2<f32> {
-    let rnd = hash12(cellId + vec2<f32>(time * 0.05, 0.0));
+    let rnd = hash12(cellId + vec2<f32>(0.37, 0.0));
     let offset = (hash12(cellId + vec2<f32>(1.0, 2.0)) - 0.5) * 0.6;
     let drift = vec2<f32>(
         sin(time * flowSpeed * 2.0 + rnd * 6.28318),
@@ -115,13 +99,21 @@ fn moteCenter(cellId: vec2<f32>, time: f32, flowSpeed: f32) -> vec2<f32> {
     return cellId + vec2<f32>(0.5) + vec2<f32>(offset) - drift;
 }
 
-// Leaky integrate-and-fire: the membrane charges at a per-mote rate (its
-// own FFT band and bass raise the input current); on crossing threshold it
-// fires and resets. Returns seconds since the last spike.
-fn sinceSpike(cellId: vec2<f32>, time: f32, drive: f32) -> f32 {
-    let rate = mix(0.22, 0.85, hash12(cellId + vec2<f32>(3.3, 7.1))) * drive;
-    let phase = fract(time * rate + hash12(cellId + vec2<f32>(11.0, 5.0)));
-    return phase / max(rate, 1e-3);
+// Leaky integrate-and-fire: the membrane charges at a fixed per-mote rate;
+// on crossing threshold it fires and resets. Extra input current (the
+// mote's FFT band, bass, a held pointer) is a bounded depolarising kick that
+// pushes near-threshold motes over now. (HEAD multiplied the rate by audio,
+// so fract(time*rate) jumped ~a cycle per frame under music: strobing.)
+// Returns (seconds since the last spike, inter-spike period).
+fn sinceSpike(cellId: vec2<f32>, time: f32, kick: f32) -> vec2<f32> {
+    let rate = mix(0.3, 1.0, hash12(cellId + vec2<f32>(3.3, 7.1)));
+    let phase = fract(time * rate + hash12(cellId + vec2<f32>(11.0, 5.0)) + kick);
+    return vec2<f32>(phase / rate, 1.0 / rate);
+}
+
+// Axon link src -> dst exists (hash-gated wiring, denser with Dust Density).
+fn linkOn(src: vec2<f32>, dst: vec2<f32>, densityNorm: f32) -> bool {
+    return hash12(src * 2.1 + dst * 0.7 + vec2<f32>(13.0, 29.0)) < mix(0.35, 0.7, densityNorm);
 }
 
 fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
@@ -163,9 +155,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Depth-aware parallax: gradient of the input frame's depth pushes
     // the dust field so motes drift around foreground silhouettes.
     let texel = vec2<f32>(1.0) / res;
-    let depthC = textureSampleLevel(readDepthTexture, u_sampler, uv, 0.0).r;
-    let depthDX = textureSampleLevel(readDepthTexture, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r - depthC;
-    let depthDY = textureSampleLevel(readDepthTexture, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r - depthC;
+    let depthC = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let depthDX = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r - depthC;
+    let depthDY = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r - depthC;
     let depthGrad = vec2<f32>(depthDX, depthDY);
     // Dust Density also sets how strongly motes skirt silhouettes.
     let pDust = p + depthGrad * mix(0.5, 2.5, densityNorm);
@@ -181,41 +173,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         fbm2(pDust * 3.0 + 4.0 * q + vec2<f32>(8.3 - t * 0.15, 2.8), 4)
     ) * 0.3;
 
-    // Particle grid layer
+    // Particle grid layer. HEAD fix: the grid follows a gentle share of the
+    // domain warp (the full warp's Jacobian is >10x, which folded cells into
+    // slivers and turned motes into speckle); the drift field is unchanged.
     let gridScale = mix(8.0, 24.0, dustDensity);
-    let gridPos = warped * gridScale;
+    let gridPos = (pDust + (warped - pDust) * 0.12) * gridScale;
     let cellId = floor(gridPos);
-    let cellFract = fract(gridPos) - 0.5;
 
-    // Random offset per cell
-    let rnd = hash12(cellId + vec2<f32>(time * 0.05, 0.0));
-    let offset = (hash12(cellId + vec2<f32>(1.0, 2.0)) - 0.5) * 0.6;
-    let drift = vec2<f32>(
-        sin(time * flowSpeed * 2.0 + rnd * 6.28318),
-        cos(time * flowSpeed * 1.5 + rnd * 6.28318)
-    ) * 0.25;
-    let particlePos = cellFract - offset + drift;
-
-    // Per-cell band: this cell's own bass/mids/treble lane drives it
-    let cellEnergy = cellBandEnergy(cellId);
-
-    // Distance from particle center with per-band audio jitter
-    let jitter = 1.0 + (bass + treble) * 0.2 + cellEnergy * 0.55;
-    let d = length(particlePos) / jitter;
+    // HEAD fix: Glow Radius is in screen-height units but distances are in
+    // grid cells, so motes/axons were sub-pixel. Convert once.
+    let rCell = glowRadius * gridScale * 0.3;
 
     // Mouse gravity attracts nearby particles (screen space, unparallaxed)
     let toMouse = mouse - p;
     let mouseDist = length(toMouse);
     let mousePull = exp(-mouseDist * 3.0) * mouseDown * 0.15;
-    let mouseGlow = glow(mouseDist, 0.4 + mids * 0.3, 0.6 * mouseDown);
-
-    // ── Idea 1: integrate-and-fire spikes + refractory afterglow ─────
+    let mouseGlow = glow(mouseDist, 0.4 + mids * 0.3, 0.35 * mouseDown);
     // Holding the mouse depolarises nearby motes (extra input current).
-    let drive = 1.0 + cellEnergy * 0.8 + bass * 0.5 + exp(-mouseDist * 4.0) * mouseDown * 1.5;
-    var since = sinceSpike(cellId, time, drive);
+    let mouseKick = exp(-mouseDist * 4.0) * mouseDown * 0.5;
 
     // Click ripples are stimulus electrodes: the expanding front force-fires
     // every mote it crosses (the most recent crossing wins).
+    var crossedPix = 1e4;
     var electrode = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -225,56 +204,97 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let rpos = (rp.xy - 0.5) * vec2<f32>(aspect, 1.0);
             let rdist = length(p - rpos);
             let front = age * 0.45;
-            // time since the front passed this point
             let crossed = age - rdist / 0.45;
             if (crossed >= 0.0) {
-                since = min(since, crossed);
+                crossedPix = min(crossedPix, crossed);
             }
-            electrode += exp(-pow((rdist - front) * 40.0, 2.0)) * exp(-age * 1.2);
+            let fd = (rdist - front) * 40.0;
+            electrode += exp(-fd * fd) * exp(-age * 1.2);
         }
     }
-    let spikeFlash = exp(-since * 16.0);
-    // Luciferin-like afterglow fades through the refractory window.
-    let afterglow = exp(-since * 2.2) * 0.45;
-    let excite = spikeFlash + afterglow;
 
-    // Layered glow field (per-band energy boosts the cell's glow)
-    let density = mix(0.3, 1.2, dustDensity);
-    let bandBoost = (0.7 + cellEnergy * 0.9) * (0.55 + excite * 0.9);
-    let spikeRadius = glowRadius * (1.0 + spikeFlash * 0.8);
-    let particleGlow = glow(d, spikeRadius, density * bandBoost);
-    let softField = glow(d, glowRadius * 4.0, density * 0.25 * bandBoost);
+    // ── Idea 1: integrate-and-fire motes, evaluated on a 4x4 cell window ─
+    // (offsets -2..1) so neighbouring motes are not clipped at the cell wall
+    // and every incoming synapse of the 3x3 motes is known.
+    var wCenter: array<vec2<f32>, 16>;
+    var wSince: array<f32, 16>;
+    var wPeriod: array<f32, 16>;
+    var wEnergy: array<f32, 16>;
+    for (var j = 1; j < 16; j = j + 1) {   // j = 0, the (-2,-2) corner, is never read
+        let c = cellId + vec2<f32>(f32(j % 4) - 2.0, f32(j / 4) - 2.0);
+        let e = cellBandEnergy(c);
+        let sp = sinceSpike(c, time, e * 0.25 + bass * 0.15 + mouseKick);
+        wCenter[j] = moteCenter(c, time, flowSpeed);
+        wSince[j] = sp.x;
+        wPeriod[j] = sp.y;
+        wEnergy[j] = e;
+    }
 
-    // ── Idea 2: axon filaments with conducted spike pulses ───────────
-    // Each mote wires to its +x / +y neighbour (hash-gated). A spike leaves
-    // the source mote and travels the axon at a finite conduction velocity.
-    var axon = 0.0;
-    var axonPulse = 0.0;
     let conduction = 2.5 * (1.0 + treble * 0.6);
-    let axonWidth = glowRadius * 0.35;
-    for (var k = 0; k < 4; k = k + 1) {
-        var src = cellId;
-        var dst = cellId + vec2<f32>(1.0, 0.0);
-        if (k == 1) { dst = cellId + vec2<f32>(0.0, 1.0); }
-        if (k == 2) { src = cellId - vec2<f32>(1.0, 0.0); dst = cellId; }
-        if (k == 3) { src = cellId - vec2<f32>(0.0, 1.0); dst = cellId; }
-        let linkSeed = hash12(src * 2.1 + dst * 0.7 + vec2<f32>(13.0, 29.0));
-        if (linkSeed < mix(0.35, 0.7, densityNorm)) {
-            let a = moteCenter(src, time, flowSpeed);
-            let b = moteCenter(dst, time, flowSpeed);
-            let sd = segDist(gridPos, a, b);
-            let srcDrive = 1.0 + cellBandEnergy(src) * 0.8 + bass * 0.5;
-            let s = sinceSpike(src, time, srcDrive);
-            let head = s * conduction / max(length(b - a), 1e-3);
-            let fiber = glow(sd.x, axonWidth, 0.12 * (0.5 + mids));
-            let pulse = glow(sd.x, axonWidth * 1.8, 1.0) * exp(-pow((sd.y - head) * 9.0, 2.0)) * step(head, 1.1);
-            axon += fiber;
-            axonPulse += pulse;
+    // ── Idea 3: synaptic relay ───────────────────────────────────────
+    // A pulse that reaches the end of an axon (conduction delay + 40 ms
+    // synaptic delay) fires the postsynaptic mote, so spikes cascade through
+    // the wiring. relay[k] = time since the 3x3 mote k last fired, own or relayed.
+    var relay: array<f32, 9>;
+    for (var k = 0; k < 9; k = k + 1) {
+        let ox = k % 3 - 1;
+        let oy = k / 3 - 1;
+        let wi = (ox + 2) + (oy + 2) * 4;
+        let c = cellId + vec2<f32>(f32(ox), f32(oy));
+        var since = wSince[wi];
+        for (var m = 0; m < 2; m = m + 1) {
+            let si = select(wi - 4, wi - 1, m == 0);
+            let src = select(c - vec2<f32>(0.0, 1.0), c - vec2<f32>(1.0, 0.0), m == 0);
+            if (linkOn(src, c, densityNorm) && hash12(src * 1.3 + c * 0.9 + vec2<f32>(7.0, 3.0)) > 0.3) {
+                let delay = length(wCenter[wi] - wCenter[si]) / conduction + 0.04;
+                var arrived = wSince[si] - delay;
+                if (arrived < 0.0) { arrived += wPeriod[si]; }
+                since = min(since, arrived);
+            }
         }
+        relay[k] = since;
     }
 
-    // Color palette (per-band energy nudges the phase per cell)
-    let phase = hueShift + time * 0.04 + rnd * 0.2 + bass * 0.1 + cellEnergy * 0.12;
+    // Layered glow field (per-band energy boosts each mote's glow)
+    let density = mix(0.3, 1.2, dustDensity);
+    let spikeColor = vec3<f32>(0.7, 0.95, 1.0);
+    let jitterG = 1.0 + (bass + treble) * 0.2;
+    var particleGlow = 0.0;
+    var softField = 0.0;
+    var firing = 0.0;
+    var phaseAcc = 0.0;
+    var flashAcc = 0.0;
+    for (var k = 0; k < 9; k = k + 1) {
+        let ox = k % 3 - 1;
+        let oy = k / 3 - 1;
+        let wi = (ox + 2) + (oy + 2) * 4;
+        let c = cellId + vec2<f32>(f32(ox), f32(oy));
+        let e = wEnergy[wi];
+        let dRaw = length(gridPos - wCenter[wi]);
+        let d = dRaw / (jitterG + e * 0.55);
+        let since = min(relay[k], crossedPix);
+        let spikeFlash = exp(-since * 16.0);
+        // Luciferin-like afterglow fades through the refractory window.
+        let excite = spikeFlash + exp(-since * 2.2) * 0.45;
+        let bandBoost = (0.7 + e * 0.9) * (0.55 + excite * 0.9);
+        let g = glow(d, rCell * (1.0 + spikeFlash * 0.8), density * bandBoost);
+        // Halo keeps its size under audio (only the core jitters).
+        let sf = glow(dRaw, rCell * 2.0, density * 0.2 * bandBoost);
+        // Per-mote palette phase, glow-weighted (one palette eval per pixel)
+        let mrnd = hash12(c + vec2<f32>(0.37, 0.0));
+        phaseAcc += (mrnd * 0.2 + e * 0.12) * (g + sf);
+        flashAcc += spikeFlash * g;
+        particleGlow += g;
+        softField += sf;
+        firing = max(firing, g * spikeFlash);
+    }
+
+    // Colour palette: the nearby motes' own phases, glow-weighted, falling
+    // back to the field's mean phase away from motes (a per-cell fallback
+    // tiled the mouse halo and trail tint into cell-shaped blocks).
+    let wSum = particleGlow + softField;
+    let motePhase = mix(0.1 + bass * 0.06, phaseAcc / max(wSum, 1e-4), clamp(wSum * 4.0, 0.0, 1.0));
+    let phase = hueShift + time * 0.04 + bass * 0.1 + motePhase;
     let dustColor = palette(
         phase,
         vec3<f32>(0.5),
@@ -289,11 +309,53 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         vec3<f32>(1.0, 0.7, 0.4),
         vec3<f32>(0.15, 0.45, 0.75)
     );
-    // Action potential flashes hot cyan-white before relaxing to the palette.
-    let spikeColor = vec3<f32>(0.7, 0.95, 1.0);
+
+    // ── Idea 2: axon filaments with conducted spike pulses ───────────
+    // Each 3x3 mote wires to its +x / +y neighbour (hash-gated). A spike
+    // (own or relayed) leaves the source and travels at a finite velocity.
+    // ── Idea 4: saltatory conduction ─────────────────────────────────
+    // The axons are myelinated: bright sheath internodes pinched at dark
+    // nodes of Ranvier. The pulse hops node to node; each node flashes as
+    // it regenerates the spike and fades while the next internode charges.
+    var axon = 0.0;
+    var axonPulse = 0.0;
+    let axonWidth = rCell * 0.35;
+    for (var k = 0; k < 9; k = k + 1) {
+        let ox = k % 3 - 1;
+        let oy = k / 3 - 1;
+        let wi = (ox + 2) + (oy + 2) * 4;
+        let src = cellId + vec2<f32>(f32(ox), f32(oy));
+        for (var m = 0; m < 2; m = m + 1) {
+            let dx = select(0, 1, m == 0);
+            let dy = 1 - dx;
+            if (ox + dx <= 1 && oy + dy <= 1) {
+                let dst = src + vec2<f32>(f32(dx), f32(dy));
+                let a = wCenter[wi];
+                let b = wCenter[wi + dx + dy * 4];
+                let sd = segDist(gridPos, a, b);
+                // Skip far fibres before the hash and the glow work.
+                if (sd.x < axonWidth * 5.0 && linkOn(src, dst, densityNorm)) {
+                    let len = max(length(b - a), 1e-3);
+                    let internodes = max(2.0, floor(len * 3.0 + 0.5));
+                    let nodeDist = abs(fract(sd.y * internodes + 0.5) - 0.5);
+                    let sheath = smoothstep(0.08, 0.22, nodeDist);
+                    let fiber = glow(sd.x, axonWidth * (0.55 + 0.45 * sheath), 0.16 * (0.5 + mids)) * (0.35 + 0.65 * sheath);
+                    let head = relay[k] * conduction / len;
+                    let hop = floor(head * internodes);
+                    let charge = head * internodes - hop;
+                    let along = (sd.y - hop / internodes) * len;
+                    let nodeFlash = glow(along, axonWidth * 2.2, 1.0) * exp(-charge * 2.5) * step(head, 1.0);
+                    let pulse = glow(sd.x, axonWidth * 2.2, 1.0) * nodeFlash;
+                    axon += fiber;
+                    axonPulse += pulse;
+                }
+            }
+        }
+    }
 
     var col = vec3<f32>(0.02, 0.02, 0.04);
-    col += mix(dustColor, spikeColor, spikeFlash * 0.7) * particleGlow;
+    let moteFlash = clamp(flashAcc / max(particleGlow, 1e-4), 0.0, 1.0);
+    col += mix(dustColor, spikeColor, moteFlash * 0.7) * particleGlow;
     col += accentColor * softField;
     col += accentColor * mouseGlow;
     col += dustColor * mousePull;
@@ -316,20 +378,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let prevFrame = acesInverse(prevDisplay) / (DISPLAY_EXPOSURE * max(trailTint, vec3<f32>(0.2)));
     let trailDecay = mix(0.86, 0.93, speedNorm);
     let inject = mix(0.35, 0.7, glowNorm);
-    var trail = prevFrame * trailDecay + col * inject;
+    // Injection is normalised by (1 - decay): HEAD's col*inject had a 5-10x
+    // steady-state gain that only stayed dark because motes were sub-pixel.
+    var trail = prevFrame * trailDecay + col * inject * (1.0 - trailDecay) * 4.0;
     // Clamp accumulated trail pre-tint at ~1.2 (luma-echo-warp lesson).
     trail = min(trail, vec3<f32>(1.2));
 
     // Single ACES pass on the display colour.
     let display = aces(trail * trailTint * DISPLAY_EXPOSURE);
 
-    // Alpha = dust density: mote cores, axon fibres and accumulated trail.
+    // Alpha = dust medium plus mote cores, axon fibres and accumulated trail.
     let luma = dot(display, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(particleGlow * 0.6 + softField * 0.5 + (axon + axonPulse) * 0.5 + luma * 0.6, 0.02, 1.0);
+    // HEAD floor was 0.02 (meanA ~0.1 -> pale wash over a page); the dark
+    // dust medium is now mostly opaque.
+    let alpha = clamp(0.85 + particleGlow * 0.3 + softField * 0.2 + (axon + axonPulse) * 0.3 + luma * 0.3, 0.0, 1.0);
 
     let finalColor = vec4<f32>(display, alpha);
     textureStore(writeTexture, coord, finalColor);
     // Pass the input depth through; firing motes sit slightly proud.
-    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depthC + particleGlow * spikeFlash * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depthC + firing * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, finalColor);
 }

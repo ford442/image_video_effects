@@ -5,9 +5,10 @@
 //  Complexity: High
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish pass — richer pulsing, color, and atmospheric underwater light)
-//  Upgraded: 2026-10-11
-//  Ideas: jet propulsion (contraction wave stretches tentacles, drift-lag streaming); anatomy (radial canals, margin ring canal, horseshoe gonad, notched lappets); jelly-lit marine snow; oral arms; bell muscle striations
-//  A packing: raw pulsePhase in A.r (identical at every pixel, read back from C.r), A.g/A.b = 0, A.a = semantic alpha; writeTexture = ACES display RGBA
+//  Upgraded: 2026-10-19
+//  Ideas: jet propulsion (contraction wave stretches tentacles, drift-lag streaming); anatomy (radial canals, margin ring canal, horseshoe gonad, notched lappets); jelly-lit marine snow; oral arms; bell muscle striations;
+//         Beer–Lambert mesoglea (§12.2F: chord transmission + milky in-scatter); shed vortex rings with shear-lit dinoflagellates stirring the snow (§12.1 T2)
+//  A packing: raw pulsePhase in A.r (identical at every pixel, read back from C.r), A.g/A.b = 0, A.a = semantic alpha (0.86 water + 0.14 x body coverage); writeTexture = ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -54,6 +55,12 @@ fn smin_j(a: f32, b: f32, k: f32) -> f32 {
 fn env_j(prev: f32, val: f32, attack: f32, release: f32) -> f32 {
   let k = select(release, attack, val > prev);
   return mix(prev, val, k);
+}
+
+fn rot_j(a: f32) -> mat2x2<f32> {
+  let c = cos(a);
+  let s = sin(a);
+  return mat2x2<f32>(c, s, -s, c);
 }
 
 // ── Exponential glow ──────────────────────────────────────────────
@@ -168,7 +175,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0; i < numTentacles; i++) {
     let fi = f32(i);
     let angle = fi / f32(numTentacles) * 6.28318 + hash_j(fi * 3.7) * 0.3;
-    let baseOffset = vec2<f32>(cos(angle), sin(angle)) * bellRadius * 0.7;
+    // Margin ring seen edge-on: x spreads with cos, back tentacles sit slightly higher.
+    let baseOffset = vec2<f32>(cos(angle) * bellRadius * 0.85, bellRadius * (0.28 + 0.06 * sin(angle)));
     let base = jellyPos + baseOffset;
 
     // Sine wave propagation for tentacle movement
@@ -187,7 +195,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let thrust = thr[s - 1];
       let lag = lagVel * (tNorm / f32(segments));
       let swayX = sin(wavePhase + fs * 0.5) * waveAmp * (1.0 - 0.4 * thrust) * tNorm + lag.x;
-      let swayY = -segLen * (1.0 + 0.25 * thrust) + sin(wavePhase * 0.7 + fs * 0.3) * waveAmp * 0.3 * tNorm + lag.y;
+      let swayY = segLen * (1.0 + 0.25 * thrust) + sin(wavePhase * 0.7 + fs * 0.3) * waveAmp * 0.3 * tNorm + lag.y;
 
       let nextPoint = prevPoint + vec2<f32>(swayX, swayY);
       let dSeg = sdSegment(p, prevPoint, nextPoint);
@@ -195,7 +203,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       dTentacles = smin_j(dTentacles, dSeg - segThickness, 0.02);
 
       // Glow along tentacles
-      tentacleGlow += glow(dSeg, 80.0 * glowIntensity) * (1.0 - tNorm * 0.3);
+      tentacleGlow += glow(dSeg, 1100.0 * glowIntensity) * (1.0 - tNorm * 0.3);
 
       prevPoint = nextPoint;
     }
@@ -209,7 +217,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let base = jellyPos + vec2<f32>(cos(ang), 0.04) * bellRadius * 0.35 + vec2<f32>(0.0, bellRadius * 0.15);
     let frill = sin(af * 3.0 + time * pulseSpeed) * 0.04;
     let tip = base + vec2<f32>(frill, tentacleLen * 0.28);
-    armGlow += glow(sdSegment(p, base, tip), 60.0 * glowIntensity) * 0.7;
+    armGlow += glow(sdSegment(p, base, tip), 800.0 * glowIntensity) * 0.7;
   }
 
   // ── Sparkle particles (treble-driven) ───────────────────────────
@@ -231,7 +239,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ── Bioluminescent pulse ────────────────────────────────────────
   let pulse = 0.5 + 0.5 * sin(time * pulseSpeed * 2.0 + bassSmooth * 3.14159);
-  let pulseGlow = glow(dBell, 30.0 * glowIntensity * (0.5 + pulse * 0.5));
+  let pulseGlow = glow(dBell, 700.0 * glowIntensity * (0.5 + pulse * 0.5));
 
   // ── Shockwave on click ──────────────────────────────────────────
   var shockwave = 0.0;
@@ -268,8 +276,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     anatomyLum = canalLum + gonadLum;
   }
 
+  // ── Idea 7: shed vortex rings ───────────────────────────────────
+  // Each contraction peak (pulseSpeed·t = π mod 2π, where thr[] peaks) sheds a ring from the
+  // margin. Its cross-section is two counter-rotating cores that sink below the bell and decay.
+  var snowP = p;
+  var ringSpark = 0.0;
+  let cyc = floor((time * pulseSpeed - 3.14159) / 6.28318);
+  for (var k = 0; k < 2; k = k + 1) {
+    let tBirth = (3.14159 + 6.28318 * (cyc - f32(k))) / pulseSpeed;
+    let age = max(time - tBirth, 0.0);
+    let circ = smoothstep(0.0, 0.25, age) * exp(-age * 0.55) * (1.0 + bassSmooth * 0.6);
+    let sink = 0.16 * (1.0 - exp(-age / 1.3));
+    let spread = bellRadius * (0.8 + 0.12 * age);
+    let ringY = jellyPos.y + bellRadius * 0.32 + sink;
+    for (var sgn = -1; sgn <= 1; sgn = sgn + 2) {
+      let side = f32(sgn);
+      let core = vec2<f32>(jellyPos.x + side * spread, ringY);
+      // Fluid runs down through the ring centre: left core turns one way, right core the other.
+      let spin = -side;
+      let rs = snowP - core;
+      let swirl = spin * circ * 0.011 / (dot(rs, rs) + 0.0018);
+      snowP = core + rot_j(swirl) * rs;
+      // Shear in the core trips dinoflagellate flashes: spiral arms of sparks around a hollow core.
+      let rel = p - core;
+      let r = length(rel);
+      let a = atan2(rel.y, rel.x);
+      let arms = max(sin(2.0 * a * spin + r * 70.0 - time * 5.0), 0.0);
+      let shell = exp(-r * r / 0.0022) * (1.0 - exp(-r * r / 0.00025));
+      let grains = smoothstep(0.62, 0.9, vnoise_j(rot_j(spin * age * 2.5) * rel * 220.0 + vec2<f32>(f32(k) * 13.0 + side * 5.0, cyc * 3.7)));
+      ringSpark += circ * shell * arms * (0.6 + 2.2 * grains);
+    }
+  }
+
   // ── Color composition ───────────────────────────────────────────
-  // Bell color - deep sea translucent
+  // Water colour (named bellColor at HEAD: it fills the whole frame)
   let bellColor = vec3<f32>(0.05, 0.15, 0.25) * (0.6 + pulsePhase * 0.4);
 
   // Bioluminescent glow color
@@ -280,51 +320,58 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Tentacle color
   let tentacleColor = vec3<f32>(0.1, 0.3, 0.4) * tentacleGlow + vec3<f32>(0.45, 0.85, 0.7) * armGlow;
 
-  // Combine
-  var col = bellColor;
+  // ── Idea 6: Beer–Lambert mesoglea ───────────────────────────────
+  // Chord through the dome L = 2·sqrt(R² − r²); red is absorbed first. What lies behind the
+  // bell (water, marine snow) is transmitted by T; the gel in-scatters ambient + its own glow.
+  let inBell = smoothstep(0.004, -0.004, dBell);
+  let rr = length(bellPScaled);
+  let chord = 2.0 * sqrt(max(bellRadius * bellRadius - rr * rr, 0.0));
+  let trans = mix(vec3<f32>(1.0), exp(-vec3<f32>(3.3, 1.5, 0.9) * chord * 2.6), inBell);
+  let inScatter = vec3<f32>(0.34, 0.48, 0.56) * (0.75 + 0.4 * pulsePhase) + glowCol * 0.25 * pulse * glowIntensity;
+
+  var col = bellColor * trans + inScatter * (vec3<f32>(1.0) - trans);
   col += tentacleColor;
   col += bioGlow;
   col += glowCol * sparkle * trebleSmooth * 3.0;
   col += glowCol * shockwave * 2.0;
 
-  // Inner organs glow: diffuse mesoglea shell (kept, softened) + IDEA 2 anatomy on top
-  let innerGlow = glow(dBell - bellRadius * 0.3, 20.0 * glowIntensity) * pulse * 0.55;
+  // Inner organs glow: diffuse mesoglea shell centred inside the bell + IDEA 2 anatomy on top
+  let innerGlow = glow(dBell + bellRadius * 0.3, 90.0 * glowIntensity) * inBell * pulse * 0.55;
   col += vec3<f32>(0.2, 0.6, 0.8) * innerGlow;
   col += anatomy * glowIntensity * 0.6;
 
-  // IDEA 3: marine snow lit by the jelly (two parallax layers), dimmed behind the bell body
-  let snow = marine_snow(p, time, 9.0, 0.02, 0.0, 0.004, jellyPos, pulse)
-           + 0.7 * marine_snow(p, time, 15.0, 0.035, 31.0, 0.0028, jellyPos, pulse);
+  // IDEA 3: marine snow lit by the jelly (two parallax layers), seen through the mesoglea;
+  // Idea 7 stirs it — sampled through the vortex-ring swirl.
+  let snow = marine_snow(snowP, time, 9.0, 0.02, 0.0, 0.004, jellyPos, pulse)
+           + 0.7 * marine_snow(snowP, time, 15.0, 0.035, 31.0, 0.0028, jellyPos, pulse);
   let snowCol = mix(vec3<f32>(0.75, 0.95, 1.0), glowCol, 0.45);
-  let inBell = smoothstep(0.01, -0.01, dBell);
-  col += snowCol * snow * glowIntensity * 0.4 * (1.0 - 0.6 * inBell);
+  col += snowCol * snow * glowIntensity * 0.4 * trans;
+  col += vec3<f32>(0.3, 0.75, 1.0) * ringSpark * glowIntensity * 1.6;
 
   // Vignette
   let vignette = 1.0 - length(uv - 0.5) * 0.25;
   col *= vignette;
 
-  col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(0.4545));
-
   let caStr = 0.003 * (1.0 + bass);
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
   // ── Alpha encoding ──────────────────────────────────────────────
-  // Alpha = glow intensity + tentacle density.
-  // Glowing parts are translucent (lower alpha), dense body is more opaque.
+  // Coverage = body + tentacles + glow; the water itself is a near-opaque medium.
   let densityAlpha = smoothstep(0.02, -0.02, dBell) * 0.7;
   let tentacleAlpha = smoothstep(0.005, -0.005, dTentacles) * 0.5;
   let glowAlpha = (pulseGlow + tentacleGlow * 0.3 + innerGlow * 0.5 + anatomyLum * 0.5) * 0.4;
 
-  var alpha = densityAlpha + tentacleAlpha;
+  var cov = densityAlpha + tentacleAlpha;
   // Glow reduces density alpha for translucency effect
-  alpha = mix(alpha, glowAlpha, smoothstep(0.0, 0.5, glowAlpha));
-  alpha += sparkle * trebleSmooth * 0.3;
-  alpha += shockwave * 0.2;
-  alpha += snow * 0.1;
-  alpha = clamp(alpha, 0.0, 0.92);
+  cov = mix(cov, glowAlpha, smoothstep(0.0, 0.5, glowAlpha));
+  cov += sparkle * trebleSmooth * 0.3;
+  cov += shockwave * 0.2;
+  cov += snow * 0.1 + ringSpark * 0.3;
+  cov = clamp(cov, 0.0, 0.92);
+  let alpha = 0.86 + 0.14 * cov / 0.92;
 
-  let outCol = vec4<f32>(acesToneMap(col * 1.1), alpha);
+  let outCol = vec4<f32>(acesToneMap(max(col, vec3<f32>(0.0)) * 1.1), alpha);
   textureStore(writeTexture, gid.xy, outCol);
   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(pulsePhase, 0.0, 0.0, alpha));
-  textureStore(writeDepthTexture, gid.xy, vec4<f32>(alpha, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, gid.xy, vec4<f32>(cov, 0.0, 0.0, 0.0));
 }
