@@ -3,7 +3,7 @@
   "name": "Motion Revealer",
   "url": "shaders/motion-revealer.wgsl",
   "category": "interactive-mouse",
-  "description": "Lucas-Kanade optical flow structure tensor motion detector with spectral streakline integration, bioluminescent particle wake, and exact-load temporal frame difference.",
+  "description": "Motion in the photo, the pointer, and clicks opens a streaked reveal along the optical-flow direction. Streaks follow the structure tensor only where it is coherent, and the reveal holds for a few frames after the motion stops.",
   "features": [
     "mouse-driven",
     "optical-flow",

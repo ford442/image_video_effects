@@ -8177,7 +8177,7 @@
       "history": []
     },
     "blueprint-reveal": {
-      "hash": "a5cc1f0b76e1c1cf",
+      "hash": "f7c579622b3eb7ea",
       "history": [
         {
           "event": "upgraded",
@@ -8186,6 +8186,14 @@
           "prev_hash": "cb33591319712604",
           "commit": "9f26f634",
           "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "f7c579622b3eb7ea",
+          "prev_hash": "a5cc1f0b76e1c1cf",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
         }
       ]
     },
@@ -8274,8 +8282,17 @@
       ]
     },
     "codebreaker-reveal": {
-      "hash": "9f4dda689c38405e",
-      "history": []
+      "hash": "8db9608b7fd646d8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "8db9608b7fd646d8",
+          "prev_hash": "9f4dda689c38405e",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
+        }
+      ]
     },
     "cross-mouse-spec-dispersion-lens": {
       "hash": "8412e3a36239cce4",
@@ -8393,8 +8410,17 @@
       "history": []
     },
     "digital-reveal": {
-      "hash": "7ff63743b3045f66",
-      "history": []
+      "hash": "a270dcbd5ce3616a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "a270dcbd5ce3616a",
+          "prev_hash": "7ff63743b3045f66",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
+        }
+      ]
     },
     "directional-glitch": {
       "hash": "44fae4f46e0d6d92",
@@ -8837,8 +8863,17 @@
       "history": []
     },
     "motion-revealer": {
-      "hash": "9ba33d2954711019",
-      "history": []
+      "hash": "918f98e57735a76a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "918f98e57735a76a",
+          "prev_hash": "9ba33d2954711019",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
+        }
+      ]
     },
     "mouse-chromatic-explosion": {
       "hash": "8d9af987e9821a81",
@@ -8965,8 +9000,17 @@
       ]
     },
     "neon-flashlight": {
-      "hash": "67ee96d546613169",
-      "history": []
+      "hash": "5115578205742748",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "5115578205742748",
+          "prev_hash": "67ee96d546613169",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
+        }
+      ]
     },
     "neon-fluid-warp": {
       "hash": "67036031e29df88c",
@@ -9020,8 +9064,17 @@
       "history": []
     },
     "night-vision-scope": {
-      "hash": "e2dd5804712cc180",
-      "history": []
+      "hash": "9c767fd48c26b381",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "9c767fd48c26b381",
+          "prev_hash": "e2dd5804712cc180",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
+        }
+      ]
     },
     "optical-feedback": {
       "hash": "c39ff527f1c39507",
@@ -9121,7 +9174,7 @@
       ]
     },
     "pixel-reveal": {
-      "hash": "bdac5ece68c7c56f",
+      "hash": "665aa5b83a8bdeb8",
       "history": [
         {
           "event": "upgraded",
@@ -9130,6 +9183,14 @@
           "prev_hash": "6f9bd0e04e269986",
           "commit": "0910248e",
           "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "665aa5b83a8bdeb8",
+          "prev_hash": "bdac5ece68c7c56f",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
         }
       ]
     },
@@ -9317,7 +9378,7 @@
       "history": []
     },
     "sketch-reveal": {
-      "hash": "f76c3ec3e6477960",
+      "hash": "5397b7c5d571defa",
       "history": [
         {
           "event": "upgraded",
@@ -9326,6 +9387,14 @@
           "prev_hash": "a975bb79f6bb6f96",
           "commit": "9f26f634",
           "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "5397b7c5d571defa",
+          "prev_hash": "f76c3ec3e6477960",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
         }
       ]
     },
@@ -9342,12 +9411,30 @@
       "history": []
     },
     "sonar-pulse": {
-      "hash": "5cb6b446769b4f38",
-      "history": []
+      "hash": "d83beaf35c97df2c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "d83beaf35c97df2c",
+          "prev_hash": "5cb6b446769b4f38",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
+        }
+      ]
     },
     "sonar-reveal": {
-      "hash": "ed0e428f3d0c0dec",
-      "history": []
+      "hash": "a2d04cb2716b9351",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "a2d04cb2716b9351",
+          "prev_hash": "ed0e428f3d0c0dec",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
+        }
+      ]
     },
     "sonic-distortion": {
       "hash": "ae569b6c9c5672a7",
@@ -9406,8 +9493,17 @@
       "history": []
     },
     "thermal-touch": {
-      "hash": "c59e1f10554fd80f",
-      "history": []
+      "hash": "edbd5eda551dc2c7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "edbd5eda551dc2c7",
+          "prev_hash": "c59e1f10554fd80f",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
+        }
+      ]
     },
     "tile-twist": {
       "hash": "11364127a884413d",
@@ -9501,7 +9597,7 @@
       "history": []
     },
     "x-ray-reveal": {
-      "hash": "731f2cff8f750d44",
+      "hash": "e3624371714c7fe1",
       "history": [
         {
           "event": "upgraded",
@@ -9510,6 +9606,14 @@
           "prev_hash": "7ffa76c6f1af67b2",
           "commit": "0910248e",
           "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:37:31.285Z",
+          "hash": "e3624371714c7fe1",
+          "prev_hash": "731f2cff8f750d44",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/reveal-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/"
         }
       ]
     },

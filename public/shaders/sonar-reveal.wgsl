@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: mouse-driven, click-reactive, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: PPI sweep arm with phosphor afterglow wedge; contact blips on image edges at ring fronts; outward-drifting echo return
+//  Upgraded: 2026-09-28, 2026-10-27
+//  Ideas: PPI sweep arm with phosphor afterglow wedge; contact blips on image edges at ring fronts; outward-drifting echo return; range rings; beam spread
 //  A packing: ACES display RGB + semantic coverage alpha; C read back as colour (exact textureLoad, manual bilinear) for the echo
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.283185307;
 
@@ -102,7 +83,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i: u32 = 0u; i < 3u; i = i + 1u) {
     let fi = select(f1, select(f2, f3, i == 1u), i == 0u);
     let phase = dist * fi * TAU - (time * 2.5 + bassShove);
-    let rw = 0.012 + softness * 0.06 + treble * 0.008;
+    // ── Idea: beam spread — ring width grows with range. Softness is the near width.
+    let rw = (0.012 + softness * 0.06 + treble * 0.008) * (1.0 + dist * 1.6);
     let r = smoothstep(rw, 0.0, abs(sin(phase) * 0.5 - 0.5 + detune * f32(i)));
     ringAccum = ringAccum + r;
     ringFront = ringFront + smoothstep(0.55, 1.0, r);
@@ -162,13 +144,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let blip = edgeMag * frontGate;
   let hdrBlip = mix(rimColor, vec3<f32>(1.0, 0.97, 0.9), 0.6) * blip * intensity * 0.9;
 
+  // ── Idea: range rings — fixed calibration circles at 1/3 and 2/3 of the reveal radius.
+  let rangeNear = 1.0 - smoothstep(0.0, px * 1.5, abs(dist - baseSize * 0.34));
+  let rangeFar = 1.0 - smoothstep(0.0, px * 1.5, abs(dist - baseSize * 0.67));
+  let rangeRing = (rangeNear + rangeFar * 0.75) * (0.28 + intensity * 0.22) * (1.0 - reveal * 0.8);
+
   let hdrRim = ringAccum * intensity * audioPulse * rimColor;
   let hdrSparkle = vec3<f32>(1.0, 0.92, 0.75) * sparkle * intensity;
   let hdrShock = shockwaves * intensity * rimColor * 0.6;
 
   let splitShadow = mix(vec3<f32>(0.08, 0.04, 0.12), vec3<f32>(0.04, 0.08, 0.14), temp);
   let shadowMask = (1.0 - reveal) * (1.0 - ringAccum);
-  var rgb = mix(dim, c0.rgb, reveal) + hdrRim + hdrSparkle + hdrShock + hdrSweep + hdrBlip;
+  var rgb = mix(dim, c0.rgb, reveal) + hdrRim + hdrSparkle + hdrShock + hdrSweep + hdrBlip + rimColor * rangeRing;
   rgb = rgb + splitShadow * shadowMask * 0.25;
 
   // ── Idea 3: outward-drifting echo return ──────────────────────────
