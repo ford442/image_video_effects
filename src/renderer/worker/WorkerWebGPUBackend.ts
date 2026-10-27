@@ -45,10 +45,13 @@ import { registerShaderCompileService } from '../../utils/shaderCompileService';
 import { claimDeviceGeneration, clearRendererDevice, publishRendererDevice } from '../deviceRegistry';
 import { canShareMemory, createInputRingBuffer, InputRingWriter } from './inputRing';
 import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
+import { defaultSlotLayer, normalizeSlotLayer, type SlotLayer } from '../layerState';
+import type { HdrToneMapSettings } from '../../services/hdrOutput';
+import type { DirectPresentStatus, ShaderPrecisionInfo } from '../WebGPURenderer';
 
 const FFT_BINS = 128;
 
-type SlotShadow = { shaderId: string | null; enabled: boolean; mode: SlotMode };
+type SlotShadow = { shaderId: string | null; enabled: boolean; mode: SlotMode; layer: SlotLayer };
 
 const WALL_CLOCK_TIMINGS: GPUTimings = {
   parallelTime: 0,
@@ -114,6 +117,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     shaderId: null,
     enabled: false,
     mode: 'chained' as SlotMode,
+    layer: defaultSlotLayer(),
   }));
   private readonly slotParams: [number, number, number, number][] = Array.from(
     { length: PHYSICAL_SLOT_LIMIT },
@@ -213,6 +217,10 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       compile: (id, code) => client.rpc({ type: 'compileCheck', id, code }),
     });
     publishRendererDevice(null, { supportsSubgroups: !!this.info.supportsSubgroups, thread: 'worker', owner: this });
+    // The worker cannot see the page URL: forward its kill switch.
+    if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('no_direct_present')) {
+      client.send({ type: 'setDirectPresentEnabled', enabled: false });
+    }
     console.log('✅ TypeScript WebGPU renderer running in the render worker');
     return true;
   }
@@ -438,6 +446,11 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     this.markDirty();
   }
 
+  /** Device-loss replay: ripples with their age, so they resume mid-animation. */
+  restoreRipples(ripples: ReadonlyArray<readonly [number, number, number]>): void {
+    this.client?.send({ type: 'restoreRipples', ripples: ripples.map(([x, y, age]) => [x, y, age]) });
+  }
+
   // ── Slots and shaders (optimistic shadow + command) ───────────────────────
 
   async loadShader(id: string, url: string): Promise<boolean> {
@@ -468,16 +481,33 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   setActiveShader(id: string): void {
-    this.slots[0] = { shaderId: id, enabled: true, mode: 'chained' };
-    for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
+    this.slots.forEach((slot, i) => {
+      this.slots[i] = { shaderId: i === 0 ? id : null, enabled: i === 0, mode: 'chained', layer: slot.layer };
+    });
     this.client?.send({ type: 'setActiveShader', id });
   }
 
   setSlotShader(index: number, id: string): void {
     const slot = this.slots[index];
     if (!slot) return;
-    this.slots[index] = { shaderId: id, enabled: !!id, mode: slot.mode };
+    this.slots[index] = { shaderId: id, enabled: !!id, mode: slot.mode, layer: slot.layer };
     this.client?.send({ type: 'setSlotShader', index, id });
+  }
+
+  setSlotLayer(index: number, layer: SlotLayer): void {
+    const slot = this.slots[index];
+    if (!slot) return;
+    slot.layer = normalizeSlotLayer(layer);
+    this.client?.send({ type: 'setSlotLayer', index, layer: slot.layer });
+  }
+
+  getSlotLayer(index: number): SlotLayer | null {
+    const layer = this.slots[index]?.layer;
+    return layer ? { ...layer, mask: { ...layer.mask } } : null;
+  }
+
+  getCompositorStats(): { layers: number; bytes: number; compositesLastFrame: number } {
+    return { ...(this.snap?.compositor ?? { layers: 0, bytes: 0, compositesLastFrame: 0 }) };
   }
 
   setSlotEnabled(index: number, enabled: boolean): void {
@@ -498,7 +528,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
 
   getSlotState(index: number): SlotShadow | null {
     const slot = this.slots[index];
-    return slot ? { ...slot } : null;
+    return slot ? { ...slot, layer: { ...slot.layer, mask: { ...slot.layer.mask } } } : null;
   }
 
   setInputSource(source: InputSource): void {
@@ -620,12 +650,40 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     return { ...(this.snap?.nodeScales ?? {}) };
   }
 
+  /** Device-loss replay; the worker validates each node against its own (fresh) slots. */
+  restoreNodeScales(scales: Record<string, number>): void {
+    if (Object.keys(scales).length > 0) this.client?.send({ type: 'restoreNodeScales', scales });
+  }
+
   getScalableNodes(): RenderSnapshot['scalableNodes'] {
     return this.snap?.scalableNodes.map((n) => ({ ...n })) ?? [];
   }
 
   setSourceAutoExposure(enabled: boolean): void {
     this.client?.send({ type: 'setSourceAutoExposure', enabled });
+  }
+
+  setHdrToneMap(settings: HdrToneMapSettings): void {
+    this.client?.send({ type: 'setHdrToneMap', settings: { ...settings } });
+  }
+
+  setShaderF16Enabled(enabled: boolean): void {
+    // The worker clears its pipeline cache; drop our view of it too until the next snapshot.
+    this.cachedIds.clear();
+    this.client?.send({ type: 'setShaderF16Enabled', enabled });
+  }
+
+  setDirectPresentEnabled(enabled: boolean): void {
+    this.client?.send({ type: 'setDirectPresentEnabled', enabled });
+  }
+
+  getDirectPresentStatus(): DirectPresentStatus {
+    return { ...(this.snap?.directPresent ?? { available: false, enabled: true, active: false, reason: 'storage-unavailable' }) };
+  }
+
+  getShaderPrecisionInfo(): ShaderPrecisionInfo {
+    const info = this.snap?.shaderPrecision;
+    return info ? { ...info, precisions: { ...info.precisions } } : { supported: false, enabled: false, precisions: {} };
   }
 
   applyTestRenderState(state: TestRenderState): void {

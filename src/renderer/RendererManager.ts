@@ -59,6 +59,12 @@ import { getDeviceGeneration, getRendererDevice, isRendererDeviceLive } from './
 import { getLiveDeviceCount } from './webgpuBootProbe';
 import { DeviceRecoveryController, type DeviceRecoveryStatus } from './deviceRecovery';
 import { PHYSICAL_SLOT_LIMIT } from './slotOrchestrator';
+import { defaultSlotLayer, normalizeSlotLayer, slotLayersEqual, type SlotLayer } from './layerState';
+import { MAX_RIPPLES } from './UniformBuffer';
+import type { HdrToneMapSettings } from '../services/hdrOutput';
+
+/** Ripples older than this are not replayed after a device loss (every catalog ripple has faded). */
+export const RIPPLE_REPLAY_MAX_AGE_S = 10;
 import type { DisplayP3Result } from './webgpuBootProbe';
 
 export type { RendererType, RendererInitOptions, WebGpuProbeHandoff };
@@ -109,8 +115,20 @@ export class RendererManager {
   private lastShaderStack: ShaderStackSnapshot | null = null;
   private readonly getSessionState?: RendererManagerOptions['getSessionState'];
   private readonly deviceRecovery: DeviceRecoveryController;
-  /** Chained/parallel per slot, captured from the lost backend and re-applied after recovery. */
-  private pendingSlotModes: Array<'chained' | 'parallel'> = [];
+  /** Opt-in graph node scales of the lost backend (`${slot}:${nodeId}` → scale). */
+  private pendingNodeScales: Record<string, number> = {};
+  /**
+   * Session state the manager replays onto every rebuilt TS backend (backend switch or
+   * device-loss recovery): per-slot compositing, the last depth map, source auto-exposure.
+   */
+  private slotLayers: SlotLayer[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => defaultSlotLayer());
+  /** Chained/parallel as last set through the manager (a backend switch starts all-chained). */
+  private slotModes: Array<'chained' | 'parallel'> = Array.from({ length: PHYSICAL_SLOT_LIMIT }, () => 'chained');
+  private lastDepthMap: { data: Float32Array; width: number; height: number } | null = null;
+  private sourceAutoExposure: boolean | null = null;
+  private hdrToneMap: HdrToneMapSettings | null = null;
+  /** Ripples added since the last clear (performance.now() stamps), for device-loss replay. */
+  private rippleLog: Array<{ x: number; y: number; at: number }> = [];
   private readonly config: RendererConfig;
   private canvas: HTMLCanvasElement | null = null;
   private webGpuHandoff: WebGpuProbeHandoff | undefined;
@@ -320,6 +338,7 @@ export class RendererManager {
         if (this.lastShaderStack) {
           await this.resyncShaderStack(this.lastShaderStack);
         }
+        this.replaySessionExtras();
       }
       return true;
     }
@@ -346,6 +365,29 @@ export class RendererManager {
    * Re-send the page's runtime graphs (the Graph Lab draft) to a freshly built TS backend. The
    * page's overlay survives a backend switch, but a render worker's realm starts empty.
    */
+  /**
+   * Slot modes, compositor layers, the depth map and source auto-exposure live in the
+   * manager, so any rebuilt backend (device-loss recovery included) gets them back (#1512).
+   * Layers and auto-exposure are TS-only; WASM always composites as replace.
+   */
+  private replaySessionExtras(): void {
+    const backend = this.backend();
+    this.slotModes.forEach((mode, i) => {
+      if (mode === 'parallel') setSlotMode(backend, i, mode);
+    });
+    if (this.lastDepthMap) {
+      const { data, width, height } = this.lastDepthMap;
+      inputBridge.updateDepthMap(this.currentRenderer, data, width, height);
+    }
+    const r = this.shaderRenderer();
+    if (!isWebGpuBackend(r)) return;
+    this.slotLayers.forEach((layer, i) => {
+      if (!slotLayersEqual(layer, defaultSlotLayer())) r.setSlotLayer?.(i, layer);
+    });
+    if (this.sourceAutoExposure !== null) r.setSourceAutoExposure?.(this.sourceAutoExposure);
+    if (this.hdrToneMap) r.setHdrToneMap?.(this.hdrToneMap);
+  }
+
   private reseedRuntimeGraphs(): void {
     const r = this.shaderRenderer();
     if (!isWebGpuBackend(r)) return;
@@ -414,15 +456,34 @@ export class RendererManager {
     const captured = this.captureLiveStack();
     if (captured) {
       this.lastShaderStack = captured.stack;
-      this.pendingSlotModes = captured.slotModes;
+      this.pendingNodeScales = captured.nodeScales;
+      // The lost backend's modes are what was rendering; the switch replays them from the mirror.
+      captured.slotModes.forEach((mode, i) => {
+        this.slotModes[i] = mode;
+      });
+      captured.layers.forEach((layer, i) => {
+        if (layer) this.slotLayers[i] = layer;
+      });
     }
+    // Ages are taken at the loss, so each ripple resumes where it froze, not after the rebuild.
+    const lostAt = performance.now();
     const ok = await this.switchRenderer('webgpu', { restoreOnFailure: false });
     if (!ok || this.destroyed) return false;
-    this.pendingSlotModes.forEach((mode, i) => {
-      if (mode === 'parallel') this.setSlotMode(i, mode);
-    });
-    this.pendingSlotModes = [];
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) {
+      r.restoreNodeScales?.(this.pendingNodeScales);
+      const ripples = this.replayableRipples(lostAt);
+      if (ripples.length > 0) r.restoreRipples?.(ripples);
+    }
+    this.pendingNodeScales = {};
     return true;
+  }
+
+  /** [x, y, ageSeconds] for each logged ripple still young enough to be visible. */
+  private replayableRipples(now: number): Array<[number, number, number]> {
+    return this.rippleLog
+      .map(({ x, y, at }): [number, number, number] => [x, y, Math.max(0, (now - at) / 1000)])
+      .filter(([, , age]) => age < RIPPLE_REPLAY_MAX_AGE_S);
   }
 
   /**
@@ -430,13 +491,22 @@ export class RendererManager {
    * shader URLs as they were loaded, and the host session's slot params. Null when there is
    * no backend left to read (a retry after a failed attempt reuses the earlier capture).
    */
-  private captureLiveStack(): { stack: ShaderStackSnapshot; slotModes: Array<'chained' | 'parallel'> } | null {
+  private captureLiveStack(): {
+    stack: ShaderStackSnapshot;
+    slotModes: Array<'chained' | 'parallel'>;
+    layers: Array<SlotLayer | null>;
+    nodeScales: Record<string, number>;
+  } | null {
     const r = this.currentRenderer;
     if (!r) return null;
     const session = this.getSessionState?.() ?? null;
     const slots = Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState?.(i) ?? null);
+    // Optional calls: capture runs on a backend that just died, and must never throw here.
+    const nodeScales = isWebGpuBackend(r) ? r.getNodeScales?.() ?? {} : {};
     if (!slots.some(Boolean)) {
-      return session ? { stack: { ...session, inputSource: this.lastInputSource }, slotModes: [] } : null;
+      return session
+        ? { stack: { ...session, inputSource: this.lastInputSource }, slotModes: [], layers: [], nodeScales }
+        : null;
     }
     const resolveShader = (id: string): ShaderEntry | undefined => {
       const source = this.shaderSources.get(id);
@@ -451,6 +521,8 @@ export class RendererManager {
         inputSource: this.lastInputSource,
       },
       slotModes: slots.map((slot) => slot?.mode ?? 'chained'),
+      layers: slots.map((slot) => (slot?.layer ? normalizeSlotLayer(slot.layer) : null)),
+      nodeScales,
     };
   }
 
@@ -533,7 +605,24 @@ export class RendererManager {
       options,
     );
   }
-  setSlotMode(index: number, mode: 'chained' | 'parallel'): void { setSlotMode(this.backend(), index, mode); }
+  setSlotMode(index: number, mode: 'chained' | 'parallel'): void {
+    if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) this.slotModes[index] = mode;
+    setSlotMode(this.backend(), index, mode);
+  }
+  /** Per-slot compositing (#1512). Kept here too, so a rebuilt backend gets it back. */
+  setSlotLayer(index: number, layer: SlotLayer): void {
+    if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return;
+    const next = normalizeSlotLayer(layer);
+    this.slotLayers[index] = next;
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) r.setSlotLayer?.(index, next);
+  }
+  getSlotLayer(index: number): SlotLayer | null {
+    const r = this.shaderRenderer();
+    const fromBackend = isWebGpuBackend(r) ? r.getSlotLayer?.(index) ?? null : null;
+    const layer = fromBackend ?? this.slotLayers[index];
+    return layer ? { ...layer, mask: { ...layer.mask } } : null;
+  }
   setInputSource(source: InputSource): void {
     this.lastInputSource = source;
     inputBridge.setInputSource(this.currentRenderer, source);
@@ -541,9 +630,16 @@ export class RendererManager {
   getInputSource(): InputSource | null {
     return inputBridge.getInputSource(this.currentRenderer) ?? this.lastInputSource;
   }
-  addRipple(x: number, y: number): void { addRipple(this.backend(), x, y); }
+  addRipple(x: number, y: number): void {
+    this.rippleLog.push({ x, y, at: performance.now() });
+    if (this.rippleLog.length > MAX_RIPPLES) this.rippleLog.shift();
+    addRipple(this.backend(), x, y);
+  }
   addRipplePoint(x: number, y: number): void { this.addRipple(x, y); }
-  clearRipples(): void { clearRipples(this.backend()); }
+  clearRipples(): void {
+    this.rippleLog = [];
+    clearRipples(this.backend());
+  }
   async loadImage(url: string): Promise<string> {
     this.lastImageUrl = url;
     const resolved = await inputBridge.loadImage(this.currentRenderer, url);
@@ -554,6 +650,8 @@ export class RendererManager {
   getAvailableModes(): ShaderEntry[] { return inputBridge.getAvailableModes(this.currentRenderer); }
   setImageList(urls: string[]): void { inputBridge.setImageList(this.currentRenderer, urls); }
   updateDepthMap(data: Float32Array, width: number, height: number): void {
+    // A copy: callers may reuse their array, and the worker path transfers its own.
+    this.lastDepthMap = { data: data.slice(), width, height };
     inputBridge.updateDepthMap(this.currentRenderer, data, width, height);
   }
   getSupportsDeepWorkgroup(): boolean { return this.currentRenderer?.getSupportsDeepWorkgroup?.() ?? false; }
@@ -680,7 +778,28 @@ export class RendererManager {
   setRenderQuality(mode: RenderQualityMode, hints?: { supportsDeepWorkgroup?: boolean; formatCaps?: DeviceFormatCapabilities }): void {
     this.applyQualityPolicy(mode, hints);
   }
+  /** The `// @requires f16` half path (TS WebGPU). Recompiles on the next shader load. */
+  setShaderF16Enabled(enabled: boolean): void {
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) r.setShaderF16Enabled?.(enabled);
+  }
+  /** Direct-to-swapchain present (TS WebGPU, bgra8unorm-storage) on / off. */
+  setDirectPresentEnabled(enabled: boolean): void {
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) r.setDirectPresentEnabled?.(enabled);
+  }
+  getShaderPrecisionInfo(): import('./WebGPURenderer').ShaderPrecisionInfo | null {
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) ? r.getShaderPrecisionInfo?.() ?? null : null;
+  }
+  /** HDR canvas tonemap (paper white / peak nits); used only while the canvas is HDR. */
+  setHdrToneMap(settings: HdrToneMapSettings): void {
+    this.hdrToneMap = { ...settings };
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) r.setHdrToneMap?.(settings);
+  }
   setSourceAutoExposure(enabled: boolean): void {
+    this.sourceAutoExposure = enabled;
     const r = this.shaderRenderer();
     if (r && 'setSourceAutoExposure' in r) {
       (r as WebGPUBackendApi).setSourceAutoExposure(enabled);

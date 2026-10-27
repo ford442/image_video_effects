@@ -78,7 +78,7 @@ fn fs(in: VSOut) -> @location(0) vec4f {
 }
 `;
 
-const makeBlitWGSL = (flipY: boolean) => /* wgsl */ `
+const makeBlitWGSL = (flipY: boolean, hdr = false) => /* wgsl */ `
 struct VSOut {
   @builtin(position) pos : vec4f,
   @location(0)       uv  : vec2f,
@@ -99,7 +99,17 @@ fn vs(@builtin(vertex_index) idx: u32) -> VSOut {
 }
 
 @group(0) @binding(0) var src: texture_2d<f32>;
+${hdr ? `// x exposure (paper white / SDR white), y headroom (peak / SDR white): hdrOutput.ts
+@group(0) @binding(1) var<uniform> presentParams: vec4f;
 
+// Identity up to 1.0 (SDR white), then a soft shoulder that approaches the
+// display headroom asymptotically with slope 1 at the knee.
+fn shoulder(x: f32, headroom: f32) -> f32 {
+  if (x <= 1.0 || headroom <= 1.0) { return min(x, max(headroom, 1.0)); }
+  let r = headroom - 1.0;
+  return 1.0 + r * (1.0 - exp(-(x - 1.0) / r));
+}
+` : ''}
 fn tap(p: vec2i, maxP: vec2i) -> vec4f {
   return textureLoad(src, clamp(p, vec2i(0), maxP), 0);
 }
@@ -120,9 +130,15 @@ fn fs(in: VSOut) -> @location(0) vec4f {
     mix(tap(p0 + vec2i(0, 1), maxP), tap(p0 + vec2i(1, 1), maxP), f.x),
     f.y,
   );
-  // Gamma encode: linear → sRGB (γ = 2.2 approximation)
+${hdr ? `  // HDR canvas (rgba16float, extended tone mapping): canvas 1.0 is SDR white and
+  // values above it are highlights. Tonemap on the max channel (keeps hue), then
+  // the same γ = 2.2 encode as SDR, extended past 1.0.
+  let lin   = max(c.rgb, vec3f(0.0)) * presentParams.x;
+  let peak  = max(lin.r, max(lin.g, lin.b));
+  let toned = select(lin, lin * (shoulder(peak, presentParams.y) / peak), peak > 1.0);
+  return vec4f(pow(toned, vec3f(1.0 / 2.2)), 1.0);` : `  // Gamma encode: linear → sRGB (γ = 2.2 approximation)
   let rgb   = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));
-  return vec4f(rgb, 1.0);
+  return vec4f(rgb, 1.0);`}
 }
 `;
 
@@ -137,3 +153,11 @@ export const BLIT_WGSL = makeBlitWGSL(true);
  * screen-space Y-up coordinates and should not be vertically flipped at present.
  */
 export const GENERATIVE_BLIT_WGSL = makeBlitWGSL(false);
+
+/**
+ * HDR present (#1512): the blit for an rgba16float / extended-tone-mapping
+ * canvas. Same sampling and orientation as BLIT_WGSL / GENERATIVE_BLIT_WGSL, but
+ * keeps values above 1.0 and applies the paper-white / peak tonemap.
+ */
+export const HDR_BLIT_WGSL = makeBlitWGSL(true, true);
+export const HDR_GENERATIVE_BLIT_WGSL = makeBlitWGSL(false, true);

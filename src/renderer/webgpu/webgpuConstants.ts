@@ -4,6 +4,8 @@
  * Shared constants and types for the TypeScript WebGPU renderer.
  */
 
+import type { SlotLayer } from '../layerState';
+
 // ── Constants matching C++ renderer ─────────────────────────────────────────
 
 export const MAX_PLASMA_BALLS = 50;
@@ -44,4 +46,6 @@ export interface ShaderSlot {
   mode: SlotMode;
   /** Per-slot zoom_params (p1..p4), patched into the uniform buffer before this slot's pass. */
   params?: number[];
+  /** How this slot's output joins the image below it (#1512); absent → replace. */
+  layer?: SlotLayer;
 }

@@ -137,6 +137,9 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onSetGenerativeShowcaseDelay,
     onPreviewImportShader,
     onImportStatus,
+    compositing,
+    hdrToneMap,
+    canvasColor,
 }) => {
     const autoTransition = useAiVjAutoTransition();
     const [studioOpen, setStudioOpen] = usePersistedToggle('vj.studio', true);
@@ -183,6 +186,10 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     const projectFile = useProjectFile({
         modes,
         slotParams,
+        slotModes: compositing?.slotModes,
+        slotLayers: compositing?.slotLayers,
+        hdrToneMap: hdrToneMap?.settings,
+        setHdrToneMap: hdrToneMap?.setSettings,
         activeSlot,
         inputSource,
         currentImageUrl,
@@ -354,6 +361,11 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     slotShaderStatus={slotShaderStatus}
                     slotMenuOptions={slotMenuOptions}
                     maxActiveSlots={maxActiveSlots}
+                    slotModes={compositing?.slotModes}
+                    slotLayers={compositing?.slotLayers}
+                    setSlotMode={compositing?.setSlotMode}
+                    setSlotLayer={compositing?.setSlotLayer}
+                    compositorAvailable={activeRendererType === 'webgpu'}
                 />
             ),
         },
@@ -400,6 +412,13 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     sourceAutoExposureDisabled={
                         activeRendererType !== 'webgpu' || rendererDiagnostics?.gpuComputeAvailable === false
                     }
+                    displayP3={canvasColor?.displayP3}
+                    onDisplayP3Change={canvasColor?.setDisplayP3}
+                    displayP3Disabled={activeRendererType !== 'webgpu'}
+                    displayP3Status={canvasColor?.status}
+                    hdrActive={canvasColor?.hdrActive}
+                    hdrToneMap={hdrToneMap?.settings}
+                    onHdrToneMapChange={hdrToneMap?.setSettings}
                     maxActiveSlots={maxActiveSlots}
                     internalResolution={performanceHud.internalWidth}
                     scale={performanceHud.scale}

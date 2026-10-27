@@ -6,6 +6,12 @@
  */
 
 import { SlotParams, SlotMode } from '../renderer/types';
+import {
+    compactSlotLayer,
+    expandCompactSlotLayer,
+    type CompactSlotLayer,
+    type SlotLayer,
+} from '../renderer/layerState';
 
 export const SHARED_CHAIN_VERSION = 1;
 export const MAX_SHARED_SLOTS = 6;
@@ -23,7 +29,15 @@ export const DEFAULT_SLOT_PARAMS: SlotParams = {
     depthThreshold: 0.5,
 };
 
-export interface SharedChainSlot {
+/**
+ * One slot on the wire. The compositor fields (#1512) are compact and all optional,
+ * so links from older builds decode as replace layers and older builds ignore them:
+ *   b  'mask' (matte) or a blend mode; absent → replace
+ *   o  opacity 0..1; absent → 1
+ *   m  mask ref, e.g. "l", "d", "s2", "!d~0.25"; absent → none
+ *   k  key threshold for luma-key / depth-key; absent → the mode's default
+ */
+export interface SharedChainSlot extends CompactSlotLayer {
     /** Shader id, or null for an empty/disabled slot. */
     shaderId: string | null;
     /** Only the params that differ from the default — re-expanded on decode. */
@@ -69,6 +83,8 @@ export function buildSharedChain(
     options?: {
         enabled?: boolean[];
         slotModes?: SlotMode[];
+        /** Per-slot compositing; default (replace) layers add nothing to the link. */
+        layers?: Array<SlotLayer | undefined>;
         defaultsLookup?: SlotParamDefaultsLookup;
     }
 ): SharedChain {
@@ -88,6 +104,8 @@ export function buildSharedChain(
         if (options?.slotModes && options.slotModes[i] && options.slotModes[i] !== 'chained') {
             slot.mode = options.slotModes[i];
         }
+        const layer = options?.layers?.[i];
+        if (shaderId && layer) Object.assign(slot, compactSlotLayer(layer));
         slots.push(slot);
     }
 
@@ -98,11 +116,18 @@ export function buildSharedChain(
 export function expandSharedChain(
     chain: SharedChain,
     defaultsLookup?: SlotParamDefaultsLookup
-): { modes: Array<string | null>; slotParams: SlotParams[]; enabled: boolean[]; slotModes: SlotMode[] } {
+): {
+    modes: Array<string | null>;
+    slotParams: SlotParams[];
+    enabled: boolean[];
+    slotModes: SlotMode[];
+    layers: SlotLayer[];
+} {
     const modes: Array<string | null> = [];
     const slotParams: SlotParams[] = [];
     const enabled: boolean[] = [];
     const slotModes: SlotMode[] = [];
+    const layers: SlotLayer[] = [];
 
     for (const slot of chain.slots.slice(0, MAX_SHARED_SLOTS)) {
         const defaults = getDefaultsFor(slot.shaderId, defaultsLookup);
@@ -110,9 +135,10 @@ export function expandSharedChain(
         slotParams.push(expandParams(slot.params, defaults));
         enabled.push(slot.enabled !== false);
         slotModes.push(slot.mode === 'parallel' ? 'parallel' : 'chained');
+        layers.push(expandCompactSlotLayer(slot));
     }
 
-    return { modes, slotParams, enabled, slotModes };
+    return { modes, slotParams, enabled, slotModes, layers };
 }
 
 // ─── Wire encoding (base64url of minified JSON) ───────────────────────────────
@@ -161,6 +187,11 @@ function isSharedChainSlot(value: unknown): value is SharedChainSlot {
     if (slot.params !== undefined && (typeof slot.params !== 'object' || slot.params === null)) return false;
     if (slot.enabled !== undefined && typeof slot.enabled !== 'boolean') return false;
     if (slot.mode !== undefined && !isSlotMode(slot.mode)) return false;
+    // Compositor fields: wrong types reject the slot; unknown values degrade on expand.
+    if (slot.b !== undefined && typeof slot.b !== 'string') return false;
+    if (slot.o !== undefined && typeof slot.o !== 'number') return false;
+    if (slot.m !== undefined && typeof slot.m !== 'string') return false;
+    if (slot.k !== undefined && typeof slot.k !== 'number') return false;
     return true;
 }
 

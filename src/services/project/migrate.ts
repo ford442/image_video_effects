@@ -3,6 +3,7 @@ import type { SharedChain } from '../layerChainShare';
 import {
   PROJECT_APP_NAME,
   PROJECT_FILE_SCHEMA_VERSION,
+  type ProjectFile,
   type ProjectFileV1,
   type ProjectMigrationResult,
 } from './types';
@@ -15,7 +16,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function makeV1(chain: SharedChain, createdAt: string): ProjectFileV1 {
   return {
-    schemaVersion: PROJECT_FILE_SCHEMA_VERSION,
+    schemaVersion: 1,
     app: { name: PROJECT_APP_NAME, version: DEFAULT_APP_VERSION },
     createdAt,
     chain,
@@ -26,11 +27,20 @@ function makeV1(chain: SharedChain, createdAt: string): ProjectFileV1 {
 }
 
 /**
+ * v1 → v2 (#1512). v2 only adds optional fields (chain-slot compositor fields
+ * b/o/m/k, render.hdr), and a v1 file cannot contain them, so the step is the
+ * version bump: every v1 slot becomes a replace layer, which is what v1 rendered.
+ */
+export function migrateV1ToV2(project: ProjectFileV1): ProjectFile {
+  return { ...project, schemaVersion: PROJECT_FILE_SCHEMA_VERSION };
+}
+
+/**
  * Migrate one version at a time toward the current project format.
  *
  * v0 is the pair of pre-project portable formats: a bare SharedChain or a bare
- * VjSetExportPayload. Current v1 input is returned unchanged and is validated
- * by the caller after migration.
+ * VjSetExportPayload, lifted into v1 and then stepped to v2. Current v2 input
+ * is returned unchanged; the caller validates the result.
  */
 export function migrateProjectFile(
   raw: unknown,
@@ -39,15 +49,16 @@ export function migrateProjectFile(
   if (!isRecord(raw)) return { project: null, reason: 'Project data must be an object' };
 
   if ('schemaVersion' in raw) {
-    if (raw.schemaVersion !== PROJECT_FILE_SCHEMA_VERSION) {
-      return { project: null, reason: `Unsupported project schema version: ${String(raw.schemaVersion)}` };
+    if (raw.schemaVersion === PROJECT_FILE_SCHEMA_VERSION) return { project: raw as unknown as ProjectFile };
+    if (raw.schemaVersion === 1) {
+      return { project: migrateV1ToV2(raw as unknown as ProjectFileV1), migratedFrom: 1 };
     }
-    return { project: raw as unknown as ProjectFileV1 };
+    return { project: null, reason: `Unsupported project schema version: ${String(raw.schemaVersion)}` };
   }
 
-  // v0 SharedChain: the chain's own `v` remains untouched inside the v1 envelope.
+  // v0 SharedChain: the chain's own `v` remains untouched inside the envelope.
   if (typeof raw.v === 'number' && Array.isArray(raw.slots)) {
-    return { project: makeV1(raw as unknown as SharedChain, now().toISOString()) };
+    return { project: migrateV1ToV2(makeV1(raw as unknown as SharedChain, now().toISOString())), migratedFrom: 0 };
   }
 
   // v0 VJ set export: preserve the entire payload for recorder playback while
@@ -62,7 +73,7 @@ export function migrateProjectFile(
     );
     if (parsed.bindings) project.audio = { mappings: parsed.bindings };
     project.timeline = parsed;
-    return { project };
+    return { project: migrateV1ToV2(project), migratedFrom: 0 };
   }
 
   return { project: null, reason: 'Unrecognized project file or legacy export format' };

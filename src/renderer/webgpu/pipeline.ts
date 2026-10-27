@@ -9,12 +9,26 @@ import {
   analyzeShaderBindings,
   compileShader,
   CONSERVATIVE_BINDING_USAGE,
+  createComputePipelineChecked,
   ShaderBindingUsage,
 } from '../ShaderCompilation';
+import { withValidationScope } from './validationScope';
+import { DIRECT_PRESENT_FORMAT, toDirectPresentVariant } from './directPresent';
 import { colorTextureSampleType, type InternalColorFormat } from '../../config/formatPolicy';
 import bindGroup0Contract from '../../contracts/bind_group0.json';
-import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
+import {
+  BLIT_WGSL,
+  GENERATIVE_BLIT_WGSL,
+  HDR_BLIT_WGSL,
+  HDR_GENERATIVE_BLIT_WGSL,
+  SCALE_COPY_WGSL,
+  VIDEO_COPY_WGSL,
+} from '../ShaderTemplates';
+import { DEFAULT_HDR_TONE_MAP, hdrToneMapUniform, type HdrToneMapSettings } from '../../services/hdrOutput';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
+import { chooseF16Variant, type F16Choice } from '../wgslF16';
+import { rewriteWgslStorageFormats } from '../wgslFormatRewrite';
+import { compileCheckWgsl } from './compileCheck';
 import { HISTORY_DEPTH } from './webgpuConstants';
 import { PIPELINE_CACHE_LIMIT, PipelineLru } from './pipelineCache';
 import {
@@ -35,6 +49,14 @@ export interface WebGPUComputeLayout {
   pipelineLayout: GPUPipelineLayout;
 }
 
+/** The present pass is HDR (keeps > 1.0, applies the tonemap) on this swapchain format. */
+export function isHdrPresentFormat(format: GPUTextureFormat): boolean {
+  return format === 'rgba16float';
+}
+
+/** Size of the present params uniform (vec4<f32>, ShaderTemplates HDR blit binding 1). */
+export const PRESENT_PARAMS_BYTES = 16;
+
 export interface WebGPUBlitResources {
   blitPipeline: GPURenderPipeline;
   generativeBlitPipeline: GPURenderPipeline;
@@ -49,6 +71,9 @@ export interface WebGPUBlitResources {
 /** Group-1 layout provider; null when the device cannot host the sim ring. */
 export type SimRingLayoutProvider = () => GPUPipelineLayout | null;
 
+/** Which precision a shader compiled at: 'f32-fallback' = it asked for f16 and the half variant failed. */
+export type ShaderPrecision = F16Choice | 'f32-fallback';
+
 export class WebGPUShaderManager {
   private pipelines = new Map<string, GPUComputePipeline>();
   /** Recency of every cached pipeline; the single eviction authority (warm-up included). */
@@ -61,7 +86,33 @@ export class WebGPUShaderManager {
   private pipelineHashes = new Map<string, string>();
   private workgroupSizes = new Map<string, { x: number; y: number }>();
   private bindingUsages = new Map<string, ShaderBindingUsage>();
+  private precisions = new Map<string, ShaderPrecision>();
+  /** Compiled source per cached pipeline (after the precision choice): what a direct variant derives from. */
+  private sources = new Map<string, string>();
+  /** Direct-present variants (#1512): pipeline, or null when it cannot be built. */
+  private directPipelines = new Map<string, GPUComputePipeline | null>();
+  private directPending = new Set<string>();
+  /** Bumped on clear(): an in-flight direct compile from before is dropped. */
+  private directGeneration = 0;
   private colorFormat: InternalColorFormat = 'rgba32float';
+  /** Device has shader-f16 and the half path is on: `// @requires f16` shaders compile half. */
+  private shaderF16 = false;
+
+  /** Turn the f16 variant path on / off (#1512); recompiles on the next load. */
+  setShaderF16(enabled: boolean): void {
+    if (this.shaderF16 === enabled) return;
+    this.shaderF16 = enabled;
+    this.clear();
+  }
+
+  getShaderF16(): boolean {
+    return this.shaderF16;
+  }
+
+  /** Precision each opted-in shader compiled at (absent: never compiled or not opted in). */
+  getPrecisions(): Record<string, ShaderPrecision> {
+    return Object.fromEntries([...this.precisions].filter(([, p]) => p !== 'not-requested'));
+  }
 
   setColorFormat(format: InternalColorFormat): void {
     if (this.colorFormat === format) return;
@@ -135,6 +186,9 @@ export class WebGPUShaderManager {
     this.workgroupSizes.delete(id);
     this.bindingUsages.delete(id);
     this.simRingShaders.delete(id);
+    this.precisions.delete(id);
+    this.sources.delete(id);
+    this.directPipelines.delete(id);
   }
 
   clear(): void {
@@ -144,6 +198,94 @@ export class WebGPUShaderManager {
     this.workgroupSizes.clear();
     this.bindingUsages.clear();
     this.simRingShaders.clear();
+    this.precisions.clear();
+    this.sources.clear();
+    this.directPipelines.clear();
+    this.directPending.clear();
+    this.directGeneration++;
+  }
+
+  /**
+   * The direct-present variant of `id` (directPresent.ts): a pipeline, null when it
+   * cannot be built, undefined while it was never requested or is compiling.
+   */
+  getDirectPipeline(id: string): GPUComputePipeline | null | undefined {
+    return this.directPipelines.get(id);
+  }
+
+  /** Compile the direct variant in the background; frames use the blit until it is ready. */
+  requestDirectPipeline(device: GPUDevice, layout: GPUPipelineLayout, id: string): void {
+    if (this.directPipelines.has(id) || this.directPending.has(id)) return;
+    const source = this.sources.get(id);
+    if (!source || this.simRingShaders.has(id)) {
+      this.directPipelines.set(id, null);
+      return;
+    }
+    const generation = this.directGeneration;
+    this.directPending.add(id);
+    void this.compileDirect(device, layout, id, source).then((pipeline) => {
+      if (generation !== this.directGeneration) return;
+      this.directPending.delete(id);
+      // Evicted meanwhile: a later load compiles it again.
+      if (this.pipelines.has(id)) this.directPipelines.set(id, pipeline);
+    });
+  }
+
+  /**
+   * Never falls back to the pass-through shader (compileShader would): a direct
+   * variant that does not compile is simply not used.
+   */
+  private async compileDirect(
+    device: GPUDevice,
+    layout: GPUPipelineLayout,
+    id: string,
+    source: string,
+  ): Promise<GPUComputePipeline | null> {
+    const variant = toDirectPresentVariant(source);
+    if (!variant) return null;
+    try {
+      const code = rewriteWgslStorageFormats(variant, this.colorFormat);
+      const moduleResult = await withValidationScope(device, () =>
+        device.createShaderModule({ label: `${id}-direct`, code }),
+      );
+      const module = moduleResult.value;
+      if (!module || moduleResult.threw || moduleResult.error) return null;
+      const created = await createComputePipelineChecked(device, {
+        label: `${id}-direct`,
+        layout,
+        compute: { module, entryPoint: 'main' },
+      });
+      if (!created.pipeline) console.warn(`[WebGPU] "${id}": direct-present variant failed — using the blit`, created.error);
+      return created.pipeline;
+    } catch (e) {
+      console.warn(`[WebGPU] "${id}": direct-present variant threw — using the blit`, e);
+      return null;
+    }
+  }
+
+  /**
+   * The source to compile: the half variant of a `// @requires f16` shader when
+   * the device has shader-f16 and it compiles against the layout, else the f32
+   * source unchanged (wgslF16.ts).
+   */
+  private async selectPrecision(
+    device: GPUDevice,
+    layout: GPUPipelineLayout,
+    id: string,
+    wgsl: string,
+  ): Promise<{ source: string; precision: ShaderPrecision }> {
+    const choice = chooseF16Variant(wgsl, this.shaderF16);
+    if (choice.variant !== 'f16') return { source: choice.source, precision: choice.variant };
+    try {
+      const messages = await compileCheckWgsl(
+        device, `${id}-f16`, rewriteWgslStorageFormats(choice.source, this.colorFormat), { layout },
+      );
+      if (!messages.some((m) => m.type === 'error')) return { source: choice.source, precision: 'f16' };
+      console.warn(`[WebGPU] "${id}": f16 variant failed (${messages[0]?.message ?? 'unknown'}) — using f32`);
+    } catch (e) {
+      console.warn(`[WebGPU] "${id}": f16 variant check threw — using f32`, e);
+    }
+    return { source: wgsl, precision: 'f32-fallback' };
   }
 
   async compile(
@@ -172,17 +314,21 @@ export class WebGPUShaderManager {
       layout = simLayout;
     }
 
+    const { source, precision } = await this.selectPrecision(device, layout, id, wgsl);
     const ok = await compileShader(
       device,
       layout,
       id,
-      wgsl,
+      source,
       this.pipelines,
       this.pipelineHashes,
       this.workgroupSizes,
       this.colorFormat,
     );
     if (ok) {
+      this.precisions.set(id, precision);
+      this.sources.set(id, source);
+      this.directPipelines.delete(id);
       this.bindingUsages.set(id, analyzeShaderBindings(wgsl));
       if (wantsSimRing) this.simRingShaders.add(id);
       else this.simRingShaders.delete(id);
@@ -213,6 +359,8 @@ export function bindGroup0LayoutEntry(
   binding: { binding: number; kind: string },
   colorFormat: InternalColorFormat,
   hasF32Filt: boolean,
+  /** Direct present (#1512): binding 2 is the bgra8unorm swapchain instead of the colour format. */
+  outputFormat?: GPUTextureFormat,
 ): GPUBindGroupLayoutEntry {
   const spec = bindGroup0Contract.kinds[binding.kind as BindGroup0Kind] as {
     sampler?: GPUSamplerBindingType;
@@ -226,10 +374,10 @@ export function bindGroup0LayoutEntry(
   if (spec.buffer) return { ...base, buffer: { type: spec.buffer } };
   if (spec.storageTexture) {
     const { access, format } = spec.storageTexture;
-    return {
-      ...base,
-      storageTexture: { access, format: format === 'color-format' ? colorFormat : (format as GPUTextureFormat) },
-    };
+    const resolved = outputFormat && binding.binding === 2
+      ? outputFormat
+      : format === 'color-format' ? colorFormat : (format as GPUTextureFormat);
+    return { ...base, storageTexture: { access, format: resolved } };
   }
   if (!spec.texture) throw new Error(`bind_group0.json: kind ${binding.kind} declares no resource`);
   const { sampleType, viewDimension } = spec.texture;
@@ -249,14 +397,16 @@ export function createComputeBindGroupLayout(
   device: GPUDevice,
   hasF32Filt: boolean,
   colorFormat: InternalColorFormat = 'rgba32float',
+  outputFormat?: GPUTextureFormat,
 ): WebGPUComputeLayout {
+  const label = outputFormat ? 'computeBGL-direct' : 'computeBGL';
   const bindGroupLayout = device.createBindGroupLayout({
-    label: 'computeBGL',
-    entries: bindGroup0Contract.bindings.map((b) => bindGroup0LayoutEntry(b, colorFormat, hasF32Filt)),
+    label,
+    entries: bindGroup0Contract.bindings.map((b) => bindGroup0LayoutEntry(b, colorFormat, hasF32Filt, outputFormat)),
   });
 
   const pipelineLayout = device.createPipelineLayout({
-    label: 'computePL',
+    label: outputFormat ? 'computePL-direct' : 'computePL',
     bindGroupLayouts: [bindGroupLayout],
   });
 
@@ -353,11 +503,17 @@ export function createComputeBindGroupForPass(
   );
 }
 
+/**
+ * Present + input-scale pipelines. On an rgba16float canvas (HDR, #1512) the
+ * present shaders are the HDR variants; the layout is the same on every format:
+ * binding 0 the texture, binding 1 the present params uniform (unused on SDR).
+ */
 export function createBlitPipeline(
   device: GPUDevice,
   canvasFormat: GPUTextureFormat,
   blitReadTex: GPUTexture,
   internalColorFormat: InternalColorFormat = 'rgba32float',
+  presentParams: GPUBuffer | null = null,
 ): WebGPUBlitResources {
   const blitBindGroupLayout = device.createBindGroupLayout({
     label: 'blitBGL',
@@ -367,13 +523,19 @@ export function createBlitPipeline(
         visibility: GPUShaderStage.FRAGMENT,
         texture: { sampleType: 'unfilterable-float' },
       },
+      {
+        binding: 1,
+        visibility: GPUShaderStage.FRAGMENT,
+        buffer: { type: 'uniform', minBindingSize: PRESENT_PARAMS_BYTES },
+      },
     ],
   });
 
-  const module = device.createShaderModule({ label: 'blitShader', code: BLIT_WGSL });
+  const hdr = isHdrPresentFormat(canvasFormat);
+  const module = device.createShaderModule({ label: hdr ? 'hdrBlitShader' : 'blitShader', code: hdr ? HDR_BLIT_WGSL : BLIT_WGSL });
   const generativeModule = device.createShaderModule({
-    label: 'generativeBlitShader',
-    code: GENERATIVE_BLIT_WGSL,
+    label: hdr ? 'hdrGenerativeBlitShader' : 'generativeBlitShader',
+    code: hdr ? HDR_GENERATIVE_BLIT_WGSL : GENERATIVE_BLIT_WGSL,
   });
 
   const blitPipeline = device.createRenderPipeline({
@@ -396,11 +558,8 @@ export function createBlitPipeline(
     primitive: { topology: 'triangle-list' },
   });
 
-  const blitBindGroup = device.createBindGroup({
-    label: 'blitBG',
-    layout: blitBindGroupLayout,
-    entries: [{ binding: 0, resource: blitReadTex.createView() }],
-  });
+  const params = presentParams ?? createPresentParamsBuffer(device);
+  const blitBindGroup = createBlitBindGroup(device, blitBindGroupLayout, blitReadTex, params);
 
   const scaleModule = device.createShaderModule({
     label: 'scaleCopyShader',
@@ -459,15 +618,29 @@ export function createBlitPipeline(
   };
 }
 
+export function createPresentParamsBuffer(device: GPUDevice, settings: HdrToneMapSettings = DEFAULT_HDR_TONE_MAP): GPUBuffer {
+  const buffer = device.createBuffer({
+    label: 'presentParams',
+    size: PRESENT_PARAMS_BYTES,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(buffer, 0, hdrToneMapUniform(settings));
+  return buffer;
+}
+
 export function createBlitBindGroup(
   device: GPUDevice,
   layout: GPUBindGroupLayout,
   blitReadTex: GPUTexture,
+  presentParams: GPUBuffer,
 ): GPUBindGroup {
   return device.createBindGroup({
     label: 'blitBG',
     layout,
-    entries: [{ binding: 0, resource: blitReadTex.createView() }],
+    entries: [
+      { binding: 0, resource: blitReadTex.createView() },
+      { binding: 1, resource: { buffer: presentParams } },
+    ],
   });
 }
 
@@ -484,9 +657,17 @@ export class WebGPUPipelineModule {
   videoCopyBindGroupLayout: GPUBindGroupLayout | null = null;
   supportsExternalTexture = false;
   colorFormat: InternalColorFormat = 'rgba32float';
+  /** Present params uniform (HDR tonemap); bound on every format, read only by the HDR blit. */
+  presentParamsBuf: GPUBuffer | null = null;
+  private presentParamsDevice: GPUDevice | null = null;
+  private hdrToneMap: HdrToneMapSettings = { ...DEFAULT_HDR_TONE_MAP };
   private hasF32Filterable = false;
   private canvasFormat: GPUTextureFormat = 'bgra8unorm';
   private blitReadTex!: GPUTexture;
+
+  /** Direct present (#1512): group 0 with binding 2 = bgra8unorm swapchain; built on first use. */
+  private directLayout: WebGPUComputeLayout | null = null;
+  private directLayoutDevice: GPUDevice | null = null;
 
   /** Group-1 sim-ring layouts; created lazily, null when the device lacks the limits. */
   simRingBindGroupLayout: GPUBindGroupLayout | null = null;
@@ -507,6 +688,7 @@ export class WebGPUPipelineModule {
     this.hasF32Filterable = hasF32Filt;
     this.colorFormat = colorFormat;
     this.shaderManager.setColorFormat(colorFormat);
+    this.directLayout = null;
     const layout = createComputeBindGroupLayout(device, hasF32Filt, colorFormat);
     this.bindGroupLayout = layout.bindGroupLayout;
     this.pipelineLayout = layout.pipelineLayout;
@@ -548,7 +730,11 @@ export class WebGPUPipelineModule {
     this.canvasFormat = canvasFormat;
     this.blitReadTex = blitReadTex;
     this.colorFormat = colorFormat;
-    const blit = createBlitPipeline(device, canvasFormat, blitReadTex, colorFormat);
+    if (!this.presentParamsBuf || this.presentParamsDevice !== device) {
+      this.presentParamsBuf = createPresentParamsBuffer(device, this.hdrToneMap);
+      this.presentParamsDevice = device;
+    }
+    const blit = createBlitPipeline(device, canvasFormat, blitReadTex, colorFormat, this.presentParamsBuf);
     this.blitPipeline = blit.blitPipeline;
     this.generativeBlitPipeline = blit.generativeBlitPipeline;
     this.scaleCopyPipeline = blit.scaleCopyPipeline;
@@ -557,6 +743,54 @@ export class WebGPUPipelineModule {
     this.videoCopyPipeline = blit.videoCopyPipeline;
     this.videoCopyBindGroupLayout = blit.videoCopyBindGroupLayout;
     this.supportsExternalTexture = blit.supportsExternalTexture;
+  }
+
+  /** The direct-present group-0 layout (dataA/B/history unchanged; binding 2 = swapchain). */
+  getDirectLayout(device: GPUDevice): WebGPUComputeLayout {
+    if (!this.directLayout || this.directLayoutDevice !== device) {
+      this.directLayout = createComputeBindGroupLayout(device, this.hasF32Filterable, this.colorFormat, DIRECT_PRESENT_FORMAT);
+      this.directLayoutDevice = device;
+    }
+    return this.directLayout;
+  }
+
+  /** Per-frame group 0 for a direct-present pass: binding 2 is this frame's swapchain texture. */
+  createDirectBindGroup(
+    device: GPUDevice,
+    swapchain: GPUTexture,
+    textures: WebGPUTextureSet,
+    buffers: WebGPUBufferSet,
+    samplers: WebGPUSamplerSet,
+  ): GPUBindGroup {
+    return createComputeBindGroupForRoles(
+      device,
+      this.getDirectLayout(device).bindGroupLayout,
+      { read: textures.readTex, color: swapchain, dataA: textures.dataTexA, dataB: textures.dataTexB, dataC: textures.dataTexC },
+      textures,
+      buffers,
+      samplers,
+    );
+  }
+
+  /** Re-specialise the present pipelines for a renegotiated swapchain format (HDR on / off). */
+  setCanvasFormat(device: GPUDevice, canvasFormat: GPUTextureFormat): void {
+    if (this.canvasFormat === canvasFormat || !this.blitReadTex) {
+      this.canvasFormat = canvasFormat;
+      return;
+    }
+    this.setupBlitPipelines(device, canvasFormat, this.blitReadTex, this.colorFormat);
+  }
+
+  getCanvasFormat(): GPUTextureFormat {
+    return this.canvasFormat;
+  }
+
+  /** Paper white / peak for the HDR present; takes effect at the next present. */
+  setHdrToneMap(device: GPUDevice | null, settings: HdrToneMapSettings): void {
+    this.hdrToneMap = { ...settings };
+    if (device && this.presentParamsBuf && this.presentParamsDevice === device) {
+      device.queue.writeBuffer(this.presentParamsBuf, 0, hdrToneMapUniform(settings));
+    }
   }
 
   setColorFormat(device: GPUDevice, colorFormat: InternalColorFormat): void {
@@ -605,5 +839,10 @@ export class WebGPUPipelineModule {
 
   clear(): void {
     this.shaderManager.clear();
+    this.directLayout = null;
+    this.directLayoutDevice = null;
+    this.presentParamsBuf?.destroy();
+    this.presentParamsBuf = null;
+    this.presentParamsDevice = null;
   }
 }

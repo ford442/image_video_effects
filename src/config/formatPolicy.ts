@@ -22,6 +22,8 @@ export interface DeviceFormatCapabilities {
   supportsFloat16Array: boolean;
   hasFloat32Filterable: boolean;
   hasFloat32Blendable: boolean;
+  /** Compatibility-mode device (#1512): FP16 storage and the documented catalog exclusions. */
+  compat?: boolean;
 }
 
 export const ULTRA_COLOR_FORMAT: InternalColorFormat = 'rgba32float';
@@ -117,6 +119,8 @@ export interface FormatProbeOptions {
   isMobile?: boolean;
   /** Boot-probe GPUDevice — same requestDevice; never a second device. */
   device?: GPUDevice | null;
+  /** The device came from the compatibility rung. */
+  compat?: boolean;
 }
 
 /**
@@ -177,6 +181,7 @@ export async function probeFormatCapabilities(
     supportsFloat16Array: float16,
     hasFloat32Filterable,
     hasFloat32Blendable,
+    ...(options.compat ? { compat: true } : {}),
   };
 }
 
@@ -212,6 +217,9 @@ export function resolveColorFormat(
   mode: RenderQualityMode,
   caps: DeviceFormatCapabilities = DEFAULT_FORMAT_CAPABILITIES,
 ): InternalColorFormat {
+  // Compat devices (GL ES class) run FP16 whatever the tier asks for (#1512): half the
+  // bandwidth, and the one float storage format every compat backend has.
+  if (caps.compat && canUseRgba16Float(caps)) return BALANCED_COLOR_FORMAT;
   // rgba32float without float32-filterable can only be bound unfilterable, which breaks
   // every shader sampling readTexture through u_sampler — prefer FP16 whenever legal.
   const fp32Filterable = caps.hasFloat32Filterable;
@@ -288,6 +296,22 @@ export function resolveFp32Pin(
     return { colorFormat: requestedFormat, pinned: false, pinnedBy: [] };
   }
   return { colorFormat: ULTRA_COLOR_FORMAT, pinned: true, pinnedBy };
+}
+
+export type CatalogExclusionReason = 'deep-workgroup' | 'rgba32float-storage';
+
+/**
+ * Why a catalog entry cannot run on this device, or null (#1512: the catalog
+ * degrades instead of failing on compat / limited adapters). Call with measured
+ * capabilities only — DEFAULT_FORMAT_CAPABILITIES has no rgba32float storage.
+ */
+export function catalogExclusionReason(
+  shader: { id?: string; requiresDeepWorkgroup?: boolean; requiresRgba32Float?: boolean },
+  device: { supportsDeepWorkgroup: boolean; formatCaps: DeviceFormatCapabilities },
+): CatalogExclusionReason | null {
+  if (shader.requiresDeepWorkgroup && !device.supportsDeepWorkgroup) return 'deep-workgroup';
+  if (inferRequiresRgba32Float(shader) && !device.formatCaps.supportsRgba32FloatStorage) return 'rgba32float-storage';
+  return null;
 }
 
 /** Infer FP32 requirement from the explicit JSON flag or the state-shader allowlist. */

@@ -1,4 +1,5 @@
 import {
+  catalogExclusionReason,
   colorTextureSampleType,
   DEFAULT_FORMAT_CAPABILITIES,
   estimateInternalTextureMiB,
@@ -264,5 +265,32 @@ describe('resolvePerformancePolicy colorFormat', () => {
       formatCaps: DEFAULT_FORMAT_CAPABILITIES,
     });
     expect(policy.colorFormat).toMatch(/^rgba(16|32)float$/);
+  });
+});
+
+describe('compatibility-mode degradation (#1512)', () => {
+  const measured = {
+    ...DEFAULT_FORMAT_CAPABILITIES,
+    adapterGpuType: 'discrete' as const,
+    supportsRgba32FloatStorage: true,
+    hasFloat32Filterable: true,
+  };
+
+  it('runs FP16 on a compat device whatever the tier asks for', () => {
+    for (const mode of ['ultra', 'balanced', 'battery', 'auto'] as const) {
+      expect(resolveColorFormat(mode, { ...measured, compat: true })).toBe('rgba16float');
+    }
+    expect(resolveColorFormat('ultra', measured)).toBe('rgba32float');
+  });
+
+  it('hides shaders the device cannot run, with a reason', () => {
+    const noFp32 = { ...measured, supportsRgba32FloatStorage: false, compat: true };
+    expect(catalogExclusionReason({ id: 'ripple-tank' }, { supportsDeepWorkgroup: true, formatCaps: noFp32 }))
+      .toBe('rgba32float-storage');
+    expect(catalogExclusionReason({ id: 'x', requiresRgba32Float: true }, { supportsDeepWorkgroup: true, formatCaps: measured }))
+      .toBeNull();
+    expect(catalogExclusionReason({ id: 'deep', requiresDeepWorkgroup: true }, { supportsDeepWorkgroup: false, formatCaps: measured }))
+      .toBe('deep-workgroup');
+    expect(catalogExclusionReason({ id: 'plasma' }, { supportsDeepWorkgroup: false, formatCaps: noFp32 })).toBeNull();
   });
 });

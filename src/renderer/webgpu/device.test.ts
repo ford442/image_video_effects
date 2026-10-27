@@ -17,7 +17,6 @@ import {
 } from './device';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
 import { setRendererErrorHandler, type RendererError } from '../ErrorHandling';
-import { UNIFORM_BUFFER_LAYOUT } from '../types';
 
 const TU = {
   COPY_SRC: 0x01,
@@ -180,7 +179,7 @@ describe('canvas_configure.json contract', () => {
     }
   });
 
-  it('declares backends for every capability (copySrc on both, color TS-only)', () => {
+  it('declares backends for every capability (copySrc on both, color / HDR / storage TS-only)', () => {
     const backends = Object.fromEntries(
       Object.entries(canvasConfigureContract.optIn).map(([k, v]) => [k, v.backends]),
     );
@@ -188,8 +187,11 @@ describe('canvas_configure.json contract', () => {
       copySrc: ['ts', 'wasm'],
       displayP3: ['ts'],
       extendedToneMapping: ['ts'],
+      hdrCanvas: ['ts'],
+      storageBinding: ['ts'],
     });
     expect(canvasConfigureContract.optIn.extendedToneMapping.requires).toBe('displayP3');
+    expect(canvasConfigureContract.optIn.hdrCanvas.requires).toBe('extendedToneMapping');
   });
 
   it('keeps the generated C++ header in sync with the JSON', () => {
@@ -214,6 +216,7 @@ describe('resolveCanvasColorOptIns', () => {
     expect(resolveCanvasColorOptIns('', () => true)).toEqual({
       displayP3: false,
       extendedToneMapping: false,
+      hdrCanvas: false,
     });
   });
 
@@ -221,20 +224,22 @@ describe('resolveCanvasColorOptIns', () => {
     expect(resolveCanvasColorOptIns('?display_p3=1', () => false)).toEqual({
       displayP3: true,
       extendedToneMapping: false,
+      hdrCanvas: false,
     });
   });
 
-  it('enables extended tone mapping only with display-p3 on HDR displays', () => {
+  it('enables extended tone mapping and the HDR canvas only with display-p3 on HDR displays', () => {
     expect(resolveCanvasColorOptIns('display_p3=1&x=2', () => true)).toEqual({
       displayP3: true,
       extendedToneMapping: true,
+      hdrCanvas: true,
     });
     expect(resolveCanvasColorOptIns('?display_p3=0', () => true).extendedToneMapping).toBe(false);
   });
 
   it('honors the persisted setting without a URL param', () => {
-    expect(resolveCanvasColorOptIns('', () => false, true)).toEqual({ displayP3: true, extendedToneMapping: false });
-    expect(resolveCanvasColorOptIns('', () => true, true)).toEqual({ displayP3: true, extendedToneMapping: true });
+    expect(resolveCanvasColorOptIns('', () => false, true)).toEqual({ displayP3: true, extendedToneMapping: false, hdrCanvas: false });
+    expect(resolveCanvasColorOptIns('', () => true, true)).toEqual({ displayP3: true, extendedToneMapping: true, hdrCanvas: true });
   });
 
   it('keeps a stored-off setting off, and lets the URL force it on', () => {
@@ -318,10 +323,8 @@ describe('initializeWebGPUDevice', () => {
     expect(adapter.requestDevice).toHaveBeenCalledWith(
       expect.objectContaining({
         requiredFeatures: ['float32-filterable', 'timestamp-query'],
-        requiredLimits: expect.objectContaining({
-          maxBindingsPerBindGroup: 14,
-          maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE,
-        }),
+        // Limits tier (#1512): a core adapter already has every base limit, so none is requested.
+        requiredLimits: {},
       }),
     );
     const summary = result.ok ? result.adapterSummary : '';

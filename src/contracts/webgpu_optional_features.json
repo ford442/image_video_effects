@@ -9,6 +9,17 @@
     "subgroups"
   ],
   "timestampQueryAlwaysOnWhenAvailable": true,
+  "tsOnly": {
+    "requestOrder": [
+      "shader-f16",
+      "bgra8unorm-storage",
+      "float32-blendable",
+      "dual-source-blending",
+      "core-features-and-limits"
+    ],
+    "cppMirror": false,
+    "note": "Capability tier 2 (#1512): requested after the three shared features, by the TS renderer only (the WASM backend is frozen, docs/WASM_BACKEND_POLICY.md). Each is optional and recorded on window.webgpuProbe. shader-f16 enables the `// @requires f16` variant path (wgslF16.ts); bgra8unorm-storage the direct-to-swapchain present (canvas_configure.json optIn.storageBinding); float32-blendable and dual-source-blending are recorded for a fixed-function compositor path (the shipped compositor is compute and needs neither); core-features-and-limits upgrades an adapter from the compatibility rung to a core device when it can."
+  },
   "requiredFeaturesArrayMin": 3,
   "cppEnums": {
     "float32-filterable": "WGPUFeatureName_Float32Filterable",

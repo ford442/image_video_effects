@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { RenderMode } from '../../../renderer/types';
+import { RenderMode, SlotMode } from '../../../renderer/types';
+import type { SlotLayer } from '../../../renderer/layerState';
+import { SlotLayerRow } from './SlotLayerRow';
 import { ShaderMegaMenu } from '../../ShaderMegaMenu';
 import type { ShaderMegaMenuOption } from '../../ShaderMegaMenu';
 import { ShaderGallery } from '../../ShaderGallery';
@@ -12,6 +14,13 @@ export interface SlotStackPanelProps {
     slotShaderStatus?: Array<'idle' | 'loading' | 'error'>;
     slotMenuOptions: ShaderMegaMenuOption[];
     maxActiveSlots?: number;
+    /** Layer strip (#1512): chained/parallel + compositing per slot. Absent → no layer row. */
+    slotModes?: SlotMode[];
+    slotLayers?: SlotLayer[];
+    setSlotMode?: (index: number, mode: SlotMode) => void;
+    setSlotLayer?: (index: number, layer: SlotLayer) => void;
+    /** False on WASM / Canvas2D (compositing is TS WebGPU only). */
+    compositorAvailable?: boolean;
 }
 
 export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
@@ -22,6 +31,11 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
     slotShaderStatus = ['idle', 'idle', 'idle', 'idle', 'idle', 'idle'],
     slotMenuOptions,
     maxActiveSlots = 6,
+    slotModes,
+    slotLayers,
+    setSlotMode,
+    setSlotLayer,
+    compositorAvailable = true,
 }) => {
     const [galleryOpenFor, setGalleryOpenFor] = useState<number | null>(null);
 
@@ -32,6 +46,7 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
                 {modes.map((mode, i) => {
                     if (i >= maxActiveSlots) return null;
                     const slotStatus = slotShaderStatus[i] || 'idle';
+                    const layer = slotLayers?.[i];
                     const borderColor = slotStatus === 'error' ? '#ff4757'
                         : slotStatus === 'loading' ? '#ffa502'
                         : activeSlot === i ? '#FFD700' : 'rgba(255,215,0,0.08)';
@@ -106,6 +121,17 @@ export const SlotStackPanel: React.FC<SlotStackPanelProps> = ({
                                     🖼️
                                 </button>
                             </div>
+                            {slotModes && layer && setSlotMode && setSlotLayer && mode !== 'none' && (
+                                <SlotLayerRow
+                                    slotIndex={i}
+                                    slotCount={Math.min(maxActiveSlots, modes.length)}
+                                    mode={slotModes[i] ?? 'chained'}
+                                    layer={layer}
+                                    onModeChange={(m) => setSlotMode(i, m)}
+                                    onLayerChange={(layer) => setSlotLayer(i, layer)}
+                                    available={compositorAvailable}
+                                />
+                            )}
                         </div>
                     );
                 })}

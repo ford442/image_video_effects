@@ -7,6 +7,7 @@ import type {
   ProjectSource,
 } from './types';
 import { validateProjectFile } from './validate';
+import { PROJECT_FILE_SCHEMA_VERSION } from './types';
 
 export interface ProjectImportEnvironment {
   knownShaderIds: ReadonlySet<string>;
@@ -24,15 +25,19 @@ export function parseProjectFile(serialized: string): ProjectParseResult {
     return { ok: false, errors: ['Project file is not valid JSON'] };
   }
 
-  const wasLegacy = !!raw && typeof raw === 'object' && !('schemaVersion' in raw);
   const migrated = migrateProjectFile(raw);
   if (!migrated.project) return { ok: false, errors: [migrated.reason] };
   const validated = validateProjectFile(migrated.project);
   if (!validated.ok) return validated;
+  const migrationReason = migrated.migratedFrom === 0
+    ? `Imported legacy export as project schema v${PROJECT_FILE_SCHEMA_VERSION}`
+    : migrated.migratedFrom !== undefined
+      ? `Upgraded project schema v${migrated.migratedFrom} to v${PROJECT_FILE_SCHEMA_VERSION}`
+      : undefined;
   return {
     ok: true,
     project: validated.project,
-    ...(wasLegacy ? { migrationReason: 'Imported legacy export as project schema v1' } : {}),
+    ...(migrationReason ? { migrationReason } : {}),
   };
 }
 

@@ -32,6 +32,9 @@ export function buildRendererDiagnostics(
     getGpuErrors?: () => string[];
     getCanvasColorState?: () => import('./webgpuBootProbe').CanvasColorState | null;
     getInputEcho?: () => NonNullable<RendererDiagnostics['webgpu']>['input'];
+    getCompositorStats?: () => NonNullable<NonNullable<RendererDiagnostics['webgpu']>['compositor']>;
+    getShaderPrecisionInfo?: () => NonNullable<NonNullable<RendererDiagnostics['webgpu']>['shaderPrecision']>;
+    getDirectPresentStatus?: () => NonNullable<NonNullable<RendererDiagnostics['webgpu']>['directPresent']>;
     renderThread?: 'main' | 'worker';
     inputChannel?: 'sab' | 'postMessage';
   } | null;
@@ -60,6 +63,9 @@ export function buildRendererDiagnostics(
         ...(active.getCanvasColorState ? { canvas: active.getCanvasColorState() } : {}),
         ...(active.getGpuErrors ? { gpuErrors: active.getGpuErrors() } : {}),
         ...(active.getInputEcho ? { input: active.getInputEcho() } : {}),
+        ...(active.getCompositorStats ? { compositor: active.getCompositorStats() } : {}),
+        ...(active.getShaderPrecisionInfo ? { shaderPrecision: active.getShaderPrecisionInfo() } : {}),
+        ...(active.getDirectPresentStatus ? { directPresent: active.getDirectPresentStatus() } : {}),
       },
       ...(lastFailedWasmRenderer ? { wasm: lastFailedWasmRenderer.getDiagnostics() } : {}),
     };
