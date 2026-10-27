@@ -12,7 +12,7 @@
     "translucent",
     "alpha-layered"
   ],
-  "description": "Iterated Function System fractal flame with probabilistic affine transforms, non-linear variations, and flame palette rendering. Features organic fbm drift, temporal accumulation trails, HDR bloom, chromatic aberration, audio-reactive morphing, and advanced alpha compositing via Beer-Lambert transmittance, luminance keying, and depth-layered fade.",
+  "description": "Iterated Function System fractal flame with four affine maps, stochastic non-linear variations, and flame palette rendering. Features organic fbm drift, temporal accumulation trails, HDR bloom, chromatic aberration, audio-reactive morphing, and advanced alpha compositing via Beer-Lambert transmittance, luminance keying, and depth-layered fade. Orbit-trap filaments illuminate return paths near the affine axes, while density-weighted transform-residence color reveals the contributing branches.",
   "workgroup_size": [
     16,
     16,

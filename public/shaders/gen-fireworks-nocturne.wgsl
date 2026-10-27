@@ -4,8 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-10
-//  Ideas: muzzle flash at launchPos; even/odd round-burst vs droop habits; aerial perspective per shell; color-changing stars
+//  Upgraded: 2026-10-27
+//  Ideas: cooling ballistic wakes; delayed ember scintillation
+//  Retained: muzzle flash; round/droop habits; aerial perspective; color-changing stars
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -98,6 +99,14 @@ fn sparkPos(origin: vec2<f32>, vel: vec2<f32>, age: f32, g: f32, drag: f32) -> v
   return origin + vec2<f32>(vx, vy) * t;
 }
 
+fn coolingWake(uv: vec2<f32>, tail: vec2<f32>, head: vec2<f32>, width: f32, color: vec3<f32>) -> vec3<f32> {
+  let axis = head - tail;
+  let along = clamp(dot(uv - tail, axis) / max(dot(axis, axis), 0.000001), 0.0, 1.0);
+  let d = uv - mix(tail, head, along);
+  let coverage = exp(-dot(d, d) / max(width * width, 0.000001));
+  return mix(color * vec3<f32>(0.8, 0.4, 0.18), color, along) * coverage * (0.25 + 0.75 * along);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -140,7 +149,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ── Firework shells (8 primary + some variation) ──
   let numShells = 9;
-  let basePeriod = 1.85 / tempo;  // seconds between new shells on average
+  let basePeriod = 1.85;
 
   for (var s: i32 = 0; s < numShells; s = s + 1) {
     let si = f32(s);
@@ -148,11 +157,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed2 = hash1(si * 29.7 + 7.0);
 
     // Staggered launch timing
-    let launchOffset = seed * basePeriod * 0.9;
-    let cycle = basePeriod * (0.85 + seed2 * 0.35);
-    let shellTime = time * tempo + launchOffset;
-    let shellBirth = floor(shellTime / cycle) * cycle - launchOffset;
-    let age = time - shellBirth;
+    let cycle = 7.5 + basePeriod * (0.85 + seed2 * 0.35);
+    let age = fract(time * tempo / cycle + seed) * cycle;
 
     if (age < 0.0 || age > 7.5) { continue; }
 
@@ -238,6 +244,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let sparkCol = mix(fireworkColor(hue, temp + changeFlash), farHaze, aerialDepth * 0.35);
 
         col += sparkCol * glow * (0.85 + treble * 0.6);
+        let tail = sparkPos(burstCenter, vel, max(0.0, burstAge - 0.12), grav, drag);
+        col += coolingWake(uv, tail, sp, size * 0.5, sparkCol)
+          * lifeFade * shellEnergy * farDim * 0.55 * smoothstep(0.0, 0.12, burstAge);
       }
 
       // Secondary crackle / micro bursts (treble driven)
@@ -245,8 +254,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let crackles = i32(6.0 + treble * 14.0);
       for (var c = 0; c < crackles; c = c + 1) {
         let cf = f32(c);
-        let cSeed = hash1(si * 44.0 + cf * 19.0 + time * 3.0);
-        let cAngle = cSeed * TAU + time * (2.0 + cSeed);
+        let cSeed = hash1(si * 44.0 + cf * 19.0);
+        let cAngle = cSeed * TAU;
         let cSpeed = 0.35 + cSeed * 0.4;
         let cVel = vec2<f32>(cos(cAngle), sin(cAngle)) * cSpeed;
         let cPos = sparkPos(burstCenter, cVel, burstAge * 0.6, 0.9, 0.35);
@@ -277,6 +286,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let emberCol = mix(mix(vec3<f32>(1.0, 0.55, 0.15), vec3<f32>(0.9, 0.3, 0.1), eAge * 0.12), farHaze, aerialDepth * 0.35);
         col += emberCol * eg;
+        let ignition = 0.9 + eSeed * 1.4;
+        let scintillation = pow(0.5 + 0.5 * sin(eAge * (9.0 + eSeed * 6.0) + ef), 8.0)
+          * smoothstep(ignition, ignition + 0.2, eAge);
+        col += mix(emberCol, vec3<f32>(1.0, 0.9, 0.6), 0.65) * eg * scintillation * (0.8 + treble * 0.4);
       }
     }
   }
@@ -314,6 +327,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mh = fract(msSeed * 1.6 + colorDrift + time * 0.03);
         let mc = fireworkColor(mh, 0.6 - mBurstAge * 0.1);
         col += mc * mg * (1.0 + treble * 0.5);
+        let mTail = sparkPos(mCenter, mVel, max(0.0, mBurstAge - 0.12), 1.05, 0.22);
+        col += coolingWake(uv, mTail, mPos, mSz * 0.5, mc) * mFade * mEnergy * 0.55
+          * smoothstep(0.0, 0.12, mBurstAge);
       }
     }
   }

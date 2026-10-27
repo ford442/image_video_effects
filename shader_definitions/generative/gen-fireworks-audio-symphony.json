@@ -14,7 +14,7 @@
     "4th-of-july",
     "july-4"
   ],
-  "description": "A fireworks display conducted by the music. A smoothed bass envelope triggers bigger, faster launches on transients; mids layer in secondary shells; treble crackles a cloud of micro-sparks. Mouse click or hold launches a personal synced shell at the cursor.",
+  "description": "A fireworks display conducted by the music. A smoothed bass envelope boosts shell energy on transients, with energy and spectral color latched at burst; mids layer in secondary shells; treble crackles a cloud of micro-sparks. Alternating warm and cool secondary voices answer across the burst, while treble glints form short staccato chains. Mouse click or hold launches a personal synced shell at the cursor. Stable staggered launch clocks let each shell finish its burn.",
   "workgroup_size": [
     16,
     16,

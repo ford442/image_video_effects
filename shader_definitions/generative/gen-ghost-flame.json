@@ -9,7 +9,7 @@
     "blackbody",
     "ethereal"
   ],
-  "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air. An inner blue cone hugs the wick, and soot streaks the aged, spent gas.",
+  "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air. An inner blue cone hugs the wick, and soot streaks the aged, spent gas. Blue reaction lace follows fuel fronts, and temperature-driven shear rolls the advected gas into curling tongues.",
   "workgroup_size": [
     16,
     16,

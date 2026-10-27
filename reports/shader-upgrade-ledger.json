@@ -4207,7 +4207,7 @@
       ]
     },
     "gen-fireworks-audio-symphony": {
-      "hash": "dd35c25c8a81a072",
+      "hash": "5fd443f7ca721b05",
       "history": [
         {
           "event": "upgraded",
@@ -4216,11 +4216,19 @@
           "prev_hash": "f26e7eb05680aa91",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "5fd443f7ca721b05",
+          "prev_hash": "dd35c25c8a81a072",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
     "gen-fireworks-chrysanthemum": {
-      "hash": "07110fc711d42b0b",
+      "hash": "6f59c8369c5f1e4c",
       "history": [
         {
           "event": "upgraded",
@@ -4229,6 +4237,14 @@
           "prev_hash": "34e863d02cb7677a",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "6f59c8369c5f1e4c",
+          "prev_hash": "07110fc711d42b0b",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
@@ -4246,7 +4262,7 @@
       ]
     },
     "gen-fireworks-crackle-palm": {
-      "hash": "5a4e8a57ffe10b98",
+      "hash": "774dccf4eed5296e",
       "history": [
         {
           "event": "upgraded",
@@ -4255,6 +4271,14 @@
           "prev_hash": "c90d7d8b7e2c7479",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "774dccf4eed5296e",
+          "prev_hash": "5a4e8a57ffe10b98",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
@@ -4293,7 +4317,7 @@
       ]
     },
     "gen-fireworks-fan-shell": {
-      "hash": "ab3c13369f14d193",
+      "hash": "a8ad5c6a45136be6",
       "history": [
         {
           "event": "upgraded",
@@ -4302,6 +4326,14 @@
           "prev_hash": "faa1f04d1d8afcac",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "a8ad5c6a45136be6",
+          "prev_hash": "ab3c13369f14d193",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
@@ -4332,7 +4364,7 @@
       ]
     },
     "gen-fireworks-nocturne": {
-      "hash": "13c245e74c6ef3ef",
+      "hash": "9c206a391552a786",
       "history": [
         {
           "event": "upgraded",
@@ -4341,6 +4373,14 @@
           "prev_hash": "ff746aef82a7860b",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "9c206a391552a786",
+          "prev_hash": "13c245e74c6ef3ef",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
@@ -4379,7 +4419,7 @@
       ]
     },
     "gen-fireworks-smoke-bloom": {
-      "hash": "6f336b9d5b2e8375",
+      "hash": "0f9a862dd1ea6789",
       "history": [
         {
           "event": "upgraded",
@@ -4388,6 +4428,14 @@
           "prev_hash": "2d57b805f8f3eed1",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "0f9a862dd1ea6789",
+          "prev_hash": "6f336b9d5b2e8375",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
@@ -4405,7 +4453,7 @@
       ]
     },
     "gen-fireworks-willow-cascade": {
-      "hash": "0fbdcbfb45d3ad00",
+      "hash": "b5633c612829b95e",
       "history": [
         {
           "event": "upgraded",
@@ -4414,11 +4462,19 @@
           "prev_hash": "8ebd9f134078b275",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "b5633c612829b95e",
+          "prev_hash": "0fbdcbfb45d3ad00",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
     "gen-fireworks-wind-ripple": {
-      "hash": "de336876fa47798c",
+      "hash": "5586376de48c36c1",
       "history": [
         {
           "event": "upgraded",
@@ -4427,6 +4483,14 @@
           "prev_hash": "86d486408380ea0e",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "5586376de48c36c1",
+          "prev_hash": "de336876fa47798c",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
@@ -4603,7 +4667,7 @@
       ]
     },
     "gen-ghost-flame": {
-      "hash": "72e69547198a267c",
+      "hash": "196889930ad130ed",
       "history": [
         {
           "event": "upgraded",
@@ -4612,6 +4676,14 @@
           "prev_hash": "6aaaa38000c73713",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "196889930ad130ed",
+          "prev_hash": "72e69547198a267c",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
         }
       ]
     },
@@ -5074,8 +5146,17 @@
       ]
     },
     "gen-ifs-fractal-flame": {
-      "hash": "3879a9202c41d646",
-      "history": []
+      "hash": "9be936bcfc8c11a3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T14:03:07.323Z",
+          "hash": "9be936bcfc8c11a3",
+          "prev_hash": "3879a9202c41d646",
+          "commit": "03d1b25",
+          "note": "2026-10-27 fireworks/flames second pass (GPT-6 Astra): two native visual additions per shader; identities and A packing retained, saved params unchanged. Ideas/Retained/A packing documented in shader headers; regression matrix in tests/fireworks-flames.swiftshader.spec.ts. Hardware visual review and thumbnail refresh remain external."
+        }
+      ]
     },
     "gen-image-pixel-detonation": {
       "hash": "6c9eb2578ae4e25f",

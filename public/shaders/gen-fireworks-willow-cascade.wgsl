@@ -4,8 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-10
-//  Ideas: terminal hang at strand tips; leeward lean of the whole curtain; lingering gold willow trunk; tip drips that detach and fall
+//  Upgraded: 2026-10-27
+//  Ideas: braided willow filaments; traveling charcoal burnout
+//  Retained: terminal hang; leeward curtain lean; gold trunk; detached tip drips
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -67,6 +68,16 @@ fn willowColor(warmth: f32, silver: f32, age: f32) -> vec3<f32> {
   return col;
 }
 
+fn willowBraid(age: f32, seed: f32, wind: f32) -> vec2<f32> {
+  let side = vec2<f32>(1.0, wind) / max(length(vec2<f32>(1.0, wind)), 0.001);
+  return side * sin(age * 11.0 + seed * TAU) * 0.009 * smoothstep(0.0, 0.45, age);
+}
+
+fn charcoalBurn(age: f32, seed: f32, trailTime: f32) -> f32 {
+  let pockets = pow(0.5 + 0.5 * sin(age * 5.0 - trailTime * 16.0 + seed * TAU), 4.0);
+  return 1.0 - pockets * smoothstep(0.4, 2.0, age) * 0.7;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -107,9 +118,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed = hash1(si * 23.1 + 5.0);
     let seed2 = hash1(si * 41.7 + 3.0);
 
-    let cycle = basePeriod * (0.9 + seed * 0.4);
-    let birth = floor((time * (0.55 + mids * 0.15) + seed * 2.1) / cycle) * cycle - seed * 2.1;
-    let age = time - birth;
+    let cycle = 9.0 + basePeriod * (0.9 + seed * 0.4);
+    let age = fract(time * 0.55 / cycle + seed) * cycle;
     if (age < 0.0 || age > 9.0) { continue; }
 
     let baseX = (seed - 0.5) * 1.6;
@@ -142,7 +152,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       // Idea 3 — willow trunk: the ascent path lingers as a gold trunk under the crown.
       let trunkT = clamp((uv.y - baseY) / max(burstCenter.y - baseY, 0.01), 0.0, 1.0);
       let trunkX = baseX + burstLean.x * trunkT;
-      let trunkGrain = 0.6 + 0.4 * hash2(vec2<f32>(floor(uv.y * 260.0), floor(time * 14.0) + si));
+      let trunkGrain = 0.6 + 0.4 * vnoise(vec2<f32>(uv.y * 260.0, time * 2.0 + si));
       let willowTrunk = exp(-abs(uv.x - trunkX) * 220.0) * smoothstep(0.0, 0.15, trunkT) * smoothstep(1.0, 0.85, trunkT)
         * exp(-burstAge * 0.75) * trunkGrain * shellEnergy * 0.45;
       col += willowColor(warmth, 0.0, burstAge + 2.0) * willowTrunk;
@@ -172,9 +182,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let tPos = willowPos(burstCenter, vel, trailAge, droopAmt * (0.8 + bass * 0.3), windAmt);
           let tFade = burstFade * (1.0 - tf * 0.7) * (0.5 + jSeed * 0.5);
           let tSize = 0.005 + jSeed2 * 0.004;
-          let tg = softGlow(uv, tPos, tSize, tFade * shellEnergy * 1.4);
-          let tc = willowColor(warmth, jSeed * treble, burstAge + tf);
-          col += tc * tg;
+          let burn = charcoalBurn(burstAge, jSeed, tf);
+          let tc = mix(vec3<f32>(0.6, 0.16, 0.025), willowColor(warmth, jSeed * treble, burstAge + tf), burn);
+          let braid = willowBraid(trailAge, jSeed, windAmt) * (1.0 + mids * 0.2);
+          let tg = softGlow(uv, tPos, tSize, tFade * shellEnergy * 1.1 * burn);
+          let splitGlow = softGlow(uv, tPos + braid, tSize * 0.55, tFade * shellEnergy * 0.35 * burn)
+            + softGlow(uv, tPos - braid, tSize * 0.55, tFade * shellEnergy * 0.35 * burn);
+          col += tc * (tg + splitGlow);
         }
         col += willowColor(warmth, jSeed * treble, burstAge) * streak * shellEnergy;
 
@@ -220,8 +234,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ang = (mf / f32(mStrands)) * TAU;
         let mVel = vec2<f32>(cos(ang) * 0.4, 0.5 + ms * 0.4) * mEnergy;
         let mPos = willowPos(mCenter, mVel, mbAge, droopAmt * 1.1, windAmt * 1.5);
-        let mg = softGlow(uv, mPos, 0.006, mFade * mEnergy);
-        col += willowColor(warmth, ms, mbAge) * mg;
+        let burn = charcoalBurn(mbAge, ms, 0.0);
+        let braid = willowBraid(mbAge, ms, windAmt);
+        let mg = softGlow(uv, mPos, 0.006, mFade * mEnergy * burn);
+        let splitGlow = softGlow(uv, mPos + braid, 0.003, mFade * mEnergy * burn * 0.35)
+          + softGlow(uv, mPos - braid, 0.003, mFade * mEnergy * burn * 0.35);
+        col += mix(vec3<f32>(0.6, 0.16, 0.025), willowColor(warmth, ms, mbAge), burn) * (mg + splitGlow);
       }
     }
   }
@@ -240,7 +258,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col *= clamp(vig, 0.18, 1.0) * (0.75 + depth * 0.5);
 
   col = acesToneMap(col * 1.08);
-  let alpha = clamp(length(col) * 1.1 + 0.12, 0.15, 0.96);
+  let luminance = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let alpha = 0.15 + 0.81 * (1.0 - exp(-luminance * 2.5));
   let genDepth = clamp(1.0 - length(col) * 0.2, 0.05, 0.98);
 
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));

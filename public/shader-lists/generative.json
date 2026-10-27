@@ -11277,7 +11277,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "A fireworks display conducted by the music. A smoothed bass envelope triggers bigger, faster launches on transients; mids layer in secondary shells; treble crackles a cloud of micro-sparks. Mouse click or hold launches a personal synced shell at the cursor.",
+    "description": "A fireworks display conducted by the music. A smoothed bass envelope boosts shell energy on transients, with energy and spectral color latched at burst; mids layer in secondary shells; treble crackles a cloud of micro-sparks. Alternating warm and cool secondary voices answer across the burst, while treble glints form short staccato chains. Mouse click or hold launches a personal synced shell at the cursor. Stable staggered launch clocks let each shell finish its burn.",
     "workgroup_size": [
       16,
       16,
@@ -11356,7 +11356,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Fast ballistic petals, radial speed-line streaks, and advected HDR trails. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor. Outer rays grow petal barbs and change color partway through the burn.",
+    "description": "Dense spherical chrysanthemum and peony shells with hundreds of sparks arranged in concentric rings. Fast ballistic petals, radial speed-line streaks, and advected HDR trails. Bass expands burst radius, mids add secondary ring shells, treble crackles the outer petals. Mouse detonates a massive peony at the cursor. Outer rays grow petal barbs and change color partway through the burn. Circumferential burn waves illuminate each latitude, and paired cooling florets split from the outer petal tips.",
     "workgroup_size": [
       16,
       16,
@@ -11508,7 +11508,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives thousands of micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor. Fronds carry a continuous rachis and a hot pistil at each tip.",
+    "description": "Multi-stage pyrotechnic shells that bloom in two acts. A primary burst erupts first, then delayed secondary crackle and palm fronds spawn from sub-points along the fading sparks. Treble drives micro-crackle pops; mids trigger the second-stage palm arms. Bass deepens the initial detonation. Mouse launches a triple-stage command shell at the cursor. Fronds carry a continuous rachis and a hot pistil at each tip. Crackle grains split into cooling daughter sparks, and the palm crown unfurls from its center toward the tips.",
     "workgroup_size": [
       16,
       16,
@@ -11738,7 +11738,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Wide fan shells that burst into a sweeping hemisphere of colored sparks, like a peacock tail opening in the sky. Sparks spread in a broad arc with strong horizontal bias before falling. Mids widen the fan angle, bass deepens the colors. Mouse opens a personal fan at the cursor. Rays now ignite edge to edge as the fan unfolds, framed by two heavy gold guard-stick ribs.",
+    "description": "Wide fan shells that burst into a sweeping hemisphere of colored sparks, like a peacock tail opening in the sky. Sparks spread in a broad arc with strong horizontal bias before falling. Mids widen the fan angle, bass deepens the colors. Mouse opens a personal fan at the cursor. Rays ignite edge to edge as the fan unfolds, framed by two heavy gold guard-stick ribs. A sector-by-sector color handoff travels across the fan as a fine silver fringe sheds from its tips.",
     "workgroup_size": [
       16,
       16,
@@ -11976,7 +11976,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "A living fireworks display over a dark velvet night. Multiple mortar shells launch, burst in jewel and gold colors with realistic gravity arcs and lingering ember trails. Bass detonates bigger shells and richer bursts, treble crackles extra sparks. Mouse click or hold launches a personal command shell at the cursor. Temporal glow and soft smoke persist between explosions for cinematic long-exposure feel. Each shell has its own distance, so far bursts open smaller and hazier, and stars switch to a second jewel colour mid-flight.",
+    "description": "A living fireworks display over a dark velvet night. Multiple mortar shells launch, burst in jewel and gold colors with realistic gravity arcs and lingering ember trails. Bass detonates bigger shells and richer bursts, treble crackles extra sparks. Mouse click or hold launches a personal command shell at the cursor. Temporal glow and soft smoke persist between explosions for cinematic long-exposure feel. Each shell has its own distance, so far bursts open smaller and hazier, and stars switch to a second jewel colour mid-flight. Cooling wakes follow each spark's ballistic path, while delayed scintillation relights the falling embers.",
     "workgroup_size": [
       16,
       16,
@@ -12208,7 +12208,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Soft volumetric smoke gathers around bursts and along falling sparks, while a feedback light bloom adds luminous halos to the brightest areas. Bass swells the smoky glow, mids add secondary burst layers, and treble scatters micro-sparks. Mouse launches a smoky peony at the cursor. Rising puffs hollow into vortex smoke rings, and sparks seen through the smoke dim and redden.",
+    "description": "Soft volumetric smoke gathers around bursts and along falling sparks, while a feedback light bloom adds luminous halos to the brightest areas. Bass swells the smoky glow, mids add secondary burst layers, and treble scatters micro-sparks. Mouse launches a smoky peony at the cursor. Rising puffs hollow into vortex smoke rings, and sparks seen through the smoke dim and redden. Coherent entrainment billows scallop the smoke, with a shell-colored silver lining on the puff surface facing the flash.",
     "workgroup_size": [
       16,
       16,
@@ -12358,7 +12358,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Classic willow-style fireworks with long, drooping golden and silver trails. Velocity-stretched droop streaks, wind-advected embers, and advected HDR trails. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor. The ascent lingers as a gold willow trunk, and beads drip from the strand tips.",
+    "description": "Classic willow-style fireworks with long, drooping golden and silver trails. Velocity-stretched droop streaks, wind-advected embers, and advected HDR trails. Bass deepens the droop, treble adds silver micro-sparkle along the trails. Mouse launches a personal willow shell at the cursor. The ascent lingers as a gold willow trunk, and beads drip from the strand tips. Paired filaments braid around the falling arcs as traveling charcoal-burnout pockets leave amber gaps between bright beads.",
     "workgroup_size": [
       16,
       16,
@@ -12435,7 +12435,7 @@
       "4th-of-july",
       "july-4"
     ],
-    "description": "Sparks drift on a fast time-varying wind while ripple events ignite shock-front barrages. Comet-tail speed lines, wind conveyors, and advected HDR trails. Bass deepens the shells, mids add secondary gusts, treble scatters silver micro-sparkle. Mouse launches a personal wind-swept shell at the cursor. Travelling gust bands push passing sparks harder, and ripple shock fronts refract the sky behind them.",
+    "description": "Sparks drift on a fast time-varying wind while ripple events ignite shock-front barrages. Comet-tail speed lines, wind conveyors, and advected HDR trails. Bass deepens the shells, mids add secondary gusts, treble scatters silver micro-sparkle. Mouse launches a personal wind-swept shell at the cursor. Travelling gust bands push passing sparks harder, and ripple shock fronts refract the sky behind them. Crosswind eddies roll the spark wakes, and each click launches a silver compression front followed by a warmer rarefaction rim.",
     "workgroup_size": [
       16,
       16,
@@ -13432,7 +13432,7 @@
       "blackbody",
       "ethereal"
     ],
-    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air. An inner blue cone hugs the wick, and soot streaks the aged, spent gas.",
+    "description": "Fluid advection flame simulation with temperature-based alpha translucency. Hot regions are bright and slightly translucent, cool regions fade to transparent. Simplex noise advection with upward velocity and vorticity confinement creates ethereal ghost-fire, with a wick column, blue ignition chemiluminescence, buoyant puffing pinch-off that sheds flame packets, and schlieren heat-haze fringes in the surrounding air. An inner blue cone hugs the wick, and soot streaks the aged, spent gas. Blue reaction lace follows fuel fronts, and temperature-driven shear rolls the advected gas into curling tongues.",
     "workgroup_size": [
       16,
       16,
@@ -16009,7 +16009,7 @@
       "translucent",
       "alpha-layered"
     ],
-    "description": "Iterated Function System fractal flame with probabilistic affine transforms, non-linear variations, and flame palette rendering. Features organic fbm drift, temporal accumulation trails, HDR bloom, chromatic aberration, audio-reactive morphing, and advanced alpha compositing via Beer-Lambert transmittance, luminance keying, and depth-layered fade.",
+    "description": "Iterated Function System fractal flame with four affine maps, stochastic non-linear variations, and flame palette rendering. Features organic fbm drift, temporal accumulation trails, HDR bloom, chromatic aberration, audio-reactive morphing, and advanced alpha compositing via Beer-Lambert transmittance, luminance keying, and depth-layered fade. Orbit-trap filaments illuminate return paths near the affine axes, while density-weighted transform-residence color reveals the contributing branches.",
     "workgroup_size": [
       16,
       16,

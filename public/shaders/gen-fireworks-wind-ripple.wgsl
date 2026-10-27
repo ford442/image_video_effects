@@ -4,8 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-10
-//  Ideas: altitude shear (higher sparks drift more); leeward streak downwind of each spark; travelling gust bands; ripple shock refraction
+//  Upgraded: 2026-10-27
+//  Ideas: crosswind eddy roll; compression/rarefaction shock doublet
+//  Retained: altitude shear; leeward streaks; gust bands; ripple shock refraction
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -47,7 +48,10 @@ fn sparkPosWind(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32, drag: f32, wind: v
   let t = age;
   let df = exp(-drag * t);
   let windPush = wind * t * (1.0 - exp(-t * 0.4));
-  return o + vec2<f32>(v.x * df + windPush.x, v.y * df - g * t * t * 0.5 + windPush.y * 0.5);
+  let crosswind = vec2<f32>(-wind.y, wind.x);
+  let phase = dot(v, vec2<f32>(7.1, 13.7));
+  let eddy = crosswind * sin(t * 3.8 + phase) * (1.0 - exp(-t * 1.6)) * 0.12;
+  return o + vec2<f32>(v.x * df + windPush.x, v.y * df - g * t * t * 0.5 + windPush.y * 0.5) + eddy;
 }
 
 fn altitudeShear(y: f32) -> f32 {
@@ -76,7 +80,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let mouseNorm = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
-  let mouseUV = (mouseNorm - 0.5) * vec2<f32>(res.x / min(res.x, res.y), 1.0);
+  let mouseUV = (mouseNorm - 0.5) * res / min(res.x, res.y);
 
   let energy = mix(0.45, 1.45, u.zoom_params.x);
   let windAmt = mix(0.03, 0.42, u.zoom_params.x);
@@ -98,12 +102,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var r: i32 = 0; r < i32(shockCount); r = r + 1) {
     let ripple = u.ripples[r];
     let rAge = time - ripple.z;
-    if (rAge < 0.0 || rAge > 1.4 || ripple.w < (1.0 - rippleSens) * 0.6) { continue; }
-    let rCenter = (ripple.xy - vec2<f32>(0.5)) * vec2<f32>(res.x / min(res.x, res.y), 1.0);
+    if (rAge < 0.0 || rAge > 1.4) { continue; }
+    let rCenter = (ripple.xy - vec2<f32>(0.5)) * res / min(res.x, res.y);
     let d = uvRaw - rCenter;
     let front = length(d) - rAge * (0.7 + energy * 0.15);
-    let lens = front * exp(-front * front * 700.0) * smoothstep(1.4, 0.1, rAge) * ripple.w;
-    shockRefract -= normalize(d + vec2<f32>(0.0001)) * lens * 0.9;
+    let rear = front + 0.035 * smoothstep(0.0, 0.2, rAge);
+    let lens = (front * exp(-front * front * 700.0) - rear * exp(-rear * rear * 1100.0) * 0.45)
+      * smoothstep(1.4, 0.1, rAge) * rippleSens;
+    shockRefract -= d / max(length(d), 0.0001) * lens * 0.9;
   }
   let uv = uvRaw + shockRefract;
 
@@ -121,9 +127,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed = hash1(si * 23.0 + 4.0);
     let seed2 = hash1(si * 41.0 + 9.0);
 
-    let cycle = 2.1 * (0.8 + seed * 0.5) / (1.0 + bass * 0.25);
-    let birth = floor((time + seed * 2.3) / cycle) * cycle - seed * 2.3;
-    let age = time - birth;
+    let cycle = 7.5 + 2.1 * (0.8 + seed * 0.5);
+    let age = fract(time / cycle + seed) * cycle;
     if (age < 0.0 || age > 7.5) { continue; }
 
     let baseX = (seed - 0.5) * 1.7 + wind.x * age * 0.25;
@@ -197,13 +202,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var r: i32 = 0; r < i32(rippleCount); r = r + 1) {
     let ripple = u.ripples[r];
     let rAge = time - ripple.z;
-    let strength = ripple.w;
-    if (rAge < 0.0 || rAge > 1.4 || strength < (1.0 - rippleSens) * 0.6) { continue; }
+    let strength = rippleSens;
+    if (rAge < 0.0 || rAge > 1.4) { continue; }
 
-    let rCenter = (ripple.xy - vec2<f32>(0.5)) * vec2<f32>(res.x / min(res.x, res.y), 1.0);
+    let rCenter = (ripple.xy - vec2<f32>(0.5)) * res / min(res.x, res.y);
     let rFade = smoothstep(1.4, 0.1, rAge);
     let shockRing = exp(-abs(length(uv - rCenter) - rAge * (0.7 + energy * 0.15)) * 55.0) * rFade;
     col += vec3<f32>(0.9, 0.95, 1.0) * shockRing * strength * 0.35;
+    let rearRadius = max(0.0, rAge * (0.7 + energy * 0.15) - 0.035 * smoothstep(0.0, 0.2, rAge));
+    let rarefaction = exp(-abs(length(uv - rCenter) - rearRadius) * 95.0) * rFade;
+    col += shellColor(colorDrift, 0.25) * rarefaction * strength * 0.22 * smoothstep(0.0, 0.12, rAge);
 
     let rSparks = i32(18.0 + strength * 34.0 + mids * 12.0);
 

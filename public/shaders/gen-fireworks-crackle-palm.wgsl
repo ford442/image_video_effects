@@ -4,8 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-11
-//  Ideas: crackle born on primary spark positions; opposite leaflet pairs on fronds; rachis filament; frond-tip pistil
+//  Upgraded: 2026-10-27
+//  Ideas: branching crackle grains; age-driven crown unfurl
+//  Retained: primary-host crackle; opposite leaflets; rachis filament; tip pistil
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -81,6 +82,14 @@ fn addCrackle(
     let flash = exp(-popAge * 18.0) * (0.5 + treble * 0.8);
     let micro = softGlow(uv, popPos, 0.003 + cs * 0.003, flash * popFade * intensity);
     *col += vec3<f32>(0.95, 0.97, 1.0) * micro * (1.2 + treble);
+    for (var branch = 0; branch < 3; branch = branch + 1) {
+      let branchAngle = ang + f32(branch) * TAU / 3.0;
+      let split = vec2<f32>(cos(branchAngle), sin(branchAngle)) * popAge * (0.09 + cs2 * 0.08);
+      let grainPos = popPos + split - vec2<f32>(0.0, popAge * popAge * 0.2);
+      let grainColor = mix(vec3<f32>(0.95, 0.97, 1.0), vec3<f32>(1.0, 0.42, 0.08), clamp(popAge * 3.0, 0.0, 1.0));
+      *col += grainColor * softGlow(uv, grainPos, 0.0025, flash * popFade * intensity * 0.55)
+        * smoothstep(0.0, 0.035, popAge);
+    }
   }
 }
 
@@ -99,15 +108,17 @@ fn addPalmFrond(
   let dir = vec2<f32>(cos(armAngle), sin(armAngle) * 0.3 - 0.7);
   let side = vec2<f32>(-dir.y, dir.x) * spread * 0.15;
   var prevPos = origin;
+  let opening = smoothstep(0.0, 0.85, localAge);
 
   for (var f = 0; f < frondLen; f = f + 1) {
     let ff = f32(f) / f32(frondLen);
-    let along = dir * ff * (0.35 + spread * 0.4);
-    let droop = vec2<f32>(0.0, -ff * ff * (0.25 + spread * 0.35));
+    let along = dir * ff * (0.35 + spread * 0.4) * opening;
+    let droop = vec2<f32>(0.0, -ff * ff * (0.25 + spread * 0.35)) * opening * opening;
     let sway = side * sin(ff * PI + localAge * 2.0) * 0.08;
     let pos = origin + along + droop + sway;
 
-    let fade = smoothstep(3.5, 0.2, localAge) * (1.0 - ff * 0.5);
+    let growthFront = smoothstep(ff * 0.65, ff * 0.65 + 0.12, localAge);
+    let fade = smoothstep(3.5, 0.2, localAge) * (1.0 - ff * 0.5) * growthFront;
     let g = softGlow(uv, pos, 0.005 + ff * 0.003, fade * energy);
     *col += shellColor(hue + ff * 0.15, 1.0 - ff) * g;
     // Rachis filament — continuous midrib between frond samples.
@@ -118,13 +129,13 @@ fn addPalmFrond(
     *col += shellColor(hue + ff * 0.08, 0.7) * exp(-ribDist * ribDist / 0.000012) * fade * energy * 0.85;
     prevPos = pos;
     // Opposite leaflet pairs on each rachis sample.
-    let leaf = side * (0.55 + ff * 0.8);
+    let leaf = side * (0.55 + ff * 0.8) * opening;
     let leafFade = fade * energy * 0.7 * (1.0 - ff * 0.35);
     *col += shellColor(hue + ff * 0.15, 0.35) * softGlow(uv, pos + leaf, 0.0035 + ff * 0.002, leafFade);
     *col += shellColor(hue + ff * 0.15, 0.35) * softGlow(uv, pos - leaf, 0.0035 + ff * 0.002, leafFade);
   }
   // Frond-tip pistil — hotter spark at the end of the rachis.
-  let tipFade = smoothstep(3.5, 0.4, localAge);
+  let tipFade = smoothstep(3.5, 0.4, localAge) * smoothstep(0.5, 0.85, localAge);
   *col += vec3<f32>(1.0, 0.96, 0.82) * softGlow(uv, prevPos, 0.009, tipFade * energy * 1.6);
   *col += shellColor(hue + 0.2, 1.0) * softGlow(uv, prevPos + vec2<f32>(0.0, -0.012), 0.004, tipFade * energy);
 }
@@ -163,9 +174,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed = hash1(si * 29.0 + 3.0);
     let seed2 = hash1(si * 47.0 + 9.0);
 
-    let cycle = 2.2 * (0.85 + seed * 0.4);
-    let birth = floor((time * (0.7 + bass * 0.15) + seed * 1.6) / cycle) * cycle - seed * 1.6;
-    let age = time - birth;
+    let cycle = 7.5 + 2.2 * (0.85 + seed * 0.4);
+    let age = fract(time * 0.7 / cycle + seed) * cycle;
     if (age < 0.0 || age > 7.5) { continue; }
 
     let baseX = (seed - 0.5) * 1.65;
@@ -210,7 +220,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let hosts = i32(5.0 + mids * 4.0);
         for (var sp = 0; sp < hosts; sp = sp + 1) {
           let spf = f32(sp);
-          let jf = spf * f32(nPrimary) / max(f32(hosts), 1.0);
+          let jf = floor(spf * f32(nPrimary) / max(f32(hosts), 1.0));
           let js = hash1(si * 71.0 + jf * 4.1);
           let js2 = hash1(si * 17.0 + jf * 6.3);
           let ang = (jf / max(f32(nPrimary), 1.0)) * TAU + (js - 0.5) * 0.6;

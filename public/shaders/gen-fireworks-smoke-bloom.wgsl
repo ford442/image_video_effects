@@ -4,8 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-10
-//  Ideas: buoyancy (smoke rises as sparks fall); burst-lit smoke from local flash; vortex-ring smoke cap; smoke extinction of sparks behind the puff
+//  Upgraded: 2026-10-27
+//  Ideas: entrainment billows; flash-facing smoke silver lining
+//  Retained: buoyancy; burst-lit smoke; vortex-ring cap; smoke extinction
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -61,9 +62,18 @@ fn shellColor(hue: f32, hot: f32) -> vec3<f32> {
 
 fn smokePuff(uv: vec2<f32>, center: vec2<f32>, age: f32, density: f32, time: f32) -> f32 {
   let q = (uv - center) * 6.0;
-  let n = fbm(q + vec2<f32>(time * 0.015, age * 0.08), 3);
+  let roll = vec2<f32>(sin(q.y * 2.3 - age * 0.9), cos(q.x * 2.1 + age * 0.7));
+  let entrainment = vnoise(q * 1.7 + roll * 0.4 + vec2<f32>(0.0, -age * 0.3));
+  let n = fbm(q + roll * smoothstep(0.0, 1.2, age) * 0.24 + vec2<f32>(time * 0.015, age * 0.08), 3)
+    * (0.7 + entrainment * 0.6);
   let d = length(uv - center);
   return n * exp(-d * d * 1.8) * density;
+}
+
+fn smokeLining(uv: vec2<f32>, center: vec2<f32>, age: f32, density: f32, time: f32, body: f32) -> f32 {
+  let towardFlash = vec2<f32>(0.0, -0.035);
+  let neighbor = smokePuff(uv + towardFlash, center, age, density, time);
+  return max(body - neighbor, 0.0) * 5.0 * exp(-body * 1.5);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -102,9 +112,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed = hash1(si * 29.0 + 3.0);
     let seed2 = hash1(si * 47.0 + 9.0);
 
-    let cycle = 2.3 * (0.8 + seed * 0.5) / (1.0 + bass * 0.2);
-    let birth = floor((time + seed * 2.1) / cycle) * cycle - seed * 2.1;
-    let age = time - birth;
+    let cycle = 7.5 + 2.3 * (0.8 + seed * 0.5);
+    let age = fract(time / cycle + seed) * cycle;
     if (age < 0.0 || age > 7.5) { continue; }
 
     let baseX = (seed - 0.5) * 1.65;
@@ -130,6 +139,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       // Idea 1 — buoyancy: puff lifts while sparks fall
       let puffCenter = center + vec2<f32>(0.0, burstAge * 0.12);
       let puffBody = smokePuff(uv, puffCenter, burstAge, smokeDensity * (0.6 + bass * 0.4), time);
+      let lining = smokeLining(uv, puffCenter, burstAge, smokeDensity * (0.6 + bass * 0.4), time, puffBody);
       // Idea 3 — vortex-ring cap: the rising puff hollows into a side-on smoke torus
       let vortexRing = smoothstep(0.6, 3.0, burstAge);
       let torusR = 0.04 + burstAge * 0.035;
@@ -138,6 +148,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let smoke = puffBody * mix(1.0, 0.2 + 1.7 * torus, vortexRing);
       // Idea 2 — burst-lit smoke: puff brightness from the local flash
       col += vec3<f32>(0.12, 0.1, 0.14) * smoke * fade * shellEnergy * (0.35 + flashLit * 1.45);
+      col += shellColor(hue, 0.6) * lining * fade * shellEnergy * (0.18 + flashLit * 1.5);
       // Idea 4 — smoke extinction: this shell's sparks dim and redden through its puff
       let extinction = exp(-smoke * 2.6 * fade);
       let extinctTint = mix(vec3<f32>(1.0, 0.62, 0.45), vec3<f32>(1.0), extinction) * extinction;
@@ -208,7 +219,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       col += vec3<f32>(1.0, 0.96, 0.85) * exp(-mbAge * 10.0) * mEnergy * 2.5 * softGlow(uv, mCenter, 0.08, 1.0);
       let mPuff = mCenter + vec2<f32>(0.0, mbAge * 0.12);
-      col += vec3<f32>(0.1, 0.09, 0.12) * smokePuff(uv, mPuff, mbAge, smokeDensity, time) * mFade * mEnergy * (0.35 + exp(-mbAge * 8.0) * 1.4);
+      let mSmoke = smokePuff(uv, mPuff, mbAge, smokeDensity, time);
+      let mLining = smokeLining(uv, mPuff, mbAge, smokeDensity, time, mSmoke);
+      col += vec3<f32>(0.1, 0.09, 0.12) * mSmoke * mFade * mEnergy * (0.35 + exp(-mbAge * 8.0) * 1.4);
+      col += shellColor(fract(time * 0.02), 0.6) * mLining * mFade * mEnergy * (0.18 + exp(-mbAge * 8.0) * 1.5);
 
       let mSparks = i32(40.0 + energy * 50.0);
       let mHue = fract(time * 0.02 + u.zoom_params.w * 0.5);
