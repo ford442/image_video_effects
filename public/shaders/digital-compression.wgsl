@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Compression — Batch 61
-//  YUV macroblock crush: spring focus, held clear zone, capped ripples,
-//  DCT-style block geometry, ACES + three-band audio.
+//  Digital Compression
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-27
+//  Ideas: AC quantization (§12.2B); mosquito noise on the block edge
+//  A packing: diagnostic (influence, artifact, blocks, alpha); C unread; ACES on display only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rgb2yuv(rgb: vec3<f32>) -> vec3<f32> {
   let y = 0.29900 * rgb.r + 0.58700 * rgb.g + 0.11400 * rgb.b;
@@ -126,6 +111,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sampled = textureSampleLevel(readTexture, non_filtering_sampler, sampleUV, 0.0);
   var color = sampled.rgb;
 
+  // ── Idea 1: AC quantization (§12.2B) ────────────────────────────
+  // The block corner stays the DC. The pixel-minus-DC residual is rounded
+  // to a step from Bit Crush and added back. Bit Crush at zero keeps the
+  // flat block sample.
+  let localRgb = textureSampleLevel(readTexture, non_filtering_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let quantStep = max(mix(0.02, 0.18, colorDepthParam * influence), 0.001);
+  let acQuant = round((localRgb - sampled.rgb) / quantStep) * quantStep;
+  color += acQuant * step(0.001, colorDepthParam);
+
   let colorActive = step(0.001, colorDepthParam);
   let levels = mix(255.0, 2.0, colorDepthParam * influence);
   color = mix(color, floor(color * levels) / max(levels, 0.001), colorActive);
@@ -139,7 +133,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edge = blockEdge(blockUV, blocks, aspect);
   color = mix(color, color * vec3<f32>(1.15, 0.9, 1.1), edge * mids * 0.35 * influence);
 
-  color = acesToneMap(color * (0.96 + bass * 0.06));
+  // ── Idea 2: mosquito noise ──────────────────────────────────────
+  // MPEG mosquito grain sits on the block edge this file already measures.
+  // Artifacts still scales it. The phase steps with time, like a codec.
+  let mozPhase = floor(time * 9.0);
+  let mosquito = (hash12(blockUV * 13.0 + vec2<f32>(mozPhase, 2.7)) - 0.5) * edge * artifactParam * influence;
+  color += vec3<f32>(mosquito * 0.4);
+
+  color = acesToneMap(clamp(color, vec3<f32>(0.0), vec3<f32>(4.0)) * (0.96 + bass * 0.06));
   let artifactStrength = clamp(artifactParam * influence + displaceActive * 0.3, 0.0, 1.0);
   let alpha = clamp(artifactStrength * 0.5 + influence * 0.3 + bass * 0.2, 0.0, 1.0);
 

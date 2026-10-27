@@ -1,30 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Glitch Brush — Batch 58E
-//  Sprung brush (extraBuffer[133..136], 0,0 writer), click grenades,
-//  traveling scan-head conveyor, oil-slick phosphor on tears,
-//  held-drag density, exact C paint persistence. Display RGBA in A.
+//  Interactive Glitch Brush
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-27
+//  Ideas: speed-thinning (§12.2C); block-snapped tear
+//  A packing: pre-ACES linear display RGBA; ACES on the display write only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn random(st: vec2<f32>) -> f32 {
   return fract(sin(dot(st.xy, vec2<f32>(12.9898, 78.233))) * 43758.5453123);
@@ -34,6 +18,10 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
   return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -64,6 +52,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let validF = select(0.0, 1.0, mouseValid);
   var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
   var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  // Incoming speed, before this frame's integration. Speed-thinning reads it.
+  let incomingSpeed = length(sVel);
   let snapF = step(length(sPos), 0.0001) * step(length(sVel), 0.0001) * validF;
   sPos = mix(sPos, mousePos, snapF);
   let springGoal = mix(sPos, mousePos, validF);
@@ -83,7 +73,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let diffAspect = vec2<f32>((sPos.x - uv.x) * aspect, sPos.y - uv.y);
   let dist = length(diffAspect);
-  let brushMask = validF * (1.0 - smoothstep(brushSize * 0.65, brushSize, dist));
+  // ── Idea 1: speed-thinning (§12.2C) ─────────────────────────────
+  // A fast stroke gets thin. Brush Size stays the base width. Grenades
+  // below still use that base, because a click is not a stroke.
+  let strokeRadius = max(brushSize / (1.0 + incomingSpeed * 2.4), 0.012);
+  let brushMask = validF * (1.0 - smoothstep(strokeRadius * 0.65, strokeRadius, dist));
 
   var grenade = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -109,9 +103,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let splitR = colorSplit * (0.5 + trebleBinR);
   let splitB = colorSplit * (0.5 + trebleBinB);
-  let sampleUV_r = clamp(uv + offset - vec2<f32>(splitR, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-  let sampleUV_g = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-  let sampleUV_b = clamp(uv + offset + vec2<f32>(splitB, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  // ── Idea 2: block-snapped tear ──────────────────────────────────
+  // The horizontal tear lands on the block grid. Block Scale still sets
+  // the cell. Colour split is applied after the snap.
+  let destX = clamp(uv.x + offset.x, 0.0, 1.0);
+  let snappedX = floor(destX * blockScale) / blockScale;
+  let useX = mix(destX, snappedX, activeMask);
+  let sampleUV_r = clamp(vec2<f32>(useX - splitR, uv.y), vec2<f32>(0.0), vec2<f32>(1.0));
+  let sampleUV_g = clamp(vec2<f32>(useX, uv.y), vec2<f32>(0.0), vec2<f32>(1.0));
+  let sampleUV_b = clamp(vec2<f32>(useX + splitB, uv.y), vec2<f32>(0.0), vec2<f32>(1.0));
   let r = textureSampleLevel(readTexture, u_sampler, sampleUV_r, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, sampleUV_g, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, sampleUV_b, 0.0).b;
@@ -136,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color, prev, 0.22 * (1.0 - activeMask * 0.4));
 
   let depth = textureLoad(readDepthTexture, coords, 0).r;
-  textureStore(writeTexture, coords, color);
   textureStore(dataTextureA, coords, color);
+  textureStore(writeTexture, coords, vec4<f32>(acesToneMap(clamp(color.rgb, vec3<f32>(0.0), vec3<f32>(4.0))), clamp(color.a, 0.0, 1.0)));
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

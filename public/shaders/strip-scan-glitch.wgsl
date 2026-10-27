@@ -3,31 +3,13 @@
 //  Category: interactive-mouse
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, held-drag
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: vertical-blanking seam (each strip's wrap shows a black blanking bar with sync-pulse ticks and a soft smear on the rows either side); held brake (holding drags the strips under the cursor to a freeze-frame halt with treble flutter, releasing back to speed); speed-streak ghost (fast strips leave a short vertical smear read from C along their scroll direction)
+//  Upgraded: 2026-09-28, 2026-10-27
+//  Ideas: vertical-blanking seam (each strip's wrap shows a black blanking bar with sync-pulse ticks and a soft smear on the rows either side); held brake (holding drags the strips under the cursor to a freeze-frame halt with treble flutter, releasing back to speed); speed-streak ghost (fast strips leave a short vertical smear read from C along their scroll direction); slit integration; inter-strip leak
 //  A packing: pre-ACES linear display RGB + source-derived alpha; C read back as colour (brake freeze + streak taps)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,              // x=time, y=clickCount, z=resX, w=resY
-  zoom_config: vec4<f32>,         // x=zoomTime, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>,         // x=Strip Count, y=Scroll Speed, z=Glitch Jitter, w=RGB Split
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Strip Count, y=Scroll Speed, z=Glitch Jitter, w=RGB Split
 
 fn hash11(x: f32) -> f32 { return fract(sin(x * 12.9898) * 43758.5453); }
 
@@ -106,6 +88,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampleB = sampleWrapped(uvB);
 
     var finalColor = vec3<f32>(sampleR.r, sampleG.g, sampleB.b);
+
+    // ── Idea 1: slit integration ────────────────────────────────────
+    // A slit-scan camera integrates a finite slit. Fast strips average a
+    // few source rows along the scroll; slow strips stay a single row.
+    // The later C streak is a separate ghost and is left alone.
+    let slitAmt = clamp(abs(stripSpeed) * 0.18, 0.0, 0.5);
+    let slitDir = sign(stripSpeed + 1e-4);
+    let slitA = sampleWrapped(uvG + vec2<f32>(0.0, slitDir * 0.006)).rgb;
+    let slitB = sampleWrapped(uvG - vec2<f32>(0.0, slitDir * 0.006)).rgb;
+    finalColor = mix(finalColor, (finalColor + slitA + slitB) / 3.0, slitAmt);
+
+    // ── Idea 2: inter-strip leak ────────────────────────────────────
+    // Neighbouring slits bleed at the boundary. RGB Split still sets how
+    // far the leak reaches; the interior of the strip stays itself.
+    let stripFrac = fract(uv.x * stripCount);
+    let stripEdge = 1.0 - smoothstep(0.0, 0.08, min(stripFrac, 1.0 - stripFrac));
+    let neighborDir = select(-1.0, 1.0, stripFrac < 0.5);
+    let neighbor = sampleWrapped(vec2<f32>(uv.x + neighborDir / max(stripCount, 1.0), uvG.y)).rgb;
+    finalColor = mix(finalColor, neighbor, stripEdge * rgbSplitParam);
 
     // Alpha: blend from each channel sample; strips with high jitter have corrupted alpha.
     let jitterAlphaMod = 1.0 - abs(jitter) * jitterParam * 0.2;
