@@ -4,9 +4,9 @@
 //  Features: gradient-flow, branchless-ripples, audio-reactive, advection, upgraded-rgba
 //  Complexity: Medium
 //  Created: Phase B / Optimizer
-//  Upgraded: 2026-09-21 (2026-05-23; rewired 2026-08-02, Algorithmist swarm b27)
-//  Ideas: accumulated melt (the advected sample now drags exact C history, so the flow
-//         compounds into streams); gravity sag weighted by paint brightness
+//  Upgraded: 2026-10-27
+//  Ideas: gravity-fed rivulet channels in the advected paint; directional wet
+//         impasto highlights on pigment ridges
 //  A packing: pre-sheen melted RGB + alpha (the PHI sheen is on writeTexture only)
 //
 //  Slider contract (saved-preset safe — ids/names/defaults unchanged):
@@ -26,26 +26,8 @@
 //    [137]       = initialized flag
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Viscosity, y=Turbulence, z=RippleStrength, w=ColorShift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Viscosity, y=Turbulence, z=RippleStrength, w=ColorShift
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -64,6 +46,11 @@ const SPRING_DT: f32 = 0.0166667;
 
 fn safeNormalize2(v: vec2<f32>) -> vec2<f32> {
     return v * inverseSqrt(max(dot(v, v), 1e-8));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn loadHistoryR(coord: vec2<i32>, dims: vec2<i32>) -> f32 {
@@ -96,8 +83,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / max(resolution.y, 1.0);
     let time = u.config.x;
 
-    let bass   = plasmaBuffer[0].x;
-    let treble = plasmaBuffer[0].z;
+    let audio = plasmaBuffer[0].xyz;
+    let bass = audio.x;
+    let treble = audio.z;
 
     // ── Honest slider constants (saved-preset contract) ─────────────
     let viscosity = clamp(0.85 + u.zoom_params.x * 0.13, 0.5, 0.99);
@@ -185,6 +173,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sag = 0.3 + r1.y * 0.6;
     flow_dir = safeNormalize2(flow_dir + vec2<f32>(0.0, sag));
 
+    // Narrow channels meander down the same gravity-fed pigment field.
+    let channelPhase = turbUV.x * 32.0 + sin(turbUV.y * 5.0 + time * 0.3) * 0.8;
+    let channel = pow(0.5 + 0.5 * cos(channelPhase), 6.0);
+    let channelForce = vec2<f32>(-sin(channelPhase) * 0.08, channel * 0.28);
+    flow_dir = safeNormalize2(flow_dir + channelForce * (0.25 + turbK * 0.5));
+
     // ── Advection sampling (hand-tuned, verbatim) ──────────────────
     let advectStep = flow_dir * viscosity * (1.0 + audioK * 0.4);
     let last_pos = vec2<f32>(coord) - advectStep;
@@ -209,11 +203,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                            0.5 + 0.5 * sin(hue_phase + 4.188));
     var shifted = mix(meltRGB, meltRGB * (0.6 + hueMat * 0.8), hueShiftK);
 
-    // ── Alpha (hand-tuned, verbatim) ───────────────────────────────
-    let luma = dot(shifted, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.5 + gradLen * 0.6 + mouseGate * 0.2 + treble * 0.05 + 0.1, 0.0, 1.0);
+    // The paint gradient is also a relief normal: wet raised edges catch light.
+    let reliefNormal = normalize(vec3<f32>(-grad * 3.0, 1.0));
+    let halfLight = normalize(vec3<f32>(-0.35, -0.5, 1.9));
+    let ridge = smoothstep(0.02, 0.45, length(grad));
+    let glint = pow(max(dot(reliefNormal, halfLight), 0.0), 24.0) * ridge;
+    let pigment = clamp(dot(meltRGB, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+    let glintAudio = 1.0 + clamp(audio.y, 0.0, 1.0) * 0.25 + clamp(treble, 0.0, 1.0) * 0.1;
+    shifted += mix(meltRGB, vec3<f32>(1.0, 0.9, 0.75), 0.45) * glint * (0.25 + pigment * 0.35) * glintAudio;
 
-    let finalColor = vec4<f32>(shifted, alpha);
+    let coverage = max(color.a, melted.a * hold);
+    let alpha = clamp(coverage * (0.85 + ridge * 0.15), 0.0, 1.0);
+
+    let finalColor = vec4<f32>(aces(shifted), alpha);
 
     textureStore(writeTexture, coord, finalColor);
     // A keeps the pre-sheen melt so the hue shift doesn't compound through feedback.
