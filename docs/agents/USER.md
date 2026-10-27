@@ -18,6 +18,26 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-18: sent Cursor batch-04 (aurora-rift-pass1 through wave-equation-rgba-fluid).
   - 2026-10-18: sent Cursor batch-05 (fabric-of-reality through fire_smoke_volumetric).
   - 2026-10-18: sent Cursor batch-06 (spectrogram-displace-pass1 through gen-fluffy-raincloud). The single-pass spectrogram stays in this batch. `gen-fluffy-raincloud` is `gen_fluffy_raincloud.wgsl`.
+  - 2026-10-27: sent a print and craft twelve (impasto-swirl through stipple-engraving). Notes in `docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/`.
+
+## 2026-10-27 — cursor/print-craft-twelve (12 shaders)
+
+- IDs: impasto-swirl, paper-cutout, cmyk-halftone-interactive, foil-impression, poly-art, cross-stitch, knitted-fabric, interactive-halftone-spin, dynamic-halftone, charcoal-rub, sequin-flip, stipple-engraving.
+- Per shader, the ideas actually added:
+  - impasto-swirl: knife ridge from stored thickness; lip bead. Oil-paint swirl restored over an unrelated stipple body. Thickness stays in A.a.
+  - paper-cutout: deckle on the lit core; paper tooth in the shadow. Layer stack kept.
+  - cmyk-halftone-interactive: midtone dot gain; ink trap under the colour rims. Registration target and slur kept.
+  - foil-impression: catchlight along the brush tangent; foil skips steep emboss. Press mix kept.
+  - poly-art: smaller facets on busy detail; lit bevel on the crease. Voronoi kept.
+  - cross-stitch: knot at the full-stitch crossing; Aida holes at the corners. Half-stitch kept.
+  - knitted-fabric: purl on odd courses; lint in the gaps. Strain and ply kept.
+  - interactive-halftone-spin: rosette paper hole; wet tack on last frame's ink. Arc smear kept.
+  - dynamic-halftone: dots stretch toward the pointer; center dot swells on an edge. Euclidean spot kept.
+  - charcoal-rub: pigment takes the photo; a heavy rub burnishes through. Fibre and vine dust kept.
+  - sequin-flip: stitch hole; edge-on slit. GGX flip kept.
+  - stipple-engraving: elliptical dots along the hatch; burr beside the cut. Threshold stipple kept.
+- Floor: prelude include on all twelve; 16×16; exact C where C is read; A packing as documented; saved params exact.
+- Gates: Naga 12/12, prelude tracker, extraBuffer, dead sliders. Real-GPU visual QA: external.
   - 2026-10-27: sent Cursor batch-13 (sonic-boom through quantized-ripples, 12 shaders). Notes in `docs/agents/swarm-outputs/grok-2026-10-27-batch-13/`.
 
 ## 2026-10-27 — cursor/batch-13 (12 shaders)

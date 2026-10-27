@@ -481,7 +481,7 @@
     "id": "charcoal-rub",
     "name": "Charcoal Rub",
     "url": "shaders/charcoal-rub.wgsl",
-    "description": "Scratch-off effect like rubbing charcoal paper. Mouse reveals image beneath textured overlay.",
+    "description": "Charcoal rubbed onto laid paper. The stick takes the photograph's colour, a heavy rub burnishes through to the picture, and vine dust hangs at the edge of the stroke.",
     "params": [
       {
         "id": "hardness",
@@ -1015,7 +1015,7 @@
       "print",
       "audio-reactive"
     ],
-    "description": "CMYK halftone rosette print with rotating screens, registration drift, a registration target at the cursor and press slur. A remains CMYK coverage masks.",
+    "description": "CMYK halftone rosette with rotating screens, a registration target, press slur, midtone dot gain, and a black trap under the colour rims. A remains CMYK coverage masks.",
     "updated": true
   },
   {
@@ -1125,7 +1125,7 @@
     "id": "cross-stitch",
     "name": "Cross Stitch Reveal",
     "url": "shaders/cross-stitch.wgsl",
-    "description": "Quantizes the image into cross-stitch patterns. Mouse movement unravels or distorts the fabric.",
+    "description": "Cross-stitch of the photo on Aida cloth. Dark cells are half-stitches, full stitches knot where the threads cross, and the cell corners are needle holes. The pointer unravels the cloth.",
     "params": [
       {
         "id": "scale",
@@ -2530,7 +2530,7 @@
     "id": "dynamic-halftone",
     "name": "Dynamic Halftone",
     "url": "shaders/dynamic-halftone.wgsl",
-    "description": "Halftone dot print that swells under the cursor: Euclidean dot shapes, pooling ink and ragged paper rims.",
+    "description": "Halftone dots that swell, pool and rag under the pointer, stretch toward it, and grow where the photo changes.",
     "params": [
       {
         "id": "density",
@@ -3080,7 +3080,7 @@
     "id": "foil-impression",
     "name": "Foil Impression",
     "url": "shaders/foil-impression.wgsl",
-    "description": "Embossed metallic foil with moving brushed highlights, held impression pressure, click rings, three-band audio, and iridescent spectral reflection.",
+    "description": "Embossed metallic foil with brushed streaks along the relief, crinkle at the press, a catchlight stretched along the brush, and paper showing where the emboss is too steep for the die.",
     "params": [
       {
         "id": "pressure_radius",
@@ -3728,7 +3728,7 @@
     "id": "impasto-swirl",
     "name": "Impasto Swirl",
     "url": "shaders/impasto-swirl.wgsl",
-    "description": "Simulates wet oil paint mixing. Mouse acts as a smudge tool that stirs the image.",
+    "description": "Wet oil paint the pointer stirs into a swirl. The stroke thickens under the knife, dries back toward the photo, catches a ridge from the stored thickness, and beads at the brush lip.",
     "params": [
       {
         "id": "brush",
@@ -3760,7 +3760,8 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -4386,7 +4387,7 @@
     "id": "interactive-halftone-spin",
     "name": "Interactive Halftone Spin",
     "url": "shaders/interactive-halftone-spin.wgsl",
-    "description": "Spinning CMYK halftone screens with rotational arc-smear and a CMYK ink after-image. A remains [C, M, Y, K] coverage.",
+    "description": "Spinning CMYK screens with arc-smear and an ink after-image. Overprinted cyan, magenta and yellow leave a paper hole, and new ink on old ink prints darker. A remains CMYK coverage.",
     "params": [
       {
         "id": "scale",
@@ -5036,7 +5037,7 @@
     "name": "Knitted Fabric",
     "category": "interactive-mouse",
     "url": "shaders/knitted-fabric.wgsl",
-    "description": "Knitted wool texture with two-ply twisted yarn and heathered per-stitch fibre. The cursor pulls and stretches the fabric: strained stitches thin out and open onto the dark backing; clicks pluck the knit.",
+    "description": "Knitted wool with two-ply yarn and heather. Odd courses are purl, fibres lint into the gaps, and the pointer pulls stitches open onto the backing.",
     "params": [
       {
         "id": "scale",
@@ -8334,7 +8335,7 @@
     "id": "paper-cutout",
     "name": "Paper Cutout",
     "url": "shaders/paper-cutout.wgsl",
-    "description": "Quantizes the image into hand-cut, slightly off-register paper layers lit from the pointer: taller stacks cast darker shadows, cut edges facing the light show a white core, and clicks punch emboss rings.",
+    "description": "Quantizes the image into hand-cut, slightly off-register paper layers lit from the pointer: taller stacks cast darker shadows, the lit core is a torn deckle, fibre shows in the shadow, and clicks punch emboss rings.",
     "params": [
       {
         "id": "layers",
@@ -9110,7 +9111,7 @@
     "id": "poly-art",
     "name": "Poly Art",
     "url": "shaders/poly-art.wgsl",
-    "description": "Transforms the image into a low-poly Voronoi mosaic. Mouse interaction distorts the grid density.",
+    "description": "Low-poly Voronoi of the photo. Facets shrink where the picture is busy, the pointer tightens the grid, and the crease facing the light picks up a bevel.",
     "params": [
       {
         "id": "size",
@@ -10844,7 +10845,7 @@
     "id": "sequin-flip",
     "name": "Sequin Flip",
     "url": "shaders/sequin-flip.wgsl",
-    "description": "Articulated sequins flip under hover, held brush, and click fronts, revealing GGX microfacet gold or silver backs with three-band sparkle motion.",
+    "description": "Sequins flip under the pointer onto gold or silver backs. Each disk has a stitch hole, and a sequin turned sideways is a bright slit.",
     "params": [
       {
         "id": "grid_size",
@@ -11705,7 +11706,7 @@
     "id": "stipple-engraving",
     "name": "Stipple Engraving",
     "url": "shaders/stipple-engraving.wgsl",
-    "description": "Tone-aware low-discrepancy stippling combines directional hatching, paper absorption, cursor burnishing, held ink pooling, and click-driven engraving rings.",
+    "description": "Tone stipple and directional hatching. Dots stretch along the engraved line, and the burin throws a pale burr to one side. The pointer burnishes the plate.",
     "features": [
       "mouse-driven",
       "audio-reactive",

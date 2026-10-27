@@ -3,32 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: per-plate registration target at the cursor; press slur/doubling ghost dot along the feed
+//  Upgraded: 2026-10-27
+//  Ideas: registration target; press slur; midtone dot gain; ink trap
 //  A packing: [C, M, Y, K] plate coverage with light persistence
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn rgb2cmyk(rgb: vec3<f32>) -> vec4<f32> {
   let k = 1.0 - max(rgb.r, max(rgb.g, rgb.b));
@@ -71,6 +52,13 @@ fn halftone_dot(
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ── Idea: midtone dot gain. Spread peaks at a 50% dot and follows Ink Darkness.
+fn gained(amount: f32, darkness: f32) -> f32 {
+  let a = clamp(amount, 0.0, 1.0);
+  let mid = sin(a * 3.14159265);
+  return clamp(a + mid * 0.16 * darkness, 0.0, 1.0);
 }
 
 // Idea 1: a printer's registration target (ring + crosshair) centred on the
@@ -144,14 +132,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let slurLen = (0.0012 + length(heldDelta) * 0.035) * (1.0 + audio.x * 0.6);
   let feed = vec2<f32>(0.0, slurLen);
   let slurAmt = 0.22 + held * 0.18;
-  let finalC = max(halftone_dot(uv, aspect, density, angC, offC, cmyk.x, 1.0 + audio.x * 0.35),
-                   halftone_dot(uv, aspect, density, angC, offC + feed, cmyk.x, 1.0 + audio.x * 0.35) * slurAmt);
-  let finalM = max(halftone_dot(uv, aspect, density, angM, offM, cmyk.y, 1.0 + audio.y * 0.35),
-                   halftone_dot(uv, aspect, density, angM, offM + feed * 1.15, cmyk.y, 1.0 + audio.y * 0.35) * slurAmt);
-  let finalY = max(halftone_dot(uv, aspect, density, angY, offY, cmyk.z, 1.0 + audio.z * 0.35),
-                   halftone_dot(uv, aspect, density, angY, offY + feed * 0.85, cmyk.z, 1.0 + audio.z * 0.35) * slurAmt);
-  let dotK = max(halftone_dot(uv, aspect, density, angK, offK, cmyk.w, 1.0 + (audio.x + audio.z) * 0.20),
-                 halftone_dot(uv, aspect, density, angK, offK + feed, cmyk.w, 1.0 + (audio.x + audio.z) * 0.20) * slurAmt);
+  let gainC = gained(cmyk.x, inkDarkness);
+  let gainM = gained(cmyk.y, inkDarkness);
+  let gainY = gained(cmyk.z, inkDarkness);
+  let gainK = gained(cmyk.w, inkDarkness);
+  let finalC = max(halftone_dot(uv, aspect, density, angC, offC, gainC, 1.0 + audio.x * 0.35),
+                   halftone_dot(uv, aspect, density, angC, offC + feed, gainC, 1.0 + audio.x * 0.35) * slurAmt);
+  let finalM = max(halftone_dot(uv, aspect, density, angM, offM, gainM, 1.0 + audio.y * 0.35),
+                   halftone_dot(uv, aspect, density, angM, offM + feed * 1.15, gainM, 1.0 + audio.y * 0.35) * slurAmt);
+  let finalY = max(halftone_dot(uv, aspect, density, angY, offY, gainY, 1.0 + audio.z * 0.35),
+                   halftone_dot(uv, aspect, density, angY, offY + feed * 0.85, gainY, 1.0 + audio.z * 0.35) * slurAmt);
+  let dotK = max(halftone_dot(uv, aspect, density, angK, offK, gainK, 1.0 + (audio.x + audio.z) * 0.20),
+                 halftone_dot(uv, aspect, density, angK, offK + feed, gainK, 1.0 + (audio.x + audio.z) * 0.20) * slurAmt);
 
   let px = 1.0 / max(resolution.y, 1.0);
   let markVis = 0.55 + held * 0.45;
@@ -162,7 +154,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let plateC = max(finalC, markC);
   let plateM = max(finalM, markM);
   let plateY = max(finalY, markY);
-  let finalK = max(dotK, markK);
+  let markedK = max(dotK, markK);
+  // ── Idea: ink trap. A hairline of black under the colour rims hides paper flashes.
+  let colorPlate = max(plateC, max(plateM, plateY));
+  let rim = smoothstep(0.18, 0.5, colorPlate) * (1.0 - smoothstep(0.72, 0.96, colorPlate));
+  let finalK = max(markedK, rim * 0.5 * inkDarkness);
 
   let mixC = mix(vec3<f32>(1.0), vec3<f32>(0.0, 1.0, 1.0), plateC * inkDarkness);
   let mixM = mix(vec3<f32>(1.0), vec3<f32>(1.0, 0.0, 1.0), plateM * inkDarkness);
