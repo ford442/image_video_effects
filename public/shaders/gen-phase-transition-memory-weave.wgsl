@@ -3,9 +3,11 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-10
-//  Ideas: Schmitt latch and latent heat; polycrystalline grains; critical opalescence; twin lattice
-//  A packing: raw sim state (R=order field, G=memory weave, B=hysteresis phase latch 0/1, A=signed latent heat -1..1); ACES display RGBA on writeTexture
+//  Upgraded: 2026-10-19
+//  Ideas: Schmitt latch and latent heat; polycrystalline grains; critical opalescence; twin lattice;
+//         dendritic solidification front (sixfold, latent-throttled; §12.2D isotropic 9-point);
+//         buoyant latent-heat plumes (§12.2D Boussinesq)
+//  A packing: raw sim state (R=order field, G=memory weave, B=hysteresis phase latch 0/1, A=signed latent heat -1..1, buoyantly advected); ACES display RGBA on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -167,59 +169,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let transitionSharpness = u.zoom_params.z * 4.0 + 1.0; // 1..5
     let glowAmt      = u.zoom_params.w * 2.0 + 0.5;  // 0.5..2.5
 
-    // ── Persistent state: spring mouse [133..136], prevDown [137], smoothed bass [138] ──
+    // Raw pointer (uv, row 0 = top). The old extraBuffer spring never
+    // persisted (the engine re-uploads extraBuffer every frame), so the
+    // mouse force sat near uv (0,0); press-to-nucleate uses the live cursor.
     let rawMouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let mouseDown = u.zoom_config.w;
-    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        let h = 0.016;
-        let spx = extraBuffer[133];
-        let spy = extraBuffer[134];
-        let svx = extraBuffer[135];
-        let svy = extraBuffer[136];
-        let nvx = clamp(svx + ((rawMouse.x - spx) * 70.0 - svx * 11.0) * h, -3.0, 3.0);
-        let nvy = clamp(svy + ((rawMouse.y - spy) * 70.0 - svy * 11.0) * h, -3.0, 3.0);
-        extraBuffer[133] = clamp(spx + nvx * h, 0.0, 1.0);
-        extraBuffer[134] = clamp(spy + nvy * h, 0.0, 1.0);
-        extraBuffer[135] = nvx;
-        extraBuffer[136] = nvy;
-        extraBuffer[137] = mouseDown;
-        extraBuffer[138] = mix(extraBuffer[138], bass, 0.08);
-    }
-    var sm = rawMouse;
-    var smVel = vec2<f32>(0.0, 0.0);
-    var bassSmooth = bass;
-    if (arrayLength(&extraBuffer) > 138u) {
-        sm = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        smVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        bassSmooth = extraBuffer[138];
-    }
 
     // Band proxies from plasmaBuffer[0] (old out-of-range FFT buffer reads removed)
     let fftLo = mids;
     let fftHi = treble;
 
-    // ── Feedback: previous order/memory field + 4-tap diffusion ──
-    // Domains coarsen over time (emergent, history-dependent coarsening).
+    // ── Feedback: previous state + 3x3 neighbourhood (exact loads) ──
     let prevState = textureLoad(dataTextureC, px, 0);
     let rx = max(i32(res.x) - 1, 0);
     let ry = max(i32(res.y) - 1, 0);
-    var diffSum = prevState.r;
-    diffSum += textureLoad(dataTextureC, vec2<i32>(min(px.x + 1, rx), px.y), 0).r;
-    diffSum += textureLoad(dataTextureC, vec2<i32>(max(px.x - 1, 0), px.y), 0).r;
-    diffSum += textureLoad(dataTextureC, vec2<i32>(px.x, min(px.y + 1, ry)), 0).r;
-    diffSum += textureLoad(dataTextureC, vec2<i32>(px.x, max(px.y - 1, 0)), 0).r;
-    let lapOrder = diffSum * 0.2;
+    let xl = max(px.x - 1, 0);
+    let xr = min(px.x + 1, rx);
+    let yu = max(px.y - 1, 0);
+    let yd = min(px.y + 1, ry);
+    let sE  = textureLoad(dataTextureC, vec2<i32>(xr, px.y), 0);
+    let sW  = textureLoad(dataTextureC, vec2<i32>(xl, px.y), 0);
+    let sN  = textureLoad(dataTextureC, vec2<i32>(px.x, yu), 0); // above (screen up)
+    let sS  = textureLoad(dataTextureC, vec2<i32>(px.x, yd), 0); // below
+    let sNE = textureLoad(dataTextureC, vec2<i32>(xr, yu), 0);
+    let sNW = textureLoad(dataTextureC, vec2<i32>(xl, yu), 0);
+    let sSE = textureLoad(dataTextureC, vec2<i32>(xr, yd), 0);
+    let sSW = textureLoad(dataTextureC, vec2<i32>(xl, yd), 0);
+    let edges4 = sE + sW + sN + sS;
+    let corners4 = sNE + sNW + sSE + sSW;
+    // Isotropic 9-point stencil (0.2 edges, 0.05 corners, -1 centre) replaces
+    // the axis-biased 5-tap average; same diffusion strength as before.
+    let lap9 = edges4 * 0.2 + corners4 * 0.05 - prevState;
+    let lapOrder = prevState.r + 0.8 * lap9.r;
 
-    // Mouse: press nucleates crystal, motion stirs (melts) the fluid phase
-    let mousePos = vec2<f32>(sm.x * aspect, sm.y);
+    // Mouse: press nucleates crystal (with the field's own treble gain)
+    let mousePos = vec2<f32>(rawMouse.x * aspect, rawMouse.y);
     let mouseDist = length(uvA - mousePos);
     let mouseForce = exp(-mouseDist * mouseDist * 12.0);
-    let stir = clamp(length(smVel) * 1.5, 0.0, 1.0);
     let press = step(0.5, mouseDown);
-    let mouseOrderForce = mouseForce * (press * 0.8 * (0.5 + treble * 0.5) - stir * 0.45);
+    let mouseOrderForce = mouseForce * press * 0.8 * (0.5 + treble * 0.5);
 
-    // Compute order parameter (smoothed bass -> slow, lagging thresholds)
-    let baseOrder = orderParameter(uvA * phaseScale, t, bassSmooth, mids, treble, viscosity);
+    // Compute order parameter
+    let baseOrder = orderParameter(uvA * phaseScale, t, bass, mids, treble, viscosity);
     var order = clamp(baseOrder + mouseOrderForce, 0.0, 1.0);
 
     // Click nucleation fronts: expanding crystallization rings (guarded, finite)
@@ -250,17 +241,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // (+, warm flash); melting absorbs it (-, cold flash). Both persist in A.
     let prevLatch = step(0.5, prevState.b);
     let loopHalf = 0.12 * (1.0 - bass * 0.4);
-    let freezeT = 0.5 + loopHalf;
+    var freezeT = 0.5 + loopHalf;
     let meltT = 0.5 - loopHalf;
+
+    // Idea 2 grain field, needed by the dendrite anisotropy below
+    let grain = grainField(uvA * phaseScale * 3.0, t);
+
+    // ── Idea 5: dendritic solidification front ──
+    // Crystal grows out of crystal: a supercooled cell freezes early when its
+    // isotropic 9-point neighbourhood is already frozen. The assist is sixfold
+    // anisotropic about the grain's hex axes (front normal from the latch
+    // gradient) and cancelled by neighbouring latent heat -> six-armed
+    // dendrites that tip-split where released heat piles up.
+    let frozenFrac = edges4.b * 0.2 + corners4.b * 0.05;
+    let latchGrad = vec2<f32>(
+        (sE.b - sW.b) * 2.0 + (sNE.b + sSE.b) - (sNW.b + sSW.b),
+        (sS.b - sN.b) * 2.0 + (sSE.b + sSW.b) - (sNE.b + sNW.b));
+    let frontAng = atan2(latchGrad.y, latchGrad.x + 1e-5);
+    let sixfold = 0.5 + 0.5 * cos(6.0 * (frontAng - grain.x));
+    let heatAhead = max(edges4.a * 0.2 + corners4.a * 0.05, 0.0);
+    let assist = frozenFrac * (0.25 + 0.75 * sixfold * sixfold) * (1.0 - prevLatch);
+    freezeT = freezeT - assist * 0.3 + heatAhead * 0.35;
     var latch = prevLatch;
     if (prevLatch > 0.5) {
         if (order < meltT) { latch = 0.0; }
     } else {
-        if (order > freezeT) { latch = 1.0; }
+        if (order > freezeT && order > meltT + 0.02) { latch = 1.0; }
     }
     let freezeEvent = max(latch - prevLatch, 0.0);
     let meltEvent = max(prevLatch - latch, 0.0);
-    let latent = clamp(prevState.a * 0.93 + freezeEvent - meltEvent, -1.0, 1.0);
+
+    // ── Idea 6: buoyant latent-heat plumes (Boussinesq f_y = alpha*T) ──
+    // Released heat is upwind-advected: warm rises toward the screen top
+    // (taken from the cell below), cold from melting sinks (from above).
+    let buoyK = 0.7;
+    let outFlow = clamp(abs(prevState.a) * buoyK, 0.0, 0.85);
+    let inWarm = max(sS.a, 0.0) * clamp(max(sS.a, 0.0) * buoyK, 0.0, 0.85);
+    let inCold = min(sN.a, 0.0) * clamp(max(-sN.a, 0.0) * buoyK, 0.0, 0.85);
+    let carried = prevState.a * (1.0 - outFlow) + inWarm + inCold;
+    let latent = clamp(carried * 0.975 + freezeEvent - meltEvent, -1.0, 1.0);
 
     // Phase identification (with hysteresis-like sharp transitions)
     let fluidFraction    = smoothstep(0.4, 0.2, order) * (1.0 - latch * 0.5);
@@ -271,10 +290,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Structural patterns per phase (FFT bins sharpen lattice detail)
     // Idea 2: grain orientation from nucleation-site Voronoi
-    let grain = grainField(uvA * phaseScale * 3.0, t);
     let lattice = crystallineLattice(uvA * phaseScale, t, 8.0 + treble * 4.0 + fftHi * 6.0, treble, grain.x)
                 * (1.0 - grain.y * 0.7);
-    let flow = fluidFlow(uvA * phaseScale, t, bass + stir * mouseForce);
+    // Buoyancy also lifts the fluid that advects the memory weave (heat haze).
+    let flow = fluidFlow(uvA * phaseScale, t, bass) - vec2<f32>(0.0, latent * 0.12);
     let chaos = chaoticPattern(uvA * phaseScale, t, bass, mids);
 
     // Warped UV for memory effects (fluid flow advects the pattern history)
@@ -314,7 +333,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += vec3<f32>(0.62, 0.74, 0.95) * twinLattice * crystallineFraction * glowAmt * 0.28;
 
     // Latent heat: warm release on freezing, cold absorption on melting
-    color += vec3<f32>(1.0, 0.55, 0.2) * max(latent, 0.0) * 0.45 * (1.0 + bass * 0.3);
+    // (sqrt: the thin, diluted plume heat stays visible as rising wisps)
+    color += vec3<f32>(1.0, 0.55, 0.2) * sqrt(max(latent, 0.0)) * 0.45 * (1.0 + bass * 0.3);
     color -= vec3<f32>(0.25, 0.12, 0.0) * max(-latent, 0.0) * 0.6;
     color += vec3<f32>(0.1, 0.3, 0.6) * max(-latent, 0.0) * 0.25;
     color = max(color, vec3<f32>(0.0));
@@ -323,9 +343,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let phaseBoundary = select(0.0, 1.0, abs(order - 0.5) < 0.08);
     color += vec3<f32>(1.0, 0.9, 0.7) * phaseBoundary * (mids * 0.6 + boundaryBoost * 0.8);
 
-    // Mouse forced region highlight + stirred wake
-    color += vec3<f32>(0.9, 0.95, 1.0) * mouseForce * 0.3;
-    color += vec3<f32>(0.2, 0.6, 0.9) * mouseForce * stir * 0.5;
+    // Mouse forced region highlight (press only; an idle cursor leaves no blob)
+    color += vec3<f32>(0.9, 0.95, 1.0) * mouseForce * press * 0.3;
 
     // Vignette
     let vig = 1.0 - smoothstep(0.3, 0.75, length(uv - 0.5) * 1.2);
@@ -334,7 +353,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Semantic alpha: luminous phase structure carries coverage, dark voids recede
     let finalCol = acesToneMap(color * glowAmt * (1.0 + bass * 0.15));
     let luma = dot(finalCol, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let alpha = clamp(0.3 + luma * 1.2 + phaseBoundary * 0.15 + crystallineFraction * 0.1, 0.0, 1.0);
+    let alpha = clamp(0.78 + luma * 0.5 + phaseBoundary * 0.15 + crystallineFraction * 0.1, 0.0, 1.0);
     textureStore(writeTexture, px, vec4<f32>(finalCol, alpha));
 
     // Relief depth: crystalline order and lattice sit near (near = 1)

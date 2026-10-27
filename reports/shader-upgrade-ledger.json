@@ -1910,17 +1910,8 @@
       ]
     },
     "bio_lenia_continuous": {
-      "hash": "c756c1a29d5508f1",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "c756c1a29d5508f1",
-          "prev_hash": "3af46adbee2c4b77",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
-        }
-      ]
+      "hash": "3af46adbee2c4b77",
+      "history": []
     },
     "gen-bioluminescent-abyss": {
       "hash": "1ac74b34142e44a0",
@@ -1961,17 +1952,8 @@
       "history": []
     },
     "coral-growth": {
-      "hash": "b58ee824289d3538",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "b58ee824289d3538",
-          "prev_hash": "8e0b2bb8f333d109",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
-        }
-      ]
+      "hash": "8e0b2bb8f333d109",
+      "history": []
     },
     "cosmic-jellyfish": {
       "hash": "9ef20ff6309b968f",
@@ -1995,25 +1977,25 @@
       "history": []
     },
     "crystalline-veins": {
-      "hash": "c8d09b9062aa6125",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "c8d09b9062aa6125",
-          "prev_hash": "2166b55faae96205",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
-        }
-      ]
+      "hash": "2166b55faae96205",
+      "history": []
     },
     "deep-sea-thermal-vent": {
       "hash": "7f823f5227fee5cb",
       "history": []
     },
     "electric-eel-storm": {
-      "hash": "c8e75e9a8cc051ed",
-      "history": []
+      "hash": "0527357e6a8f4d1d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "0527357e6a8f4d1d",
+          "prev_hash": "c8e75e9a8cc051ed",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        }
+      ]
     },
     "emergent-calligraphic-weave": {
       "hash": "19d97c70ee42cbad",
@@ -2368,7 +2350,7 @@
       ]
     },
     "gen-barnsley-fern": {
-      "hash": "9bfa3267116c847d",
+      "hash": "fae2c4775fa21a31",
       "history": [
         {
           "event": "upgraded",
@@ -2377,14 +2359,6 @@
           "prev_hash": "dbd2978774108f19",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "9bfa3267116c847d",
-          "prev_hash": "fae2c4775fa21a31",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
         }
       ]
     },
@@ -2406,7 +2380,7 @@
       ]
     },
     "gen-bio-luminescent-jelly": {
-      "hash": "9efdb02e5ad790fa",
+      "hash": "a6d1579f26d9a376",
       "history": [
         {
           "event": "upgraded",
@@ -2415,21 +2389,20 @@
           "prev_hash": "c1e8882dd890fd74",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "a6d1579f26d9a376",
+          "prev_hash": "9efdb02e5ad790fa",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
         }
       ]
     },
     "gen-bioelectric-pulse": {
-      "hash": "b3d7eaf6ab4470dc",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "b3d7eaf6ab4470dc",
-          "prev_hash": "13c3e55141414e37",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
-        }
-      ]
+      "hash": "13c3e55141414e37",
+      "history": []
     },
     "gen-bioluminescent-aether-jellyfish-swarm": {
       "hash": "afab16c95809f238",
@@ -2445,17 +2418,8 @@
       ]
     },
     "gen-bioluminescent-aether-pulsar": {
-      "hash": "98744f069ad6151b",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "98744f069ad6151b",
-          "prev_hash": "8c03fa2f6cf377f3",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
-        }
-      ]
+      "hash": "8c03fa2f6cf377f3",
+      "history": []
     },
     "gen-bioluminescent-chrono-plasma-astro-owl": {
       "hash": "55f42bda1bc40020",
@@ -2513,17 +2477,8 @@
       ]
     },
     "gen-bioluminescent-neural-lattice": {
-      "hash": "cd7d937cee21f32c",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "cd7d937cee21f32c",
-          "prev_hash": "6d752a757d35f45a",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
-        }
-      ]
+      "hash": "6d752a757d35f45a",
+      "history": []
     },
     "gen-bioluminescent-reaction-diffusion": {
       "hash": "4afab0887d2ec6b9",
@@ -2988,7 +2943,7 @@
       ]
     },
     "gen-chronos-biomechanical-void-leviathan": {
-      "hash": "1ca3b29aaeea62cd",
+      "hash": "3bb24684540c9d4c",
       "history": [
         {
           "event": "upgraded",
@@ -2997,6 +2952,22 @@
           "prev_hash": "0adac1fc449a8821",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "9d51910c12a26776",
+          "prev_hash": "1ca3b29aaeea62cd",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "3bb24684540c9d4c",
+          "prev_hash": "9d51910c12a26776",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
         }
       ]
     },
@@ -3069,7 +3040,7 @@
       ]
     },
     "gen-coral-reef-colony": {
-      "hash": "e92d0b284bab61d5",
+      "hash": "48566e81eec98e1b",
       "history": [
         {
           "event": "upgraded",
@@ -3078,14 +3049,6 @@
           "prev_hash": "76436766b097572a",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "e92d0b284bab61d5",
-          "prev_hash": "48566e81eec98e1b",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
         }
       ]
     },
@@ -3141,7 +3104,7 @@
       ]
     },
     "gen-cryogenic-frost-plasma-matrix": {
-      "hash": "b600103ca617bf51",
+      "hash": "fd925b9d95b90cf6",
       "history": [
         {
           "event": "upgraded",
@@ -3150,6 +3113,14 @@
           "prev_hash": "c7a30f5f91be4ebb",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "fd925b9d95b90cf6",
+          "prev_hash": "b600103ca617bf51",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
         }
       ]
     },
@@ -3214,7 +3185,7 @@
       ]
     },
     "gen-cyber-organic-void-mycelium-pulsar": {
-      "hash": "4021a52a961a20a5",
+      "hash": "a64450434e8ea870",
       "history": [
         {
           "event": "upgraded",
@@ -3223,14 +3194,6 @@
           "prev_hash": "62535b270d140810",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "4021a52a961a20a5",
-          "prev_hash": "a64450434e8ea870",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
         }
       ]
     },
@@ -3535,7 +3498,7 @@
       ]
     },
     "gen-emergent-script-gardens": {
-      "hash": "cb48a9de5ba860d6",
+      "hash": "bd2a9060bcc9e595",
       "history": [
         {
           "event": "upgraded",
@@ -3544,14 +3507,6 @@
           "prev_hash": "a1fd38de1aa29c58",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "cb48a9de5ba860d6",
-          "prev_hash": "bd2a9060bcc9e595",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
         }
       ]
     },
@@ -3590,7 +3545,7 @@
       ]
     },
     "gen-ethereal-aurora-ghost-orchid": {
-      "hash": "21a1ee5b67cb9f67",
+      "hash": "49b0a437ddc3b55a",
       "history": [
         {
           "event": "upgraded",
@@ -3599,14 +3554,6 @@
           "prev_hash": "a730faa51b03a32f",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "21a1ee5b67cb9f67",
-          "prev_hash": "49b0a437ddc3b55a",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
         }
       ]
     },
@@ -3632,7 +3579,7 @@
       ]
     },
     "gen-ethereal-chrono-flora-loom": {
-      "hash": "abc90e7b5589fd7d",
+      "hash": "54ec52afeabdd2c3",
       "history": [
         {
           "event": "upgraded",
@@ -3641,14 +3588,6 @@
           "prev_hash": "8d0be3af33990fb2",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "abc90e7b5589fd7d",
-          "prev_hash": "54ec52afeabdd2c3",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
         }
       ]
     },
@@ -4212,7 +4151,7 @@
       ]
     },
     "gen-fractal-neuro-mycelium-lattice": {
-      "hash": "94e08c32f992a32b",
+      "hash": "440459aea0cf419e",
       "history": [
         {
           "event": "upgraded",
@@ -4221,14 +4160,6 @@
           "prev_hash": "47edf63c619a1efd",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "94e08c32f992a32b",
-          "prev_hash": "440459aea0cf419e",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
         }
       ]
     },
@@ -4366,7 +4297,7 @@
       ]
     },
     "gen-graviton-plasma-lotus": {
-      "hash": "5c4d7c01f72eda2b",
+      "hash": "26ee87d8663a8316",
       "history": [
         {
           "event": "upgraded",
@@ -4383,14 +4314,6 @@
           "prev_hash": "8f41dead067066f3",
           "commit": "4653c738",
           "note": null
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "5c4d7c01f72eda2b",
-          "prev_hash": "26ee87d8663a8316",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
         }
       ]
     },
@@ -5063,7 +4986,7 @@
       "history": []
     },
     "gen-luminescent-aether-plasma-astro-axolotl": {
-      "hash": "ec6c859ef979551b",
+      "hash": "c9b33075edf4beab",
       "history": [
         {
           "event": "upgraded",
@@ -5072,6 +4995,22 @@
           "prev_hash": "27d5c63a56153605",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "cdd134d2a0560ba1",
+          "prev_hash": "ec6c859ef979551b",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "c9b33075edf4beab",
+          "prev_hash": "cdd134d2a0560ba1",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
         }
       ]
     },
@@ -5190,17 +5129,8 @@
       ]
     },
     "gen-luminescent-quantum-silicate-diatom": {
-      "hash": "723ce70012fb5ad8",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "723ce70012fb5ad8",
-          "prev_hash": "3022faea573b1326",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
-        }
-      ]
+      "hash": "3022faea573b1326",
+      "history": []
     },
     "gen-luminescent-quantum-void-anglerfish": {
       "hash": "e858b56ff3331f4d",
@@ -5364,7 +5294,7 @@
       "history": []
     },
     "gen-magnetic-kelp": {
-      "hash": "395a0914f16aee63",
+      "hash": "0d2eefe0f7fd367a",
       "history": [
         {
           "event": "upgraded",
@@ -5373,14 +5303,6 @@
           "prev_hash": "f6a8cd450881b4f0",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "395a0914f16aee63",
-          "prev_hash": "0d2eefe0f7fd367a",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
         }
       ]
     },
@@ -5586,17 +5508,8 @@
       ]
     },
     "gen-neon-lotus": {
-      "hash": "0ce77e52892267e5",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "0ce77e52892267e5",
-          "prev_hash": "cff0aa0b1ba6458d",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
-        }
-      ]
+      "hash": "cff0aa0b1ba6458d",
+      "history": []
     },
     "gen-neon-neural-network": {
       "hash": "1a6ec0929b2b0934",
@@ -5679,8 +5592,33 @@
       ]
     },
     "gen-neural-dust": {
-      "hash": "c0eafe0f7c0399f2",
-      "history": []
+      "hash": "98bf03797af989ba",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "22156bed9cfaa8e8",
+          "prev_hash": "c0eafe0f7c0399f2",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "e01848188b4f2782",
+          "prev_hash": "22156bed9cfaa8e8",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:44:52.063Z",
+          "hash": "98bf03797af989ba",
+          "prev_hash": "e01848188b4f2782",
+          "commit": "9a62d483",
+          "note": "opus/batch-08: depth read via non_filtering_sampler (2026-10-19)"
+        }
+      ]
     },
     "gen-neural-fractal": {
       "hash": "95d37034a49c9a42",
@@ -5815,7 +5753,7 @@
       ]
     },
     "gen-opal-circuit": {
-      "hash": "c61aaae860f4e55a",
+      "hash": "04578554fd90e30b",
       "history": [
         {
           "event": "upgraded",
@@ -5824,14 +5762,6 @@
           "prev_hash": "6e9f3a61e61eadf9",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "c61aaae860f4e55a",
-          "prev_hash": "04578554fd90e30b",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
         }
       ]
     },
@@ -5840,7 +5770,7 @@
       "history": []
     },
     "gen-phase-transition-memory-weave": {
-      "hash": "c20cd8b4a5e0a45d",
+      "hash": "80483454e3222f1d",
       "history": [
         {
           "event": "upgraded",
@@ -5849,6 +5779,14 @@
           "prev_hash": "7960716a36a39a77",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "80483454e3222f1d",
+          "prev_hash": "c20cd8b4a5e0a45d",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
         }
       ]
     },
@@ -6265,17 +6203,8 @@
       ]
     },
     "gen-quantum-neural-lace": {
-      "hash": "186dc9e29b32abd6",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "186dc9e29b32abd6",
-          "prev_hash": "afb1466ab94e0973",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
-        }
-      ]
+      "hash": "afb1466ab94e0973",
+      "history": []
     },
     "gen-quantum-pollen": {
       "hash": "d778b4700ac259ca",
@@ -6341,8 +6270,25 @@
       "history": []
     },
     "gen-radiant-quantum-plasma-kraken-core": {
-      "hash": "f5e1a6ae399e91cf",
-      "history": []
+      "hash": "5b92652a1bc64230",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "ad3e97437fac9b52",
+          "prev_hash": "f5e1a6ae399e91cf",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "5b92652a1bc64230",
+          "prev_hash": "ad3e97437fac9b52",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
+        }
+      ]
     },
     "gen-rainbow-firefly-dance": {
       "hash": "c364078978ff0157",
@@ -6442,8 +6388,17 @@
       "history": []
     },
     "gen-sentient-cyber-aurora-void-owl": {
-      "hash": "63c061c5b15e54d4",
-      "history": []
+      "hash": "d4ad7892cb2870d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "d4ad7892cb2870d2",
+          "prev_hash": "63c061c5b15e54d4",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        }
+      ]
     },
     "gen-sentient-cyber-chrono-void-serpent": {
       "hash": "9a91b8b1adfb0c30",
@@ -6536,17 +6491,8 @@
       "history": []
     },
     "gen-showcase-kinetic-bloom": {
-      "hash": "b777ca1a7a9032ef",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "b777ca1a7a9032ef",
-          "prev_hash": "b44426bdc1513854",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
-        }
-      ]
+      "hash": "b44426bdc1513854",
+      "history": []
     },
     "gen-showcase-nebula-core": {
       "hash": "3506b3165d60c954",
@@ -6676,8 +6622,25 @@
       ]
     },
     "gen-stellar-web-loom": {
-      "hash": "ca771165d30f91c1",
-      "history": []
+      "hash": "5ffc8eb06d0a736b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:16:47.561Z",
+          "hash": "8cd3f52f1ca55f78",
+          "prev_hash": "ca771165d30f91c1",
+          "commit": "f4b48122",
+          "note": "opus/batch-08: native ideas + rescues (2026-10-19)"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-19T07:27:02.779Z",
+          "hash": "5ffc8eb06d0a736b",
+          "prev_hash": "8cd3f52f1ca55f78",
+          "commit": "23a5752c",
+          "note": "opus/batch-08 review fixes (2026-10-19)"
+        }
+      ]
     },
     "gen-strange-field-flow": {
       "hash": "f98ee201ad36a403",
@@ -6734,17 +6697,8 @@
       ]
     },
     "gen-symbiotic-cyber-mycelium": {
-      "hash": "7b3336617af3a8f8",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "7b3336617af3a8f8",
-          "prev_hash": "65e76f5a9c09943a",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
-        }
-      ]
+      "hash": "65e76f5a9c09943a",
+      "history": []
     },
     "gen-symbiotic-light-networks": {
       "hash": "90593a463e421a81",
@@ -6991,7 +6945,7 @@
       ]
     },
     "gen-xeno-mycelial-resonance-web": {
-      "hash": "fa540264e359626c",
+      "hash": "751433e9f39610ab",
       "history": [
         {
           "event": "upgraded",
@@ -7000,14 +6954,6 @@
           "prev_hash": "bb889930e1b6e90d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T08:03:00.222Z",
-          "hash": "fa540264e359626c",
-          "prev_hash": "751433e9f39610ab",
-          "commit": "73349721",
-          "note": "2026-10-25 sonnet/batch-01 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-01"
         }
       ]
     },
@@ -10325,17 +10271,8 @@
       "history": []
     },
     "digital-moss": {
-      "hash": "db4607b7274e3ac0",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "db4607b7274e3ac0",
-          "prev_hash": "91f80ad024e60774",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
-        }
-      ]
+      "hash": "91f80ad024e60774",
+      "history": []
     },
     "fabric-of-reality": {
       "hash": "7c8356dcc8ee138d",
@@ -11011,18 +10948,6 @@
           "hash": "9214f40e60534b0a",
           "commit": "5c5183cd",
           "note": "2026-10-18 argon4/batch-04: two native ideas each"
-        }
-      ]
-    },
-    "gen-quantum-coral-reef": {
-      "hash": "80b63ac8f413081c",
-      "history": [
-        {
-          "event": "added",
-          "date": "2026-10-25T10:56:17.564Z",
-          "hash": "80b63ac8f413081c",
-          "commit": "93e0ca80",
-          "note": "2026-10-25 sonnet/batch-02 organic twelve (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-25-sonnet-batch-02"
         }
       ]
     }
