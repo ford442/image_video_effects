@@ -7,28 +7,12 @@
 //   At 1337K, blackbody peak wavelength = 2.16683 μm (infrared)
 // Upgrade (2026-07-22, Visualist): true Planckian blackbody ramp,
 //   fresnel specular on flow ridges, bass-driven heat waves, glow clamp @1.2
+//  Upgraded: 2026-07-22, 2026-10-27
+//  Ideas: cool oxide skin in melt hollows; flow-aligned specular streaks
+//  A packing: ACES display RGBA history
 
-// 13-binding universal layout (matches all 694+ shaders in this repo)
-@group(0) @binding(0) var nearestSampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTexture: texture_2d<f32>;
-@group(0) @binding(5) var nearestClampSampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x: time, y: unused, z: unused, w: unused
-    zoom_config: vec4<f32>,  // x: mouseX, y: mouseY, z: mouseDown, w: unused
-    zoom_params: vec4<f32>,  // x: flowSpeed/turbulence, y: glow, z: specular, w: highlightFreq
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x: flowSpeed/turbulence, y: glow, z: specular, w: highlightFreq
 
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -58,9 +42,9 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-    let a = x * (x * 0.15 + 0.05) + 0.004;
-    let b = x * (x * 0.15 + 0.50) + 0.06;
-    return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14),
+                 vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // True blackbody (Planckian locus) color ramp.
@@ -158,6 +142,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Stefan-Boltzmann-ish emissive falloff: relative to melt-point emission
     let emissive = pow(kelvin / 1337.33, 3.0);
     var color = blackbody * emissive * 0.55;
+    let oxide = (1.0 - smoothstep(0.28, 0.55, molten)) *
+        (1.0 - smoothstep(1450.0, 2100.0, kelvin));
+    color *= 1.0 - oxide * 0.32;
 
     // Detail sparkle keeps the fine fBM grain alive inside the ramp
     color += blackbody * detail * 0.35;
@@ -185,6 +172,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fresnelSpec = (fresnel * ridgeMask * 1.6 + specLobe * 0.9)
                       * mix(0.15, 1.5, specularStrength) * (1.0 + treble * 1.2);
     color += blackbodyColor(kelvin + 900.0) * fresnelSpec;
+    let flowTangent = vec2<f32>(-grad.y, grad.x) / max(length(grad), 0.001);
+    let streakPhase = dot(q, flowTangent) * (6.0 + highlightFreq * 10.0) - t * flowSpeed;
+    let streak = pow(0.5 + 0.5 * cos(streakPhase), 10.0) * ridgeMask;
+    color += vec3<f32>(1.0, 0.68, 0.24) * streak * specularStrength * 0.3;
 
     // ── Glow layer with bass heat waves, clamped pre-tint at ~1.2 ────────
     // (luma-echo-warp lesson: clamp BEFORE multiplying by tint, or the tint
@@ -207,12 +198,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     color += ripple * (0.4 + treble * 0.6);
 
     // Tone and vignette
-    color = pow(color, vec3<f32>(0.95));
+    color = pow(max(color, vec3<f32>(0.0)), vec3<f32>(0.95));
     let vignette = 1.0 - length(uv - 0.5) * 0.6;
     color *= vignette * 0.95 + 0.05;
 
     // Chromatic aberration
-    let depth = textureSampleLevel(depthTexture, nearestClampSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
@@ -223,12 +214,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let alpha = clamp(length(color) * 1.2, 0.2, 0.95);
 
     // Temporal feedback
-    let prev = textureSampleLevel(dataTextureC, nearestSampler, uv, 0.0);
+    let prev = textureLoad(dataTextureC, coord, 0);
     let decay = 0.96;
     let temporal = mix(prev.rgb * decay, color, 0.25);
 
     // Output
     textureStore(writeTexture, id.xy, vec4<f32>(temporal, alpha));
     textureStore(dataTextureA, coord, vec4<f32>(temporal, alpha));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

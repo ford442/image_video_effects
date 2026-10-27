@@ -7,10 +7,8 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Updated: 2026-06-01
-//  Upgraded: 2026-09-27
-//  Ideas: relativistic beaming + gravitational redshift on the disk; log-spiral
-//         density-wave arms; precessing helical jet riding the knot cadence;
-//         frame-drag nodal precession ripples; photon-ring caustic scintillation
+//  Upgraded: 2026-09-27, 2026-10-27
+//  Ideas: spiral-arm self-shadowing; precessing jet sheath
 //  A packing: raw HDR rgb + semantic alpha (ACES only on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -148,6 +146,8 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, 
                 let shift = vec3<f32>(1.0 - 0.3 * ts, 1.0, 1.0 + 0.4 * ts);
                 col = mix(vec3<f32>(0.8, 0.2, 0.0), vec3<f32>(0.8, 0.9, 1.0), heat) * heat * (1.4 + shear) * shift * beamTint.x;
                 col *= 0.9 + ltPrecess * 0.4;
+                let armShadow = pow(1.0 - arm, 3.0) * smoothstep(0.7, 2.5, diskDist);
+                col *= 1.0 - 0.32 * armShadow;
                 // Idea 5: scintillating photon-ring caustics near the innermost stable orbit.
                 let photonRing = exp(-pow((diskDist - 1.6) * 10.0, 2.0));
                 let scint = pow(0.5 + 0.5 * sin(time * 9.0 + diskAngle * 18.0 + n * 10.0), 6.0);
@@ -159,6 +159,9 @@ fn marchRay(ro: vec3<f32>, rd: vec3<f32>, time: f32, dd: f32, ji: f32, gw: f32, 
         let jetKnot = exp(-knotPhase * knotPhase * 180.0);
         glow += vec3<f32>(1.0, 0.9, 1.0) * 0.02 / (abs(dBlackHole) + 0.05);
         glow += vec3<f32>(0.45, 0.12, 1.2) * (0.008 * ji * (0.7 + jetKnot * 2.4)) / (abs(dJet) + 0.05);
+        let sheathDist = abs(length(pJet.xz - helixAxis) - (0.16 + 0.025 * abs(pJet.y)));
+        let sheath = exp(-sheathDist * 18.0) * exp(-abs(pJet.y) * 0.25);
+        glow += vec3<f32>(0.16, 0.25, 0.7) * sheath * ji * 0.012;
         glow += vec3<f32>(1.0, 0.4, 0.1) * 0.005 * mix(1.0, beamTint.x, 0.6) / (abs(dDisk) + 0.1);
         t += max(abs(d) * 0.5, 0.003);
         if (distToOrigin < 0.8) {

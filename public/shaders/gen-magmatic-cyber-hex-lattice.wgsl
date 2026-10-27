@@ -1,7 +1,10 @@
-// ----------------------------------------------------------------
 // Magmatic Cyber-Hex Lattice
 // Category: generative
-// ----------------------------------------------------------------
+// Features: audio-reactive, mouse-driven, upgraded-rgba
+// Complexity: High
+// Upgraded: 2026-10-27
+// Ideas: magma-heated hex walls; cooling Voronoi crust plates
+// A packing: ACES display RGBA
 
 #include "_prelude.wgsl"
 
@@ -51,6 +54,12 @@ fn fbm(p: vec2<f32>) -> f32 {
         w *= 0.5;
     }
     return f;
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp(c * (2.51 * c + 0.03) / (c * (2.43 * c + 0.59) + 0.14),
+                 vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Smooth min/max for blending structures
@@ -176,7 +185,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Raymarching
     var t = 0.0;
-    var max_t = 30.0;
+    let max_t = 30.0;
     var hit = false;
     var mat = 0;
     var magma_h = 0.0;
@@ -198,12 +207,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Shading
     var col = vec3<f32>(0.0); // Background
+    var coverage = 0.0;
 
     if (hit) {
         let p = ro + t * rd;
         let n = calcNormal(p);
         let l = normalize(vec3<f32>(1.0, 2.0, -1.0));
         let diff = max(dot(n, l), 0.0);
+        coverage = exp(-0.02 * t * t);
 
         if (mat == 0) { // Grid
             col = vec3<f32>(0.1) * diff;
@@ -219,6 +230,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (n.y > 0.8) {
                 col += neon_color * (0.2 + treble * 0.8);
             }
+            let magmaLevel = -1.0 + fbm(p.xz * 0.2 + u.config.x * 0.1 * u.zoom_params.y) * 1.5 +
+                clamp(plasmaBuffer[0].y, 0.0, 1.0) * 0.5;
+            let heatContact = exp(-abs(p.y - magmaLevel) * 2.5);
+            col += vec3<f32>(1.0, 0.22, 0.02) * heatContact * 0.8;
         } else if (mat == 1) { // Magma
             let c1 = vec3<f32>(0.5, 0.0, 0.0);
             let c2 = vec3<f32>(1.0, 0.5, 0.0);
@@ -227,12 +242,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             col = mix(c1, c2, smoothstep(0.0, 0.5, magma_h));
             col = mix(col, c3, smoothstep(0.5, 1.0, magma_h));
             col *= 1.5;
+            let cellDistance = voronoi(p.xz * 0.65 + u.config.x * 0.08 * u.zoom_params.y);
+            let plateEdges = smoothstep(0.22, 0.65, cellDistance);
+            col *= 1.0 - 0.48 * plateEdges;
+            col += vec3<f32>(1.0, 0.2, 0.02) * (1.0 - plateEdges) * 0.22;
         }
 
         // Fog
         col = mix(col, vec3<f32>(0.0), 1.0 - exp(-0.02 * t * t));
     }
 
-    let final_color = vec4<f32>(col, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), final_color);
+    let coord = vec2<i32>(global_id.xy);
+    let alpha = clamp(coverage * (0.65 + 0.35 * length(aces(col))), 0.0, 1.0);
+    let final_color = vec4<f32>(aces(col), alpha);
+    textureStore(writeTexture, coord, final_color);
+    textureStore(dataTextureA, coord, final_color);
+    let depth = select(0.0, clamp(1.0 - t / max_t, 0.0, 1.0), hit);
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

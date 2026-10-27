@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: side-vorticity curl from up-advection; age-gated ember sparks from Ember Glow
+//  Upgraded: 2026-09-12, 2026-10-27
+//  Ideas: smoke-starved combustion; heat-gradient reaction fronts
 //  A packing: raw (fuel, temperature, smoke, age)
 // ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
@@ -17,26 +17,7 @@
 //  Fuel and smoke need sub-percent precision for stable flame fronts.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -151,7 +132,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // === COMBUSTION ===
     // Fuel burns if temperature is high enough
     let ignitionTemp = 0.2;
-    let burning = step(ignitionTemp, temperature) * fuel * burnRate;
+    let oxygen = 1.0 - 0.3 * smoothstep(0.25, 1.5, smoke);
+    let burning = step(ignitionTemp, temperature) * fuel * burnRate * oxygen;
     fuel -= burning;
     temperature += burning * 2.0;
     age += burning * 0.5;
@@ -200,6 +182,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Smoke darkens and tints blue-gray
     let smokeColor = vec3<f32>(0.2, 0.25, 0.3);
     var displayColor = mix(fireColor, smokeColor, min(smoke, 0.9));
+    let heatEdge = length(vec2<f32>(right.g - left.g, up.g - down.g));
+    let reactionFront = smoothstep(0.02, 0.35, heatEdge) *
+        smoothstep(0.15, 0.8, temperature) * oxygen;
+    displayColor += vec3<f32>(1.0, 0.38, 0.04) * reactionFront * 0.45;
 
     // Age adds red ember glow
     let ember = smoothstep(0.5, 2.0, age) * emberGlow;

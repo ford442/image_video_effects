@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: drag-damped spark flight; shell types per mortar (peony / willow / ring); crossette split; image-sampled launch-site muzzle flash; delayed secondary peony burst
+//  Upgraded: 2026-10-10, 2026-10-27
+//  Ideas: wind-sheared spark flight; pulsing crossette crackle
 //  A packing: ACES display RGBA (rgb = tone-mapped colour, read back from C as trail history; a = semantic glow alpha)
 // ═══════════════════════════════════════════════════════════════════
 //  Created 2026-07-05 (Spark Engine). The loaded image (or video frame)
@@ -236,6 +236,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           vel = rot2(vec2<f32>(cos(ra), sin(ra) * ringTilt), ringRoll) * rs;
         }
 
+        // A slow crosswind bends the same trajectory used for heads and tails.
+        vel.x += 0.13 * sin(time * 0.16 + seed * TAU);
         let sp = sparkPosDrag(bCenter, vel, bAge, gGrav, kDrag);
 
         // Sample image near burst center for color (with twist)
@@ -274,7 +276,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
               let cd = rot2(hd, PI * 0.25 + f32(c) * PI * 0.5);
               let cv = vS * 0.35 + cd * (0.45 * spd);
               let cp = sparkPosDrag(pS, cv, cAge, gGrav, kDrag);
-              g += softGlow(uv, cp, 0.006, amp * 0.75);
+              let crackle = 0.65 + 0.35 * sin(cAge * 16.0 + f32(c) * 1.7 + js * TAU);
+              g += softGlow(uv, cp, 0.006, amp * 0.75 * crackle);
             }
             g += softGlow(uv, pS, 0.012, amp * 2.0 * exp(-cAge * 12.0)); // split pop
           }

@@ -5,8 +5,8 @@
 //  Complexity: Very High
 //  Chunks From: gen-singularity-forge.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
-//  Upgraded: 2026-09-15
-//  Ideas: Keplerian Doppler beaming on the disk; photon-ring caustic at 1.5 Rs
+//  Upgraded: 2026-09-15, 2026-10-27
+//  Ideas: orbiting thermal disk hotspots; cooling ballistic jet knots
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Raymarched black hole with accretion disk where thermal energy is
@@ -14,26 +14,7 @@
 //  temperatures range from cool red dwarfs to blazing blue giants.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rotate2D(angle: f32) -> mat2x2<f32> {
   let c = cos(angle);
@@ -83,7 +64,7 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
   if (t <= 6.5) {
     r = 1.0;
     g = clamp(0.39 * log(t) - 0.63, 0.0, 1.0);
-    b = clamp(0.54 * log(t - 1.0) - 1.0, 0.0, 1.0);
+    b = clamp(0.54 * log(max(t - 1.0, 0.001)) - 1.0, 0.0, 1.0);
   } else {
     r = clamp(1.29 * pow(t - 0.6, -0.133), 0.0, 1.0);
     g = clamp(1.29 * pow(t - 0.6, -0.076), 0.0, 1.0);
@@ -192,7 +173,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let vLen = max(length(vPhi), 0.001);
         let los = -rd;
         let betaDoppler = clamp(dot(vPhi / vLen, los) * 0.35 / max(sqrt(diskDist), 0.4), -0.6, 0.6);
-        let tempD = temp * (1.0 + betaDoppler);
+        let diskAngle = atan2(pDisk.z, pDisk.x);
+        let orbitPhase = 3.0 * (diskAngle - time / max(pow(diskDist, 1.5), 0.5));
+        let hotSpot = pow(0.5 + 0.5 * cos(orbitPhase), 8.0);
+        let tempD = temp * (1.0 + betaDoppler) * (1.0 + hotSpot * 0.18);
         let thermal = blackbodyColor(tempD);
         let heat = clamp(1.0 - (diskDist - 1.0) * 0.3, 0.0, 1.0);
         col = thermal * heat * 2.0 * (1.0 + max(betaDoppler, 0.0) * 0.8);
@@ -206,9 +190,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let ring = exp(-photonDist * photonDist * 90.0);
     glow += blackbodyColor(18000.0) * ring * 0.07 * (1.0 + treble * 0.4);
 
-    let jetTemp = 15000.0;
+    let jetAge = abs(pJet.y);
+    let knotPhase = jetAge * 1.8 - time * 2.0;
+    let jetKnot = pow(0.5 + 0.5 * cos(knotPhase), 8.0);
+    let jetTemp = mix(15000.0, 6000.0, clamp(jetAge / 5.0, 0.0, 1.0));
     let jetColor = blackbodyColor(jetTemp);
-    glow += jetColor * (0.01 * jetIntensity * (1.0 + sin(spaghettification))) / (abs(dJet) + 0.05);
+    glow += jetColor * (0.01 * jetIntensity * (1.0 + sin(spaghettification)) *
+      (0.65 + 0.7 * jetKnot)) / (abs(dJet) + 0.05);
     let ambTemp = 4000.0;
     let ambColor = blackbodyColor(ambTemp);
     glow += ambColor * 0.005 / (abs(dDisk) + 0.1);
@@ -221,13 +209,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if(t > 20.0) { break; }
   }
 
-  col += glow;
-  col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
-
-  col = toneMapACES(col * 1.5);
-
+  col = max(col + glow, vec3<f32>(0.0));
   let maxChannel = max(col.r, max(col.g, col.b));
   let exposure = max(0.0, maxChannel - 1.0);
+  col = toneMapACES(col * 1.5);
   let alpha = clamp(exposure + length(col) * 0.45 + 0.12, 0.0, 1.0);
 
   textureStore(dataTextureA, vec2<i32>(id.xy), vec4<f32>(col, alpha));

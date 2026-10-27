@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Busse columnar convection with thermal-wind differential rotation and tangent-cylinder polar vortex; plume-head coronae with radial dike swarms and annular troughs
+//  Upgraded: 2026-09-14, 2026-10-27
+//  Ideas: sinking-column crust shadows; plume-heated fracture seams
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Convection, y=Plume Intensity, z=Crust Thickness, w=Glow
-  ripples: array<vec4<f32>, 50>, // xy=pos, z=start time
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Convection, y=Plume Intensity, z=Crust Thickness, w=Glow
 
 fn hash21(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
@@ -228,6 +210,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cor = coronae(stereo, t, u.zoom_params.y, bass);
   moltenCol += vec3<f32>(1.0, 0.55, 0.15) * cor.y * 0.35 * plumeAmt * glowPow;
   moltenCol += vec3<f32>(1.0, 0.72, 0.3) * cor.x * (0.35 + treble * 0.5 + quake * 0.5) * glowPow;
+  let sinking = smoothstep(0.0, 0.12, -busse.x) * busse.y;
+  moltenCol *= 1.0 - 0.28 * sinking;
+  let plumeSeams = cor.y * (1.0 - smoothstep(0.04, 0.18, crackNoise));
+  moltenCol += vec3<f32>(1.0, 0.42, 0.08) * plumeSeams * plumeAmt * glowPow * 0.9;
 
   // Dark crust where not cracking; annular coronae troughs thicken the lid
   let crustMask = clamp(smoothstep(0.0, crustThick * 2.0, crackNoise) * (1.0 - plume) + cor.z * 0.6 * (0.5 + u.zoom_params.z), 0.0, 1.0) * (1.0 - quake * 0.4);

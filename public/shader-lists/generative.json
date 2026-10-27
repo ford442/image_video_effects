@@ -18441,6 +18441,11 @@
       16,
       1
     ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "hex_scale",

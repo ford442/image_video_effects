@@ -474,8 +474,17 @@
       "history": []
     },
     "gen-singularity-forge-blackbody": {
-      "hash": "00df0de1b8cdda8f",
-      "history": []
+      "hash": "4526175fd253d0af",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "4526175fd253d0af",
+          "prev_hash": "00df0de1b8cdda8f",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
+        }
+      ]
     },
     "gen-string-theory-structure": {
       "hash": "46d910b7aa416ef6",
@@ -5172,7 +5181,7 @@
       ]
     },
     "gen-image-pyro": {
-      "hash": "b7a25474ecd2eb56",
+      "hash": "03433f95ec017dda",
       "history": [
         {
           "event": "upgraded",
@@ -5181,6 +5190,14 @@
           "prev_hash": "a5e896603a2c9c98",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "03433f95ec017dda",
+          "prev_hash": "b7a25474ecd2eb56",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
         }
       ]
     },
@@ -5863,6 +5880,19 @@
         }
       ]
     },
+    "gen-magmatic-cyber-hex-lattice": {
+      "hash": "023779b254cf1664",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "023779b254cf1664",
+          "prev_hash": "0eac97eb45df2b1f",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
+        }
+      ]
+    },
     "gen-minimal-surface-soap-iridescence": {
       "hash": "450de54a6c906933",
       "history": [
@@ -5877,8 +5907,17 @@
       ]
     },
     "gen-molten-planetary-core": {
-      "hash": "dec6656d109d51b7",
-      "history": []
+      "hash": "bd88c2e21ad06f50",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "bd88c2e21ad06f50",
+          "prev_hash": "dec6656d109d51b7",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
+        }
+      ]
     },
     "gen-multi-scale-evolutionary-cellular-gardens": {
       "hash": "3e3aedd96fa05b0d",
@@ -7080,7 +7119,7 @@
       "history": []
     },
     "gen-singularity-forge": {
-      "hash": "065eb14bba3f5b3c",
+      "hash": "42ef0488916b7d61",
       "history": [
         {
           "event": "upgraded",
@@ -7089,6 +7128,14 @@
           "prev_hash": "7c24f437188e1a41",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "42ef0488916b7d61",
+          "prev_hash": "065eb14bba3f5b3c",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
         }
       ]
     },
@@ -7253,8 +7300,17 @@
       ]
     },
     "gen-supernova-remnant": {
-      "hash": "862b6298703ba7b6",
-      "history": []
+      "hash": "ad31b84860062ae7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "ad31b84860062ae7",
+          "prev_hash": "862b6298703ba7b6",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
+        }
+      ]
     },
     "gen-symbiotic-bismuth-crystal-dragon-core": {
       "hash": "1457637c8ff23d4b",
@@ -7942,8 +7998,17 @@
       ]
     },
     "molten-gold": {
-      "hash": "21519cd3a01ac73b",
-      "history": []
+      "hash": "318813bf4a889d61",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "318813bf4a889d61",
+          "prev_hash": "21519cd3a01ac73b",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
+        }
+      ]
     },
     "morphogenic-resonance": {
       "hash": "f696307124199c62",
@@ -8130,8 +8195,17 @@
       ]
     },
     "supernova-remnant": {
-      "hash": "1a1de0bab8d19195",
-      "history": []
+      "hash": "7e10baa0365294a8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "7e10baa0365294a8",
+          "prev_hash": "1a1de0bab8d19195",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
+        }
+      ]
     },
     "symbiotic-light-propagation-networks": {
       "hash": "e7eed819c22d7915",
@@ -11942,8 +12016,17 @@
       "history": []
     },
     "alpha-fire-temperature": {
-      "hash": "19ccb49bb5f7aeb7",
-      "history": []
+      "hash": "defb6ede67aaf59e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "defb6ede67aaf59e",
+          "prev_hash": "19ccb49bb5f7aeb7",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
+        }
+      ]
     },
     "alpha-fluid-simulation-paint": {
       "hash": "e90ea790005ffda5",
@@ -12100,8 +12183,17 @@
       ]
     },
     "lichtenberg-fractal": {
-      "hash": "5746de8562f4d7d0",
-      "history": []
+      "hash": "6740436ed04d83ce",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T15:04:02.917Z",
+          "hash": "6740436ed04d83ce",
+          "prev_hash": "5746de8562f4d7d0",
+          "commit": "d2c5400",
+          "note": "2026-10-27 thermal and cosmic shader upgrades; ideas and feedback packing documented in shader headers"
+        }
+      ]
     },
     "luma-flow-field": {
       "hash": "7ea0d6d9da863463",
