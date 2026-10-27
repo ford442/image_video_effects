@@ -3,30 +3,13 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal-feedback, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: three-strand braided fibrils; opposing-curl tension knots
+//  Upgraded: 2026-10-19
+//  Ideas: three-strand braided fibrils; opposing-curl tension knots;
+//         dew beads strung along each fibril; low-tension void pockets with lit rims
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Flow Speed, .y = Thread Density, .z = Vortex Strength, .w = Iridescence Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Flow Speed, .y = Thread Density, .z = Vortex Strength, .w = Iridescence Shift
 
 // --- Constants & Utilities ---
 const PI: f32 = 3.14159265359;
@@ -244,13 +227,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     radiance += vec3<f32>(1.55, 1.28, 1.08) * knotCore * (1.0 + treble * 0.35);
     radiance += palette(iridescence + 0.62) * causticTail * (0.32 + treble * 0.16);
 
+    // Idea 3 — dew beads: droplets of light strung at even spacing along the
+    // strongest fibril, drifting slowly with the flow and glinting with treble.
+    let strandMax = max(strand0, max(strand1, strand2));
+    let dewCoord = along * (16.0 + threadDensity * 3.0) - u.config.x * flowSpeed * 0.25;
+    let dewCell = floor(dewCoord);
+    let dewF = fract(dewCoord) - 0.5;
+    let dewOn = step(0.35, fract(sin(dewCell * 78.233 + across * 3.0) * 43758.5453));
+    let dew = pow(strandMax, 3.0) * exp(-dewF * dewF * 48.0) * dewOn;
+    let glint = 0.6 + 0.4 * sin(dewCell * 2.7 + u.config.x * (2.0 + treble * 9.0));
+    radiance += vec3<f32>(0.92, 0.97, 1.0) * dew * glint * (0.55 + treble * 0.5);
+
+    // Idea 4 — void pockets: where the curl field goes slack, the silk thins into
+    // the void it is named for; a thin lit rim marks the pocket boundary.
+    let voidMask = smoothstep(0.16, 0.05, tension);
+    let voidRim = exp(-pow((tension - 0.17) * 18.0, 2.0)) * (1.0 - voidMask);
+    radiance = radiance * (1.0 - voidMask * 0.85);
+    radiance += palette(iridescence + 0.85 + field.z * 0.1) * voidRim * (0.22 + mids * 0.12);
+
     // Slow exact A/C display-history blending preserves the silk drift.
     let currentDisplay = acesToneMap(radiance);
     let past = textureLoad(dataTextureC, coords, 0);
     let blend = clamp(0.045 + flowSpeed * 0.012, 0.045, 0.09);
     let finalColor = mix(past.rgb, currentDisplay, blend);
     let currentAlpha = clamp(
-        0.08 + tension * 0.08 + braid * 0.42 + knotCore * 0.34,
+        (0.08 + tension * 0.08 + braid * 0.42 + knotCore * 0.34 + dew * 0.2) * (1.0 - voidMask * 0.6),
         0.0,
         0.96
     );

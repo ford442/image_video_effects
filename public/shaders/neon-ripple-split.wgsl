@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, semantic-alpha
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: crest RGB split along the shear axis; neon seam lines at shear zero crossings (alpha = max(displacement, seam))
+//  Upgraded: 2026-10-27
+//  Ideas: wave packets on the shear carrier; neon spends the photo under the tube
 //  A packing: linear pre-ACES RGBA (12% feedback, exact C load); (0,0) = bass env + sentinel -7 in .w
 // ═══════════════════════════════════════════════════════════════════
 //  A sine shear runs down the screen and displaces the image in x; pink
@@ -108,13 +108,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Single smooth displacement field (NO per-channel UVs) ───
     let shearPhase = uv.y * frequency - time * effectiveRippleSpeed;
-    let shearWave = sin(shearPhase);
+    let carrier = sin(shearPhase);
+    // ── Idea 1: wave packets ────────────────────────────────────────
+    // A slower envelope rides the existing carrier. Frequency still sets
+    // the carrier. A residual keeps the shear visible between packets.
+    let packet = 0.5 + 0.5 * sin(uv.y * frequency * 0.18 - time * effectiveRippleSpeed * 0.28);
+    let shearWave = carrier * mix(0.32, 1.0, smoothstep(0.2, 0.8, packet));
     let baseRipple = shearWave * splitAmount;
     let dx = (baseRipple + rippleSum) * (1.0 + depth * 0.5);
     let smoothOffset = vec2<f32>(dx, 0.0) + gravityOffset;
     let displacedUV = clamp(uv + smoothOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // ── Idea 1: crest RGB split — at the crests of the shear (|sin| → 1) the
+    // Kept: crest RGB split — at the crests of the shear (|sin| → 1) the
     // R and B channels sample ±dx*0.15 apart along the shear (x) axis, G stays
     // on the unified UV. Zero at the zero crossings, so flat regions stay clean.
     let crest = smoothstep(0.45, 1.0, abs(shearWave));
@@ -140,12 +145,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let absRipple = abs(baseRipple) + abs(rippleSum) * 0.5;
     let neon = vec3<f32>(1.0, 0.5, 0.8) * absRipple * 10.0 * intensity;
 
-    // ── Idea 2: neon seam lines — a thin horizontal seam where the shear
+    // Kept: neon seam lines — a thin horizontal seam where the shear
     // crosses zero (|sin| < ~0.12 → ~6 px at 1080p for frequency 20), lit in
     // the pink neon mixed with the spectral tint and pumped by the bass env.
     let seam = pow(1.0 - smoothstep(0.0, 0.12, abs(shearWave)), 2.0);
     let seamColor = mix(vec3<f32>(1.0, 0.5, 0.8), spectralTint * 1.5, 0.5) * seam * intensity * (0.5 + env * 0.6) * 0.8;
-    let finalColor = tintedColor + neon + seamColor;
+    // ── Idea 2: neon spends the photo ───────────────────────────────
+    // The tube is the light. Under the seam and the crest glow the
+    // picture desaturates and darkens, then the neon is added back.
+    let glowAmt = clamp((length(neon) + length(seamColor)) * 0.12, 0.0, 0.65);
+    let photoL = dot(tintedColor, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let stolen = mix(tintedColor, vec3<f32>(photoL * 0.35), glowAmt);
+    let finalColor = stolen + neon + seamColor;
 
     // ─── Alpha = max(ripple displacement * bass pulse + neon emission, seam) ───
     let bassPulse = 0.3 + env * 0.7;

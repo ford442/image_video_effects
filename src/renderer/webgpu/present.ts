@@ -54,6 +54,8 @@ export function needsScaledInputCopy(
 export class WebGPUPresenter {
   private scaleBindGroup: GPUBindGroup | null = null;
   private scaleBindGroupTex: GPUTexture | null = null;
+  /** The layout is rebuilt with the present pipelines (HDR on / off, colour format). */
+  private scaleBindGroupLayout: GPUBindGroupLayout | null = null;
 
   /** Seed readTex from the source, scaling through a render pass when required. */
   encodeInputCopy(state: WebGPUFrameState, encoder: GPUCommandEncoder): void {
@@ -72,7 +74,8 @@ export class WebGPUPresenter {
         ],
       });
       scalePass.setPipeline(state.scaleCopyPipeline);
-      scalePass.setBindGroup(0, this.getScaleBindGroup(state));
+      const scaleGroup = this.getScaleBindGroup(state);
+      if (scaleGroup) scalePass.setBindGroup(0, scaleGroup);
       scalePass.draw(3);
       scalePass.end();
       return;
@@ -133,7 +136,7 @@ export class WebGPUPresenter {
   }
 
   updateBlitBindGroup(state: WebGPUFrameState): void {
-    if (!state.device) return;
+    if (!state.device || !state.presentParamsBuf) return;
     if (!needsBlitBindGroupRefresh({
       hasBindGroup: !!state.blitBindGroup,
       readTextureMatches: state.blitReadTex === state.lastBlitReadTex,
@@ -147,20 +150,28 @@ export class WebGPUPresenter {
       state.device,
       state.blitBindGroupLayout,
       state.blitReadTex,
+      state.presentParamsBuf,
     );
     state.lastBlitReadTex = state.blitReadTex;
     state.lastBlitScaledW = state.scaledW;
     state.lastBlitScaledH = state.scaledH;
   }
 
-  private getScaleBindGroup(state: WebGPUFrameState): GPUBindGroup {
-    if (!this.scaleBindGroup || this.scaleBindGroupTex !== state.sourceTex) {
+  private getScaleBindGroup(state: WebGPUFrameState): GPUBindGroup | null {
+    if (!state.device || !state.presentParamsBuf) return null;
+    if (
+      !this.scaleBindGroup
+      || this.scaleBindGroupTex !== state.sourceTex
+      || this.scaleBindGroupLayout !== state.blitBindGroupLayout
+    ) {
       this.scaleBindGroup = createBlitBindGroup(
-        state.device!,
+        state.device,
         state.blitBindGroupLayout,
         state.sourceTex,
+        state.presentParamsBuf,
       );
       this.scaleBindGroupTex = state.sourceTex;
+      this.scaleBindGroupLayout = state.blitBindGroupLayout;
     }
     return this.scaleBindGroup;
   }

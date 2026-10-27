@@ -3,8 +3,9 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: brightness-dependent beam width; rolling ground-loop hum bar; faceplate glass (rounded tube corners + curved-glass glare)
+//  Upgraded: 2026-10-19
+//  Ideas: brightness-dependent beam width; rolling ground-loop hum bar; faceplate glass (rounded tube corners + curved-glass glare);
+//         corner misconvergence (R/B land radially off G, ∝ r²); high-voltage breathing (bright pictures grow the raster)
 //  A packing: pre-ACES HDR phosphor RGB (post-persistence, no glass glare) + semantic alpha; C read back as that HDR RGB
 // ═══════════════════════════════════════════════════════════════════
 
@@ -86,11 +87,21 @@ fn scanBeam(srcY: f32, lineCount: f32, linesPerPx: f32, luma: f32, intensity: f3
   return mix(1.0, beam, clamp(intensity, 0.0, 1.0) * aa);
 }
 
-fn chromaticAberration(uv: vec2<f32>, strength: f32) -> vec3<f32> {
-  let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(strength, 0.0), 0.0).r;
+// IDEA 4 — corner misconvergence. The three guns converge at the centre but drift apart toward
+// the corners: R and B land radially off G by an amount growing with r², on top of HEAD's
+// constant horizontal split.
+fn misconverged(uv: vec2<f32>, strength: f32, convK: f32) -> vec3<f32> {
+  let c = uv * 2.0 - 1.0;
+  let conv = (uv - vec2<f32>(0.5)) * dot(c, c) * convK;
+  let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(strength, 0.0) + conv, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(strength, 0.0), 0.0).b;
+  let b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(strength, 0.0) - conv, 0.0).b;
   return vec3<f32>(r, g, b);
+}
+
+// IDEA 5 — high-voltage breathing: scale the raster about the screen centre.
+fn breatheUV(uv: vec2<f32>, breath: f32) -> vec2<f32> {
+  return vec2<f32>(0.5) + (uv - vec2<f32>(0.5)) / (1.0 + breath);
 }
 
 fn crtVignette(uv: vec2<f32>, strength: f32) -> f32 {
@@ -190,11 +201,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let flickerAmount = 0.5 + barrelAmount * 0.5 + mids * 0.2;
   let chromaticStr = 0.002 * barrelAmount + treble * 0.005;
 
+  // IDEA 5 — high-voltage breathing. A bright picture draws beam current, the EHT sags and the
+  // deflection overshoots: the raster grows. A 9-tap average picture level drives it (up to
+  // ~2.5% at full Barrel; dark frames shrink slightly).
+  var apl = 0.0;
+  for (var ty = 0; ty < 3; ty = ty + 1) {
+    for (var tx = 0; tx < 3; tx = tx + 1) {
+      let tuv = vec2<f32>(0.2 + 0.3 * f32(tx), 0.2 + 0.3 * f32(ty));
+      apl += dot(textureSampleLevel(readTexture, u_sampler, tuv, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    }
+  }
+  apl = apl / 9.0;
+  let breath = clamp((apl - 0.35) * 0.06, -0.01, 0.025) * barrelAmount;
+
   let curved = barrelAmount > 0.01;
-  var crtUV = select(uv, curveUv(uv, curvature), curved);
+  var crtUV = breatheUV(select(uv, curveUv(uv, curvature), curved), breath);
   // Source-row step for one screen pixel down (for scanline anti-aliasing under curvature).
-  let nextUV = select(uv + vec2<f32>(0.0, 1.0 / resolution.y),
-                      curveUv(uv + vec2<f32>(0.0, 1.0 / resolution.y), curvature), curved);
+  let nextUV = breatheUV(select(uv + vec2<f32>(0.0, 1.0 / resolution.y),
+                      curveUv(uv + vec2<f32>(0.0, 1.0 / resolution.y), curvature), curved), breath);
   let srcRowStep = abs(nextUV.y - crtUV.y);
 
   // IDEA 3a — rounded faceplate corners; soft glass edge instead of a hard tube cut.
@@ -221,7 +245,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let humGain = 1.0 - humDepth * humBand;
   crtUV.x += humBand * (0.0008 + mids * 0.002) * sin(crtUV.y * 40.0 + time * 7.0);
 
-  var color = chromaticAberration(crtUV, chromaticStr);
+  var color = misconverged(crtUV, chromaticStr, 0.006 * barrelAmount);
   let rowLuma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
 
   // IDEA 1 — beam-width scanlines on the curved source row (~3 screen px per line flat).

@@ -3,13 +3,15 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-19
 //  Ideas: gill regeneration wave through fractal branch generations (bass-kicked);
 //         root-to-tip capillary plasma flow along gill filaments (mids);
 //         leucistic gold iridophore speckle on body skin (treble glint);
 //         lateral-line neuromast dots with a head-to-tail pulse (air-band FFT);
-//         feathered gill fimbriae that breathe with Gill Expansion
-//  A packing: ACES display RGBA (C not read)
+//         feathered gill fimbriae that breathe with Gill Expansion;
+//         thin-film guanine iridophore sheen (§12.2F thin-film phase);
+//         lidless eyes with a Fresnel–Schlick cornea (§12.2F)
+//  A packing: ACES display RGBA (C not read); alpha 0.86+ on nebula misses, 0.9+ on the creature
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=Gill Expansion, y=Current Warp, z=Nebula Density, w=Bioluminescence
@@ -104,26 +106,40 @@ fn kaleido(uv: vec2<f32>, folds: f32) -> vec2<f32> {
     return vec2<f32>(cos(fa), sin(fa)) * rad;
 }
 
+// Current-warp twist shared by map() and the eye shading (Idea 7 needs the same body frame).
+fn currentTwist(p_in: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec3<f32> {
+    let current_warp = u.zoom_params.y;
+    let twist = (p_in.y * 1.5 + u.config.x * 0.4) * current_warp * (0.4 + snd.w * 0.8) + rip * 2.5;
+    let pw_xy = p_in.xy * rot2D(twist * 0.35);
+    return vec3<f32>(pw_xy.x, pw_xy.y, p_in.z);
+}
+
+// Body frame: swim wiggle (mids) + bass breathing applied to the twisted point.
+fn bodyFrame(p: vec3<f32>, snd: vec4<f32>) -> vec3<f32> {
+    var p_body = p;
+    p_body.x += sin(p_body.y * 2.0 - u.config.x * 0.5 * 3.0) * (0.1 + snd.y * 0.08);
+    return p_body / (1.0 + snd.x * 0.08);
+}
+
 // snd = (bass, mids, treble, fftGillBand); rip = click-ripple displacement
 fn map(p_in: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
     var p = p_in;
 
     // Current Warp slider: aether-current domain twist along the body axis.
     // FFT gill band tightens the current; click ripples churn it.
-    let current_warp = u.zoom_params.y;
-    let twist = (p.y * 1.5 + u.config.x * 0.4) * current_warp * (0.4 + snd.w * 0.8) + rip * 2.5;
-    let pw_xy = p.xy * rot2D(twist * 0.35);
-    p = vec3<f32>(pw_xy.x, pw_xy.y, p.z);
+    p = currentTwist(p, snd, rip);
 
     // Slowly translate Axolotl along the Z axis (swimming forward)
     let swim_time = u.config.x * 0.5;
 
     // Axolotl Body (Stretched sphere) — mids drive the swim wiggle
-    var p_body = p;
-    p_body.x += sin(p_body.y * 2.0 - swim_time * 3.0) * (0.1 + snd.y * 0.08);
-    p_body /= (1.0 + snd.x * 0.08); // bass breathing
+    let p_body = bodyFrame(p, snd); // swim wiggle + bass breathing
     let d_body = length(p_body * vec3<f32>(1.0, 0.3, 1.0)) - 0.4;
     var res = vec2<f32>(d_body, 1.0); // ID 1 = Body
+
+    // Idea 7: lidless eyes, dorsolateral on the head (+y end), riding the body's swim wiggle
+    let p_eye = vec3<f32>(abs(p_body.x) - 0.24, p_body.y - 0.78, p_body.z + 0.2);
+    let d_eye = length(p_eye) - 0.062;
 
     // Axolotl Tail
     var p_tail = p;
@@ -180,6 +196,9 @@ fn map(p_in: vec3<f32>, snd: vec4<f32>, rip: f32) -> vec2<f32> {
     } else {
         res.x = smin(res.x, d_gills, 0.1);
     }
+    if (d_eye < res.x) {
+        res = vec2<f32>(d_eye, 3.0); // ID 3 = Eye
+    }
 
     return res;
 }
@@ -215,7 +234,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let coord = vec2<i32>(gid.xy);
     let uv01 = vec2<f32>(gid.xy) / res;
-    let uv = (uv01 - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+    // Row 0 is the top of the frame: flip so world +y (head, gills) is up on screen.
+    let uv = (uv01 - 0.5) * vec2<f32>(res.x / res.y, -1.0);
 
     let t = u.config.x;
 
@@ -230,9 +250,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Click ripples deform the geometry
     let rip = rippleField(uv01, t);
 
-    // Mouse-orbit camera (mouse uv is 0-1, y=0 top — used directly, no flip)
+    // Mouse-orbit camera (mouse uv is 0-1, y=0 top). uv.y is flipped above, so the
+    // pitch is flipped too: vertical drag keeps the same sense as the horizontal yaw.
     let yaw = (u.zoom_config.y - 0.5) * PI * 1.4 + t * 0.06;
-    let pitch = (u.zoom_config.z - 0.5) * PI * 0.6;
+    let pitch = (0.5 - u.zoom_config.z) * PI * 0.6;
     let cam = rotY(yaw) * rotX(pitch);
 
     let ro = cam * vec3<f32>(0.0, 0.0, -3.0);
@@ -278,7 +299,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         let base_col = vec3<f32>(0.8, 0.2, 0.6); // Pinkish axolotl base
 
-        if (m_id < 1.5) {
+        if (m_id > 2.9) {
+            // Idea 7: eye — black pupil, gold iris ring, cornea reflects the nebula by Fresnel–Schlick
+            let pb = bodyFrame(currentTwist(p, snd, rip), snd);
+            let side = select(-1.0, 1.0, pb.x > 0.0);
+            let gaze = normalize(vec3<f32>(side * 0.24, 0.12, -0.2));
+            let cosA = dot(normalize(pb - vec3<f32>(side * 0.24, 0.78, -0.2)), gaze);
+            let iris = smoothstep(0.62, 0.7, cosA) * (1.0 - smoothstep(0.84, 0.9, cosA));
+            let cosV = max(dot(n, -rd), 0.0);
+            let fres = 0.025 + 0.975 * pow(1.0 - cosV, 5.0);
+            let refl = reflect(rd, n);
+            let catchlight = pow(max(dot(refl, lightDir), 0.0), 80.0);
+            let eyeBase = vec3<f32>(0.015, 0.01, 0.02) + vec3<f32>(0.75, 0.5, 0.15) * iris * (0.3 + diff * 0.7);
+            col = eyeBase * (1.0 - fres) + (bg_color * 3.0 + vec3<f32>(0.3, 0.2, 0.4)) * fres + vec3<f32>(1.0, 0.95, 0.9) * catchlight * (fres + 0.6);
+        } else if (m_id < 1.5) {
             // Body: subsurface scattering and refraction
             let sss = max(0.0, dot(rd, -lightDir));
             col = base_col * diff + vec3<f32>(0.1, 0.5, 0.8) * fresnel + vec3<f32>(0.5, 0.1, 0.4) * sss * 0.5;
@@ -286,6 +320,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let fleck = smoothstep(0.72, 0.86, noise(p * 34.0 + vec3<f32>(0.0, swim_phase_skin(t), 0.0)));
             let glint = 0.35 + clamp(treble, 0.0, 1.5) * 1.1 * (0.5 + 0.5 * sin(t * 9.0 + p.y * 40.0));
             col += vec3<f32>(1.0, 0.72, 0.28) * fleck * glint * (0.25 + diff * 0.75);
+            // Idea 6: iridophore platelet sheen — guanine thin film (n = 1.83, d = 0.12–0.24 µm),
+            // R(λ) ∝ sin²(δ/2), δ = 4π·n·d·cosθt/λ; hue walks with the view angle across the flank.
+            let skinP = p + vec3<f32>(0.0, swim_phase_skin(t), 0.0);
+            let patchMask = smoothstep(0.54, 0.7, noise(skinP * 5.0 + vec3<f32>(3.1, 0.0, 1.7)));
+            let filmD = 0.12 + 0.12 * noise(skinP * 11.0);
+            let cosI = max(dot(n, -rd), 0.0);
+            let cosT = sqrt(1.0 - (1.0 - cosI * cosI) / (1.83 * 1.83));
+            let delta = 12.566 * 1.83 * filmD * cosT / vec3<f32>(0.65, 0.55, 0.45);
+            let filmR = sin(delta * 0.5) * sin(delta * 0.5);
+            col = mix(col, filmR * (0.45 + diff * 0.8) * (0.9 + clamp(treble, 0.0, 1.5) * 0.4), patchMask * 0.55);
             // Idea 4: lateral-line neuromasts — a row of bioluminescent dots along each flank (z≈0 seam of the
             // body, spaced along its y axis); a pulse runs head (+y) to tail (-y), quickened by the air-band FFT.
             let nmCoord = p.y * 14.0;
@@ -323,7 +367,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Semantic alpha: creature coverage is solid, nebula/caustic transmission follows luma
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let hit_cov = select(0.0, 1.0, d < MAX_DIST);
-    let alpha = clamp(mix(luma * 0.7 + 0.25, 0.9 + luma * 0.1, hit_cov), 0.0, 1.0);
+    let alpha = clamp(mix(0.86 + luma * 0.1, 0.9 + luma * 0.1, hit_cov), 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

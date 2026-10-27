@@ -44,10 +44,13 @@ export type HostedRenderer = Pick<
   | 'setSlotParams'
   | 'addRipple'
   | 'clearRipples'
+  | 'restoreRipples'
   | 'setActiveShader'
   | 'setSlotShader'
   | 'setSlotEnabled'
   | 'setSlotMode'
+  | 'setSlotLayer'
+  | 'getCompositorStats'
   | 'getSlotState'
   | 'setInputSource'
   | 'updateDepthMap'
@@ -57,8 +60,14 @@ export type HostedRenderer = Pick<
   | 'setMaxPassesPerFrame'
   | 'setFramePassBudget'
   | 'setNodeScale'
+  | 'restoreNodeScales'
   | 'setAdaptiveQuality'
   | 'setSourceAutoExposure'
+  | 'setHdrToneMap'
+  | 'setShaderF16Enabled'
+  | 'getShaderPrecisionInfo'
+  | 'setDirectPresentEnabled'
+  | 'getDirectPresentStatus'
   | 'applyTestRenderState'
   | 'setCanvasCopySrc'
   | 'setDisplayP3'
@@ -184,6 +193,9 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     nodeScales: r.getNodeScales(),
     scalableNodes: r.getScalableNodes(),
     slots: Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState(i)),
+    compositor: r.getCompositorStats(),
+    shaderPrecision: r.getShaderPrecisionInfo(),
+    directPresent: r.getDirectPresentStatus(),
     graphReport: r.getLastGraphReport(),
     chores: r.getGpuChoresBreadcrumbs(),
     cachedShaderIds: r.getPipelineCacheStats().cachedIds,
@@ -233,6 +245,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     setSlotShader: ({ index, id }) => withRenderer((r) => r.setSlotShader(index, id)),
     setSlotEnabled: ({ index, enabled }) => withRenderer((r) => r.setSlotEnabled(index, enabled)),
     setSlotMode: ({ index, mode }) => withRenderer((r) => r.setSlotMode(index, mode)),
+    setSlotLayer: ({ index, layer }) => withRenderer((r) => r.setSlotLayer(index, layer)),
     setInputSource: ({ source }) => withRenderer((r) => r.setInputSource(source)),
     updateDepthMap: ({ data, width, height }) => withRenderer((r) => r.updateDepthMap(data, width, height)),
     setVideoActive: ({ active }) => {
@@ -255,8 +268,13 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     setNodeScale: ({ slot, nodeId, scale }) => withRenderer((r) => {
       r.setNodeScale(slot, nodeId, scale);
     }),
+    restoreNodeScales: ({ scales }) => withRenderer((r) => r.restoreNodeScales(scales)),
+    restoreRipples: ({ ripples }) => withRenderer((r) => r.restoreRipples(ripples)),
     setAdaptiveQuality: ({ enabled, targetFps }) => withRenderer((r) => r.setAdaptiveQuality(enabled, targetFps)),
     setSourceAutoExposure: ({ enabled }) => withRenderer((r) => r.setSourceAutoExposure(enabled)),
+    setHdrToneMap: ({ settings }) => withRenderer((r) => r.setHdrToneMap(settings)),
+    setShaderF16Enabled: ({ enabled }) => withRenderer((r) => r.setShaderF16Enabled(enabled)),
+    setDirectPresentEnabled: ({ enabled }) => withRenderer((r) => r.setDirectPresentEnabled(enabled)),
     applyTestRenderState: ({ state }) => withRenderer((r) => r.applyTestRenderState(state)),
     setCanvasCopySrc: ({ enabled }) => withRenderer((r) => {
       r.setCanvasCopySrc(enabled);

@@ -79,23 +79,3 @@ export function unwrapListResponse<T>(
   }
   throw new Error(`Invalid response format: expected array or { ${key}: [] }`);
 }
-
-/** Generate HMAC SHA256 signature for webhook authentication. */
-export async function generateHmacSignature(payload: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(secret);
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const payloadData = encoder.encode(payload);
-  const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, payloadData);
-  const signatureArray = new Uint8Array(signatureBuffer);
-  const signatureHex = Array.from(signatureArray)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  return `sha256=${signatureHex}`;
-}

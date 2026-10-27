@@ -3,7 +3,9 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  Upgraded: 2026-10-26
+//  Ideas: vorticity confinement (§12.2D); shear streak
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -20,6 +22,16 @@ fn flowField(p: vec2<f32>, time: f32) -> vec2<f32> {
   let a = sin(p.y * 6.0 + time) + cos(p.x * 3.7 - time * 0.7);
   let b = cos(p.x * 5.0 - time * 0.8) - sin(p.y * 4.3 + time * 0.6);
   return vec2<f32>(a, b) * 0.5;
+}
+
+// Analytic curl of flowField(uv * scale, tFlow), derivatives taken in uv.
+fn flowCurl(uv: vec2<f32>, turbulence: f32, time: f32, audioY: f32) -> f32 {
+  let scale = mix(3.5, 9.5, turbulence);
+  let q = uv * scale;
+  let tFlow = time * (0.18 + audioY * 0.35);
+  let dFyDx = 0.5 * (-sin(q.x * 5.0 - tFlow * 0.8) * 5.0) * scale;
+  let dFxDy = 0.5 * (cos(q.y * 6.0 + tFlow) * 6.0) * scale;
+  return dFyDx - dFxDy;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -52,6 +64,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   ) * (0.0015 + turbulence * 0.003);
 
   var displacement = (ambientFlow * (0.003 + turbulence * 0.005) + convectiveShear) * depthFlow;
+  // ── Idea 1: vorticity confinement (§12.2D) ───────────────────────
+  let eps = 0.006;
+  let wCurl = flowCurl(uv, turbulence, time, audio.y);
+  let cgx = (abs(flowCurl(uv + vec2<f32>(eps, 0.0), turbulence, time, audio.y)) - abs(flowCurl(uv - vec2<f32>(eps, 0.0), turbulence, time, audio.y))) / (2.0 * eps);
+  let cgy = (abs(flowCurl(uv + vec2<f32>(0.0, eps), turbulence, time, audio.y)) - abs(flowCurl(uv - vec2<f32>(0.0, eps), turbulence, time, audio.y))) / (2.0 * eps);
+  let nCurl = vec2<f32>(cgx, cgy) / max(length(vec2<f32>(cgx, cgy)), 0.0001);
+  let confine = vec2<f32>(nCurl.y, -nCurl.x) * clamp(wCurl, -6.0, 6.0) * 0.00022 * (0.35 + turbulence);
+  displacement += vec2<f32>(confine.x / aspect, confine.y);
   var vortexEnergy = 0.0;
 
   // Interactive pointer drag / vortex circulation
@@ -119,10 +139,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sheen = clamp(vortexEnergy * 0.14 + length(displacement) * 20.0 + shearRate * audio.z * 0.12, 0.0, 1.0);
   let sheenColor = vec3<f32>(0.05, 0.12, 0.18) * sheen * (0.45 + audio.y * 0.8) + fresnel * vec3<f32>(0.12, 0.2, 0.28);
   var rgb = vec3<f32>(sampleR.r, sampleG.g, sampleB.b) + sheenColor;
+  // ── Idea 2: shear streak ─────────────────────────────────────────
+  // Fast shear slips the photo along the laminar flow the field already has.
+  let flowLen = max(length(ambientFlow), 0.0001);
+  let flowDir = ambientFlow / flowLen;
+  let slip = clamp(shearRate / 2.5, 0.0, 1.0);
+  let streakUV = clamp(uvG + vec2<f32>(flowDir.x / aspect, flowDir.y) * slip * 0.012, vec2<f32>(0.0), vec2<f32>(1.0));
+  let streak = textureSampleLevel(readTexture, u_sampler, streakUV, 0.0).rgb;
+  rgb = mix(rgb, streak, slip * 0.22);
 
   let feedbackMix = clamp((0.08 + viscosity * 0.22) * history.a, 0.04, 0.35);
   rgb = mix(rgb, history.rgb, feedbackMix);
-  rgb = acesToneMapping(rgb);
+  rgb = acesToneMapping(max(rgb, vec3<f32>(0.0)));
 
   let sourceAlpha = max(sampleR.a, max(sampleG.a, sampleB.a));
   let alpha = clamp(sourceAlpha * (0.88 + viscosity * 0.12) + sheen * 0.2 + fresnel * 0.1, 0.0, 1.0);

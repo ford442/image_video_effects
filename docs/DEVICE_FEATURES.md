@@ -13,9 +13,39 @@ Before the production renderer starts, `runWebGpuBootProbe()` walks the adapter 
 | `float32-filterable` | Requested when adapter supports | Requested when adapter supports | rgba32float texture sampling on bindings 1/9/13 |
 | `timestamp-query` | Requested when adapter supports (always-on) | Requested when available | GPU frame timing via `WebGPUTiming.ts` / `timing.cpp` |
 | `subgroups` | Requested when available | Requested when adapter + emdawn headers support | WGSL `enable subgroups` shaders |
-| `chromium-experimental-subgroups` | Fallback when `subgroups` absent | Fallback when headers define the enum | Chromium pre-standard subgroup path |
 
-Feature collection lives in `collectOptionalDeviceFeatures()` — order is `float32-filterable` → `timestamp-query` → subgroup variant. C++ `requiredFeatures[3]` uses the same order (`src/contracts/webgpu_optional_features.json`, enforced by `verify:device-policy`).
+Feature collection lives in `collectOptionalDeviceFeatures()` — order is `float32-filterable` → `timestamp-query` → `subgroups` (the pre-standard `chromium-experimental-subgroups` fallback was dropped). C++ `requiredFeatures[3]` uses the same order (`src/contracts/webgpu_optional_features.json`, enforced by `verify:device-policy`).
+
+### Capability tier 2 (#1512, TS only)
+
+After the three shared features the TS renderer requests `webgpu_optional_features.json` `tsOnly.requestOrder`, each only when the adapter offers it. The WASM backend is frozen and requests none of them (`cppMirror: false`).
+
+| Feature | `webgpuProbe` field | Used for |
+|---------|---------------------|----------|
+| `shader-f16` | `shaderF16` | The `// @requires f16` variant path (below) |
+| `bgra8unorm-storage` | `bgra8unormStorage` | Direct-to-swapchain present (below) |
+| `float32-blendable` | `float32Blendable` | Recorded only: the layer compositor is compute and blends in the shader ([COMPOSITOR.md](COMPOSITOR.md)) |
+| `dual-source-blending` | `dualSourceBlending` | Recorded only, same reason |
+| `core-features-and-limits` | (`compat: false`) | Lifts a compatibility-rung adapter to a core device when it can |
+
+The probe also reports `featureLevel` (`core` / `compatibility`), `compat`, `limitsTier` ([BINDING_CONTRACT.md](BINDING_CONTRACT.md) "Limits tiers"), `canvasFormat` and `canvasStorageBinding`. `adapterSummary` ends with `| tier2: f16=… bgra8storage=… dualSource=… limits=… featureLevel=…`.
+
+#### `shader-f16` variant path
+
+A shader opts in with a `// @requires f16` header line and writes its half-precision math against the `hf` / `hf2` / `hf3` / `hf4` aliases from `#include "_half.wgsl"` (colour helpers `luma_h`, `saturate_h`, `srgb_to_linear_h`, `linear_to_srgb_h`, `hue_rotate_h`, `reinhard_h`; hash / noise `pcg2_h`, `hash21_h`, `value_noise_h`, `fbm4_h`). As shipped those aliases are `f32`, so the file is plain f32 WGSL that compiles everywhere and passes the naga gates (naga's validator has no FLOAT16 capability). On a device with `shader-f16`, `wgslF16.ts` rewrites only the alias lines to `f16` and prepends `enable f16;`. The shader manager compile-checks that variant first and falls back to the f32 source when it fails (`f32-fallback`). `getShaderPrecisionInfo()` (diagnostics `webgpu.shaderPrecision`) lists the precision each opted-in shader got; `setShaderF16Enabled(false)` forces f32. The golden suite checks that an opted-in shader renders within ΔE < 1 of its f32 form.
+
+#### Direct-to-swapchain present
+
+With `bgra8unorm-storage` and a `bgra8unorm` preferred canvas format, the probe tries `RENDER_ATTACHMENT | STORAGE_BINDING` in a validation scope (`canvas_configure.json` `optIn.storageBinding`) and the renderer keeps it on the live configure. When a frame's result is provably what the blit would show, the final slot writes the swapchain texture directly and the present pass is skipped (`webgpu/directPresent.ts`). That needs one enabled chained slot, single-pass with a replace layer, working size equal to the canvas, non-generative input (the generative blit flips Y), no history ring, and no thumbnail capture in flight. The slot runs a variant of its own shader: binding 2 retyped to `bgra8unorm`, and every stored value passed through the blit's encode (clamp, γ 2.2, alpha 1). The variant compiles in the background on the first eligible frame; until then, or if it fails, the blit is used. `getDiagnostics().webgpu.directPresent` reports `{ available, enabled, active, reason }`. Kill switch: `?no_direct_present`. SwiftShader prefers `rgba8unorm`, so the path never activates on the cloud VM.
+
+#### Compatibility rung
+
+The adapter ladder's last rung is `requestAdapter({ featureLevel: 'compatibility' })`, for GL ES class GPUs. What degrades on such a device (`webgpuProbe.compat === true`):
+
+- **Format:** rgba16float whatever the quality tier asks for (`formatPolicy.resolveColorFormat`, [FORMAT_TIERS.md](FORMAT_TIERS.md)).
+- **Catalog:** shaders needing deep workgroups (when the device lacks those limits) or rgba32float storage (when unavailable) are hidden (`catalogExclusionReason`).
+- **Limits:** only `limitsTiers.base` is required; compat's lower spec defaults mean `maxComputeInvocationsPerWorkgroup: 256` is requested explicitly.
+- **Textures:** a texture bound as a 2d-array (history ring, compositor stack) declares `textureBindingViewDimension: '2d-array'` at creation (`webgpu/compat.ts`), and bind groups bind every layer.
 
 ### Timestamp honesty (#1007 / #1030)
 
@@ -23,26 +53,26 @@ Feature collection lives in `collectOptionalDeviceFeatures()` — order is `floa
 
 ## Canvas configure contract
 
-Source of truth: [`src/contracts/canvas_configure.json`](../src/contracts/canvas_configure.json) (v3). Both renderers read it:
+Source of truth: [`src/contracts/canvas_configure.json`](../src/contracts/canvas_configure.json) (v4). Both renderers read it:
 
 - **TS** imports the JSON. `buildCanvasConfigureOptions()` takes `alphaMode`, `usage` and every opt-in value from it, and the GPUTextureUsage fallback bits come from `usageBits`.
 - **C++** includes [`wasm_renderer/canvas_configure.h`](../wasm_renderer/canvas_configure.h), which is generated from the JSON by `npm run gen:canvas-configure` (`scripts/gen-canvas-configure-header.js`) and committed. `JS_CreateSurfaceFromCanvas` and `JS_ProbeCanvasCopySrc` get `usage` and `alphaMode` as arguments (`kUsage` / `kCopySrcUsage`, `kAlphaModeJs`). `ConfigureSurface()` uses `kUsage` / `kCopySrcUsage`, `kAlphaMode` and `kPresentMode`. The header `static_assert`s each `WGPUTextureUsage_*` against `usageBits`, so the number passed to JS is the matching `GPUTextureUsage` bit.
 
 `npm run verify:device-policy` fails when the header is stale (it re-renders it and compares) or when `device.cpp` hardcodes a contracted value: a `GPUTextureUsage.*` or quoted `alphaMode` in an EM_JS configure, a `WGPUTextureUsage_*` / `WGPUCompositeAlphaMode_*` / `WGPUPresentMode_*` literal in `ConfigureSurface()`, or a call site that doesn't pass the header constants. It also still checks preferred format, explicit width/height, and that `ConfigureSurface()` is called after surface import. `build.sh` runs the generator with `--check` before `em++`.
 
-**Capabilities.** Each `optIn` entry is one capability: `copySrc`, `displayP3`, `extendedToneMapping`. Every entry lists `configureKeys` (the configure fields it changes), `backends` (`ts`, optionally `wasm`), and optionally `requires` (`extendedToneMapping` requires `displayP3`). The rules:
+**Capabilities.** Each `optIn` entry is one capability: `copySrc`, `displayP3`, `extendedToneMapping`, `hdrCanvas`, `storageBinding`. Every entry lists `configureKeys` (the configure fields it changes), `backends` (`ts`, optionally `wasm`), and optionally `requires` (`extendedToneMapping` requires `displayP3`; `hdrCanvas` requires `extendedToneMapping`). The rules:
 
 - The TS `CanvasConfigureOptIns` type must have exactly the `optIn` keys; a compile-time check fails otherwise. `buildCanvasConfigureOptions` must read every one of them.
 - A capability that lists `wasm` needs a `cpp.<name>` block.
-- No `ctx.configure` in `device.cpp` may set a key that belongs only to a capability without `wasm`. Today that means `colorSpace` and `toneMapping` stay TS-only.
+- No `ctx.configure` in `device.cpp` may set a key that belongs only to a capability without `wasm`. Today that means `colorSpace` and `toneMapping` stay TS-only. `usage` and `format` are exempt: the C++ configure sets both from its own contract constants, and the TS-only values (`STORAGE_BINDING`, `rgba16float`) never reach it. The generated header carries them as unused constants (`kStorageBindingUsage`, `kHdrCanvasFormat`, …), so the WASM binary is unchanged.
 
 **Adding a capability** (for example, C++ Display P3): add `"wasm"` to its `backends`, add the `cpp.<name>` block and any constants the header needs, run `npm run gen:canvas-configure`, and implement it in `device.cpp` using the header values. `verify:device-policy` reports anything still missing.
 
 | Key | Default | Owner |
 |-----|--------------|-------|
 | `alphaMode` | `opaque` | TS + JS configure + C++ |
-| `usage` | `RENDER_ATTACHMENT` | TS + JS configure + C++ |
-| `format` | `getPreferredCanvasFormat()` | TS + JS configure (C++ mirrors via `JS_GetPreferredCanvasFormat`) |
+| `usage` | `RENDER_ATTACHMENT` | TS + JS configure + C++; TS adds `STORAGE_BINDING` for direct present (`storageBinding`) |
+| `format` | `getPreferredCanvasFormat()` | TS + JS configure (C++ mirrors via `JS_GetPreferredCanvasFormat`); TS uses `rgba16float` for the HDR canvas (`hdrCanvas`) |
 | `presentModeWasm` | `fifo` | C++ `ConfigureSurface()` only — TS never sets a presentMode |
 | `colorSpace` | `srgb` (browser default, not written) | opt-in only (`displayP3`, backends `ts`) |
 | `toneMapping` | `standard` (browser default, not written) | opt-in only (`extendedToneMapping`, backends `ts`) |
@@ -64,7 +94,7 @@ That JS `ctx.configure` is **not** the only configure. Immediately after `import
 
 ### Present pipeline
 
-Internal compute targets **rgba32float** (or policy-selected internal format). The final blit pass copies to the canvas swapchain texture obtained from `context.getCurrentTexture()`. The canvas format is **not** rgba32float — it is whatever `getPreferredCanvasFormat()` returns.
+Internal compute targets **rgba32float** (or policy-selected internal format). The final blit pass copies to the canvas swapchain texture obtained from `context.getCurrentTexture()`. The canvas format is **not** rgba32float — it is whatever `getPreferredCanvasFormat()` returns, or `rgba16float` while the HDR canvas is live. The blit layout always has binding 1, the present-params uniform (unused by the SDR shaders, which are byte-identical to before). A swapchain format change re-specialises the present pipelines (`WebGPUPipelineModule.setCanvasFormat`); frames are held while the canvas is renegotiated, so no frame pairs the new format with the old pipeline. Direct present (above) skips this pass for eligible frames.
 
 Diagnostics: `adapterSummary` includes `surfaceFormat=<format>` and `features=[...]` after device creation for TS/WASM parity reports.
 
@@ -87,8 +117,9 @@ Rejection is fail-soft — it never fails the ladder rung. `encodePresent` (TS) 
 **User setting.** Controls → Render Quality → **Wide-gamut output (Display P3)** (`data-testid="display-p3-toggle"`). The choice persists in `localStorage` under `px_display_p3` (`canvas_configure.json` `optIn.displayP3.storageKey`, service `src/services/displayP3.ts`). `?display_p3=1` still works and wins: either source enables the opt-in, so a URL-forced page turns P3 back on at the next load whatever the saved value. The default is unchanged: off, srgb/standard, nothing written to `configure`.
 
 - Requests `colorSpace: 'display-p3'`. Never requested at boot unless the setting or URL opts in (Pascal-era GPUs, cheap panels, screenshot mismatch).
-- `toneMapping: { mode: 'extended' }` is only tried behind the same opt-in **and** when `matchMedia('(dynamic-range: high)')` matches. The page evaluates the media query (a worker cannot see it) and passes it to the renderer. Format stays `getPreferredCanvasFormat()`.
-- Negotiation (`negotiateCanvasColor`): p3+extended → p3+standard → default srgb. A configure throw, a validation-scope error, or a `getConfiguration()` readback that doesn't match counts as rejected. A rejection leaves the default sRGB swapchain configured, so the canvas never goes blank.
+- `toneMapping: { mode: 'extended' }` is only tried behind the same opt-in **and** when `matchMedia('(dynamic-range: high)')` matches. The page evaluates the media query (a worker cannot see it) and passes it to the renderer.
+- **Real HDR (#1512).** Extended tone mapping is only ever configured on an **rgba16float** canvas (`optIn.hdrCanvas`): an 8-bit swapchain clamps to [0, 1], so `extended` alone shows nothing. The present pipeline switches to the HDR variant, which maps working linear `x` to `exposure · x` with a soft shoulder toward `headroom`, then encodes γ 2.2 extended past 1.0. `exposure = paperWhite / 203` and `headroom = peak / 203` (203 nits is the BT.2408 reference white, `canvas_configure.json` `hdrToneMap`). Paper white (default 203) and peak (default 1000) are sliders in Render Quality while HDR is active (`data-testid="hdr-tonemap"`), persist under `px_hdr_tonemap`, are saved in project files (`render.hdr`) and are replayed after a device loss.
+- Negotiation (`negotiateCanvasColor`): p3 + extended + rgba16float → p3 + standard (preferred format) → default srgb. A configure throw, a validation-scope error, or a `getConfiguration()` readback that doesn't match counts as rejected. A rejection leaves the default sRGB swapchain configured, so the canvas never goes blank. The applied format is `webgpuProbe.canvasFormat`.
 - **Live toggle** (`WebGPURenderer.setDisplayP3`, worker RPC `setDisplayP3`): re-runs the negotiation on the existing `GPUDevice`/context — no second device — and preserves the current `COPY_SRC` bit. Capture (`setCanvasCopySrc`) spreads the stored `canvasColorOptIns`, so a P3 canvas stays P3 through capture and restore.
 - **Recording guard:** while the swapchain holds `COPY_SRC` for a GPU-encode take, or the page is recording, the toggle is *deferred* (`deferred: true`, nothing reconfigured). The UI says "applies after recording stops" and applies it when recording ends, so one file never mixes color spaces.
 - **Diagnostics:** the applied values are in `window.webgpuProbe.canvasColorSpace` / `canvasToneMapping`, plus `canvasColorFallback` when the request was narrowed (`unsupported-p3`, `unsupported-extended-tone-mapping`, `not-hdr-display`). Both boot and live changes update it. `getDiagnostics().webgpu.canvas` carries `{ requestedDisplayP3, colorSpace, toneMapping, copySrc, fallbackReason }`. The Controls panel shows `Applied: display-p3 / extended` or `Using sRGB: <reason>`.
@@ -115,7 +146,7 @@ The setting changes what the canvas presents; recordings get their own tag. They
 
 #### Hardware validation record
 
-Fill one row per tested browser/display. SwiftShader (the cloud VM) has no wide-gamut display, so it only exercises the sRGB fallback path. `tests/display-p3.swiftshader.spec.ts` (`npm run test:engine2 -- -g "Display P3"`) toggles P3 live in both render threads and asserts the canvas still presents, GPU errors stay empty, and a rejection lands on sRGB with `canvasColorFallback`.
+Fill one row per tested browser/display. SwiftShader (the cloud VM) has no wide-gamut display; it accepts the P3 and HDR configures, which only proves the canvas keeps presenting without GPU errors (`tests/compositor-golden.swiftshader.spec.ts` checks the HDR request). `tests/display-p3.swiftshader.spec.ts` (`npm run test:engine2 -- -g "Display P3"`) toggles P3 live in both render threads and asserts the canvas still presents, GPU errors stay empty, and a rejection lands on sRGB with `canvasColorFallback`.
 
 | Browser / OS | Display | `color-gamut` | `dynamic-range` | Applied color space | Applied tone mapping | Fallback reason | Date / tester |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -124,4 +155,5 @@ Fill one row per tested browser/display. SwiftShader (the cloud VM) has no wide-
 ## Deferred
 
 - **C++ canvas parity:** ~~`COPY_SRC`~~ (done: canvas_configure v2, see above) / `colorSpace` + extended tone mapping on `JS_CreateSurfaceFromCanvas` + `ConfigureSurface()` — after #1080 (TS-first `?display_p3=1`). Route it through the capabilities flow above: add `"wasm"` to `optIn.displayP3.backends`, then regenerate the header.
-- **HDR / PQ recording tags:** only the P3 + sRGB-curve tag is written. Extended tone mapping (`toneMapping: 'extended'`) output is not tagged as PQ/HLG.
+- **HDR / PQ recording tags:** only the P3 + sRGB-curve tag is written. HDR canvas output (rgba16float, `toneMapping: 'extended'`) is not tagged as PQ/HLG.
+- **Fixed-function compositor path:** `float32-blendable` / `dual-source-blending` are requested and recorded but unused while the compositor is compute.

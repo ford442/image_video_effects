@@ -12,7 +12,7 @@
     "reactive",
     "ambient"
   ],
-  "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions.",
+  "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions. Ancient growth bundles into dark-cored rhizomorph cords and the remembered trail ages toward sepia.",
   "workgroup_size": [
     16,
     16,
@@ -23,7 +23,9 @@
   "updated": true,
   "id": "gen-chrono-mycelial-tapestry",
   "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
-  "features": [],
+  "features": [
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "growth_rate",

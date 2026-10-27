@@ -2,31 +2,14 @@
 // Radiant Quantum-Plasma Kraken-Core
 // Category: generative
 // Features: mouse-driven, audio-reactive, upgraded-rgba
-// Upgraded: 2026-09-27
-// Ideas: paired sucker-current rows; core-to-arm peristaltic discharge; siphon jet; ink wake
-// A packing: ACES display RGBA
+// Upgraded: 2026-10-19
+// Ideas: paired sucker-current rows; core-to-arm peristaltic discharge; siphon jet; ink wake;
+//        interbrachial web transilluminated by the core; coiling arm tips (suckers inward)
+// A packing: ACES display RGBA; alpha = 0.88 void / 0.97 creature + core glow (C read for ink wake)
 // ----------------------------------------------------------------
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=held
-    zoom_params: vec4<f32>,  // x=Tentacle Twist 0-5, y=Plasma Glow 0-5, z=Core Heat 0.1-3, w=Void Depth 0-1
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Tentacle Twist 0-5, y=Plasma Glow 0-5, z=Core Heat 0.1-3, w=Void Depth 0-1
 
 // --- Math & Noise Helpers ---
 
@@ -85,6 +68,8 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 var<private> g_arm_tpos: f32 = 0.0;
 var<private> g_arm_local: vec3<f32> = vec3<f32>(0.0);
 var<private> g_peri: f32 = 0.0;
+var<private> g_web: f32 = 0.0;     // 1 when the interbrachial web is the nearest surface
+var<private> g_web_r: f32 = 0.0;   // radial distance on the web (for transillumination)
 
 // Box SDF for domain repetition
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
@@ -112,12 +97,13 @@ fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
 
     // Mouse Interaction (Gravitational distortion)
     let mx = (u.zoom_config.y - 0.5) * 2.0;
-    let my = (u.zoom_config.z - 0.5) * 2.0;
+    let my = (0.5 - u.zoom_config.z) * 2.0; // y=0 top; flipped with uv.y in main()
     let click_pull = smoothstep(0.0, 1.0, length(vec2<f32>(mx, my)) * 2.0);
 
     // Add overall temporal and mouse rotation
     let rotY = rot(t * 0.2 + mx * 2.0);
-    let rotX = rot(t * 0.1 + my * 2.0);
+    // +0.5 rad: show the arm crown from 3/4 above instead of edge-on
+    let rotX = rot(t * 0.1 + my * 2.0 + 0.5);
     var p_rot = p_in;
     let p_rot_xz = rotY * p_rot.xz;
     p_rot.x = p_rot_xz.x;
@@ -161,18 +147,51 @@ fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
         p_tentacle.z = p_tentacle.z + cos(p_tentacle.x * 1.5 - t * 2.5) * 0.3 * (1.0 + bass);
 
         let t_start = vec3<f32>(0.5, 0.0, 0.0);
-        let t_end = vec3<f32>(6.0, 0.0, 0.0);
+        // ── Idea 6: coiling arm tips — the straight capsule stops at COIL_X and the last
+        // third of the arm curls ventrally (-y, sucker side) along a tapered circular arc
+        // whose sweep breathes per arm.
+        let COIL_X = 4.1;
+        let coilR = 0.62;
+        let t_end = vec3<f32>(COIL_X, 0.0, 0.0);
 
-        let t_pos = clamp(p_tentacle.x / 6.0, 0.0, 1.0);
+        // Arc centred below the attach point; `along` runs clockwise from the attach point.
+        // Sweep stays < 1.5 pi so the angle unwrap below is unambiguous.
+        let sweep = PI * (1.1 + 0.25 * sin(t * 1.3 + i * 1.7) + 0.1 * clamp(bass, 0.0, 1.0));
+        let q = vec2<f32>(p_tentacle.x - COIL_X, p_tentacle.y + coilR);
+        let qa = atan2(q.y, q.x);
+        let along = clamp(fract((PI * 0.5 - qa) / (2.0 * PI) + 0.25) * 2.0 * PI - PI * 0.5, 0.0, sweep);
+        let arcAng = PI * 0.5 - along;
+        let arcPt = vec2<f32>(COIL_X, -coilR) + vec2<f32>(cos(arcAng), sin(arcAng)) * coilR;
+        let coil_vec = vec3<f32>(p_tentacle.x - arcPt.x, p_tentacle.y - arcPt.y, p_tentacle.z);
+
+        let tpos_straight = clamp(p_tentacle.x / 6.0, 0.0, COIL_X / 6.0);
+        let tpos_coil = mix(COIL_X / 6.0, 1.0, along / sweep);
+
+        // Bass skin roughness: only evaluated near the arm and when bass can change it
+        // (HEAD ran this fbm for all 8 arms on every map call).
+        var rough = 0.0;
+        if (bass > 0.01) {
+            if (min(sdCapsule(p_tentacle, t_start, t_end, 0.4), length(coil_vec)) < 0.7) {
+                rough = fbm(p_tentacle * 5.0) * 0.05 * bass;
+            }
+        }
+
         // Core-to-arm peristaltic discharge: travelling constriction
-        let peri = sin(t_pos * 14.0 - u.config.x * 3.2);
-        let t_radius = mix(0.4, 0.02, t_pos) * (1.0 + peri * 0.14)
-            + fbm(p_tentacle * 5.0) * 0.05 * bass;
-
-        let d_t = sdCapsule(p_tentacle, t_start, t_end, t_radius);
+        let peri_s = sin(tpos_straight * 14.0 - u.config.x * 3.2);
+        let peri_c = sin(tpos_coil * 14.0 - u.config.x * 3.2);
+        let r_s = mix(0.4, 0.02, tpos_straight) * (1.0 + peri_s * 0.14) + rough;
+        let r_c = mix(0.4, 0.02, tpos_coil) * (1.0 + peri_c * 0.14) + rough;
+        let d_straight = sdCapsule(p_tentacle, t_start, t_end, r_s);
+        let d_coil = length(coil_vec) - r_c;
+        let in_coil = d_coil < d_straight;
+        let d_t = min(d_straight, d_coil);
+        let t_pos = select(tpos_straight, tpos_coil, in_coil);
+        let peri = select(peri_s, peri_c, in_coil);
+        // On the coil the inner face (toward the arc centre) is the sucker side: local y < 0.
+        let local = select(p_tentacle, vec3<f32>(tpos_coil * 6.0, length(q) - coilR, p_tentacle.z), in_coil);
         if (d_t < d_tentacles) {
             nearest_tpos = t_pos;
-            nearest_local = p_tentacle;
+            nearest_local = local;
             nearest_peri = peri;
         }
         d_tentacles = smin(d_tentacles, d_t, 0.3);
@@ -181,6 +200,20 @@ fn map(p_in: vec3<f32>, is_light: ptr<function, f32>) -> f32 {
     g_arm_tpos = nearest_tpos;
     g_arm_local = nearest_local;
     g_peri = nearest_peri;
+
+    // ── Idea 5: interbrachial web — a thin membrane joining the arm bases in the crown
+    // plane, scalloped deep between arms and reaching up each arm, cupped downward like an
+    // umbrella and breathing with the peristaltic wave.
+    let web_r = length(p_rot.xz);
+    let web_th = atan2(p_rot.z, p_rot.x);
+    let lobe = 0.5 + 0.5 * cos(web_th * num_tentacles);
+    let web_R = 2.1 + 1.5 * lobe * lobe + 0.12 * sin(u.config.x * 3.2 - web_r * 2.0);
+    let web_sag = -0.45 * smoothstep(1.2, 3.6, web_r);
+    let web_q = vec2<f32>(max(web_r - web_R, 0.0), p_rot.y - web_sag);
+    let d_web = length(web_q) - 0.035;
+    g_web = select(0.0, 1.0, d_web < d_tentacles && d_web < d_core);
+    g_web_r = web_r;
+    d_tentacles = smin(d_tentacles, d_web, 0.25);
 
     if (d_core < d_tentacles) {
         *is_light = 1.0;
@@ -211,17 +244,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
-    let uv = (fragCoord.xy - 0.5 * res) / res.y;
+    // Row 0 is the top of the frame: flip so +y is up.
+    let uv = vec2<f32>(fragCoord.x - 0.5 * res.x, 0.5 * res.y - fragCoord.y) / res.y;
     let t = u.config.x;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
     let plasma_glow = u.zoom_params.y; // 0–5
+    let core_heat01 = clamp(u.zoom_params.z / 3.0, 0.0, 1.0);
     let void_depth = u.zoom_params.w;  // 0–1
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 0.0, 10.0 + (void_depth * 5.0)); // Zoom out based on void depth
+    let camDist = 10.0 + (void_depth * 5.0);
+    var ro = vec3<f32>(0.0, 0.0, camDist); // Zoom out based on void depth
     var rd = normalize(vec3<f32>(uv, -1.0));
 
     // Add some camera sway
@@ -268,6 +304,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let n = calcNormal(p);
         var dummyHit = 0.0;
         let hitDist = map(p, &dummyHit);
+        // map() above refreshed g_web / g_web_r / g_arm_* for the hit point itself.
+        let on_web = g_web;
+        let web_r = g_web_r;
 
         let lightDir1 = normalize(vec3<f32>(5.0, 5.0, 5.0));
         let lightDir2 = normalize(vec3<f32>(-5.0, -2.0, -3.0));
@@ -298,6 +337,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         mat_col += vec3<f32>(1.0, 0.75, 0.95) * jet * (0.35 + plasma_glow * 0.08);
 
         col = mat_col * (diff1 * 0.8 + diff2 * 0.4 + 0.2) + fresnel * vec3<f32>(0.8, 0.9, 1.0);
+
+        // ── Idea 5 (shading): the web is a thin membrane transilluminated by the radiant
+        // core — warm core light falling off with distance from the crown, crossed by radial
+        // veins that run out along each arm; Core Heat sets how hot the skirt glows.
+        let veins = pow(abs(cos(atan2(p.z, p.x) * 12.0)), 16.0);
+        let trans = exp(-max(web_r - 1.5, 0.0) * 0.6) * (1.0 - 0.55 * veins) * (0.8 + bass * 0.6);
+        let webCol = mix(vec3<f32>(1.0, 0.62, 0.45), vec3<f32>(1.0, 0.4, 0.7), core_heat01);
+        col = mix(col, col * 0.25 + webCol * trans * (1.0 + u.zoom_params.z * 0.7), on_web);
         col += vec3<f32>(0.12) * clamp(-hitDist, 0.0, 1.0);
     } else {
         let star_noise = fbm(rd * 100.0) * fbm(rd * 200.0);
@@ -318,10 +365,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let stain = select(0.0, (1.0 - is_light) * clamp(u.zoom_params.z / 3.0, 0.0, 1.0) * (0.12 + bass * 0.2), hit);
     col = mix(col, col * 0.45 + inkC * 0.2, clamp(stain, 0.0, 0.65));
 
-    col = mix(col, bg_color, 1.0 - exp(-0.02 * d * d));
+    // Depth fog measured from the creature's near side (HEAD used the full camera distance,
+    // which faded every hit to 1–13 % of its colour).
+    let fogD = max(d - (camDist - 5.0), 0.0);
+    col = mix(col, bg_color, 1.0 - exp(-0.02 * fogD * fogD));
 
-    let alpha = clamp(select(0.0, 0.7, hit) + clamp(acc, 0.0, 2.0) * 0.12, 0.0, 1.0);
-    let out = vec4<f32>(acesToneMap(col), alpha);
+    // The abyssal void is part of the picture: opaque medium, the creature fully covers.
+    let alpha = clamp(select(0.88, 0.97, hit) + clamp(acc, 0.0, 2.0) * 0.12, 0.0, 1.0);
+    let out = vec4<f32>(acesToneMap(max(col, vec3<f32>(0.0))), alpha);
     let depth = select(0.0, clamp(1.0 - d / 30.0, 0.0, 1.0), hit);
     textureStore(writeTexture, coord, out);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

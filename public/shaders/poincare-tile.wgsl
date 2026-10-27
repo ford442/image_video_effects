@@ -3,8 +3,9 @@
 //  Category: artistic
 //  Features: mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-16
-//  Ideas: geodesic ink on the sector boundary; vertex cusps where q-rays meet the rim
+//  Upgraded: 2026-10-19
+//  Ideas: geodesic ink on the sector boundary; vertex cusps where q-rays meet the rim;
+//         reflection parity (odd sectors mirror the image); equidistant rings (hyperbolic metric)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -227,6 +228,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Alternative: direct mapping with scaling
   texUV = fract(w * tileScale * 0.5 + vec2<f32>(0.5));
+
+  // Idea 3 — reflection parity. In a reflection-group tiling neighbouring tiles are mirror
+  // images: odd sectors sample the image reflected across their own axis (conjugate in the
+  // canonical frame, rotated back).
+  let parity = step(0.25, abs(fract(sector * 0.5)));
+  let mirrorZ = vec2<f32>(tiledZ.x, -tiledZ.y);
+  let sCos = cos(sectorAngle);
+  let sSin = sin(sectorAngle);
+  let wMirror = vec2<f32>(mirrorZ.x * sCos - mirrorZ.y * sSin, mirrorZ.x * sSin + mirrorZ.y * sCos);
+  texUV = select(texUV, fract(wMirror * tileScale * 0.5 + vec2<f32>(0.5)), parity > 0.5);
   
   // Ripple effects in hyperbolic space
   for (var i = 0; i < 50; i = i + 1) {
@@ -280,7 +291,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cusp = smoothstep(0.045, 0.0, qSpoke) * smoothstep(0.78, 0.98, r);
   finalColor = finalColor + vec3<f32>(0.75, 0.84, 1.0) * cusp;
 
-  let alpha = clamp(sourceColor.a * boundary * 0.7 + ink * 0.35 + cusp * 0.45 + 0.12, 0.0, 1.0);
+  // Idea 4 — equidistant rings. Circles at equal hyperbolic distance d = 2·atanh|w| from the
+  // moving centre: fixed width in hyperbolic units, so they crowd and thin toward the rim.
+  let hypD = 2.0 * atanh(min(length(w), 0.999));
+  let ringD = abs(fract(hypD * 1.2 - time * animSpeed * 0.15 + 0.5) - 0.5);
+  let ring = (1.0 - smoothstep(0.0, 0.05, ringD)) * edgeDarken;
+  finalColor = finalColor + vec3<f32>(0.35, 0.45, 0.65) * ring * 0.22;
+
+  let alpha = clamp(sourceColor.a * boundary * 0.7 + ink * 0.35 + cusp * 0.45 + ring * 0.08 + 0.12, 0.0, 1.0);
   let display = aces(max(finalColor, vec3<f32>(0.0)));
   let outColor = vec4<f32>(display, alpha);
   textureStore(writeTexture, vec2<i32>(coord), outColor);

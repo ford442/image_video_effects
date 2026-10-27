@@ -86,6 +86,15 @@ export default defineConfig({
       },
     },
     {
+      // The compositor golden frames on a real adapter (#1512 Part C): the self-hosted GPU
+      // runner (.github/workflows/gpu-required.yml, suite compositor-golden). Same spec and
+      // fixtures as the swiftshader project; WASM_GPU_TESTS=1 supplies the GPU flags.
+      name: 'gpu-golden',
+      testMatch: '**/compositor-golden.swiftshader.spec.ts',
+      timeout: 300 * 1000,
+      use: { ...desktopChromeNoUa, channel: 'chromium', launchOptions: { args: GPU_LAUNCH_ARGS } },
+    },
+    {
       // The existing renderer smoke suites on the software device. Run once per
       // render thread: PX_RENDER_THREAD=main|worker (default worker, #1314).
       name: 'swiftshader-smoke',

@@ -3,31 +3,12 @@
 //  Category: simulation
 //  Features: RK4, fluid-advection, dye-simulation, high-order, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: strain-rate filaments from |∇u|; history LIC along a second RK4 step
+//  Upgraded: 2026-09-12, 2026-10-26
+//  Ideas: strain-rate filaments from |∇u|; history LIC along a second RK4 step; Okubo-Weiss elliptic cores; Euler-vs-RK4 residual seam
 //  A packing: HDR dye RGB + |vel| in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -172,12 +153,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         max(0.0, -curl) * 2.0
     );
     dye = mix(dye, dye + curlVis * 0.3, vortexStr);
-    dye += dye * filament * 0.35;
+    // ── Idea: Okubo-Weiss cores — rotation beats strain; filaments stay out of the core
+    let qNorm = (strain - abs(curl)) / max(strain + abs(curl), 1e-4);
+    let elliptic = smoothstep(0.05, 0.55, -qNorm);
+    dye += dye * filament * 0.35 * (1.0 - elliptic);
+    dye = mix(dye, dye * vec3<f32>(0.55, 0.72, 0.95), elliptic * vortexStr * 0.55);
 
     // Idea 2 — history LIC along a second RK4 step
     let licPos = fract(advectRK4(wrappedPos, -dt * 0.012 * (1.0 + mids * 0.2), time));
     let licDye = stateLinear(licPos, res).rgb;
     dye = mix(dye, licDye, 0.18 * feedback);
+
+    // ── Idea: Euler residual — the unused Euler step misses the RK4 landing where the field bends
+    let eulerPos = fract(advectEuler(uv, -dt * 0.01 * (1.0 + mids * 0.35), time));
+    let eulerDye = stateLinear(eulerPos, res).rgb;
+    let residual = smoothstep(0.002, 0.06, length(eulerDye - dye));
+    dye = dye + vec3<f32>(0.15, 0.45, 0.7) * residual * (0.05 + u.zoom_params.x * 0.08);
 
     let aspect = res.x / res.y;
     var clickEnergy = 0.0;

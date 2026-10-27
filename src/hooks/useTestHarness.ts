@@ -235,6 +235,15 @@ export function useTestHarness({
                     manager.updateAudioFrequencyBins(bins);
                 },
                 getSlotState: (index: number) => manager.getSlotState(index),
+                setSlotMode: (index: number, mode: 'chained' | 'parallel') => manager.setSlotMode(index, mode),
+                /** Layer compositor (#1512): blend / opacity / mask for one slot. */
+                setSlotLayer: (index: number, layer: Parameters<typeof manager.setSlotLayer>[1]) =>
+                    manager.setSlotLayer(index, layer),
+                getSlotLayer: (index: number) => manager.getSlotLayer(index),
+                /** f16 variant path on / off (#1512); reload shaders afterwards. */
+                setShaderF16Enabled: (enabled: boolean) => manager.setShaderF16Enabled(enabled),
+                getShaderPrecisionInfo: () => manager.getShaderPrecisionInfo(),
+                setDirectPresentEnabled: (enabled: boolean) => manager.setDirectPresentEnabled(enabled),
                 getPerformanceStatus: () => manager.getPerformanceStatus(),
                 releaseFp32Requirement: (id: string) => manager.releaseFp32Requirement(id),
                 getGPUTimings: () => manager.getGPUTimings(),

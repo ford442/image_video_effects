@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: simulation, rgba-state-machine, temporal, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: herbivore taxis along plant gradient; nutrient patches from local death
+//  Upgraded: 2026-09-12, 2026-10-25
+//  Ideas: herbivore taxis along plant gradient; nutrient patches from local death; Holling type II satiation; Allee establishment
 //  A packing: raw (plants, herbivores, predators, nutrients)
 // ═══════════════════════════════════════════════════════════════════
 //  2D ecosystem cellular automaton with 4 interacting species.
@@ -19,26 +19,7 @@
 //  and stable predator-prey oscillations impossible in binary CA.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -102,7 +83,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // === ECOSYSTEM DYNAMICS ===
     // Plants grow from nutrients, spread to neighbors
-    let plantGrowth = growthRate * nutrients * (1.0 - plants) * (1.0 + avgPlants);
+    var plantGrowth = growthRate * nutrients * (1.0 - plants) * (1.0 + avgPlants);
+    // ── Idea: Allee establishment ──
+    // A plant with almost no neighbors fails to recruit; a stand grows as before.
+    let allee = smoothstep(0.04, 0.18, avgPlants);
+    plantGrowth = plantGrowth * mix(0.15, 1.0, allee);
     let plantEaten = herbivores * plants * 0.3;
     plants = plants + plantGrowth - plantEaten;
 
@@ -110,6 +95,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let herbivoreGrowth = herbivoreEfficiency * plantEaten;
     let herbivoreDeath = herbivores * decayRate * 2.0;
     let herbivorePredation = predators * herbivores * 0.5;
+    // ── Idea: Holling type II satiation ──
+    // Kill rate saturates as herbivores crowd, and the predator's meal matches that loss.
+    let hollingPredation = herbivorePredation / max(1.0 + herbivores * 3.5, 0.001);
     let herbivoreSpread = (avgHerbivores - herbivores) * 0.02 * herbivores;
 
     // Idea 1 — herbivores bias toward the plant gradient (taxis, not isotropic spread)
@@ -119,10 +107,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fromPlantsY = select(down.g, up.g, plantGrad.y > 0.0);
     let taxis = (fromPlants - herbivores) * gAbs.x * 0.12 * herbivores
         + (fromPlantsY - herbivores) * gAbs.y * 0.12 * herbivores;
-    herbivores = herbivores + herbivoreGrowth - herbivoreDeath - herbivorePredation + herbivoreSpread + taxis;
+    herbivores = herbivores + herbivoreGrowth - herbivoreDeath - hollingPredation + herbivoreSpread + taxis;
 
     // Predators eat herbivores, reproduce, die, spread
-    let predatorGrowth = predatorEfficiency * herbivorePredation;
+    let predatorGrowth = predatorEfficiency * hollingPredation;
     let predatorDeath = predators * decayRate * 1.5;
     let predatorSpread = (avgPredators - predators) * 0.01 * predators;
     predators = predators + predatorGrowth - predatorDeath + predatorSpread;

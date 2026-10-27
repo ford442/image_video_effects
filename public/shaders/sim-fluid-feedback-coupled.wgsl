@@ -1,30 +1,13 @@
 // Fluid Feedback Coupled — Codex (e) velocity/pressure/dye feedback solver.
 // A/C packing: velocity.xy, pressure, density.
 // B and extraBuffer are intentionally unused; C loads are exact and bounded.
-// Upgraded: 2026-09-21
+// Upgraded: 2026-09-21, 2026-10-26
 // Ideas: buoyant dye (Boussinesq sinking plumes / Rayleigh-Taylor fingers); schlieren display of
-//        the stored-but-never-shown pressure field (refraction + knife-edge shading)
+//        the stored-but-never-shown pressure field (refraction + knife-edge shading);
+//        shallow-water continuity (§12.2D); baroclinic torque
+// A packing: raw velocity.xy, pressure, density
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -128,6 +111,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       clickFront += abs(front);
     }
   }
+
+  // ── Idea 3: shallow-water continuity (§12.2D) ─────────────────────
+  // Divergence was only a pressure source. Converging flow piles the dye.
+  density = clamp(density - divergence * density * 0.45, 0.0, 1.6);
+
+  // ── Idea 4: baroclinic torque ──────────────────────────────────────
+  // Density and pressure gradients that are not parallel spin the plume.
+  let densGrad = vec2<f32>(right.w - left.w, bottom.w - top.w);
+  let presGrad = vec2<f32>(right.z - left.z, bottom.z - top.z);
+  let torque = densGrad.x * presGrad.y - densGrad.y * presGrad.x;
+  let iso = presGrad / max(length(presGrad), 0.0001);
+  velocity += vec2<f32>(iso.y, -iso.x) * torque * (0.08 + turbulence * 0.12);
 
   // Idea 1 — buoyant dye. Dye is denser than the fluid it is stirred into, so it gets a
   // downward (Boussinesq) force relative to the ambient background density

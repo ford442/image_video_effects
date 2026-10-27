@@ -10,6 +10,8 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <memory>
+#include <vector>
 
 namespace pixelocity {
 
@@ -18,6 +20,7 @@ static_assert(sizeof(Uniforms) == webgpu_limits::kMaxUniformBufferBindingSize,
 
 using wasm_internal::MakeStringView;
 using wasm_internal::CheckLimit;
+using wasm_internal::kErrorScopeWaitTimeoutNs;
 
 // Finite WaitAny budgets for init. With UINT64_MAX emdawn waits forever, and on
 // SwiftShader the adapter request never resolves in ~1 run of 10: init then hangs
@@ -26,7 +29,13 @@ using wasm_internal::CheckLimit;
 // A future left pending is completed as CallbackCancelled when the instance drops;
 // the callbacks below only write their out-pointer on Success, so the dead stack
 // slot is never touched. Worst case 4 × 3 s + 5 s = 17 s, under the bridge's 20 s
-// backstop (src/wasm/bridge/init.ts CPP_INIT_TIMEOUT_MS).
+// backstop (src/wasm/bridge/init.ts CPP_INIT_TIMEOUT_MS). Error-scope pops use
+// wasm_internal::kErrorScopeWaitTimeoutNs; no WaitAny in wasm_renderer/ may use
+// UINT64_MAX (verify:device-policy).
+//
+// A timed-out adapter request can still resolve later. Its slot is heap-owned
+// (lateAdapters below) so the callback never writes a dead stack frame, and the
+// requests are polled once more after the ladder so a late adapter is released.
 constexpr uint64_t kAdapterWaitTimeoutNs = 3'000'000'000ull;
 constexpr uint64_t kDeviceWaitTimeoutNs = 5'000'000'000ull;
 
@@ -198,6 +207,11 @@ bool WebGPURenderer::CreateDevice() {
 
     WGPUAdapter rawAdapter = nullptr;
     size_t adapterTimeouts = 0;
+    struct AdapterSlot {
+        WGPUFuture future = {};
+        WGPUAdapter adapter = nullptr;
+    };
+    std::vector<std::unique_ptr<AdapterSlot>> lateAdapters;
 
     for (size_t attempt = 0; attempt < kAdapterAttemptCount && rawAdapter == nullptr; ++attempt) {
         WGPUPowerPreference pref = adapterAttempts[attempt].powerPreference;
@@ -227,13 +241,14 @@ bool WebGPURenderer::CreateDevice() {
         adapterOpts.powerPreference = pref;
         adapterOpts.forceFallbackAdapter = useFallbackAdapter;
 
-        WGPUAdapter adapterFromCallback = nullptr;
+        auto slot = std::make_unique<AdapterSlot>();
 
         auto adapterCallback = [](WGPURequestAdapterStatus status, WGPUAdapter adapter,
                                    WGPUStringView message, void* userdata1, void* /*userdata2*/) {
-            auto* outAdapter = static_cast<WGPUAdapter*>(userdata1);
+            if (status == WGPURequestAdapterStatus_CallbackCancelled) return;
+            auto* out = static_cast<AdapterSlot*>(userdata1);
             if (status == WGPURequestAdapterStatus_Success && adapter) {
-                *outAdapter = adapter;
+                out->adapter = adapter;
             } else {
                 printf("❌ Adapter request failed (status=%d)\n", (int)status);
                 if (message.data && message.length > 0) {
@@ -245,8 +260,9 @@ bool WebGPURenderer::CreateDevice() {
         // WGPUCallbackMode_WaitAnyOnly + ASYNCIFY is required for wgpuInstanceWaitAny.
         WGPUFuture adapterFuture = wgpuInstanceRequestAdapter(instance_.get(), &adapterOpts,
             WGPURequestAdapterCallbackInfo{
-                nullptr, WGPUCallbackMode_WaitAnyOnly, adapterCallback, &adapterFromCallback, nullptr
+                nullptr, WGPUCallbackMode_WaitAnyOnly, adapterCallback, slot.get(), nullptr
             });
+        slot->future = adapterFuture;
 
         WGPUFutureWaitInfo adapterWait = WGPU_FUTURE_WAIT_INFO_INIT;
         adapterWait.future = adapterFuture;
@@ -261,13 +277,28 @@ bool WebGPURenderer::CreateDevice() {
                    (int)waitStatus);
         }
 
-        if (adapterFromCallback) {
-            rawAdapter = adapterFromCallback;
+        if (!adapterWait.completed) {
+            lateAdapters.push_back(std::move(slot));
+        } else if (slot->adapter) {
+            rawAdapter = slot->adapter;
             printf("[WASM] Successfully obtained adapter on attempt %zu (powerPref=%s, fallbackAdapter=%s)\n",
                    attempt + 1, prefName, useFallbackAdapter ? "true" : "false");
         } else {
             printf("[WASM] Adapter attempt %zu failed (completed=%d).\n",
                    attempt + 1, (int)adapterWait.completed);
+        }
+    }
+
+    // Poll the timed-out requests once (zero timeout): an adapter that resolved
+    // late is not the one we use, so release it instead of leaking it.
+    for (const auto& late : lateAdapters) {
+        WGPUFutureWaitInfo w = WGPU_FUTURE_WAIT_INFO_INIT;
+        w.future = late->future;
+        wgpuInstanceWaitAny(instance_.get(), 1, &w, 0);
+        if (w.completed && late->adapter && late->adapter != rawAdapter) {
+            printf("[WASM] Releasing an adapter whose request resolved after its timeout.\n");
+            wgpuAdapterRelease(late->adapter);
+            late->adapter = nullptr;
         }
     }
 
@@ -610,6 +641,8 @@ bool WebGPURenderer::CreateDevice() {
             PopResult pop;
             auto popCb = [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
                             WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+                // Cancelled = instance dropped after a timed-out wait: the slot is dead.
+                if (status == WGPUPopErrorScopeStatus_CallbackCancelled) return;
                 auto* out = static_cast<PopResult*>(userdata1);
                 const bool okStatus = status == WGPUPopErrorScopeStatus_Success;
                 const bool isGpuError =
@@ -630,9 +663,15 @@ bool WebGPURenderer::CreateDevice() {
             });
             WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
             popWait.future = popFuture;
-            wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+            const WGPUWaitStatus waitStatus =
+                wgpuInstanceWaitAny(instance_.get(), 1, &popWait, kErrorScopeWaitTimeoutNs);
+            if (waitStatus != WGPUWaitStatus_Success) {
+                printf("[WASM] Format probe %s: error-scope WaitAny status=%d — treat as unsupported\n",
+                       label, (int)waitStatus);
+            }
 
-            const bool ok = tex.get() != nullptr && !pop.hadError;
+            const bool ok = tex.get() != nullptr && !pop.hadError
+                && waitStatus == WGPUWaitStatus_Success;
             return ok;
         };
 
@@ -731,6 +770,7 @@ bool WebGPURenderer::CreateDevice() {
                 nullptr, WGPUCallbackMode_WaitAnyOnly,
                 [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
                    WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+                    if (status == WGPUPopErrorScopeStatus_CallbackCancelled) return;
                     if (status != WGPUPopErrorScopeStatus_Success || type != WGPUErrorType_NoError) {
                         *static_cast<bool*>(userdata1) = true;
                         if (message.data && message.length > 0) {
@@ -744,7 +784,7 @@ bool WebGPURenderer::CreateDevice() {
             WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
             popWait.future = popFuture;
             const WGPUWaitStatus waitStatus =
-                wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+                wgpuInstanceWaitAny(instance_.get(), 1, &popWait, kErrorScopeWaitTimeoutNs);
             canvasCopySrcSupported_ = accepted == 1 && !hadError
                 && waitStatus == WGPUWaitStatus_Success;
             printf("[WASM] Canvas COPY_SRC probe: %s\n", canvasCopySrcSupported_ ? "yes" : "no");

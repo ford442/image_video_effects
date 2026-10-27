@@ -3,8 +3,8 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-06
-//  Ideas: molten-temperature memory (drips re-solidify); ledge pooling + meniscus lip
+//  Upgraded: 2026-10-06, 2026-10-26
+//  Ideas: molten-temperature memory; ledge pooling; drip-head bead (§12.2D); cooling crust
 //  A packing: linear pre-ACES melt RGB (advected history mix, no display glow); A.a = molten temperature 0..1
 //  History: created 2024-01-01; upgraded-rgba 2026-05-31; chunks warpedFBM, curl2D, bass_env
 // ═══════════════════════════════════════════════════════════════════
@@ -105,7 +105,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let branchNoise = fbm(vec2<f32>(uv.x * 11.0, uv.y * 4.0 - time * meltSpeed * 24.0), 4);
     let branch = smoothstep(0.54, 0.78, branchNoise + luma * 0.22) * meltMask;
     let meltRunner = pow(max(0.0, sin((uv.y + uv.x * (0.18 + branch * 0.2)) * 46.0 - time * (13.0 + mids * 6.0))), 14.0) * meltMask;
-    let dripPacket = pow(max(0.0, sin(uv.y * 62.0 + branchNoise * 8.0 - time * (18.0 + treble * 7.0))), 18.0) * branch;
+    let dripPhase = uv.y * 62.0 + branchNoise * 8.0 - time * (18.0 + treble * 7.0);
+    let dripPacket = pow(max(sin(dripPhase), 0.0), 18.0) * branch;
     let curl = curl2D(uv * 3.0, time * 0.2) * meltSpeed * (1.0 + bass * 0.5);
     let gravity = vec2<f32>((branch - 0.5) * meltSpeed * 0.16, meltSpeed * luma * meltMask * (1.0 + meltRunner * 0.7 + branch * 0.5));
 
@@ -154,9 +155,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hdr = heated.rgb + vec3<f32>(0.45, 0.12 + mids * 0.18, 0.04 + treble * 0.12) * (branch + clickHeat + molten * 0.6) * heat * 0.24;
     // Meniscus: the pooled lip catches light.
     hdr = hdr + vec3<f32>(1.0, 0.92, 0.8) * ledge * 0.10 * (0.4 + 0.6 * smoothstep(0.05, 0.6, temp));
+    // ── Idea: drip-head bead (§12.2D) ─────────────────────────────
+    // The packet moves toward +y. The leading side is just past the
+    // crest, where cos(phase) is negative.
+    let dripHead = dripPacket * smoothstep(0.0, 0.65, -cos(dripPhase));
+    hdr = hdr + vec3<f32>(1.0, 0.78, 0.42) * dripHead * 0.22;
+    // ── Idea: cooling crust ───────────────────────────────────────
+    // Previous temperature above the advected temperature is a spot
+    // that just cooled. Pull it toward luma.
+    let crust = smoothstep(0.02, 0.22, hereTemp - temp);
+    hdr = mix(hdr, vec3<f32>(luma), crust * 0.38);
     hdr = max(hdr, vec3<f32>(0.0));
     let mapped = clamp((hdr * (2.51 * hdr + 0.03)) / (hdr * (2.43 * hdr + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
-    let finalColor = vec4<f32>(mapped, clamp(meltAlpha + branch * 0.12 + clickHeat * 0.08 + ledge * 0.1, 0.0, 1.0));
+    let finalColor = vec4<f32>(mapped, clamp(meltAlpha + branch * 0.12 + clickHeat * 0.08 + ledge * 0.1 + dripHead * 0.06, 0.0, 1.0));
 
     textureStore(writeTexture, coord, finalColor);
     textureStore(dataTextureA, coord, vec4<f32>(clamp(blended.rgb, vec3<f32>(0.0), vec3<f32>(16.0)), temp));

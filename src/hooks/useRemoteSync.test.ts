@@ -45,6 +45,7 @@ describe('useRemoteSync commands', () => {
     triggerRoulette?: () => void;
     updateSlotParam?: (index: number, updates: Record<string, number>) => void;
     handleNewRandomImage?: () => Promise<void>;
+    loadLocalMedia?: (blob: Blob, kind: 'image' | 'video') => Promise<void>;
   }) {
     return renderHook(() =>
       useRemoteSync({
@@ -161,5 +162,41 @@ describe('useRemoteSync commands', () => {
     });
 
     expect(handleNewRandomImage).toHaveBeenCalled();
+  });
+
+  it('loads CMD_UPLOAD_FILE bytes into the main app (regression: upload was a no-op)', () => {
+    const loadLocalMedia = vi.fn(async () => {});
+    mountMain({ loadLocalMedia });
+
+    const main = MockBroadcastChannel.instances[0];
+    const bytes = new Uint8Array([1, 2, 3, 4]);
+    act(() => {
+      main!.onmessage?.({
+        data: {
+          type: 'CMD_UPLOAD_FILE',
+          payload: { name: 'clip.mp4', type: 'video', mimeType: 'video/mp4', data: bytes.buffer },
+        },
+      } as MessageEvent);
+    });
+
+    expect(loadLocalMedia).toHaveBeenCalledTimes(1);
+    const [blob, kind] = loadLocalMedia.mock.calls[0] as unknown as [Blob, string];
+    expect(kind).toBe('video');
+    expect(blob.type).toBe('video/mp4');
+    expect(blob.size).toBe(bytes.byteLength);
+  });
+
+  it('ignores CMD_UPLOAD_FILE with an invalid payload', () => {
+    const loadLocalMedia = vi.fn(async () => {});
+    mountMain({ loadLocalMedia });
+
+    const main = MockBroadcastChannel.instances[0];
+    act(() => {
+      main!.onmessage?.({
+        data: { type: 'CMD_UPLOAD_FILE', payload: { type: 'audio', data: 'nope' } },
+      } as MessageEvent);
+    });
+
+    expect(loadLocalMedia).not.toHaveBeenCalled();
   });
 });

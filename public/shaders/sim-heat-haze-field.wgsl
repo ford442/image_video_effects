@@ -3,31 +3,12 @@
 //  Category: distortion
 //  Features: simulation, temperature-field, convection, refraction, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: thermal plumes (upward heat advection); schlieren streaks along ∇T
+//  Upgraded: 2026-10-26 (prev 2026-09-12)
+//  Ideas: thermal plumes (upward heat advection); schlieren streaks along ∇T; inferior mirage; signed schlieren
 //  A packing: raw (temp, grad.x, grad.y, displacement mag)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -145,13 +126,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Sample image with displacement
     let displacedUV = clamp(uv + displacement, vec2<f32>(0.0), vec2<f32>(1.0));
-    var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    // ── Idea 3: inferior mirage — a hot ground layer folds the view back across itself
+    let fold = 0.70;
+    let reflectedY = fold - (displacedUV.y - fold);
+    let hotGround = smoothstep(0.70, 0.95, uv.y) * smoothstep(0.35, 0.9, newTemp);
+    let mirageAmt = hotGround * clamp(distortion * 18.0, 0.0, 1.0);
+    let mirageUV = clamp(vec2<f32>(displacedUV.x, mix(displacedUV.y, reflectedY, mirageAmt)), vec2<f32>(0.0), vec2<f32>(1.0));
+    var color = textureSampleLevel(readTexture, u_sampler, mirageUV, 0.0).rgb;
     
     // Heat tint (hot areas get slight red/yellow tint)
     let heatTint = vec3<f32>(1.0 + newTemp * 0.3, 1.0 + newTemp * 0.1, 1.0 - newTemp * 0.1);
     color *= heatTint;
     color += vec3<f32>(1.0, 0.35 + mids * 0.25, 0.08 + treble * 0.2) * pow(newTemp, 2.0) * 0.12;
     color = mix(color, color * vec3<f32>(0.72, 0.88, 1.08), schliere * newTemp * 0.55);
+    // ── Idea 4: signed schlieren — one side of ∇T brightens, the other darkens
+    let knife = clamp(dot(grad, vec2<f32>(1.0, 0.35)) * 4.0, -1.0, 1.0);
+    color = color * (1.0 + knife * schliere * 0.35);
     color += vec3<f32>(1.15, 0.55, 0.12) * plume * 0.8;
     
     // Desaturate in hot areas (air shimmer effect)
@@ -160,7 +150,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     color = acesToneMap(color);
-    let sourceAlpha = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).a;
+    let sourceAlpha = textureSampleLevel(readTexture, u_sampler, mirageUV, 0.0).a;
     let alpha = clamp(sourceAlpha * 0.75 + newTemp * 0.22 + clickHeat * 0.12 + schliere * 0.15, 0.0, 1.0);
     
     textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));

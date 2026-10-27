@@ -6,7 +6,9 @@
 //            chromatic-aberration, aces-tone-map, temporal-feedback,
 //            velocity-trails
 //  Complexity: Medium
-//  Upgraded: 2026-08-23 (Batch 64)
+//  Upgraded: 2026-08-23, 2026-10-26
+//  Ideas: Barkhausen crackle; iron-filing streaks
+//  A packing: ACES display RGBA
 //
 //  FIXED IN THIS PASS — three defects.
 //
@@ -52,26 +54,7 @@
 //             Ripple interference is now audio-amplified.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -221,7 +204,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // ─── Sample video input at displaced UV ───
-    let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    let baseSample = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    // ── Idea 2: iron-filing streaks ────────────────────────────────────
+    // Three short taps along the field, only inside the magnet's influence.
+    let fieldDir = totalDisp / max(length(totalDisp), 1e-4);
+    var filing = baseSample;
+    var filingW = 1.0;
+    let filingStep = 0.0035 * (0.4 + strength * 0.35);
+    for (var fk: i32 = 1; fk <= 3; fk = fk + 1) {
+        let fwgt = 1.0 - f32(fk) * 0.22;
+        let suv = clamp(displacedUV + fieldDir * filingStep * f32(fk), vec2<f32>(0.0), vec2<f32>(1.0));
+        filing = filing + textureSampleLevel(readTexture, u_sampler, suv, 0.0).rgb * fwgt;
+        filingW = filingW + fwgt;
+    }
+    filing = filing / max(filingW, 1e-4);
+    let filingMix = influence * smoothstep(0.0015, 0.02, length(totalDisp));
+    let baseColor = mix(baseSample, filing, filingMix);
 
     // ─── Structure 2: hysteresis memory ───
     // Ferromagnets lag their drive and only flip past a coercive field. The
@@ -243,6 +241,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var feedbackColor = mix(baseColor, prevColor, feedbackMix);
     // Domain walls glow where they are actively sweeping.
     feedbackColor += vec3<f32>(0.45, 0.72, 1.0) * wallEnergy * switching * 0.22;
+    // ── Idea 1: Barkhausen crackle ─────────────────────────────────────
+    // Domains jump only while the hysteresis curve is mid-flip.
+    let flipWin = smoothstep(0.22, 0.48, switching) * (1.0 - smoothstep(0.52, 0.78, switching));
+    let cellH = hash21(floor(uv * (18.0 + strength * 16.0)));
+    let jump = exp(-abs(fract(time * (1.2 + env * 1.5) + cellH) - 0.5) * 36.0);
+    let bark = jump * flipWin * (0.35 + wallEnergy * 0.4);
+    feedbackColor = mix(feedbackColor, prevColor, bark * 0.35);
+    feedbackColor += vec3<f32>(0.85, 0.92, 1.0) * bark * 0.45;
 
     // Spectral tint via mix, not per-channel sampling
     let tint = vec3<f32>(1.0 + aberration * 0.3, 1.0, 1.0 - aberration * 0.3);

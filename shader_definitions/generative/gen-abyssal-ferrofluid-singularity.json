@@ -4,6 +4,11 @@
   "url": "shaders/gen-abyssal-ferrofluid-singularity.wgsl",
   "category": "generative",
   "tags": ["ferrofluid", "magnetic", "singularity", "metallic", "iridescent", "dark"],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
   "params": [
     {
       "id": "p1",

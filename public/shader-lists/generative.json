@@ -793,7 +793,7 @@
     "id": "cosmic-jellyfish",
     "name": "Cosmic Jellyfish",
     "url": "shaders/cosmic-jellyfish.wgsl",
-    "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails.",
+    "description": "A raymarched cosmic jellyfish with a ribbed scalloped bell, layered oral arms and fine tentacles, audio-driven bioluminescence, click pressure waves, and persistent volumetric trails. Thin bell regions transmit the glow, horseshoe gonads shine through the crown, and eight rhopalia blink around the rim.",
     "tags": [
       "3d",
       "raymarching",
@@ -812,7 +812,8 @@
       "raymarching",
       "bioluminescent",
       "depth-aware",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1146,7 +1147,7 @@
     "name": "Electric Eel Storm",
     "category": "generative",
     "url": "shaders/electric-eel-storm.wgsl",
-    "description": "Electric eels swimming through a conductive storm cloud, discharging arcs between them. Bass drives eel body pulses, mids create storm cloud turbulence, treble triggers lightning arc flashes. Mouse attracts the eel school.",
+    "description": "Undulating electric eels with ribbon fins drift through a storm cloud, firing discharge volleys that light their dipole field lines and arc between them. Bass drives volleys and body pulses, treble drops lightning; mouse attracts the school, clicks startle nearby eels.",
     "features": [
       "audio-reactive",
       "generative",
@@ -1663,6 +1664,11 @@
       "metallic",
       "iridescent",
       "dark"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3264,7 +3270,7 @@
       "volumetric",
       "filmic"
     ],
-    "description": "Flowing aurora curtains with silky spectral ribbons, now in HDR with ACES filmic grading, dynamic temperature shifts, split-tone shadows/highlights, Fresnel rim lighting, volumetric god rays, caustic dapples, and depth-layered fog. Reacts to bass, mids, and treble.",
+    "description": "Flowing aurora curtains with silky spectral ribbons, now in HDR with ACES filmic grading, dynamic temperature shifts, split-tone shadows/highlights, Fresnel rim lighting, volumetric god rays, caustic dapples, and depth-layered fog. Reacts to bass, mids, and treble. Fine field-aligned rays flicker inside the curtains and each ribbon carries a nitrogen-pink lower hem.",
     "workgroup_size": [
       16,
       16,
@@ -3622,7 +3628,7 @@
       "glow",
       "translucent"
     ],
-    "description": "SDF tentacle jellyfish with pulsing bio-luminescence and glow-intensity alpha encoding. Audio drives pulse rhythm and sparkle particles; mouse attracts the jellyfish and creates shockwaves. Jet-propulsion tentacle stretch and drift streaming, radial canals / gonad / notched lappets, and jelly-lit marine snow. A packing: raw pulsePhase in A.r, alpha in A.a. Four oral arms hang under the bell, and muscle striations brighten as it contracts.",
+    "description": "SDF moon jelly with pulsing bioluminescence: jet-propulsion tentacles, radial canals, gonads, oral arms and lit marine snow. A Beer–Lambert gel bell turns milky where thick; each contraction sheds vortex rings that swirl the snow and spark dinoflagellates. Audio drives pulse and sparkle; mouse attracts it.",
     "workgroup_size": [
       16,
       16,
@@ -4093,6 +4099,64 @@
     ],
     "updated": true,
     "category": "generative"
+  },
+  {
+    "id": "gen-bioluminescent-neural-coral-matrix",
+    "name": "Bioluminescent Neural-Coral Matrix",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "neural",
+      "coral",
+      "bioluminescence",
+      "cybernetic",
+      "sdf",
+      "audio-reactive"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "url": "/shaders/gen-bioluminescent-neural-coral-matrix.wgsl",
+    "params": [
+      {
+        "name": "Structure Scale",
+        "default": 2.5,
+        "min": 1,
+        "max": 5,
+        "step": 0.1,
+        "id": "structure_scale",
+        "mapping": "zoom_params.x"
+      },
+      {
+        "name": "Distortion Intensity",
+        "default": 1.5,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "id": "distortion_intensity",
+        "mapping": "zoom_params.y"
+      },
+      {
+        "name": "Travel Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "id": "travel_speed",
+        "mapping": "zoom_params.z"
+      },
+      {
+        "name": "Bioluminescence",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "id": "bioluminescence",
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-bioluminescent-neural-lattice-weaver",
@@ -6392,7 +6456,7 @@
       "reactive",
       "ambient"
     ],
-    "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions.",
+    "description": "A multi-temporal fungal network where different generations of mycelium coexist in layered time, creating a living, breathing tapestry of organic growth across temporal dimensions. Ancient growth bundles into dark-cored rhizomorph cords and the remembered trail ages toward sepia.",
     "workgroup_size": [
       16,
       16,
@@ -6403,7 +6467,9 @@
     "updated": true,
     "id": "gen-chrono-mycelial-tapestry",
     "url": "shaders/gen-chrono-mycelial-tapestry.wgsl",
-    "features": [],
+    "features": [
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "growth_rate",
@@ -7360,7 +7426,7 @@
       "raymarching",
       "audio-reactive"
     ],
-    "description": "An infinitely shattering and reforming matrix of absolute-zero hyper-fractals that bleed iridescent thermal plasma when fractured by heavy bass frequencies. Hoarfrost dendrites trace the fracture seams, and a cyan sublimation sheath marks where ice meets plasma.",
+    "description": "A Sierpinski-fold ice fractal around a magenta plasma core. Facets glow in crossed-polariser grain colours, the core shows through the ice with a dispersive fringe, and hoarfrost dendrites, rime terraces and plasma tongues mark the fractures.",
     "workgroup_size": [
       16,
       16,
@@ -7409,7 +7475,11 @@
     "updated": true,
     "id": "gen-cryogenic-frost-plasma-matrix",
     "url": "shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
-    "features": []
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "name": "Crystal Caverns",
@@ -20491,7 +20561,7 @@
     "name": "Neural Dust",
     "category": "generative",
     "url": "shaders/gen-neural-dust.wgsl",
-    "description": "Drifting luminous particle field driven by domain-warped FBM. Audio reactivity controls density and jitter, while mouse gravity attracts nearby dust motes.",
+    "description": "Drifting domain-warped dust motes that fire like neurons: spikes flash and relay through myelinated axons node to node, cascading across the network. Audio depolarises motes; hold the mouse to excite and attract them.",
     "features": [
       "generative",
       "fbm-noise",
@@ -21396,7 +21466,7 @@
       "hysteresis",
       "feedback"
     ],
-    "description": "A viscous history-dependent field undergoing phase transitions between fluid, crystalline, and chaotic states with strong visual memory of past configurations. Audio controls phase transition thresholds. Mouse locally forces phase changes. Beautiful hysteresis and pattern retention.",
+    "description": "A viscous history-dependent field freezing into hex-lattice polycrystals that grow as six-armed dendrites, with latent heat rising off the fronts, melting back to fluid and chaos. Audio shifts the thresholds; press to nucleate crystal.",
     "workgroup_size": [
       16,
       16,
@@ -23286,6 +23356,70 @@
     ]
   },
   {
+    "name": "Quantum Coral Reef",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "fractal",
+      "bioluminescent",
+      "underwater",
+      "audio-reactive"
+    ],
+    "description": "A mesmerizing, bioluminescent deep-sea ecosystem that grows fractally, responding to unseen quantum currents and user interaction.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": false,
+    "supportsDof": false,
+    "updated": false,
+    "id": "gen-quantum-coral-reef",
+    "url": "shaders/gen-quantum-coral-reef.wgsl",
+    "features": [
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "zoom_scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "complexity",
+        "name": "Complexity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "audio_influence",
+        "name": "Audio Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Quantum-Entangled Ferrofluid Engine",
     "category": "generative",
     "tags": [
@@ -23328,7 +23462,7 @@
       "audio-reactive",
       "interactive"
     ],
-    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies. Optimized: 4-tap scalar-potential curl flow, HDR feedback chain, generated depth.",
+    "description": "A hyper-dense, glowing swarm of ethereal quantum 'moths' that dynamically flock and self-organize into luminous geometric mandalas, reacting violently to acoustic frequencies. Optimized: 4-tap scalar-potential curl flow, HDR feedback chain, generated depth. Wing blobs carry ocellus eyespots and shed fluorescent scale dust into the drifting trail.",
     "workgroup_size": [
       16,
       16,
@@ -23636,7 +23770,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-organic, microscopic journey through an infinitely growing, glowing fungal network that pulses with data-like energy and branches dynamically based on spatial noise.",
+    "description": "A hyper-organic, microscopic journey through an infinitely growing, glowing fungal network that pulses with data-like energy and branches dynamically based on spatial noise. Clamp-connection hooks bypass each septum and the pulse steps compartment by compartment.",
     "workgroup_size": [
       16,
       16,
@@ -25463,7 +25597,7 @@
     "tags": [
       "generative"
     ],
-    "description": "",
+    "description": "A dark cyber-owl with prism-lattice wings spread in a volumetric aurora: feather-current lanes, a faceted iris with Airy eyeshine, and a radial-feathered facial disc that glows as it focuses sound. The head tracks the mouse; bass beats the wings.",
     "workgroup_size": [
       16,
       16,
@@ -25822,7 +25956,7 @@
   {
     "id": "gen-sentient-void-silk-nebula",
     "name": "Sentient Void-Silk Nebula",
-    "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads.",
+    "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads. Dew beads string along the fibrils and slack regions open into rim-lit void pockets.",
     "category": "generative",
     "url": "shaders/gen-sentient-void-silk-nebula.wgsl",
     "workgroup_size": [
@@ -26517,6 +26651,70 @@
     "description": "A repeated stellar resonance manifold with coherent p/g-mode shells, compression-heated blackbody highlights, nodal dislocation seams, and coronal loop arc curtains driven by audio bands."
   },
   {
+    "name": "Stellar Mycelium Overdrive",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "cosmic",
+      "mycelium",
+      "sdf",
+      "bioluminescent"
+    ],
+    "description": "A hyper-organic network of glowing stardust mycelium that dynamically branches, pulses with cosmic energy, and responds to gravity wells.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": false,
+    "supportsDof": false,
+    "updated": false,
+    "id": "gen-stellar-mycelium-overdrive",
+    "url": "shaders/gen-stellar-mycelium-overdrive.wgsl",
+    "features": [
+      "audio-reactive",
+      "mouse-driven"
+    ],
+    "params": [
+      {
+        "id": "density",
+        "name": "Density",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "pulse_speed",
+        "name": "Pulse Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 2,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "color_shift",
+        "name": "Color Shift",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Stellar Plasma-Ouroboros",
     "category": "generative",
     "tags": [
@@ -26590,7 +26788,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-dimensional cosmic loom weaving infinite tendrils of starlight and plasma silk across a dark void, blending organic neuro-network vibes with vast, mechanical astrophysics. Upgraded for fast motion: warp-flight camera driven by Weave Speed, radial speed-line streaks, clamped HDR feedback light-trails, bass-transient flash bursts, audio-reactive color temperature, ACES tone mapping and real raymarched depth. Plucked standing-wave threads pinned at the lattice nodes, per-axis warp/weft hues with over/under weave thickness, and a gyro ring on every node.",
+    "description": "Warp-flight through a cosmic loom of plucked starlight threads: violet, amber and teal warp/weft with over/under weave, gyro-ringed knots that shine in stellar spectral colours, gold shuttles throwing the weft, speed streaks and HDR light-trails.",
     "workgroup_size": [
       16,
       16,
@@ -26612,7 +26810,8 @@
       "generated-depth",
       "semantic-alpha",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -27043,6 +27242,69 @@
       "upgraded-rgba",
       "audio-reactive",
       "mouse-driven"
+    ]
+  },
+  {
+    "id": "gen-symbiotic-neuro-lattice",
+    "name": "Symbiotic Neuro-Lattice",
+    "url": "shaders/gen-symbiotic-neuro-lattice.wgsl",
+    "description": "A biomechanical network that pulsates with glowing quantum synaptic energy, weaving organic fluid tendrils with sharp metallic structures.",
+    "tags": [
+      "organic",
+      "network",
+      "cyberpunk",
+      "biotech"
+    ],
+    "features": [
+      "ray-marching",
+      "audio-reactive",
+      "mouse-control",
+      "pbr-shading"
+    ],
+    "params": [
+      {
+        "id": "thickness",
+        "name": "Thickness",
+        "default": 0.5,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "gravity_strength",
+        "name": "Gravity Strength",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "pulse_frequency",
+        "name": "Pulse Frequency",
+        "default": 2,
+        "min": 0.5,
+        "max": 10,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "updated": true,
+    "category": "generative",
+    "workgroup_size": [
+      16,
+      16,
+      1
     ]
   },
   {
@@ -28451,7 +28713,8 @@
       "temporal",
       "semantic-alpha",
       "reaction-diffusion",
-      "biological"
+      "biological",
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
@@ -28519,7 +28782,9 @@
       "audio-driven",
       "mouse-rogue-body",
       "ripple-perturbation",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "gravitational",
@@ -28849,7 +29114,7 @@
     "id": "interactive_neural_swarm",
     "name": "Neural Swarm",
     "url": "shaders/interactive_neural_swarm.wgsl",
-    "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns",
+    "description": "Agent-based neural network visualization with signal propagation, connection weights, and emergent activation patterns. Axons are myelinated with saltatory node hops, synaptic boutons flare on arrival, and somas grow dendritic spines.",
     "tags": [
       "neural",
       "network",
@@ -28863,7 +29128,8 @@
       "audio-reactive",
       "agent-based",
       "signal-propagation",
-      "neon"
+      "neon",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -31023,7 +31289,7 @@
     "name": "Supernova Core",
     "category": "generative",
     "url": "shaders/supernova-core.wgsl",
-    "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing.",
+    "description": "Sedov-Taylor blast wave with radioactive decay luminosity (56Ni->56Co->56Fe). Rayleigh-Taylor instability fingers and neutrino-driven convection cells. Blackbody cooling sequence with iron emission lines and chromatic aberration. Audio drives shock expansion. Mouse creates asymmetric ejecta. Depth controls light echo perspective. Advanced alpha composition blends luminance keying, depth layering, and physical transmittance for cleaner 3-slot compositing. Dust light echoes race ahead of the shock, the companion carves a shadow cone in the ejecta, and a reverse shock reignites the RT fingers.",
     "features": [
       "audio-reactive",
       "generative",
@@ -31405,7 +31671,8 @@
       "turing-patterns",
       "depth-aware",
       "biological",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

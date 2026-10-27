@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: bidirectional RK2 streamlines; filings clump with field strength + bare pole caps; held magnet becomes a luma-signed pole
+//  Upgraded: 2026-10-05, 2026-10-26
+//  Ideas: bidirectional RK2 streamlines; filings clump; held luma-signed pole; contrast pile; cancellation seam
 //  A packing: ACES display RGBA (same as writeTexture; C is not read)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -33,6 +33,15 @@ fn hash21(p: vec2<f32>) -> f32 {
 fn sampleLuma(uv: vec2<f32>) -> f32 {
   let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   return dot(c, vec3(0.299, 0.587, 0.114));
+}
+
+fn lumaGradient(pos: vec2<f32>) -> vec2<f32> {
+  let ps = vec2(0.003, 0.003);
+  let lumL = sampleLuma(pos + vec2(-ps.x, 0.0));
+  let lumR = sampleLuma(pos + vec2(ps.x, 0.0));
+  let lumUp = sampleLuma(pos + vec2(0.0, -ps.y));
+  let lumDn = sampleLuma(pos + vec2(0.0, ps.y));
+  return vec2(lumR - lumL, lumDn - lumUp) * 10.0;
 }
 
 // ═══ CHUNK: magnetic_field_rk2 ═══
@@ -134,6 +143,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cap = smoothstep(0.82, 0.95, luma) + smoothstep(0.18, 0.05, luma);
   filament = filament * (1.0 - cap);
 
+  // ── Idea: contrast pile ────────────────────────────────────────
+  // Filings gather on the luma edges that source the field.
+  let grad = lumaGradient(uv);
+  let pile = smoothstep(0.08, 0.32, length(grad)) * disc;
+  filament = min(filament + pile * 0.45, 1.0);
+
+  // ── Idea: cancellation seam ────────────────────────────────────
+  // Where the image gradient opposes the pointer term, the filament breaks.
+  let mouseDelta = vec2(diff.x * aspect, diff.y);
+  let swirl = vec2(-mouseDelta.y, mouseDelta.x);
+  let dirField = mix(swirl, mouseDelta * gPole, abs(gPole));
+  let mouseOnly = dirField * fieldStrength * (1.0 + bass) / max(dot(mouseDelta, mouseDelta), 0.0001);
+  let mouseReturned = vec2(mouseOnly.x / aspect, mouseOnly.y);
+  let gN = grad / max(length(grad), 1e-5);
+  let mN = mouseReturned / max(length(mouseReturned), 1e-5);
+  let oppose = smoothstep(0.1, 0.55, -dot(gN, mN)) * pile;
+  filament = filament * (1.0 - oppose * 0.72);
+
   let filingColor = vec3(0.15, 0.12, 0.10);
   let northColor = vec3(0.8, 0.2, 0.1);
   let southColor = vec3(0.1, 0.3, 0.8);
@@ -150,7 +177,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let depthFade = mix(0.6, 1.0, depth * depthLayer);
   let filingMix = filament * mix(0.25, 0.55, clump);
-  let emission_base = mix(displaced, polarityColor, filingMix) + hdrBloom + filingGlow + capGlow;
+  let emission_base = mix(displaced, polarityColor, filingMix) + hdrBloom + filingGlow + capGlow + vec3(0.82, 0.86, 0.9) * oppose * 0.14;
   let emission = emission_base * depthFade;
   let tonemapped = aces_tonemap(max(emission, vec3(0.0)));
 

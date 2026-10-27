@@ -1,7 +1,7 @@
 # WebGPU Shader Effects & Visual Library
 
 <!-- catalog-counts:intro:begin -->
-A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,392** compute shaders across 14 categories.
+A React + WebGPU app for real-time GPU shader effects — fluids, generative art, audio-reactive visuals, AI depth estimation, and a catalog of **1,396** compute shaders across 14 categories.
 <!-- catalog-counts:intro:end -->
 
 ## Documentation map
@@ -71,7 +71,7 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 ## Features
 
 <!-- catalog-counts:features:begin -->
-- **1,392 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
+- **1,396 shader effects** — counts from `public/shader-manifest-unified.json` (regenerate: `npm run build:manifest`; gate: `npm run verify:catalog-counts`)
 <!-- catalog-counts:features:end -->
 - **Dual renderer** — TypeScript WebGPU (default) + experimental C++/WASM backend
 - **Multipass & slot stacks** — chained/parallel layers, ping-pong feedback (`docs/PARALLEL_SLOTS.md`)
@@ -83,8 +83,8 @@ More detail: [`docs/SHADER_TEMPLATES.md`](docs/SHADER_TEMPLATES.md) · [`scripts
 ## Prerequisites
 
 - **WebGPU browser** — Chrome 113+, Edge 113+, or Firefox Nightly with WebGPU enabled
-- **Node.js 16+** and npm
-- **Optional:** Emscripten (`emcc`) for WASM rebuilds; headless VMs can use `SKIP_WASM_BUILD=1`
+- **Node.js 24+** and npm (`engines` in `package.json`)
+- **Optional:** Emscripten (`emcc`) only to rebuild the frozen WASM renderer (`BUILD_WASM=1`); `npm run build` uses the committed `public/wasm/*`
 
 ## Installation
 
@@ -99,7 +99,7 @@ Opens at `http://localhost:3000`. Use `BROWSER=none npm start` in headless envir
 
 ### Headless / Cloud VM contributors
 
-Cursor Cloud and similar VMs **lack a GPU adapter** — the WebGPU boot probe fails and the canvas shows a **blocking failure overlay** with full attempt logs (`window.webgpuProbe`). There is no automatic Canvas2D fallback. Validate shader/renderer work via **Jest** (`npm test`) and **build** (`SKIP_WASM_BUILD=1 npm run build`), not by eyeballing the canvas.
+Cursor Cloud and similar VMs **lack a GPU adapter** — the WebGPU boot probe fails and the canvas shows a **blocking failure overlay** with full attempt logs (`window.webgpuProbe`). There is no automatic Canvas2D fallback. Validate shader/renderer work via **Vitest** (`npm run test:ci`) and **build** (`npm run build`), not by eyeballing the canvas.
 
 Outbound requests to `storage.noahcohn.com`, `storage.googleapis.com`, and Unsplash may be **network-blocked** — use local `public/` assets. See [`AGENTS.md`](AGENTS.md) Cloud VM section.
 
@@ -109,7 +109,7 @@ Outbound requests to `storage.noahcohn.com`, `storage.googleapis.com`, and Unspl
 capture the corresponding PNG on a discrete-GPU workstation and commit it with
 the catalog change; CI checks pull requests for coverage regressions.
 
-Setup script for agent environments: `bash scripts/jules-setup.sh` (uses committed WASM artifacts, `SKIP_WASM_BUILD=1`).
+Setup script for agent environments: `bash scripts/jules-setup.sh` (uses committed WASM artifacts).
 
 ## Storage: Local vs VPS
 
@@ -138,7 +138,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 <!-- catalog-counts:table:begin -->
 | Category | Count | Description |
 |----------|------:|-------------|
-| **generative** | 497 | Procedural art, fractals, generative patterns |
+| **generative** | 501 | Procedural art, fractals, generative patterns |
 | **interactive-mouse** | 239 | Mouse and touch-driven interactions |
 | **advanced-hybrid** | 166 | Multi-technique / advanced hybrid stacks |
 | **artistic** | 98 | Creative and artistic visual effects |
@@ -152,7 +152,7 @@ Counts from `npm run build:manifest` → `public/shader-manifest-unified.json`:
 | **hybrid** | 18 | Combined technique shaders |
 | **geometric** | 16 | Geometric patterns and tessellations |
 | **lighting-effects** | 15 | Volumetric lighting and glow |
-| **Total** | **1,392** | 14 canonical categories |
+| **Total** | **1,396** | 14 canonical categories |
 <!-- catalog-counts:table:end -->
 
 Legacy list files (`interactive.json`, `liquid.json`) were removed — use `interactive-mouse.json` and `liquid-effects.json`.
@@ -167,7 +167,7 @@ Legacy list files (`interactive.json`, `liquid.json`) were removed — use `inte
 image_video_effects/
 ├── public/
 <!-- catalog-counts:structure:begin -->
-│   ├── shaders/                    # WGSL compute shaders (1,392 catalog ids; more pass files on disk)
+│   ├── shaders/                    # WGSL compute shaders (1,396 catalog ids; more pass files on disk)
 <!-- catalog-counts:structure:end -->
 │   ├── shader-lists/               # Generated category JSON (14 files)
 │   ├── shader-manifest-unified.json
@@ -216,8 +216,10 @@ See [`docs/APP_STRUCTURE.md`](docs/APP_STRUCTURE.md) for panel/hook detail.
 | Goal | Command |
 |------|---------|
 | Dev | `BROWSER=none npm start` |
-| Prod JS (no emcc) | `SKIP_WASM_BUILD=1 npm run build` |
-| WASM artifacts | `npm run wasm:build` (needs `emcc` + emdawn) |
+| Prod build (no emcc) | `npm run build` |
+| Unit tests (single run) | `npm run test:ci` |
+| Lint | `npm run lint` |
+| WASM artifacts | `npm run wasm:build` or `BUILD_WASM=1 npm run build` (needs `emcc` + emdawn) |
 | Typecheck | `npm run typecheck` |
 | Device policy sync | `npm run verify:device-policy` |
 | Uniforms layout | `npm run verify:uniforms` |
@@ -230,13 +232,13 @@ See [`docs/TOOLCHAIN_DECISION.md`](docs/TOOLCHAIN_DECISION.md) for the Vite/Vite
 | Command | Purpose |
 |---------|---------|
 | `npm start` | Dev server (prestart: shader lists + manifest, relative URLs) |
-| `npm run build` | Production build (`prebuild`: wasm → lists → manifest → vite build; relative URLs unless `SHADER_LIST_BASE_URL` is set) |
+| `npm run build` | Production build (`prebuild`: bridge sync → lists → manifest → vite build; WASM recompiles only with `BUILD_WASM=1`; relative URLs unless `SHADER_LIST_BASE_URL` is set) |
 | `npm run build:manifest` | Regenerate `shader-manifest-unified.json` from category lists |
 | `npm run verify:toolchain-foundation` | Bundle budget, dependency boundaries, shader-list URL policy, catalog count SoT |
 | `npm test` | Vitest unit tests (watch mode; `npm run test:ci` for a single run) |
 | `bash scripts/jules-setup.sh` | Agent/headless setup (`npm ci`, skip WASM compile) |
 
-Production path: `wasm:build` runs **once** in `prebuild`, not again in `build`. No emcc: `SKIP_WASM_BUILD=1 npm run build`. Details: [`WASM_BUILD_CI_GUIDE.md`](docs/WASM_BUILD_CI_GUIDE.md).
+Production path: `npm run build` needs no emcc and ships the committed `public/wasm/*`. `BUILD_WASM=1 npm run build` recompiles once in `prebuild`. Details: [`WASM_BUILD_CI_GUIDE.md`](docs/WASM_BUILD_CI_GUIDE.md). Deploy wrapper (adds `.htaccess`): `bash tools/deploy/build.sh`.
 
 ### Shader list URLs (local vs deploy)
 
@@ -371,11 +373,11 @@ There is no Controls toggle (removed in #1329).
 
 **Limitations while Tier B:** best-effort parity with TS WebGPU; WASM GPU timings are wall-clock only; Playwright GPU tests require a real WebGPU adapter (`WASM_GPU_TESTS=1`). See policy doc before treating WASM as production-ready.
 
-**Build WASM locally:** `npm run wasm:build` (requires [Emscripten](https://emscripten.org/)). In CI/headless VMs without emsdk: `SKIP_WASM_BUILD=1 npm run build` uses committed artifacts in `public/wasm/`.
+**Build WASM locally:** `npm run wasm:build` (requires [Emscripten](https://emscripten.org/)). Without emsdk, `npm run build` uses the committed artifacts in `public/wasm/`.
 - **Pipeline:** Ping-pong textures; compute shaders read prior frame, write next
 - **Uniforms:** Shared 13-binding compute contract, from `#include "_prelude.wgsl"` (see `docs/BINDING_CONTRACT.md`)
 - **Depth:** AI depth maps drive parallax and depth-aware effects
-- **Multipass:** Linear chains today; graph runner planned — [`docs/plans/PLAN-ADVANCED-EFFECTS.md`](docs/plans/PLAN-ADVANCED-EFFECTS.md)
+- **Multipass:** Linear chains plus the multipass graph runner — [`docs/MULTIPASS_GRAPH.md`](docs/MULTIPASS_GRAPH.md)
 
 ## Browser support
 

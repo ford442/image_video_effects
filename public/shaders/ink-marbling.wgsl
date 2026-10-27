@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ink Marbling — Batch 68 persistent pigment/thickness simulation.
 //  Category: liquid-effects
-//  Upgraded: 2026-09-21
-//  Ideas: area-preserving drop spread (Jaffer's marbling map); comb rake
+//  Upgraded: 2026-09-21, 2026-10-26
+//  Ideas: Jaffer drop spread; comb rake; gall; stone outline
 //  A packing: raw pigment.rgb + thickness; B is intentionally unwritten.
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -70,7 +70,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rakeDir = select(1.0, -1.0, (i32(rakePass) & 1) == 1);
   flow.y += rakeDir * rakeActive * u.zoom_params.x * 0.0012 * tineLambda / (tineDist + tineLambda);
 
-  var drop = 0.0; var dropColor = vec3<f32>(0.0); var jaffer = vec2<f32>(0.0);
+  var drop = 0.0; var dropColor = vec3<f32>(0.0); var jaffer = vec2<f32>(0.0); var stone = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i++) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
@@ -79,6 +79,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let core = exp(-d * d * 90.0) * exp(-age * 1.1);
     let ring = exp(-pow((d - age * 0.09) * 35.0, 2.0)) * (1.0 - age / 3.0);
     drop += core + ring * 0.45;
+    stone += ring;
     dropColor += palette(fract(ripple.z * 0.17 + f32(i) * 0.13)) * (core + ring * 0.25);
     // ── Idea 1: area-preserving drop spread ──────────────────────────
     // In real marbling a new drop PUSHES every existing ring outward — that
@@ -108,15 +109,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Viscosity-dependent pigment diffusion broadens marbled veins without
   // filtering the rgba32float state texture.
   let neighborState = (prevL + prevR + prevD + prevU) * 0.25;
-  let diffusion = 0.008 + detail * 0.032 + mids * 0.004;
+  // ── Idea: gall ─────────────────────────────────────────────────
+  // Surfactant thins the paint on a vein. Detail still sets the
+  // base rate; a steep pigment gradient diffuses less.
+  let pigmentGrad = length(previous.rgb - neighborState.rgb);
+  let diffusion = (0.008 + detail * 0.032 + mids * 0.004) * (1.0 - smoothstep(0.04, 0.28, pigmentGrad) * 0.75);
   let diffusedState = mix(previous, neighborState, diffusion);
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let sourcePigment = mix(source.rgb, palette(fract(time * 0.025 + dot(uv, vec2<f32>(0.7, 0.3)))), 0.35 + treble * 0.2);
   let injection = clamp(swirlMask * u.zoom_params.x * (0.08 + bass * 0.08) + drop, 0.0, 1.0);
   let retainedThickness = diffusedState.a * (0.988 - flowSpeed * 0.006);
-  let thickness = clamp(max(retainedThickness, injection) + abs(waveA.x * waveB.y) * 0.002 * detail, 0.0, 1.0);
+  // ── Idea: stone outline ────────────────────────────────────────
+  // The drop ring already pushes pigment. It also leaves a dark,
+  // thicker front — the stone edge.
+  let thickness = clamp(max(retainedThickness, injection) + abs(waveA.x * waveB.y) * 0.002 * detail + stone * 0.4, 0.0, 1.0);
   let injectedPigment = select(sourcePigment, dropColor / max(drop, 0.001), drop > 0.001);
-  let pigment = clamp(mix(diffusedState.rgb * 0.995, injectedPigment, injection), vec3<f32>(0.0), vec3<f32>(1.5));
+  let basePigment = clamp(mix(diffusedState.rgb * 0.995, injectedPigment, injection), vec3<f32>(0.0), vec3<f32>(1.5));
+  let pigment = mix(basePigment, basePigment * vec3<f32>(0.42, 0.38, 0.5), clamp(stone * 2.0, 0.0, 0.65));
   let state = vec4<f32>(pigment, thickness);
   textureStore(dataTextureA, pixel, state);
 

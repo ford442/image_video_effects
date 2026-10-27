@@ -2,7 +2,7 @@
   "id": "foil-impression",
   "name": "Foil Impression",
   "url": "shaders/foil-impression.wgsl",
-  "description": "Embossed metallic foil with moving brushed highlights, held impression pressure, click rings, three-band audio, and iridescent spectral reflection.",
+  "description": "Embossed metallic foil with brushed streaks along the relief, crinkle at the press, a catchlight stretched along the brush, and paper showing where the emboss is too steep for the die.",
   "params": [
     {
       "id": "pressure_radius",

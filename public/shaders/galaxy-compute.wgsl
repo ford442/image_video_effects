@@ -1,34 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Volumetric Spiral Galaxy
 //  Category: simulation
-//  Features: simulation, procedural, volumetric, spiral-galaxy
+//  Features: simulation, procedural, volumetric, spiral-galaxy, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded by: Algorithmist Agent
-//  Date: 2026-05-03
+//  Upgraded: 2026-10-25
+//  Ideas: trailing dust lane; core blackbody (§12.2F)
+//  A packing: ACES display RGBA (C is not read)
 // ═══════════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -122,6 +102,12 @@ fn colorTemperature(t: f32) -> vec3<f32> {
   return vec3<f32>(r, g, b);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -130,6 +116,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
   let zoom = max(u.zoom_params.x, 0.1);
   let pan = vec2<f32>(u.zoom_params.y, u.zoom_params.z);
   let centeredUV = (uv - 0.5) / zoom + 0.5 + (pan - 0.5);
@@ -138,7 +126,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let armDensity = spiralArmDensity(p, 3.0, 2.2);
   let clouds = nebulaClouds(p, time);
-  let stars = starParticleGlow(p, time);
+  let stars = starParticleGlow(p, time) * (1.0 + treble * 0.28);
   let halo = galaxyHalo(p, time);
 
   let integratedDensity = armDensity * (0.6 + clouds * 0.4) + halo;
@@ -148,7 +136,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dustScattering = integratedDensity * clouds * 0.5 + bulge * 0.25;
   let synchrotron = integratedDensity * clouds * 0.35 + armDensity * 0.2;
 
-  let temp = 0.5 + bulge * 0.5;
+  // ── Idea: core blackbody (§12.2F) ──
+  // The bulge temperature the shader already feeds to colorTemperature runs hotter, and bass lifts it.
+  let temp = clamp(0.5 + bulge * 0.5 + bass * bulge * 0.45, 0.0, 1.0);
   let gasColor = colorTemperature(temp);
 
   var r = hotGas * gasColor.r + stars.r * 0.6;
@@ -156,14 +146,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var b = synchrotron * 1.8 + hotGas * gasColor.b * 0.3 + stars.b * 0.35 + bulge * 0.1;
 
   let opticalDepth = clamp(integratedDensity + bulge * 0.6 + stars.r * 0.3, 0.0, 1.0);
-  let galaxyColor = vec3<f32>(r, g, b);
+  var galaxyColor = vec3<f32>(r, g, b);
+  galaxyColor += vec3<f32>(1.05, 0.9, 0.7) * bulge * bulge * (0.12 + bass * 0.4);
+
+  // ── Idea: trailing dust lane ──
+  // Same log spiral as spiralArmDensity (3 arms, tightness 2.2), phase shifted behind the crest.
+  let rG = length(p);
+  let armPhase = (atan2(p.y, p.x) - log(max(rG, 0.001)) * 2.2) * 3.0;
+  let trailDist = abs(fract((armPhase - 0.62) / 6.2831853) - 0.5) * 2.0;
+  let dustLane = smoothstep(0.2, 0.02, trailDist) * exp(-rG * 2.1) * (1.0 - bulge);
+  galaxyColor = galaxyColor * (1.0 - dustLane * 0.62);
+  galaxyColor = mix(galaxyColor, galaxyColor * vec3<f32>(1.2, 0.68, 0.4), clamp(dustLane * 0.55, 0.0, 0.55));
 
   let texColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let opacity = clamp(u.zoom_params.w, 0.0, 1.0);
-  let finalRGB = mix(texColor.rgb, galaxyColor, opticalDepth * opacity);
-  let finalAlpha = mix(texColor.a, 1.0, opticalDepth * opacity);
+  let cover = clamp(opticalDepth * (1.0 - dustLane * 0.35) * opacity, 0.0, 1.0);
+  let finalRGB = aces(max(mix(texColor.rgb, galaxyColor, cover), vec3<f32>(0.0)));
+  let finalAlpha = mix(texColor.a, cover, 0.85);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, finalAlpha));
+  let coord = vec2<i32>(global_id.xy);
+  textureStore(writeTexture, coord, vec4<f32>(finalRGB, finalAlpha));
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(finalRGB, finalAlpha));
 }

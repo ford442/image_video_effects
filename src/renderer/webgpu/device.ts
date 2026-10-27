@@ -11,6 +11,7 @@ import { publishWebGpuProbe, runWebGpuBootProbe } from '../webgpuBootProbe';
 import { AdapterGpuType, DeviceFormatCapabilities } from '../../config/formatPolicy';
 import type { AdapterIdentity } from '../../config/adapterIdentity';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
+import optionalFeaturesContract from '../../contracts/webgpu_optional_features.json';
 
 export interface WebGPUDeviceInitResult {
   ok: true;
@@ -29,8 +30,14 @@ export interface WebGPUDeviceInitResult {
   adapterAttemptLabel: string | null;
   /** Probe result: swapchain accepts COPY_SRC (enables canvas → VideoFrame capture). */
   canvasCopySrc: boolean;
-  canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
+  canvasColorOptIns: CanvasColorOptIns;
   canvasColorFallback?: CanvasColorFallbackReason;
+  /** Probe: the bgra8unorm swapchain accepts STORAGE_BINDING (direct-to-swapchain present). */
+  canvasStorageBinding?: boolean;
+  /** The device came from the compatibility rung (#1512). */
+  compat?: boolean;
+  /** shader-f16 was granted: `// @requires f16` shaders compile their half variant. */
+  shaderF16?: boolean;
   /** Removes the boot probe's log-only uncapturederror listener (see WebGpuProbeHandoff). */
   detachUncapturedLog?: () => void;
 }
@@ -63,20 +70,30 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     canvasCopySrc: handoff.canvasCopySrc,
     canvasColorOptIns: handoff.canvasColorOptIns,
     canvasColorFallback: handoff.canvasColorFallback,
+    canvasStorageBinding: handoff.canvasStorageBinding ?? false,
+    compat: handoff.compat ?? false,
+    shaderF16: handoff.shaderF16 ?? false,
     detachUncapturedLog: handoff.detachUncapturedLog,
   };
 }
+
+/**
+ * Capability tier 2 (#1512), requested after the shared three by TS only
+ * (webgpu_optional_features.json tsOnly; the frozen C++ backend does not mirror them).
+ */
+export const TIER2_OPTIONAL_FEATURES = optionalFeaturesContract.tsOnly.requestOrder as readonly GPUFeatureName[];
 
 /** Pixelocity optional features requested when the adapter offers them. */
 const PIXELOCITY_OPTIONAL_FEATURES = [
   'float32-filterable',
   'timestamp-query',
   'subgroups',
-  'chromium-experimental-subgroups',
+  ...TIER2_OPTIONAL_FEATURES,
 ] as const;
 
 /**
- * Collect optional device features to request (mirrors wasm_renderer/device.cpp order).
+ * Collect optional device features to request (mirrors wasm_renderer/device.cpp order
+ * for the first three; the tier-2 features follow and are TS-only).
  * timestamp-query is always-on when available (#1007 / #1030).
  */
 export function collectOptionalDeviceFeatures(adapter: GPUAdapter): GPUFeatureName[] {
@@ -90,6 +107,9 @@ export function collectOptionalDeviceFeatures(adapter: GPUAdapter): GPUFeatureNa
   const subgroupFeatureName = resolveSubgroupFeatureName(adapter);
   if (subgroupFeatureName) {
     features.push(subgroupFeatureName);
+  }
+  for (const name of TIER2_OPTIONAL_FEATURES) {
+    if (adapter.features.has(name)) features.push(name);
   }
   return features;
 }
@@ -110,6 +130,20 @@ export interface CanvasConfigureOptIns {
   displayP3?: boolean;
   /** Request toneMapping { mode: 'extended' } (display-p3 opt-in + HDR display only). */
   extendedToneMapping?: boolean;
+  /** rgba16float swapchain, so extended tone mapping can show > 1.0 (#1512; requires extended). */
+  hdrCanvas?: boolean;
+  /** Add STORAGE_BINDING: the final slot writes the bgra8unorm swapchain directly (#1512). */
+  storageBinding?: boolean;
+}
+
+/** The colour part of a configure: what color negotiation decides and every reconfigure keeps. */
+export type CanvasColorOptIns = Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping' | 'hdrCanvas'>;
+
+/** The swapchain format a configure with these opt-ins uses. */
+export function canvasFormatFor(preferred: GPUTextureFormat, optIns: CanvasConfigureOptIns = {}): GPUTextureFormat {
+  return optIns.displayP3 && optIns.extendedToneMapping && optIns.hdrCanvas
+    ? canvasConfigureContract.optIn.hdrCanvas.format as GPUTextureFormat
+    : preferred;
 }
 
 /** One canvas capability per canvas_configure.json optIn entry (shared with C++ canvas_configure.h). */
@@ -141,14 +175,19 @@ export function buildCanvasConfigureOptions(
   format: GPUTextureFormat,
   optIns: CanvasConfigureOptIns = {},
 ): GPUCanvasConfiguration {
-  const usageNames = optIns.copySrc
+  const usageNames = new Set<string>(optIns.copySrc
     ? canvasConfigureContract.optIn.copySrc.usage
-    : canvasConfigureContract.usage;
+    : canvasConfigureContract.usage);
+  // STORAGE_BINDING is only legal on the bgra8unorm swapchain with bgra8unorm-storage.
+  const storageFormat = canvasConfigureContract.optIn.storageBinding.format;
+  if (optIns.storageBinding && format === storageFormat && !optIns.hdrCanvas) {
+    for (const name of canvasConfigureContract.optIn.storageBinding.usage) usageNames.add(name);
+  }
   const config: GPUCanvasConfiguration = {
     device,
     format,
     alphaMode: canvasConfigureContract.alphaMode as GPUCanvasAlphaMode,
-    usage: textureUsageBits(usageNames),
+    usage: textureUsageBits([...usageNames]),
   };
   if (optIns.displayP3) {
     config.colorSpace = canvasConfigureContract.optIn.displayP3.colorSpace as PredefinedColorSpace;
@@ -156,6 +195,7 @@ export function buildCanvasConfigureOptions(
       config.toneMapping = {
         mode: canvasConfigureContract.optIn.extendedToneMapping.toneMappingMode as GPUCanvasToneMappingMode,
       };
+      if (optIns.hdrCanvas) config.format = canvasFormatFor(format, optIns);
     }
   }
   return config;
@@ -173,14 +213,13 @@ export function resolveCanvasColorOptIns(
     typeof window.matchMedia === 'function' &&
     window.matchMedia(canvasConfigureContract.optIn.extendedToneMapping.requiresMediaQuery).matches,
   stored = false,
-): Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'> {
+): CanvasColorOptIns {
   const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
   const displayP3 =
     params.get(canvasConfigureContract.optIn.displayP3.urlParam) === '1' || stored;
-  return {
-    displayP3,
-    extendedToneMapping: displayP3 && isHdrDisplay(),
-  };
+  const extendedToneMapping = displayP3 && isHdrDisplay();
+  // An HDR display gets the rgba16float swapchain; without it 'extended' shows nothing.
+  return { displayP3, extendedToneMapping, hdrCanvas: extendedToneMapping };
 }
 
 /** Append post-device fields to adapterSummary in WASM-aligned order. */
@@ -200,11 +239,8 @@ export function appendAdapterSummaryFields(
 }
 
 export function resolveSubgroupFeatureName(adapter: GPUAdapter): GPUFeatureName | null {
-  if (adapter.features.has('subgroups')) return 'subgroups';
-  if (adapter.features.has('chromium-experimental-subgroups' as GPUFeatureName)) {
-    return 'chromium-experimental-subgroups' as GPUFeatureName;
-  }
-  return null;
+  // Standard name only: the chromium-experimental-subgroups fallback is obsolete.
+  return adapter.features.has('subgroups') ? 'subgroups' : null;
 }
 
 export async function initializeWebGPUDevice(

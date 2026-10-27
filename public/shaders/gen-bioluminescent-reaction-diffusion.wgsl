@@ -4,33 +4,15 @@
 //  Features: mouse-driven, audio-reactive, simulation, upgraded-rgba,
 //            chromatic-species, temporal-mutation, depth-scaled-glow
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-09-27, 2026-10-25
 //  Ideas: luciferin quench from stored B-age; excitation flash on advancing B fronts;
 //         pointer wake resets local luciferin-age for an unquenched glow trail;
-//         quorum-sensing ignition flash at local B concentration maxima
+//         quorum-sensing ignition flash at local B concentration maxima;
+//         substrate veins on |grad A|; quenched-core bleach
 //  A packing: raw (A, B, luciferin-age, 1)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -164,13 +146,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let glow = clamp(finalB * 2.0, 0.0, 1.0) * quench;
 
+  // ── Idea: substrate veins ──
+  // The four edge neighbors already loaded for the Laplacian. A ridge in substrate
+  // is the trail the reaction has not yet consumed.
+  let aGrad = vec2<f32>(nR.x - nL.x, nU.x - nD.x);
+  let substrateVein = clamp(length(aGrad) * 7.0, 0.0, 1.0) * finalA;
+
   // Depth-scaled glow intensity
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let depthScale = 0.5 + depth * 0.5;
-  let alpha = mix(video_color.a, 1.0, glow * 0.7 * depthScale);
-  let finalRGB = mixedSpecies * glow * depthScale * intensity
+  let alpha = mix(video_color.a, 1.0, glow * 0.7 * depthScale + substrateVein * 0.12);
+  var finalRGB = mixedSpecies * glow * depthScale * intensity
     + vec3<f32>(0.55, 0.95, 1.0) * excitation * intensity
-    + vec3<f32>(0.9, 1.0, 0.65) * ignition * intensity;
+    + vec3<f32>(0.9, 1.0, 0.65) * ignition * intensity
+    + vec3<f32>(0.15, 0.85, 0.7) * substrateVein * intensity * 0.45;
+  // ── Idea: quenched-core bleach ──
+  // Spent luciferin pulls the colony back toward the deep-water color instead of leaving a pastel.
+  let coreBleach = smoothstep(0.55, 0.95, luciferinAge) * finalB;
+  finalRGB = mix(finalRGB, deepWater, clamp(coreBleach * 0.72, 0.0, 0.72));
 
   textureStore(writeTexture, coord, vec4<f32>(acesToneMap(finalRGB * 1.1), alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

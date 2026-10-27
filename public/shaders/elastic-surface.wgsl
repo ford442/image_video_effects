@@ -3,31 +3,13 @@
 //  Category: distortion
 //  Features: mouse-driven, depth-aware, temporal, ripple-reactive, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: Poisson contraction perpendicular to stretch; exact-load membrane neighbors
+//  Upgraded: 2026-10-27
+//  Ideas: plate bending on the short waves; compression wrinkles along the tangent
 //  A packing: raw sim (disp.xy, vel.xy) — never ACES
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Elasticity, y=SurfaceTension, z=WaveSpeed, w=DepthInfluence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Elasticity, y=SurfaceTension, z=WaveSpeed, w=DepthInfluence
 
 // ─── Noise helpers ────────────────────────────────────────────────
 
@@ -108,6 +90,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accel = -disp * elasticity / depthMod
               + laplacian * tension;
 
+    // ── Idea 1: plate bending ───────────────────────────────────────
+    // Short waves live in the fine Laplacian and not in the 2-texel one.
+    // Bending snaps those back. Wave Speed still scales the step below.
+    let nN2 = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 2), vec2<i32>(0), maxC), 0).rg;
+    let nS2 = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -2), vec2<i32>(0), maxC), 0).rg;
+    let nE2 = textureLoad(dataTextureC, clamp(coord + vec2<i32>(2, 0), vec2<i32>(0), maxC), 0).rg;
+    let nW2 = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-2, 0), vec2<i32>(0), maxC), 0).rg;
+    let lapWide = (nN2 + nS2 + nE2 + nW2) * 0.25 - disp;
+    accel = accel - (laplacian - lapWide) * tension * 0.45;
+
     // Ambient FBM perturbation — organic background rippling
     let noiseUV = uv * 4.0 + time * 0.08;
     let ambientForce = (fbm2(noiseUV) - 0.5) * 0.0004 * waveSpeed;
@@ -158,7 +150,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let stretchLen = length(disp);
     let tangent = vec2<f32>(-disp.y, disp.x);
     let poisson = tangent * stretchLen * 0.35;
-    let distortedUV = clamp(uv - disp - poisson, vec2<f32>(0.0), vec2<f32>(1.0));
+    // ── Idea 2: compression wrinkles ────────────────────────────────
+    // Where the sheet is squeezed, a fine ridge runs along the tangent
+    // and catches the specular below.
+    let divDisp = (nE.x - nW.x) + (nN.y - nS.y);
+    let compressed = 1.0 - smoothstep(-0.03, 0.004, divDisp);
+    let wrinkleN = tangent / max(length(tangent), 1e-5);
+    let wrinkle = sin(dot(uv, wrinkleN) * 220.0 + time * 1.5) * compressed * min(stretchLen * 8.0, 1.0);
+    let wrinkleOff = wrinkleN * wrinkle * 0.004;
+    let distortedUV = clamp(uv - disp - poisson + wrinkleOff, vec2<f32>(0.0), vec2<f32>(1.0));
     let color = textureSampleLevel(readTexture, u_sampler, distortedUV, 0.0);
 
     // Fake surface lighting from displacement gradient (normal map)
@@ -166,7 +166,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let light  = normalize(vec3<f32>(0.4, 0.6, 1.0));
     let diffuse  = max(dot(normal, light), 0.0);
     let specular = pow(max(dot(reflect(-light, normal), vec3<f32>(0.0, 0.0, 1.0)), 0.0), 32.0);
-    let lighting = 0.7 + 0.25 * diffuse + 0.15 * specular;
+    let ridge = compressed * pow(max(wrinkle, 0.0), 2.0);
+    let lighting = 0.7 + 0.25 * diffuse + 0.15 * specular + ridge * 0.35;
 
     // RGBA alpha encodes stretch intensity
     let stretch = clamp(length(disp) * 12.0, 0.0, 1.0);

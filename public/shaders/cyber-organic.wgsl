@@ -1,29 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cyber Organic Scanner — Batch 59
-//  Bioluminescent veins, OkLab mixing, capped ripple pulses, held
-//  tightens reveal, thin-film rim, ACES + semantic alpha.
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-19
+//  Ideas: bioluminescent veins; OkLab mixing; thin-film rim;
+//         value-noise vein kernel; scan-head fluorescence afterglow;
+//         reveal persistence from exact C.z
+//  A packing: raw fields (vein, scan, reveal, alpha); C.z read as reveal history
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=ScanSpeed, y=OrganicScale, z=RevealRadius, w=PulseSpeed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=ScanSpeed, y=OrganicScale, z=RevealRadius, w=PulseSpeed
 
 // ── Color Science ─────────────────────────────────────────────────
 
@@ -130,12 +118,29 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
 }
 
+// ── Idea 1: value-noise vein kernel ──────────────────────────────
+// The old octave call hash12(floor(f) + fract(f)) is just hash12(f):
+// white noise, so the vein band was per-pixel speckle. Smoothly
+// interpolated lattice noise keeps the same octaves, gains and band
+// thresholds, but the band now forms connected, branching tissue with
+// dark channels between lobes instead of TV static.
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  let a = hash12(i);
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, w.x), mix(c, d, w.x), w.y);
+}
+
 fn fbm(p: vec2<f32>) -> f32 {
   var v = 0.0;
   var a = 0.5;
   var f = p;
   for (var i = 0; i < 4; i = i + 1) {
-    v = v + a * hash12(floor(f) + fract(f));
+    v = v + a * valueNoise(f);
     f = f * 2.1 + 7.13;
     a = a * 0.5;
   }
@@ -181,10 +186,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       reveal = max(reveal, smoothstep(0.22, 0.0, rDist) * (1.0 - age * 0.45));
     }
   }
+
+  // ── Idea 3: reveal persistence from exact C.z ────────────────────
+  // A already stores reveal in .z; reading it back gives the scanner a
+  // memory: tissue the cursor passed stays exposed and fades out.
+  let prevField = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
+  reveal = max(reveal, clamp(prevField.z, 0.0, 1.0) * 0.95);
   let field = fbm(uv * organicScale + vec2<f32>(time * 0.12, -time * 0.09));
   let vein = 1.0 - smoothstep(0.12, 0.32, abs(field - 0.5));
   let scan = 0.5 + 0.5 * sin(uv.y * 40.0 + time * scanSpeed * 6.0 + field * 6.28318);
   let pulse = 0.5 + 0.5 * sin(time * pulseSpeed * 6.0 + field * 12.0);
+  // ── Idea 2: scan-head fluorescence ───────────────────────────────
+  // A read head sweeps down the frame at scanSpeed. Veins it crosses
+  // are excited and keep fluorescing behind it with an exponential
+  // afterglow tail; nothing lights ahead of the head.
+  let headY = fract(time * scanSpeed * 0.08);
+  let behind = fract(headY - uv.y);
+  let headLine = exp(-behind * dims.y * 0.35);
+  let afterglow = exp(-behind * 9.0);
+  let excite = vein * (afterglow * (0.35 + 0.65 * reveal) + headLine * 1.5) * (0.6 + 0.4 * bass);
+
   let warp = vec2<f32>(scan - 0.5, pulse - 0.5) * 0.03 * (0.4 + audio.x + reveal);
   let sampleUV = clamp(uv + warp, vec2<f32>(0.0), vec2<f32>(1.0));
 
@@ -229,6 +250,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   );
   finalColor = finalColor + glowColor * veinGlow;
   finalColor = finalColor + glowColor * ripplePulse * 0.35;
+  finalColor = finalColor + glowColor * excite * 0.45 + vec3<f32>(0.55, 1.0, 0.9) * headLine * 0.06;
 
   // Thin-film oil-slick rim on vein edges
   let rimPhase = vein * 6.28318 + time * 0.4 + treble * 2.0;
@@ -263,7 +285,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Bloom-based alpha
   let bloomAlpha = pow(max(0.0, luma - 0.6), 2.0) * 3.0;
-  let finalAlpha = clamp(0.68 + reveal * 0.18 + vein * 0.10 + bloomAlpha * 0.1 + ripplePulse * 0.08, 0.42, 0.98);
+  let finalAlpha = clamp(0.68 + reveal * 0.18 + vein * 0.10 + bloomAlpha * 0.1 + ripplePulse * 0.08 + excite * 0.06, 0.42, 0.98);
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
   let depthOut = clamp(mix(baseDepth, 0.24 + reveal * 0.56 + vein * 0.18, 0.32), 0.0, 1.0);

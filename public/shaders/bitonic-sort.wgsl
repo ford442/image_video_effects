@@ -9,27 +9,14 @@
 //            multi-ripple, domain-warp, quasi-random, temporal-feedback,
 //            aces-tone-map, chromatic-aberration, kaleidoscope, voronoi-ridges
 //  Complexity: High
+//  Upgraded: 2026-10-19
+//  Ideas: key-coherent run smoothing (bilateral in key space along slot
+//         order); sort-axis drip of exact C feedback inside sorted spans
+//  A packing: temporal-feedback RGB (decayed C mixed with display) +
+//             semantic alpha
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=SortThresh, y=WarpAmp, z=EdgeGlow, w=SortLength
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=SortThresh, y=WarpAmp, z=EdgeGlow, w=SortLength
 
 const TAU: f32 = 6.28318530718;
 
@@ -283,10 +270,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
     let edgeMask = max(spanEdge, keyJump * spanMask) * mask;
 
     let effectiveMix = clamp(SORT_MIX_BASE * mask * bassMod * spanMask * elemMask, 0.0, 1.0);
-    let finalRgb = mix(p.rgb, sorted.rgb, effectiveMix);
+
+    // ── Idea 1: key-coherent run smoothing ──────────────────────────
+    // A sorted run is a sequence of slots in key order; a real pixel sorter
+    // shows it as a continuous gradient streak. Blend each slot with its
+    // slot-order neighbours, weighted by key proximity (bilateral in key
+    // space) so the run is smooth inside and stays crisp at key jumps.
+    let prevLi = select(li - 1u, 0u, li == 0u);
+    let prevKey = sKey[phys(prevLi)];
+    let prevSentinel = select(prevKey > 1.5, prevKey < -0.5, !globalAsc);
+    let wNext = exp(-abs(sortedKey - nextKey) * 18.0) * (1.0 - f32(nextSentinel));
+    let wPrev = exp(-abs(sortedKey - prevKey) * 18.0) * (1.0 - f32(prevSentinel));
+    let runRgb = (sorted.rgb * 2.0 + sCol[phys(nextLi)].rgb * wNext + sCol[phys(prevLi)].rgb * wPrev)
+               / (2.0 + wNext + wPrev);
+    let sortedRgb = mix(sorted.rgb, runRgb, elemMask);
+
+    // ── Idea 2: sort-axis drip (exact C, upstream along the run) ────
+    // Slots run row-major along +x (descending flips it). Inside sorted
+    // spans the feedback reads history one pixel upstream, so streaks melt
+    // along the sort axis frame after frame and settle when the mask lets go.
+    let dripDir = select(1, -1, globalAsc);
+    let upX = clamp(x + dripDir, 0, i32(resX) - 1);
+    let upstream = textureLoad(dataTextureC, vec2<i32>(upX, y), 0);
+    let drip = effectiveMix * (1.0 - keyJump) * 0.6;
+    let histRgb = mix(prev.rgb, upstream.rgb, drip);
+
+    let finalRgb = mix(p.rgb, sortedRgb, effectiveMix);
     let tone = acesToneMap(finalRgb * (0.9 + mids * 0.2));
     let caStr = 0.003 * (1.0 + bass) + 0.001 * distance(uv, vec2<f32>(0.5));
     var color = mix(tone, chromaticAberration(uv, caStr), 0.25 * effectiveMix);
+    // Idea 2 (display): a share of the dripped history shows through the streak.
+    color = mix(color, clamp(histRgb, vec3<f32>(0.0), vec3<f32>(1.0)), drip * 0.35);
 
     // Restrained edge glow on sorted-span boundaries; pulses gently with bass.
     let glowCol = edgeGlowColor(sortedKey);
@@ -298,7 +312,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>,
 
     textureStore(writeDepthTexture, vec2<i32>(x, y), vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-    let feedback = mix(prev.rgb * FEEDBACK_DECAY, color, 0.15 + bass * 0.05);
+    let feedback = mix(histRgb * FEEDBACK_DECAY, color, 0.15 + bass * 0.05);
     textureStore(dataTextureA, vec2<i32>(x, y), vec4<f32>(feedback, alpha));
   }
 }

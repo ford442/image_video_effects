@@ -2,31 +2,12 @@
 //  Flow Sort — Streamline Pixel Sorting
 //  Category: simulation
 //  Features: temporal-persistence, mouse-driven, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-09
-//  Ideas: LIC smear along the field; Asendorf gate on the streamline
+//  Upgraded: 2026-10-25
+//  Ideas: LIC smear along the field; Asendorf gate on the streamline; laminar extension; run-end bead
 //  A packing: ACES display RGBA (C persist is color)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn luminance(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
@@ -115,6 +96,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var sortedColor = currentColor.rgb;
   var sortedLum = currentLum;
+  var runEnd = 0.0;
 
   for (var passIndex = 0; passIndex < sortPasses; passIndex = passIndex + 1) {
     let passOffset = f32(passIndex + 1) * texelSize * flowStrength;
@@ -134,12 +116,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       sortedColor = mix(sortedColor, downstreamColor.rgb, blend);
       sortedLum = luminance(sortedColor);
     }
+    // ── Idea: run-end bead — the gate refused a brighter upstream sample ──
+    let refused = select(0.0, 1.0, upstreamLum > sortedLum && upstreamLum <= threshold);
+    runEnd = max(runEnd, refused);
   }
 
   // Idea 1 — LIC smear along the existing field.
   let licA = textureSampleLevel(readTexture, u_sampler, clamp(uv + flow * texelSize * 3.0 * flowStrength, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   let licB = textureSampleLevel(readTexture, u_sampler, clamp(uv - flow * texelSize * 3.0 * flowStrength, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   sortedColor = mix(sortedColor, (licA + licB) * 0.5, 0.18 * (0.5 + mids * 0.5));
+
+  // ── Idea: laminar extension — a longer smear only where the field ahead agrees ──
+  let flowAhead = computeFlowField(clamp(uv + flow * texelSize * 6.0, vec2<f32>(0.0), vec2<f32>(1.0)), texelSize);
+  let agree = clamp(dot(flow, flowAhead), 0.0, 1.0);
+  let farA = textureSampleLevel(readTexture, u_sampler, clamp(uv + flow * texelSize * 8.0 * flowStrength, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let farB = textureSampleLevel(readTexture, u_sampler, clamp(uv - flow * texelSize * 8.0 * flowStrength, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  sortedColor = mix(sortedColor, (farA + farB) * 0.5, 0.22 * agree);
+  sortedColor = mix(sortedColor, vec3<f32>(1.0, 0.93, 0.72), runEnd * 0.28);
 
   let histDims = vec2<i32>(textureDimensions(dataTextureC));
   let prevColor = textureLoad(dataTextureC, historyCoord(uv, histDims), 0).rgb;

@@ -5,30 +5,11 @@
 //  pluck packets, stronger soap-film iridescence from stretch energy,
 //  held drag punch, bounded click plucks. V/H via dir param.
 //
-//  A packing: display RGBA (tonemapped rgb, semantic alpha)
-//  B unused. C = previous-frame trail (exact textureLoad).
-//  No extraBuffer writes.
+//  Upgraded: 2026-10-27
+//  Ideas: string partials at the pluck; stretch bleach of the soap film
+//  A packing: ACES display RGBA (colour trail in C)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -102,6 +83,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Held drag punch — stronger stretch under press
     let dragShift = (mouseDisplace - 0.5) * strength * influence * tension * (1.0 + held * 0.85);
     var totalShift = dragShift + (springShift1 + springShift2) * influence;
+    // ── Idea 1: string partials ─────────────────────────────────────
+    // The 2nd and 3rd harmonics of the existing oscillator, weaker by
+    // 1/n. sin(n π p) is the node: a center pluck kills the even partial.
+    let pluckPos = clamp(mouseDisplace, 0.02, 0.98);
+    let n2 = sin(2.0 * 3.14159265 * pluckPos);
+    let n3 = sin(3.0 * 3.14159265 * pluckPos);
+    let partial2 = damped_oscillator(time + cellPhase * 0.1, pluckFreq * tension * 2.0, pluckDecay * 1.4, cellPhase) * bass * 0.03 * n2;
+    let partial3 = damped_oscillator(time + cellPhase * 0.1, pluckFreq * tension * 3.0, pluckDecay * 1.8, cellPhase + 0.4) * bass * 0.02 * n3;
+    totalShift = totalShift + (partial2 + partial3) * influence;
 
     var clickPluck = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -173,11 +163,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let plasticSheen = pow(1.0 - abs(dot(viewDir, normal)), 3.0) * 0.18 * (1.0 + treble + held * 0.2);
     rgb += vec3<f32>(plasticSheen);
 
-    let band = min(u32(alongCoord * 8.0), 7u);
-    let bandShimmer = plasmaBuffer[band + 1u].x * 0.12;
+    // Treble phase. plasmaBuffer[band+1] is not a voice.
+    let bandShimmer = treble * (0.5 + 0.5 * sin(alongCoord * 40.0 + time * 3.0 + cellPhase)) * 0.12;
     rgb += soap * bandShimmer * (0.4 + stretchEnergy);
 
-    rgb = aces_tonemap(rgb * (1.0 + edgeGlow * 0.38 + held * 0.14 + packets * 0.08));
+    // ── Idea 2: stretch bleach ──────────────────────────────────────
+    // Rubber goes pale where it thins. Quiet strips keep the soap film.
+    let stretchPale = clamp(abs(totalShift) * 6.0, 0.0, 0.65);
+    let stripLuma = dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    rgb = mix(rgb, vec3<f32>(stripLuma), stretchPale * 0.55);
+
+    rgb = aces_tonemap(max(rgb, vec3<f32>(0.0)) * (1.0 + edgeGlow * 0.38 + held * 0.14 + packets * 0.08));
     rgb = mix(rgb, prev.rgb * 0.9, 0.16);
 
     let deformationEnergy = abs(totalShift) * 4.0;

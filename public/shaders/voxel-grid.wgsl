@@ -7,9 +7,9 @@
 //            sdf, early-exit, lod-noise, branchless
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-09-11
-//  Ideas: mortar AO in cell_gap; axis-face photo tint
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-11, 2026-10-19
+//  Ideas: mortar AO in cell_gap; axis-face photo tint; voxel cast shadow from the occupancy of the layers in front; light-facing bevel catch-light on each cube edge
+//  A packing: ACES display RGBA, premultiplied (C read as premultiplied colour history)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -49,6 +49,12 @@ fn rayBoxIntersect(ro: vec3<f32>, rd: vec3<f32>, b: vec3<f32>) -> vec2<f32> {
     let tNear = max(max(min(t1.x, t2.x), min(t1.y, t2.y)), min(t1.z, t2.z));
     let tFar  = min(min(max(t1.x, t2.x), max(t1.y, t2.y)), max(t1.z, t2.z));
     return vec2<f32>(tNear, tFar);
+}
+// Same occupancy test the layer loop uses (hash21 < threshold at that layer's cell).
+fn voxelOccupied(p2: vec2<f32>, z: i32, density: f32, threshold: f32) -> f32 {
+    let cell = floor(p2 * density + vec2<f32>(0.0, f32(z) * 0.1));
+    let h = hash21(cell + vec2<f32>(f32(z) * 0.37, f32(z) * 0.13));
+    return f32(h < threshold);
 }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -111,7 +117,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (tb.y < 0.0 || tb.x > tb.y) {
         let bg = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
         let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
-        let bgCa = acesToneMap(genChromaticShift(bg, uv01, caStr) * 0.9);
+        let bgCa = acesToneMap(max(genChromaticShift(bg, uv01, caStr), vec3<f32>(0.0)) * 0.9);
         let a = clamp(luma(bgCa) + depth * 0.15, 0.05, 0.55);
         let out = vec4<f32>(bgCa * a, a);
         textureStore(writeTexture, pixel, out);
@@ -143,7 +149,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let decay = 0.96 - cell_gap * 0.04;
         let trail = mix(prev.rgb * decay, bg, 0.12 + bass * 0.06);
         let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
-        let c = acesToneMap(genChromaticShift(trail, uv01, caStr) * 0.95);
+        let c = acesToneMap(max(genChromaticShift(trail, uv01, caStr), vec3<f32>(0.0)) * 0.95);
         let a = clamp(luma(c) * 0.7 + depth * 0.12, 0.05, 0.45);
         let out = vec4<f32>(c * a, a);
         textureStore(writeTexture, pixel, out);
@@ -174,6 +180,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let keyDir = normalize(vec3<f32>(-0.5, 0.7, 0.5));
     let fillDir = normalize(vec3<f32>(0.6, 0.2, 0.4));
     let keyLit = max(dot(normal, keyDir), 0.0);
+
+    // ── Idea 3: voxel cast shadow ──
+    // Walk back 1..3 layers toward the camera from the hit layer, slid along the key light
+    // by the depth gained, and re-ask the same occupancy test. Occupied voxels in front and
+    // toward the light block the key light on this cube.
+    var occShadow = 0.0;
+    for (var j = 1; j <= 3; j = j + 1) {
+        let zz = hitLayer - j;
+        let valid = f32(zz >= 0);
+        let zc = max(zz, 0);
+        let tj = mix(tNear, tFar, f32(zc) / (layerCount - 1.0));
+        let posJ = ro + rd * tj;
+        let dz = max(posJ.z - hitPos.z, 0.0);
+        let towardLight = hitPos.xy + keyDir.xy * (dz / max(keyDir.z, 0.1));
+        let p2J = towardLight * 0.5 + 0.5 + warpShift * (1.0 + tj) + curl * 0.005 * tj;
+        occShadow += voxelOccupied(p2J, zc, grid_density, threshold) * valid * (0.6 - f32(j) * 0.15);
+    }
+    let keyShadow = 1.0 - 0.65 * clamp(occShadow, 0.0, 1.0);
     let fillLit = max(dot(normal, fillDir), 0.0) * 0.35;
     let fresnel = pow(1.0 - max(dot(normal, vec3<f32>(0.0, 0.0, 1.0)), 0.0), 3.0);
 
@@ -182,11 +206,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let faceColor = textureSampleLevel(readTexture, u_sampler, clamp(cellCenter + axis, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let palette = psychedelicPalette(time * 0.08 + influence + fbm(uv * 4.0, flowOct) + u.zoom_params.x * 0.2);
     let base = mix(mix(cellColor, faceColor, 0.45), palette, 0.28 + influence * 0.25 + bass * 0.12);
-    let lit = base * (keyLit * 1.2 + fillLit * 0.6) + fresnel * vec3<f32>(0.4, 0.7, 1.0) * (0.5 + treble * 0.5);
+    let lit = base * (keyLit * keyShadow * 1.2 + fillLit * 0.6) + fresnel * vec3<f32>(0.4, 0.7, 1.0) * (0.5 + treble * 0.5);
     var color = lit * (1.3 + influence * 0.7 + bass * 0.4 + treble * 0.2);
 
     let edgeWidth = 0.004 + cell_gap * 0.01;
     let mask = 1.0 - smoothstep(-edgeWidth, edgeWidth, box);
+    // ── Idea 4: bevel catch-light ──
+    // Just inside the cube edge (box in (-bevelW, 0)) the bevel faces outward; the side of
+    // the bevel facing the key light (light rotated into the cube's local frame) catches a
+    // thin highlight, the far side darkens. Width follows the existing cell-gap edge width.
+    let bevelW = edgeWidth * 4.0 + 0.03;
+    let bevelBand = smoothstep(-bevelW, -bevelW * 0.3, box) * mask;
+    let edgeN = select(vec2<f32>(sign(local.x), 0.0), vec2<f32>(0.0, sign(local.y)), abs(local.y) > abs(local.x));
+    let lightLocal = rot2(angle) * normalize(keyDir.xy);
+    let facing = dot(edgeN, lightLocal);
+    let bevelLit = bevelBand * max(facing, 0.0) * keyShadow;
+    let bevelDark = bevelBand * max(-facing, 0.0);
+    color = color * (1.0 - bevelDark * 0.3) + vec3<f32>(1.0, 0.97, 0.9) * bevelLit * (0.35 + treble * 0.15);
     let mortarAo = smoothstep(0.0, edgeWidth * 3.0, abs(box)) * cell_gap * 2.2;
     color *= 1.0 - clamp(mortarAo, 0.0, 0.55);
     let decay = 0.96 - cell_gap * 0.04;
@@ -194,7 +230,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
     color = genChromaticShift(color, uv01, caStr);
-    color = acesToneMap(color * (0.95 + mids * 0.15));
+    color = acesToneMap(max(color, vec3<f32>(0.0)) * (0.95 + mids * 0.15));
 
     let alpha = clamp(luma(color) * 1.4 + influence * 0.35 + bass * 0.15, 0.15, 0.95)
                 * (0.75 + depth * 0.25) * (1.0 - normT * 0.35);

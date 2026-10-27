@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid Displacement — persistent incompressible flow and height-field warp.
 //  Category: liquid-effects
-//  Upgraded: 2026-09-21
-//  Ideas: vorticity confinement; flow-line streaks along the velocity
+//  Upgraded: 2026-09-21, 2026-10-26
+//  Ideas: vorticity confinement; flow-line streaks; shallow-water continuity (§12.2D); bore lip
 //  A packing: raw — RG=velocity, B=surface height, A=activity/initialization.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -114,7 +114,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   velocity += curl * turbulence * (0.002 + mids * 0.0015);
   velocity *= mix(0.982, 0.935, viscosity);
   velocity = clamp(velocity, vec2<f32>(-1.1), vec2<f32>(1.1));
-  height = clamp(height + (-divergence * 0.055 + lapH * 0.025 + clickHeight * 0.012) * flowSpeed, 0.015, 0.85);
+  // ── Idea: shallow-water continuity (§12.2D) ────────────────────
+  // Divergence already changed the height by a constant. Weight it
+  // by the height stored in C so thick water carries more volume.
+  height = clamp(height + (-divergence * height * 0.22 + lapH * 0.025 + clickHeight * 0.012) * flowSpeed, 0.015, 0.85);
   let activity = clamp(max(c.a * 0.996, 0.12 + length(velocity) * 0.7 + clickHeight * 0.2 + mouseMask * heldScale), 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(velocity, height, activity));
 
@@ -138,8 +141,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   streak *= 0.25;
   let flowRgb = mix(source.rgb, streak, clamp(length(velocity) * 2.5, 0.0, 0.8));
 
+  // ── Idea: bore lip ─────────────────────────────────────────────
+  // Flow running into a steep height slope breaks as a bright line.
+  let intoSlope = max(-dot(velocity, heightGrad), 0.0);
+  let bore = smoothstep(0.015, 0.09, length(heightGrad)) * smoothstep(0.012, 0.16, intoSlope);
   let color = flowRgb * absorption + vec3<f32>(0.08, 0.42, 0.72) * (fresnel * (0.25 + mids * 0.18))
-    + vec3<f32>(0.55, 0.9, 1.15) * caustic * (0.18 + treble * 0.22);
+    + vec3<f32>(0.55, 0.9, 1.15) * caustic * (0.18 + treble * 0.22)
+    + vec3<f32>(0.72, 0.9, 1.05) * bore * (0.16 + treble * 0.12);
   let alpha = clamp(source.a + (1.0 - source.a) * activity * (0.2 + height * 0.65) + fresnel * 0.08, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
   let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;

@@ -1,30 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Glitch Cubes — Batch 58E
-//  Image-mapped cubes with exact C height memory, beveled grout,
-//  conveyor packets, held extrusion, oil-slick edge runners, bounded
-//  click fronts. A packs [rgb, settledHeight].
+//  Interactive Glitch Cubes
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-27
+//  Ideas: height bevel; extruded side wall
+//  A packing: [linear rgb, settledHeight]; ACES on the display write only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -34,6 +18,10 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
   let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
   return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -99,6 +87,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let g = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     color = vec3<f32>(r, g, b) + height * 0.1;
+    // ── Idea 1: height bevel ──────────────────────────────────────
+    // The face is lighter toward its top edge, in proportion to how far
+    // the cube is extruded. A flat tile (height ≈ 0) stays even.
+    let shade = 1.0 + (0.5 - posOnFace.y) * clamp(height, 0.0, 1.5) * 0.55;
+    color *= shade;
     alpha = clamp(0.8 + height * 0.2, 0.0, 1.0);
   } else {
     let shadowCenter = vec2<f32>(0.5) + viewVec * 0.05;
@@ -122,11 +115,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   settledColor += vec3<f32>(0.2, 0.55, 1.0) * conveyor * (0.03 + mids * 0.10);
   settledColor += vec3<f32>(1.0, 0.28, 0.72) * clickFront * 0.10;
   settledColor += slick * (grout * 0.16 * f32(isFace) + clickFront * 0.2);
+  // ── Idea 2: extruded side wall ──────────────────────────────────
+  // The ring just outside the grown face is the side of the cube: the
+  // tile colour, darkened. It only appears once the face has height.
+  // The cast shadow stays the shadow branch above.
+  let faceMask = select(0.0, 1.0, isFace);
+  let outsideFace = max(distFace.x, distFace.y);
+  let wallBand = limit + 0.02 + height * 0.15;
+  let wall = (1.0 - smoothstep(limit, wallBand, outsideFace)) * (1.0 - faceMask) * smoothstep(0.02, 0.12, height);
+  let shadowCenterW = vec2<f32>(0.5) + viewVec * 0.05;
+  let distShadowW = abs(f_st - shadowCenterW);
+  let shadowLimitW = baseScale * 0.5;
+  let inShadow = select(0.0, 1.0, distShadowW.x < shadowLimitW && distShadowW.y < shadowLimitW);
+  let wallCol = textureSampleLevel(readTexture, u_sampler, clamp(tileCenterUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * vec3<f32>(0.22, 0.18, 0.26);
+  settledColor = mix(settledColor, wallCol, wall * (1.0 - inShadow) * (0.65 + shadowStr * 0.35));
   settledColor = clamp(settledColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthAlpha = mix(alpha, 1.0, depth * 0.3);
-  textureStore(writeTexture, pixel, vec4<f32>(settledColor, depthAlpha));
+  textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(settledColor), depthAlpha));
   textureStore(dataTextureA, pixel, vec4<f32>(settledColor, settledHeight));
   textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(depth + settledHeight * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

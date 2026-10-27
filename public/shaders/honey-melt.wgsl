@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: gravity sag on melted cells; comb-wall capillary
+//  Upgraded: 2026-09-08, 2026-10-26
+//  Ideas: gravity sag on melted cells; comb-wall capillary; melt-front meniscus (§12.2D)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -140,11 +140,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rim = smoothstep(0.4, 0.5, len);
     let meltHeld = melt * (1.0 - rim * 0.65);
 
+    // ── Idea 1: comb-wall capillary ────────────────────────────────
+    // Honey wicks along the shared wall while the cell is only partly
+    // melted. Distortion still scales how far the wick pulls the sample.
+    let wall = smoothstep(0.32, 0.46, len) * (1.0 - smoothstep(0.46, 0.55, len));
+    let partial = smoothstep(0.05, 0.35, melt) * (1.0 - smoothstep(0.55, 0.95, melt));
+    let wick = wall * partial * (0.65 + distortStr * 0.5);
+    let wallTangent = vec2<f32>(-localVec.y, localVec.x) / max(len, 0.001);
+
     // 2. Melted State: Fluid distortion with gravity sag
     let audio = plasmaBuffer[0].xyz;
     let noiseVal = noise(uv * 10.0 + time * 0.5);
     let sag = meltHeld * (0.045 + 0.035 * audio.x) * distortStr;
-    let fluidUV = clamp(uv + vec2<f32>(noiseVal * 0.018 * distortStr, abs(noiseVal) * 0.07 * distortStr + sag), vec2<f32>(0.0), vec2<f32>(1.0));
+    let capillaryUV = wallTangent * wick * 0.55 / max(gridSize, 1.0) / aspectVec;
+    let fluidUV = clamp(uv + vec2<f32>(noiseVal * 0.018 * distortStr, abs(noiseVal) * 0.07 * distortStr + sag) + capillaryUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Sample colors
     var colSolid = textureSampleLevel(readTexture, u_sampler, solidUV, 0.0);
@@ -152,11 +161,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Golden tint for solid honey
     colSolid = mix(colSolid, vec4<f32>(1.0, 0.75, 0.15, input_alpha), 0.25);
     colSolid = mix(colSolid, vec4<f32>(0.3, 0.15, 0.0, input_alpha), rim * 0.6);
+    colSolid = mix(colSolid, vec4<f32>(0.42, 0.20, 0.04, colSolid.a), wick);
 
     let colFluid = textureSampleLevel(readTexture, u_sampler, fluidUV, 0.0);
 
     // Calculate honey thickness at this point
-    let honeyThickness = calculateHoneyThickness(len, 1.0 - rim * 0.5);
+    let honeyThickness = max(calculateHoneyThickness(len, 1.0 - rim * 0.5), wick * 0.65);
     
     // Apply honey SSS to solid cells
     let lightDir = normalize(vec3<f32>(0.5, 0.8, 0.3));
@@ -168,14 +178,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Final Mix — walls hold until meltHeld
     let finalColor = mix(colSolid, colFluid, meltHeld);
-    
+
+    // ── Idea 2: melt-front meniscus (§12.2D) ───────────────────────
+    // Surface tension holds a golden bead on the melt contour.
+    // Edge softness still widens that front.
+    let front = smoothstep(0.08, 0.42, melt) * (1.0 - smoothstep(0.42, 0.78 + softness * 0.2, melt));
+    let meniscus = front * (0.45 + softness);
+    let beaded = finalColor.rgb + vec3<f32>(1.0, 0.78, 0.28) * meniscus * 0.28;
+
     // Calculate honey alpha
     let honeyAlpha = calculateHoneyAlpha(honeyThickness, meltHeld);
-    
-    // Blend alpha between solid (more opaque) and melted (varies)
-    let finalAlpha = mix(honeyAlpha, mix(honeyAlpha, 0.7, 0.3), meltHeld * 0.5);
 
-    let mapped = acesTonemap(finalColor.rgb);
+    // Blend alpha between solid (more opaque) and melted (varies)
+    let finalAlpha = clamp(mix(honeyAlpha, mix(honeyAlpha, 0.7, 0.3), meltHeld * 0.5) + meniscus * 0.08, 0.0, 1.0);
+
+    let mapped = acesTonemap(beaded);
     let display = vec4<f32>(mapped, finalAlpha);
     textureStore(writeTexture, vec2<i32>(global_id.xy), display);
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

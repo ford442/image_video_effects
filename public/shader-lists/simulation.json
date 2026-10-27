@@ -1199,7 +1199,9 @@
       "simulation",
       "procedural",
       "volumetric",
-      "spiral-galaxy"
+      "spiral-galaxy",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -2529,7 +2531,7 @@
     "id": "sim-decay-system",
     "name": "Decay System",
     "url": "shaders/sim-decay-system.wgsl",
-    "description": "Multi-layer decay and corrosion simulation. Image corrodes from edges inward with different materials.",
+    "description": "Multi-layer decay and corrosion simulation. Image corrodes from edges inward with different materials. Decay creeps along edges, and rare pits nucleate off the edge.",
     "features": [
       "simulation",
       "cellular-automata",
@@ -2597,7 +2599,8 @@
       "temporal",
       "navier-stokes",
       "fluid-coupling",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -2735,7 +2738,7 @@
     "id": "sim-heat-haze-field",
     "name": "Heat Haze Field",
     "url": "shaders/sim-heat-haze-field.wgsl",
-    "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns.",
+    "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns. Hot ground folds an inferior mirage, and schlieren brighten one side of the temperature gradient.",
     "feedbackPacking": "A/C = temperature, gradient.xy, refractive activity; raw thermal state via exact bounded loads",
     "features": [
       "simulation",

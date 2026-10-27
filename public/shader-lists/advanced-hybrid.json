@@ -5460,7 +5460,8 @@
     "features": [
       "mouse-driven",
       "raymarched",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6910,7 +6911,8 @@
       "fbm",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8132,6 +8134,7 @@
       "gabor-texture",
       "volumetric",
       "randomization-safe",
+      "upgraded-rgba",
       "mouse-driven"
     ],
     "params": [
@@ -8196,6 +8199,7 @@
       "neural-patterns",
       "volumetric",
       "randomization-safe",
+      "upgraded-rgba",
       "audio-reactive",
       "audio-driven"
     ],
@@ -8323,7 +8327,8 @@
       "depth-aware",
       "mouse-driven",
       "temporal",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9849,7 +9854,9 @@
       "viscous-drag",
       "bilateral-filter",
       "mouse-driven",
-      "ripple-shockwaves"
+      "ripple-shockwaves",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

@@ -3,32 +3,15 @@
 //  Category: simulation
 //  Features: simulation, agent-based, mouse-driven, electromagnetic, interactive, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-12
-//  Ideas: field-line deposit along E; opposite-polarity wipe from click charges
+//  Upgraded: 2026-09-12, 2026-10-19
+//  Ideas: field-line deposit along E; opposite-polarity wipe from click charges;
+//         tube relief (endoplasm core / ectoplasm wall); peristaltic shuttle streaming;
+//         advancing search-front fan
 //  A packing: raw (trail, E mag, signed B, activity)
 //  extraBuffer: pointer history [133..138] only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -162,7 +145,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   let diffused = sum / 9.0;
-  var newTrail = diffused * decayRate;
+
+  // Promoted from the diffusion taps: 5-pt Laplacian and central gradient
+  // of the trail (the same stencil the box diffusion already touches).
+  let tR = stateAt(coord + vec2<i32>(1, 0), resolution).r;
+  let tL = stateAt(coord + vec2<i32>(-1, 0), resolution).r;
+  let tD = stateAt(coord + vec2<i32>(0, 1), resolution).r;
+  let tU = stateAt(coord + vec2<i32>(0, -1), resolution).r;
+  let trailLap = (tR + tL + tD + tU) - 4.0 * trail;
+  let trailGrad = vec2<f32>(tR - tL, tD - tU) * 0.5;
+  let veinRidge = clamp(-trailLap * 3.0, 0.0, 1.0);
+
+  // ── Idea 2: peristaltic shuttle streaming ──────────────────────────
+  // Physarum veins contract rhythmically; the wave travels outward from the
+  // charge (log-distance phase) and squeezes mass along the tube, so vein
+  // cores decay a touch faster on the contraction and refill on relaxation.
+  let chargeDist = max(length((uv - mousePos) * vec2<f32>(aspect, 1.0)), 0.002);
+  let peristalsis = 0.5 + 0.5 * sin(time * (1.6 + bass * 1.2) - log(chargeDist) * 6.0 - trail * 4.0);
+  let squeeze = 1.0 - 0.012 * peristalsis * veinRidge;
+  var newTrail = diffused * decayRate * squeeze;
 
   // Simulate agent deposits with EM field steering
   var deposit = 0.0;
@@ -239,7 +240,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     newTrail * 0.8,
     newTrail * 0.9 + pow(newTrail, 2.0) * 0.1
   );
-  let shiftedTrail = hueShift(trailColor, totalB * 0.5);
+  var shiftedTrail = hueShift(trailColor, totalB * 0.5);
+
+  // ── Idea 1: tube relief (endoplasm core / ectoplasm wall) ──────────
+  // Veins are tubes: the streaming endoplasm core (trail ridge, −∇²) reads
+  // bright and the gel wall (steep |∇trail| flank) reads darker.
+  let wallMask = clamp(length(trailGrad) * 6.0, 0.0, 1.0) * (1.0 - veinRidge);
+  shiftedTrail = shiftedTrail * (1.0 - 0.35 * wallMask) * (1.0 + 0.6 * veinRidge * (0.6 + 0.4 * peristalsis));
 
   var color = mix(baseColor * 0.2, shiftedTrail, newTrail * 0.9);
   color = color + vec3<f32>(0.0, newTrail * 0.3, newTrail * 0.4) * newTrail;
@@ -253,6 +260,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color + fieldColor * fieldLineDeposit * 8.0;
   color = color * (1.0 - wipe * 0.45);
 
+  // ── Idea 3: advancing search-front fan ─────────────────────────────
+  // Where the trail is growing (newTrail > C.r) on a steep flank, the
+  // plasmodium's pale fan-shaped margin leads the network.
+  let growth = clamp((newTrail - trail) * 40.0, 0.0, 1.0);
+  let frontFan = growth * clamp(length(trailGrad) * 10.0, 0.0, 1.0) * (1.0 - veinRidge);
+  color = color + vec3<f32>(0.95, 0.85, 0.35) * frontFan * 0.35;
+
   // Core glow near mouse
   let coreDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
   let coreGlow = exp(-coreDist * coreDist * 400.0) * chargeStrength;
@@ -263,7 +277,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Alpha = EM field magnitude blended with trail
   let sourceAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
-  let alpha = clamp(sourceAlpha * 0.15 + fieldMag * 0.12 + newTrail * 0.72 + activity * 0.12 + wipe * 0.15, 0.0, 1.0);
+  let alpha = clamp(sourceAlpha * 0.15 + fieldMag * 0.12 + newTrail * 0.72 + activity * 0.12 + wipe * 0.15 + frontFan * 0.1, 0.0, 1.0);
 
   textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth * (1.0 - newTrail * 0.2), 0.0, 0.0, 0.0));

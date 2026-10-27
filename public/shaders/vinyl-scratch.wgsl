@@ -3,9 +3,10 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-09-21, 2026-10-19
 //  Ideas: eccentric spindle wow; radius-dependent groove pitch + label;
-//         stylus scratch marks cut by clicks
+//         stylus scratch marks cut by clicks; bow-tie anisotropic groove
+//         sheen; glossy track-gap bands; tangential platter smear
 //  A packing: ACES display RGBA. NOTE: HEAD reads C.a back as a sparkle-
 //    coherence proxy — that is the semantic alpha being reused, documented
 //    here and left intact rather than silently repacked.
@@ -45,7 +46,7 @@ fn vinylDust(uv: vec2<f32>, time: f32, dist: f32, dustAmount: f32) -> f32 {
 }
 
 // Groove lighting: reflections along concentric grooves
-fn grooveReflection(uv: vec2<f32>, dist: f32, time: f32, angle: f32, bass: f32) -> vec3<f32> {
+fn grooveReflection(uv: vec2<f32>, dist: f32, time: f32, angle: f32, bass: f32, gloss: f32) -> vec3<f32> {
     let grooveFreq = 80.0;
     let groovePhase = dist * grooveFreq - time * 2.0;
     let groove = sin(groovePhase) * 0.5 + 0.5;
@@ -53,10 +54,20 @@ fn grooveReflection(uv: vec2<f32>, dist: f32, time: f32, angle: f32, bass: f32) 
     
     // Light source angle
     let lightAngle = time * 0.5 + bass * 0.3;
-    let angleDiff = abs(angle - lightAngle);
-    let lightWrap = exp(-angleDiff * angleDiff * 2.0) + exp(-(angleDiff - 6.283) * (angleDiff - 6.283) * 2.0);
+    // ── Idea 4: bow-tie anisotropic groove sheen ──────────────────────
+    // Concentric grooves reflect a point light as a radial bar through
+    // the spindle: two opposite lobes, not one. The angular distance is
+    // taken modulo π so the bar keeps tracking the light (HEAD compared an
+    // unwrapped lightAngle to atan2 and the sheen died after ~10 s). The
+    // lobe tightens outward, where the grooves are straighter.
+    var dA = angle - lightAngle;
+    dA = dA - 3.14159265359 * floor(dA / 3.14159265359 + 0.5);
+    let lobeWidth = mix(2.0, 9.0, smoothstep(0.1, 0.5, dist)) * (1.0 + gloss * 3.0);
+    let lightWrap = exp(-dA * dA * lobeWidth) * (1.0 + gloss * 1.5);
+    // Track gaps are mirror-smooth: the ridge profile is not needed to catch light.
+    let ridge = mix(grooveSharp, 1.0, gloss);
     
-    let reflection = grooveSharp * lightWrap * 0.3 * (1.0 + bass * 0.5);
+    let reflection = ridge * lightWrap * 0.3 * (1.0 + bass * 0.5);
     return vec3<f32>(reflection * 1.0, reflection * 0.95, reflection * 0.85);
 }
 
@@ -236,9 +247,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rUV = clamp(sampleUV + vec2<f32>(wobbleR, 0.0) + caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
     let bUV = clamp(sampleUV - vec2<f32>(wobbleB, 0.0) - caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+    var r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
+    var g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
+    var b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
+
+    // ── Idea 6: tangential platter smear ──────────────────────────────
+    // A platter turning faster than the eye can follow blurs along the
+    // groove, never across it. Two extra taps at ±dθ around the same
+    // centre, dθ from the rotation rate already driving the spin.
+    let smearA = clamp(abs(rotationSpeed) * 0.012, 0.0, 0.05);
+    let cS = cos(smearA);
+    let sS = sin(smearA);
+    let tapP = vec2<f32>(rotatedDirX * cS - rotatedDirY * sS, rotatedDirX * sS + rotatedDirY * cS);
+    let tapM = vec2<f32>(rotatedDirX * cS + rotatedDirY * sS, -rotatedDirX * sS + rotatedDirY * cS);
+    let uvP = clamp(vec2<f32>(tapP.x / aspect, tapP.y) + center + vec2<f32>(wobbleOffset), vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvM = clamp(vec2<f32>(tapM.x / aspect, tapM.y) + center + vec2<f32>(wobbleOffset), vec2<f32>(0.0), vec2<f32>(1.0));
+    let smearRGB = (textureSampleLevel(readTexture, u_sampler, uvP, 0.0).rgb
+                  + textureSampleLevel(readTexture, u_sampler, uvM, 0.0).rgb) * 0.5;
+    let smearMix = smoothstep(0.0, 0.05, smearA) * 0.5;
+    r = mix(r, smearRGB.r, smearMix);
+    g = mix(g, smearRGB.g, smearMix);
+    b = mix(b, smearRGB.b, smearMix);
     var color = vec4<f32>(r, g, b, textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).a);
 
     let grooveNoise = fract(sin(dot(uv * time, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -252,7 +281,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let outerR = 0.52;
     let grooveBand = smoothstep(labelR, labelR + 0.03, dist) * smoothstep(outerR + 0.05, outerR, dist);
     let groovePitch = 300.0 * (1.0 + 0.35 / max(dist, 0.08));
-    let grooveIntensity = (sin(dist * groovePitch) * 0.5 + 0.5) * noiseIntensity * depthGroove * grooveBand;
+    // ── Idea 5: glossy track-gap bands ────────────────────────────────
+    // Between songs the cutter lays an unmodulated silent spiral: a bright,
+    // smooth ring with no groove noise. Loud bass widens the modulated
+    // (matte) grooves, which narrows the gaps.
+    let trackPos = (dist - labelR) / (outerR - labelR) * 5.0;
+    let gapDist = abs(fract(trackPos) - 0.5) * 2.0;           // 1 at a gap, 0 mid-track
+    let gapWidth = 0.035 * (1.0 - bass * 0.5);
+    let trackGap = smoothstep(1.0 - gapWidth * 2.0, 1.0 - gapWidth, gapDist)
+                 * step(0.5, trackPos) * step(trackPos, 4.5) * grooveBand;
+    let grooveIntensity = (sin(dist * groovePitch) * 0.5 + 0.5) * noiseIntensity * depthGroove * grooveBand * (1.0 - trackGap);
 
     color = mix(color, vec4<f32>(grooveNoise, grooveNoise, grooveNoise, color.a), grooveIntensity * 0.2);
 
@@ -267,7 +305,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = vec4<f32>(color.rgb + dustColor, color.a);
 
     // ── Groove lighting / reflections ──
-    let reflection = grooveReflection(uv, dist, time, angle, bass) * grooveLightAmount;
+    let reflection = grooveReflection(uv, dist, time, angle, bass, trackGap) * grooveLightAmount;
     color = vec4<f32>(color.rgb + reflection, color.a);
 
     // ── Groove sparkle ──
@@ -296,7 +334,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dirt = lensDirt(uv, time, brightMask);
     color = vec4<f32>(color.rgb + vec3<f32>(0.9, 0.85, 0.7) * dirt, color.a);
 
-    color.a = clamp(color.a + grooveIntensity * 0.15 + clickPop * 0.2 + scratchMark * 0.12 + bass * 0.05, 0.0, 1.0);
+    color.a = clamp(color.a + grooveIntensity * 0.15 + clickPop * 0.2 + scratchMark * 0.12 + trackGap * 0.1 + bass * 0.05, 0.0, 1.0);
 
     var finalColor = acesToneMap(clamp(color.rgb, vec3<f32>(0.0), vec3<f32>(1.5)) * (0.95 + bass * 0.05));
     textureStore(writeTexture, coord, vec4<f32>(finalColor, color.a));

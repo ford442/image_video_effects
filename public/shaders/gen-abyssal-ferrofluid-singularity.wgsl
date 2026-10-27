@@ -1,7 +1,11 @@
-// ----------------------------------------------------------------
-// Abyssal Ferrofluid Singularity
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Abyssal Ferrofluid Singularity
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-10-26
+//  Ideas: step-count AO (§12.2E); SDF curvature wear (§12.2E)
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 // --- CONSTANTS ---
@@ -59,6 +63,32 @@ fn getDist(p_in: vec3<f32>) -> f32 {
 }
 
 // --- NORMALS ---
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ── Idea 1: step-count AO (§12.2E) ────────────────────────────────
+fn aoFive(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i: i32 = 1; i <= 5; i = i + 1) {
+        let h = 0.015 + 0.12 * f32(i) / 5.0;
+        occ += (h - getDist(p + n * h)) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - 2.4 * occ, 0.0, 1.0);
+}
+
+// ── Idea 2: SDF curvature (§12.2E) ────────────────────────────────
+fn curvature(p: vec3<f32>) -> f32 {
+    let e = 0.02;
+    let d = getDist(p);
+    let s = getDist(p + vec3<f32>(e, 0.0, 0.0)) + getDist(p - vec3<f32>(e, 0.0, 0.0))
+          + getDist(p + vec3<f32>(0.0, e, 0.0)) + getDist(p - vec3<f32>(0.0, e, 0.0))
+          + getDist(p + vec3<f32>(0.0, 0.0, e)) + getDist(p - vec3<f32>(0.0, 0.0, e));
+    return (s - 6.0 * d) / max(e * e, 1e-5);
+}
+
 fn getNormal(p: vec3<f32>) -> vec3<f32> {
     let d = getDist(p);
     let e = vec2<f32>(0.001, 0.0);
@@ -74,6 +104,7 @@ fn getNormal(p: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dims = textureDimensions(writeTexture);
+    if (id.x >= dims.x || id.y >= dims.y) { return; }
     let uv = vec2<f32>(id.xy) / vec2<f32>(dims);
 
     // Map to -1, 1 space correcting aspect ratio
@@ -128,16 +159,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let distCenter = length(p);
         let glow = smoothstep(1.5, 0.5, distCenter) * vec3<f32>(0.2, 0.0, 0.5) * clamp(plasmaBuffer[0].z, 0.0, 1.0); // Treble drives core glow
 
-        col = vec3<f32>(diff * 0.1) + vec3<f32>(spec) + mix(vec3<f32>(0.0), iriCol, u.zoom_params.z) + glow * u.zoom_params.w;
-    } else {
-        // Background
-        col = vec3<f32>(0.01, 0.01, 0.02) * (1.0 - length(p_uv));
+        let ao = aoFive(p, n);
+        let kappa = curvature(p);
+        let tipLight = smoothstep(0.25, 1.4, kappa);
+        let crease = smoothstep(0.05, 0.85, -kappa);
+        col = vec3<f32>(diff * 0.1) * ao
+            + vec3<f32>(spec) * (0.35 + 0.65 * tipLight)
+            + mix(vec3<f32>(0.0), iriCol, u.zoom_params.z)
+            + glow * u.zoom_params.w * ao;
+        col *= 1.0 - crease * 0.45;
+        let cover = clamp(0.55 + fresnel * 0.4 + tipLight * 0.1, 0.0, 1.0);
+        col = acesFilm(max(col, vec3<f32>(0.0)));
+        let final_col = vec4<f32>(col, cover);
+        textureStore(writeTexture, id.xy, final_col);
+        textureStore(writeDepthTexture, id.xy, vec4<f32>(clamp(dO / MAX_DIST, 0.0, 1.0), 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, id.xy, final_col);
+        return;
     }
 
-    let final_col = vec4<f32>(col, 1.0);
-
-    // Write out all required textures to avoid pipeline regressions
-    textureStore(writeTexture, id.xy, final_col);
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(dO / MAX_DIST, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, id.xy, final_col);
+    col = vec3<f32>(0.01, 0.01, 0.02) * (1.0 - length(p_uv));
+    let bg = acesFilm(max(col, vec3<f32>(0.0)));
+    let bgAlpha = clamp(0.18 + (1.0 - length(p_uv)) * 0.12, 0.0, 1.0);
+    let missed = vec4<f32>(bg, bgAlpha);
+    textureStore(writeTexture, id.xy, missed);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(clamp(dO / MAX_DIST, 0.0, 1.0), 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, id.xy, missed);
 }

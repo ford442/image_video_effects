@@ -32,7 +32,7 @@ function safeSource(source: ProjectSource): ProjectSource {
   }
 }
 
-/** Build a v1 project by explicitly selecting portable session fields. */
+/** Build a current-version project by explicitly selecting portable session fields. */
 export function buildProjectFile(state: ProjectBuildState): ProjectFile {
   const mappings = state.audioMappings ? sanitizeBindings(state.audioMappings) : [];
   return {
@@ -47,6 +47,7 @@ export function buildProjectFile(state: ProjectBuildState): ProjectFile {
     source: safeSource(state.source),
     render: {
       ...(state.quality ? { quality: state.quality } : {}),
+      ...(state.hdr ? { hdr: { paperWhiteNits: state.hdr.paperWhiteNits, peakNits: state.hdr.peakNits } } : {}),
     },
     ...(mappings.length > 0 ? { audio: { mappings } } : {}),
     ...(state.timeline ? { timeline: state.timeline } : {}),

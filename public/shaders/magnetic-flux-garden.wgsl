@@ -5,31 +5,14 @@
 //            upgraded-rgba, aces-tone-map, depth-aware
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-10-25
 //  Optimized: 2026-07-22 (curl-noise line weave, IQ palette bloom,
 //             feedback clamp, rewired slider mappings)
+//  Ideas: neutral current sheet; soft inverse-square pole cores (§12.2F)
+//  A packing: raw (flux, curl, seed, alpha); ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn sat(x: f32) -> f32 {
   return clamp(x, 0.0, 1.0);
@@ -179,10 +162,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   color = color + vec3<f32>(1.0, 0.85, 0.25) * seed * (0.4 + treble);
 
+  // ── Idea: neutral sheet on the midplane between the two poles ──
+  let midP = (poleA + poleB) * 0.5;
+  let side = dot(p - midP, poleB - poleA);
+  let sheet = exp(-side * side * 140.0);
+  color = color + vec3<f32>(0.72, 0.90, 1.0) * sheet * lineGain * 0.16;
+
+  // ── Idea: soft inverse-square cores (§12.2F) — the march bails out inside the pole ──
+  let coreA = 0.012 / (dot(p - poleA, p - poleA) + 0.012);
+  let coreB = 0.012 / (dot(p - poleB, p - poleB) + 0.012);
+  color = color + vec3<f32>(1.0, 0.94, 0.82) * (coreA + coreB) * dipoleGain * 0.55;
+
   // ── Temporal feedback with pre-tint clamp (luma-echo-warp lesson) ─
   //  Clamp the accumulated frame at ~1.2 before tinting so bloom trails
-  //  cannot blow out over time.
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  //  cannot blow out over time. C is the field triple from the previous A.
+  let prev = textureLoad(dataTextureC, coord, 0);
   let prevClamped = min(prev.rgb, vec3<f32>(1.2));
   color = mix(color, prevClamped * 0.9, 0.025 + bass * 0.01);
 

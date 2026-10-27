@@ -2,32 +2,12 @@
 //  foil-impression
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-21
-//  Ideas: anisotropic brushed-metal streaks along image relief;
-//         crinkle micro-fold shimmer at the press boundary
-//  A packing: display RGBA passthrough (no history)
+//  Upgraded: 2026-10-27
+//  Ideas: brushed streaks along relief; crinkle at the press; anisotropic catchlight; foil skip on steep slopes
+//  A packing: ACES display RGBA. C is not read.
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 // Hash function
 fn hash(p: vec2<f32>) -> f32 {
@@ -60,6 +40,10 @@ fn fbm(p: vec2<f32>) -> f32 {
 
 fn getLuma(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -130,7 +114,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // If pressed, show more image color. If not, silver.
   let target_color = mix(foil_base, img_color, color_mix_amt);
-  let final_albedo = mix(foil_base, target_color, press_factor);
+  let pressedAlbedo = mix(foil_base, target_color, press_factor);
+  // ── Idea: foil skip. Steep emboss slopes miss the die and show the paper.
+  let steep = smoothstep(0.12, 0.55, 1.0 - image_normal.z);
+  let final_albedo = mix(pressedAlbedo, vec3<f32>(0.94, 0.91, 0.84), steep * (0.2 + 0.8 * press_factor));
 
   // 5. Lighting
   let light_dir = normalize(vec3<f32>(0.5 + sin(time * 0.8) * 0.4, -0.5 + cos(time * 0.6) * 0.35, 1.0));
@@ -148,13 +135,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // instead of a fixed diagonal, so streaks visibly wrap around embossed
   // features (a true anisotropic brush, not a flat overlay pattern).
   let reliefTangent = normalize(vec2<f32>(-dy, dx) + vec2<f32>(1e-4));
+  // ── Idea: brushed streak. The highlight widens along the brush tangent.
+  let alongBrush = abs(dot(half_dir, normalize(vec3<f32>(reliefTangent, 0.0))));
+  let aniso = pow(max(NdotH, 0.0), mix(46.0, 7.0, alongBrush));
   let brushFreq = mix(80.0, 260.0, roughness);
   let brushCoordFixed = (uv.x + uv.y) * brushFreq;
   let brushCoordRelief = dot(uv, reliefTangent) * brushFreq;
   let brushCoord = mix(brushCoordFixed, brushCoordRelief, press_factor);
   let brushed = sin(brushCoord - time * (4.0 + audio.y * 7.0));
   let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + brushed * 2.0 + time + audio.z * 2.0);
-  var col = final_albedo * (0.3 + 0.7 * NdotL) + vec3<f32>(spec) + spectral * (abs(brushed) * 0.08 + clickFront * 0.22 + audio.x * 0.08) * (0.3 + relief);
+  var col = final_albedo * (0.3 + 0.7 * NdotL) + vec3<f32>(spec * 0.45 + aniso * 0.7) + spectral * (abs(brushed) * 0.08 + clickFront * 0.22 + audio.x * 0.08) * (0.3 + relief);
 
   // Idea 2: crinkle micro-fold shimmer — an extra high-frequency noise
   // octave gated right at the press boundary (where press_factor transitions
@@ -164,7 +154,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = col + vec3<f32>(1.0, 0.95, 0.85) * foldBand * foldNoise * foldNoise * 0.6;
 
   // Tone mapping / clamp
-  col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+  col = aces(max(col, vec3<f32>(0.0)));
 
   textureStore(writeTexture, coord, vec4<f32>(col, img_color_sample.a));
   textureStore(dataTextureA, coord, vec4<f32>(col, img_color_sample.a));

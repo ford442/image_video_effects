@@ -4,8 +4,8 @@
 //  Features: cellular-automata, neon, audio-reactive, mouse-interactive,
 //    depth-aware, temporal-feedback, aces-tone-map, chromatic-aberration, generation-counter, hue-preserve-clamp, ign-dither
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: neighbor-count heat; still-life amber on low-activity survivors; split deaths; glider lean; cell bezel; oscillator strobe
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: neighbor-count heat; still-life amber on low-activity survivors; split deaths; glider lean; cell bezel; oscillator strobe; longevity rings; survival knife-edge
 //  A packing: raw alive, generation, activity, alpha
 // ═══════════════════════════════════════════════════════════════════
 
@@ -143,6 +143,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2 — still-life amber (survivors with almost no Δ)
   let stillLife = survival * (1.0 - smoothstep(0.0, 0.15, activity));
   color += vec3<f32>(1.0, 0.72, 0.22) * stillLife * 0.22;
+  // ── Idea: survival knife-edge ──
+  // Conway stays alive on two neighbors and dies on one. That lonely edge is a cold rim.
+  let knife = survival * (1.0 - smoothstep(0.0, 0.35, abs(neighbors - 2.0)));
+  color += vec3<f32>(0.45, 0.78, 1.0) * knife * 0.28;
   // Idea 4 — glider lean toward the crowded neighbor side
   let leanTint = clamp(vec3<f32>(0.55 + lean.x * 0.4, 0.22, 0.55 - lean.y * 0.4), vec3<f32>(0.0), vec3<f32>(1.0));
   color += leanTint * newState * clamp(length(lean), 0.0, 1.0) * 0.24;
@@ -175,6 +179,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Age tint: older cells shift toward warm amber
   let ageTint = vec3<f32>(1.0 + generation * 0.4, 1.0 - generation * 0.15, 1.0 - generation * 0.35);
   color *= mix(vec3<f32>(1.0), ageTint, survival * 0.6);
+  // ── Idea: longevity rings ──
+  // The generation counter already packed in C.g draws growth rings on old survivors.
+  let ring = exp(-abs(fract(generation * 7.0) - 0.5) * 16.0);
+  color += vec3<f32>(1.0, 0.86, 0.55) * survival * ring * smoothstep(0.04, 0.22, generation) * 0.34;
 
   var outCol = acesToneMap(huePreserveClamp(color * 1.3, 2.0));
   outCol += (ign(vec2<f32>(pixel)) - 0.5) / 255.0;

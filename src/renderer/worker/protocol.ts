@@ -27,6 +27,9 @@ import type { InputSource } from '../types';
 import type { FrameStats } from '../webgpu/deviceCounters';
 import type { CanvasConfigureOptIns } from '../webgpu/device';
 import type { SlotMode } from '../webgpu/webgpuConstants';
+import type { SlotLayer } from '../layerState';
+import type { HdrToneMapSettings } from '../../services/hdrOutput';
+import type { DirectPresentStatus, ShaderPrecisionInfo } from '../WebGPURenderer';
 import type { CanvasColorState, DisplayP3Result, WebGpuProbeSerializable } from '../webgpuBootProbe';
 
 /** What the worker scope supports (sent once, before init). */
@@ -72,6 +75,8 @@ export type RenderCommand =
   | { type: 'setSlotShader'; index: number; id: string }
   | { type: 'setSlotEnabled'; index: number; enabled: boolean }
   | { type: 'setSlotMode'; index: number; mode: SlotMode }
+  /** Compositing for one slot (#1512): blend / opacity / mask. */
+  | { type: 'setSlotLayer'; index: number; layer: SlotLayer }
   | { type: 'setInputSource'; source: InputSource }
   | { type: 'updateDepthMap'; data: Float32Array; width: number; height: number }
   | { type: 'setVideoActive'; active: boolean }
@@ -81,8 +86,18 @@ export type RenderCommand =
   | { type: 'setMaxPassesPerFrame'; cap: number }
   | { type: 'setFramePassBudget'; budget: number }
   | { type: 'setNodeScale'; slot: number; nodeId: string; scale: number }
+  /** Device-loss replay: node scales of the lost backend (`${slot}:${nodeId}` → scale). */
+  | { type: 'restoreNodeScales'; scales: Record<string, number> }
+  /** Device-loss replay: [x, y, ageSeconds] per live ripple. */
+  | { type: 'restoreRipples'; ripples: Array<[number, number, number]> }
   | { type: 'setAdaptiveQuality'; enabled: boolean; targetFps: number }
   | { type: 'setSourceAutoExposure'; enabled: boolean }
+  /** HDR canvas tonemap: paper white / peak nits (#1512). */
+  | { type: 'setHdrToneMap'; settings: HdrToneMapSettings }
+  /** The `// @requires f16` half-variant path on / off (#1512). */
+  | { type: 'setShaderF16Enabled'; enabled: boolean }
+  /** Direct-to-swapchain present on / off (the page's `?no_direct_present`, #1512). */
+  | { type: 'setDirectPresentEnabled'; enabled: boolean }
   | { type: 'applyTestRenderState'; state: TestRenderState }
   | { type: 'setCanvasCopySrc'; enabled: boolean }
   | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> }
@@ -169,7 +184,13 @@ export interface RenderSnapshot {
   video: VideoIngestStats;
   nodeScales: Record<string, number>;
   scalableNodes: Array<{ slot: number; nodeId: string; minScale: number; scale: number }>;
-  slots: Array<{ shaderId: string | null; enabled: boolean; mode: SlotMode } | null>;
+  slots: Array<{ shaderId: string | null; enabled: boolean; mode: SlotMode; layer?: SlotLayer } | null>;
+  /** Layer-stack memory and last frame's composites (#1512). */
+  compositor?: { layers: number; bytes: number; compositesLastFrame: number };
+  /** shader-f16 support and per-shader compiled precision (#1512). */
+  shaderPrecision?: ShaderPrecisionInfo;
+  /** Direct-to-swapchain present (#1512). */
+  directPresent?: DirectPresentStatus;
   graphReport: GraphRunReport | null;
   chores: GpuChoresBreadcrumbs;
   cachedShaderIds: string[];
@@ -209,6 +230,7 @@ export const RENDER_COMMAND_TYPES = [
   'setSlotShader',
   'setSlotEnabled',
   'setSlotMode',
+  'setSlotLayer',
   'setInputSource',
   'updateDepthMap',
   'setVideoActive',
@@ -218,8 +240,13 @@ export const RENDER_COMMAND_TYPES = [
   'setMaxPassesPerFrame',
   'setFramePassBudget',
   'setNodeScale',
+  'restoreNodeScales',
+  'restoreRipples',
   'setAdaptiveQuality',
   'setSourceAutoExposure',
+  'setHdrToneMap',
+  'setShaderF16Enabled',
+  'setDirectPresentEnabled',
   'applyTestRenderState',
   'setCanvasCopySrc',
   'warmShaders',

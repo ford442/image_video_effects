@@ -6,6 +6,7 @@
 
 import type { Mock } from 'vitest';
 import { createPortPair, flushPorts, FakePort } from '../testing/fakePorts';
+import { defaultSlotLayer } from '../layerState';
 import { setRendererErrorHandler } from '../ErrorHandling';
 import { createWaveTankGraph } from '../multipassGraph';
 import { hasGraph } from '../multipassRegistry';
@@ -63,7 +64,11 @@ function fakeRenderer() {
     setSlotShader: record('setSlotShader'),
     setSlotEnabled: record('setSlotEnabled'),
     setSlotMode: record('setSlotMode'),
+    setSlotLayer: record('setSlotLayer'),
     getSlotState: () => ({ shaderId: null, enabled: false, mode: 'chained' as const }),
+    getCompositorStats: () => ({ layers: 0, bytes: 0, compositesLastFrame: 0 }),
+    restoreRipples: record('restoreRipples'),
+    restoreNodeScales: record('restoreNodeScales'),
     setInputSource: record('setInputSource'),
     updateDepthMap: record('updateDepthMap'),
     setTransferredVideo: record('setTransferredVideo'),
@@ -77,6 +82,11 @@ function fakeRenderer() {
     },
     setAdaptiveQuality: record('setAdaptiveQuality'),
     setSourceAutoExposure: record('setSourceAutoExposure'),
+    setHdrToneMap: record('setHdrToneMap'),
+    setShaderF16Enabled: record('setShaderF16Enabled'),
+    setDirectPresentEnabled: record('setDirectPresentEnabled'),
+    getDirectPresentStatus: () => ({ available: false, enabled: true, active: false, reason: 'storage-unavailable' as const }),
+    getShaderPrecisionInfo: () => ({ supported: false, enabled: false, precisions: {} }),
     applyTestRenderState: record('applyTestRenderState'),
     setCanvasCopySrc: (...args: unknown[]) => {
       calls.push(['setCanvasCopySrc', args]);
@@ -542,7 +552,9 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     const { backend } = await backendWithWorker();
     backend.setSlotShader(2, 'plasma');
     backend.setSlotMode(2, 'parallel');
-    expect(backend.getSlotState(2)).toEqual({ shaderId: 'plasma', enabled: true, mode: 'parallel' });
+    expect(backend.getSlotState(2)).toEqual({ shaderId: 'plasma', enabled: true, mode: 'parallel', layer: defaultSlotLayer() });
+    backend.setSlotLayer(2, { ...defaultSlotLayer(), output: 'blend', blend: 'screen', opacity: 0.5 });
+    expect(backend.getSlotLayer(2)).toMatchObject({ output: 'blend', blend: 'screen', opacity: 0.5 });
     // Deliver a snapshot directly (the host's interval is effectively off here).
     (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
       type: 'snapshot',
@@ -709,6 +721,19 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     expect(fatal).not.toHaveBeenCalled();
   });
 
+  it('drops shader ids the worker LRU evicted from isShaderCached (regression)', async () => {
+    const { backend } = await backendWithWorker();
+    expect(await backend.loadShader('ok', 'x')).toBe(true);
+    expect(backend.isShaderCached('ok')).toBe(true);
+    deliverSnapshot(backend, true, ['ok', 'warm']);
+    expect(backend.isShaderCached('warm')).toBe(true);
+    // The worker's pipeline cache evicted 'ok' — the next snapshot no longer lists it.
+    deliverSnapshot(backend, true, ['warm']);
+    expect(backend.isShaderCached('ok')).toBe(false);
+    expect(backend.isShaderCached('warm')).toBe(true);
+    await backend.destroy();
+  });
+
   it('a late rpcResult from the old worker cannot resolve a request on a new backend', async () => {
     const first = await backendWithWorker();
     await first.backend.destroy();
@@ -723,7 +748,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
   });
 });
 
-function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): void {
+function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean, cachedShaderIds: string[] = []): void {
   (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
     type: 'snapshot',
     snapshot: {
@@ -731,7 +756,7 @@ function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): vo
       passTimings: [], timing: { source: 'wall-clock', periodNs: 1, profiledPasses: 0, overflow: 0 },
       frameStats: { submitsLastFrame: 1, bindGroupsLastFrame: 0, framesRendered: 1 },
       video: { ingestPath: 'none', framesIngested: 0, droppedFrames: 0, missedFrames: 0, queueDepth: 0 },
-      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds: [],
+      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds,
       colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
       resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
       gpuErrors: [], liveGpuDevices: 1, inputChannel: 'postMessage',

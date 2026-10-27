@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../renderer/types';
-import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from '../syncTypes';
+import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord, UploadFilePayload } from '../syncTypes';
+import type { LocalMediaKind } from './useLocalMediaUpload';
 
 export interface UseRemoteSyncOptions {
     modes: RenderMode[];
@@ -30,6 +31,8 @@ export interface UseRemoteSyncOptions {
     handleRandomizeSlot?: (slot: number) => void;
     triggerRandomizeAllSlots?: () => void;
     triggerRoulette?: () => void;
+    /** Load a file uploaded from the remote (CMD_UPLOAD_FILE) into the main app. */
+    loadLocalMedia?: (blob: Blob, kind: LocalMediaKind) => Promise<void>;
 }
 
 export function useRemoteSync({
@@ -59,6 +62,7 @@ export function useRemoteSync({
     handleRandomizeSlot,
     triggerRandomizeAllSlots,
     triggerRoulette,
+    loadLocalMedia,
 }: UseRemoteSyncOptions): void {
     const channelRef = useRef<BroadcastChannel | null>(null);
     const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -72,6 +76,8 @@ export function useRemoteSync({
     triggerRandomizeAllSlotsRef.current = triggerRandomizeAllSlots;
     const triggerRouletteRef = useRef(triggerRoulette);
     triggerRouletteRef.current = triggerRoulette;
+    const loadLocalMediaRef = useRef(loadLocalMedia);
+    loadLocalMediaRef.current = loadLocalMedia;
     const setModeRef = useRef(setMode);
     setModeRef.current = setMode;
     const setActiveSlotRef = useRef(setActiveSlot);
@@ -184,7 +190,15 @@ export function useRemoteSync({
                     handleRandomizeSlotRef.current?.(0);
                 }
             } else if (msg.type === 'CMD_UPLOAD_FILE') {
-                // File upload from remote - handle if needed
+                const upload = msg.payload as Partial<UploadFilePayload> | undefined;
+                if (upload && (upload.type === 'image' || upload.type === 'video') && upload.data instanceof ArrayBuffer) {
+                    const blob = new Blob([upload.data], { type: upload.mimeType ?? '' });
+                    loadLocalMediaRef.current?.(blob, upload.type)?.catch((err: unknown) => {
+                        console.warn('[RemoteSync] CMD_UPLOAD_FILE failed to load', err);
+                    });
+                } else {
+                    console.warn('[RemoteSync] CMD_UPLOAD_FILE missing/invalid payload');
+                }
             }
         };
 

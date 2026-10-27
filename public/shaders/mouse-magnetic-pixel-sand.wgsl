@@ -6,8 +6,8 @@
 //  Chunks From: chunk-library.md (hash12)
 //  Created: 2026-04-18
 //  By: Agent 2C
-//  Upgraded: 2026-09-21
-//  Ideas: field-line chaining; bass-driven field pulse; settling residue (C feedback)
+//  Upgraded: 2026-10-27
+//  Ideas: static friction on the live pull; linked dashes along the field
 //  A packing: raw sim state — C.a settled residue (decays), C.rgb last filing color
 // ═══════════════════════════════════════════════════════════════════
 //  Pixels are treated as iron filings. The mouse is a magnet that
@@ -16,26 +16,7 @@
 //  Alpha channel stores pixel magnetic field strength.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -46,6 +27,10 @@ fn hash12(p: vec2<f32>) -> f32 {
 
 fn getLuma(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -89,9 +74,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let grain = hash12(floor(uv * grainSize) + vec2<f32>(0.5));
   let grainOffset = (grain - 0.5) * 0.02 * susceptibility;
 
+  // ── Idea 1: static friction ─────────────────────────────────────
+  // The live pull and the grain jitter stay zero until the field clears
+  // a small threshold. Ripples below can still kick a stuck grain.
+  let pull = abs(fieldStrength) * falloff;
+  let sticks = smoothstep(0.015, 0.055, pull);
   var displacedUV = uv;
   if (mousePos.x >= 0.0) {
-    displacedUV = uv + fieldDir * fieldStrength * falloff + vec2<f32>(grainOffset);
+    displacedUV = uv + (fieldDir * fieldStrength * falloff + vec2<f32>(grainOffset)) * sticks;
   }
 
   // Ripple effects: secondary magnetic pulses
@@ -144,10 +134,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let residueColor = mix(prevResidue.rgb * residueDecay, color, depositRate);
   color = mix(color, residueColor, settled * 0.5 * (1.0 - falloff));
 
+  // ── Idea 2: linked dashes ───────────────────────────────────────
+  // A periodic gap along the field, pitched by Grain Size. The gap
+  // only cuts where filings are actually gathered.
+  let alongField = dot((uv - mousePos) * vec2<f32>(aspect, 1.0), fieldDir);
+  let dashPhase = abs(fract(alongField * grainSize * 0.12) - 0.5) * 2.0;
+  let dash = smoothstep(0.18, 0.48, dashPhase);
+  let link = mix(1.0, dash, susceptibility * falloff);
+  color = mix(color * 0.22, color, link);
+
   // Alpha = magnetic field strength at this pixel
   let alpha = clamp(abs(fieldStrength) * falloff * 3.0 + susceptibility * 0.3 + settled * 0.15, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+  let display = aces_tonemap(max(color, vec3<f32>(0.0)));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(display, alpha));
   textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(residueColor, settled));
 
   // Depth passthrough

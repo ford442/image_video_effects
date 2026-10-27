@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Rosensweig cone lattice (counter-helix breaks ridges into peaks); chrome reflects the core beam; pointer-magnet spike growth; iron-filing dipole field lines
+//  Upgraded: 2026-10-10, 2026-10-26
+//  Ideas: Rosensweig cone lattice (counter-helix breaks ridges into peaks); chrome reflects the core beam; pointer-magnet spike growth; iron-filing dipole field lines; crevice AO (§12.2E); cone-tip heat
 //  A packing: raw HDR display RGBA history (C read back as the same)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -24,25 +24,32 @@ fn hash31(p: vec3<f32>) -> f32 {
     return fract(sin(dot(p, vec3<f32>(127.1, 311.7, 74.7))) * 43758.5453);
 }
 
+// Idea 1 — Rosensweig cone lattice, and Idea 3 — pointer magnet. Same weights the SDF uses.
+fn spikeField(pIn: vec3<f32>, time: f32, audio: vec3<f32>, magnet: vec4<f32>) -> f32 {
+    var p = pIn;
+    let twist = time * 0.18 + p.y * (0.14 + audio.y * 0.08);
+    let twistedXZ = rot(twist) * p.xz;
+    p.x = twistedXZ.x; p.z = twistedXZ.y;
+    let angle = atan2(p.z, p.x);
+    let lobes = 8.0 + floor(audio.z * 4.0);
+    let helix = pow(max(sin(angle * lobes + p.y * 4.5 - time * 2.0), 0.0), 5.0);
+    let crossHelix = 0.5 + 0.5 * sin(angle * lobes - p.y * 4.5 + time * 1.3);
+    var field = helix * (0.3 + 0.7 * crossHelix * crossHelix);
+    let outward = normalize(vec3<f32>(pIn.x, 0.0, pIn.z) + vec3<f32>(0.0001, 0.0, 0.0));
+    let toMagnet = normalize(magnet.xyz - pIn + vec3<f32>(0.0, 0.0001, 0.0));
+    let pull = pow(max(dot(outward, toMagnet), 0.0), 2.0) * exp(-abs(pIn.y - magnet.y) * 0.45);
+    field = field * (1.0 + pull * magnet.w * 1.3);
+    return field;
+}
+
 fn mapScene(pIn: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f32, magnet: vec4<f32>) -> vec2<f32> {
     var p = pIn;
     let twist = time * 0.18 + p.y * (0.14 + audio.y * 0.08);
     let twistedXZ = rot(twist) * p.xz;
     p.x = twistedXZ.x; p.z = twistedXZ.y;
     let obelisk = sdBox(p, vec3<f32>(0.72, height, 0.72));
-    let angle = atan2(p.z, p.x);
     let radial = length(p.xz);
-    let lobes = 8.0 + floor(audio.z * 4.0);
-    let helix = pow(max(sin(angle * lobes + p.y * 4.5 - time * 2.0), 0.0), 5.0);
-    // Idea 1 — Rosensweig cone lattice: a counter-helix gates the ridges into discrete peaks,
-    // the crossed normal-field instability pattern real ferrofluid forms.
-    let crossHelix = 0.5 + 0.5 * sin(angle * lobes - p.y * 4.5 + time * 1.3);
-    var field = helix * (0.3 + 0.7 * crossHelix * crossHelix);
-    // Idea 3 — pointer magnet: spikes on the side facing the pointer magnet grow (world frame, pre-twist)
-    let outward = normalize(vec3<f32>(pIn.x, 0.0, pIn.z) + vec3<f32>(0.0001, 0.0, 0.0));
-    let toMagnet = normalize(magnet.xyz - pIn + vec3<f32>(0.0, 0.0001, 0.0));
-    let pull = pow(max(dot(outward, toMagnet), 0.0), 2.0) * exp(-abs(pIn.y - magnet.y) * 0.45);
-    field = field * (1.0 + pull * magnet.w * 1.3);
+    let field = spikeField(pIn, time, audio, magnet);
     let taper = smoothstep(height + 0.25, 0.0, abs(p.y));
     let spikeShell = radial - (0.72 + field * spikes * taper * (0.45 + audio.x));
     let cap = abs(p.y) - height;
@@ -60,6 +67,18 @@ fn normalAt(p: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f32,
         mapScene(p + e.yxy, time, audio, height, spikes, magnet).x - mapScene(p - e.yxy, time, audio, height, spikes, magnet).x,
         mapScene(p + e.yyx, time, audio, height, spikes, magnet).x - mapScene(p - e.yyx, time, audio, height, spikes, magnet).x
     ));
+}
+
+// ── Idea: crevice AO (§12.2E) — five taps along the hit normal, through the same map
+fn creviceAo(p: vec3<f32>, n: vec3<f32>, time: f32, audio: vec3<f32>, height: f32, spikes: f32, magnet: vec4<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 5; i = i + 1) {
+        let h = 0.02 + 0.16 * f32(i) / 5.0;
+        occ += (h - mapScene(p + n * h, time, audio, height, spikes, magnet).x) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - 2.2 * occ, 0.0, 1.0);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -134,7 +153,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let beamY = abs(hitPos.y + refl.y * max(along, 0.0));
         let coreReflect = exp(-max(closest - 0.25, 0.0) * 14.0) * smoothstep(height - 0.1, height + 0.3, beamY) * step(0.0, along);
         let chromeLit = chrome + core * coreReflect * (0.25 + fresnel * 0.6);
-        hdrColor = select(chromeLit, core, material > 1.5);
+        let ao = creviceAo(hitPos, n, time * fieldSpeed, audio, height, spikes, magnet);
+        // ── Idea: cone-tip heat — the lattice weight at the hit, warm on the peaks
+        let tip = spikeField(hitPos, time * fieldSpeed, audio, magnet);
+        let tipHeat = vec3<f32>(1.05, 0.46, 0.16) * pow(clamp(tip, 0.0, 1.0), 2.0) * spikes * (0.18 + fresnel * 0.35);
+        let shellLit = chromeLit * mix(1.0, ao, 0.82) + tipHeat;
+        hdrColor = select(shellLit, core, material > 1.5);
     }
     hdrColor += vec3<f32>(0.08, 0.35, 0.9) * min(glow, 5.0) * 0.08 * coreGlow;
 

@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
 //  A/C packing: display RGBA exact-load history. B/extraBuffer unused.
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-10-26
+//  Ideas: deep-water dispersion (§12.2D); crest cusp
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -66,9 +68,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Dual continuous motion: Trochoidal Gerstner wave array + ambient vortex drift
   let pAspect = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-  let wave1 = trochoidalWave(pAspect, normalize(vec2<f32>(1.0, 0.6)), 12.0 + turbulence * 14.0, 0.003 * depthFactor, 4.2 + audio.x * 3.0, time);
-  let wave2 = trochoidalWave(pAspect, normalize(vec2<f32>(-0.7, 1.0)), 18.0 + turbulence * 18.0, 0.002 * depthFactor, 5.1 + audio.y * 3.4, time);
-  let wave3 = trochoidalWave(pAspect, normalize(vec2<f32>(0.35, -1.0)), 27.0 + turbulence * 11.0, 0.0014 * depthFactor, 7.0 + audio.z * 4.0, time);
+  let k1 = 12.0 + turbulence * 14.0;
+  let k2 = 18.0 + turbulence * 18.0;
+  let k3 = 27.0 + turbulence * 11.0;
+  // ── Idea: deep-water dispersion (§12.2D) ───────────────────────
+  // Phase speed ∝ 1/sqrt(k). The middle wave keeps its authored speed.
+  // The dispersion slider still owns the chromatic split below.
+  let wave1 = trochoidalWave(pAspect, normalize(vec2<f32>(1.0, 0.6)), k1, 0.003 * depthFactor, (4.2 + audio.x * 3.0) * sqrt(k2) * inverseSqrt(max(k1, 1e-4)), time);
+  let wave2 = trochoidalWave(pAspect, normalize(vec2<f32>(-0.7, 1.0)), k2, 0.002 * depthFactor, 5.1 + audio.y * 3.4, time);
+  let wave3 = trochoidalWave(pAspect, normalize(vec2<f32>(0.35, -1.0)), k3, 0.0014 * depthFactor, (7.0 + audio.z * 4.0) * sqrt(k2) * inverseSqrt(max(k3, 1e-4)), time);
 
   let braidA = sin(pAspect.x * 15.0 + sin(pAspect.y * 7.0 - time * 3.5) * 2.0 - time * 6.0);
   let braidB = cos(pAspect.y * 18.0 + sin(pAspect.x * 9.0 + time * 4.0) * 1.7 + time * 7.2);
@@ -137,6 +145,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sampledRGB = vec3<f32>(cR.r, cG.g, cB.b);
   var rgb = mix(sampledRGB, sampledRGB * (0.7 + iridescentColor * 0.9), spectralMask);
   rgb += iridescentColor * fresnel * (0.18 + audio.z * 0.35);
+  // ── Idea: crest cusp ───────────────────────────────────────────
+  // Gerstner heights peak sharply and the troughs stay dark.
+  let gerstnerH = (wave1.z + wave2.z + wave3.z) * 150.0;
+  let crest = smoothstep(0.25, 1.15, gerstnerH);
+  let trough = smoothstep(-0.12, -0.85, gerstnerH);
+  rgb = rgb * mix(1.0, 0.78, trough) + iridescentColor * crest * 0.14;
 
   let feedbackMix = clamp((0.08 + viscosity * 0.2) * history.a, 0.04, 0.32);
   rgb = mix(rgb, history.rgb, feedbackMix);

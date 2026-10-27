@@ -5,14 +5,14 @@
 // The WASM canvas configure (JS_CreateSurfaceFromCanvas, JS_ProbeCanvasCopySrc,
 // ConfigureSurface in device.cpp) reads these; TS buildCanvasConfigureOptions()
 // reads the same JSON.
-// WASM capabilities: copySrc. TS-only: displayP3, extendedToneMapping.
+// WASM capabilities: copySrc. TS-only: displayP3, extendedToneMapping, hdrCanvas, storageBinding.
 #pragma once
 
 #include <webgpu/webgpu.h>
 
 namespace canvas_configure {
 
-inline constexpr int kContractVersion = 3;
+inline constexpr int kContractVersion = 4;
 
 // Default path.
 inline constexpr WGPUTextureUsage kUsage = WGPUTextureUsage_RenderAttachment;
@@ -23,7 +23,20 @@ inline constexpr WGPUPresentMode kPresentMode = WGPUPresentMode_Fifo;
 // optIn.copySrc: full swapchain usage while the capture opt-in is on.
 inline constexpr WGPUTextureUsage kCopySrcUsage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_CopySrc;
 
+// optIn.hdrCanvas (TS only): HDR swapchain format under extended tone mapping.
+inline constexpr WGPUTextureFormat kHdrCanvasFormat = WGPUTextureFormat_RGBA16Float;
+
+// optIn.storageBinding (TS only): direct-to-swapchain present (bgra8unorm-storage).
+inline constexpr WGPUTextureUsage kStorageBindingUsage = WGPUTextureUsage_RenderAttachment | WGPUTextureUsage_StorageBinding;
+inline constexpr WGPUTextureFormat kStorageBindingFormat = WGPUTextureFormat_BGRA8Unorm;
+
+// hdrToneMap: final tonemap of the HDR canvas (nits).
+inline constexpr float kSdrReferenceWhiteNits = 203.0f;
+inline constexpr float kPaperWhiteNitsDefault = 203.0f;
+inline constexpr float kPeakNitsDefault = 1000.0f;
+
 static_assert(WGPUTextureUsage_RenderAttachment == 0x10, "GPUTextureUsage.RENDER_ATTACHMENT bit");
 static_assert(WGPUTextureUsage_CopySrc == 0x1, "GPUTextureUsage.COPY_SRC bit");
+static_assert(WGPUTextureUsage_StorageBinding == 0x8, "GPUTextureUsage.STORAGE_BINDING bit");
 
 }  // namespace canvas_configure

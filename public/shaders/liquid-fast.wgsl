@@ -3,7 +3,9 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  Upgraded: 2026-08-15, 2026-10-26
+//  Ideas: stream shear caustic; fast-jet tail
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -77,7 +79,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Dual continuous motion: Primary Hamiltonian stream + Secondary convective shear
   let pAspect = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-  let streamFlow = streamVelocity(pAspect, time * response, turbulence) * depthFactor;
+  let streamClock = time * response;
+  let streamBase = streamVelocity(pAspect, streamClock, turbulence);
+  let streamFlow = streamBase * depthFactor;
+  // ── Idea: stream shear caustic ─────────────────────────────────
+  // Finite differences of the Hamiltonian velocity. Response still
+  // owns the clock; this only lights where that field shears.
+  let shearStep = 0.012;
+  let dVx = streamVelocity(pAspect + vec2<f32>(shearStep, 0.0), streamClock, turbulence) - streamBase;
+  let dVy = streamVelocity(pAspect + vec2<f32>(0.0, shearStep), streamClock, turbulence) - streamBase;
+  let streamShear = length(vec2<f32>(length(dVx), length(dVy))) / shearStep;
   let convectiveShear = vec2<f32>(
     sin(pAspect.y * 14.0 + time * (1.2 * response) + audio.y * 2.0),
     cos(pAspect.x * 12.0 - time * (0.9 * response) + audio.x * 1.5)
@@ -95,7 +106,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dragCore = exp(-mouseDist * 7.5);
   let vortexTangent = vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist;
   let inertialJet = pointerVelocity / vec2<f32>(aspect, 1.0) * dragCore * 0.012;
-  let dragWake = vortexTangent * dragCore * (0.008 + turbulence * 0.015) * (1.0 + isMouseDown * 2.5) + inertialJet;
+  // ── Idea: fast-jet tail ────────────────────────────────────────
+  // A narrow wake behind the pointer, in the same space as the
+  // inertial jet. Quiet when the pointer is still.
+  let pvAspect = pointerVelocity * vec2<f32>(aspect, 1.0);
+  let pvLen = length(pvAspect);
+  let pvDir = pvAspect / max(pvLen, 1e-4);
+  let along = max(-dot(mouseDelta, pvDir), 0.0);
+  let across = abs(dot(mouseDelta, vec2<f32>(-pvDir.y, pvDir.x)));
+  let tail = smoothstep(0.0, 0.012, along) * exp(-along * 3.2) * exp(-across * across * 90.0) * smoothstep(0.05, 0.28, pvLen);
+  let tailJet = pointerVelocity / vec2<f32>(aspect, 1.0) * tail * (0.006 + turbulence * 0.01);
+  let dragWake = vortexTangent * dragCore * (0.008 + turbulence * 0.015) * (1.0 + isMouseDown * 2.5) + inertialJet + tailJet;
   totalDisp += vec2<f32>(dragWake.x / aspect, dragWake.y);
 
   // Capped ripple shockwaves with radial wave packet dispersion
@@ -155,8 +176,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let specular = fresnel * (rimHue * 0.75 + vec3<f32>(causticLight));
 
   let feedbackMix = clamp(0.08 + response * 0.14 - kineticEnergy * 2.0, 0.04, 0.28) * history.a;
+  let shearGlint = smoothstep(0.015, 0.055, streamShear);
   var finalRGB = mix(advectedColor.rgb + specular, history.rgb, feedbackMix);
-  finalRGB = acesToneMapping(finalRGB);
+  finalRGB = finalRGB + rimHue * shearGlint * 0.16 + vec3<f32>(0.65, 0.82, 1.0) * tail * 0.22;
+  finalRGB = acesToneMapping(max(finalRGB, vec3<f32>(0.0)));
 
   let finalAlpha = clamp(advectedColor.a * (0.85 + depthFactor * 0.15) + fresnel * 0.15 + causticLight * 0.1, 0.0, 1.0);
   let outputColor = vec4<f32>(finalRGB, finalAlpha);

@@ -19,6 +19,8 @@ const PARAM_LABELS: Record<string, string> = {
     normalStrength: 'Normal Strength',
     fogFalloff: 'Fog Falloff',
     depthThreshold: 'Depth Threshold',
+    // Compositor layer opacity (#1512): routed to the layer, not the shader uniforms.
+    opacity: 'Layer Opacity',
 };
 
 export interface LiveControlPanelProps {

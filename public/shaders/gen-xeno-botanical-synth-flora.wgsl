@@ -3,8 +3,10 @@
 //  Category: generative
 //  Alpha Mode: Depth-Layered Alpha + Physical Transmittance
 //  Features: advanced-alpha, botanical, generative, depth-aware, l-system, mouse-driven, audio-reactive, temporal, upgraded-rgba
-//  Upgraded: 2026-10-10
-//  Ideas: leaf veins; conductive filaments; phototropism and spores; stomata; branch prickles
+//  Upgraded: 2026-10-10, 2026-10-19
+//  Ideas: leaf veins; conductive filaments; phototropism and spores; stomata; branch prickles;
+//         golden-angle leaf rosettes that unfurl with Growth (golden-angle layout, §12.2E);
+//         xylem sap pulses running outward from the root along branch ridges into G (nutrient)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -146,10 +148,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let barkNoise = fbm(floor(uv * 20.0) + time * 0.1 * audioReactivity, 3);
 
     // Leaf shapes at branch tips
-    let leafUV = (fract(uv * 4.0) - 0.5) * 2.0;
-    let leafDist = sdLeaf(leafUV, 0.8, 0.3);
+    let tileUV = (fract(uv * 4.0) - 0.5) * 2.0;
+
+    // ── Idea 6: golden-angle phyllotaxis (§12.2E) ──
+    // Each tile carries a rosette of up to three blades placed at successive
+    // golden-angle turns (theta = i * 2.39996) with sizes ~ sqrt(i), so no two
+    // tiles' leaves line up. Blades 2 and 3 unfurl as Growth rises; blade 1 is
+    // always present. Veins and stomata follow the nearest blade's frame.
+    let tileId = floor(uv * 4.0);
+    let tileIdx = tileId.x + tileId.y * 4.0;
+    var leafDist = 1e3;
+    var leafUV = tileUV;
+    var leafLen = 0.8;
+    for (var k: i32 = 0; k < 3; k = k + 1) {
+        let fk = f32(k);
+        let theta = (tileIdx * 3.0 + fk) * 2.39996 + sin(time * 0.25 + tileIdx) * 0.08;
+        let unfurl = select(smoothstep(fk * 0.25, fk * 0.25 + 0.2, growth), 1.0, k == 0);
+        let sizeK = sqrt((3.0 - fk) / 3.0);
+        let lenK = max(0.8 * sizeK * unfurl, 0.02);
+        let ct = cos(theta);
+        let st = sin(theta);
+        let q = vec2<f32>(ct * tileUV.x + st * tileUV.y, -st * tileUV.x + ct * tileUV.y);
+        let dK = sdLeaf(q, lenK, 0.3 * sizeK * unfurl) + (1.0 - unfurl) * 0.2;
+        let nearer = dK < leafDist;
+        leafUV = select(leafUV, q, nearer);
+        leafLen = select(leafLen, lenK, nearer);
+        leafDist = min(leafDist, dK);
+    }
     let leafMask = smoothstep(0.05, -0.05, leafDist);
-    let veins = leafVeinMask(leafUV, 0.8) * leafMask;
+    let veins = leafVeinMask(leafUV, leafLen) * leafMask;
 
     // Combine structures
     let flora = smoothstep(0.0, 0.5 + glowSpread * barkNoise, branchPattern * growth);
@@ -159,6 +186,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Conductive filaments sit on the existing branch ridges.
     let ridge = smoothstep(0.42, 0.55, branchPattern) * (1.0 - smoothstep(0.62, 0.78, branchPattern));
     let filament = ridge * (0.35 + treble * 1.1) * growth;
+
+    // ── Idea 7: xylem sap pulses ──
+    // The branches are vascular: sap fronts leave the root (centre) and run
+    // outward along the existing ridge crests. f = fract(t*v - r*k) makes a
+    // sharp leading edge with an exponential tail behind it; bass pumps the
+    // flow. Written into G, which this shader already encodes as nutrient.
+    let sapF = fract(time * (0.45 + bass * 0.9) - radius * 9.0);
+    let sapPulse = smoothstep(0.0, 0.03, sapF) * exp(-sapF * 5.0);
+    let sap = ridge * sapPulse * growth;
 
     // Click spore spray: short radial grains, not a shockwave ring.
     var spore = 0.0;
@@ -191,6 +227,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     floraColorBase = floraColorBase + vec3<f32>(0.15, 0.85, 0.35) * veins;
     floraColorBase = floraColorBase + vec3<f32>(0.25, 0.85, 1.0) * filament;
+    floraColorBase = floraColorBase + vec3<f32>(0.08, 0.9, 0.3) * sap * 0.8;
     floraColorBase = floraColorBase + vec3<f32>(0.85, 1.0, 0.45) * spore * (0.6 + treble);
     // Idea: stomata — pores on the blade, off the veins.
     let stoma = leafMask * (1.0 - veins) * step(0.965, hash(floor(leafUV * 22.0)));
@@ -207,10 +244,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     floraColor = mix(floraColor, prev, 0.06);
 
     let feather = glowSpread * 0.5 + 0.05;
-    let coverage = max(combinedFlora, max(veins, max(filament, max(spore, max(stoma, prickle)))));
+    let coverage = max(combinedFlora, max(veins, max(filament, max(spore, max(stoma, max(prickle, sap))))));
     let alpha = volumetricAlpha(coverage, 1.0) * depthLayeredAlpha(floraColorBase, uv, depthWeight) * smoothstep(0.0, feather, coverage);
 
-    let outColor = vec4<f32>(acesToneMap(floraColor), alpha);
+    let outColor = vec4<f32>(acesToneMap(max(floraColor, vec3<f32>(0.0))), alpha);
     textureStore(writeTexture, coord, outColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, outColor);

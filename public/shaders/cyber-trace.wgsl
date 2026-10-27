@@ -2,30 +2,12 @@
 //  Cyber Trace — Batch 59
 //  Spring brush, capped click blooms, exact C history, ACES composite,
 //  semantic alpha, extraBuffer[133..138] at (0,0) only.
-//  Ideas: velocity-oriented arc stamp; treble circuit sparks
-//  A packing: history RGB (unchanged)
+//  Upgraded: 2026-10-27
+//  Ideas: velocity-oriented arc stamp; treble circuit sparks; paint-tangent arc (§12.2C); etched groove and via dashes
+//  A packing: history RGB; A.a is brush coverage
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hue2rgb(p: f32, q: f32, t: f32) -> f32 {
     var tc = t;
@@ -75,33 +57,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rawMouse = u.zoom_config.yz;
     let isMouseDown = u.zoom_config.w > 0.5;
 
-    let hasSpringState = arrayLength(&extraBuffer) > 138u;
-    var mousePos = rawMouse;
-    var mouseVel = vec2<f32>(0.0);
-    if (hasSpringState && extraBuffer[138] > 0.5) {
-        mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
-        var springPos = mousePos;
-        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        if (extraBuffer[138] <= 0.5) {
-            springPos = rawMouse;
-            springVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-            let omega = 8.0;
-            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-            springVel += accel * dt;
-            springPos += springVel * dt;
-        }
-        extraBuffer[133] = springPos.x;
-        extraBuffer[134] = springPos.y;
-        extraBuffer[135] = springVel.x;
-        extraBuffer[136] = springVel.y;
-        extraBuffer[137] = time;
-        extraBuffer[138] = 1.0;
-    }
+    // extraBuffer is cleared every frame, so the spring velocity was always
+    // zero and the arc collapsed to a disc. The direction comes from the
+    // trail already stored in C.
+    let mousePos = rawMouse;
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -110,17 +69,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let toPixel = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(toPixel);
 
-    // Idea 1: velocity-oriented arc stamp — trail a capsule behind the sprung
-    // cursor along its velocity instead of stamping a plain disc, so fast
-    // drags read as a drawn electric arc rather than a dot.
-    let velMag = length(mouseVel);
-    let arcDir = select(vec2<f32>(1.0, 0.0), mouseVel / max(velMag, 0.0001), velMag > 0.0001);
+    // Idea 1: arc along the paint tangent (§12.2C). The gradient of the
+    // stored trail points across the stroke; the capsule runs along it.
+    let resI = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let hL = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(-1, 0), vec2<i32>(0), resI), 0);
+    let hR = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(1, 0), vec2<i32>(0), resI), 0);
+    let hU = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, -1), vec2<i32>(0), resI), 0);
+    let hD = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, 1), vec2<i32>(0), resI), 0);
+    let paintGrad = vec2<f32>(luma(hR.rgb) - luma(hL.rgb), luma(hD.rgb) - luma(hU.rgb));
+    let tangent = vec2<f32>(-paintGrad.y, paintGrad.x);
+    let velMag = length(tangent);
+    let arcDir = select(vec2<f32>(1.0, 0.0), tangent / max(velMag, 0.0001), velMag > 0.0001);
     let arcLen = clamp(velMag * 0.05, 0.0, brushSize * 2.5);
     let segVec = -arcDir * arcLen;
     let tSeg = clamp(dot(toPixel, segVec) / max(dot(segVec, segVec), 1e-6), 0.0, 1.0);
     let closest = segVec * tSeg;
     let capsuleDist = length(toPixel - closest);
     var brush = smoothstep(brushSize, brushSize * 0.5, capsuleDist) * select(0.5, 1.0, isMouseDown);
+
+    // ── Idea 2: via dashes on the brush rim.
+    let viaAngle = atan2(toPixel.y, toPixel.x);
+    let viaDash = step(0.45, fract(viaAngle * 1.2732395));
+    let viaRim = smoothstep(brushSize * 1.15, brushSize * 0.72, capsuleDist) * (1.0 - smoothstep(brushSize * 0.72, brushSize * 0.35, capsuleDist));
+    brush = brush + viaDash * viaRim * 0.65;
 
     // Idea 2: treble circuit sparks — above a treble threshold, small ticks
     // branch perpendicular off the arc, hashed by a moving grid cell so they
@@ -149,14 +120,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let drawColor = hslToRgb(fract(colorTick), 1.0, 0.5);
     let newHistory = clamp(historyColor.rgb * decaySpeed + drawColor * brush, vec3<f32>(0.0), vec3<f32>(2.0));
 
-    textureStore(dataTextureA, pixel, vec4<f32>(newHistory, 1.0));
+    textureStore(dataTextureA, pixel, vec4<f32>(newHistory, clamp(brush, 0.0, 1.0)));
 
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let band = min(u32(uv.x * 8.0), 7u);
-    let bandShimmer = plasmaBuffer[band + 1u].x * 0.3;
+    // plasmaBuffer[1..] is never uploaded. The shimmer is a phase of the live mids.
+    let bandShimmer = mids * (0.5 + 0.5 * sin(uv.x * 24.0 + time * 1.7));
     let audioGlow = glowIntensity * (1.0 + bass * 0.5) * (1.0 + bandShimmer) * select(1.0, 1.2, isMouseDown);
 
-    let rawComposite = inputColor + newHistory * audioGlow;
+    // ── Idea 2 continued: the photo darkens under the trail.
+    let groove = clamp(luma(newHistory) * 0.45, 0.0, 0.55);
+    let rawComposite = inputColor * (1.0 - groove) + newHistory * audioGlow;
     var finalColor = acesToneMap(rawComposite * (0.92 + mids * 0.08));
 
     let trailStrength = clamp(luma(newHistory) * audioGlow * 0.5 + brush * 0.4, 0.0, 1.0);

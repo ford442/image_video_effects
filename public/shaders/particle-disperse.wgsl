@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, physics, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: motion-blur streaks along vel; neighbour velocity coupling (4-tap Laplacian); dust breakup of displaced regions
+//  Upgraded: 2026-10-05, 2026-10-26
+//  Ideas: motion-blur streaks along vel; neighbour velocity coupling (4-tap Laplacian); dust breakup of displaced regions; ballistic coast; clump shadow
 //  A packing: raw sim state, no tone map — (offset.xy, vel.xy) in uv / uv-per-frame
 // ═══════════════════════════════════════════════════════════════════
 //  Wind-force particle dispersion with physical light simulation:
@@ -116,7 +116,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     vel = vel + lap * 0.12;
 
     // Spring force (return to offset 0)
-    let spring = -offset * returnSpeed;
+    // ── Idea: ballistic coast — fast grains keep flying; slow grains still settle
+    let coast = 1.0 / (1.0 + length(vel) * 48.0);
+    let spring = -offset * returnSpeed * coast;
     vel = vel + spring;
 
     // Damping
@@ -183,7 +185,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add velocity-colored streaks (clamped — HEAD could go negative)
     let velocity_color = clamp(vec3<f32>(0.5 + vel.x * 2.0, 0.5 + vel.y * 2.0, 0.5 + speed), vec3<f32>(0.0), vec3<f32>(1.0));
     hdr_rgb = hdr_rgb + velocity_color * motion_blur_amount * 0.3;
-    hdr_rgb = hdr_rgb * mix(0.35, 1.0, survive);
+    // ── Idea: clump shadow — the neighbor along the displacement is also away from home
+    let aheadStep = vec2<i32>(i32(sign(offset.x)), i32(sign(offset.y)));
+    let aheadOff = load_state(coord + aheadStep, dims).xy;
+    let clump = smoothstep(0.002, 0.02, length(aheadOff)) * smoothstep(0.002, 0.02, length(offset));
+    hdr_rgb = hdr_rgb * mix(0.35, 1.0, survive) * mix(1.0, 0.62, clump);
 
     // Cumulative density using exponential transmittance: coverage of the
     // grain sheet. Luminance no longer drives it, so dark pixels stay opaque.

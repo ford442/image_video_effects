@@ -8,27 +8,13 @@
 //            audio-envelope
 //  Complexity: High
 //  Created: 2026-05-31
+//  Upgraded: 2026-10-19
+//  Ideas: slipface grainflow tongues (lee side past angle of repose, ripples erased);
+//         brink terminator (sharp sunlit line where slope flips on high ground);
+//         brink spindrift from exact C history read upwind along the wind
+//  A packing: rgb = trail * alpha (colour history), a = smoothed bass envelope (unchanged)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -56,7 +42,7 @@ fn linear_srgb_to_oklab(c: vec3<f32>) -> vec3<f32> {
   let l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
   let m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
   let s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
-  let l_ = pow(l, 1.0 / 3.0); let m_ = pow(m, 1.0 / 3.0); let s_ = pow(s, 1.0 / 3.0);
+  let l_ = pow(max(l, 0.0), 1.0 / 3.0); let m_ = pow(max(m, 0.0), 1.0 / 3.0); let s_ = pow(max(s, 0.0), 1.0 / 3.0);
   return vec3<f32>(0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
                    1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
                    0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_);
@@ -152,7 +138,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rippleCoord = p * 8.0 + windDir * t * 2.0;
   let ripple1 = sin(rippleCoord.x * 3.0 + rippleCoord.y * 1.5) * 0.5 + 0.5;
   let ripple2 = sin(rippleCoord.x * 5.0 - rippleCoord.y * 2.0 + t * 1.5) * 0.5 + 0.5;
-  let rippleMask = smoothstep(0.6, 0.9, ripple1 * ripple2) * erosion * (0.5 + abs(slope) * 2.0);
+  var rippleMask = smoothstep(0.6, 0.9, ripple1 * ripple2) * erosion * (0.5 + abs(slope) * 2.0);
+
+  // ── Idea 1: slipface grainflow tongues ──
+  // Past the angle of repose on the lee side (slope < 0 here) the slipface
+  // fails in avalanches: narrow tongues of loose sand running straight
+  // downslope (long in aniso.x, thin across-wind in aniso.y). Grainflow
+  // wipes out the wind ripples, so real slipfaces are ripple-free.
+  let slipface = smoothstep(-0.35, -0.8, slope) * smoothstep(0.25, 0.5, height);
+  let tongueN = valueNoise(vec2<f32>(aniso.y * 14.0, aniso.x * 1.2 - t * 0.6));
+  let tongueLobe = smoothstep(0.55, 0.85, tongueN) * smoothstep(0.0, 0.4, valueNoise(vec2<f32>(aniso.y * 5.0 + 3.1, aniso.x * 0.6)));
+  let grainflow = slipface * tongueLobe * clamp(0.35 + windBase * 1.3, 0.0, 1.0);
+  rippleMask = rippleMask * (1.0 - slipface * 0.85);
 
   let lit = vec3<f32>(0.92, 0.72, 0.42);
   let mid = vec3<f32>(0.72, 0.45, 0.22);
@@ -165,7 +162,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rimLight = blackbodyRGB(6000.0) * 0.5;
 
   let shadowMask = smoothstep(0.2, -0.6, slope) * shadowDepth;
-  let duneColor = mixOkLab(lit, mixOkLab(mid, shadow, shadowMask * 0.7), shadowMask);
+  var duneColor = mixOkLab(lit, mixOkLab(mid, shadow, shadowMask * 0.7), shadowMask);
+  // (Idea 1) avalanche sand is loose and fresh: a little lighter than the packed slipface.
+  duneColor = mix(duneColor, mixOkLab(duneColor, lit, 0.55) * 1.08, grainflow * 0.7);
 
   let normalApprox = normalize(vec3<f32>(-slope * 2.0, 1.0, 0.5));
   let sunDir = normalize(vec3<f32>(0.6, 0.8, 0.2));
@@ -182,6 +181,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let sss = smoothstep(-0.8, -0.2, slope) * crest * vec3<f32>(0.55, 0.30, 0.12) * 0.5;
   hdr = hdr + sss;
+
+  // ── Idea 2: brink terminator ──
+  // The brink is a discontinuity, not a soft falloff: on high ground, where the
+  // stoss slope flips to the slipface, a thin sun-catching line with a darker lip
+  // just over the edge. Contrast follows Shadow Depth (its existing role).
+  let brinkGate = smoothstep(0.5, 0.72, height);
+  let brinkLine = exp(-(slope + 0.04) * (slope + 0.04) * 90.0) * brinkGate;
+  let brinkLip = exp(-(slope + 0.28) * (slope + 0.28) * 60.0) * brinkGate;
+  hdr = hdr + keyLight * lit * brinkLine * (0.25 + shadowDepth * 0.5);
+  hdr = hdr * (1.0 - brinkLip * shadowDepth * 0.35);
 
   let sparkleCoord = uv01 * (120.0 + treble * 60.0) + windDir * t * 10.0;
   let sparkle = step(0.997 - treble * 0.004, fract(sin(dot(sparkleCoord, vec2<f32>(12.9898, 78.233))) * 43758.5453));
@@ -204,10 +213,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let transmittance = exp(-hazeDensity * 1.5);
   hdr = hdr * transmittance + skyColor * (1.0 - transmittance) * 0.5;
 
+  // ── Idea 3: brink spindrift from history ──
+  // Wind lifts grains over the brink: read the exact colour trail a few texels
+  // UPWIND (C.rgb, same packing) and lay it over crests/brinks as a pale veil, so
+  // each crest trails a streamer downwind. Reach grows with wind and the bass envelope.
+  let driftReach = (4.0 + windSpeed * 18.0) * (1.0 + bass * 0.5);
+  let driftPx = clamp(pixel - vec2<i32>(round(windDir * driftReach)), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  let upwind = textureLoad(dataTextureC, driftPx, 0).rgb;
+  let spindrift = clamp((crest + brinkLine) * (0.2 + windBase * 1.2), 0.0, 0.6);
+  hdr = mix(hdr, max(upwind, vec3<f32>(0.0)) * 1.05 + lit * keyLight * 0.04, spindrift * 0.45);
+
   let decay = 0.96 - shadowDepth * 0.03;
   let trail = mix(prev.rgb * decay, hdr, 0.18 + bass * 0.05);
 
-  let mapped = acesToneMap(hue_preserve_clamp(trail, 5.0) * 1.3);
+  let mapped = acesToneMap(hue_preserve_clamp(max(trail, vec3<f32>(0.0)), 5.0) * 1.3);
   let dither = (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
   let color = pow(mapped, vec3<f32>(1.0 / 2.2)) + vec3<f32>(dither);
 

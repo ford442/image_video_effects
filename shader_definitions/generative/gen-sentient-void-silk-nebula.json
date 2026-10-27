@@ -1,7 +1,7 @@
 {
   "id": "gen-sentient-void-silk-nebula",
   "name": "Sentient Void-Silk Nebula",
-  "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads.",
+  "description": "A hyper-dimensional fluid simulation that weaves iridescent void silk threads. Dew beads string along the fibrils and slack regions open into rim-lit void pockets.",
   "category": "generative",
   "url": "shaders/gen-sentient-void-silk-nebula.wgsl",
   "workgroup_size": [

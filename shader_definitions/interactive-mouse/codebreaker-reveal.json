@@ -41,6 +41,7 @@
     "interactive"
   ],
   "name": "Codebreaker Reveal",
+  "description": "Matrix rain covers the photo. A disc at the pointer, plus click bursts, decrypts it. Each falling cell has a white head and a green tail, and the open hole lingers after the disc moves on, closing at a rate set by Rain Speed.",
   "updated": true,
   "x-meta": {
     "upgrade": {

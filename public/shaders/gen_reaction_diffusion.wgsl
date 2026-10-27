@@ -4,31 +4,12 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal, hue-preserve-clamp, ign-dither
 //  Complexity: High
 //  Scientific: Dual-mode excitable media with FitzHugh-Nagumo action waves and Gray-Scott fallback kinetics
-//  Upgraded: 2026-09-27
-//  Ideas: refractory trough; gradient-stretched feed
+//  Upgraded: 2026-09-27, 2026-10-26
+//  Ideas: refractory trough; gradient-stretched feed; refractory stimulus gate; curvature slowing
 //  A packing: raw sim fields in A (and B slot-chain). ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn clampCoord(p: vec2<i32>, size: vec2<i32>) -> vec2<i32> {
   return clamp(p, vec2<i32>(0, 0), size - vec2<i32>(1, 1));
@@ -193,11 +174,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aParam = mix(0.9, 0.5, excite);
   let bParam = 0.8;
   let epsilon = mix(0.05, 0.13, recover);
+  // ── Idea 1: refractory stimulus gate ───────────────────────────────
+  // The display trough already uses these thresholds. On the FHN branch a
+  // cell in that trough cannot accept another stimulus. Gray-Scott stays open.
+  let preAct = saturate(uState * 0.38 + 0.5);
+  let preInh = saturate(vState * 0.42 + 0.42);
+  let troughW = 0.18 + recover * 0.45;
+  let preRef = smoothstep(0.12, troughW, preInh) * (1.0 - smoothstep(0.15, 0.62, preAct));
+  let fhnOpen = 1.0 - preRef;
   let du = 0.45 * lap.x + uState - (uState * uState * uState) / 3.0 - vState
-    + mouseStim * 1.65 + audioStim * 1.55 + trebleStim * 0.8 + spiralSeed * 1.5;
+    + (mouseStim * 1.65 + audioStim * 1.55 + trebleStim * 0.8 + spiralSeed * 1.5) * fhnOpen;
   let dv = epsilon * (uState + aParam - bParam * vState);
   // Stimulus (z) also owns the integration timestep (diffusion-adjacent pace).
-  let fitzDt = 0.055 + stim * 0.04;
+  // ── Idea 2: curvature slowing ──────────────────────────────────────
+  // Tight bends (large Laplacian against the gradient) take a shorter step.
+  let curv = saturate(abs(lap.x) / (gmag + 0.2));
+  let fitzDt = (0.055 + stim * 0.04) * (1.0 - 0.4 * curv * (0.35 + excite));
   let fitzU = clamp(uState + du * fitzDt, -2.4, 2.4);
   let fitzV = clamp(vState + dv * fitzDt, -1.8, 1.8);
 
@@ -226,6 +218,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let troughWidth = 0.18 + recover * 0.45;
   let refractory = smoothstep(0.12, troughWidth, inhibitor) * (1.0 - smoothstep(0.15, 0.62, activator));
   fitzColor *= 1.0 - refractory * (0.32 + recover * 0.4);
+  fitzColor += vec3<f32>(1.0, 0.92, 0.75) * curv * waveFront * 0.22;
 
   let generatedColor = mix(gsColor, fitzColor, fitzMode);
   let opacity = 0.9;

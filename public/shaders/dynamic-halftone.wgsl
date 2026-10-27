@@ -3,31 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: Euclidean round→diamond→round spot; 3×3 neighbour dots pool where they overlap; ragged paper-tooth rims
+//  Upgraded: 2026-10-27
+//  Ideas: Euclidean spot; neighbour pooling; ragged rims; pointer stretch; edge swell
 //  A packing: ACES display RGBA (premultiplied by dot-coverage alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Density, y=InfluenceRadius, z=Contrast, w=EdgeSharpness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Density, y=InfluenceRadius, z=Contrast, w=EdgeSharpness
 
 fn palette(t: f32) -> vec3<f32> {
   return vec3<f32>(0.50, 0.49, 0.47) +
@@ -92,11 +74,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
       let l = dot(col, vec3<f32>(0.299, 0.587, 0.114));
       let infl = smoothstep(influenceRadius, 0.0, length((sampleUV - mouse) * vec2<f32>(aspect, 1.0)));
-      let radius = clamp(l * 0.5 * (1.0 + infl * 0.8), 0.0, 0.6);
+      var radius = clamp(l * 0.5 * (1.0 + infl * 0.8), 0.0, 0.6);
+      if (dx == 0 && dy == 0) {
+        // ── Idea: edge swell. The center dot grows where the photo changes beside it.
+        let sideUV = clamp(sampleUV + vec2<f32>(1.0 / density, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let sideL = dot(textureSampleLevel(readTexture, u_sampler, sideUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+        radius = clamp(radius * (1.0 + abs(l - sideL) * 0.85), 0.0, 0.62);
+      }
       let edgeWidth = 0.05 * (1.0 + infl) * edgeSharpnessFactor;
       let plateAngle = sin(time * 0.17 + cid.x * 0.07) * 0.22 + infl * 0.45;
       let rot = mat2x2<f32>(cos(plateAngle), -sin(plateAngle), sin(plateAngle), cos(plateAngle));
-      let q = rot * (gridUV - cid - vec2<f32>(0.5)) * vec2<f32>(1.0 + infl * 0.55, 1.0 - infl * 0.22);
+      // ── Idea: pointer stretch. Dots elongate toward the pointer; the plate still spins.
+      let q0 = rot * (gridUV - cid - vec2<f32>(0.5));
+      let toMouse = vec2<f32>(sampleUV.x * aspect, sampleUV.y) - vec2<f32>(mouse.x * aspect, mouse.y);
+      let pullAng = atan2(toMouse.y, toMouse.x);
+      let cP = cos(pullAng);
+      let sP = sin(pullAng);
+      let qPull = mat2x2<f32>(cP, -sP, sP, cP) * q0;
+      let stretch = 1.0 + infl * 0.7;
+      let q = vec2<f32>(qPull.x / stretch, qPull.y);
 
       // Idea 1: Euclidean spot — round in highlights, an area-matched diamond
       // around the 50% tone (diamonds chain into a checkerboard), round again

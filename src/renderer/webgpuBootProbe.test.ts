@@ -13,6 +13,16 @@ import {
 } from './webgpuBootProbe';
 import { ADAPTER_ATTEMPT_LADDER } from './webgpuDevicePolicy';
 
+const formatProbe = vi.hoisted(() => ({ reject: null as Error | null }));
+vi.mock('../config/formatPolicy', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../config/formatPolicy')>();
+  return {
+    ...actual,
+    probeFormatCapabilities: (...args: Parameters<typeof actual.probeFormatCapabilities>) =>
+      formatProbe.reject ? Promise.reject(formatProbe.reject) : actual.probeFormatCapabilities(...args),
+  };
+});
+
 const TU = {
   COPY_SRC: 0x01,
   COPY_DST: 0x02,
@@ -180,6 +190,26 @@ describe('webgpuBootProbe', () => {
     expect(result.ok).toBe(false);
     expect(result.attempts.some((a) => a.failedStage === 'probePipeline')).toBe(true);
     expect(device.destroy).toHaveBeenCalled();
+  });
+
+  it('destroys the device when probeFormatCapabilities rejects (regression: leaked device)', async () => {
+    const device = makeMockDevice();
+    const context = makeMockContext();
+    const canvas = document.createElement('canvas');
+    canvas.getContext = vi.fn(() => context) as unknown as typeof canvas.getContext;
+    (navigator as Navigator & { gpu?: GPU }).gpu = {
+      requestAdapter: vi.fn().mockResolvedValue(makeMockAdapter({}, device)),
+      getPreferredCanvasFormat: () => 'bgra8unorm',
+    } as unknown as GPU;
+    formatProbe.reject = new Error('format probe exploded');
+    try {
+      const result = await runWebGpuBootProbe(canvas, 1024, 1024);
+      expect(result.ok).toBe(false);
+      expect(result.attempts.some((a) => a.error === 'format probe exploded')).toBe(true);
+      expect(device.destroy).toHaveBeenCalled();
+    } finally {
+      formatProbe.reject = null;
+    }
   });
 
   it('fails at probePipeline stage when the async create rejects without throwing (#1395)', async () => {
@@ -374,16 +404,38 @@ describe('negotiateCanvasColor', () => {
   it('accepts display-p3 + extended tone mapping when the readback agrees', async () => {
     const context = makeMockContext();
     Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
-    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    const r = await negotiateCanvasColor(device(), context, 'rgba16float', { displayP3: true, extendedToneMapping: true });
     expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'extended' });
     expect(r.reason).toBeUndefined();
+  });
+
+  it('only ever configures extended tone mapping on an rgba16float swapchain (regression: advertised but no-op)', async () => {
+    const context = makeMockContext();
+    Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    // #1512: the HDR rung swaps in the rgba16float swapchain, so extended is real.
+    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'extended', canvasFormat: 'rgba16float' });
+    expect(r.applied).toEqual({ displayP3: true, extendedToneMapping: true, hdrCanvas: true });
+    const extended = configs(context).filter((c) => c.toneMapping?.mode === 'extended');
+    expect(extended.length).toBeGreaterThan(0);
+    expect(extended.every((c) => c.format === 'rgba16float')).toBe(true);
+  });
+
+  it('keeps the 8-bit swapchain when only p3 is requested (SDR display)', async () => {
+    const context = makeMockContext();
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: false });
+    expect(r).toMatchObject({ canvasFormat: 'bgra8unorm', toneMapping: 'standard' });
+    expect(configs(context).every((c) => c.format === 'bgra8unorm')).toBe(true);
   });
 
   it('steps down to p3/standard when extended tone mapping is rejected', async () => {
     const context = makeMockContext();
     Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'standard' } }) });
     const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
-    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard', reason: 'unsupported-extended-tone-mapping' });
+    expect(r).toMatchObject({
+      colorSpace: 'display-p3', toneMapping: 'standard', canvasFormat: 'bgra8unorm', reason: 'unsupported-extended-tone-mapping',
+    });
+    expect(configs(context).at(-1)?.format).toBe('bgra8unorm');
   });
 
   it('notes an SDR display when p3 is accepted without extended tone mapping requested', async () => {
@@ -407,6 +459,7 @@ describe('negotiateCanvasColor', () => {
     window.webgpuProbe = { ok: true, finishedAt: '', userAgent: '', userAgentBrands: [], attempts: [], canvasColorFallback: 'unsupported-p3' };
     updateWebGpuProbeColor({
       requested: { displayP3: true }, applied: { displayP3: true }, colorSpace: 'display-p3', toneMapping: 'standard',
+      canvasFormat: 'bgra8unorm',
     });
     expect(window.webgpuProbe).toMatchObject({ canvasColorSpace: 'display-p3', canvasToneMapping: 'standard' });
     expect(window.webgpuProbe?.canvasColorFallback).toBeUndefined();

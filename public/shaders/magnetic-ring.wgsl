@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: ring wake from exact C history behind a dragged magnet; swept integer field spokes bent by drag velocity
+//  Upgraded: 2026-10-05, 2026-10-26
+//  Ideas: ring wake from exact C history behind a dragged magnet; swept integer field spokes bent by drag velocity; upstream flux compression; dipole 1/r³ haze
 //  A packing: display RGB + .a ring energy (wake source); texel (0,0) = (prevMouse.xy, prevTime, valid); texel (1,0) = (smoothed velocity.xy aspect-uv/s, sentinel 7, valid)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -83,8 +83,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // leans each spoke more the further it sits from the ring's core radius,
     // so a dragged magnet combs its spokes into curved field lines.
     let sweep = clamp(dot(tangent, vel) * 2.0, -1.2, 1.2);
+    // ── Idea 3: upstream flux compression ──────────────────────────
+    // A moving magnet squeezes the rings on the side it is heading into.
+    let lead = clamp(dot(safeDir, vel), -1.2, 1.2);
     for (var i: f32 = 0.0; i < rings; i = i + 1.0) {
-      let r = baseRadius * (1.0 + i * 0.6);
+      let r = baseRadius * (1.0 + i * 0.6) * (1.0 - lead * 0.12);
       let m = 1.0 - smoothstep(0.0, ringThickness, abs(dist - r));
       ringMask = ringMask + m;
       // Integer spoke count per turn (48 / 24 / 16) so the atan2 seam is invisible.
@@ -121,6 +124,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     ringMask = clamp(ringMask, 0.0, 1.0);
+
+    // ── Idea 4: dipole 1/r³ haze ───────────────────────────────────
+    // The strokes are the field lines. The disk between them is the
+    // dipole falloff, knocked out where a ring is already drawn.
+    let dipole = strength * 0.55 / (dist * dist * dist + 0.08);
+    let haze = dipole * (1.0 - ringMask) * exp(-dist * 1.1);
+    voiceGlow += vec3<f32>(0.20, 0.40, 0.75) * haze * 0.08;
 
     let displacement = safeDir * ringMask * strength * (0.03 + pulse * 0.04);
     let offsetUV = vec2<f32>(displacement.x / aspect, displacement.y);

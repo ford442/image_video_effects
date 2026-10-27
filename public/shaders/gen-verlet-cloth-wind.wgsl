@@ -5,31 +5,12 @@
 //            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06, 2026-09-15, 2026-09-27
-//  Ideas: gust-front propagation sweeping wind across the lattice; thread-tension sheen along warp/weft; hem lead on the free edge; fold occlusion in concave valleys
+//  Upgraded: 2026-06-06, 2026-09-15, 2026-09-27, 2026-10-25
+//  Ideas: gust-front propagation sweeping wind across the lattice; thread-tension sheen along warp/weft; hem lead on the free edge; fold occlusion in concave valleys; selvage stiffness; slack drape
 //  A packing: raw sim (h, v, 0, 0) on the 64x64 lattice (C read as fields there); ACES display RGBA elsewhere (unread)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -100,7 +81,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let hem = f32(gCoord.y) / f32(gridRes - 1);
       let hemLead = hem * hem * sin(frontT * 1.7) * windStr * 0.02;
       let force = gravity + wind + laplacian * stiffness + mForce + hemLead;
-      v = v * 0.95 + force * 0.016;
+      // ── Idea: selvage stiffness ──
+      // Free side columns (not the pinned top row) resist the flap. The pin stays locked above.
+      let edgeCols = min(f32(gCoord.x), f32(gridRes - 1 - gCoord.x));
+      let selvage = smoothstep(5.0, 0.0, edgeCols);
+      v = v * (0.95 - selvage * 0.06) + force * 0.016 * (1.0 - selvage * 0.45);
       h = h + v * 0.016;
     } else {
       h = 0.0;
@@ -136,6 +121,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // warp/weft thread highlights along the lattice axes, so strained regions
   // read as woven threads under tension rather than smooth rubber.
   let stretch = length(vec2<f32>(dx, dy));
+  // ── Idea: slack drape ──
+  // Near-zero stretch is hanging cloth, darker than a taut panel. Fold occlusion stays the concave term.
+  let slack = exp(-stretch * 22.0);
   let warpHi = pow(1.0 - abs(fract(cUV.x) - 0.5) * 2.0, 8.0) * stretch;
   let weftHi = pow(1.0 - abs(fract(cUV.y) - 0.5) * 2.0, 8.0) * stretch;
   color = color + vec3<f32>(0.5, 0.65, 0.9) * (warpHi + weftHi) * (0.6 + bass * 0.8);
@@ -143,6 +131,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let neighAvg = (s10 + s01 + s11) / 3.0;
   let fold = clamp(neighAvg - h, 0.0, 1.0);
   color = color * (1.0 - fold * 0.5);
+  color = color * (1.0 - slack * (1.0 - fold) * 0.28);
   let weave = hash12(uv * 300.0) * 0.05;
   color = color * (1.0 + weave);
   let vignetteUV = uv * (1.0 - uv);

@@ -6,31 +6,13 @@
 //            temporal-feedback, chromatic-aberration, semantic-alpha
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-27
-//  Ideas: satin anisotropic sheen from ribbon fold slope; warp-thread striations along ribbons; fold-crease occlusion
+//  Upgraded: 2026-10-19
+//  Ideas: satin anisotropic sheen from ribbon fold slope; warp-thread striations along ribbons; fold-crease occlusion;
+//         field-aligned vertical auroral rays; nitrogen-pink hem on each ribbon's lower border
 //  A packing: ACES display RGBA (HEAD stored wind/band/shimmer in A but read C as colour)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -203,6 +185,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let crease = sat(-ribbons);
     let foldOcc = 1.0 - 0.32 * crease * crease * (0.4 + 0.6 * curtain);
     color = color * foldOcc;
+
+    // IDEA 4: field-aligned rays. Real curtains are built of fine vertical rays along the
+    // magnetic field; the wind warp bends them slightly, each ray flickers on its own.
+    let rayCoord = p.x * (34.0 + bandCount * 2.0) + wind * 2.5;
+    let rayId = floor(rayCoord);
+    let rayRnd = hash21(vec2<f32>(rayId, 11.3));
+    let rayLobe = pow(0.5 + 0.5 * cos(TAU * fract(rayCoord)), 6.0);
+    let rayFlicker = 0.55 + 0.45 * sin(time * (2.5 + treble * 14.0) + rayRnd * TAU);
+    color = color * (1.0 + rayLobe * mix(0.15, 0.7, rayRnd) * rayFlicker * curtain);
+
+    // IDEA 5: nitrogen hem. The lower border of each ribbon (the side ph moves into going
+    // down-screen) fringes pink-magenta, as N2 emission does under the oxygen green.
+    let edgeMask = band * (1.0 - band) * 4.0;
+    let hemSide = sat(-sign(ribbons) * cos(ph) * 3.0);
+    let hem = edgeMask * hemSide * curtain;
+    color = color + vec3<f32>(0.95, 0.28, 0.66) * hem * hdrPresence * (0.45 + bass * 0.3);
 
     // IDEA 1: satin anisotropic sheen. cos(ph) is the fold slope; a 2D fold normal against a
     // slowly sliding light gives one bright flank per fold (quarter-phase from crest/crease).

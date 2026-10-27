@@ -7,30 +7,13 @@
 //  Complexity: High
 //  Chunks From: cellular automata + slow parameter evolution
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06
 //  Upgraded: 2026-07-22 (Algorithmist: 8-neighbor diffusion, border glow, real slider wiring)
+//  Upgraded: 2026-10-25
+//  Ideas: founder inoculum on barren cells; overgrazing scar
+//  A packing: raw (s1, s2, resource, 0); ACES on display
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // 8-neighbor diffusion weights: orthogonal cells are distance 1, diagonals ~sqrt(2).
 const W_ORTHO: f32 = 1.0;
@@ -41,6 +24,10 @@ fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+fn loadGarden(c: vec2<i32>, res: vec2<i32>) -> vec4<f32> {
+    return textureLoad(dataTextureC, clamp(c, vec2<i32>(0), res - vec2<i32>(1)), 0);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -83,21 +70,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let nurtureStrength = mix(0.15, 1.0, pNurture);
 
     // ── Sim state readback: dataTextureC carries (s1, s2, resource, _) ──
-    let state = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let coord = vec2<i32>(gid.xy);
+    let resI = vec2<i32>(i32(res.x), i32(res.y));
+    let state = loadGarden(coord, resI);
     let s1 = state.r;
     let s2 = state.g;
     let resourceLevel = state.b;
 
     // ── Full 8-neighbor sampling with distance-correct weights ──
-    let ps = 1.0 / res;
-    let nE  = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( ps.x,  0.0), 0.0);
-    let nW  = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-ps.x,  0.0), 0.0);
-    let nN  = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( 0.0,  ps.y), 0.0);
-    let nS  = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( 0.0, -ps.y), 0.0);
-    let nNE = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( ps.x,  ps.y), 0.0);
-    let nNW = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-ps.x,  ps.y), 0.0);
-    let nSE = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>( ps.x, -ps.y), 0.0);
-    let nSW = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-ps.x, -ps.y), 0.0);
+    let nE  = loadGarden(coord + vec2<i32>( 1,  0), resI);
+    let nW  = loadGarden(coord + vec2<i32>(-1,  0), resI);
+    let nN  = loadGarden(coord + vec2<i32>( 0,  1), resI);
+    let nS  = loadGarden(coord + vec2<i32>( 0, -1), resI);
+    let nNE = loadGarden(coord + vec2<i32>( 1,  1), resI);
+    let nNW = loadGarden(coord + vec2<i32>(-1,  1), resI);
+    let nSE = loadGarden(coord + vec2<i32>( 1, -1), resI);
+    let nSW = loadGarden(coord + vec2<i32>(-1, -1), resI);
 
     let orthoS1 = (nE.r + nW.r + nN.r + nS.r) * W_ORTHO;
     let diagS1  = (nNE.r + nNW.r + nSE.r + nSW.r) * W_DIAG;
@@ -132,6 +120,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     newS1 += mouseNurture * 0.3;
     newS2 += mouseNurture * 0.25;
 
+    // ── Idea: founder inoculum — one speck per empty plot, never on living ground ──
+    let site = floor(vec2<f32>(f32(gid.x), f32(gid.y)) / 56.0);
+    let founderHash = hash12(site);
+    let local = fract(vec2<f32>(f32(gid.x), f32(gid.y)) / 56.0) - 0.5;
+    let inSpeck = step(length(local), 0.12);
+    let barren = step(s1 + s2 + resourceLevel + avgS1 + avgS2, 0.05);
+    let speciesPick = step(0.5, hash12(site + vec2<f32>(3.1, 9.7)));
+    let planted = barren * inSpeck * step(0.62, founderHash);
+    newS1 = newS1 + planted * speciesPick * 0.85;
+    newS2 = newS2 + planted * (1.0 - speciesPick) * 0.85;
+    newRes = newRes + planted * 0.35;
+
     newS1 = clamp(newS1, 0.0, 1.8);
     newS2 = clamp(newS2, 0.0, 1.8);
     newRes = clamp(newRes, 0.0, 1.5);
@@ -163,7 +163,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Temporal color memory: previous frame tint bleeds in
     let prevCol = state.rgb;
     let col = mix(c1 + c2 + resCol, prevCol * vec3<f32>(0.95, 0.9, 0.85), 0.08 + bass * 0.03);
-    let colGlow = col + glowCol;
+    var colGlow = col + glowCol;
+    // ── Idea: overgrazing scar — ochre soil where the pasture is eaten down ──
+    let grazed = smoothstep(0.45, 1.2, newS1 + newS2) * smoothstep(0.55, 0.05, newRes);
+    colGlow = mix(colGlow, vec3<f32>(0.42, 0.20, 0.07), grazed * 0.62);
 
     let totalLife = newS1 * 0.6 + newS2 * 0.6;
     let alpha = clamp(totalLife * 0.85 + newRes * 0.2 + borderGlow * 0.25 + bass * 0.05, 0.15, 1.0);

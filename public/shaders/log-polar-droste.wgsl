@@ -1,26 +1,10 @@
 // Log-Polar Droste Effect - Recursive Spiral Zoom
-// Creates infinite recursive zoom effect with spiral distortion
+// Upgraded: 2026-10-27
+// Ideas: Droste frame at the log wrap; sector gutter between branches
+// A packing: ACES display RGBA
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=ZoomSpeed, y=SpiralFactor, z=RecursionDepth, w=BranchCount
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=ZoomSpeed, y=SpiralFactor, z=RecursionDepth, w=BranchCount
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -81,6 +65,11 @@ fn smoothBand(x: f32, edge0: f32, edge1: f32) -> f32 {
   return t * t * (3.0 - 2.0 * t);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let c = max(x, vec3<f32>(0.0));
+  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -90,8 +79,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
   let time = u.config.x;
   
-  // Parameters
-  let zoomSpeed = mix(0.1, 1.0, u.zoom_params.x);
+  // Parameters. Bass only pushes the zoom the slider already owns; silence matches the old rate.
+  let bass = plasmaBuffer[0].x;
+  let zoomSpeed = mix(0.1, 1.0, u.zoom_params.x) * (1.0 + bass * 0.22);
   let spiralFactor = mix(-1.0, 1.0, u.zoom_params.y);
   let recursionDepth = mix(1.0, 5.0, u.zoom_params.z);
   let branchCount = floor(mix(1.0, 6.0, u.zoom_params.w));
@@ -127,12 +117,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Wrap log-radius for infinite recursion
   let logRange = log(r2 / r1);
   logR = ((logR - log(r1)) % logRange + logRange) % logRange + log(r1);
-  
+  // ── Idea 1: Droste frame — a dark border where the log-radius wraps.
+  let wrapPos = logR - log(r1);
+  let frameBand = smoothstep(0.16, 0.0, wrapPos) + smoothstep(logRange - 0.16, logRange, wrapPos);
+
   // Apply multi-branch spiral
   if (branchCount > 1.0) {
     let branchAngle = TAU / branchCount;
     angle = angle + floor(angle / branchAngle) * (time * zoomSpeed * 0.5);
   }
+  // ── Idea 2: sector gutter on each branch cut. One branch grows no extra seam.
+  let sectors = max(branchCount, 1.0);
+  let sectorFrac = fract((angle + PI) / TAU * sectors);
+  let gutter = (smoothstep(0.07, 0.0, sectorFrac) + smoothstep(0.93, 1.0, sectorFrac)) * step(1.5, branchCount);
   
   // Convert back to Cartesian for texture sampling
   var newR = exp(logR);
@@ -209,10 +206,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   finalColor = finalColor * mix(0.7, 1.0, vignette * innerFade);
   
+  finalColor = mix(finalColor, finalColor * 0.12, clamp(frameBand, 0.0, 1.0));
+  finalColor = mix(finalColor, finalColor * 0.2, clamp(gutter, 0.0, 1.0));
+
   // Add glow at center
   let centerGlow = exp(-distFromCenter * 3.0) * 0.3;
   finalColor = finalColor + vec3<f32>(0.2, 0.5, 1.0) * centerGlow;
-  
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, 1.0));
+
+  let display = aces(finalColor);
+  let alpha = clamp(sourceColor.a * mix(0.55, 1.0, vignette * innerFade) * (1.0 - 0.35 * clamp(frameBand, 0.0, 1.0)), 0.0, 1.0);
+  let outColor = vec4<f32>(display, alpha);
+  textureStore(writeTexture, vec2<i32>(coord), outColor);
+  textureStore(dataTextureA, vec2<i32>(coord), outColor);
   textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -2,8 +2,11 @@
 
 ## Overview
 
-By default, Pixelocity's 3 shader slots run **chained** (sequentially):
-- Slot 0 output → Slot 1 input → Slot 1 output → Slot 2 input
+Pixelocity has **6 physical shader slots** (`maxPhysicalSlots` in
+[`src/contracts/slot_limits.json`](../src/contracts/slot_limits.json), `PHYSICAL_SLOT_LIMIT` in TS,
+`MAX_SHADER_SLOTS` in C++). The performance tier's `maxActiveSlots` (1–3) is a separate, lower
+soft cap on how many run at once. By default slots run **chained** (sequentially):
+- Slot 0 output → Slot 1 input → Slot 1 output → Slot 2 input → … → Slot 5
 - This is correct for layered effects (e.g., liquid → distortion)
 
 With **parallel slot groups**, independent effects can run concurrently on the GPU:
@@ -74,7 +77,8 @@ Frame Render:
   │     │  readTex→   │  │  readTex→   │  │  readTex→   │  │
   │     │  writeTex   │  │  writeTex   │  │  writeTex   │  │
   │     └─────────────┘  └─────────────┘  └─────────────┘  │
-  │     (Last parallel slot wins - use for overlays)        │
+  │     (Last wins, unless a slot has a blend layer: then   │
+  │      one composite pass blends the group, #1512)        │
   │                                                         │
   │  3. Copy writeTex → readTex                             │
   │                                                         │
@@ -157,9 +161,9 @@ device.queue.submit([encoder.finish()]);
 
 ### Limitations
 
-1. **No automatic compositing**: Parallel slots write to the same output texture. The last one wins.
-   - For alpha blending, use a dedicated compositing shader
-   - Or chain effects that need to blend
+1. **Compositing is opt-in per slot**: with every slot on the default *replace* layer, parallel slots write to the same output texture and the last one wins.
+   - Give a slot a blend layer (blend mode, opacity, mask) in the Slot stack row and the group is captured and blended in one pass at internal precision. See [COMPOSITOR.md](COMPOSITOR.md).
+   - A chained slot with a blend layer is mixed over its own input the same way.
 
 2. **Same input**: All parallel slots read from `readTex` at the start of the parallel group
    - They don't see each other's output
@@ -208,5 +212,5 @@ renderer.setSlotMode(1, 'parallel');
 // Distortion reads video, warps it
 renderer.setSlotShader(2, 'lens-distort');
 renderer.setSlotMode(2, 'parallel');
-// Result: RD patterns AND distorted video overlaid (last wins)
+// Result: RD patterns AND distorted video overlaid (last wins; give slot 3 a blend layer to mix them)
 ```

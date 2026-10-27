@@ -2,7 +2,7 @@
   "id": "swirling-void",
   "name": "Swirling Void",
   "url": "shaders/swirling-void.wgsl",
-  "description": "General relativistic Kerr metric frame-dragging vortex with accretion disk Doppler beaming, blackbody thermal gradient, photon sphere deflection, and exact-load photon ring persistence.",
+  "description": "Kerr frame-drag around a dark horizon, with a hot disk and a photon ring. Near the ring the sample locks onto the photon sphere, and the disk cuts off on a bright orbit at three times the horizon. A holds pre-ACES colour for the trail.",
   "features": [
     "mouse-driven",
     "audio-reactive",

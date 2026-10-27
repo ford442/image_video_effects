@@ -5,9 +5,10 @@
 //            bass-growth-speed, aces-tone-map
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-10-25
 //  Ideas: terminal leaf discs at every tip; rotating ideal-polygon geodesics of the Poincaré disk;
-//         Poincaré metric-thinning branch strokes; negative-space horocycle rings
+//         Poincaré metric-thinning branch strokes; negative-space horocycle rings;
+//         rim crowding; Fuchsian sector tint
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -171,12 +172,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                    negativeSpace * (1.0 - diskEdge) * step(r, 1.0);
     let horoColor = hue2rgb(leafHue + 0.18) * horoRing * (0.08 + mids * 0.035);
 
+    // ── Idea: rim crowding ──
+    // Hyperbolic length piles up at the boundary, so the thinned branches there run hot.
+    let rimPack = smoothstep(0.62, 0.94, r) * branchGlow * (1.0 - diskEdge);
+    let rimColor = vec3<f32>(1.0, 0.78, 0.42) * rimPack * 0.45;
+
+    // ── Idea: Fuchsian sector tint ──
+    // The same 7-fold as the ideal polygon, painted only into the empty sectors, rotating with that lattice.
+    let sector = 6.28318530718 / 7.0;
+    let wedge = fract((atan2(p.y, p.x) - time * 0.03) / sector);
+    let tile = step(0.5, wedge);
+    let tileTint = mix(vec3<f32>(0.07, 0.03, 0.11), vec3<f32>(0.03, 0.06, 0.12), tile);
+    let tileColor = tileTint * negativeSpace * (1.0 - diskEdge) * step(r, 1.0) * 0.28;
+
     // Temporal branch glow persistence (exact load; HEAD filtered an rgba32float history)
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
-    let finalRGB = mix(rgb * val + leafColor + tipColor + geoColor + horoColor, prev * 0.92, 0.05 + bass * 0.02);
+    let finalRGB = mix(rgb * val + leafColor + tipColor + geoColor + horoColor + rimColor + tileColor, prev * 0.92, 0.05 + bass * 0.02);
     
     let alpha = clamp(val * 0.6 + branchGlow * 0.3 + leafGlow * 0.2 + tipLeaf * 0.3 +
-                      geoLine * 0.15 + horoRing * 0.04 + 0.1 + bass * 0.05, 0.0, 1.0) *
+                      geoLine * 0.15 + horoRing * 0.04 + rimPack * 0.08 + 0.1 + bass * 0.05, 0.0, 1.0) *
                 (1.0 - diskEdge);
     let finalColor = vec4<f32>(acesToneMap(finalRGB * 1.1), alpha);
     

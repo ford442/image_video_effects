@@ -1086,6 +1086,57 @@ describe('RendererManager device-loss recovery', () => {
     clearRuntimeGraphs();
   });
 
+  it('replays compositor layers, depth map, auto-exposure, node scales and ripples after a loss (#1512)', async () => {
+    const first = lossAwareWebGPU();
+    const second = lossAwareWebGPU();
+    const screen = { output: 'blend' as const, blend: 'screen' as const, opacity: 0.5, mask: { source: 'depth' as const, invert: true } };
+    for (const r of [first, second]) {
+      Object.assign(r, {
+        backendKind: 'webgpu',
+        setResolutionScale: vi.fn(),
+        setAdaptiveQuality: vi.fn(),
+        setMaxPassesPerFrame: vi.fn(),
+        setFramePassBudget: vi.fn(),
+        setColorFormat: vi.fn(),
+        setSlotLayer: vi.fn(),
+        getSlotLayer: vi.fn(() => null),
+        updateDepthMap: vi.fn(),
+        setSourceAutoExposure: vi.fn(),
+        restoreNodeScales: vi.fn(),
+        restoreRipples: vi.fn(),
+        getNodeScales: vi.fn(() => ({})),
+      });
+    }
+    // The lost backend is the ground truth for what each slot composited and which node was scaled.
+    (first as unknown as { getSlotState: Mock }).getSlotState = vi.fn((i: number) =>
+      i === 0
+        ? { shaderId: 'rain', enabled: true, mode: 'parallel', layer: { ...screen, mask: { ...screen.mask } } }
+        : { shaderId: null, enabled: false, mode: 'chained' });
+    (first as unknown as { getNodeScales: Mock }).getNodeScales = vi.fn(() => ({ '0:tensor': 0.5 }));
+    const { manager, statuses } = await bootWith(first);
+    const depth = new Float32Array([0.1, 0.9, 0.5, 0.2]);
+    manager.updateDepthMap(depth, 2, 2);
+    depth.fill(0); // the manager keeps its own copy
+    manager.setSourceAutoExposure(true);
+    manager.addRipple(0.25, 0.75);
+    (WebGPURenderer as Mock).mockImplementation(() => second);
+
+    first.fatal!('lost', loss());
+    await vi.waitFor(() => expect(statuses).toEqual(['lost', 'recovering', 'idle']));
+
+    expect(second.setSlotLayer).toHaveBeenCalledWith(0, expect.objectContaining({ blend: 'screen', opacity: 0.5 }));
+    const [data, width, height] = (second.updateDepthMap as Mock).mock.calls.at(-1)!;
+    expect([...(data as Float32Array)].map((v) => Number(v.toFixed(2)))).toEqual([0.1, 0.9, 0.5, 0.2]);
+    expect([width, height]).toEqual([2, 2]);
+    expect(second.setSourceAutoExposure).toHaveBeenLastCalledWith(true);
+    expect(second.restoreNodeScales).toHaveBeenCalledWith({ '0:tensor': 0.5 });
+    const ripples = (second.restoreRipples as Mock).mock.calls.at(-1)![0] as Array<[number, number, number]>;
+    expect(ripples).toHaveLength(1);
+    expect(ripples[0]!.slice(0, 2)).toEqual([0.25, 0.75]);
+    expect(ripples[0]![2]).toBeGreaterThanOrEqual(0);
+    expect(manager.getSlotLayer(0)).toMatchObject({ output: 'blend', blend: 'screen' });
+  });
+
   it('a non-loss fatal error keeps the existing backend-failure path', async () => {
     const first = lossAwareWebGPU();
     const { statuses, onBackendFailure } = await bootWith(first);

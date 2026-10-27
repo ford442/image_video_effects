@@ -2,7 +2,7 @@
   "id": "laser-burn",
   "name": "Laser Burn",
   "url": "shaders/laser-burn.wgsl",
-  "description": "Temporal burn accumulation with ember glow and audio spark showers. Mouse beam chars the surface persistently; embers fade slower than heat for lingering glow. Treble creates flying spark particles near the beam, bass deepens the char.",
+  "description": "Pointer beam that chars the picture. Heat conducts into neighbouring texels, and the char edge holds a brighter oxide lip.",
   "params": [
     {
       "id": "beamSize",

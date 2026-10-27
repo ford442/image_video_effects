@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: xylem growth-ring anisotropy along twisted trunks; mycorrhizal node halos at branch-junction shells
+//  Upgraded: 2026-10-25
+//  Ideas: golden-angle branch buds; counterflowing sap; xylem growth rings; mycorrhizal node halos; bark furrows; dry heartwood
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -151,6 +151,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Idea 3: anisotropic xylem growth rings riding the trunk twist.
         let ring = 0.5 + 0.5 * sin(length(p.xz) * 28.0 - p.y * 4.0 + branch_angle * 2.0);
         col *= 0.88 + 0.26 * ring;
+
+        // ── Idea: bark furrows — longitudinal cracks cutting the rings ──
+        let furrow = pow(abs(sin(branch_angle * 8.0 + p.y * 2.5)), 10.0);
+        col *= 1.0 - furrow * 0.34;
+
+        // ── Idea: heartwood — low plasma flow is dry bark, not dim glow ──
+        let dry = 1.0 - flow;
+        col = mix(col, col * vec3<f32>(0.55, 0.40, 0.26) + vec3<f32>(0.07, 0.04, 0.02) * u.zoom_params.w, dry * 0.42);
 
         // Idea 4: mycorrhizal node halos around branch-junction shells.
         let node_shell = exp(-abs(length(p.xz) - (0.22 + 0.06 * cos(p.y * 2.2))) * 20.0);

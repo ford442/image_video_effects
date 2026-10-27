@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  particle-dreams-hdr
 //  Category: advanced-hybrid
-//  Features: multi-pass-accumulation, hdr-bloom, mouse-driven, depth-aware
+//  Features: multi-pass-accumulation, hdr-bloom, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: particle_dreams_alpha (layer accumulation, flow noise), alpha-hdr-bloom-chain (HDR bloom, ACES tone map)
 //  Created: 2026-04-18
-//  By: Agent CB-6 — Alpha & Post-Process Enhancer
+//  Upgraded: 2026-10-25
+//  Ideas: energy-conserving bloom (§12.2F); hollow vortex eye
+//  A packing: raw HDR rgb + exposure (C is not read)
 // ═══════════════════════════════════════════════════════════════════
 //  Particle Dreams with HDR Bloom Chain
 //  Accumulates 5 depth-layered samples with flow noise and vortex
@@ -13,26 +15,7 @@
 //  Final output is ACES tone mapped with bloom composited.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn ping_pong(a: f32) -> f32 {
     return 1.0 - abs(fract(a * 0.5) * 2.0 - 1.0);
@@ -79,7 +62,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
     let zoom_time = u.zoom_config.x;
     let zoom_center = u.zoom_config.yz;
-    let mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
+    let mousePos = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let bloomRadius = mix(0.01, 0.08, u.zoom_params.x);
     let bloomIntensity = u.zoom_params.y * 2.0;
@@ -109,7 +92,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let sampleColor = textureSampleLevel(readTexture, u_sampler, ping_pong_v2(transformed), 0.0).xyz;
         let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, ping_pong_v2(transformed), 0.0).x;
         let density = exp(-layerDepth * 1.5);
-        let weight = density * (1.0 + sampleDepth * 0.5);
+        // ── Idea: hollow vortex eye ──
+        // dist is already the spin radius. The tunnel keeps a pupil at the center.
+        let eye = smoothstep(0.015, 0.16, dist);
+        let weight = density * (1.0 + sampleDepth * 0.5) * mix(0.22, 1.0, eye);
         accumulatedColor += sampleColor * weight;
         accumulatedDepth += sampleDepth * weight;
         totalWeight += weight;
@@ -149,7 +135,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(chroma * baseDepth, 0.0), 0.0).z;
     let chromaticColor = vec3<f32>(r, g, b);
 
-    var hdrColor = chromaticColor + bloom;
+    // ── Idea: energy-conserving bloom (§12.2F) ──
+    // The source gives up part of the spread, then the spread is added back.
+    let spread = bloom;
+    let srcKept = max(chromaticColor - spread * 0.45, vec3<f32>(0.0));
+    var hdrColor = srcKept + spread;
 
     // Mouse bloom boost
     let mouseDist = length(uv - mousePos);
@@ -183,11 +173,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let outColor = mix(finalColor, fogColor, 1.0 - fog);
 
     // Tone map
-    let ldrColor = toneMapACES(outColor * toneMapExp);
+    let ldrColor = toneMapACES(max(outColor, vec3<f32>(0.0)) * toneMapExp);
 
-    // Store HDR state
-    textureStore(dataTextureA, coord, vec4<f32>(hdrColor, exposure));
-    textureStore(writeTexture, coord, vec4<f32>(ldrColor, exposure + 0.1));
+    let bloomAmt = clamp(length(spread), 0.0, 1.0);
+    let cover = clamp(totalWeight / 5.0, 0.0, 1.0);
+    let alpha = clamp(0.12 + cover * 0.4 + bloomAmt * 0.32 + (1.0 - fog) * 0.22, 0.0, 1.0);
+
+    // Store raw HDR (C is not read). Display is the tone-mapped frame.
+    textureStore(dataTextureA, coord, vec4<f32>(max(hdrColor, vec3<f32>(0.0)), exposure));
+    textureStore(writeTexture, coord, vec4<f32>(ldrColor, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

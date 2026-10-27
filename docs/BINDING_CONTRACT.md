@@ -5,6 +5,7 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 **Cross-references:**
 - TypeScript layout: [`src/renderer/webgpu/pipeline.ts`](../src/renderer/webgpu/pipeline.ts) (`createComputeBindGroupLayout`)
 - TypeScript resources: [`src/renderer/webgpu/resources.ts`](../src/renderer/webgpu/resources.ts) (`historyTex`, buffers)
+- **Layout contract:** [`src/contracts/bind_group0.json`](../src/contracts/bind_group0.json) — TS builds its entries from it; C++ reads the generated [`wasm_renderer/bind_group0.h`](../wasm_renderer/bind_group0.h) (`npm run gen:bind-group0`; `verify:device-policy` fails when stale)
 - C++ layout: [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) (`CreateBindGroupLayout`)
 - Device limits: [`src/contracts/webgpu_limits.json`](../src/contracts/webgpu_limits.json) ↔ [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
 - Optional features: [`src/contracts/webgpu_optional_features.json`](../src/contracts/webgpu_optional_features.json) ↔ [`collectOptionalDeviceFeatures`](../src/renderer/webgpu/device.ts) ↔ `device.cpp` `requiredFeatures[3]`
@@ -34,6 +35,15 @@ The standalone `?validator` page has no renderer, so its probe device stays loca
 | **Layout size** | **14** bind-group entries (0–13); `maxBindingsPerBindGroup` must be **≥ 14** |
 
 ## Bind group layout (group 0)
+
+Sample types (from `bind_group0.json`, identical in TS and C++):
+
+- Colour bindings 1 / 9 / 13 are `float` for `rgba16float`, and for `rgba32float` only with
+  `float32-filterable`; otherwise `unfilterable-float`. The format policy therefore prefers
+  `rgba16float` on devices without the feature (most shaders sample `readTexture` with `u_sampler`).
+- Depth binding 4 (`r32float`) is **always** `unfilterable-float`: sample it with the
+  non-filtering sampler (binding 5) or `textureLoad`, never `u_sampler`. `verify:naga-wasm`
+  blocks the pairing (naga-reflect check, resolved by binding number).
 
 | Binding | WGSL name | Type | Access |
 |---------|-----------|------|--------|
@@ -163,7 +173,21 @@ Both backends validate adapter limits before device creation and request explici
 
 **Error scopes (#1395).** A GPU call whose failure we act on runs through `withErrorScope` / `withValidationScope` / `withOutOfMemoryScope` ([`src/renderer/webgpu/validationScope.ts`](../src/renderer/webgpu/validationScope.ts)), never a hand-rolled `pushErrorScope` block. The scope covers only the callback's synchronous part and is popped before any returned promise is awaited, so frame-loop errors are never captured or hidden. Async creates (`createComputePipelineAsync`) report through their own rejection. Shader compile checks (renderer `compileCheck`, ShaderScanner, ShaderValidator) all go through `compileCheckWgsl` ([`compileCheck.ts`](../src/renderer/webgpu/compileCheck.ts)): the module is scoped, and with the renderer's pipeline layout a shader that compiles but does not fit the bind group is reported too. Nothing in these paths should reach `uncapturederror`; `tests/engine2-validation-scope.swiftshader.spec.ts` checks that.
 
-### Limits table (must match TS ↔ C++)
+### Limits tiers (TS, #1512)
+
+The TS renderer no longer requests limits that only restate the spec defaults. `webgpu_limits.json` `limitsTiers` defines three cumulative tiers; the boot probe validates `base` on every adapter (the compatibility rung included), requests a base limit only where it is above the spec default for the adapter's feature level (`specDefaults.core` / `.compatibility`), and requests the deep-workgroup and buffer-size limits when offered. The probed tier is `window.webgpuProbe.limitsTier`.
+
+| Tier | Limits (beyond the previous tier) | Gates |
+|------|-----------------------------------|-------|
+| `base` | 4096 texture floor (fixed, never canvas-scaled); 14 bindings: 4 storage textures, 4 sampled, 3 samplers, 2 storage buffers, 1 uniform of `sizeof(Uniforms)`; 16×16 / 256 invocations | Device creation |
+| `deep-workgroup` | 32×32 / 1024 invocations | `requiresDeepWorkgroup` shaders |
+| `big-buffer` | `maxBufferSize` ≥ 1 GiB | The 2048 working size (`vramBudget.ts`) |
+
+`resolveLimitsTier()` and `buildRequiredLimits()` live in [`webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts). The tiers are TS-only (`cppMirror.limitsTiers: false`).
+
+### Limits table (C++ mirror)
+
+This is `minimumComputeLimits`, which the frozen C++ backend still checks (`CheckLimit`) and requests through the generated `webgpu_limits.h`. Changing it changes the WASM binary, so it stays as is; the TS renderer validates the tiers above instead.
 
 | Limit | Required | Notes |
 |-------|----------|-------|
@@ -205,7 +229,7 @@ See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md) for canvas configure and timestam
 
 | Feature | TypeScript | C++ WASM | Purpose |
 |---------|------------|----------|---------|
-| `float32-filterable` | Requested when adapter supports | Logged only | rgba32float texture sampling on bindings 1/9/13 |
+| `float32-filterable` | Requested when adapter supports | Requested when adapter supports | rgba32float texture sampling on bindings 1/9/13 |
 | `timestamp-query` | Requested when adapter supports; ring-buffered readback in `WebGPUTiming.ts` / `frame.ts` | Requested when available | GPU timing — `available`/`gpu-timestamp` only after valid readback (`hasRealGpuTimings`) |
 | `subgroups` | Requested when available (for WGSL `enable subgroups` shaders) | N/A | **Not used** — `-sg.wgsl` file variants were removed 2026-07-26 |
 

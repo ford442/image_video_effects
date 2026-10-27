@@ -1,6 +1,7 @@
 import React from 'react';
 import { RenderQualityMode } from '../../../config/performancePolicy';
 import { formatLabel, InternalColorFormat } from '../../../config/formatPolicy';
+import { HDR_NITS_LIMITS, type HdrToneMapSettings } from '../../../services/hdrOutput';
 
 export interface RenderQualityPanelProps {
   qualityMode: RenderQualityMode;
@@ -27,6 +28,10 @@ export interface RenderQualityPanelProps {
   displayP3Disabled?: boolean;
   /** Applied-state / fallback explanation shown under the toggle. */
   displayP3Status?: string;
+  /** The canvas is HDR (rgba16float + extended): show the paper white / peak tonemap (#1512). */
+  hdrActive?: boolean;
+  hdrToneMap?: HdrToneMapSettings;
+  onHdrToneMapChange?: (settings: HdrToneMapSettings) => void;
 }
 
 const MODES: Array<{ id: RenderQualityMode; label: string; hint: string }> = [
@@ -59,6 +64,9 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
   onDisplayP3Change,
   displayP3Disabled = false,
   displayP3Status,
+  hdrActive = false,
+  hdrToneMap,
+  onHdrToneMapChange,
 }) => (
   <div className="control-group glass-panel" style={{ padding: '12px' }}>
     <div className="gold-section-header" style={{ fontSize: '12px', marginTop: 0 }}>
@@ -150,6 +158,29 @@ export const RenderQualityPanel: React.FC<RenderQualityPanelProps> = ({
             style={{ fontSize: '10px', color: '#9090a8', marginTop: '2px', lineHeight: 1.4 }}
           >
             {displayP3Status}
+          </div>
+        )}
+        {hdrActive && hdrToneMap && onHdrToneMapChange && (
+          <div data-testid="hdr-tonemap" style={{ marginTop: '6px', fontSize: '11px', color: '#c0c0d0' }}>
+            {([
+              ['paperWhiteNits', 'Paper white'],
+              ['peakNits', 'Peak'],
+            ] as const).map(([key, label]) => (
+              <label key={key} style={{ display: 'block', marginTop: '4px' }}>
+                {label}: {Math.round(hdrToneMap[key])} nits
+                <input
+                  type="range"
+                  className="glass-range"
+                  aria-label={`HDR ${label.toLowerCase()} (nits)`}
+                  min={HDR_NITS_LIMITS.min}
+                  max={key === 'paperWhiteNits' ? 1000 : 4000}
+                  step={key === 'paperWhiteNits' ? 1 : 10}
+                  value={hdrToneMap[key]}
+                  onChange={(e) => onHdrToneMapChange({ ...hdrToneMap, [key]: Number(e.target.value) })}
+                  style={{ width: '100%' }}
+                />
+              </label>
+            ))}
           </div>
         )}
       </>

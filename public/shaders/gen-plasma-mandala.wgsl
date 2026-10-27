@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: diocotron ring; dihedral click pulses; petal-midline current filaments; Debye sheath gap
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: diocotron ring; dihedral click pulses; petal-midline current filaments; Debye sheath gap; X-point reconnection; density cavity
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -166,6 +166,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea: Debye sheath — a dark gap just inside the glow ring.
   let sheath = exp(-abs(r - (ring_r - 0.055)) * 42.0);
   col *= 1.0 - sheath * 0.42 * (0.6 + bass * 0.4);
+  // ── Idea: X-point reconnection ──
+  // The filament and the diocotron ring already exist. Their crossing flashes.
+  let xpoint = filament * exp(-abs(r - ring_r) * 24.0);
+  col += vec3<f32>(1.0, 0.95, 0.82) * xpoint * (0.4 + mids * 0.45) * glow_scale;
+  // ── Idea: density cavity ──
+  // Plasma expelled just outside the column. The sheath stays the inner gap.
+  let cavity = exp(-abs(r - (ring_r + 0.08)) * 28.0) * (1.0 - seam);
+  col *= 1.0 - cavity * 0.32;
   col += vec3<f32>(1.0, 0.92, 0.85) * seam * 0.28 * (0.6 + treble * 0.4);
   col += vec3<f32>(0.55, 0.85, 1.0) * vortex_core * 0.22 * (0.5 + bass * 0.8) * glow_scale;
   col += (vec3<f32>(1.0) - col * 0.5) * pulse * 0.45 * (0.8 + treble * 0.4);

@@ -11,8 +11,12 @@
 //               edges, with a slow binocular-rivalry flicker
 //            3. convergence-plane shimmer — a faint neutral contour marks the zero-parallax
 //               depth set by the mouse
+//            4. Dubois projection — each eye's full RGB through Dubois' red/cyan least-squares
+//               matrices, blended 50% with the channel split
+//            5. depth budget — parallax soft-compressed (budget·tanh) so extreme separation
+//               stays fusible
 //  Complexity: High
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-10-19
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -106,6 +110,8 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
 // warp continuous rather than tap-quantised. If nothing lands (a disocclusion),
 // fill from the farthest candidate, because background is what was hidden.
 // Returns the horizontal sample offset for this eye.
+const PARALLAX_BUDGET: f32 = 0.025;
+
 fn synthEye(uv: vec2<f32>, eyeSign: f32, sepCurve: f32, focal: f32) -> f32 {
     let maxS = abs(sepCurve) * 2.0 + 1e-4;
     let sigma = maxS / 4.0;
@@ -117,7 +123,10 @@ fn synthEye(uv: vec2<f32>, eyeSign: f32, sepCurve: f32, focal: f32) -> f32 {
         let o = f32(k) / 4.0 * maxS;
         let sUV = clamp(uv + vec2<f32>(o, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
         let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, sUV, 0.0).r;
-        let land = eyeSign * sepCurve * (d - focal) * 2.0;
+        // Idea 5: depth budget. Stereographers keep parallax inside a comfort budget; the raw
+        // shift is soft-compressed to ±2.5% of the width instead of growing without limit.
+        let rawLand = eyeSign * sepCurve * (d - focal) * 2.0;
+        let land = PARALLAX_BUDGET * tanh(rawLand / PARALLAX_BUDGET);
         let err = (o - land) / sigma;
         let hit = exp(-err * err);
         let score = hit * (0.25 + d);
@@ -187,10 +196,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rUV = clamp(rBase + caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
     let cUV = clamp(cBase - caOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    var color = vec3<f32>(0.0);
-    color.r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-    color.g = textureSampleLevel(readTexture, u_sampler, cUV, 0.0).g;
-    color.b = textureSampleLevel(readTexture, u_sampler, cUV, 0.0).b;
+    // Idea 4: Dubois projection. The colour-optimised anaglyph projects each eye's full RGB
+    // through matrices fitted to the red/cyan filter spectra (Dubois 2001), which tames
+    // retinal rivalry on saturated reds and cyans. Blended 50% with HEAD's channel split.
+    let leftRGB = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).rgb;
+    let rightRGB = textureSampleLevel(readTexture, u_sampler, cUV, 0.0).rgb;
+    let splitRGB = vec3<f32>(leftRGB.r, rightRGB.g, rightRGB.b);
+    let duboisRGB = clamp(vec3<f32>(
+        dot(leftRGB, vec3<f32>(0.456, 0.500, 0.176)) + dot(rightRGB, vec3<f32>(-0.043, -0.088, -0.002)),
+        dot(leftRGB, vec3<f32>(-0.040, -0.038, -0.016)) + dot(rightRGB, vec3<f32>(0.378, 0.734, -0.018)),
+        dot(leftRGB, vec3<f32>(-0.015, -0.021, -0.005)) + dot(rightRGB, vec3<f32>(-0.072, -0.113, 1.226))
+    ), vec3<f32>(0.0), vec3<f32>(1.0));
+    var color = mix(splitRGB, duboisRGB, 0.5);
 
     // Ghost fringing: R/C offset residual trails
     let ghostShift = separation * depthOffset * 0.5;
@@ -202,8 +219,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2: filter crosstalk. Real red/cyan gels leak a few percent of the
     // other eye's image. The leak is visible only where the two views differ
     // (high-contrast parallax edges), and it pulses slowly like binocular rivalry.
-    let lumR = dot(textureSampleLevel(readTexture, u_sampler, rUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let lumC = dot(textureSampleLevel(readTexture, u_sampler, cUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lumR = dot(leftRGB, vec3<f32>(0.299, 0.587, 0.114));
+    let lumC = dot(rightRGB, vec3<f32>(0.299, 0.587, 0.114));
     let rivalry = 0.6 + 0.4 * sin(time * 1.7 + hash21(floor(validUV * 12.0)) * 6.2831853);
     let leak = abs(lumR - lumC) * ghostAmount * 0.35 * rivalry;
     color.r = color.r + lumC * leak;

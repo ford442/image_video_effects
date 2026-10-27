@@ -90,5 +90,11 @@ export interface RendererDiagnostics {
     gpuErrors?: string[];
     /** Input currently held by the renderer (worker mode; proves the input channel). */
     input?: { mouse: [number, number]; mouseDown: boolean; audio: [number, number, number]; slot0: number[] } | null;
+    /** Layer compositor (#1512): stack layers allocated, their bytes, composites last frame. */
+    compositor?: { layers: number; bytes: number; compositesLastFrame: number };
+    /** shader-f16 (#1512): supported, half path on, per-shader compiled precision. */
+    shaderPrecision?: import('./WebGPURenderer').ShaderPrecisionInfo;
+    /** Direct-to-swapchain present (bgra8unorm-storage, #1512): available / active / why not. */
+    directPresent?: import('./WebGPURenderer').DirectPresentStatus;
   };
 }

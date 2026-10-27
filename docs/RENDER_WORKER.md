@@ -49,7 +49,7 @@ A runtime `GPUDevice` loss is recovered without a page reload. The flow is the s
    - The lost backend's own slot state is replayed (shader per slot, enabled, chained/parallel), for all `PHYSICAL_SLOT_LIMIT` (6) slots, with each shader loaded from the URL it was originally loaded from. Slot params come from the host's `getSessionState()`, and the manager's last input source is reused. So is the CPU-side still (read *before* the release) or else the last image URL. The `<video>` element re-attaches on the next page frame.
 4. **Fail.** If the attempt fails, the state goes to `failed`. `WebGPUCanvas` shows `WebGpuProbeFailureOverlay` with the new probe diagnostics and a **Retry** button (`recoverFromDeviceLoss()`). A second loss within 30 s of a recovery skips the automatic attempt and goes straight to `failed`.
 
-Not replayed: depth map, source auto-exposure, node scales, ripples. Quality, resolution scale and pass budgets come back through the manager's performance policy, as on any backend switch.
+Also replayed (#1512): each slot's compositor layer ([COMPOSITOR.md](COMPOSITOR.md)), the last depth map, source auto-exposure, the HDR paper white / peak, graph node scales, and ripples younger than `RIPPLE_REPLAY_MAX_AGE_S` (10 s) with their ages kept. `RendererManager` mirrors the page-side state and replays it after every successful backend switch, so a worker crash, which cannot be asked anything, restores it too. Quality, resolution scale and pass budgets come back through the manager's performance policy, as on any backend switch.
 
 A worker **crash** recovers the same way (#1395). An `error` event on the Worker after the handshake marks the client dead: pending RPCs reject and sends are dropped. `renderWorkerClient` then notifies `onDied`. `WorkerWebGPUBackend` stops like a loss (`initialized = false`, registry cleared, compile service unregistered) and fires the fatal handler once with `kind: 'worker-died'`. `RendererManager` hands that to the same `DeviceRecoveryController`, so the new worker replays the page-side slot shadow. Nothing is asked of the dead worker. `messageerror` is not treated as a crash.
 
@@ -68,7 +68,7 @@ Status is reported in `getDiagnostics().deviceRecovery` and `__pixelocity__.getD
 
 ## Cross-origin isolation and the SharedArrayBuffer ring
 
-Production (`build.sh` → `.htaccess`), `npm start` (`vite.config.ts` `server.headers`) and `scripts/serve-isolated.mjs` send:
+Production (`tools/deploy/build.sh` → `.htaccess`), `npm start` (`vite.config.ts` `server.headers`) and `scripts/serve-isolated.mjs` send:
 
 ```
 Cross-Origin-Opener-Policy: same-origin

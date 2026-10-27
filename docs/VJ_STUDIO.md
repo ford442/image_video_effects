@@ -86,14 +86,14 @@ The OSC decoder ships as a lazy `osc` chunk — it is never in the main bundle (
 
 Use **Export project (.pixelocity.json)** to download a user-owned session file; no account or server is involved. **Import project…** validates the complete file before applying any part of it and lists anything that needs attention.
 
-Project schema v1 is an envelope around the existing formats, not another shader-stack model:
+Project schema v2 is an envelope around the existing formats, not another shader-stack model:
 
-- `chain` embeds `SharedChain` unchanged, including its own `v`, ordered slots, compact params, enabled flags, and chain/parallel modes.
-- The envelope adds the active slot, safe image/video/stream references or generative shader id, render quality, MIDI/keyboard mappings, and an optional embedded `VjSetExportPayload` recording.
+- `chain` embeds `SharedChain` unchanged, including its own `v`, ordered slots, compact params, enabled flags, chain/parallel modes, and each slot's compositor layer (`b` blend, `o` opacity, `m` mask, `k` key; see [COMPOSITOR.md](COMPOSITOR.md)).
+- The envelope adds the active slot, safe image/video/stream references or generative shader id, render quality, HDR paper white / peak (`render.hdr`), MIDI/keyboard mappings, and an optional embedded `VjSetExportPayload` recording.
 - Unknown shader ids become empty slots with a warning. A source that is not in the current media catalog becomes `none` with a relink warning.
 - Media bytes, `data:`/`blob:` URLs, camera or microphone permission state, device/track handles, transient GPU objects, and adaptive render-scale telemetry are never saved. Webcam projects save only the source choice and ask the browser for permission again when applied.
 
-The contract is [`src/contracts/project_file.json`](../src/contracts/project_file.json) (JSON Schema draft 2020-12). Project migrations are explicit one-version steps. Version 0 compatibility accepts a bare `SharedChain` or existing v1 `.vjset.json` and lifts it into project v1; unknown future versions are rejected with a reason. Chain URLs, preset packs, and the older VJ-set export remain separate and backward-compatible.
+The contract is [`src/contracts/project_file.json`](../src/contracts/project_file.json) (JSON Schema draft 2020-12). Project migrations are explicit one-version steps. Version 0 compatibility accepts a bare `SharedChain` or existing v1 `.vjset.json` and lifts it into project v1; v1 steps to v2 by its version number alone (a slot without layer fields is a replace layer, #1512). Unknown future versions are rejected with a reason. Chain URLs, preset packs, and the older VJ-set export remain separate and backward-compatible.
 
 ## Set recorder
 
@@ -178,7 +178,7 @@ Open **Preset Packs** in VJ Studio for **Physics Lab** solos (Ripple / Fabric / 
 | OSC status "Relay unreachable" | Start storage_manager with `OSC_RELAY_ENABLED=1`; check the URL/port; a page served over `https` needs a `wss://` relay |
 | OSC connects but nothing moves | Check the address prefix `/pixelocity/…`, 0-based slot numbers, and that the slot exists in the current stack; **last:** in the OSC section shows what arrived |
 | Audio "fights" my fader | Should not happen — file a bug with the slot / shader id; holds last ~0.6 s after the last MIDI/OSC message |
-| Import JSON fails | File must be `.vjset.json` from Export JSON or compatible schema v1 |
+| Import JSON fails | File must be `.vjset.json` from Export JSON or a project file of schema v1 or v2 |
 | Ripple/fabric look “stuck” on battery | Raise quality to balanced — 7-pass graphs exceed the battery pass cap |
 | Fabric explodes | Lower Gravity / raise Stiffness; Self Heal mid-high after tearing |
 

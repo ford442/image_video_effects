@@ -35,10 +35,14 @@ import {
 } from './hooks';
 import { useThumbnailManifest } from './hooks/useThumbnailManifest';
 import { useShaderWarmup } from './hooks/useShaderWarmup';
+import { useLocalMediaLoader, useLocalMediaUpload } from './hooks/useLocalMediaUpload';
 import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
 import { defaultSlotParams } from './app/constants/defaultSlotParams';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
 import { touch as touchAudioParam } from './services/audioParamHold';
+import { LAYER_OPACITY_PARAM, useSlotCompositing } from './hooks/useSlotCompositing';
+import { useHdrToneMap } from './hooks/useHdrToneMap';
+import { useCanvasColor } from './hooks/useCanvasColor';
 import './styles/index.css';
 
 function MainApp() {
@@ -176,6 +180,8 @@ function MainApp() {
         setInputSource,
     });
     useShaderWarmup(rendererRef, availableModesRef);
+    const compositing = useSlotCompositing(rendererRef, rendererReady);
+    const hdr = useHdrToneMap(rendererRef, rendererReady);
 
     const {
                 isModelLoaded,
@@ -216,6 +222,10 @@ function MainApp() {
         rendererReady,
         supportsDeepWorkgroup,
         availableModes,
+        // Measured only on the TS backend (its boot probe); WASM reports no storage caps.
+        getFormatCapabilities: () => rendererRef.current?.getActiveRendererType() === 'webgpu'
+            ? rendererRef.current.getFormatCapabilities()
+            : undefined,
     });
 
     const { handleLoadImage, handleNewRandomImage } = useImageLoading({
@@ -329,6 +339,9 @@ function MainApp() {
         handleLoadImage,
         startWebcam,
         setStatus,
+        slotModes: compositing.slotModes,
+        slotLayers: compositing.slotLayers,
+        applySlotCompositing: compositing.applySlotCompositing,
     });
 
     useB3hdMode({
@@ -439,6 +452,22 @@ function MainApp() {
         setStatus,
     });
 
+    const canvasColor = useCanvasColor(rendererRef, rendererReady, isRecording);
+
+    const { loadLocalMedia } = useLocalMediaLoader({
+        loadImage: async (url) => {
+            syncInputSourceToRenderer('image');
+            setStatus('Loading image...');
+            await handleLoadImage(url);
+            setStatus('Image loaded');
+        },
+        loadVideo: (url) => {
+            setSelectedVideo(url);
+            syncInputSourceToRenderer('video');
+        },
+    });
+    const { handleFileChange: handleUploadFileChange } = useLocalMediaUpload(loadLocalMedia);
+
     useRemoteSync({
         modes,
         activeSlot,
@@ -466,6 +495,7 @@ function MainApp() {
         handleRandomizeSlot,
         triggerRandomizeAllSlots,
         triggerRoulette,
+        loadLocalMedia,
     });
 
     useTestHarness({ rendererRef, rendererReady });
@@ -513,13 +543,19 @@ function MainApp() {
         rendererRef.current?.setSourceAutoExposure(enabled);
     }, []);
 
+    const { setSlotOpacity } = compositing;
     const handleSetSlotParam = useCallback((slot: number, param: string, value: number) => {
+        // Layer opacity is a slot param for bindings (#1512), but lives in the compositor state.
+        if (param === LAYER_OPACITY_PARAM) {
+            setSlotOpacity(slot, value);
+            return;
+        }
         const updates: Partial<SlotParams> = { [param]: value };
         // MIDI / keyboard / OSC drive this param: host audio backs off until it settles.
         touchAudioParam(slot, param, value);
         updateSlotParam(slot, updates);
         rendererRef.current?.updateSlotParams(updates, slot);
-    }, [updateSlotParam]);
+    }, [updateSlotParam, setSlotOpacity]);
 
     const handleTakeScreenshot = useCallback(async () => {
         const manager = rendererRef.current;
@@ -657,6 +693,9 @@ function MainApp() {
     return (
         <div className="App">
             <AppShell
+                compositing={compositing}
+                hdrToneMap={hdr}
+                canvasColor={canvasColor}
                 rendererDiagnostics={rendererDiagnostics}
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
@@ -700,6 +739,7 @@ function MainApp() {
                 setActiveGenerativeShader={setActiveGenerativeShader}
                 fileInputImageRef={fileInputImageRef}
                 fileInputVideoRef={fileInputVideoRef}
+                onFileSelected={handleUploadFileChange}
                 isAiVjMode={isAiVjMode}
                 toggleAiVj={toggleAiVj}
                 aiVjStatus={aiVjStatus}

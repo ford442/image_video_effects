@@ -4,8 +4,8 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-12
-//  Upgraded: 2026-10-10
-//  Ideas: even-row imbrication (half-petal offset); midrib along each petal dir; involute curl as rows age; pistil disk inside the first row
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: even-row imbrication (half-petal offset); midrib along each petal dir; involute curl as rows age; pistil disk inside the first row; tip notch; falling pollen
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -120,6 +120,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         col += pistilCol * hexBokeh(uv, pistilDisk, 0.0032, fade * energy * 0.85);
       }
 
+      // ── Idea: falling pollen ──
+      // Gold grains leave the pistil and drop under the same gravity as the petal tips.
+      for (var g = 0; g < 5; g = g + 1) {
+        let gf = f32(g);
+        let gseed = hash1(si * 13.0 + gf * 3.1);
+        let gAng = gseed * TAU;
+        let grainOrigin = center + vec2<f32>(cos(gAng), sin(gAng)) * energy * 0.045;
+        let grain = sparkPos(grainOrigin, vec2<f32>(cos(gAng), sin(gAng)) * 0.025, max(0.0, bAge - 0.35) * 0.4, GRAVITY * 0.16);
+        col += vec3<f32>(1.0, 0.88, 0.4) * hexBokeh(uv, grain, 0.0024, fade * energy * 0.45);
+      }
+
       for (var row = 0; row < rows; row = row + 1) {
         let rf = f32(row);
         let rowDelay = rf * 0.08 * (1.0 + mids * 0.2);
@@ -151,7 +162,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           let petalT = along / max(energy * 0.7, 0.01);
           let pc = dahliaColor(petalT, rf, seed + ps + hueCycle);
           let glowR = 0.004 + ps * 0.003 + rf * 0.001;
-          col += pc * hexBokeh(uv, fallPos, glowR, rowFade * energy * (0.8 + treble * 0.3));
+          // ── Idea: tip notch ──
+          // Two lobes along the petal perpendicular, center tip slightly reduced: a laciniated dahlia tip.
+          let notch = smoothstep(0.35, 1.8, rowAge);
+          col += pc * hexBokeh(uv, fallPos, glowR, rowFade * energy * (0.8 + treble * 0.3) * (1.0 - notch * 0.28));
+          col += pc * hexBokeh(uv, fallPos + perp * glowR * 2.6, glowR * 0.62, rowFade * energy * 0.42 * notch);
+          col += pc * hexBokeh(uv, fallPos - perp * glowR * 2.6, glowR * 0.62, rowFade * energy * 0.42 * notch);
           col += pc * 0.4 * hexBokeh(uv, petalCenter, glowR * 1.5, rowFade * energy * 0.5);
           // Midrib — thin bright line along this petal's dir.
           let rib1 = center + dir * along * 0.32;

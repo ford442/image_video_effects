@@ -6,6 +6,10 @@
 //  Chunks From: neural-raymarcher.wgsl, conv-gabor-texture-analyzer.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-3 — Convolution Post-Processor
+//  Upgraded: 2026-10-19
+//  Ideas: quadrature Gabor energy (V1 complex cell); cross-orientation
+//         divisive normalization of the palette weights
+//  A packing: A unused (C never read)
 // ═══════════════════════════════════════════════════════════════════
 //  Raymarched neural network visualization with Gabor oriented texture
 //  detection applied to surfaces. Gabor responses highlight connection
@@ -17,26 +21,8 @@
 //           directional structure at each pixel
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=NetworkDepth, y=ActivationVis, z=Glow, w=CameraRotation
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=NetworkDepth, y=ActivationVis, z=Glow, w=CameraRotation
 
 // ═══ CHUNK: ping_pong (from neural-raymarcher.wgsl) ═══
 fn ping_pong(a: f32) -> f32 {
@@ -98,8 +84,13 @@ fn schlickFresnel(cosTheta: f32, f0: f32) -> f32 {
 }
 
 // ═══ CHUNK: gaborResponse (from conv-gabor-texture-analyzer.wgsl) ═══
+// Idea 1: quadrature Gabor energy. The odd (sine) kernel is accumulated on the
+// same taps as the even (cosine) one; sign(even)·sqrt(even² + odd²) is the
+// phase-invariant complex-cell response, so an edge reads as one ridge instead
+// of a ringing double line.
 fn gaborResponse(uv: vec2<f32>, theta: f32, freq: f32, sigma: f32, pixelSize: vec2<f32>) -> f32 {
   var response = 0.0;
+  var responseOdd = 0.0;
   let radius = i32(ceil(sigma * 3.0));
   let maxRadius = min(radius, 4);
   let cosTheta = cos(theta);
@@ -111,14 +102,21 @@ fn gaborResponse(uv: vec2<f32>, theta: f32, freq: f32, sigma: f32, pixelSize: ve
       let xTheta = x * cosTheta + y * sinTheta;
       let yTheta = -x * sinTheta + y * cosTheta;
       let gaussian = exp(-(xTheta * xTheta + yTheta * yTheta) / (2.0 * sigma * sigma + 0.001));
-      let sinusoidal = cos(2.0 * 3.14159265 * freq * xTheta);
-      let kernel = gaussian * sinusoidal;
+      let carrierPhase = 2.0 * 3.14159265 * freq * xTheta;
+      let kernel = gaussian * cos(carrierPhase);
+      let kernelOdd = gaussian * sin(carrierPhase);
       let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
       let luma = dot(textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
       response = response + luma * kernel;
+      responseOdd = responseOdd + luma * kernelOdd;
     }
   }
-  return response;
+  let energy = sqrt(response * response + responseOdd * responseOdd);
+  return select(-energy, energy, response >= 0.0);
+}
+
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // ═══ CHUNK: palette (from conv-gabor-texture-analyzer.wgsl) ═══
@@ -141,7 +139,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let activationVis = u.zoom_params.y;
   let glow = u.zoom_params.z;
   let cameraRotation = u.zoom_params.w * 6.28;
-  let gaborFreq = mix(0.05, 0.3, u.zoom_config.x);
+  // zoom_config.x is time, so HEAD's frequency grew without bound and the bank
+  // aliased into noise within seconds. Held at the legacy default (0.3).
+  let gaborFreq = 0.125; // mix(0.05, 0.3, 0.3)
   let gaborSigma = mix(1.5, 4.0, u.zoom_config.y);
   let gaborScale = mix(0.5, 3.0, u.zoom_config.z);
 
@@ -222,14 +222,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pal90 = palette(r90 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.67, 0.0, 0.33));
   let pal135 = palette(r135 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.67, 0.33));
 
+  // Idea 2: cross-orientation divisive normalization. Each channel's weight is
+  // its squared energy over the pooled mean (Heeger-style), so the winning
+  // orientation owns its palette instead of four blending to grey, and the
+  // overlay gain saturates with local contrast.
+  let energies = vec4<f32>(abs(r0), abs(r45), abs(r90), abs(r135));
+  let e2 = energies * energies;
+  let pooled = dot(e2, vec4<f32>(0.25));
+  let normW = e2 / (0.02 + pooled);
+  let totalW = dot(normW, vec4<f32>(1.0)) + 0.001;
   var gaborColor = vec3<f32>(0.0);
-  gaborColor = gaborColor + pal0 * abs(r0);
-  gaborColor = gaborColor + pal45 * abs(r45);
-  gaborColor = gaborColor + pal90 * abs(r90);
-  gaborColor = gaborColor + pal135 * abs(r135);
-  let totalResponse = abs(r0) + abs(r45) + abs(r90) + abs(r135) + 0.001;
-  gaborColor = gaborColor / totalResponse;
-  gaborColor = gaborColor * 1.3;
+  gaborColor = gaborColor + pal0 * normW.x;
+  gaborColor = gaborColor + pal45 * normW.y;
+  gaborColor = gaborColor + pal90 * normW.z;
+  gaborColor = gaborColor + pal135 * normW.w;
+  gaborColor = gaborColor / totalW;
+  let contrastGain = mix(0.55, 1.0, clamp(totalW * 0.25, 0.0, 1.0));
+  gaborColor = gaborColor * 1.3 * contrastGain;
 
   // Blend Gabor onto raymarched result based on activationVis
   let neuralColor = mix(foggedColor, foggedColor * 0.5 + gaborColor * 0.5, activationVis);
@@ -237,8 +246,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Dominant orientation magnitude for alpha
   let dominantOrientation = max(max(abs(r0), abs(r45)), max(abs(r90), abs(r135))) / gaborScale;
 
-  let alpha = mix(0.85, 1.0, glow * 0.3);
+  let displayColor = aces_tonemap(clamp(neuralColor, vec3<f32>(0.0), vec3<f32>(4.0)));
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(neuralColor, dominantOrientation));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(displayColor, clamp(dominantOrientation, 0.0, 1.0)));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
 }
