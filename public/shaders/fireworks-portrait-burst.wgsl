@@ -1,6 +1,9 @@
 // Fireworks Portrait Burst — bright regions detonate
 // Upgraded (Batch 18): fixed mouse coordinate bug, honest luminance depth,
 // one-shot ripple click bursts. Spark physics preserved verbatim.
+// Upgraded: 2026-10-27
+// Ideas: highlight bloom; cooling embers
+// A packing: ACES display RGBA; B: dimmed display/previous-color echo
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
@@ -72,13 +75,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let coreGlow = softGlow(uv, center, 0.05, 1.0);
       col += pCol * exp(-bAge*9.0) * energy * 2.0 * coreGlow;
       sparkGlow += coreGlow * energy * exp(-bAge*9.0);
+      let highlightBloom = softGlow(uv, center, 0.105, exp(-bAge*3.4)*energy*pLum*0.35);
+      col += pCol * highlightBloom;
+      sparkGlow += highlightBloom;
       let n = i32(20.0 + energy*35.0);
       for (var j = 0; j < n; j = j + 1) {
         let js = hash1(si*71.0+f32(j)*3.1);
         let ang = f32(j)/f32(n)*TAU + (js-0.5)*0.8;
         let spd = (0.3+js*0.5)*energy;
         let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*spd, bAge, 0.9);
-        var sc = mix(pCol, ember, warmth*0.4);
+        let cooling = smoothstep(0.1, 2.4, bAge);
+        var sc = mix(pCol, ember, warmth*(0.25+cooling*0.55));
         sc = mix(sc, vec3<f32>(1.0,0.95,0.85), smoothstep(0.5,0.0,bAge*0.3));
         let sg = softGlow(uv, sp, 0.006+js*0.004, fade*energy*(0.85+treble*0.5));
         col += sc * sg;
@@ -140,9 +147,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // --- Temporal echo + tonemap (display state / dimmed echo stay raw) ---
   col = mix(prev*0.91, col, 0.33);
   col = acesToneMap(col*1.06);
+  let alpha = clamp(length(col)*1.1+0.14, 0.12, 0.96);
   textureStore(dataTextureB, pixel, vec4<f32>(col*0.52+prev*0.38, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.14, 0.12, 0.96)));
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
 
   // --- Honest depth: bright bursts sit forward instead of flat 0.0 ---
   let depthOut = clamp(dot(col, lumWeights) * 0.8 + sparkGlow * 0.2, 0.0, 1.0);

@@ -1,6 +1,9 @@
 // Fireworks Depth Parade — depth-sorted layer launches
 // Batch 23: normalized pointer coordinates, discrete click barrages, and
 // source/shell-derived depth while preserving the display feedback packing.
+// Upgraded: 2026-10-27
+// Ideas: image-depth occlusion; atmospheric distance
+// A packing: ACES display RGBA; B: dimmed display/previous-color echo
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
@@ -68,8 +71,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let center = probe + vec2<f32>(0.0, launchH);
       let fade = smoothstep(4.5, 0.2, layerAge);
 
-      let launchGlow = exp(-layerAge*7.0) * energy * softGlow(uv, center, 0.04+lf*0.01, 1.2);
-      col += pCol * launchGlow;
+      let visibility = 1.0 - 0.45 * smoothstep(0.0, 0.18, depth - layerDepth);
+      let distanceColor = mix(pCol, vec3<f32>(dot(pCol, vec3<f32>(0.299, 0.587, 0.114))), lf * 0.12);
+      let launchGlow = exp(-layerAge*7.0) * energy * softGlow(uv, center, 0.04+lf*0.01, 1.2) * visibility;
+      col += distanceColor * launchGlow;
       shellDepthSignal = max(shellDepthSignal, launchGlow * layerDepth);
       let n = i32(14.0 + energy*22.0 + mids*8.0);
       for (var j = 0; j < n; j = j + 1) {
@@ -77,8 +82,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ang = f32(j)/f32(n)*TAU + js;
         let spd = (0.25+js*0.35)*energy*(0.7+pDepth*0.5);
         let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*spd, layerAge, 0.7+lf*0.15);
-        let sparkGlow = softGlow(uv, sp, 0.005+js*0.003, fade*energy*(0.8+treble*0.4));
-        col += pCol * sparkGlow;
+        let sparkGlow = softGlow(uv, sp, (0.005+js*0.003)*(1.0+lf*0.15),
+          fade*energy*(0.8+treble*0.4)*visibility*(1.0-lf*0.1));
+        col += distanceColor * sparkGlow;
         shellDepthSignal = max(shellDepthSignal, sparkGlow * layerDepth);
       }
     }
@@ -122,6 +128,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let shellCenter = clickOrigin + vec2<f32>((seed - 0.5) * 0.18, -0.28 - layerDepth * 0.24);
       let shellEnergy = (0.65 + clickDepth * depthBoost + bass * 0.35) * depthMatch;
       let shellFade = smoothstep(2.8, 0.10, barrageAge);
+      let visibility = 1.0 - 0.45 * smoothstep(0.0, 0.18, depth - layerDepth);
+      let distanceColor = mix(clickColor, vec3<f32>(dot(clickColor, vec3<f32>(0.299, 0.587, 0.114))), dlf * 0.12);
       let sparkCount = 18 + i32(mids * 8.0 + layerDepth * 10.0);
       for (var bj = 0; bj < sparkCount; bj = bj + 1) {
         let jf = f32(bj);
@@ -129,18 +137,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ang = jf / f32(sparkCount) * TAU + jitter * 0.35;
         let velocity = vec2<f32>(cos(ang), sin(ang)) * (0.28 + jitter * 0.28) * shellEnergy;
         let spark = sparkPos(shellCenter, velocity, barrageAge, 0.65 + dlf * 0.12);
-        let clickGlow = softGlow(uv, spark, 0.005 + jitter * 0.003,
-          shellFade * shellEnergy * (0.75 + treble * 0.35));
-        col += clickColor * clickGlow;
+        let clickGlow = softGlow(uv, spark, (0.005 + jitter * 0.003) * (1.0 + dlf * 0.15),
+          shellFade * shellEnergy * (0.75 + treble * 0.35) * visibility * (1.0 - dlf * 0.1));
+        col += distanceColor * clickGlow;
         shellDepthSignal = max(shellDepthSignal, clickGlow * layerDepth);
       }
     }
   }
   col = mix(prev*trail, col, 0.32);
   col = acesToneMap(col*1.06);
+  let alpha = clamp(length(col)*1.1+0.14, 0.12, 0.96);
   textureStore(dataTextureB, pixel, vec4<f32>(col*0.5+prev*0.4, 1.0));
-  textureStore(dataTextureA, pixel, vec4<f32>(col, 1.0));
-  textureStore(writeTexture, pixel, vec4<f32>(col, clamp(length(col)*1.1+0.14, 0.12, 0.96)));
+  textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
   let shellLuma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let depthOut = clamp(max(depth * 0.85, shellDepthSignal + shellLuma * 0.28), 0.0, 1.0);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
