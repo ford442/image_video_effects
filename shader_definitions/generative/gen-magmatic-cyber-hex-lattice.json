@@ -1,13 +1,24 @@
 {
-  "id": "magmatic-cyber-hex-lattice",
+  "id": "gen-magmatic-cyber-hex-lattice",
   "name": "Magmatic Cyber-Hex Lattice",
   "description": "A high-tech hexagonal grid structure floating over a glowing, slow-churning lake of cybernetic magma.",
   "url": "shaders/gen-magmatic-cyber-hex-lattice.wgsl",
   "category": "generative",
-  "tags": ["hex", "magma", "cyber", "grid", "voronoi"],
-  "workgroup_size": [16, 16, 1],
+  "tags": [
+    "hex",
+    "magma",
+    "cyber",
+    "grid",
+    "voronoi"
+  ],
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
   "params": [
     {
+      "id": "hex_scale",
       "name": "Hex Scale",
       "default": 1.0,
       "min": 0.1,
@@ -15,6 +26,7 @@
       "step": 0.1
     },
     {
+      "id": "magma_speed",
       "name": "Magma Speed",
       "default": 1.0,
       "min": 0.0,
@@ -22,6 +34,7 @@
       "step": 0.1
     },
     {
+      "id": "neon_intensity",
       "name": "Neon Intensity",
       "default": 1.0,
       "min": 0.0,
