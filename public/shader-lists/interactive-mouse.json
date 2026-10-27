@@ -305,7 +305,7 @@
     "id": "blueprint-reveal",
     "name": "Blueprint Reveal",
     "url": "shaders/blueprint-reveal.wgsl",
-    "description": "Blueprint drafting from Sobel edges: strong edges inked as bold contours, weak ones as thin construction lines, far-depth edges dashed as hidden lines. The cursor and clicks reveal the photo through a decaying ink mask that develops into a Prussian-blue cyanotype as it fades.",
+    "description": "Blueprint drafting from Sobel edges: strong edges inked as bold contours, weak ones as thin construction lines, far-depth edges dashed as hidden lines. The construction grid has heavier major lines, and a registration mark sits on the pointer. The cursor and clicks reveal the photo through a decaying ink mask that develops into a Prussian-blue cyanotype as it fades.",
     "params": [
       {
         "id": "edgeStrength",
@@ -1061,6 +1061,7 @@
       "interactive"
     ],
     "name": "Codebreaker Reveal",
+    "description": "Matrix rain covers the photo. A disc at the pointer, plus click bursts, decrypts it. Each falling cell has a white head and a green tail, and the open hole lingers after the disc moves on, closing at a rate set by Rain Speed.",
     "updated": true
   },
   {
@@ -2317,7 +2318,7 @@
     "name": "Digital Rain Reveal",
     "category": "interactive-mouse",
     "url": "shaders/digital-reveal.wgsl",
-    "description": "Matrix rain with glyph shapes hides the image; sprung brush reveals content. Held enlarges brush, clicks add capped ripples, regional FFT colors, depth-weighted reveal, ACES composite.",
+    "description": "Glyph rain hides the photo in finite drops with gaps. A brush, enlarged while held, and clicks open a hole that fades from an exact mask; glyphs wipe apart from the top of each cell as the photo comes through.",
     "workgroup_size": [
       16,
       16,
@@ -2366,7 +2367,6 @@
       "chromatic-drops",
       "click-reactive",
       "held-drag",
-      "spring-cursor",
       "glyph-shapes",
       "aces-tone-map"
     ],
@@ -6416,7 +6416,7 @@
     "name": "Motion Revealer",
     "url": "shaders/motion-revealer.wgsl",
     "category": "interactive-mouse",
-    "description": "Lucas-Kanade optical flow structure tensor motion detector with spectral streakline integration, bioluminescent particle wake, and exact-load temporal frame difference.",
+    "description": "Motion in the photo, the pointer, and clicks opens a streaked reveal along the optical-flow direction. Streaks follow the structure tensor only where it is coherent, and the reveal holds for a few frames after the motion stops.",
     "features": [
       "mouse-driven",
       "optical-flow",
@@ -7621,7 +7621,7 @@
     "id": "neon-flashlight",
     "name": "Neon Flashlight",
     "url": "shaders/neon-flashlight.wgsl",
-    "description": "Depth-edge neon flashlight with animated cone ribs, radial sweeps, held beam squeeze, click flashes, and three-band spectral pulses.",
+    "description": "A neon beam at the pointer that lights the photo and traces edges, with an umbra, a penumbra, and a specular catch. The core falls off as inverse-square and desaturates toward white; the rim keeps the neon hue.",
     "params": [
       {
         "id": "radius",
@@ -8025,7 +8025,7 @@
     "id": "night-vision-scope",
     "name": "Night Vision Scope",
     "url": "shaders/night-vision-scope.wgsl",
-    "description": "Simulates a night vision intensifier tube with a high-clarity scope area following the mouse.",
+    "description": "A green intensifier tube, sharp inside a disc that follows the pointer, with grain, scanlines, microchannel sparks, and bloom around bright sources. The phosphor lags, and fixed vertical streaks sit under the temporal grain.",
     "params": [
       {
         "id": "scopeSize",
@@ -8796,7 +8796,7 @@
     "name": "Pixel Reveal",
     "url": "shaders/pixel-reveal.wgsl",
     "category": "interactive-mouse",
-    "description": "Pixel sorting with threshold-based reveal and temporal noise accumulation. Revealed pixels decay back to hidden over time. Glitch chromatic separation on edges, scanline bands, film grain, and depth-controlled pixel perspective.",
+    "description": "A mosaic that remembers the pointer, refines on a resolution ladder, and dithers colour by that same ladder. Hidden blocks sort bright pixels one cell along the scan, and a dark mortar marks the coarse tile edges. Revealed pixels decay back to hidden over time.",
     "params": [
       {
         "id": "pixelSize",
@@ -10945,7 +10945,7 @@
     "name": "Sketch Reveal",
     "category": "interactive-mouse",
     "url": "shaders/sketch-reveal.wgsl",
-    "description": "Gradient-directed pencil sketch with tonal-art-map hatching (single, cross and diagonal layers by darkness), paper tooth and graphite sheen. The cursor lays a watercolour wash of the photo that dries slowly from exact history and leaves a darker pigment rim at its edge. Depth controls stroke scale.",
+    "description": "Gradient-directed pencil sketch with tonal-art-map hatching (single, cross and diagonal layers by darkness), a contour outline, paper tooth and graphite sheen. The cursor lays a watercolour wash of the photo that dries slowly from exact history, granulates in the mid-wetness, and leaves a darker pigment rim at its edge. Depth controls stroke scale.",
     "params": [
       {
         "id": "brushSize",
@@ -11174,7 +11174,7 @@
     "id": "sonar-pulse",
     "name": "Sonar Pulse",
     "url": "shaders/sonar-pulse.wgsl",
-    "description": "Radial sonar waves emitting from the cursor that distort and scan the image. Now with audio reactivity.",
+    "description": "Radial sonar waves from the cursor that distort and scan the image, with a secondary beat, chromatic echo, and click pings. Long waves outrun short ones, and the pulse falls off as a cylindrical wave.",
     "params": [
       {
         "id": "speed",
@@ -11233,7 +11233,7 @@
       "audio-driven",
       "upgraded-rgba"
     ],
-    "description": "Reveals the original image in a sonar disc around the mouse over a dimmed, tinted world, with concentric ring fronts and click shockwaves. A PPI radar sweep arm rotates from the pointer trailing a phosphor afterglow wedge; image edges flash as contact blips when a ring or shock front passes over them; and the Echo Mix return drifts outward from the pointer over frames. Bass, mids and treble shove the rings, shift the rim colour and add sparkle.",
+    "description": "Reveals the original image in a sonar disc around the mouse over a dimmed, tinted world, with concentric ring fronts and click shockwaves. A PPI radar sweep arm rotates from the pointer trailing a phosphor afterglow wedge; image edges flash as contact blips when a ring or shock front passes over them; and the Echo Mix return drifts outward from the pointer over frames. Fixed range rings sit at one-third and two-thirds of the reveal radius, and each traveling ring widens with distance. Bass, mids and treble shove the rings, shift the rim colour and add sparkle.",
     "params": [
       {
         "name": "Reveal Size",
@@ -12039,7 +12039,7 @@
     "name": "Thermal Touch",
     "url": "shaders/thermal-touch.wgsl",
     "category": "interactive-mouse",
-    "description": "Heat diffusion simulation with Gaussian blur approximation, blackbody radiation color mapping, persistent mouse heat trails, and HDR glow with ACES tone mapping.",
+    "description": "The pointer and clicks deposit inverse-square heat into a field that conducts with a 9-point laplacian and cools. The plate is a blackbody image with glow and isotherms. Image brightness is the temperature floor.",
     "params": [
       {
         "id": "heat-intensity",
@@ -12923,7 +12923,7 @@
     "id": "x-ray-reveal",
     "name": "X-Ray Reveal",
     "url": "shaders/x-ray-reveal.wgsl",
-    "description": "Interactive X-Ray lens that reveals an inverted, edge-enhanced internal structure.",
+    "description": "A collimated x-ray lens: inverted plate, bone window, penumbra, crosshair, and quantum mottle. The anode side of the field is darker, and a fine vertical anti-scatter grid sits on the plate.",
     "params": [
       {
         "id": "lens_size",

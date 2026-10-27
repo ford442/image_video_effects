@@ -3,7 +3,7 @@
   "name": "Sketch Reveal",
   "category": "interactive-mouse",
   "url": "shaders/sketch-reveal.wgsl",
-  "description": "Gradient-directed pencil sketch with tonal-art-map hatching (single, cross and diagonal layers by darkness), paper tooth and graphite sheen. The cursor lays a watercolour wash of the photo that dries slowly from exact history and leaves a darker pigment rim at its edge. Depth controls stroke scale.",
+  "description": "Gradient-directed pencil sketch with tonal-art-map hatching (single, cross and diagonal layers by darkness), a contour outline, paper tooth and graphite sheen. The cursor lays a watercolour wash of the photo that dries slowly from exact history, granulates in the mid-wetness, and leaves a darker pigment rim at its edge. Depth controls stroke scale.",
   "params": [
     {
       "id": "brushSize",
@@ -49,5 +49,43 @@
     "charcoal",
     "hatching",
     "graphite"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Brush Size",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Edge Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Sketch Contrast",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Brush Softness",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Reveal — Batch 61
-//  Matrix rain + glyph shapes: spring brush at extraBuffer[133..138],
-//  exact C mask, capped ripples, held enlarges brush, ACES composite.
+//  Digital Reveal
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-27
+//  Ideas: finite drops; glyph dissolve
+//  A packing: reveal mask in A.r (C.r read back); A.a mirrors the mask
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(.1031, .1030, .0973));
@@ -71,32 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let prevVal = textureLoad(dataTextureC, pixel, 0).r;
 
-  var springPos = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 10.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
-
-  let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(springPos.x * aspect, springPos.y));
+  let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
   let brushRadius = revealSize * 0.3 + 0.05;
   let mouseValid = select(0.0, 1.0, mouse.x >= 0.0);
   let brush = mouseValid * smoothstep(brushRadius, brushRadius * 0.5, dist);
@@ -114,8 +74,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     newVal = max(newVal, blob * liveF * (1.0 - age * 0.5));
   }
 
-  textureStore(dataTextureA, pixel, vec4<f32>(newVal, 0.0, 0.0, 1.0));
-
   let gridSize = vec2<f32>(18.0 + density * 26.0, (18.0 + density * 26.0) * aspect);
   let cellUV = fract(uv * gridSize);
   let cellID = floor(uv * gridSize);
@@ -126,14 +84,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let charBright = smoothstep(0.0, 0.2, dropVal) * smoothstep(1.0, 0.8, dropVal);
   let flicker = step(0.1, hash22(vec2<f32>(cellID.x, charID)).x);
   let glyph = glyphShape(cellUV, hash22(vec2<f32>(cellID.x, charID)).x);
+  // ── Idea: glyph dissolve — the reveal wipes each glyph from the top of its cell.
+  let wipe = 1.0 - clamp(newVal, 0.0, 1.0);
+  let glyphVis = glyph * (1.0 - smoothstep(wipe - 0.02, wipe + 0.05, cellUV.y));
+  // ── Idea: finite drops — a hash-length run, then a gap. Density sets the grid, speed the fall.
+  let cycle = fract(verticalPos * (0.12 + density * 0.02));
+  let dropLen = 0.16 + hash22(vec2<f32>(cellID.x, 1.7)).x * 0.32;
+  let inDrop = smoothstep(0.0, 0.04, cycle) * (1.0 - smoothstep(dropLen, dropLen + 0.06, cycle));
 
-  let band = min(u32(uv.x * 8.0), 7u);
-  var rainColor = vec3<f32>(0.05, 0.95, 0.32) * charBright * flicker * glyph;
-  rainColor *= 1.0 + plasmaBuffer[band + 1u].x * 0.25;
-  rainColor.g += bass * 0.3 * charBright * glyph;
-  if (hash22(vec2<f32>(cellID.x, charID)).y > 0.98 - density * 0.1) {
-    rainColor = vec3<f32>(0.8 + treble * 0.2, 1.0, 0.8 + treble * 0.2);
-  }
+  let colPhase = hash22(vec2<f32>(cellID.x, 4.0)).x;
+  var rainColor = vec3<f32>(0.05, 0.95, 0.32) * charBright * flicker * glyphVis * inDrop;
+  rainColor = rainColor * (1.0 + treble * colPhase * 0.35);
+  rainColor = rainColor + vec3<f32>(0.0, bass * 0.3 * charBright * glyphVis * inDrop, 0.0);
+  let rare = step(0.98 - density * 0.1, hash22(vec2<f32>(cellID.x, charID)).y);
+  rainColor = mix(rainColor, vec3<f32>(0.8 + treble * 0.2, 1.0, 0.8 + treble * 0.2), rare * inDrop);
 
   let depthGlow = mix(1.0, mix(0.6, 1.2, depth), 0.4);
   rainColor *= depthGlow;
@@ -141,8 +105,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let imageColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   var finalColor = mix(rainColor, imageColor, clamp(newVal, 0.0, 1.0));
   finalColor = acesToneMap(finalColor * (0.95 + mids * 0.05));
-  let alpha = clamp(newVal + charBright * glyph * 0.2 + bass * 0.05, 0.0, 1.0);
+  let alpha = clamp(newVal + charBright * glyphVis * inDrop * 0.2 + bass * 0.05, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, vec4<f32>(newVal, 0.0, 0.0, newVal));
 }
