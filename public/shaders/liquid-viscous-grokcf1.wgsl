@@ -3,7 +3,9 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  Upgraded: 2026-10-26
+//  Ideas: MacCormack trail (§12.2D); ionization front
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -123,19 +125,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Exact-load temporal state feedback from dataTextureC
   let histCoord = clamp(vec2<i32>(floor((uv - totalDisp * 0.3) * resolution)), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
   let history = textureLoad(dataTextureC, histCoord, 0);
+  // ── Idea 1: MacCormack trail (§12.2D) ────────────────────────────
+  // Forward sample plus half the error against the step back, clamped
+  // to those two colors so the correction cannot invent a new hue.
+  let backUV = clamp(uv + totalDisp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
+  let backCoord = clamp(vec2<i32>(floor(backUV * resolution)), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+  let backHist = textureLoad(dataTextureC, backCoord, 0);
+  let centerHist = textureLoad(dataTextureC, coord, 0);
+  let trailLo = min(history.rgb, backHist.rgb);
+  let trailHi = max(history.rgb, backHist.rgb);
+  let corrected = clamp(history.rgb + 0.5 * (centerHist.rgb - backHist.rgb), trailLo, trailHi);
 
   // Nebula ionization & filament veins
-  let density = smoothstep(0.22, 0.88, warpA * 0.55 + warpB * 0.55 + vortexEnergy * 0.1);
+  let ionArg = warpA * 0.55 + warpB * 0.55 + vortexEnergy * 0.1;
+  let density = smoothstep(0.22, 0.88, ionArg);
   let paletteA = vec3<f32>(0.06, 0.22, 0.55);
   let paletteB = vec3<f32>(0.8, 0.18, 0.75);
   let nebulaHue = mix(paletteA, paletteB, fract(warpB + spectralShift + time * 0.03 + audio.y * 0.25));
   let veins = pow(clamp(1.0 - abs(warpA - warpB) * 3.2, 0.0, 1.0), 4.5);
 
   var rgb = baseColor.rgb + nebulaHue * density * nebulaGlow * (0.4 + audio.x * 0.85) + veins * vec3<f32>(0.28, 0.6, 1.0) * (0.22 + audio.z * 1.1);
+  // ── Idea 2: ionization front ─────────────────────────────────────
+  let front = exp(-abs(ionArg - 0.55) * 16.0);
+  rgb += nebulaHue * front * nebulaGlow * 0.45;
 
   let trailMix = clamp((0.14 + viscosity * 0.32) * history.a, 0.05, 0.52);
-  rgb = mix(rgb, history.rgb, trailMix);
-  rgb = acesToneMapping(rgb);
+  rgb = mix(rgb, corrected, trailMix);
+  rgb = acesToneMapping(max(rgb, vec3<f32>(0.0)));
 
   let finalAlpha = clamp(baseColor.a * 0.78 + density * 0.24 + veins * 0.14 + history.a * trailMix * 0.12, 0.0, 1.0);
   let outputColor = vec4<f32>(rgb, finalAlpha);

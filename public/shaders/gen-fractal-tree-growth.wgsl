@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: fractal, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: idle sway (per-level phase-lagged sine bend so the tree breathes without the pointer); sap pulses (bright bands rising along each segment's h, phase offset per level); kept: bark rings from segment h; apical meristem glow on growing tips
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: idle sway (per-level phase-lagged sine bend so the tree breathes without the pointer); sap pulses (bright bands rising along each segment's h, phase offset per level); kept: bark rings from segment h; apical meristem glow on growing tips; reaction wood; lenticels
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -55,6 +55,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var leafField = 0.0;
     var barkRings = 0.0;
     var sapAcc = 0.0;
+    var lenticelAcc = 0.0;
     var heightDepth = 0.0;
     var hueMoment = 0.0;
     for (var leafPath = 0; leafPath < 32; leafPath++) {
@@ -72,12 +73,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let bend = side * spread * (0.72 + f32(level) * 0.08) + wind * (f32(level) + 1.0) + sway;
             direction = normalize(rotateVector(direction, bend));
             let tip = origin + direction * segmentLength * levelGrowth;
-            let thickness = mix(0.026, 0.006, f32(level) / 5.0) * (1.0 + audio.x * 0.2);
+            // ── Idea: reaction wood ──
+            // The compressed side of the bend (opposite the signed cross of the segment) grows thicker.
+            let lateral = direction.x * (p.y - origin.y) - direction.y * (p.x - origin.x);
+            let reaction = smoothstep(0.0, 0.03, -lateral * bend);
+            let thickness = mix(0.026, 0.006, f32(level) / 5.0) * (1.0 + audio.x * 0.2) * (1.0 + reaction * 0.55);
             let sh = sdSegment2(p, origin, tip);
             let d = sh.x;
             let h = sh.y;
             let branch = exp(-d * d / max(thickness * thickness, 0.000001));
             let rings = branch * exp(-abs(fract(h * 6.5 + f32(level) * 0.17) - 0.5) * 16.0);
+            // ── Idea: lenticels ──
+            // Sparse bark pores between the continuous rings, placed along the same segment h.
+            let poreSeed = fract(sin(h * 91.7 + f32(level) * 17.3 + f32(leafPath) * 0.17) * 43758.5453);
+            let lenticel = branch * step(0.84, poreSeed) * exp(-abs(fract(h * 8.0) - 0.5) * 10.0);
+            lenticelAcc += lenticel / 32.0;
             // Idea 2 - sap pulse rising along the segment (h runs origin -> tip)
             let sap = branch * exp(-sq((fract(h * 1.0 - time * 0.45 + f32(level) * 0.37) - 0.5) * 6.0));
             sapAcc += sap / 32.0 * levelGrowth;
@@ -116,6 +126,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let foliage = palette(hue) * (0.55 + leafGlow + audio.z * 0.6);
     var hdrColor = vec3<f32>(0.006, 0.012, 0.012) + bark * branchField * (1.1 + audio.x * 0.5);
     hdrColor += vec3<f32>(0.42, 0.22, 0.08) * barkRings * 1.35;
+    hdrColor *= 1.0 - clamp(lenticelAcc * 14.0, 0.0, 0.42);
     hdrColor += vec3<f32>(0.55, 1.0, 0.45) * sapAcc * (1.4 + audio.y * 0.8);
     hdrColor += foliage * leafField * leafGlow;
     hdrColor += vec3<f32>(0.3 + audio.x * 0.25, 0.9 + audio.y * 0.35, 0.45 + audio.z * 0.45) * clickGrowth * 0.34;

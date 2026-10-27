@@ -1199,7 +1199,9 @@
       "simulation",
       "procedural",
       "volumetric",
-      "spiral-galaxy"
+      "spiral-galaxy",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -2597,7 +2599,8 @@
       "temporal",
       "navier-stokes",
       "fluid-coupling",
-      "randomization-safe"
+      "randomization-safe",
+      "audio-reactive"
     ],
     "params": [
       {

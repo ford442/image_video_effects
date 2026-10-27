@@ -1,34 +1,13 @@
 // ═══════════════════════════════════════════════════════════════
 //  RGB Ripple Waves - Phase-shifted RGB waves with wavelength-alpha
 //  Features: mouse-driven, phase-dispersion, wavelength-dependent-alpha, audio-reactive, upgraded-rgba
-//
-//  SCIENTIFIC MODEL:
-//  - Dispersion affects both wave phase AND alpha per channel
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
+//  Upgraded: 2026-10-26
+//  Ideas: deep-water channel speed (§12.2D); Cauchy phase (§12.2F)
+//  A packing: ACES display RGBA
+//  Beer-Lambert alpha stays per wavelength (650 / 550 / 450 nm).
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════
 //  SPECTRAL PHYSICS CONSTANTS
@@ -46,14 +25,19 @@ fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
     return exp(-thickness * absorption);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// n(λ) = 1 + B/λ², λ in µm, relative to red so the red wave stays the anchor.
+fn cauchyPhase(dispersion: f32) -> vec3<f32> {
+    let invL2 = vec3<f32>(1.0 / 0.4225, 1.0 / 0.3025, 1.0 / 0.2025);
+    let n = vec3<f32>(1.0) + dispersion * invL2;
+    return (n / n.x - vec3<f32>(1.0)) * 50.6;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    // Evaluate unused parameters
-    let unused_x = u.zoom_params.x;
-    let unused_y = u.zoom_params.y;
-    let unused_z = u.zoom_params.z;
-    let unused_w = u.zoom_params.w;
-
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
@@ -78,34 +62,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let speed = 5.0 * (1.0 + bass * 0.3) * mix(0.1, 2.0, u.zoom_params.y);
     let amplitude = 0.02 * exp(-dist * 2.0) * (1.0 + bass * 0.6) * mix(0.0, 3.0, u.zoom_params.z);
 
-    // Phase shifts for RGB (simulating chromatic dispersion)
-    let p_shift = mix(0.0, 5.0, u.zoom_params.w);
-    let phase_r = 0.0;
-    let phase_g = 1.0 * p_shift;
-    let phase_b = 2.0 * p_shift;
+    // ── Idea 2: Cauchy phase (§12.2F) ───────────────────────────────
+    // Channel phase is B in n = 1 + B/λ². Red stays put; blue runs farther
+    // than a linear 0,1,2 step. At the default slider this is near the old offset.
+    let phase = cauchyPhase(mix(0.0, 0.12, u.zoom_params.w));
+    // ── Idea 1: deep-water channel speed (§12.2D) ───────────────────
+    // c ∝ sqrt(λ). Green keeps the slider speed.
+    let speedScale = vec3<f32>(sqrt(WAVELENGTH_RED / WAVELENGTH_GREEN), 1.0, sqrt(WAVELENGTH_BLUE / WAVELENGTH_GREEN));
 
-    // Calculate waves
-    let wave_r = sin(dist * frequency - time * speed + phase_r);
-    let wave_g = sin(dist * frequency - time * speed + phase_g);
-    let wave_b = sin(dist * frequency - time * speed + phase_b);
+    let wave_r = sin(dist * frequency - time * speed * speedScale.x + phase.x);
+    let wave_g = sin(dist * frequency - time * speed * speedScale.y + phase.y);
+    let wave_b = sin(dist * frequency - time * speed * speedScale.z + phase.z);
 
-    // Displace UVs
-    var displacement_r = vec2<f32>(0.0);
-    var displacement_g = vec2<f32>(0.0);
-    var displacement_b = vec2<f32>(0.0);
+    let dir_aspect = (uv_aspect - mouse_aspect) / max(dist, 0.001);
+    let dir_uv = vec2<f32>(dir_aspect.x / aspect, dir_aspect.y);
+    let ampMask = select(0.0, 1.0, dist > 0.001);
+    let displacement_r = dir_uv * wave_r * amplitude * ampMask;
+    let displacement_g = dir_uv * wave_g * amplitude * ampMask;
+    let displacement_b = dir_uv * wave_b * amplitude * ampMask;
 
-    if (dist > 0.001) {
-        let dir_aspect = normalize(uv_aspect - mouse_aspect);
-        let dir_uv = vec2<f32>(dir_aspect.x / aspect, dir_aspect.y);
-
-        displacement_r = dir_uv * wave_r * amplitude;
-        displacement_g = dir_uv * wave_g * amplitude;
-        displacement_b = dir_uv * wave_b * amplitude;
-    }
-
-    let r = textureSampleLevel(readTexture, u_sampler, uv + displacement_r, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv + displacement_g, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + displacement_b, 0.0).b;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + displacement_r, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + displacement_g, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + displacement_b, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
     // ═══════════════════════════════════════════════════════════════
     //  WAVELENGTH-DEPENDENT ALPHA
@@ -132,7 +110,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = finalColor + vec3<f32>(0.4, 0.7, 1.0) * crest * bass * 0.6;
 
     let outAlpha = clamp(finalAlpha + crest * bass * 0.3, 0.0, 1.0);
-    let outColor = vec4<f32>(finalColor, outAlpha);
+    let outColor = vec4<f32>(aces(max(finalColor, vec3<f32>(0.0))), outAlpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
     textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);

@@ -7,7 +7,9 @@
 //            upgraded-rgba, semantic-alpha, aces
 //  Complexity: High
 //  Created: 2026-03-20
-//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+//  Upgraded: 2026-08-23, 2026-10-26
+//  Ideas: capillary meniscus bead; Marangoni crawl toward thick film
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  "Optimized" was a misnomer before this pass. The surface normal was built
 //  by calling proceduralHeight() five times (centre + 4 neighbours), and each
@@ -181,7 +183,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let refractionStrength = 0.02 * surfaceTension;
     let refractDisplacement = normal.xy * refractionStrength * backgroundFactor;
     let totalDisplacement = refractDisplacement + vec2<f32>(hCenter * 0.01);
-    let colorUV = clamp(uv + totalDisplacement, vec2<f32>(0.0), vec2<f32>(1.0));
+    // ── Idea 2: Marangoni crawl ────────────────────────────────────────
+    // Turbid film flows along the height gradient toward the thicker side.
+    // Surface Tension and Turbidity keep their roles and only scale the crawl.
+    let slopeLen = length(hg.yz);
+    let filmThin = clamp(turbidity * (0.4 - hCenter * 28.0), 0.0, 1.0);
+    let mara = hg.yz / max(slopeLen, 1e-4) * filmThin * surfaceTension * 0.006;
+    let colorUV = clamp(uv + totalDisplacement + mara, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Slight dispersion along the slope — the film splits light where it tilts.
     let dispDir = normalize(hg.yz + vec2<f32>(1e-6));
@@ -223,6 +231,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let s64 = s32 * s32;
     let specular = s64 * s64 * 0.8 * (1.0 - turbidity * 0.5) * (1.0 + treble * 0.5);
     liquidColor += vec3<f32>(specular) + vec3<f32>(0.6, 0.8, 1.0) * fresnel * 0.25;
+
+    // ── Idea 1: meniscus bead ──────────────────────────────────────────
+    // Cool highlight on the capillary node: height near zero, slope in band.
+    let node = exp(-hCenter * hCenter / max(0.00008 * surfaceTension, 1e-6));
+    let bead = node * smoothstep(0.05, 0.35, slopeLen) * (1.0 - smoothstep(1.8, 4.0, slopeLen));
+    liquidColor += vec3<f32>(0.75, 0.9, 1.0) * bead * surfaceTension * (0.25 + treble * 0.15);
 
     // ── Temporal sheen (exact load — dataTextureC is rgba32float) ────────────
     let prev = textureLoad(dataTextureC, coord, 0);

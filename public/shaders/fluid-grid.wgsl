@@ -4,28 +4,12 @@
 //  Features: mouse-driven, audio-reactive, curl-noise, divergence-free, upgraded-rgba
 //  Complexity: High
 //  Chunks From: fluid-grid, curl2D, fbm, bass_env
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-05-31, 2026-10-26
+//  Ideas: cell spin of minor rails along the curl heading; stagnation bead where the cursor shoves a quiet cell
+//  A packing: pre-ACES display RGBA (C is that history)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=GridSize, y=FlowSpeed, z=Distortion, w=Turbulence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=GridSize, y=FlowSpeed, z=Distortion, w=Turbulence
 
 fn hash21(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -135,7 +119,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let cellCoord = vec2<u32>(floor(clamp(tileUV * gridSize, vec2<f32>(0.0), vec2<f32>(65535.0))));
     let cellBand = (cellCoord.x + cellCoord.y) % 8u;
-    let cellVoice = plasmaBuffer[(cellBand % 8u) + 1u].x;
+    // plasmaBuffer[1+] is never written. Each cell phases off treble instead.
+    let cellVoice = treble * hash21(vec2<f32>(f32(cellCoord.x) + f32(cellBand), f32(cellCoord.y)));
     let curlDomain = uv * (2.2 + turbulence * 0.6);
     let curlRaw = curl2D(curlDomain, time * flowSpeed);
     let curl = curlRaw * 0.03 * turbulence * bass_env(bass, mids) * (1.0 + cellVoice * 0.25);
@@ -174,10 +159,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Draw the lattice in the deformed domain. Major rails, minor rails, and
     // glowing junctions retain different weights under local strain.
     let deformedGrid = sampleUV * gridSize;
-    let gridLine = fract(deformedGrid);
+    // ── Idea: cell spin — minor rails twist with the local curl heading. Major rails stay.
+    let flowAngle = atan2(curlRaw.y, curlRaw.x) * turbulence * 0.35;
+    let cs = cos(flowAngle);
+    let sn = sin(flowAngle);
+    let centered = fract(deformedGrid) - 0.5;
+    let spun = vec2<f32>(cs * centered.x - sn * centered.y, sn * centered.x + cs * centered.y) + 0.5;
+    let gridLine = spun;
     let cellEdge = min(min(gridLine.x, 1.0 - gridLine.x), min(gridLine.y, 1.0 - gridLine.y));
     let lineWeight = 0.015 + (1.0 - legacyViscosity) * 0.035;
-    let minorMask = 1.0 - smoothstep(lineWeight, lineWeight + 0.012, cellEdge);
+    // ── Idea: stagnation bead — rails thicken where the cursor pushes and the offset cancels
+    let stagnant = smoothstep(0.028, 0.004, length(uvOffset)) * smoothstep(0.01, 0.08, push);
+    let beadWeight = lineWeight * (1.0 + stagnant * 2.4);
+    let minorMask = 1.0 - smoothstep(beadWeight, beadWeight + 0.012, cellEdge);
     let majorLine = fract(deformedGrid / 5.0);
     let majorEdge = min(min(majorLine.x, 1.0 - majorLine.x), min(majorLine.y, 1.0 - majorLine.y));
     let majorMask = 1.0 - smoothstep(lineWeight * 0.75, lineWeight * 0.75 + 0.01, majorEdge);

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: multi-state-ca, evolving-rules, audio-mutation, mouse-nutrient, tapestry-weave, depth-pattern, temporal-texture, organic-evolution, semantic-alpha, temporal, chromatic, depth-aware, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: kill-rate contour banding on the growth front; slow-rotating diffusion-anisotropy striping; spot nucleus; substrate halo; weft threads; apoptosis pits
+//  Upgraded: 2026-10-25
+//  Ideas: kill-rate contour banding on the growth front; slow-rotating diffusion-anisotropy striping; spot nucleus; substrate halo; weft threads; apoptosis pits; replenishment wash; stoichiometric rim
 //  A packing: raw sim (nextA, nextB, 0, 1)
 //  By: Grok (deep visual/audio flourish — seasonal plasma color climate, stronger mouse nutrient injector, semantic alpha from chemical energy + glow, richer final glaze)
 // ═══════════════════════════════════════════════════════════════════
@@ -160,6 +160,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea: apoptosis pit — B falling while A recovers, a dark hole in the colony.
     let dying = smoothstep(0.0, 0.08, B - nextB) * smoothstep(0.0, 0.06, nextA - A);
     outColor = mix(outColor, vec3<f32>(0.02, 0.01, 0.03), dying * 0.7);
+
+    // ── Idea: replenishment wash — feed rebuilding substrate the colony left ──
+    let replen = feed * (1.0 - A);
+    let wash = smoothstep(0.008, 0.04, replen) * smoothstep(0.55, 0.12, nextB);
+    outColor = mix(outColor, vec3<f32>(0.72, 0.78, 0.66), wash * 0.4);
+
+    // ── Idea: stoichiometric rim — the reaction peaks off the nucleus ──
+    let stoich = smoothstep(0.004, 0.03, reaction) * (1.0 - nucleus);
+    outColor = outColor + vec3<f32>(1.0, 0.50, 0.22) * stoich * 0.45;
 
     // Semantic alpha: chemical concentration + audio "glow" gives transparent background areas
     let semantic_alpha = clamp(0.35 + energy * 0.7 + mids * 0.15, 0.25, 1.0);

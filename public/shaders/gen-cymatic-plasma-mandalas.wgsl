@@ -5,9 +5,10 @@
 //            temporal-symmetry-memory, audio-cymatic-frequency, depth-edge-glow
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-25
 //  Ideas: three-band wave interference replacing the single-sine cymatic fake;
-//         standing-wave sand speckle gathering at true zero-crossing nodes; antinode bellies; circular nodal rings
+//         standing-wave sand speckle gathering at true zero-crossing nodes; antinode bellies; circular nodal rings;
+//         angular Chladni spokes; belly evacuation of nodal sand
 //  A packing: A/C = final ACES display RGBA; exact temporal symmetry memory
 // ═══════════════════════════════════════════════════════════════════
 
@@ -163,10 +164,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = colorBase * aberration;
 
     col = col + vec3<f32>(1.0, 0.8, 0.9) * exp(-length(uv) * 5.0) * (0.5 + audio * 0.5 + treble * 0.2);
-    col += vec3<f32>(0.95, 0.92, 0.85) * sandSpeckle * (0.6 + treble * 0.5);
     // Idea: antinode bellies — brightest where the summed wave is fullest.
     let belly = smoothstep(0.72, 0.96, abs(waveSum));
+    // ── Idea: belly evacuation — grains slide off the antinodes onto the nodes ──
+    let settledSand = sandSpeckle * (1.0 - belly * 0.85);
+    col += vec3<f32>(0.95, 0.92, 0.85) * settledSand * (0.6 + treble * 0.5);
     col += colorBase * belly * 0.4;
+    // ── Idea: angular Chladni spokes — zeros of the fold's angular mode ──
+    let spoke = 1.0 - smoothstep(0.0, 0.08, abs(cos(foldedAngle * symmetryOrder + t)));
+    col += vec3<f32>(0.82, 0.90, 0.72) * spoke * (0.10 + nodeProximity * 0.45);
     // Idea: circular nodal rings — the bass wave's zero crossings, under the fold.
     let nodalRing = 1.0 - smoothstep(0.0, 0.07, abs(waveBass));
     col += vec3<f32>(0.72, 0.9, 1.0) * nodalRing * 0.22;
@@ -183,7 +189,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += vec3<f32>(0.4, 0.7, 0.9) * edgeGlow * treble;
 
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(luma * 0.7 + 0.2 + bass * 0.05 + sandSpeckle * 0.15, 0.0, 1.0);
+    let alpha = clamp(luma * 0.7 + 0.2 + bass * 0.05 + settledSand * 0.15 + spoke * 0.08, 0.0, 1.0);
     let finalColor = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);

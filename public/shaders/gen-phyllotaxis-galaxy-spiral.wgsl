@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Sersic bulge and disk; dust lanes and HII knots; flat-curve shear; parastichy sheen
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: Sersic bulge and disk; dust lanes and HII knots; flat-curve shear; parastichy sheen; seed-scale bracts; meristem rim
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -113,7 +113,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let size = (0.003 + hash11(n * 13.0) * 0.006) * (0.6 + depth * 0.8) * (1.0 + p2);
 
     let starShape = exp(-dist * dist / (size * size));
-    if (starShape < 0.001) { continue; }
+    // ── Idea: seed-scale bracts ──
+    // A short streak on the outer side of the floret, along the position vector already used to place it.
+    let radialDir = pos / max(r, 0.001);
+    let outward = dot(delta, radialDir);
+    let acrossBract = length(delta - radialDir * outward);
+    let bract = exp(-acrossBract * acrossBract / max(size * size * 0.12, 1e-8))
+      * smoothstep(0.0, size * 1.6, outward)
+      * exp(-outward / max(size * 7.0, 1e-4));
+    if (starShape < 0.001 && bract < 0.02) { continue; }
 
     // Hubble palette: young=blue, old=red, dust=yellow
     let starType = hash11(n * 7.3);
@@ -131,6 +139,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Treble triggers supernova flare on rare stars
     let isSupernova = step(0.96, starType) * step(0.7, fract(hash11(n) + time * 0.5 + treble));
     starColor += vec3<f32>(1.0, 0.9, 0.7) * isSupernova * treble * 3.0;
+    // ── Idea: meristem rim ──
+    // The youngest florets are the outer ring of the capitulum. Inner Hubble colors stay.
+    let rimR = c * sqrt(350.0);
+    let young = smoothstep(0.62, 0.96, r / max(rimR, 0.001));
+    starColor = mix(starColor, vec3<f32>(0.55, 0.78, 1.0), young * (0.35 + treble * 0.4));
 
     // Depth fade
     let depthFade = smoothstep(0.0, 0.15, depth) * smoothstep(1.0, 0.6, depth);
@@ -138,6 +151,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let extinction = 1.0 - dust * r * 2.0;
 
     accum += starColor * starShape * depthFade * extinction;
+    accum += starColor * bract * 0.42 * depthFade * extinction;
     alphaAcc += starShape * depthFade * extinction;
     maxDepth = max(maxDepth, depth * starShape);
   }

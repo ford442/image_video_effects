@@ -4,31 +4,12 @@
 //  Features: mouse-driven, audio-reactive, temporal-ink-spread, organic-growth,
 //            upgraded-rgba, navier-stokes, vorticity-confinement, surface-tension
 //  Complexity: Very High
-//  Upgraded: 2026-09-09
-//  Ideas: fiber-steered advection; nijimi wet-edge bloom
+//  Upgraded: 2026-09-09, 2026-10-26
+//  Ideas: fiber-steered advection; nijimi wet-edge bloom; isotropic 9-point diffusion (§12.2D); sumi backrun
 //  A packing: raw ink + vel.xy + alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -90,7 +71,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let w = loadInk(coord + vec2<i32>(-1, 0), resolution);
   let n = loadInk(coord + vec2<i32>(0, 1), resolution);
   let s_ = loadInk(coord + vec2<i32>(0, -1), resolution);
-  let laplacian = (e + w + n + s_) * 0.25 - prevInk;
+  // ── Idea: isotropic 9-point diffusion (§12.2D) ─────────────────
+  // Same spread coefficient. Corners take 5% so the bloom is not
+  // locked to the axes.
+  let ne = loadInk(coord + vec2<i32>(1, 1), resolution);
+  let nw = loadInk(coord + vec2<i32>(-1, 1), resolution);
+  let se = loadInk(coord + vec2<i32>(1, -1), resolution);
+  let sw = loadInk(coord + vec2<i32>(-1, -1), resolution);
+  let laplacian = 0.20 * (e + w + n + s_) + 0.05 * (ne + nw + se + sw) - prevInk;
 
   let fiber = paperFiber(uv);
   // Idea 1 — fiber-steered advection
@@ -129,6 +117,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let wetEdge = smoothstep(0.08, 0.25, newInk) * (1.0 - smoothstep(0.25, 0.55, newInk));
   // Idea 2 — nijimi bloom on the wet edge only
   newInk = clamp(newInk + laplacian * wetEdge * 0.22 * (1.0 + treble * 0.3), 0.0, 1.0);
+  // ── Idea: sumi backrun ─────────────────────────────────────────
+  // Brush up: the body pales and the wet rim takes the pigment.
+  let brushUp = 1.0 - step(0.5, mouseDown);
+  let body = smoothstep(0.4, 0.75, newInk) * (1.0 - wetEdge);
+  newInk = clamp(newInk + brushUp * (wetEdge * 0.07 - body * 0.045), 0.0, 1.0);
 
   let paperBase = vec3<f32>(0.94, 0.92, 0.88);
   let paperColor = paperBase * fiber;

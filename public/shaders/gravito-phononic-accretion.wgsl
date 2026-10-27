@@ -1,31 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Gravito-Phononic Accretion v5 — High-End Optical Prism
 //  Category: generative
-//  Upgraded: 2026-09-27
-//  Ideas: phonon standing ridges between the two centers; accretion shock shells
+//  Upgraded: 2026-10-25
+//  Ideas: phonon standing ridges between the two centers; accretion shock shells; L1 saddle; phonon overtone
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = x * (2.51 * x + 0.03);
@@ -158,6 +139,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let onSeg = smoothstep(0.0, 0.02, along) * smoothstep(span, span - 0.02, along);
   let phonon = exp(-across * across * 900.0) * abs(sin(along * 48.0 * (0.6 + p2))) * onSeg;
   color += prism * phonon * p2 * 0.55;
+
+  // ── Idea: L1 saddle — the two pulls cancel at the midpoint of the ridge ──
+  let saddle = exp(-abs(pull1 - pull2) * 220.0) * onSeg;
+  color *= 1.0 - saddle * 0.55;
+
+  // ── Idea: phonon overtone — second harmonic, narrower across the axis ──
+  let overtone = exp(-across * across * 1600.0) * abs(sin(along * 96.0 * (0.6 + p2))) * onSeg;
+  color += prism * overtone * p2 * 0.22;
 
   // Shock shells sit outside the core inject (smoothstep radius 0.05).
   let shellR = 0.12;

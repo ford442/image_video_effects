@@ -3,7 +3,9 @@
 //  Category: liquid-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-15
+//  Upgraded: 2026-10-26
+//  Ideas: deep-water dispersion (§12.2D); Jacobian foam
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -56,6 +58,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // while the derivative terms form a parallax Jacobian instead of a flat warp.
   let pAspect = (uv - 0.5) * vec2<f32>(aspect, 1.0);
   let perspectiveTilt = 1.0 + (1.0 - uv.y) * 2.1;
+  // Middle wave (index 1) keeps the authored clock; the others disperse around it.
+  let kMid = (density + 2.7) * perspectiveTilt;
   var gerstner = vec2<f32>(0.0);
   var jacobian = vec2<f32>(0.0);
   let waveDirs = array<vec2<f32>, 3>(normalize(vec2<f32>(1.0,0.32)), normalize(vec2<f32>(-0.44,1.0)), normalize(vec2<f32>(0.72,-0.69)));
@@ -63,7 +67,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let wf = f32(waveIndex);
     let direction = waveDirs[waveIndex];
     let frequency = (density + wf * 2.7) * perspectiveTilt;
-    let phase = dot(pAspect, direction) * frequency - time * speed * (1.0 + wf * 0.31) + audio.x * 1.5;
+    // ── Idea 1: deep-water dispersion (§12.2D) ─────────────────────
+    // c ∝ 1/sqrt(k). Mixed onto the existing per-wave factor so wave 1
+    // is unchanged and the speed slider still scales the whole sheet.
+    let cRel = sqrt(max(kMid, 0.001) / max(frequency, 0.001));
+    let phaseSpeed = (1.0 + wf * 0.31) * mix(1.0, cRel, 0.7);
+    let phase = dot(pAspect, direction) * frequency - time * speed * phaseSpeed + audio.x * 1.5;
     let amplitude = intensity / (1.0 + wf * 0.7);
     gerstner += direction * cos(phase) * amplitude;
     jacobian += abs(direction) * abs(sin(phase)) * frequency * amplitude;
@@ -133,11 +142,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let feedbackMix = clamp(0.12 * history.a, 0.03, 0.28);
   finalRGB = mix(finalRGB, history.rgb, feedbackMix);
-  finalRGB = acesToneMapping(finalRGB);
+  // ── Idea 2: Jacobian foam ────────────────────────────────────────
+  // The slope the Gerstner loop already sums is where the sheet breaks.
+  let foam = smoothstep(0.55, 1.4, length(jacobian));
+  let foamLuma = dot(max(finalRGB, vec3<f32>(0.0)), vec3<f32>(0.2126, 0.7152, 0.0722));
+  finalRGB = mix(finalRGB, vec3<f32>(foamLuma) * 0.55 + vec3<f32>(0.72, 0.78, 0.82), foam * 0.65);
+  finalRGB = acesToneMapping(max(finalRGB, vec3<f32>(0.0)));
 
   let sourceAlpha = max(baseColor.a, max(redSample.a, blueSample.a));
   let sheetSlope = clamp(length(jacobian), 0.0, 1.0);
-  let finalAlpha = clamp(sourceAlpha * 0.82 + edgeSilhouette * 0.2 + dispMag * 3.5 + sheetSlope * 0.12, 0.0, 1.0);
+  let finalAlpha = clamp(sourceAlpha * 0.82 + edgeSilhouette * 0.2 + dispMag * 3.5 + sheetSlope * 0.12 + foam * 0.15, 0.0, 1.0);
   let outputColor = vec4<f32>(finalRGB, finalAlpha);
 
   textureStore(writeTexture, coord, outputColor);

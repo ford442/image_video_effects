@@ -4,31 +4,12 @@
 //  Features: fluid-simulation, ink-diffusion, physical-media, temporal,
 //            mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-09
-//  Ideas: paper capillary; wet-edge darkening
+//  Upgraded: 2026-09-09, 2026-10-26
+//  Ideas: paper capillary; wet-edge darkening; isotropic 9-point viscosity (§12.2D); paper-pit granulation (§12.2C)
 //  A packing: raw vel.xy, pressure, ink density
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn paperTexture(uv: vec2<f32>) -> f32 {
     let noise = fract(sin(dot(uv * 100.0, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -103,8 +84,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let right = loadC(coord + vec2<i32>(1, 0), res);
     let down = loadC(coord + vec2<i32>(0, -1), res);
     let up = loadC(coord + vec2<i32>(0, 1), res);
+    let cornerDL = loadC(coord + vec2<i32>(-1, -1), res);
+    let cornerDR = loadC(coord + vec2<i32>(1, -1), res);
+    let cornerUL = loadC(coord + vec2<i32>(-1, 1), res);
+    let cornerUR = loadC(coord + vec2<i32>(1, 1), res);
 
-    vel += viscosity * (left.rg + right.rg + down.rg + up.rg - 4.0 * vel);
+    // ── Idea 3: isotropic 9-point viscosity (§12.2D) ────────────────
+    // Same viscosity coefficient as the 5-point stencil. Corners take
+    // 20% of the weight so bleed is not biased to the axes.
+    let edgeSum = left.rg + right.rg + down.rg + up.rg;
+    let cornerSum = cornerDL.rg + cornerDR.rg + cornerUL.rg + cornerUR.rg;
+    vel += viscosity * 4.0 * (0.20 * edgeSum + 0.05 * cornerSum - vel);
 
     let divergence = ((right.b - left.b) / (2.0 * max(ps.x, 0.0001)) + (up.b - down.b) / (2.0 * max(ps.y, 0.0001)));
     pressure = (left.b + right.b + down.b + up.b - divergence * ps.x * ps.x * 4.0) * 0.25;
@@ -178,6 +168,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let inkGrad = abs(right.a - left.a) + abs(up.a - down.a);
     let wetRim = smoothstep(0.04, 0.22, inkGrad) * smoothstep(0.02, 0.35, inkDensity);
     finalRGB *= 1.0 - wetRim * 0.18 * (1.0 + mids * 0.2);
+
+    // ── Idea 4: paper-pit granulation (§12.2C) ──────────────────────
+    // Pigment darkens in the pits of the paper noise already computed.
+    // Display only — stored density is left to the capillary step.
+    let pit = smoothstep(0.02, 0.10, valley);
+    finalRGB = mix(finalRGB, finalRGB * vec3<f32>(0.55, 0.50, 0.48),
+                   pit * clamp(inkThickness, 0.0, 1.0) * (0.45 + spreadSpeed * 0.35));
 
     finalRGB = acesToneMap(finalRGB * (1.0 + bass * 0.08));
     inkAlpha = clamp(inkAlpha + wetRim * 0.12 + videoColor.a * 0.08 + treble * 0.03, 0.0, 1.0);

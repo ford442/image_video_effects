@@ -18,6 +18,47 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-18: sent Cursor batch-04 (aurora-rift-pass1 through wave-equation-rgba-fluid).
   - 2026-10-18: sent Cursor batch-05 (fabric-of-reality through fire_smoke_volumetric).
   - 2026-10-18: sent Cursor batch-06 (spectrogram-displace-pass1 through gen-fluffy-raincloud). The single-pass spectrogram stays in this batch. `gen-fluffy-raincloud` is `gen_fluffy_raincloud.wgsl`.
+  - 2026-10-25: sent Grok high batch-01 (cellular-automata-rgba through nano-assembler, 15 shaders). Notes in `docs/agents/swarm-outputs/grok-2026-10-25-batch-01/`.
+  - 2026-10-25: sent Grok high batch-02 (gen-cymatic-plasma-mandalas through gen-crystalline-mandala-bloom, 15 shaders, 151–197 lines). Notes in `docs/agents/swarm-outputs/grok-2026-10-25-batch-02/`.
+  - 2026-10-26: sent a liquid ten (quantum-foam, vortex, liquid-optimized, hybrid-particle-fluid, ink-bleed, ambient-liquid, magnetic-interference, lava-lamp-blobs, tornado-vortex, gen-reaction-diffusion). `gen-reaction-diffusion` is `gen_reaction_diffusion.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/`.
+  - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
+
+## 2026-10-26 — liquid ten (10 shaders)
+
+- IDs: quantum-foam, vortex, liquid-optimized, hybrid-particle-fluid, ink-bleed, ambient-liquid, magnetic-interference, lava-lamp-blobs, tornado-vortex, gen-reaction-diffusion.
+- Per shader, the ideas actually added:
+  - quantum-foam: necked Voronoi walls; bubble memory from C luma. Curl foam and click bursts kept. No spring.
+  - vortex: shear-layer billows; funnel caustic. Lamb-Oseen, LIC, and the dimple kept.
+  - liquid-optimized: meniscus bead; Marangoni crawl. Analytic capillary field kept.
+  - hybrid-particle-fluid: particle-owned wake; suspension milk. Curl dye kept.
+  - ink-bleed: wet-edge bead (§12.2C); paper granulation (§12.2C). Fibre wick and nib kept.
+  - ambient-liquid: isotropic 9-point Laplacian (§12.2D); depletion stain. Gray-Scott packing kept.
+  - magnetic-interference: Barkhausen crackle; iron-filing streaks. Hysteresis and domain walls kept.
+  - lava-lamp-blobs: convection rolls; cooled cap. Meniscus, skin, and wax packing kept.
+  - tornado-vortex: clear eye; breakdown bulb. Rankine funnel kept.
+  - gen-reaction-diffusion: refractory stimulus gate; curvature slowing. Both models and raw A kept.
+- Floor: prelude include on the seven pasted headers; 16×16; exact C; A packing as documented; saved params exact.
+- Gates: Naga 10/10, extraBuffer, dead sliders, catalogs. Vitest 169 files / 1435 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
+- Real-GPU visual QA: external.
+
+## 2026-10-26 — fluid twelve (12 shaders)
+
+- IDs: gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye.
+- Per shader, the ideas actually added:
+  - gen-wave-equation: shoaling; crest refraction. Wave solver, caustics, and whitecaps kept.
+  - fluid-grid: cell spin; stagnation bead. Curl lattice and sprung cursor kept.
+  - spec-runge-kutta-advection: Okubo-Weiss cores; Euler residual seam. RK4 and LIC kept.
+  - sim-slime-mold-growth: substrate depletion; speck evaporation. Sensor loop and anastomosis kept.
+  - particle-disperse: ballistic coast; clump shadow. Offset/velocity state kept.
+  - alpha-fluid-simulation-paint: wet-edge bead (§12.2C); pressure relief. Paint solver kept.
+  - liquid-metal: moat foam trap; spike-tip catchlight. Height/foam packing kept.
+  - ferrofluid-em: local ridge packing; remanent spikes. Multipoles and coalescence kept.
+  - sim-ink-diffusion: paper granulation (§12.2C); chromatographic split. Gray-Scott state kept.
+  - gen-ferrofluid-monolith: crevice AO (§12.2E); cone-tip heat. Obelisk SDF kept.
+  - sim-smoke-trails: dense settling (§12.2D); lateral entrainment. Confinement kept.
+  - navier-stokes-dye: velocity streaks; vortex eye. Stored velocity/dye step kept.
+- Floor: prelude include on the seven pasted headers; 16×16; exact C; A packing as documented; saved params exact.
+- Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Vitest 169 files / 1435 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
   - 2026-10-27: sent the cyber HUD twelve (oscilloscope-overlay through cyber-hex-armor). Previous tape-and-block glitch twelve is PR 1538.
 
 ## 2026-10-27 — cyber HUD twelve (12 shaders)

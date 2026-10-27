@@ -4,7 +4,9 @@
 //  Features: analytic divergence-free spectrum, velocity-gradient tensor,
 //            Q criterion, principal strain, Rankine pointer, FFT energy cascade,
 //            temporal metal memory, ACES, semantic transmission
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-10-26
+//  Ideas: Q pressure-well dimple; principal-strain filaments
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -149,11 +151,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Surface tension suppresses the highest-strain displacement without erasing
   // its specular ridge, mimicking a cohesive metallic film.
+  // ── Idea 1: Q pressure-well dimple ─────────────────────────────────
+  // Rotation-dominated cores are pressure minima. The film sags toward
+  // the eye and the sampled plate darkens there.
+  let radialOut = safeNormalize(vec2<f32>(velocity.y, -velocity.x)) * sign(vorticity);
+  let well = smoothstep(0.0, 0.08, qCriterion);
   let cohesive = 1.0 / (1.0 + surfaceTension * anisotropy * 0.22);
   velocity *= cohesive;
   let departure = clamp(uv + velocity / aspectVec * (0.22 + 0.10 * bass), vec2<f32>(0.001), vec2<f32>(0.999));
-  let normal = normalize(vec3<f32>(-(jacobian.x + jacobian.y) * 0.035,
-                                    -(jacobian.z + jacobian.w) * 0.035, 1.0));
+  let wellTilt = radialOut * well * (0.45 + surfaceTension * 0.35);
+  let normal = normalize(vec3<f32>(-(jacobian.x + jacobian.y) * 0.035 - wellTilt.x,
+                                    -(jacobian.z + jacobian.w) * 0.035 - wellTilt.y, 1.0));
   let viewDir = vec3<f32>(0.0, 0.0, 1.0);
   let lightDir = normalize(vec3<f32>(-0.45, -0.55, 0.82));
   let halfDir = normalize(viewDir + lightDir);
@@ -166,7 +174,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let r = textureSampleLevel(readTexture, u_sampler, clamp(departure + spread, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, departure, 0.0);
   let b = textureSampleLevel(readTexture, u_sampler, clamp(departure - spread, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
-  let plate = vec3<f32>(r, g.g, b);
+  let plate = vec3<f32>(r, g.g, b) * (1.0 - well * 0.42);
 
   let vortexCore = smoothstep(-0.03, 0.10, qCriterion);
   let shearRidge = smoothstep(0.08, 0.65, anisotropy);
@@ -176,6 +184,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color += vec3<f32>(1.0, 0.94, 0.82) * specular;
   color += metal * fresnel * (0.08 + 0.22 * mids);
   color += vec3<f32>(0.50, 0.72, 1.0) * ringGlow * (0.18 + bass * 0.3);
+
+  // ── Idea 2: stretch filaments along the principal axis ─────────────
+  let across = vec2<f32>(-principal.y, principal.x);
+  let filament = pow(max(sin(dot(p, across) * mix(32.0, 64.0, surfaceTension)), 0.0), 16.0)
+               * shearRidge * (0.22 + treble * 0.35);
+  color += vec3<f32>(0.86, 0.91, 0.96) * filament * (0.18 + specularGain * 0.35);
 
   let previous = textureLoad(dataTextureC, coord, 0);
   color = mix(color, previous.rgb, clamp(previous.a * (0.035 + 0.09 * surfaceTension), 0.0, 0.14));

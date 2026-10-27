@@ -1,28 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Magnetic Ferrofluid — image-warping domains and droplet runners
-//  A owns HDR display history; C is loaded exactly for viscous trails.
+//  Magnetic Ferrofluid
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-10-26
+//  Ideas: labyrinth fingers; tip beads (§12.2D)
+//  A packing: pre-ACES HDR display history
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -50,6 +35,14 @@ fn domainHeight(p: vec2<f32>, magnet: vec2<f32>, scale: f32, time: f32, viscosit
   let grain = noise2(vec2<f32>(angle * 3.2 + time * 0.16, radius * scale * 0.8 - time * mobility));
   let envelope = exp(-radius * radius * 3.8);
   return envelope * (0.18 + pow(rosette, 5.0) * 0.58 + pow(rings, 9.0) * 0.32 + grain * 0.22);
+}
+
+// Zero-field ferrofluid is a maze, not a blank disk. `p` is the offset from the magnet.
+fn labyrinthHeight(delta: vec2<f32>, scale: f32) -> f32 {
+  let radius = length(delta);
+  let angle = atan2(delta.y, delta.x);
+  let finger = pow(max(cos(angle * (6.0 + scale * 0.05) + sin(radius * scale * 0.22) * 2.4), 0.0), 2.0);
+  return finger * exp(-radius * radius * 0.42) * 0.22;
 }
 
 fn hueRotate(color: vec3<f32>, angle: f32) -> vec3<f32> {
@@ -112,16 +105,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
+  // ── Idea 1: labyrinth fingers ──────────────────────────────────────
+  // Outside the spike envelope the same magnet still draws a maze.
+  let mazeGate = 1.0 - smoothstep(0.12, 0.90, field);
   let height = domainHeight(p, magnet, spikeScale, time * (1.0 + bass * 0.22), viscosity)
-    * (0.55 + field * 1.7) + clickFront * 0.42;
+    * (0.55 + field * 1.7) + clickFront * 0.42
+    + labyrinthHeight(delta, spikeScale) * mazeGate;
   let eps = 1.4 / resolution.y;
-  let hL = domainHeight(p - vec2<f32>(eps, 0.0), magnet, spikeScale, time, viscosity);
-  let hR = domainHeight(p + vec2<f32>(eps, 0.0), magnet, spikeScale, time, viscosity);
-  let hD = domainHeight(p - vec2<f32>(0.0, eps), magnet, spikeScale, time, viscosity);
-  let hU = domainHeight(p + vec2<f32>(0.0, eps), magnet, spikeScale, time, viscosity);
+  let hL = domainHeight(p - vec2<f32>(eps, 0.0), magnet, spikeScale, time, viscosity)
+    + labyrinthHeight(delta - vec2<f32>(eps, 0.0), spikeScale) * mazeGate;
+  let hR = domainHeight(p + vec2<f32>(eps, 0.0), magnet, spikeScale, time, viscosity)
+    + labyrinthHeight(delta + vec2<f32>(eps, 0.0), spikeScale) * mazeGate;
+  let hD = domainHeight(p - vec2<f32>(0.0, eps), magnet, spikeScale, time, viscosity)
+    + labyrinthHeight(delta - vec2<f32>(0.0, eps), spikeScale) * mazeGate;
+  let hU = domainHeight(p + vec2<f32>(0.0, eps), magnet, spikeScale, time, viscosity)
+    + labyrinthHeight(delta + vec2<f32>(0.0, eps), spikeScale) * mazeGate;
   var normal = normalize(vec3<f32>((hL - hR) * (2.2 + attraction * 5.0),
                                    (hD - hU) * (2.2 + attraction * 5.0), 0.14));
   normal = normalize(vec3<f32>(normal.xy + clickNormal * 0.45, normal.z));
+
+  // ── Idea 2: tip beads (§12.2D surface tension) ─────────────────────
+  // Where the raw spike height peaks, round the cusp into a cap.
+  // Neighbor taps include the maze; subtract it so the peak is the spike.
+  let hC = domainHeight(p, magnet, spikeScale, time, viscosity);
+  let rawL = hL - labyrinthHeight(delta - vec2<f32>(eps, 0.0), spikeScale) * mazeGate;
+  let rawR = hR - labyrinthHeight(delta + vec2<f32>(eps, 0.0), spikeScale) * mazeGate;
+  let rawD = hD - labyrinthHeight(delta - vec2<f32>(0.0, eps), spikeScale) * mazeGate;
+  let rawU = hU - labyrinthHeight(delta + vec2<f32>(0.0, eps), spikeScale) * mazeGate;
+  let tip = smoothstep(0.015, 0.10, hC - max(max(rawL, rawR), max(rawD, rawU))) * smoothstep(0.08, 0.50, field);
+  normal = normalize(mix(normal, vec3<f32>(normal.xy * 0.32, 0.92), tip * 0.75));
 
   let mobility = mix(1.6, 0.3, viscosity);
   let runnerPhase = radius * spikeScale * 2.3 - time * (8.0 + mobility * 7.0) + atan2(delta.y, delta.x) * 3.0;
@@ -146,9 +158,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rim = pow(max(dot(normal, rimLight), 0.0), 20.0);
   let ridge = smoothstep(0.2, 0.78, height) + runner * 0.7 + clickFront * 0.55;
   let darkMetal = source * vec3<f32>(0.10, 0.12, 0.15) + vec3<f32>(0.006, 0.009, 0.014);
+  let cap = pow(max(dot(normal, halfKey), 0.0), mix(6.0, 22.0, viscosity));
   var fluid = darkMetal + vec3<f32>(0.82, 0.9, 1.04) * (spec * 2.4 + rim * 0.7)
     + vec3<f32>(0.18, 0.32, 0.48) * fresnel * (1.0 + mids * 0.7)
-    + vec3<f32>(1.0, 0.56, 0.22) * clickFront * (0.2 + treble * 0.45);
+    + vec3<f32>(1.0, 0.56, 0.22) * clickFront * (0.2 + treble * 0.45)
+    + vec3<f32>(0.75, 0.82, 0.90) * cap * tip * (0.28 + attraction * 0.2);
   fluid = hueRotate(fluid, colorShift * TAU * 0.72);
 
   let effectMask = clamp(smoothstep(0.78, 0.18, radius) * (0.35 + attraction * 0.65) + ridge * 0.28, 0.0, 1.0);

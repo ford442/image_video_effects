@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, temporal
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-10-10
-//  Ideas: dispersive biharmonic; bathymetric refraction; crest caustics; whitecaps
+//  Upgraded: 2026-10-10, 2026-10-26
+//  Ideas: dispersive biharmonic; bathymetric refraction; crest caustics; whitecaps; shoaling; crest refraction
 //  A packing: raw sim (height, velocity, energy, waveIntensity); ACES on the display mix only
 //    - FIXED feedback-state bug: the solver reads (height, velocity)
 //      from dataTextureC.rg but previously wrote finalColor into
@@ -59,8 +59,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Sample input from previous layer
-    let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    // Depth drives bathymetry. The photo is sampled later, along the height slope.
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // Slider params (saved-preset contract: same ids/defaults/mapping order)
@@ -114,6 +113,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lapWide = (n2 + s2 + e2 + w2) * 0.25 - height;
     let biharmonic = lapWide - laplacian;
     let dispersion = scaleParam * 0.45;
+    // ── Idea: crest refraction — the photo slides along the height slope
+    let slope = vec2<f32>(e - w, n - s);
+    let refrUV = clamp(uv + slope * (0.012 + intensity * 0.028), vec2<f32>(0.0), vec2<f32>(1.0));
+    let inputColor = textureSampleLevel(readTexture, u_sampler, refrUV, 0.0);
 
     // ── Click droplets: rising-edge gaussian height pulses ─────────
     let mouse     = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -159,7 +162,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Wave equation integration with nonlinear term ──────────────
     let acceleration = (laplacian - biharmonic * dispersion) * wave_speed * wave_speed + nonlinTerm;
-    velocity = velocity * damping + acceleration;
+    // ── Idea: shoaling — the wave grows where bathymetry already slowed it
+    let shoal = inverseSqrt(max(bathy, 0.35));
+    velocity = velocity * damping + acceleration * shoal;
     height   = height + velocity + (droplet + ripplePulse + rainDrop) * audioBoost;
 
     // ── Colour by topological charge and energy density ────────────

@@ -6,28 +6,12 @@
 //  Chunks From: interactive-ripple
 //  Created: 2026-05-31
 //  By: 4-Agent Shader Upgrade Swarm
+//  Upgraded: 2026-10-26
+//  Ideas: traveling ring window; trough caustic focus
+//  A packing: raw — offset.xy, ripple height, alpha. ACES on display only.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = vec3<f32>(2.51);
@@ -70,6 +54,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var totalOffset = vec2<f32>(0.0);
   var rippleHeight = 0.0;
+  var signedWave = 0.0;
   var dispersionIntensity = 0.0;
 
   let pointerDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -77,6 +62,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pointerPacket = sin(pointerDist * waveCount * 10.0 - time * waveSpeedBase * 8.0) * exp(-pointerDist * 8.0) * held;
   totalOffset += pointerDelta / pointerDist * pointerPacket * waveHeight * 2.0;
   rippleHeight += abs(pointerPacket);
+  signedWave += pointerPacket;
 
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
@@ -84,9 +70,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let delta = (uv - center) * vec2<f32>(aspect, 1.0);
     let dist = length(delta);
     let age = max(0.0, time - ripple.z);
-    let envelope = exp(-age * damping) * exp(-dist * (3.0 + damping));
-
     let waveSpeed = waveSpeedBase * sqrt(waterDepth) * (1.0 + bass * 0.3);
+    // ── Idea 1: traveling ring window ───────────────────────────────
+    // The disc envelope stays. A ring at the front carries the energy.
+    let ringRadius = age * waveSpeed * 0.15;
+    let ring = exp(-abs(dist - ringRadius) * (4.5 + damping));
+    let envelope = exp(-age * damping) * exp(-dist * (3.0 + damping)) * mix(0.5, 1.0, ring);
     let phase = dist * waveCount * 8.0 - age * waveSpeed * 6.0;
     let wave = sin(phase) * envelope;
 
@@ -96,6 +85,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     totalOffset = totalOffset + dir * (wave + waveDisp) * waveHeight;
     rippleHeight = rippleHeight + abs(wave);
+    signedWave += wave;
     dispersionIntensity = dispersionIntensity + abs(waveDisp);
   }
 
@@ -106,6 +96,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     exp(-abs(fract(uv.y - time * 0.08 * waveSpeedBase) - 0.5) * 12.0);
   totalOffset += vec2<f32>(lattice, packet) * waveHeight * (0.18 + mids * 0.2);
   rippleHeight += abs(lattice) * 0.12 + abs(packet) * 0.18;
+  signedWave += lattice * 0.12 + packet * 0.18;
   totalOffset = totalOffset * boundReflect;
 
   let sampleUV = clamp(uv + totalOffset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -117,7 +108,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - chromaDisp, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var finalColor = vec3<f32>(r, src.g, b);
 
-  let caustic = causticPattern(sampleUV * 3.0, time) * smoothstep(0.35, 0.85, rippleHeight) * (0.25 + mids * 0.35);
+  // ── Idea 2: trough caustic focus ────────────────────────────────
+  // Valleys of the signed wave concentrate the existing caustic.
+  let focus = smoothstep(0.02, 0.45, -signedWave);
+  let caustic = causticPattern(sampleUV * 3.0, time) * smoothstep(0.35, 0.85, rippleHeight) * (0.25 + mids * 0.35) * (1.0 + focus * 0.85);
   let causticTint = mix(vec3<f32>(0.85, 0.95, 1.0), vec3<f32>(0.6, 0.9, 1.0), 0.5 + 0.5 * sin(time * 1.2));
   finalColor = finalColor + causticTint * caustic;
 
@@ -134,7 +128,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let wetRefl = smoothstep(0.5, 1.0, rippleHeight) * 0.08;
   finalColor = finalColor + vec3<f32>(wetRefl);
 
-  finalColor = acesToneMap(finalColor * 1.1);
+  finalColor = acesToneMap(max(finalColor, vec3<f32>(0.0)) * 1.1);
 
   let finalAlpha = clamp(rippleHeight * dispersionIntensity * depth * 2.5 + 0.55 + caustic * 0.3, 0.06, 0.98);
   let outDepth = clamp(mix(depth, 0.2 + rippleHeight * 0.15, 0.3), 0.0, 1.0);

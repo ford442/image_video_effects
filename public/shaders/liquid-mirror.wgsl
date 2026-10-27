@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid Mirror — sprung reflective height field with pointer push.
 //  Category: liquid-effects
-//  Upgraded: 2026-09-21
-//  Ideas: glitter path (micro-facet glints); energy-roughened reflection
+//  Upgraded: 2026-10-26
+//  Ideas: glitter path (micro-facet glints); energy-roughened reflection; surface tension (§12.2D); push meniscus
 //  A packing: raw — R=height, G=velocity, B=surface energy, A=coverage.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -58,6 +58,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pointerMask = smoothstep(pushSize, 0.0, mouseDist);
   let held = select(0.18, 1.0, u.zoom_config.w > 0.5);
   var impulse = pointerMask * held * (0.012 + distortion * 0.055 + length(pointerVelocity) * 0.018);
+  // ── Idea 2: push meniscus ────────────────────────────────────────
+  // The lip of the finger disc piles a ring. The center push stays.
+  let lip = pointerMask * (1.0 - pointerMask) * 4.0;
+  impulse += lip * held * (0.006 + distortion * 0.016);
   var clickEnergy = 0.0; let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i += 1u) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
@@ -69,7 +73,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let ambient = sin(uv.y * 18.0 + time * (0.42 + bass * 0.22)) * cos(uv.x * 15.0 - time * (0.34 + mids * 0.18));
   let tension = mix(0.16, 0.055, smoothness); let damping = mix(0.91, 0.985, smoothness);
-  velocity = clamp(velocity * damping + laplacian * tension + (0.16 - height) * 0.018 + impulse + ambient * distortion * 0.0015, -0.8, 0.8);
+  // ── Idea 1: surface tension (§12.2D) ─────────────────────────────
+  // Curvature κ = ∇²h / |∇h| rounds sharp peaks. Smoothness still damps.
+  let slopeLen = max(length(vec2<f32>(hR - hL, hU - hD)), 0.05);
+  let kappa = laplacian / slopeLen;
+  let sigma = mix(0.01, 0.0035, smoothness);
+  velocity = clamp(velocity * damping + laplacian * tension + (0.16 - height) * 0.018 + impulse + ambient * distortion * 0.0015 - clamp(kappa, -3.0, 3.0) * sigma, -0.8, 0.8);
   height = clamp(height + velocity * mix(0.095, 0.04, smoothness), 0.015, 1.0);
   let energy = clamp(max(c.b * 0.94, abs(velocity) * 1.4 + abs(laplacian) * 8.0 + clickEnergy * 0.45), 0.0, 1.0);
   let coverage = clamp(max(c.a * 0.997, smoothstep(0.015, 0.12, height)), 0.0, 1.0);
@@ -123,7 +132,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     + vec3<f32>(1.1, 1.02, 0.9) * glint * (1.4 + bass) * (0.35 + reflectivity * 0.65)
     + vec3<f32>(0.3, 0.64, 1.0) * energy * treble * 0.12;
   let alpha = clamp(max(direct.a, reflected.a) * (0.45 + coverage * 0.48) + fresnel.b * 0.16 + energy * 0.06, 0.0, 1.0);
-  textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), alpha));
   let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
   textureStore(writeDepthTexture, pixel, vec4<f32>(max(sourceDepth * 0.86, height * 0.38 + energy * 0.04), 0.0, 0.0, 0.0));
 }

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: Nebulabrot early/mid/late escape channels; anti-Buddhabrot interior dust; min-distance orbit spine; escape-argument streaks; main-cardioid limb; period-2 bulb; dwell isochrones
+//  Upgraded: 2026-10-25
+//  Ideas: Nebulabrot early/mid/late escape channels; anti-Buddhabrot interior dust; min-distance orbit spine; escape-argument streaks; main-cardioid limb; period-2 bulb; dwell isochrones; smooth escape time (§12.2E); period-3 limb
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -101,7 +101,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       if (dist > 4.0) {
         escaped = true;
         escapeVel = escapeVel + 1.0;
-        let esc = f32(i) / f32(baseIter);
+        // ── Idea: smooth escape time (§12.2E) — fractional iteration at the break ──
+        let zLen = max(sqrt(dist), 2.0);
+        let smoothI = f32(i) + 1.0 - log2(max(log(zLen) / log(2.0), 1e-4));
+        let esc = clamp(smoothI / f32(baseIter), 0.0, 1.0);
         density += esc * (1.0 + bass * 0.5);
         bloom += orbit * esc * esc * (0.3 + treble * 0.4);
         // Idea 1 — Nebulabrot: early / mid / late escape bands → R / G / B.
@@ -163,6 +166,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bulbLine = exp(-bulb * 22.0);
   color += vec3<f32>(0.9, 0.78, 0.42) * limb * aura * 0.55;
   color += vec3<f32>(0.45, 0.72, 1.0) * bulbLine * aura * 0.5;
+  // ── Idea: period-3 limb — the next bulb after the period-2 disk ──
+  let p3 = abs(length(center - vec2<f32>(-0.1226, 0.7449)) - 0.035);
+  let p3Line = exp(-p3 * 30.0);
+  color += vec3<f32>(0.85, 0.42, 0.95) * p3Line * aura * 0.5;
 
   let centerGlow = length(uv - mouseC * 0.25);
   color += vec3<f32>(0.2, 0.15, 0.35) * smoothstep(0.9, 0.15, centerGlow) * aura * (0.6 + bass * 0.4);

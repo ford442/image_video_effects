@@ -1,5 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid Metal — Rosensweig ferro-surface with anisotropic metal reflection
+//  Category: liquid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-26
+//  Ideas: Rosensweig hex lattice; cursor magnetic pole; Ward anisotropic lobe; moat foam trap; spike-tip catchlight
+//  A packing: raw (height, vertical velocity, foam, wetness). ACES on writeTexture only
 //  Raw A ownership: R height, G vertical velocity, B foam, A wetness.
 //  C is the exact previous A copy; output is a projection of current state.
 // ═══════════════════════════════════════════════════════════════════
@@ -140,8 +146,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   velocity = clamp(velocity * damping + acceleration, -1.25, 1.25);
   height = clamp(height + velocity * mix(0.11, 0.045, viscosity), 0.0, 1.6);
   let curvature = abs(laplacian) * 4.0 + abs(velocity) * 0.9;
+  let trough = clamp(-poleMoat, 0.0, 1.0);
+  // ── Idea: moat foam trap — the negative ring around the cursor spike holds bubbles
   let foam = clamp(max(stateC.b * mix(0.88, 0.97, viscosity),
-    smoothstep(0.16, 0.72, curvature) + foamImpulse * 0.55 + treble * curvature * 0.08), 0.0, 1.0);
+    smoothstep(0.16, 0.72, curvature) + foamImpulse * 0.55 + treble * curvature * 0.08
+    + trough * select(0.05, 0.22, u.zoom_config.w > 0.5)), 0.0, 1.0);
   let wetness = clamp(max(stateC.a * 0.992, smoothstep(0.05, 0.38, height) + heldPour * 0.3), 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(height, velocity, foam, wetness));
 
@@ -187,6 +196,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     + vec3<f32>(0.42, 0.68, 1.0) * specRim * 0.48
     + vec3<f32>(0.92, 0.97, 1.08) * anisotropicSpec * (0.07 + treble * 0.035) * (0.35 + spikeMode);
   color = mix(color, color + vec3<f32>(0.72, 0.84, 1.0) * foam * (0.38 + mids * 0.35), foam * 0.52);
+  // ── Idea: spike-tip catchlight — peaks that have reached equilibrium take the key light
+  let tip = smoothstep(0.62, 0.95, spikeMode) * smoothstep(0.0, 0.06, height - equilibrium + 0.02);
+  color = color + vec3<f32>(1.05, 0.98, 0.9) * specKey * tip * (0.35 + reflectivity * 0.8);
   let alpha = clamp(wetness * (0.62 + reflectivity * 0.28) + fresnel.g * 0.14 + foam * 0.08, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
 

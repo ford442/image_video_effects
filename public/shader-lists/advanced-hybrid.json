@@ -6911,7 +6911,8 @@
       "fbm",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8326,7 +8327,8 @@
       "depth-aware",
       "mouse-driven",
       "temporal",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9852,7 +9854,9 @@
       "viscous-drag",
       "bilateral-filter",
       "mouse-driven",
-      "ripple-shockwaves"
+      "ripple-shockwaves",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

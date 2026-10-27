@@ -367,8 +367,17 @@
       "history": []
     },
     "ferrofluid-em": {
-      "hash": "8e78fadd5fc17f69",
-      "history": []
+      "hash": "f9136a9b426f219e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "f9136a9b426f219e",
+          "prev_hash": "8e78fadd5fc17f69",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "fire-smoke-volumetric-fog": {
       "hash": "a51d3932ce62a899",
@@ -586,8 +595,17 @@
       ]
     },
     "hyper-tensor-fluid": {
-      "hash": "629e12c5f8cf7f4e",
-      "history": []
+      "hash": "5354791ba7a56fa2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "5354791ba7a56fa2",
+          "prev_hash": "629e12c5f8cf7f4e",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "hyperbolic-dreamweaver-julia": {
       "hash": "7de5eaac65b4932d",
@@ -602,8 +620,17 @@
       "history": []
     },
     "ink-bleed-fluid": {
-      "hash": "5f9e00a8498507df",
-      "history": []
+      "hash": "23aac22b485506d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "23aac22b485506d2",
+          "prev_hash": "5f9e00a8498507df",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "ink-dispersion-guided": {
       "hash": "34880d1d8ab3cb86",
@@ -696,8 +723,17 @@
       "history": []
     },
     "particle-dreams-hdr": {
-      "hash": "6754e5c0209f0a0a",
-      "history": []
+      "hash": "b8e3594c5539d2fd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "b8e3594c5539d2fd",
+          "prev_hash": "6754e5c0209f0a0a",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
+        }
+      ]
     },
     "phantom-lag-history": {
       "hash": "8eb378c53d80cfa8",
@@ -805,8 +841,17 @@
       "history": []
     },
     "viscous-drag-bilateral": {
-      "hash": "4bf851ad9fd50d52",
-      "history": []
+      "hash": "79f2c025e4cec803",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "79f2c025e4cec803",
+          "prev_hash": "4bf851ad9fd50d52",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "vortex-warp-coupled": {
       "hash": "b0bc7d97512c9b3c",
@@ -838,8 +883,17 @@
       "history": []
     },
     "ambient-liquid": {
-      "hash": "8f258b6ea78182a7",
-      "history": []
+      "hash": "06400bc6ca8a2df0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "06400bc6ca8a2df0",
+          "prev_hash": "8f258b6ea78182a7",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "anisotropic-kuwahara": {
       "hash": "ebd5e23eafb82266",
@@ -1096,8 +1150,17 @@
       "history": []
     },
     "ink-diffusion": {
-      "hash": "b49e7ccd8e30afa5",
-      "history": []
+      "hash": "aacddd4c2942da63",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "aacddd4c2942da63",
+          "prev_hash": "b49e7ccd8e30afa5",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
+        }
+      ]
     },
     "ink_dispersion_alpha": {
       "hash": "114fbe624d7dfa6c",
@@ -1216,8 +1279,17 @@
       "history": []
     },
     "navier-stokes-dye": {
-      "hash": "02e0e1cb08bd8c93",
-      "history": []
+      "hash": "f978f9745589f7f6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "f978f9745589f7f6",
+          "prev_hash": "02e0e1cb08bd8c93",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "nebulous-dream": {
       "hash": "c6cc3ff6996efcb6",
@@ -1320,8 +1392,17 @@
       "history": []
     },
     "quantum-foam": {
-      "hash": "c294055244d8b77b",
-      "history": []
+      "hash": "e30111e1d4d1732a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "e30111e1d4d1732a",
+          "prev_hash": "c294055244d8b77b",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "quantum-fractal": {
       "hash": "c53d97147ffb0e81",
@@ -1606,8 +1687,17 @@
       ]
     },
     "fluid-grid": {
-      "hash": "e07d78d7af7ba1ae",
-      "history": []
+      "hash": "e3c702d7ab5b121c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "e3c702d7ab5b121c",
+          "prev_hash": "e07d78d7af7ba1ae",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "fractal-glass-distort": {
       "hash": "24f32eeedd902ce1",
@@ -1727,12 +1817,30 @@
       "history": []
     },
     "liquid-swirl": {
-      "hash": "fe53cb44721c0c63",
-      "history": []
+      "hash": "752b4988b6bdfc16",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "752b4988b6bdfc16",
+          "prev_hash": "fe53cb44721c0c63",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "liquid-warp-interactive": {
-      "hash": "ccc413ac0fc5e1b1",
-      "history": []
+      "hash": "f272933fbe9a1526",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "f272933fbe9a1526",
+          "prev_hash": "ccc413ac0fc5e1b1",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "log-polar-droste": {
       "hash": "bb4f267c477cdb7e",
@@ -1968,8 +2076,17 @@
       "history": []
     },
     "vortex": {
-      "hash": "8e25618533d7c567",
-      "history": []
+      "hash": "fd028228044e9438",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "fd028228044e9438",
+          "prev_hash": "8e25618533d7c567",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "zoom-burst": {
       "hash": "11b38bef7eb42040",
@@ -2580,8 +2697,17 @@
       "history": []
     },
     "gen-bioluminescent-reaction-diffusion": {
-      "hash": "4afab0887d2ec6b9",
-      "history": []
+      "hash": "2e907b87b1b003a8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "2e907b87b1b003a8",
+          "prev_hash": "4afab0887d2ec6b9",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
+        }
+      ]
     },
     "gen-biomechanical-hive": {
       "hash": "e9ca474c8de47599",
@@ -2670,7 +2796,7 @@
       ]
     },
     "gen-buddhabrot-aura": {
-      "hash": "34b0e56b8e864efc",
+      "hash": "555564ca0846443f",
       "history": [
         {
           "event": "upgraded",
@@ -2679,6 +2805,14 @@
           "prev_hash": "3e3fdf3efbb32b66",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "555564ca0846443f",
+          "prev_hash": "34b0e56b8e864efc",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
         }
       ]
     },
@@ -2811,7 +2945,7 @@
       ]
     },
     "gen-celestial-yggdrasil-matrix": {
-      "hash": "bfb11cf2083f0a75",
+      "hash": "9b1f8b227913addf",
       "history": [
         {
           "event": "upgraded",
@@ -2820,11 +2954,19 @@
           "prev_hash": "7c5531c2a8233664",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "9b1f8b227913addf",
+          "prev_hash": "bfb11cf2083f0a75",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
         }
       ]
     },
     "gen-cellular-automata-tapestry": {
-      "hash": "38da9e9a15b5d63f",
+      "hash": "a8ea2f24b3ee04f0",
       "history": [
         {
           "event": "upgraded",
@@ -2833,6 +2975,14 @@
           "prev_hash": "5aa2c44d80befa03",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "a8ea2f24b3ee04f0",
+          "prev_hash": "38da9e9a15b5d63f",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
         }
       ]
     },
@@ -3126,7 +3276,7 @@
       ]
     },
     "gen-conway-game-of-life": {
-      "hash": "0ca5d753e615c513",
+      "hash": "95186143aadd7a21",
       "history": [
         {
           "event": "upgraded",
@@ -3135,6 +3285,14 @@
           "prev_hash": "b953cf253f5447d3",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "95186143aadd7a21",
+          "prev_hash": "0ca5d753e615c513",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
         }
       ]
     },
@@ -3237,8 +3395,17 @@
       ]
     },
     "gen-crystal-lattice-growth": {
-      "hash": "53084e5241867ab5",
-      "history": []
+      "hash": "923fb9dc495637d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "923fb9dc495637d2",
+          "prev_hash": "53084e5241867ab5",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        }
+      ]
     },
     "gen-crystalline-chrono-dyson": {
       "hash": "b258ad9e557906b6",
@@ -3254,8 +3421,17 @@
       ]
     },
     "gen-crystalline-mandala-bloom": {
-      "hash": "2c025410c0c54b33",
-      "history": []
+      "hash": "e48efdd1c29a0e00",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "e48efdd1c29a0e00",
+          "prev_hash": "2c025410c0c54b33",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        }
+      ]
     },
     "gen-crystalline-nebula-weaver-void-spider": {
       "hash": "193f71a54eef2c7e",
@@ -3416,7 +3592,7 @@
       ]
     },
     "gen-cymatic-plasma-mandalas": {
-      "hash": "a43091e254b58f84",
+      "hash": "ee281999ad3f3fb5",
       "history": [
         {
           "event": "upgraded",
@@ -3425,6 +3601,14 @@
           "prev_hash": "6c7a508284ede7ad",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "ee281999ad3f3fb5",
+          "prev_hash": "a43091e254b58f84",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
         }
       ]
     },
@@ -3476,7 +3660,7 @@
       ]
     },
     "gen-dla-copper-deposition": {
-      "hash": "5c5b218f052fc98a",
+      "hash": "1d9efa2cfd723022",
       "history": [
         {
           "event": "upgraded",
@@ -3485,6 +3669,14 @@
           "prev_hash": "78be4c24b3b1183f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "1d9efa2cfd723022",
+          "prev_hash": "5c5b218f052fc98a",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
         }
       ]
     },
@@ -3515,7 +3707,7 @@
       ]
     },
     "gen-dynamic-tessellation-ornate-fractal-tiles": {
-      "hash": "56510b33201b1d95",
+      "hash": "17d84c55d1c4b530",
       "history": [
         {
           "event": "upgraded",
@@ -3524,11 +3716,19 @@
           "prev_hash": "76feddc5e292212d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "17d84c55d1c4b530",
+          "prev_hash": "56510b33201b1d95",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
         }
       ]
     },
     "gen-echo-dunes": {
-      "hash": "ee6c95260c106e9e",
+      "hash": "3618ec33c9eb26a9",
       "history": [
         {
           "event": "upgraded",
@@ -3537,6 +3737,14 @@
           "prev_hash": "efb69c649baf2bd5",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "3618ec33c9eb26a9",
+          "prev_hash": "ee6c95260c106e9e",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
         }
       ]
     },
@@ -3904,7 +4112,7 @@
       ]
     },
     "gen-ferrofluid-monolith": {
-      "hash": "e8085d451e7b1f2c",
+      "hash": "5ea1f3fd06afe8eb",
       "history": [
         {
           "event": "upgraded",
@@ -3913,6 +4121,14 @@
           "prev_hash": "0f45d0cb63c496b8",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "5ea1f3fd06afe8eb",
+          "prev_hash": "e8085d451e7b1f2c",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
         }
       ]
     },
@@ -3995,7 +4211,7 @@
       ]
     },
     "gen-fireworks-dahlia-burst": {
-      "hash": "818041a63129701f",
+      "hash": "26cd206b21c4fc9c",
       "history": [
         {
           "event": "upgraded",
@@ -4004,6 +4220,14 @@
           "prev_hash": "bda185455e1b35f8",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "26cd206b21c4fc9c",
+          "prev_hash": "818041a63129701f",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
         }
       ]
     },
@@ -4060,7 +4284,7 @@
       ]
     },
     "gen-fireworks-ring-shell": {
-      "hash": "74471540654f4d7e",
+      "hash": "6557c39b71b47d51",
       "history": [
         {
           "event": "upgraded",
@@ -4069,6 +4293,14 @@
           "prev_hash": "69ca200e9c51b298",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "6557c39b71b47d51",
+          "prev_hash": "74471540654f4d7e",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
         }
       ]
     },
@@ -4263,7 +4495,7 @@
       ]
     },
     "gen-fractal-tree-growth": {
-      "hash": "ed4cbbf64668ffd4",
+      "hash": "eb1623c26265cea9",
       "history": [
         {
           "event": "upgraded",
@@ -4272,6 +4504,14 @@
           "prev_hash": "2de708e2aaae5d20",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "eb1623c26265cea9",
+          "prev_hash": "ed4cbbf64668ffd4",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
         }
       ]
     },
@@ -4668,7 +4908,7 @@
       "history": []
     },
     "gen-hyperbolic-tree": {
-      "hash": "b77ae6d04938d3ec",
+      "hash": "e947b6127eeebc59",
       "history": [
         {
           "event": "upgraded",
@@ -4677,6 +4917,14 @@
           "prev_hash": "5ce34ad422401914",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "e947b6127eeebc59",
+          "prev_hash": "b77ae6d04938d3ec",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
         }
       ]
     },
@@ -5903,7 +6151,7 @@
       ]
     },
     "gen-phyllotaxis-galaxy-spiral": {
-      "hash": "754366ed2509b87f",
+      "hash": "b8475d9f093e6ab3",
       "history": [
         {
           "event": "upgraded",
@@ -5912,6 +6160,14 @@
           "prev_hash": "71fd8d044a289185",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "b8475d9f093e6ab3",
+          "prev_hash": "754366ed2509b87f",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
         }
       ]
     },
@@ -5929,7 +6185,7 @@
       ]
     },
     "gen-plasma-mandala": {
-      "hash": "4d7939ab4b3d200c",
+      "hash": "93969a465e0085da",
       "history": [
         {
           "event": "upgraded",
@@ -5938,6 +6194,14 @@
           "prev_hash": "0a4744d534e9ee73",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "93969a465e0085da",
+          "prev_hash": "4d7939ab4b3d200c",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
         }
       ]
     },
@@ -6192,8 +6456,17 @@
       "history": []
     },
     "gen-psychedelic-moire-flower": {
-      "hash": "bdadc9fb189b5ab4",
-      "history": []
+      "hash": "ace9bd662940ab3d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "ace9bd662940ab3d",
+          "prev_hash": "bdadc9fb189b5ab4",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        }
+      ]
     },
     "gen-psychedelic-time-warp-kaleidoscope": {
       "hash": "394ce4d18b2a806c",
@@ -6902,8 +7175,17 @@
       "history": []
     },
     "gen-verlet-cloth-wind": {
-      "hash": "710f660287b62a6c",
-      "history": []
+      "hash": "08c2bc7b2fe0f48f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "08c2bc7b2fe0f48f",
+          "prev_hash": "710f660287b62a6c",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
+        }
+      ]
     },
     "gen-vitreous-chrono-chandelier": {
       "hash": "7215ffc90758e004",
@@ -7253,16 +7535,34 @@
       ]
     },
     "gen-reaction-diffusion": {
-      "hash": "961c268545ad250c",
-      "history": []
+      "hash": "ce5e9e67b107fc20",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "ce5e9e67b107fc20",
+          "prev_hash": "961c268545ad250c",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-trails": {
       "hash": "ab691d6bebaf92ec",
       "history": []
     },
     "gen-wave-equation": {
-      "hash": "d3c83cd03959fa6d",
-      "history": []
+      "hash": "e1bf4abeaed0dc3a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "e1bf4abeaed0dc3a",
+          "prev_hash": "d3c83cd03959fa6d",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "generative-psy-swirls": {
       "hash": "699c87088e3da26a",
@@ -7282,8 +7582,17 @@
       ]
     },
     "gravito-phononic-accretion": {
-      "hash": "fedd0318160f4290",
-      "history": []
+      "hash": "806e34501059f9f7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "806e34501059f9f7",
+          "prev_hash": "fedd0318160f4290",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        }
+      ]
     },
     "holographic-crystal": {
       "hash": "c08bfdcf4aca23cf",
@@ -7340,8 +7649,17 @@
       "history": []
     },
     "lava-lamp-blobs": {
-      "hash": "d06e13052968fe7d",
-      "history": []
+      "hash": "e31cf0a1c56a9a23",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "e31cf0a1c56a9a23",
+          "prev_hash": "d06e13052968fe7d",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "liquid_crystal_birefringence": {
       "hash": "f9d9e7b696313fb4",
@@ -7361,8 +7679,17 @@
       "history": []
     },
     "magnetic-flux-garden": {
-      "hash": "b802acbb685f572c",
-      "history": []
+      "hash": "4d6911e0659a4a05",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "4d6911e0659a4a05",
+          "prev_hash": "b802acbb685f572c",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        }
+      ]
     },
     "molten-gold": {
       "hash": "21519cd3a01ac73b",
@@ -7373,8 +7700,25 @@
       "history": []
     },
     "multi-scale-evolutionary-cellular-gardens": {
-      "hash": "24ff10972bb766ba",
-      "history": []
+      "hash": "c11256bab0d512e8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "3d1d556183408d5d",
+          "prev_hash": "24ff10972bb766ba",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T11:08:58.524Z",
+          "hash": "c11256bab0d512e8",
+          "prev_hash": "3d1d556183408d5d",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        }
+      ]
     },
     "mycelium-network": {
       "hash": "5d80dbecc3d9a859",
@@ -7521,8 +7865,17 @@
       "history": []
     },
     "tornado-vortex": {
-      "hash": "fd6940d2881ec2ac",
-      "history": []
+      "hash": "4457875168311d3f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "4457875168311d3f",
+          "prev_hash": "fd6940d2881ec2ac",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "turing-veins": {
       "hash": "d2f1e80df07be27a",
@@ -7667,8 +8020,17 @@
       "history": []
     },
     "hybrid-particle-fluid": {
-      "hash": "6a8a84e5002fdc82",
-      "history": []
+      "hash": "35e3744558f4adc6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "35e3744558f4adc6",
+          "prev_hash": "6a8a84e5002fdc82",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "hybrid-reaction-diffusion-glass": {
       "hash": "ae7131fd0cb94e29",
@@ -7968,8 +8330,17 @@
       ]
     },
     "honey-melt": {
-      "hash": "70627c97c1e2baee",
-      "history": []
+      "hash": "2a8bd46301fa7724",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "2a8bd46301fa7724",
+          "prev_hash": "70627c97c1e2baee",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "kintsugi-repair": {
       "hash": "63f3c6849ab5101e",
@@ -8161,8 +8532,17 @@
       "history": []
     },
     "slime-drip": {
-      "hash": "ddb1486ade80473e",
-      "history": []
+      "hash": "0fe96107e55f5b11",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "0fe96107e55f5b11",
+          "prev_hash": "ddb1486ade80473e",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
+        }
+      ]
     },
     "spec-cooperative-edge-linking": {
       "hash": "599091d96f2fd316",
@@ -8687,8 +9067,17 @@
       "history": []
     },
     "ferrofluid": {
-      "hash": "9a95bb085b0daf95",
-      "history": []
+      "hash": "0620547ff1ec4c8f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "0620547ff1ec4c8f",
+          "prev_hash": "9a95bb085b0daf95",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "fiber-optic-weave": {
       "hash": "b785d8ae6ce4793a",
@@ -8821,8 +9210,17 @@
       "history": []
     },
     "ink-bleed": {
-      "hash": "0ec9eca371e34f30",
-      "history": []
+      "hash": "3cf9014c8c86e95c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "3cf9014c8c86e95c",
+          "prev_hash": "0ec9eca371e34f30",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "interactive-emboss": {
       "hash": "52e9bf6d8c81163f",
@@ -8949,8 +9347,17 @@
       ]
     },
     "interactive-ripple": {
-      "hash": "d1df49932613b0d9",
-      "history": []
+      "hash": "2e78805cda939fcc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "2e78805cda939fcc",
+          "prev_hash": "d1df49932613b0d9",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "interactive-voronoi-lens": {
       "hash": "416173a8126703bc",
@@ -9095,7 +9502,7 @@
       ]
     },
     "luma-magnetism": {
-      "hash": "de1ea1a5a4393a53",
+      "hash": "8534272c691088bb",
       "history": [
         {
           "event": "upgraded",
@@ -9104,6 +9511,14 @@
           "prev_hash": "359855fb7009eae7",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "8534272c691088bb",
+          "prev_hash": "de1ea1a5a4393a53",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
         }
       ]
     },
@@ -9142,15 +9557,24 @@
       ]
     },
     "magnetic-interference": {
-      "hash": "e70109f12a9f5406",
-      "history": []
+      "hash": "fc90234427a1c672",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "fc90234427a1c672",
+          "prev_hash": "e70109f12a9f5406",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "magnetic-luma-sort": {
       "hash": "5c1663964740c8ff",
       "history": []
     },
     "magnetic-pixels": {
-      "hash": "da30d0afb1b89a6d",
+      "hash": "b7fe65900b662d4f",
       "history": [
         {
           "event": "upgraded",
@@ -9159,6 +9583,14 @@
           "prev_hash": "9bf3719195d4ddf2",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "b7fe65900b662d4f",
+          "prev_hash": "da30d0afb1b89a6d",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
         }
       ]
     },
@@ -9176,7 +9608,7 @@
       ]
     },
     "magnetic-ring": {
-      "hash": "8bc245e9b0625fec",
+      "hash": "16854b7b80d20c53",
       "history": [
         {
           "event": "upgraded",
@@ -9185,6 +9617,14 @@
           "prev_hash": "1290b66e42534630",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "16854b7b80d20c53",
+          "prev_hash": "8bc245e9b0625fec",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
         }
       ]
     },
@@ -9248,8 +9688,17 @@
       ]
     },
     "mouse-fluid-coupling": {
-      "hash": "a4aef4bbd1600066",
-      "history": []
+      "hash": "29fbe393c0f64a6f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "29fbe393c0f64a6f",
+          "prev_hash": "a4aef4bbd1600066",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "mouse-gravity": {
       "hash": "429b3365d8025070",
@@ -9429,7 +9878,7 @@
       ]
     },
     "neon-fluid-warp": {
-      "hash": "67036031e29df88c",
+      "hash": "521786c7cf46a2fb",
       "history": [
         {
           "event": "upgraded",
@@ -9438,6 +9887,14 @@
           "prev_hash": "5a93d8a7a754a85c",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "521786c7cf46a2fb",
+          "prev_hash": "67036031e29df88c",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
         }
       ]
     },
@@ -9578,7 +10035,7 @@
       "history": []
     },
     "particle-disperse": {
-      "hash": "a1936d957f9f6ed4",
+      "hash": "62997beacb5ccdd2",
       "history": [
         {
           "event": "upgraded",
@@ -9587,6 +10044,14 @@
           "prev_hash": "2f1e1b6cc93ae520",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "62997beacb5ccdd2",
+          "prev_hash": "a1936d957f9f6ed4",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
         }
       ]
     },
@@ -9808,8 +10273,17 @@
       "history": []
     },
     "raindrop-ripples": {
-      "hash": "1a5fde027e7ce071",
-      "history": []
+      "hash": "f876503472c04fc0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "f876503472c04fc0",
+          "prev_hash": "1a5fde027e7ce071",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "reactive-glass-grid": {
       "hash": "34bb90badfa3acf1",
@@ -9841,16 +10315,34 @@
       "history": []
     },
     "rgb-fluid": {
-      "hash": "39556d4953a2c26d",
-      "history": []
+      "hash": "f74989976a43779a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "f74989976a43779a",
+          "prev_hash": "39556d4953a2c26d",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
+        }
+      ]
     },
     "rgb-iso-lines": {
       "hash": "0ca5edbf912a98e2",
       "history": []
     },
     "rgb-ripple-waves": {
-      "hash": "1e770362bad343b2",
-      "history": []
+      "hash": "06f22d9e7b57bfe0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "06f22d9e7b57bfe0",
+          "prev_hash": "1e770362bad343b2",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "rgb-shift-brush": {
       "hash": "e4b43e8e2ef9e3ac",
@@ -10137,8 +10629,17 @@
       ]
     },
     "velvet-vortex": {
-      "hash": "2451ddb7d30218bc",
-      "history": []
+      "hash": "c7ab7d9e6579bcff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "c7ab7d9e6579bcff",
+          "prev_hash": "2451ddb7d30218bc",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "venetian-blinds": {
       "hash": "be132400cbf86220",
@@ -10221,8 +10722,17 @@
       "history": []
     },
     "vortex-drag": {
-      "hash": "3ade12287ff49469",
-      "history": []
+      "hash": "6e58a3cc83d4ec8e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "6e58a3cc83d4ec8e",
+          "prev_hash": "3ade12287ff49469",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "x-ray-reveal": {
       "hash": "e3624371714c7fe1",
@@ -10354,36 +10864,90 @@
       "history": []
     },
     "ink-marbling": {
-      "hash": "fdcb550ba2828c51",
-      "history": []
+      "hash": "9b2bc0364c3955ce",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "9b2bc0364c3955ce",
+          "prev_hash": "fdcb550ba2828c51",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
+        }
+      ]
     },
     "kimi-liquid-glass": {
       "hash": "eaf7d99871930b86",
       "history": []
     },
     "liquid-displacement": {
-      "hash": "c651323d33cf5548",
-      "history": []
+      "hash": "9da18c7f660b3f61",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "9da18c7f660b3f61",
+          "prev_hash": "c651323d33cf5548",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
+        }
+      ]
     },
     "liquid-fast": {
-      "hash": "d12692552cd43b58",
-      "history": []
+      "hash": "039749761b7d1650",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "039749761b7d1650",
+          "prev_hash": "d12692552cd43b58",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
+        }
+      ]
     },
     "liquid-glitch": {
-      "hash": "4c8b018f037771e5",
-      "history": []
+      "hash": "46652bc64677b6ce",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "46652bc64677b6ce",
+          "prev_hash": "4c8b018f037771e5",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-jelly": {
       "hash": "53744b82c10e8d09",
       "history": []
     },
     "liquid-metal": {
-      "hash": "7a4fb7fa642d6c26",
-      "history": []
+      "hash": "c7104b065f444ee3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "c7104b065f444ee3",
+          "prev_hash": "7a4fb7fa642d6c26",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "liquid-mirror": {
-      "hash": "a7aabc874cb72de1",
-      "history": []
+      "hash": "662ea4e223083ee4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "662ea4e223083ee4",
+          "prev_hash": "a7aabc874cb72de1",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-oil": {
       "hash": "94282d257aefff75",
@@ -10416,8 +10980,17 @@
       ]
     },
     "liquid-optimized": {
-      "hash": "d7c9dad4dd6a5cd5",
-      "history": []
+      "hash": "0ec2f5517092fb20",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T04:57:01.728Z",
+          "hash": "0ec2f5517092fb20",
+          "prev_hash": "d7c9dad4dd6a5cd5",
+          "commit": "c88e6085",
+          "note": "2026-10-26 liquid ten (grok) — docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/BRIEFS.md"
+        }
+      ]
     },
     "liquid-pass1": {
       "hash": "597449b10448b1ee",
@@ -10446,40 +11019,94 @@
       ]
     },
     "liquid-perspective": {
-      "hash": "190954c12e873fb4",
-      "history": []
+      "hash": "6a36110871abbf1c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "6a36110871abbf1c",
+          "prev_hash": "190954c12e873fb4",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-rainbow-prismatic": {
       "hash": "857cd6879af532d9",
       "history": []
     },
     "liquid-rainbow": {
-      "hash": "b50f603db2510d35",
-      "history": []
+      "hash": "6d2f05f22cf44c0e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "6d2f05f22cf44c0e",
+          "prev_hash": "b50f603db2510d35",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
+        }
+      ]
     },
     "liquid-rgb": {
-      "hash": "99fd54974cf50f96",
-      "history": []
+      "hash": "22df3613f39007a4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "22df3613f39007a4",
+          "prev_hash": "99fd54974cf50f96",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
+        }
+      ]
     },
     "liquid-smear": {
       "hash": "778e62d26d9c840a",
       "history": []
     },
     "liquid-tensor-vortex": {
-      "hash": "c4d0caa61a998680",
-      "history": []
+      "hash": "636e2e1f27290c21",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "636e2e1f27290c21",
+          "prev_hash": "c4d0caa61a998680",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "liquid-v1": {
       "hash": "a500ade44fabed15",
       "history": []
     },
     "liquid-viscous-grokcf1": {
-      "hash": "518ebb208d37df0b",
-      "history": []
+      "hash": "18d3214cd33593f7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "18d3214cd33593f7",
+          "prev_hash": "518ebb208d37df0b",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-viscous-simple": {
-      "hash": "29ccdd2b8514c78f",
-      "history": []
+      "hash": "87c61fc245394ee6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "87c61fc245394ee6",
+          "prev_hash": "29ccdd2b8514c78f",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "liquid-viscous": {
       "hash": "78779bbf8015b9d0",
@@ -10503,7 +11130,7 @@
       "history": []
     },
     "luma-melt-interactive": {
-      "hash": "661aa9caa4e1c8bf",
+      "hash": "63e1c1aaf7a38a22",
       "history": [
         {
           "event": "upgraded",
@@ -10512,6 +11139,14 @@
           "prev_hash": "f12317950bdb781c",
           "commit": "9cace4aa",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T15:30:59.445Z",
+          "hash": "63e1c1aaf7a38a22",
+          "prev_hash": "661aa9caa4e1c8bf",
+          "commit": "23d76a55",
+          "note": "2026-10-26 cursor/batch-10 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-10/BRIEFS.md"
         }
       ]
     },
@@ -10520,8 +11155,17 @@
       "history": []
     },
     "rain-ripples": {
-      "hash": "b8a1514fb044448c",
-      "history": []
+      "hash": "7777f4d808486137",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "7777f4d808486137",
+          "prev_hash": "b8a1514fb044448c",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "viscous-drag": {
       "hash": "929a5afff32f7537",
@@ -10953,8 +11597,17 @@
       "history": []
     },
     "alpha-fluid-simulation-paint": {
-      "hash": "6b4deaaeeac1c449",
-      "history": []
+      "hash": "e90ea790005ffda5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "e90ea790005ffda5",
+          "prev_hash": "6b4deaaeeac1c449",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "alpha-multi-state-ecosystem": {
       "hash": "74c0d976a68a2010",
@@ -10978,8 +11631,17 @@
       ]
     },
     "cellular-automata-rgba": {
-      "hash": "7e8e56de55569526",
-      "history": []
+      "hash": "cecd4a181f975673",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "cecd4a181f975673",
+          "prev_hash": "7e8e56de55569526",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
+        }
+      ]
     },
     "chromatic-reaction-diffusion-rgba": {
       "hash": "609e13bd3ce18d2d",
@@ -11033,12 +11695,30 @@
       ]
     },
     "flow-sort": {
-      "hash": "c97f2d85942163ce",
-      "history": []
+      "hash": "38234840432709e8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "38234840432709e8",
+          "prev_hash": "c97f2d85942163ce",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        }
+      ]
     },
     "galaxy-compute": {
-      "hash": "16e216492598e962",
-      "history": []
+      "hash": "9610cd318b10bc09",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "9610cd318b10bc09",
+          "prev_hash": "16e216492598e962",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
+        }
+      ]
     },
     "gray-scott-tank": {
       "hash": "ee31b94d212e5bd4",
@@ -11079,8 +11759,17 @@
       "history": []
     },
     "nano-assembler": {
-      "hash": "ce55face8458d659",
-      "history": []
+      "hash": "0feb5acaedd49b3e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "0feb5acaedd49b3e",
+          "prev_hash": "ce55face8458d659",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
+        }
+      ]
     },
     "optical-flow-dream": {
       "hash": "7829e2d34d7c8a96",
@@ -11210,8 +11899,17 @@
       ]
     },
     "sim-fluid-feedback-coupled": {
-      "hash": "b8aac38525ac354b",
-      "history": []
+      "hash": "e5f1f04ffff01fea",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "e5f1f04ffff01fea",
+          "prev_hash": "b8aac38525ac354b",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
     },
     "sim-fluid-feedback-field": {
       "hash": "803efa73b6e8de06",
@@ -11244,8 +11942,17 @@
       "history": []
     },
     "sim-ink-diffusion": {
-      "hash": "d326b44069c8b8f2",
-      "history": []
+      "hash": "fd39278afe541547",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "fd39278afe541547",
+          "prev_hash": "d326b44069c8b8f2",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "sim-sand-dunes-rgba": {
       "hash": "4d42b4fa59d182c8",
@@ -11269,36 +11976,99 @@
       ]
     },
     "sim-slime-mold-growth": {
-      "hash": "6d5dc6ec60b14937",
-      "history": []
+      "hash": "15eef2ce7bf077c1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "15eef2ce7bf077c1",
+          "prev_hash": "6d5dc6ec60b14937",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "sim-smoke-trails": {
-      "hash": "97b86f9e3e81f51f",
-      "history": []
+      "hash": "e4d65e25afa1a7ff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "e4d65e25afa1a7ff",
+          "prev_hash": "97b86f9e3e81f51f",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "sim-volumetric-fake": {
-      "hash": "efe4b26a498afeb3",
-      "history": []
+      "hash": "430e4df7b2feb17a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T21:33:54.175Z",
+          "hash": "430e4df7b2feb17a",
+          "prev_hash": "efe4b26a498afeb3",
+          "commit": "9c26cf56",
+          "note": "2026-10-26 cursor/batch-11 liquid, ripple, vortex (Grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-11"
+        }
+      ]
     },
     "slime-mold-on-video": {
-      "hash": "894ea10033bf6592",
-      "history": []
+      "hash": "b85e191b08bbaa23",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "b85e191b08bbaa23",
+          "prev_hash": "894ea10033bf6592",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
+        }
+      ]
     },
     "spec-runge-kutta-advection": {
-      "hash": "5a2705601bd1c0ea",
-      "history": []
+      "hash": "ac045fc99b3b3061",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-26T08:43:48.556Z",
+          "hash": "ac045fc99b3b3061",
+          "prev_hash": "5a2705601bd1c0ea",
+          "commit": "90108437",
+          "note": "2026-10-26 fluid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/BRIEFS.md"
+        }
+      ]
     },
     "split-flap-display": {
-      "hash": "1bf271477083637a",
-      "history": []
+      "hash": "d2e3f477af56c9ed",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T10:59:12.166Z",
+          "hash": "d2e3f477af56c9ed",
+          "prev_hash": "1bf271477083637a",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-02 (grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-02/"
+        }
+      ]
     },
     "steamy-glass": {
       "hash": "9ed49648f414e451",
       "history": []
     },
     "wave-equation": {
-      "hash": "33d97a420f08df1c",
-      "history": []
+      "hash": "d1a1c38736596173",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-25T08:25:27.391Z",
+          "hash": "d1a1c38736596173",
+          "prev_hash": "33d97a420f08df1c",
+          "commit": "c88e6085",
+          "note": "2026-10-25 grok/batch-01 (Grok high) — docs/agents/swarm-outputs/grok-2026-10-25-batch-01"
+        }
+      ]
     },
     "wave-tank": {
       "hash": "ea53bce22243c220",
@@ -11698,6 +12468,18 @@
           "hash": "9214f40e60534b0a",
           "commit": "5c5183cd",
           "note": "2026-10-18 argon4/batch-04: two native ideas each"
+        }
+      ]
+    },
+    "gen-abyssal-ferrofluid-singularity": {
+      "hash": "899333d01258f734",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-10-26T11:14:33.721Z",
+          "hash": "899333d01258f734",
+          "commit": "a232cbca",
+          "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
         }
       ]
     }

@@ -4,8 +4,8 @@
 //  Features: audio-reactive, audio-driven, upgraded-rgba
 //  Complexity: High
 //  Created: 2025-11-25
-//  Upgraded: 2026-10-05
-//  Ideas: 1) Lamb-Oseen vortex profile (solid core + 1/r free tail) 2) streamline streaks (LIC smear along the swirl) 3) bathtub dimple (pressure-drop funnel refracts, darkens the core, recesses depth)
+//  Upgraded: 2026-10-05, 2026-10-26
+//  Ideas: Lamb-Oseen profile; streamline streaks; bathtub dimple; shear-layer billows; funnel caustic
 //  A packing: ACES display RGBA (alpha = source alpha x funnel transmission)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -197,6 +197,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let cs = cos(ang);
         let sn = sin(ang);
         displaced = displaced + (vec2<f32>(cs * d.x - sn * d.y, sn * d.x + cs * d.y) - d);
+        // ── Idea 1: shear-layer billows ────────────────────────────────
+        // Lamb-Oseen speed peaks near x = 1.12. That ring rolls up.
+        let shellR = max(length(d), 1e-5);
+        let xShell = shellR / max(v.coreRadius, 1e-4);
+        let shearShell = exp(-(xShell - 1.121) * (xShell - 1.121) * 10.0);
+        let tangent = vec2<f32>(-d.y, d.x) / shellR;
+        let billow = sin(atan2(d.y, d.x) * 6.0 + time * speedScale * v.rotationDir * 1.7) * shearShell;
+        displaced = displaced + tangent * billow * 0.02 * vortexStrength;
     }
 
     // Idea 3: the funnel surface refracts the image toward each drain.
@@ -239,6 +247,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 3: core darkening — light falls off down the throat of the funnel.
     let throat = clamp(dimpleDepth, 0.0, 1.5);
     col = col * (1.0 - 0.35 * vortexStrength * smoothstep(0.2, 1.2, throat));
+
+    // ── Idea 2: funnel caustic ─────────────────────────────────────────
+    // The dimple slope focuses a cool ring on the shoulder, off the throat.
+    let slopeMag = length(dimple.yz);
+    let ring = smoothstep(0.15, 0.9, slopeMag) * exp(-max(slopeMag - 1.4, 0.0) * 0.8);
+    col = col + vec3<f32>(0.72, 0.84, 1.0) * ring * 0.28 * vortexStrength * (1.0 - 0.45 * smoothstep(0.2, 1.2, throat));
 
     // ACES on display RGB only (negatives clamped inside acesToneMap).
     let display = acesToneMap(col * 1.1);

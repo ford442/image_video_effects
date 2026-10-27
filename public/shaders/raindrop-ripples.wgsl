@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: wave-speed in the Laplacian; slope caustic sparkle
+//  Upgraded: 2026-10-26
+//  Ideas: wave-speed in the Laplacian; slope caustic sparkle; isotropic 9-point Laplacian (§12.2D); steep-slope damping
 //  A packing: height / prev-height in A.rg (raw). Display ACES RGB.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -72,10 +53,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let s = heightAt(pixel + vec2<i32>(0, -1), dims).x;
     let e = heightAt(pixel + vec2<i32>(1, 0), dims).x;
     let w = heightAt(pixel + vec2<i32>(-1, 0), dims).x;
-    let lap = n + s + e + w - 4.0 * height;
+    let ne = heightAt(pixel + vec2<i32>(1, 1), dims).x;
+    let nw = heightAt(pixel + vec2<i32>(-1, 1), dims).x;
+    let se = heightAt(pixel + vec2<i32>(1, -1), dims).x;
+    let sw = heightAt(pixel + vec2<i32>(-1, -1), dims).x;
+    // ── Idea 1: isotropic 9-point Laplacian (§12.2D) ───────────────
+    // Corner weight 0.2, edge weight 0.8. A constant field and a lone
+    // spike match the old 5-point magnitude, so waveC keeps its meaning.
+    let lap = 0.8 * (n + s + e + w) + 0.2 * (ne + nw + se + sw) - 4.0 * height;
 
     var newHeight = height * 2.0 - prevHeight + lap * waveC;
-    newHeight = newHeight * decay;
+    // ── Idea 2: steep-slope damping ────────────────────────────────
+    // Sharp rings spend decay faster than a broad swell.
+    let steep = clamp(abs(lap) * 0.06, 0.0, 0.2);
+    newHeight = newHeight * decay * (1.0 - steep);
 
     let gridSize = 20.0;
     let gridUV = floor(vec2<f32>(pixel) / gridSize);
@@ -111,7 +102,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — caustic from focusing (negative Laplacian)
     let caustic = pow(max(-lap, 0.0), 1.4) * 0.08 * (1.0 + treble * 0.6);
     var hdr = color.rgb + spec * 0.3 + vec3<f32>(caustic * 1.1, caustic * 1.05, caustic * 0.9);
-    let mapped = aces(hdr);
+    let mapped = aces(max(hdr, vec3<f32>(0.0)));
     let waveAmt = clamp(abs(newHeight) * 0.12 + spec * 0.4 + caustic * 2.0, 0.0, 1.0);
     let alpha = clamp(color.a * 0.5 + waveAmt * 0.5, 0.0, 1.0);
 

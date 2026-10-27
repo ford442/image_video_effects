@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, spring-interaction, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: spike coalescence snap; Earnshaw wobble
+//  Upgraded: 2026-09-11, 2026-10-26
+//  Ideas: spike coalescence snap; Earnshaw wobble; local ridge packing with |B|; remanent spikes from conductivity
 //  A packing: HDR display RGBA (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -125,20 +106,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Interference of equipotential and directional families creates magnetic ridges.
   let equipotential = pow(abs(sin(potential * (2.8 + spikeFrequency * 0.16) - time * (0.8 + mids))), 10.0);
-  let directional = pow(abs(cos(angle * (4.0 + u.zoom_params.x * 8.0)
+  // ── Idea: local ridge packing — angular frequency rises with |B|
+  let packedFreq = (4.0 + u.zoom_params.x * 8.0) * (0.72 + 0.5 * clamp(magnitude, 0.0, 1.6));
+  let directional = pow(abs(cos(angle * packedFreq
     + length(p) * spikeFrequency - time * 2.4)), 14.0);
   let poynting = pow(max(0.0, sin(dot(p, tangent) * spikeFrequency * 1.6
     - time * (4.0 + treble * 3.0) + potential * 2.0)), 18.0);
 
   // Idea 1 — spike coalescence snap: nearby ridge peaks merge with bright bridge
   let neighborAngle = angle + spikeFrequency * 0.18;
-  let neighborRidge = pow(abs(cos(neighborAngle * (4.0 + u.zoom_params.x * 8.0)
+  let neighborRidge = pow(abs(cos(neighborAngle * packedFreq
     + length(p) * spikeFrequency - time * 2.4)), 14.0);
   let coalesce = smoothstep(0.55, 0.92, directional * neighborRidge)
     * pow(max(0.0, 1.0 - abs(directional - neighborRidge) * 3.5), 3.0);
 
+  // ── Idea: remanent spikes — brightness above the photo, scaled by conductivity, holds the ridge
+  let srcPlain = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let prevHere = textureLoad(dataTextureC, pixel, 0).rgb;
+  let excess = max(dot(prevHere - srcPlain, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.0);
+  let remanent = clamp(excess, 0.0, 0.8) * conductivity * 0.35;
   let ridge = clamp((equipotential * 0.58 + directional * 0.48 + poynting * 0.35)
-    * smoothstep(0.05, 1.5, magnitude) + clickEnergy * 0.08 + coalesce * 0.22, 0.0, 2.0);
+    * smoothstep(0.05, 1.5, magnitude) + clickEnergy * 0.08 + coalesce * 0.22 + remanent, 0.0, 2.0);
   let height = (1.0 - exp(-magnitude * 0.42)) * (0.22 + ridge * 0.78);
 
   // Field-aligned distortion with Hall-like transverse drift.

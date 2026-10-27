@@ -3,31 +3,12 @@
 //  Category: simulation
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: docking bonds on shared cell edges; ballistic scatter along mouse radial
+//  Upgraded: 2026-09-12, 2026-10-25
+//  Ideas: docking bonds on shared cell edges; ballistic scatter along mouse radial; print-head front; lattice vacancies
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -86,7 +67,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let current_state = clamp(assembly_progress - mouse_repel * scatter_force * (1.0 + audio.x * 0.25), 0.0, 1.0);
 
     let pulse = 0.5 + 0.5 * sin(time * rebuild_speed * 2.0);
-    let anim_state = mix(current_state, current_state * pulse, rebuild_speed * 0.5);
+    let anim_pulse = mix(current_state, current_state * pulse, rebuild_speed * 0.5);
+    // ── Idea: print-head front ──
+    // Assembly Progress is how far across the grid the build has reached. Ahead of it, bots stay scattered.
+    let frontX = clamp(assembly_progress, 0.0, 1.0);
+    let ahead = smoothstep(frontX - 0.02, frontX + 0.1, uv.x);
+    let anim_state = mix(anim_pulse, anim_pulse * 0.22, ahead);
 
     // Idea 2 — ballistic scatter along the mouse-away radial
     let radial = dist_vec * (scatter_force * 0.28 * (1.0 - anim_state) * mouse_repel);
@@ -101,14 +87,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cell_dist = max(abs(cell_uv.x - 0.5), abs(cell_uv.y - 0.5)) * 2.0;
     let core_radius = 0.5 - border;
     let bot_alpha = softParticleAlpha(max(0.0, cell_dist - core_radius), border * 0.5);
-    let assembled_alpha = bot_alpha * (0.3 + anim_state * 0.7);
+    // ── Idea: lattice vacancies ──
+    // Stable holes in the cell hash, filled only when Assembly Progress is nearly done.
+    let vacancy = step(hash2(grid_coord).x, 0.12) * (1.0 - smoothstep(0.72, 0.96, assembly_progress));
+    let assembled_alpha = bot_alpha * (0.3 + anim_state * 0.7) * (1.0 - vacancy);
     let merge = smoothstep(0.8, 1.0, anim_state);
     let final_alpha = mix(assembled_alpha, 1.0, merge);
 
     // Idea 1 — docking bonds on shared cell edges as assembly rises
     let seamX = 1.0 - smoothstep(0.0, 0.07, min(cell_uv.x, 1.0 - cell_uv.x));
     let seamY = 1.0 - smoothstep(0.0, 0.07, min(cell_uv.y, 1.0 - cell_uv.y));
-    let dock = max(seamX, seamY) * smoothstep(0.35, 0.85, anim_state) * (0.55 + audio.y * 0.25);
+    let dock = max(seamX, seamY) * smoothstep(0.35, 0.85, anim_state) * (0.55 + audio.y * 0.25) * (1.0 - vacancy);
 
     let edge_dist = abs(cell_dist - core_radius);
     let edge_highlight = (1.0 - smoothstep(0.0, 0.05, edge_dist)) * (1.0 - anim_state);

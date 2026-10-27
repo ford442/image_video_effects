@@ -3,29 +3,13 @@
 //  Category: distortion
 //  Features: spring pointer, viscous vortex core, vortex pairing, strain
 //            caustics, FFT circulation, bounded click wakes, temporal sheen
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-10-26
+//  Ideas: Oseen eye wall; pair stagnation beads
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-  zoom_config: vec4<f32>,  // x=time, yz=mouse UV, w=held
-  zoom_params: vec4<f32>,  // x=strength, y=radius, z=smoothness, w=auto rotation
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=strength, y=radius, z=smoothness, w=auto rotation
 
 const TAU: f32 = 6.28318530717958647692;
 
@@ -171,6 +155,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spectral = 0.5 + 0.5 * cos(TAU * (vec3<f32>(abs(vorticity) * 0.08 - time * 0.06) + vec3<f32>(0.00, 0.33, 0.67)));
   color += spectral * caustic * (0.08 + 0.16 * highBand);
   color += vec3<f32>(0.55, 0.78, 1.0) * ringGlow * (0.16 + bass * 0.28);
+
+  // ── Idea 1: Oseen eye wall ─────────────────────────────────────────
+  // Tangential speed of a Lamb-Oseen vortex peaks near r = 1.12091 a.
+  let eyeR = 1.12091 * radius;
+  let eyeDist = length(p - center);
+  let eyeBand = (eyeDist - eyeR) / max(radius * 0.075, 1e-4);
+  let eyeWall = exp(-eyeBand * eyeBand);
+  color += vec3<f32>(0.78, 0.88, 1.0) * eyeWall * (0.10 + bass * 0.16);
+
+  // ── Idea 2: pair stagnation beads ──────────────────────────────────
+  // High shear and low speed is the braid point between the three vortices.
+  let slow = 1.0 - smoothstep(0.0, max(strength * 6.0, 1e-4), length(flow));
+  color += vec3<f32>(1.0, 0.94, 0.82) * caustic * slow * 0.42;
+
   color = acesFilm(color);
 
   let substance = clamp(length(flow) * 22.0 + caustic * 0.45 + ringGlow * 0.4, 0.0, 1.0);

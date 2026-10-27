@@ -4,33 +4,15 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, procedural
 //  Complexity: Medium-High
 //  Created: 2026-05-30
-//  Upgraded: 2026-09-27
-//  Ideas: twin-boundary mirror on odd arms; hopper inner-edge on each segment; growth striae; faceted nucleation core
+//  Upgraded: 2026-10-25
+//  Ideas: twin-boundary mirror on odd arms; hopper inner-edge on each segment; growth striae; faceted nucleation core; inclusion veils; triple junctions
 //  A packing: raw HDR display RGBA in A; ACES on writeTexture
 //  Mineral dendrites crystallise from a nucleation seed, each
 //  branch angle tuned to the golden ratio. Bass pulses growth.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Symmetry, y=GrowthRate, z=Hue, w=Thickness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Symmetry, y=GrowthRate, z=Hue, w=Thickness
 
 // Segment SDF: distance from p to segment a→b
 fn sdSeg(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
@@ -71,6 +53,16 @@ fn crystalBranch(
     let stria = abs(fract(across / max(thk, 1.0e-4) * 2.6) - 0.5);
     let onArm = exp(-dist * dist / (thk * thk * 2.0));
     glow += exp(-stria * stria * 46.0) * onArm * 0.22 * (1.0 - f32(i) * 0.12);
+
+    // ── Idea: inclusion veils — dust planes along the growth axis ──
+    let ba = tip - o;
+    let alongH = clamp(dot(p - o, ba) / max(dot(ba, ba), 1.0e-5), 0.0, 1.0);
+    let veil = abs(fract(alongH * 3.0) - 0.5);
+    glow += exp(-veil * veil * 70.0) * onArm * 0.18;
+
+    // ── Idea: triple junction where the child branch leaves the parent ──
+    let junction = exp(-dot(p - tip, p - tip) / max(thk * thk * 2.2, 1.0e-6));
+    glow += junction * 0.5;
 
     // Branch: two children at ±golden angle
     let goldenAngle = 2.399963;  // ~137.5 degrees in radians

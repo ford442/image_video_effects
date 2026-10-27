@@ -4,33 +4,18 @@
 //  Features: mouse-driven, vortex, velvet, audio-swirl, depth-pile, light-absorb, tactile-motion,
 //            click-shockwave, spring-glide, per-arm-spectrum
 //  Complexity: Medium
-//  Updated: 2026-07-30
-//  By: Grok (visual flourish — richer material feel, audio texture, atmospheric absorption)
-//      Kimi b17 Visualist (click ripple shockwaves, spring-damped glide, per-arm FFT spectrum)
+//  Upgraded: 2026-10-26
+//  Ideas: nap sheen along the swirl tangent; speed-thinned radius (§12.2C)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Click shockwaves: each live ripple spawns an expanding ring from its click
@@ -73,31 +58,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let softness = u.zoom_params.z;
     let pulseSpeed = u.zoom_params.w;
 
-    // ── Spring-damper glide (extraBuffer[133..136] = pos.xy, vel.xy) ──
-    // Critically damped spring: the vortex center glides after the cursor
-    // instead of snapping. All invocations integrate identical values from
-    // the previous frame's state, so the write-back race is benign.
-    let dt = 0.016;
-    var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (springPos.x == 0.0 && springPos.y == 0.0 && springVel.x == 0.0 && springVel.y == 0.0) {
-        springPos = center;
+    // Spring-damper glide. One thread writes extraBuffer[133..136].
+    // This frame uses last frame's position and velocity.
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var springPos = center;
+    var springVel = vec2<f32>(0.0);
+    if (hasSpring && extraBuffer[138] > 0.5) {
+        springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+        springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
     }
-    let stiffness = 42.0;
-    let damping = 2.0 * sqrt(stiffness);
-    let springAccel = (center - springPos) * stiffness - springVel * damping;
-    springVel = springVel + springAccel * dt;
-    springPos = springPos + springVel * dt;
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
+        var p = springPos;
+        var v = springVel;
+        let seeded = extraBuffer[138] > 0.5;
+        if (!seeded) { p = center; v = vec2<f32>(0.0); }
+        let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
+        let stiffness = 42.0;
+        let damping = 2.0 * sqrt(stiffness);
+        v += ((center - p) * stiffness - v * damping) * dt;
+        p += v * dt;
+        extraBuffer[133] = p.x;
+        extraBuffer[134] = p.y;
+        extraBuffer[135] = v.x;
+        extraBuffer[136] = v.y;
+        extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
+    }
 
     let uvCorrected = uv * vec2<f32>(aspect, 1.0);
     let centerCorrected = springPos * vec2<f32>(aspect, 1.0) + vec2<f32>(parallax, parallax);
     let dist = distance(uvCorrected, centerCorrected);
     let pulse = sin(time * pulseSpeed * bass_env(bass, mids) * 5.0) * 0.2 + 1.0;
-    let effectiveRadius = max(radiusParam * pulse, 0.001);
+    // ── Idea 2: speed-thinned radius (§12.2C) ──────────────────────
+    let glide = length(springVel);
+    let thin = 1.0 / (1.0 + glide * 1.8);
+    let effectiveRadius = max(radiusParam * pulse * mix(1.0, thin, 0.65), 0.001);
     let swirlFactor = 1.0 - smoothstep(0.0, effectiveRadius, dist);
     let softFactor = pow(swirlFactor, 1.0 / (softness + 0.1));
 
@@ -130,8 +125,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Shockwave flash: a faint cool sheen riding the expanding ring
     let shockSheen = clamp(shockTwist, 0.0, 1.0) * vec3<f32>(0.06, 0.08, 0.14);
     let velvetTint = vec3<f32>(0.12 + bass * 0.05, 0.02 + treble * 0.04, 0.16 + bass * 0.05) * softFactor;
-    let finalColor = mix(baseColor.rgb, baseColor.rgb * vec3<f32>(0.85, 0.78 + treble * 0.08, 1.08), softFactor * 0.25) + velvetTint + shockSheen;
-    let alpha = clamp(baseColor.a * 0.45 + softFactor * 0.35 + bass * 0.06, 0.08, 1.0);
+    var finalColor = mix(baseColor.rgb, baseColor.rgb * vec3<f32>(0.85, 0.78 + treble * 0.08, 1.08), softFactor * 0.25) + velvetTint + shockSheen;
+    // ── Idea 1: nap sheen ───────────────────────────────────────────
+    // Fibers follow the swirl tangent. Across the nap the pile lights;
+    // along the nap it dulls.
+    let fiber = vec2<f32>(-dir.y, dir.x) / max(length(dir), 0.0001);
+    let across = 1.0 - abs(dot(normalize(vec2<f32>(0.42, 0.78)), fiber));
+    let nap = pow(clamp(across, 0.0, 1.0), 2.5) * softFactor * smoothstep(0.0, 0.02, dist);
+    finalColor = finalColor * (1.0 - (1.0 - across) * softFactor * 0.35) + vec3<f32>(0.42, 0.28, 0.48) * nap * 0.22;
+    finalColor = aces(max(finalColor, vec3<f32>(0.0)));
+    let alpha = clamp(baseColor.a * 0.45 + softFactor * 0.35 + nap * 0.2 + bass * 0.06, 0.08, 1.0);
     let depthOut = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + softFactor * 0.05, 0.0, 1.0);
     let finalPixel = vec4<f32>(finalColor, alpha);
 

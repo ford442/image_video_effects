@@ -1665,6 +1665,11 @@
       "iridescent",
       "dark"
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "p1",
@@ -28654,7 +28659,9 @@
       "audio-driven",
       "mouse-rogue-body",
       "ripple-perturbation",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "gravitational",

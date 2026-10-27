@@ -1,35 +1,17 @@
-// ═══════════════════════════════════════════════════════════════
-//  RGB Fluid - Advection-based RGB flow with wavelength-alpha
+// ═══════════════════════════════════════════════════════════════════
+//  RGB Fluid
 //  Category: simulation
-//  Features: fluid-advection, flow-dispersion, wavelength-dependent-alpha
-//
-//  SCIENTIFIC MODEL:
-//  - Flow velocity affects dispersion and alpha per channel
-//  - Beer-Lambert law: alpha = exp(-thickness * absorption)
-//  - Red (650nm): lowest absorption, highest transmission
-//  - Blue (450nm): highest absorption, lowest transmission
-// ═══════════════════════════════════════════════════════════════
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-10-26
+//  Ideas: wavelength advection; display-only Beer-Lambert
+//  A packing: linear advected pigment RGB + transmission alpha
+// ═══════════════════════════════════════════════════════════════════
+//  Flow velocity affects dispersion and alpha per channel.
+//  Beer-Lambert: alpha = exp(-thickness * absorption).
+//  Red (650nm) transmits most. Blue (450nm) absorbs most.
+//  Absorption is applied on writeTexture only, so it does not compound.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════
 //  SPECTRAL PHYSICS CONSTANTS
@@ -45,6 +27,23 @@ fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
     let lambda_norm = (800.0 - wavelength) / 400.0;
     let absorption = mix(0.3, 1.0, lambda_norm);
     return exp(-thickness * absorption);
+}
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    let v = max(x, vec3<f32>(0.0));
+    return clamp((v * (2.51 * v + 0.03)) / (v * (2.43 * v + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn historyAt(uv: vec2<f32>, dims: vec2<i32>) -> vec3<f32> {
+    let p = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(dims) - vec2<f32>(0.5);
+    let base = vec2<i32>(floor(p));
+    let f = fract(p);
+    let hi = dims - vec2<i32>(1);
+    let s00 = textureLoad(dataTextureC, clamp(base, vec2<i32>(0), hi), 0).rgb;
+    let s10 = textureLoad(dataTextureC, clamp(base + vec2<i32>(1, 0), vec2<i32>(0), hi), 0).rgb;
+    let s01 = textureLoad(dataTextureC, clamp(base + vec2<i32>(0, 1), vec2<i32>(0), hi), 0).rgb;
+    let s11 = textureLoad(dataTextureC, clamp(base + vec2<i32>(1, 1), vec2<i32>(0), hi), 0).rgb;
+    return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -91,12 +90,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     velocity += push;
   }
 
-  // Advection
-  let advect_uv = uv - velocity;
-  let history = textureSampleLevel(dataTextureC, u_sampler, advect_uv, 0.0).rgb;
+  // ── Idea: wavelength advection ─────────────────────────────────
+  // Red lags, blue leads. Color Shift scales the split. At 0 all
+  // three channels share one path. History is four exact loads.
+  let shift = clamp(color_shift, 0.0, 1.0);
+  let advR = clamp(uv - velocity * mix(1.0, 0.82, shift), vec2<f32>(0.0), vec2<f32>(1.0));
+  let advG = clamp(uv - velocity, vec2<f32>(0.0), vec2<f32>(1.0));
+  let advB = clamp(uv - velocity * mix(1.0, 1.22, shift), vec2<f32>(0.0), vec2<f32>(1.0));
+  let dimsI = vec2<i32>(resolution);
+  let histR = historyAt(advR, dimsI);
+  let histG = historyAt(advG, dimsI);
+  let histB = historyAt(advB, dimsI);
+  let history = vec3<f32>(histR.r, histG.g, histB.b);
 
   // Current input
-  let input = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let inputTex = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let input = inputTex.rgb;
 
   // Mix input into history
   let persistence = 0.9 + (decay * 0.09);
@@ -128,14 +137,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
   let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
   
-  let finalColor = vec3<f32>(
+  // ── Idea: display-only Beer-Lambert ────────────────────────────
+  // Channel transmission tints the picture. A keeps the pigment so
+  // the absorption does not compound next frame.
+  let absorbed = vec3<f32>(
       new_color.r * alphaR,
       new_color.g * alphaG,
       new_color.b * alphaB
   );
+  let alpha = clamp(finalAlpha * 0.82 + inputTex.a * 0.18, 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-  textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesFilm(absorbed), alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(new_color, alpha));
 
   // Depth pass
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

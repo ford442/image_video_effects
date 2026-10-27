@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: mouse-as-brush, audio-viscosity, depth-paint-thickness, pressure-dynamics, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: dye-front surface tension; impasto lighting from density gradient
+//  Upgraded: 2026-09-09, 2026-10-26
+//  Ideas: dye-front surface tension; impasto lighting from density gradient; wet-edge bead (§12.2C); pressure relief
 //  A packing: raw vel.xy, pressure, dye density
 //  RGBA Channels:
 //    R = velocity.x (signed f32, left/right flow)
@@ -17,26 +17,7 @@
 //  Updated: 2026-05-31 — Grok (audio viscosity seasons + depth-as-paint-thickness)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hsv2rgb (from agent-4c spec) ═══
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
@@ -170,6 +151,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     vel += densGrad * 0.012 * smoothstep(0.08, 0.7, density);
     vel = clamp(vel, vec2<f32>(-maxVel), vec2<f32>(maxVel));
 
+    // ── Idea: wet-edge bead (§12.2C) — the density shoulder thickens and the display darkens there
+    let densLap = left.a + right.a + down.a + up.a - 4.0 * prevState.a;
+    let wetEdge = max(-densLap, 0.0) * smoothstep(0.015, 0.12, length(densGrad));
+    density = clamp(density + wetEdge * 0.02, 0.0, 5.0);
+
     // === STORE SIMULATION STATE ===
     textureStore(dataTextureA, coord, vec4<f32>(vel, pressure, density));
 
@@ -179,6 +165,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sat = smoothstep(0.0, 0.02, speed) * 0.8;
     let val = density * u.zoom_params.y * (1.5 + bass * 0.5) + 0.15;
     var displayColor = hsv2rgb(vec3<f32>(fract(hue + mids * 0.08), sat, val));
+    // ── Idea: pressure relief — squeeze lifts the paint, suction darkens it
+    displayColor = displayColor * (1.0 + clamp(pressure, -0.45, 0.45) * 0.4);
+    displayColor = mix(displayColor, displayColor * vec3<f32>(0.42, 0.28, 0.16), clamp(wetEdge * 6.0, 0.0, 0.55));
     displayColor += vec3<f32>(0.25, 0.65, 1.0) * abs(curl) * treble * 0.25;
     // Idea 2 — impasto lighting from density gradient (paint height)
     let heightN = normalize(vec3<f32>(-densGrad.x, -densGrad.y, 0.35));

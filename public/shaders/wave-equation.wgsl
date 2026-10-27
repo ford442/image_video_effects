@@ -3,32 +3,13 @@
 //  Category: simulation
 //  Features: physics, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: caustic ridges from |grad h|; standing-node darkening (h,v quadrature)
+//  Upgraded: 2026-09-12, 2026-10-25
+//  Ideas: caustic ridges from |grad h|; standing-node darkening (h,v quadrature); capillary damping (§12.2D); breaking whitecaps
 //  A packing: raw (height, velocity, foam, oscillator phase)
 // ═══════════════════════════════════════════════════════════════════
 //  B and extraBuffer are intentionally unused; C reads are exact and bounded.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -75,8 +56,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     diagonal * 0.2 - state.r * 4.0;
 
   var velocity = (state.g + laplacian * waveSpeed) * damping;
+  // ── Idea: capillary damping (§12.2D) ──
+  // Short waves (large curvature) lose speed; the long swell keeps the saved Wave Speed.
+  let shortWave = clamp(abs(laplacian) * 1.8, 0.0, 1.0);
+  velocity = velocity * (1.0 - shortWave * 0.08);
   var height = state.r + velocity;
   var foam = max(state.b * 0.962, abs(laplacian) * (0.18 + audio.z * 0.14));
+  // ── Idea: breaking whitecaps ──
+  // A positive crest that is already steep locks foam; the existing decay then carries the cap.
+  let slopePrev = length(vec2<f32>(right.r - left.r, bottom.r - top.r));
+  let breaking = smoothstep(0.0, 0.06, state.r) * smoothstep(0.2, 0.62, slopePrev);
+  foam = max(foam, breaking * 0.9);
   var phase = state.a;
 
   let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);

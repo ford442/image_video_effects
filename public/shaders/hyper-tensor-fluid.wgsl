@@ -1,27 +1,13 @@
-// Hyper Tensor Fluid — Codex (e) anisotropic tensor-guided fluid field.
-// A/C packing: velocity.xy, tensor anisotropy, transported dye.
-// B and extraBuffer are intentionally unused; C loads are exact and bounded.
+// ═══════════════════════════════════════════════════════════════════
+//  Hyper Tensor Fluid
+//  Category: advanced-hybrid
+//  Features: audio-reactive, upgraded-rgba
+//  Upgraded: 2026-10-26
+//  Ideas: tangent-weighted viscosity; MacCormack dye (§12.2D)
+//  A packing: raw velocity.xy, anisotropy, dye
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -99,10 +85,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let previous = stateAt(coord, dims);
   var velocity = previous.xy;
-  let averageVelocity = (stateAt(coord + vec2<i32>(-1, 0), dims).xy +
-    stateAt(coord + vec2<i32>(1, 0), dims).xy +
-    stateAt(coord + vec2<i32>(0, -1), dims).xy +
-    stateAt(coord + vec2<i32>(0, 1), dims).xy) * 0.25;
+  // ── Idea 1: tangent-weighted viscosity ──────────────────────────
+  // Same four neighbor taps. Weights follow the image tangent so the
+  // tensor diffuses along the edge instead of equally in every direction.
+  let tx = tangent.x * tangent.x;
+  let ty = tangent.y * tangent.y;
+  let wx = 0.15 + tx;
+  let wy = 0.15 + ty;
+  let alongX = stateAt(coord + vec2<i32>(-1, 0), dims).xy + stateAt(coord + vec2<i32>(1, 0), dims).xy;
+  let alongY = stateAt(coord + vec2<i32>(0, -1), dims).xy + stateAt(coord + vec2<i32>(0, 1), dims).xy;
+  let averageVelocity = (alongX * wx + alongY * wy) / max(2.0 * (wx + wy), 0.001);
   velocity = mix(velocity, averageVelocity, viscosity);
   velocity += tangent * anisotropy * tensorStrength * 0.0035;
 
@@ -143,7 +135,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let advectedUV = clamp(uv - velocity * advectionSpeed,
     vec2<f32>(0.0), vec2<f32>(1.0));
   let advected = stateUV(advectedUV, dims);
-  var dye = advected.w * 0.985 + lumaAt(uv) * 0.012 + audio.y * 0.004;
+  // ── Idea 2: MacCormack dye (§12.2D) ─────────────────────────────
+  // Forward dye plus half the overshoot, clamped to the three taps,
+  // then the same fade and source injection as before.
+  let backUV = clamp(advectedUV + advected.xy * advectionSpeed, vec2<f32>(0.0), vec2<f32>(1.0));
+  let dyeBack = stateUV(backUV, dims).w;
+  let dyeFwd = advected.w;
+  let dyeHere = previous.w;
+  let dyeMac = clamp(dyeFwd + 0.5 * (dyeHere - dyeBack),
+    min(min(dyeFwd, dyeHere), dyeBack),
+    max(max(dyeFwd, dyeHere), dyeBack));
+  var dye = dyeMac * 0.985 + lumaAt(uv) * 0.012 + audio.y * 0.004;
   dye += stir * 0.035 + clickFront * 0.018;
   dye = clamp(dye, 0.0, 1.4);
   textureStore(dataTextureA, coord,

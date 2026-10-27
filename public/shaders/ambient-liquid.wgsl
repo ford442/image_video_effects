@@ -7,7 +7,9 @@
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-08-23 (Batch 64)
+//  Upgraded: 2026-08-23, 2026-10-26
+//  Ideas: isotropic 9-point Laplacian (§12.2D); depletion stain
+//  A packing: raw (U, V, inkMask, luma). ACES on display only.
 //
 //  FIXED IN THIS PASS — the `reaction-diffusion` claim had nothing behind it.
 //  The JSON advertises `reaction-diffusion`, and the shader called a function
@@ -43,26 +45,7 @@
 //       chemistry and the blobs were previously two unrelated overlays.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -219,13 +202,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let stW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), maxC), 0);
     let stN = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0,  1), vec2<i32>(0), maxC), 0);
     let stS = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), maxC), 0);
+    let stNE = textureLoad(dataTextureC, clamp(coord + vec2<i32>( 1,  1), vec2<i32>(0), maxC), 0);
+    let stNW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1,  1), vec2<i32>(0), maxC), 0);
+    let stSE = textureLoad(dataTextureC, clamp(coord + vec2<i32>( 1, -1), vec2<i32>(0), maxC), 0);
+    let stSW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, -1), vec2<i32>(0), maxC), 0);
 
     // Cold start: a zeroed buffer is all substrate with a little seeded V.
     var chem = stC.rg;
     if (chem.x + chem.y < 0.001) {
         chem = vec2<f32>(1.0, step(0.995, hash21(uv * 640.0)));
     }
-    let lap = (stE.rg + stW.rg + stN.rg + stS.rg) - 4.0 * chem;
+    // ── Idea 1: isotropic 9-point Laplacian (§12.2D) ────────────────────
+    // Corner weight 0.05, edge weight 0.20. Times 4 so the Gray-Scott rate
+    // matches the old 5-point cross when the corners agree with the edges.
+    let lap = ((stE.rg + stW.rg + stN.rg + stS.rg) * 0.20
+             + (stNE.rg + stNW.rg + stSE.rg + stSW.rg) * 0.05
+             - chem) * 4.0;
 
     // Feed/kill per FFT band: different bins push the system between the spot,
     // stripe and mitosis regimes of the Gray-Scott parameter space.
@@ -256,6 +248,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Blend ink blobs into dark regions.
     color = vec4<f32>(mix(color.rgb, inkColor, inkMask * darkMask * 0.5 * p3), color.a);
+
+    // ── Idea 2: depletion stain ────────────────────────────────────────
+    // Where the reaction has spent the substrate under live V, the pool is darker.
+    // Ripple Strength already mixes the ink; it scales the stain the same way.
+    let depleted = clamp((1.0 - chem.x) * rd, 0.0, 1.0);
+    color = vec4<f32>(color.rgb * (1.0 - depleted * 0.32 * p3), color.a);
 
     // Anisotropic specular highlight along flow direction.
     let flowDir = normalize(disp + vec2<f32>(0.0001));

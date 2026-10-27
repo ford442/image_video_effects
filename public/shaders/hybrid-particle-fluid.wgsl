@@ -2,8 +2,8 @@
 //  Hybrid Particle Fluid
 //  Category: simulation
 //  Features: hybrid, particle-system, fluid-advection, glow, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-10
-//  Ideas: exact-C advection; LIC ribbon along curl velocity
+//  Upgraded: 2026-09-10, 2026-10-26
+//  Ideas: exact-C advection; LIC ribbon along curl velocity; particle-owned wake; suspension milk
 //  A packing: display RGB in A; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
@@ -75,7 +75,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     let particleCount = mix(20.0, 100.0, u.zoom_params.x);
-    let fluidSpeed = mix(0.5, 3.0, u.zoom_params.y);
+    let fluidSpeed = mix(0.5, 3.0, u.zoom_params.y) * (1.0 + mids * 0.22);
     let trailDecay = mix(0.9, 0.99, u.zoom_params.z);
     let glowRadius = mix(0.01, 0.05, u.zoom_params.w);
 
@@ -102,16 +102,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let age = fract(time * 0.1 + fi * 0.01);
         var particlePos = particleBase;
+        // ── Idea 1: particle-owned wake ─────────────────────────────────
+        // Keep the last curl step. The trail used to follow the pixel velocity,
+        // which made every wake parallel.
+        var lastVel = vec2<f32>(0.0);
 
         for (var adv: i32 = 0; adv < 5; adv++) {
-            let vel = curlNoise(particlePos * 2.0, time * 0.2) * fluidSpeed * 0.02;
-            particlePos += vel;
+            lastVel = curlNoise(particlePos * 2.0, time * 0.2) * fluidSpeed * 0.02;
+            particlePos += lastVel;
         }
 
         let trailLength = 10;
         for (var t: i32 = 0; t < trailLength; t++) {
             let ft = f32(t) / f32(trailLength);
-            let trailPos = particlePos - velocity * f32(t) * 5.0;
+            let trailPos = particlePos - lastVel * f32(t) * 6.0;
             let dist = length(uv - fract(trailPos));
 
             if (dist < glowRadius * (1.0 + ft)) {
@@ -132,10 +136,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = prevColor * trailDecay;
 
-    if (particleIntensity > 0.0) {
-        particleColor /= particleIntensity;
-        color += particleColor * particleIntensity * 0.5 * (1.0 + treble * 0.2);
-    }
+    let pNorm = particleColor / max(particleIntensity, 1e-4);
+    let pGain = step(0.001, particleIntensity);
+    color += pNorm * particleIntensity * 0.5 * (1.0 + treble * 0.2) * pGain;
 
     let velMag = length(velocity);
     color += vec3<f32>(0.2, 0.4, 0.8) * velMag * 10.0 * (1.0 + bass * 0.25);
@@ -143,11 +146,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vorticity = fbm2(uv * 4.0 + time * 0.15, 3);
     color += vec3<f32>(0.8, 0.3, 0.2) * vorticity * 0.1;
 
+    // ── Idea 2: suspension milk ────────────────────────────────────────
+    // A crowd of particles turns the dye pale and more opaque.
+    let crowd = clamp(particleIntensity / max(particleCount * 0.35, 1.0), 0.0, 1.0);
+    color = mix(color, vec3<f32>(0.78, 0.84, 0.9) * (0.7 + 0.3 * pNorm), crowd * 0.75);
+
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.5, 1.0, luma + particleIntensity * 0.3);
+    let alpha = clamp(mix(0.5, 1.0, luma + particleIntensity * 0.3 + crowd * 0.25), 0.0, 1.0);
 
     let stored = vec4<f32>(color, alpha);
     textureStore(dataTextureA, id, stored);
-    textureStore(writeTexture, id, vec4<f32>(acesToneMap(color), alpha));
+    textureStore(writeTexture, id, vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), alpha));
     textureStore(writeDepthTexture, id, vec4<f32>(velMag * 10.0, 0.0, 0.0, 0.0));
 }

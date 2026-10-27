@@ -4,29 +4,13 @@
 //  Features: analytic curl spectrum, RK2 advection, depth Coanda flow,
 //            strain caustics, viscous temporal memory, FFT bands, click fronts,
 //            chromatic refraction, ACES, semantic alpha
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-10-26
+//  Ideas: MacCormack history (§12.2D); Coanda waterline
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-  zoom_config: vec4<f32>,  // x=time, yz=mouse UV, w=held
-  zoom_params: vec4<f32>,  // x=distortion, y=flow speed, z=flow scale, w=viscosity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=distortion, y=flow speed, z=flow scale, w=viscosity
 
 struct FlowDetail {
   velocity: vec2<f32>,
@@ -166,15 +150,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sampleB = textureSampleLevel(readTexture, u_sampler, clamp(departure - chroma, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
   var color = vec3<f32>(sampleR, sampleG.g, sampleB);
 
+  // ── Idea 1: MacCormack corrector on the viscous history (§12.2D) ──
+  // One forward sample, one step back, clamped to the three taps so the
+  // viscosity mix stays sharp instead of a single smeared lookup.
   let previous = historyBilinear(departure * dims, dimsI);
+  let here = textureLoad(dataTextureC, coord, 0);
+  let backUV = clamp(departure + velocity / aspectVec * distortion, vec2<f32>(0.001), vec2<f32>(0.999));
+  let steppedBack = historyBilinear(backUV * dims, dimsI);
+  let mac = previous.rgb + 0.5 * (here.rgb - steppedBack.rgb);
+  let macLo = min(min(previous.rgb, here.rgb), steppedBack.rgb);
+  let macHi = max(max(previous.rgb, here.rgb), steppedBack.rgb);
+  let sharpened = clamp(mac, macLo, macHi);
   let memory = mix(0.025, 0.24, viscosity) * previous.a;
-  color = mix(color, previous.rgb, memory);
+  color = mix(color, sharpened, memory);
   let interference = 0.5 + 0.5 * cos(TAU *
     (vec3<f32>(abs(vorticity) * 0.06 + shear * 0.025 - time * 0.045)
      + vec3<f32>(0.00, 0.31, 0.67)));
   color += interference * strainCaustic * (0.08 + 0.18 * treble);
   color += vec3<f32>(0.42, 0.70, 1.0) * ringGlow * (0.16 + 0.28 * bass);
   color += vec3<f32>(0.10, 0.24, 0.18) * boundary * (0.08 + 0.12 * mids);
+  // ── Idea 2: Coanda waterline ───────────────────────────────────────
+  // Attached flow leaves a bead on the depth silhouette, broken along
+  // the tangent the boundary term already uses.
+  let waterline = pow(boundary, 3.0) * (0.65 + 0.35 * sin(dot(p, boundaryTangent) * 36.0));
+  color += vec3<f32>(0.62, 0.84, 0.78) * waterline * (0.16 + mids * 0.1);
   color = acesFilm(color);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, departure, 0.0).r;
