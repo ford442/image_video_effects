@@ -9,7 +9,9 @@
  * where spawning `naga` per file was not.
  *
  * scripts/wgsl_precommit_gate.py keeps the workgroup / bindgroup / extraBuffer
- * checks; this script owns naga validation.
+ * checks; this script owns naga validation. It also runs a naga-reflect check
+ * (scripts/wgsl-depth-sampler-check.mjs) that blocks sampling the r32float depth
+ * binding through the filtering sampler — depth is bound unfilterable-float.
  *
  * Usage:
  *   node scripts/verify-naga-wasm.mjs                    # files changed vs origin/main
@@ -136,7 +138,11 @@ async function main() {
 
   const loaderUrl = pathToFileURL(path.join(ROOT, contract.loader)).href;
   const { createNagaValidator } = await import(loaderUrl);
-  const { validate } = await createNagaValidator({ bytes: fs.readFileSync(wasmPath) });
+  const { validate, reflect } = await createNagaValidator({ bytes: fs.readFileSync(wasmPath) });
+  const { findDepthFilteringPairs, loadBindGroup0Contract } = await import(
+    pathToFileURL(path.join(ROOT, 'scripts/wgsl-depth-sampler-check.mjs')).href
+  );
+  const bindGroup0 = loadBindGroup0Contract();
 
   const knownFailures = new Set(contract.knownFailures.ids);
   if (contract.knownFailures.ratchet !== contract.knownFailures.ids.length) {
@@ -168,6 +174,7 @@ async function main() {
 
   const started = Date.now();
   const results = [];
+  const depthSamplerHits = [];
   for (const file of files) {
     const id = shaderId(file);
     const rel = path.relative(ROOT, file);
@@ -183,7 +190,13 @@ async function main() {
       }
     }
 
-    results.push({ id, file: rel, ...validate(source) });
+    const result = validate(source);
+    results.push({ id, file: rel, ...result });
+    if (result.ok) {
+      for (const hit of findDepthFilteringPairs(source, reflect(source), bindGroup0)) {
+        depthSamplerHits.push({ file: rel, ...hit });
+      }
+    }
   }
   const elapsedMs = Date.now() - started;
 
@@ -205,6 +218,13 @@ async function main() {
 
   for (const r of newFailures) {
     fail(`\n❌ ${r.file}\n${r.message.trimEnd()}`);
+  }
+
+  for (const h of depthSamplerHits) {
+    fail(
+      `\n❌ ${h.file}:${h.line} samples ${h.texture} (r32float depth, bound unfilterable-float) with the ` +
+        `filtering sampler ${h.sampler}. Use non_filtering_sampler (binding 5) or textureLoad.`,
+    );
   }
 
   if (nowPassing.length > 0) {

@@ -3,34 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
-//  Swarm upgrade: 2026-07-31 (Batch 19, Interactivist)
-//    - Spring-damper reveal center (extraBuffer[133..136])
-//    - Click reveal bursts from ripples[] (max-combined with cursor disc)
-//    - Per-column treble shimmer via plasmaBuffer FFT bins
+//  Upgraded: 2026-05-17, 2026-10-27
+//  Ideas: glyph head and tail; decrypt persistence
+//  A packing: ACES display RGB + decrypt mask in A.a (only C.a is read)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Radius, y=Speed, z=Density, w=Glow
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Radius, y=Speed, z=Density, w=Glow
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * .1031);
@@ -38,41 +17,22 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let rawMouse = u.zoom_config.yz;
+    let mousePos = u.zoom_config.yz;
     let time = u.config.x;
 
     // Audio reactivity
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-
-    // ── Spring-damper reveal center ─────────────────────────────────
-    // Persistent eased center + velocity live in extraBuffer[133..136]
-    // ([0..4] engine-reserved, [5..132] engine FFT bins). The raw mouse
-    // stays the spring TARGET; the reveal circle sweeps after the cursor
-    // with momentum instead of snapping to it.
-    var springCenter = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var springVel    = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if ((springCenter.x == 0.0 && springCenter.y == 0.0) && time < 2.0) {
-        springCenter = rawMouse;            // first frames: snap, no fly-in
-        springVel    = vec2<f32>(0.0, 0.0);
-    }
-    // Critically-damped spring, fixed-step semi-implicit Euler.
-    let springDt    = 1.0 / 60.0;
-    let springOmega = 9.0;                  // response speed of the chase
-    let springAccel = (rawMouse - springCenter) * springOmega * springOmega
-                    - springVel * 2.0 * springOmega;
-    springVel    = springVel + springAccel * springDt;
-    springCenter = springCenter + springVel * springDt;
-    extraBuffer[133] = springCenter.x;
-    extraBuffer[134] = springCenter.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    let mousePos = springCenter;
 
     // ── Slider-driven constants (u.zoom_params.x/y/z/w) ─────────────
     // param1 (Reveal Radius) -> base reveal disc size
@@ -81,6 +41,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // param4 (Glow Intensity)-> blink flash + edge ring brightness
     let baseRadius = max(0.01, u.zoom_params.x * 0.4);
     // Bass radius boost applied AFTER the spring so the punch stays instant.
+    // Bass widens the disc immediately.
     let radius  = baseRadius * (1.0 + bass * 0.2);
     let speed   = u.zoom_params.y * 2.0 * (1.0 + mids * 0.3);
     let density = max(10.0, u.zoom_params.z * 150.0);
@@ -135,36 +96,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixelCode  = step(0.5, hash12(vec2<f32>(colIndex, rowIndex) + floor(cellUV * 3.0)));
     let blink      = step(0.95, fract(time * 5.0 + charRandom * 10.0));
 
-    // ── Per-column treble shimmer ───────────────────────────────────
-    // Each rain column glitters at a rate set by its own FFT bin instead
-    // of blinking uniformly (colIndex is f32 -> cast via u32).
-    let colBin  = plasmaBuffer[(u32(colIndex) % 8u) + 1u].x;
-    let shimmer = step(0.93, fract(time * (2.0 + colBin * 9.0) + charRandom * 7.0)) * colBin;
+    // Column shimmer from treble. plasmaBuffer[1..] is never uploaded.
+    let shimmer = step(0.93, fract(time * (2.0 + treble * 9.0) + charRandom * 7.0 + colRandom)) * treble;
 
-    // Treble brightens the top of matrix characters
+    // ── Idea: head and tail — the leading edge of the cell is white; glyphs behind it dim.
+    let cellPhase = fract(yFlow * rowDensity);
+    let head = smoothstep(0.22, 0.0, cellPhase);
+    let tail = exp(-cellPhase * 3.2);
+
     var matrixColor = vec3<f32>(0.0, 1.0 + treble * 0.2, 0.4);
     matrixColor = mix(matrixColor, vec3<f32>(1.0), luminance * luminance);
 
-    let codeBrightness = pixelCode * luminance;
-    let finalMatrix    = matrixColor * codeBrightness * (1.0 + (blink + shimmer) * glow);
+    let codeBrightness = pixelCode * luminance * tail;
+    var finalMatrix = matrixColor * codeBrightness * (1.0 + (blink + shimmer) * glow);
+    finalMatrix = finalMatrix + vec3<f32>(0.78, 1.0, 0.86) * head * pixelCode * (0.55 + glow * 0.45);
 
-    var finalColor = mix(finalMatrix, videoColor, mask);
+    // ── Idea: decrypt persistence — the hole is stored in A.a and closes with Rain Speed.
+    let prevA = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).a;
+    let prevMask = select(0.0, prevA, prevA < 1.01);
+    let cover = clamp(0.972 - u.zoom_params.y * 0.045, 0.88, 0.985);
+    let linger = clamp(max(mask, prevMask * cover), 0.0, 1.0);
+
+    var finalColor = mix(finalMatrix, videoColor, linger);
 
     // Edge ring glow
     let ring = 1.0 - smoothstep(0.0, 0.02, abs(dist - radius));
     finalColor += vec3<f32>(0.5, 1.0, 0.8) * ring * glow;
     // Click burst rims glow in the same code-green family.
-    finalColor += vec3<f32>(0.4, 0.9, 0.7) * burstRing * glow * 0.5;
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    finalColor = finalColor + vec3<f32>(0.4, 0.9, 0.7) * burstRing * glow * 0.5;
+    finalColor = aces(max(finalColor, vec3<f32>(0.0)));
 
-    // Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // Meaningful alpha: reveal mask blend + ring glow + click bursts + bass
-    let alpha = clamp((1.0 - mask) * 0.5 + ring * 0.4 + burstRing * 0.2 + bass * 0.1 + videoSample.a * 0.1, 0.0, 1.0);
-    let fc = vec4<f32>(finalColor, alpha);
+    let alpha = clamp((1.0 - linger) * 0.45 + ring * 0.35 + burstRing * 0.2 + head * 0.15 + videoSample.a * 0.1, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), fc);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), fc);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, linger));
 }

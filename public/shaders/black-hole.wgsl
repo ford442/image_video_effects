@@ -7,29 +7,15 @@
 //  Created: 2026-05-30
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish pass — richer lensing, accretion, and atmosphere)
-//  Upgraded: 2026-09-21
-//  Ideas: frame-dragging swirl toward the horizon; photon-ring secondary (point-reflected) image
+//  Upgraded: 2026-10-26 (prev 2026-09-21)
+//  Ideas: frame-dragging swirl toward the horizon; photon-ring secondary (point-reflected) image; photon-orbit caustic; horizon reddening
 //  A packing: fields (dist, radius, horizonMask, alpha); C unread
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=Ripples, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // Params
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(1e-4)), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -147,11 +133,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         let glow_color = disk_color * glow_intensity * (3.5 * glow_falloff + orbitRunner * 0.8 + infallPacket * 0.55 + clickFront * 0.7);
 
-        // Subtle redshift near the horizon
+        // ── Idea 4: horizon reddening — green and blue fall out, and the photo dims
         let redshift = smoothstep(0.0, 0.6, dist_from_surface);
-        let final_bg = mix(bg_color * vec3<f32>(1.0, 0.92, 0.85), bg_color, redshift);
+        let redden = (1.0 - redshift) * clamp(0.35 + gravity * 0.9, 0.0, 1.0);
+        let final_bg = mix(bg_color, bg_color * vec3<f32>(1.05, 0.48, 0.22), redden) * mix(1.0, 0.78, redden);
 
         final_color = final_bg + glow_color;
+        // ── Idea 3: photon-orbit caustic — a thin bright ring at 1.5× the horizon
+        let photonOrbit = radius * 1.5;
+        let orbitD = (dist - photonOrbit) / max(radius * 0.05 + 0.001, 0.001);
+        let orbitBand = exp(-orbitD * orbitD);
+        final_color += vec3<f32>(1.0, 0.78, 0.42) * orbitBand * (0.25 + glow_intensity * 0.45);
     }
 
     let horizonMask = 1.0 - smoothstep(radius, radius + 0.08 + lensing_scale * 0.1 + clickFront * 0.02, dist);
@@ -159,7 +151,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let atm = exp(-dist * 1.8);
     let finalAlpha = clamp(0.12 + horizonMask * 0.5 + glow_intensity * 0.18 + atm * 0.15, 0.06, 1.15);
     let a = clamp(finalAlpha, 0.0, 1.0);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(final_color * a, vec3<f32>(0.0), vec3<f32>(4.0)), a));
+    let display = acesFilm(max(final_color, vec3<f32>(0.0)));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(display, a));
 
     // Passthrough depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -3,7 +3,7 @@
   "name": "Digital Rain Reveal",
   "category": "interactive-mouse",
   "url": "shaders/digital-reveal.wgsl",
-  "description": "Matrix rain with glyph shapes hides the image; sprung brush reveals content. Held enlarges brush, clicks add capped ripples, regional FFT colors, depth-weighted reveal, ACES composite.",
+  "description": "Glyph rain hides the photo in finite drops with gaps. A brush, enlarged while held, and clicks open a hole that fades from an exact mask; glyphs wipe apart from the top of each cell as the photo comes through.",
   "workgroup_size": [
     16,
     16,
@@ -52,7 +52,6 @@
     "chromatic-drops",
     "click-reactive",
     "held-drag",
-    "spring-cursor",
     "glyph-shapes",
     "aces-tone-map"
   ],

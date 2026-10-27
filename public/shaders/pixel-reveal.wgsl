@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: reveal memory with per-block dropout; progressive-decode resolution ladder; colour-depth ladder with block Bayer dither
+//  Upgraded: 2026-10-05, 2026-10-27
+//  Ideas: reveal memory with per-block dropout; progressive-decode resolution ladder; colour-depth ladder with block Bayer dither; scanline pixel-sort; tile mortar
 //  A packing: display RGB + reveal memory in .a as 10 + level (only C.a is read back; <9.5 = empty)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -138,15 +138,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dither = bayer4(vec2<u32>(max(fineId, vec2<f32>(0.0))));
   let chromaColor = floor(clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(1.0)) * levels + dither) / levels;
 
+  // ── Idea: scanline pixel-sort — a hidden pixel above the luma threshold
+  // takes the brighter tap one coarse block to the right. Pixel Size sets the reach.
+  let sortSpan = coarseStep.x * (2.0 + pixelSizeParam * 8.0);
+  let sortUV = clamp(pixelatedUV + vec2<f32>(sortSpan, 0.0), vec2<f32>(0.001), vec2<f32>(0.999));
+  let sortTap = textureSampleLevel(readTexture, u_sampler, sortUV, 0.0).rgb;
+  let sortLuma = dot(sortTap, vec3<f32>(0.299, 0.587, 0.114));
+  let sortGate = smoothstep(threshold - 0.05, threshold + 0.08, max(pxLuma, sortLuma)) * (1.0 - combinedReveal);
+  let sorted = mix(chromaColor, mix(chromaColor, sortTap, step(pxLuma, sortLuma)), sortGate);
+
   let clearColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
   // Scanline bands on hidden regions
   let scanline = sin(uv.y * resolution.y * 0.7) * 0.5 + 0.5;
   let scanDark = mix(vec3<f32>(0.02, 0.02, 0.03), vec3<f32>(0.08, 0.08, 0.10), scanline);
-  let hiddenColor = mix(scanDark, chromaColor * 0.3, temporalDecay * 0.4);
+  let hiddenColor = mix(scanDark, sorted * 0.3, temporalDecay * 0.4);
 
-  var finalColor = mix(hiddenColor, chromaColor, combinedReveal);
+  var finalColor = mix(hiddenColor, sorted, combinedReveal);
   finalColor = mix(finalColor, clearColor, reveal * 0.3);
+
+  // ── Idea: tile mortar — a dark seam on the coarse cell edge, gone inside the live reveal.
+  let cellFrac = fract(uv / max(coarseStep, vec2<f32>(1e-4)));
+  let cellEdge = min(min(cellFrac.x, 1.0 - cellFrac.x), min(cellFrac.y, 1.0 - cellFrac.y));
+  let mortar = (1.0 - smoothstep(0.0, 0.08, cellEdge)) * (1.0 - reveal);
+  finalColor = mix(finalColor, finalColor * vec3<f32>(0.32, 0.34, 0.40), mortar);
 
   // Film grain
   let grain = hash3(vec3<f32>(uv * 500.0, time)).x;

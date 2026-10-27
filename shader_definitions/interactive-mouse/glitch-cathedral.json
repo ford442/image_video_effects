@@ -2,7 +2,7 @@
   "id": "glitch-cathedral",
   "name": "Glitch Cathedral",
   "url": "shaders/glitch-cathedral.wgsl",
-  "description": "Stained-glass geometric patterns with glitch artifacts; mouse triggers channel separation and pixel sorting.",
+  "description": "Stained-glass DCT blocks with Floyd-Steinberg error, lead cames at the cell size, and a rose-window pulse. Near the pointer, RGB Split separates channels and Sort Strength pulls pixels toward the brighter neighbour. Pattern Speed sets the rose rate.",
   "params": [
     {
       "id": "cellSize",
@@ -37,7 +37,10 @@
     "interactive",
     "glitch",
     "geometric",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

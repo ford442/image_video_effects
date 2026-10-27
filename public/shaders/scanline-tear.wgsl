@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Scanline Tear — Batch 62
-//  NTSC interlace + H/V sync: spring tracking focus, held boost,
-//  capped click sync-loss ripples, exact C field memory, ACES output.
+//  Scanline Tear
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-27
+//  Ideas: sync-pulse serration (§12.2B); chroma delay line (§12.2B)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash(n: vec2<f32>) -> f32 {
   return fract(sin(dot(n, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -135,8 +120,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rollDist = abs(uv.y - hsyncRollPos);
     let inRollZone = smoothstep(0.15, 0.0, rollDist);
     let hShift = sin(time * 30.0 + uv.y * 50.0) * 0.02 * hsyncError * inRollZone * (1.0 + bass * 3.0);
+    // ── Idea 1: sync-pulse serration (§12.2B) ───────────────────────
+    // H-sync resets at the left edge, so the tear is a saw across the line
+    // on top of the existing sine. HSync Error still sets the amount.
+    let serration = (fract(uv.x) - 0.5) * 0.045 * hsyncError * inRollZone;
     let hInstability = noise(time * 10.0 + uv.y * 100.0) * 0.01 * hsyncError;
-    sampleUV.x = fract(sampleUV.x + hShift + hInstability);
+    sampleUV.x = fract(sampleUV.x + hShift + serration + hInstability);
   }
 
   if (vsyncError > 0.0) {
@@ -168,6 +157,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var outputColor = mix(fieldSample, prevFrameSample, persistence * (1.0 - f32(inCurrentField)));
 
   if (colorBurstError > 0.0) {
+    // ── Idea 2: chroma delay line (§12.2B) ──────────────────────────
+    // Luma stays on this sample. Chroma is read a few texels to the left,
+    // the way a composite delay line smears colour off the burst.
+    let chromaDelay = colorBurstError * 4.0 / max(resolution.x, 1.0);
+    let chromaUV = clamp(sampleUV - vec2<f32>(chromaDelay, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let chromaPx = textureSampleLevel(readTexture, u_sampler, chromaUV, 0.0).rgb;
+    let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+    let yL = dot(fieldSample.rgb, lumaW);
+    let cL = dot(chromaPx, lumaW);
+    let delayedChroma = vec3<f32>(yL) + (chromaPx - vec3<f32>(cL));
+    fieldSample = vec4<f32>(mix(fieldSample.rgb, delayedChroma, colorBurstError), fieldSample.a);
+
     let phaseNoise = hash(vec2<f32>(floor(uv.y * 50.0), floor(time * 60.0)));
     let phaseError = (phaseNoise - 0.5) * 2.0 * colorBurstError;
     let lineHueShift = sin(uv.y * 100.0 + time * 10.0) * 0.1 * colorBurstError;

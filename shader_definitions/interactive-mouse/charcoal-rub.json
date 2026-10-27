@@ -2,7 +2,7 @@
   "id": "charcoal-rub",
   "name": "Charcoal Rub",
   "url": "shaders/charcoal-rub.wgsl",
-  "description": "Scratch-off effect like rubbing charcoal paper. Mouse reveals image beneath textured overlay.",
+  "description": "Charcoal rubbed onto laid paper. The stick takes the photograph's colour, a heavy rub burnishes through to the picture, and vine dust hangs at the edge of the stroke.",
   "params": [
     {
       "id": "hardness",

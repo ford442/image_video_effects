@@ -1,11 +1,13 @@
-import React, { RefObject, useMemo, useRef } from 'react';
-import ShaderScanner from '../ShaderScanner';
+import React, { RefObject, Suspense, lazy, useMemo, useRef, useState } from 'react';
 import { StorageBrowser } from '../storage';
 import { RenderMode, ShaderEntry, SlotParams, InputSource } from '../../renderer/types';
 import type { RendererManager } from '../../renderer/RendererManager';
 import type { ThumbnailHost } from '../../services/thumbnailBatch';
 import { readGraphLabEnabled } from '../../graphLab/graphLabFlags';
 import { GraphLabLauncher } from '../graphLab/GraphLabLauncher';
+
+// Debug tool: kept out of the main bundle until it is first opened.
+const ShaderScanner = lazy(() => import(/* webpackChunkName: "shader-scanner" */ '../ShaderScanner'));
 
 
 export interface AppOverlaysProps {
@@ -70,6 +72,9 @@ export function AppOverlays({
     inputSource,
     currentImageUrl,
 }: AppOverlaysProps) {
+    // Mount the lazy scanner on first open and keep it mounted (it owns scan state).
+    const [scannerMounted, setScannerMounted] = useState(showShaderScanner);
+    if (showShaderScanner && !scannerMounted) setScannerMounted(true);
     // Experimental Graph Lab (?graphlab): the launcher is tiny, the workspace is a lazy chunk.
     const graphLabEnabled = useMemo(() => readGraphLabEnabled(), []);
     // Latest app state for the thumbnail batch to save/restore around a run.
@@ -239,6 +244,8 @@ export function AppOverlays({
                 </div>
             )}
 
+            {scannerMounted && (
+            <Suspense fallback={null}>
             <ShaderScanner
                 shaders={availableModes}
                 isOpen={showShaderScanner}
@@ -265,6 +272,8 @@ export function AppOverlays({
                     }
                 }}
             />
+            </Suspense>
+            )}
 
             {showStorageBrowser && (
                 <div

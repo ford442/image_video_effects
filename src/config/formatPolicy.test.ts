@@ -1,4 +1,5 @@
 import {
+  colorTextureSampleType,
   DEFAULT_FORMAT_CAPABILITIES,
   estimateInternalTextureMiB,
   floatToHalfBits,
@@ -22,16 +23,45 @@ beforeAll(() => {
 });
 
 describe('formatPolicy', () => {
+  const F32_FILTERABLE = { ...DEFAULT_FORMAT_CAPABILITIES, hasFloat32Filterable: true };
+
   it('maps ultra to rgba32float and balanced/battery to rgba16float', () => {
-    expect(resolveColorFormat('ultra')).toBe('rgba32float');
+    expect(resolveColorFormat('ultra', F32_FILTERABLE)).toBe('rgba32float');
     expect(resolveColorFormat('balanced')).toBe('rgba16float');
     expect(resolveColorFormat('battery')).toBe('rgba16float');
+  });
+
+  it('demotes ultra to rgba16float without float32-filterable (regression: catalog broke)', () => {
+    expect(resolveColorFormat('ultra', { ...DEFAULT_FORMAT_CAPABILITIES, hasFloat32Filterable: false })).toBe('rgba16float');
+    // No legal FP16 path: FP32 (unfilterable) is still the only option.
+    expect(
+      resolveColorFormat('ultra', { ...DEFAULT_FORMAT_CAPABILITIES, hasFloat32Filterable: false, supportsFloat16Array: false }),
+    ).toBe('rgba32float');
+  });
+
+  it('auto never picks FP32 without float32-filterable', () => {
+    expect(
+      resolveColorFormat('auto', {
+        ...DEFAULT_FORMAT_CAPABILITIES,
+        adapterGpuType: 'discrete',
+        isMobile: false,
+        supportsRgba32FloatStorage: true,
+        hasFloat32Filterable: false,
+      }),
+    ).toBe('rgba16float');
+  });
+
+  it('colorTextureSampleType keys on the format, not just the feature', () => {
+    expect(colorTextureSampleType('rgba16float', false)).toBe('float');
+    expect(colorTextureSampleType('rgba16float', true)).toBe('float');
+    expect(colorTextureSampleType('rgba32float', true)).toBe('float');
+    expect(colorTextureSampleType('rgba32float', false)).toBe('unfilterable-float');
   });
 
   it('auto picks FP32 on discrete desktop only when FP32 storage was measured', () => {
     expect(
       resolveColorFormat('auto', {
-        ...DEFAULT_FORMAT_CAPABILITIES,
+        ...F32_FILTERABLE,
         adapterGpuType: 'discrete',
         isMobile: false,
         supportsRgba32FloatStorage: true,

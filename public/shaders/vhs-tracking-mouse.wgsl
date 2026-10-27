@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, click-reactive, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: dash-noise texture (row-aligned dropout streaks); tracking knob on mouse X + held auto-track lock; AGC lift in the band
+//  Upgraded: 2026-09-28, 2026-10-27
+//  Ideas: dash-noise texture (row-aligned dropout streaks); tracking knob on mouse X + held auto-track lock; AGC lift in the band; adjacent-track slip; overscan blanking
 //  A packing: ACES display RGB + source alpha (no C read)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rand(co: vec2<f32>) -> f32 {
     let seed = max(dot(co, vec2<f32>(12.9898, 78.233)), 0.001);
@@ -109,7 +90,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let jitter = (rand(vec2<f32>(uv.y, floor(time * 60.0))) - 0.5) * strength * 3.0 * bar_intensity;
     let displacedUV = clamp(uv + vec2<f32>(wobble + jitter + holdWobble + clickShear * strength * 2.0, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let damageMix = clamp(bandGate + clickDamage * 50.0, 0.0, 1.0);
-    let sampleUV = mix(uv, displacedUV, damageMix);
+    var sampleUV = mix(uv, displacedUV, damageMix);
+    // ── Idea 1: adjacent-track slip ─────────────────────────────────
+    // A detuned head reads the next track, so the picture inside the band
+    // slips vertically in the direction of the tracking knob.
+    let trackSign = sign(mousePos.x - 0.5);
+    let trackSlip = detuneLive * trackSign * 0.045;
+    sampleUV.y = clamp(sampleUV.y + trackSlip * bandGate, 0.0, 1.0);
 
     // Chroma bleed: R/G/B sample at different horizontal offsets
     let bleedAmount = colorShift * (1.0 + bar_intensity * 3.0);
@@ -157,6 +144,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Tracking-loss flash on treble spikes
     let flash = step(0.75, treble) * bar_intensity * rand(vec2<f32>(time * 3.0, 0.0));
     color = mix(color, vec3<f32>(1.0), max(flash, clickDamage * (0.25 + treble * 0.25)));
+
+    // ── Idea 2: overscan blanking ────────────────────────────────────
+    // The side the head left reveals the blanking edge, inside the band.
+    // A centred knob (detune ≈ 0) keeps the bar shut.
+    let blankSide = select(uv.x, 1.0 - uv.x, trackSign > 0.0);
+    let blankW = max(detuneLive * 0.07, 0.0001);
+    let overscan = (1.0 - smoothstep(0.0, blankW, blankSide)) * smoothstep(0.04, 0.2, detuneLive) * max(bandGate, clickDamage);
+    color = mix(color, vec3<f32>(0.02), overscan);
 
     // Vignette darkening at edges
     let vig = 1.0 - dot(uv - 0.5, uv - 0.5) * 0.5;

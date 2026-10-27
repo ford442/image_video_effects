@@ -5,29 +5,12 @@
 //            biharmonic-dispersion, mean-curvature-pressure, crest-microfoam
 //  Complexity: High
 //  Scientific: Young-Laplace capillary flow with curvature-driven surface tension, dispersive capillary waves, Marangoni convection, and touch-induced droplet coalescence
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-10-26 (prev 2026-05-23)
+//  Ideas: thermal blister (§12.2D Boussinesq); contact-line pin
+//  A packing: raw (phi, velocity, temperature, merge); B diagnostic unchanged
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -155,6 +138,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   velocity *= max(0.86, 0.992 - 0.02 * gamma);
   velocity += surfaceTensionForce * 0.0012 + marangoniForce + gravityWave + capillaryWave + dropletDrive * 0.012 + coalescence;
+  // ── Idea 1: thermal blister (§12.2D) — warm film domes, cool film sinks
+  velocity += temperature * (0.003 + 0.01 * marangoni);
+  // ── Idea 2: contact-line pin — a steep, slow front sticks
+  let contact = smoothstep(0.015, 0.12, interfaceDelta);
+  let creeping = 1.0 - smoothstep(0.001, 0.02, abs(velocity));
+  velocity *= 1.0 - contact * creeping * 0.72;
   phi = mix(phi + velocity, (left.r + right.r + up.r + down.r) * 0.25, clamp(0.015 + gamma * 0.01, 0.0, 0.06));
 
   temperature = clamp(temperature + bass * 0.01 + treble * sin(dot(uv, vec2<f32>(90.0, 85.0)) - time * 20.0) * 0.01, -1.0, 1.0);

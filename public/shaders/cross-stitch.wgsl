@@ -3,32 +3,16 @@
 //  Category: artistic
 //  Features: thread coverage → alpha, fabric substrate, stitch depth,
 //            audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-21
-//  Ideas: half-stitch/full-stitch shading; satin thread sheen;
-//         bass-driven weave tension pulse
-//  A packing: display RGBA passthrough (no history)
+//  Upgraded: 2026-10-27
+//  Ideas: half-stitch and full-stitch; satin sheen; bass tension; knot at the crossing; Aida holes
+//  A packing: ACES display RGBA. C is not read.
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(.1031, .1030, .0973));
@@ -147,21 +131,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // giving the floss the glossy highlight real embroidery thread has.
     let sheen = smoothstep(thickness * 0.5, 0.0, lineDist) * 0.35;
     thread_color = thread_color + vec3<f32>(sheen);
+    // ── Idea: knot. A full stitch is darker and thicker where the diagonals cross.
+    let knot = (1.0 - smoothstep(thickness * 0.28, thickness * 0.28 + 0.07, d1))
+             * (1.0 - smoothstep(thickness * 0.28, thickness * 0.28 + 0.07, d2))
+             * fullStitch;
+    thread_color = mix(thread_color, thread_color * 0.62, knot);
 
     // Darker threads appear more opaque (more pigment)
     let dark_boost = 1.0 - luma * 0.3;
     thread_alpha *= dark_boost;
 
     // Final Mix with alpha
-    var finalColor = mix(cloth_with_texture * shadow, thread_color, mask);
-
-    // Adjust final color alpha based on thread coverage
-    // Where there's no thread, we see the fabric (low alpha)
-    // Where there's thread, we see the stitch (higher alpha)
-    let final_alpha = mix(0.15, thread_alpha, mask);
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, final_alpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, final_alpha));
+    // ── Idea: Aida holes. The cell corners open where the needle passes.
+    let corner = min(min(localUV.x, localUV.y), min(1.0 - localUV.x, 1.0 - localUV.y));
+    let hole = 1.0 - smoothstep(0.045, 0.09, corner);
+    let clothPunched = mix(cloth_with_texture, cloth_with_texture * 0.45, hole);
+    let stitchMask = max(mask, knot) * (1.0 - hole * 0.8);
+    var finalColor = mix(clothPunched * shadow, thread_color, stitchMask);
+    let final_alpha = mix(0.15, thread_alpha, stitchMask);
+    let displayRgb = aces(max(finalColor, vec3<f32>(0.0)));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(displayRgb, final_alpha));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(displayRgb, final_alpha));
 
     // Store thread thickness in depth
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(mask * threadDensity, 0.0, 0.0, final_alpha));

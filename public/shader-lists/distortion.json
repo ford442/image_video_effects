@@ -3,7 +3,7 @@
     "id": "black-hole",
     "name": "Gravitational Lensing",
     "url": "shaders/black-hole.wgsl",
-    "description": "Stylized gravitational-lensing distortion with held-pointer pull, orbiting horizon runners, inward light packets, audio modulation, and bounded click fronts.",
+    "description": "Stylized gravitational-lensing distortion with held-pointer pull, orbiting horizon runners, inward light packets, audio modulation, and bounded click fronts. A photon-orbit caustic rings the horizon, and light there reddens.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1184,11 +1184,12 @@
     "id": "gravity-well",
     "name": "Gravity Well",
     "url": "shaders/gravity-well.wgsl",
-    "description": "Schwarzschild-inspired lensing with photon-sphere rings, gravitational redshift, and Doppler-bright accretion flow.",
+    "description": "Schwarzschild-inspired lensing with photon-sphere rings, gravitational redshift, and Doppler-bright accretion flow. The disk dims inside the innermost stable orbit and brightens on that lip, and higher-order lensing splits red from blue.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {

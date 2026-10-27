@@ -1,6 +1,7 @@
 #include "renderer.h"
 #include "performance_policy.h"
 #include "wasm_internal.h"
+#include "bind_group0.h"
 #include <webgpu/webgpu.h>
 #include <emscripten/emscripten.h>
 #include <cstdio>
@@ -33,52 +34,15 @@ WGPUTextureFormat RgbaStorageFormat(policy::InternalColorFormat fmt) {
 
 // ─── Compute binding table (group 0, bindings 0–13) ──────────────────────────
 // One table drives both the bind group layout and every compute bind group,
-// so the two can no longer drift. Authoritative list: docs/BINDING_CONTRACT.md.
-enum class BindingKind : uint8_t {
-    FilteringSampler,
-    NonFilteringSampler,
-    ComparisonSampler,
-    SampledRgba,       // texture_2d<f32>, tier rgba format
-    SampledRgbaArray,  // texture_2d_array<f32>, tier rgba format
-    SampledR32,        // texture_2d<f32>, r32float
-    StorageRgba,       // texture_storage_2d<tier rgba, write>
-    StorageR32,        // texture_storage_2d<r32float, write>
-    UniformBuffer,
-    StorageBuffer,
-    ReadOnlyStorageBuffer,
-};
-
-// Which renderer object fills the binding. Input/Output are per-pass (the
-// slot's read/write textures); everything else is a shared global.
-enum class BindingResource : uint8_t {
-    FilteringSampler, NonFilteringSampler, ComparisonSampler,
-    Input, Output, Uniforms, DepthRead, DepthWrite,
-    DataA, DataB, DataC, Extra, Plasma, History,
-};
-
-struct ComputeBinding {
-    uint32_t binding;
-    BindingKind kind;
-    BindingResource resource;
-};
-
-constexpr ComputeBinding kComputeBindings[] = {
-    {  0, BindingKind::FilteringSampler,      BindingResource::FilteringSampler },
-    {  1, BindingKind::SampledRgba,           BindingResource::Input },
-    {  2, BindingKind::StorageRgba,           BindingResource::Output },
-    {  3, BindingKind::UniformBuffer,         BindingResource::Uniforms },
-    {  4, BindingKind::SampledR32,            BindingResource::DepthRead },
-    {  5, BindingKind::NonFilteringSampler,   BindingResource::NonFilteringSampler },
-    {  6, BindingKind::StorageR32,            BindingResource::DepthWrite },
-    {  7, BindingKind::StorageRgba,           BindingResource::DataA },
-    {  8, BindingKind::StorageRgba,           BindingResource::DataB },
-    {  9, BindingKind::SampledRgba,           BindingResource::DataC },
-    { 10, BindingKind::StorageBuffer,         BindingResource::Extra },
-    { 11, BindingKind::ComparisonSampler,     BindingResource::ComparisonSampler },
-    { 12, BindingKind::ReadOnlyStorageBuffer, BindingResource::Plasma },
-    { 13, BindingKind::SampledRgbaArray,      BindingResource::History },
-};
-constexpr size_t kComputeBindingCount = std::size(kComputeBindings);
+// so the two can no longer drift. It is generated from
+// src/contracts/bind_group0.json (the TS layout imports the same JSON).
+using bind_group0::BindingKind;
+using bind_group0::BindingResource;
+using bind_group0::ComputeBinding;
+using bind_group0::SampleRule;
+using bind_group0::KindSampleRule;
+using bind_group0::kComputeBindings;
+using bind_group0::kComputeBindingCount;
 static_assert(kComputeBindingCount == 14, "compute bind group contract is bindings 0-13");
 
 constexpr bool BindingsAreDense() {
@@ -92,6 +56,19 @@ static_assert(BindingsAreDense(), "kComputeBindings must list bindings 0..13 in 
 
 bool WebGPURenderer::CreateBindGroupLayout() {
     // Layout entries come straight from kComputeBindings (see the table above).
+    // Sample types follow the contract: keyed on the format, so rgba16float is
+    // always Float and r32float depth is always UnfilterableFloat (matches TS).
+    const bool f32Filterable =
+        wgpuDeviceHasFeature(device_.get(), WGPUFeatureName_Float32Filterable);
+    const WGPUTextureSampleType colorSampleType =
+        (colorFormat_ == policy::InternalColorFormat::Rgba16Float || f32Filterable)
+            ? WGPUTextureSampleType_Float
+            : WGPUTextureSampleType_UnfilterableFloat;
+    auto sampleTypeFor = [&](BindingKind kind) {
+        return KindSampleRule(kind) == SampleRule::ColorFormat
+            ? colorSampleType
+            : WGPUTextureSampleType_UnfilterableFloat;
+    };
     std::array<WGPUBindGroupLayoutEntry, kComputeBindingCount> entries{};
     for (size_t i = 0; i < kComputeBindingCount; ++i) {
         const ComputeBinding& b = kComputeBindings[i];
@@ -107,11 +84,11 @@ bool WebGPURenderer::CreateBindGroupLayout() {
                 e.sampler.type = WGPUSamplerBindingType_Comparison; break;
             case BindingKind::SampledRgba:
             case BindingKind::SampledR32:
-                e.texture.sampleType = WGPUTextureSampleType_Float;
+                e.texture.sampleType = sampleTypeFor(b.kind);
                 e.texture.viewDimension = WGPUTextureViewDimension_2D;
                 break;
             case BindingKind::SampledRgbaArray:
-                e.texture.sampleType = WGPUTextureSampleType_Float;
+                e.texture.sampleType = sampleTypeFor(b.kind);
                 e.texture.viewDimension = WGPUTextureViewDimension_2DArray;
                 break;
             case BindingKind::StorageRgba:
@@ -552,6 +529,8 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     PopResult pop;
     auto popCb = [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
                     WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+        // Cancelled = instance dropped after a timed-out wait: `pop` is a dead slot.
+        if (status == WGPUPopErrorScopeStatus_CallbackCancelled) return;
         auto* out = static_cast<PopResult*>(userdata1);
         const bool okStatus = status == WGPUPopErrorScopeStatus_Success;
         const bool isGpuError = type == WGPUErrorType_Validation
@@ -573,7 +552,7 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
         WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
         popWait.future = popFuture;
         const WGPUWaitStatus waitStatus =
-            wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+            wgpuInstanceWaitAny(instance_.get(), 1, &popWait, wasm_internal::kErrorScopeWaitTimeoutNs);
         if (waitStatus != WGPUWaitStatus_Success) {
             waitFailed = true;
             printf("[WASM] CreateComputePipeline error-scope WaitAny status=%d — treat as invalid\n",

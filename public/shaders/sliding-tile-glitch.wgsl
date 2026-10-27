@@ -3,31 +3,14 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-06, 2026-10-27
+//  Ideas: grout of the unshifted photo; distance-weighted restoration
+//  A packing: pre-ACES linear RGB in A; ACES on the display write
 //  Motion: directional row/column tile sliding conveyors + chromatic tear
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=GridSize, y=SlideAmount, z=Chaos, w=Restoration
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=GridSize, y=SlideAmount, z=Chaos, w=Restoration
 
 fn hash21(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -136,7 +119,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                          select(vec2<f32>(0.0, 1.0), vec2<f32>(0.0, -1.0), cellRandY > 0.7),
                          chaos > 0.5 && !isRowSliding);
   
-  let slideVec = dirChoice * rawSlide * glitchActivity * (1.0 - restoration * 0.5);
+  // ── Idea 2: distance-weighted restoration ───────────────────────
+  // Restoration still damps the slide. Tiles far from the pointer settle
+  // first; tiles under the pointer keep the full amount.
+  let restoreSpatial = restoration * (1.0 - mouseProximity);
+  let slideVec = dirChoice * rawSlide * glitchActivity * (1.0 - restoreSpatial);
 
   // Slid sampling UV
   let shiftedUV = clamp(uv + slideVec, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -152,6 +139,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cellEdge = min(min(cellFract.x, 1.0 - cellFract.x), min(cellFract.y, 1.0 - cellFract.y));
   let gridLine = smoothstep(0.06, 0.01, cellEdge) * glitchActivity * (0.2 + chaos * 0.8);
   let gridNeon = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + cellRandX * 6.28 + time * 2.0);
+  // ── Idea 1: grout of the unshifted photo ────────────────────────
+  // The gap the tile slid away from shows the photo at the unmoved UV.
+  // The neon line stays on top of that grout.
+  let unshifted = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  color = mix(color, unshifted * 0.62, clamp(gridLine, 0.0, 1.0));
   color += gridNeon * gridLine * 0.75;
 
   // Exact previous frame history load from dataTextureC
