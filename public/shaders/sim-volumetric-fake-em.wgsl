@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: simulation, fake-volumetrics, mouse-driven, electromagnetic, interactive, upgraded-rgba, audio-reactive
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: Faraday rotation hue twist along bent rays; Lichtenberg branch filaments at high fieldMag
+//  Upgraded: 2026-10-27
+//  Ideas: depth-occluded bent shafts; field-aligned dust streaks
 //  A packing: ACES display RGBA; extraBuffer[133..134] previous mouse
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -66,7 +47,7 @@ fn hueRotate(rgb: vec3<f32>, angle: f32) -> vec3<f32> {
 fn electricField(pos: vec2<f32>, chargePos: vec2<f32>, charge: f32) -> vec2<f32> {
   let r = pos - chargePos;
   let dist = max(length(r), 0.001);
-  return charge * normalize(r) / (dist * dist);
+  return charge * (r / dist) / (dist * dist);
 }
 
 fn magneticField(pos: vec2<f32>, chargePos: vec2<f32>, velocity: vec2<f32>, charge: f32) -> f32 {
@@ -129,7 +110,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let eField = electricField(uv, mousePos, chargeStrength);
   let bField = magneticField(uv, mousePos, mouseVel, chargeStrength);
   let fieldMag = length(eField);
-  let fieldDir = select(vec2<f32>(0.0), normalize(eField), fieldMag > 0.0001);
+  let fieldDir = eField / max(fieldMag, 0.0001);
 
   var totalE = eField;
   var totalB = bField;
@@ -151,7 +132,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let toLight = lightPos - uv;
   let distToLight = max(length(toLight), 0.001);
   let dirToLight = toLight / distToLight;
-  let bentDir = normalize(dirToLight + fieldDir * emDistortion * smoothstep(0.0, 2.0, fieldMag));
+  let bentVector = dirToLight + fieldDir * emDistortion * smoothstep(0.0, 2.0, fieldMag);
+  let bentDir = bentVector / max(length(bentVector), 0.0001);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
@@ -167,10 +149,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (samplePos.x < 0.0 || samplePos.x > 1.0 || samplePos.y < 0.0 || samplePos.y > 1.0) {
       continue;
     }
-    let sampleColor = textureSampleLevel(readTexture, u_sampler, clamp(samplePos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-    let luma = dot(sampleColor, vec3<f32>(0.299, 0.587, 0.114));
+    let sampleColor = textureSampleLevel(readTexture, u_sampler, clamp(samplePos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let luma = dot(sampleColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(samplePos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let depthOcclusion = smoothstep(0.03, 0.25, sampleDepth - depth);
 
-    occlusion = occlusion + luma * (1.0 - t);
+    occlusion = occlusion + (luma * sampleColor.a + depthOcclusion) * (1.0 - t);
     faradayTwist = faradayTwist + totalB * t;
 
     let attenuation = 1.0 - t;
@@ -183,17 +167,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let dustNoise = noise(uv * 20.0 + time * noiseSpeed) * noise(uv * 15.0 - time * noiseSpeed * 0.5);
   let dust = pow(dustNoise, 3.0) * dustDensity;
+  let fieldTangent = vec2<f32>(-fieldDir.y, fieldDir.x);
+  let dustCoords = vec2<f32>(dot(uv - mousePos, fieldDir) * 8.0, dot(uv - mousePos, fieldTangent) * 65.0);
+  let dustStreak = pow(noise(dustCoords + vec2<f32>(-time * noiseSpeed, 0.0)), 5.0) * dustDensity;
 
   let density = 0.3 * scattering;
   var lightRays = volumetric * (1.0 - occlusion) * density;
   lightRays = lightRays * lightIntensity;
   lightRays = lightRays + vec3<f32>(dust * lightIntensity * 0.5);
+  lightRays += vec3<f32>(0.75, 0.85, 1.0) * dustStreak * lightIntensity * (0.12 + emDistortion);
   let sunColor = vec3<f32>(1.0, 0.95, 0.8);
   lightRays = hueRotate(lightRays * sunColor, faradayTwist * 2.8 * chromaticSplit * 40.0);
 
   var color = src.rgb + lightRays;
-  let viewDir = normalize(uv - lightPos);
-  let lightDir = normalize(vec2<f32>(0.5) - lightPos);
+  let viewDir = (uv - lightPos) / max(length(uv - lightPos), 0.0001);
+  let lightDir = (vec2<f32>(0.5) - lightPos) / max(length(vec2<f32>(0.5) - lightPos), 0.0001);
   let alignment = max(0.0, dot(viewDir, lightDir));
   color = color + sunColor * alignment * alignment * lightIntensity * 0.1;
   let falloff = 1.0 / (1.0 + distToLight * distToLight * 2.0);

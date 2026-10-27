@@ -5,6 +5,9 @@
 //  Complexity: Medium
 //  Created: 2026-05-10
 //  Upgraded: 2026-05-23
+//  Upgraded: 2026-10-27
+//  Ideas: isotropic nine-point heat diffusion; heat-gradient schlieren bands
+//  A packing: raw heat, warp and alpha; B: display RGBA
 //  By: Phase A Upgrade Swarm
 // ═══════════════════════════════════════════════════════════════════
 
@@ -41,26 +44,7 @@
 //  spectral flash and inject a plume.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn spectrum(tt: f32) -> vec3<f32> {
   return 0.5 + 0.5 * cos(6.2831853 * (tt + vec3<f32>(0.0, 0.33, 0.67)));
@@ -115,8 +99,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let r = textureLoad(dataTextureC, clamp(sourceCoord + vec2<i32>(1, 0), vec2<i32>(0), maxCoord), 0).r;
   let t = textureLoad(dataTextureC, clamp(sourceCoord + vec2<i32>(0, -1), vec2<i32>(0), maxCoord), 0).r;
   let b = textureLoad(dataTextureC, clamp(sourceCoord + vec2<i32>(0, 1), vec2<i32>(0), maxCoord), 0).r;
+  let tl = textureLoad(dataTextureC, clamp(sourceCoord + vec2<i32>(-1, -1), vec2<i32>(0), maxCoord), 0).r;
+  let tr = textureLoad(dataTextureC, clamp(sourceCoord + vec2<i32>(1, -1), vec2<i32>(0), maxCoord), 0).r;
+  let bl = textureLoad(dataTextureC, clamp(sourceCoord + vec2<i32>(-1, 1), vec2<i32>(0), maxCoord), 0).r;
+  let br = textureLoad(dataTextureC, clamp(sourceCoord + vec2<i32>(1, 1), vec2<i32>(0), maxCoord), 0).r;
 
-  let avg = (l + r + t + b) * 0.25;
+  let avg = (l + r + t + b) * 0.2 + (tl + tr + bl + br) * 0.05;
   let diffusedHeat = mix(c, avg, diffusion) * (0.85 + plumeCore * 0.35);
 
   // 2. Add Mouse Heat (branchless)
@@ -210,7 +198,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Click bursts flash full-spectrum.
   let burstTint = spectrum(fract(heatHue + 0.5)) * clickHeat * (0.9 + bass * 1.0);
 
-  var outRGB = color.rgb + thermalTint + burstTint;
+  let schlieren = clamp((heatGradX * 0.7 - heatGradY * 0.3) * refraction * 2.0, -0.3, 0.3);
+  var outRGB = color.rgb * (1.0 + schlieren) + thermalTint + burstTint;
   outRGB = acesFilm(outRGB);
 
   // Meaningful alpha based on effect intensity

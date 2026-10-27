@@ -35,14 +35,48 @@
   ],
   "features": [
     "volumetric",
-    "raymarched",
     "depth",
     "fluid",
     "single-pass-multilayer",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
     "image-processing"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Foreground Speed",
+          "default": 1,
+          "min": 0,
+          "max": 4
+        },
+        {
+          "index": 1,
+          "name": "Background Speed",
+          "default": 0.8,
+          "min": 0,
+          "max": 4
+        },
+        {
+          "index": 2,
+          "name": "Parallax",
+          "default": 0.5,
+          "min": 0,
+          "max": 2
+        },
+        {
+          "index": 3,
+          "name": "Fog Density",
+          "default": 0.6,
+          "min": 0,
+          "max": 4
+        }
+      ]
+    }
+  }
 }

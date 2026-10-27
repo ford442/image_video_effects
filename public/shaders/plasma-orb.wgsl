@@ -6,29 +6,13 @@
 //            spring-damper-drift, corona-shimmer, temporal-glow, aces-tone-map
 //  Complexity: Very High
 //  Created: 2026-05-31
-//  Upgraded: 2026-07-22 (swarm Optimizer: worley arcs, spring drift, corona shimmer)
+//  Upgraded: 2026-10-27
+//  Ideas: traveling arc beads; limb-brightened coronal shell
+//  A packing: ACES display RGBA feedback
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=ArcInt, y=ArcChaos, z=GlowSize, w=CoreBright
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=ArcInt, y=ArcChaos, z=GlowSize, w=CoreBright
 
 const TAU: f32 = 6.28318530718;
 
@@ -128,7 +112,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // Temporal glow feedback from previous frame
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prev = textureLoad(dataTextureC, pixel, 0);
 
     // Divergence-free magnetic field via curl of scalar potential ψ
     let freq = 4.0 + depth * 6.0;
@@ -168,6 +152,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let annulus = smoothstep(0.07, 0.15, dist) * smoothstep(0.48, 0.30, dist);
     let arcPulse = 0.6 + 0.4 * sin(time * 7.0 + ridge * 20.0 + treble * 4.0);
     let arcs = arcMask * annulus * arcPulse * arcChaos;
+    let beadPhase = toroidal * 5.0 + poloidal * q * 1.5 - time * (3.0 + mids * 2.0);
+    let arcBeads = pow(max(0.5 + 0.5 * sin(beadPhase), 0.0), 10.0) * lineMask * annulus;
 
     // Equatorial current sheet
     let sheet = smoothstep(0.04 + glowSize * 0.03, 0.0, abs(p.y)) * smoothstep(0.3, 0.0, dist);
@@ -204,6 +190,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coronaMask = smoothstep(coronaRadius, coronaRadius * 0.45, dist) * smoothstep(0.12, 0.24, dist);
     let coronaCol = mix(vec3<f32>(0.2, 0.5, 1.0), vec3<f32>(0.6, 0.85, 1.0), shimmer);
     col = col + coronaCol * coronaMask * (0.25 + mids * 0.55) * (0.5 + glowSize);
+    let shellWidth = 0.025 + glowSize * 0.035;
+    let shell = exp(-abs(dist - coronaRadius * 0.62) / shellWidth) * coronaMask;
+    col += vec3<f32>(0.35, 0.7, 1.0) * shell * (0.25 + glowSize * 0.4);
+    col += vec3<f32>(0.8, 0.9, 1.0) * arcBeads * arcInt * (0.5 + treble * 0.5);
 
     // Temporal glow accumulation
     col = mix(prev.rgb * 0.85, col, 0.25);
@@ -215,24 +205,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = acesToneMap(col * (1.0 + coreBright) * 1.1);
 
     // Alpha encodes plasma beta × reconnection × depth perspective, plus arc energy
-    let alpha = clamp(beta * reconn * depth + sheet * 0.3 + lineMask * 0.15 + arcs * 0.4, 0.0, 1.0);
-
-    
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(pixel) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
-
-    let __finalRGB = col + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, pixel, vec4<f32>(__finalRGB, alpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(__finalRGB, alpha));
+    let alpha = clamp(beta * reconn * depth + sheet * 0.3 + lineMask * 0.15 + arcs * 0.4 + shell * 0.15 + arcBeads * 0.2, 0.0, 1.0);
+    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(smoothstep(0.3, 0.0, dist), 0.0, 0.0, 0.0));
 }

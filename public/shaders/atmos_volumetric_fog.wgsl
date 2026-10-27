@@ -4,30 +4,13 @@
 //  Features: upgraded-rgba, depth-aware, physical-transmittance, volumetric-fog,
 //            audio-reactive, aces-tone-map, temporal-feedback, chromatic-aberration,
 //            mouse-light, god-ray-march, fbm-breakup, treble-motes, shockwave,
-//            video-luma, bass-envelope, feedback-clamp
-//  Upgraded: 2026-07-22 (swarm b12 — Visualist: shafts, scattering, aerial light)
+//            video-luma, bass-envelope
+//  Upgraded: 2026-10-27
+//  Ideas: depth-occluded shafts; forward-scattering phase
+//  A packing: raw bass envelope, density, interaction and output alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Fixed constants freed up by rewiring the sliders to light-transport params.
 const RAY_STEPS: i32 = 10;          // radial god-ray march steps
@@ -96,7 +79,7 @@ fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
 // Screen-space radial march from the pixel toward the mouse light. fbm fog
 // density sampled along the ray occludes the light, carving visible shafts
 // through the volume instead of a flat radial glow.
-fn godRayShaft(uv: vec2<f32>, lightPos: vec2<f32>, time: f32, heightFalloff: f32) -> f32 {
+fn godRayShaft(uv: vec2<f32>, lightPos: vec2<f32>, time: f32, heightFalloff: f32, depth: f32) -> f32 {
   let rayVec = lightPos - uv;
   var occ = 0.0;
   var wsum = 0.0;
@@ -107,7 +90,9 @@ fn godRayShaft(uv: vec2<f32>, lightPos: vec2<f32>, time: f32, heightFalloff: f32
     let n = fbm(p * 3.5 + vec2<f32>(time * 0.03, time * 0.012), 3);
     let d = max(0.0, hFog * (0.35 + 0.65 * n));
     let w = 1.0 - t * t;  // nearer samples occlude more strongly
-    occ += d * w;
+    let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(p, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let visibility = 1.0 - smoothstep(0.03, 0.25, sampleDepth - depth);
+    occ += d * w * visibility;
     wsum += w;
   }
   return occ / max(wsum, 0.0001);
@@ -137,7 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
   let bass = bass_env(prev.r, rawBass, 0.8, 0.15);
 
   let mouse = u.zoom_config.yz;
@@ -198,13 +183,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── Mouse-anchored god rays ────────────────────────────────────────────
   // Radial occlusion march + sharpened cone, masked by fog density, the
   // God Rays slider, and the light intensity so shafts die off in thin fog.
-  let shaftDensity = godRayShaft(uv, mouse, time, FOG_HEIGHT);
+  let shaftDensity = godRayShaft(uv, mouse, time, FOG_HEIGHT, depth);
   let shaftMask = godRays * density * 0.9;
   let shaft = godCone * shaftDensity * lightGlow * shaftMask * 6.0;
   let shaftColor = mix(vec3<f32>(1.0, 0.92, 0.75), fogColor, 0.35);
 
   // In-scatter glow, now driven by the Scattering slider
-  let scatter = fogColor * godCone * lightGlow * density * scattering * 1.2;
+  let phaseCos = clamp(1.0 - lightDist * 1.4, -1.0, 1.0);
+  let g = 0.45;
+  let forwardPhase = (1.0 - g * g) / pow(max(1.0 + g * g - 2.0 * g * phaseCos, 0.01), 1.5);
+  let scatter = fogColor * godCone * lightGlow * density * scattering * (0.55 + 0.22 * forwardPhase);
 
   // ── Treble sparkle motes inside bright shafts ─────────────────────────
   let moteGain = shaft * 2.0 + godCone * lightGlow * godRays;
@@ -214,10 +202,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var finalColor = mix(transmitted, fogColor + scatter, alpha * 0.7);
   finalColor = finalColor + shaftColor * shaft + vec3<f32>(1.0, 0.97, 0.85) * motes;
 
-  // ── Temporal feedback, clamped pre-tint at 1.2 (luma-echo-warp lesson) ─
-  let prevSafe = clamp(prev.rgb, vec3<f32>(0.0), vec3<f32>(1.2));
-  finalColor = mix(finalColor, prevSafe * 0.95, 0.03 + bass * 0.01);
-
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
 
@@ -225,7 +209,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Alpha encodes fog density + interaction intensity (shafts included)
   let interaction = lightGlow * 0.3 + shockClear * 0.5 + shaft * 0.4;
-  let finalAlpha = clamp(alpha + interaction, 0.0, 1.0);
+  let finalAlpha = clamp(bgSample.a + (1.0 - bgSample.a) * (alpha + interaction), 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

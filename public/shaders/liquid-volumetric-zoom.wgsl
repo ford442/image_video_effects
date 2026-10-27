@@ -1,40 +1,19 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Liquid Volumetric Zoom Shader with Alpha Physics
-//  Category: liquid-effects
-//  Features: volumetric layers, zoom effect, chromatic separation
+//  Category: interactive-mouse
+//  Features: volumetric layers, zoom effect, chromatic separation, upgraded-rgba
+//  Upgraded: 2026-10-27
+//  Ideas: depth-weighted layer parallax; flow-convergence caustics
+//  A packing: ACES display RGBA; C unused
 //
 //  ALPHA PHYSICS:
 //  - Layer depth affects opacity
 //  - Fog density controls transparency falloff
-//  - Chromatic separation has wavelength-dependent alpha
+//  - Source alpha is averaged across the sampled layers
 // ═══════════════════════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=unused, z=resX, w=resY
-  zoom_config: vec4<f32>,  // x=zoomTime, y=centerX, z=centerY, w=depth_threshold
-  zoom_params: vec4<f32>,  // x=fg_speed, y=bg_speed, z=parallax_str, w=fog_density
-  ripples: array<vec4<f32>, 50>,
-};
-
-// Mapping notes:
-// - mouse in extraBuffer[8..9] if needed or use u.zoom_config.yz as center
-// - comp_params.w (chromatic aberration) read from extraBuffer[0]
+#include "_prelude.wgsl"
+// zoom_params: x=fg_speed, y=bg_speed, z=parallax_str, w=fog_density
 
 fn ping_pong(a: f32) -> f32 { return 1.0 - abs(fract(a * 0.5) * 2.0 - 1.0); }
 fn ping_pong_v2(v: vec2<f32>) -> vec2<f32> { return vec2<f32>(ping_pong(v.x), ping_pong(v.y)); }
@@ -74,8 +53,8 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
 fn reconstruct_normal(uv: vec2<f32>, depth: f32) -> vec3<f32> {
     var resolution = vec2<f32>(u.config.z, u.config.w);
     let offset = vec2<f32>(1.0 / resolution.x, 1.0 / resolution.y);
-    let dx = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(offset.x, 0.0), 0.0).r - textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(offset.x, 0.0), 0.0).r;
-    let dy = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, offset.y), 0.0).r - textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, offset.y), 0.0).r;
+    let dx = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(offset.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r - textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv - vec2<f32>(offset.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let dy = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(0.0, offset.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r - textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv - vec2<f32>(0.0, offset.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let n = vec3<f32>(-dx, -dy, 1.0);
     return normalize(n);
 }
@@ -83,6 +62,10 @@ fn reconstruct_normal(uv: vec2<f32>, depth: f32) -> vec3<f32> {
 // Schlick's approximation for Fresnel
 fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
   return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Calculate volumetric alpha
@@ -113,24 +96,17 @@ fn calculateVolumetricAlpha(
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var resolution = vec2<f32>(u.config.z, u.config.w);
+    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
     var uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
-    let treble = plasmaBuffer[0].z;
 
     let zoom_time = u.zoom_config.x;
     let zoom_center = u.zoom_config.yz;
 
-    var mousePos = vec2<f32>(u.zoom_config.y / resolution.x, u.zoom_config.z / resolution.y);
-    var clickIntensity: f32;
-    if (arrayLength(&extraBuffer) > 10u) {
-        clickIntensity = extraBuffer[10];
-    } else {
-        clickIntensity = 0.0;
-    }
+    let clickIntensity = u.zoom_config.w;
 
     var accumulatedColor = vec3<f32>(0.0);
+    var accumulatedAlpha = 0.0;
     var accumulatedDepth = 0.0;
     var totalWeight = 0.0;
 
@@ -142,7 +118,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         // Vortex spin
         let toCenter = uv - zoom_center;
-        let angle = atan2(toCenter.y, toCenter.x);
         let dist = length(toCenter);
         let vortexStrength = clickIntensity * 0.3 / (dist + 0.1);
         let spinAngle = vortexStrength * layerDepth * (1.0 - layerDepth);
@@ -154,17 +129,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let nX = noise(rotatedUV * flowScale + vec2<f32>(time * flowSpeed, 0.0));
         let nY = noise(rotatedUV * flowScale + vec2<f32>(0.0, time * flowSpeed));
         let flowUV = rotatedUV + vec2<f32>(nX, nY) * 0.015 * layerDepth;
+        let flowDx = noise((rotatedUV + vec2<f32>(0.012, 0.0)) * flowScale + vec2<f32>(time * flowSpeed, 0.0));
+        let flowDy = noise((rotatedUV + vec2<f32>(0.0, 0.012)) * flowScale + vec2<f32>(0.0, time * flowSpeed));
+        let convergence = clamp((nX - flowDx + nY - flowDy) * 4.0, 0.0, 1.0);
 
         // Zoom and sample
-        let transformed = (flowUV - zoom_center) / layerZoom + zoom_center;
+        let centerDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(flowUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+        let parallax = (flowUV - zoom_center) * (centerDepth - 0.5) * layerDepth * u.zoom_params.z * 0.12;
+        let transformed = (flowUV + parallax - zoom_center) / layerZoom + zoom_center;
         let wrapped = ping_pong_v2(transformed);
-        let sampleColor = textureSampleLevel(readTexture, u_sampler, wrapped, 0.0).rgb;
+        let sampleColor = textureSampleLevel(readTexture, u_sampler, wrapped, 0.0);
         let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, wrapped, 0.0).r;
 
         let density = exp(-layerDepth * 1.5);
         let weight = density * (1.0 + sampleDepth * 0.5);
 
-        accumulatedColor = accumulatedColor + sampleColor * weight;
+        accumulatedColor = accumulatedColor + sampleColor.rgb * weight * (1.0 + convergence * layerDepth * 0.5);
+        accumulatedAlpha = accumulatedAlpha + sampleColor.a * weight;
         accumulatedDepth = accumulatedDepth + sampleDepth * weight;
         totalWeight = totalWeight + weight;
     }
@@ -173,21 +154,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let baseDepth = accumulatedDepth / max(totalWeight, 0.0001);
 
     // Chromatic separation
-    var chroma: f32;
-    if (arrayLength(&extraBuffer) > 0u) {
-        chroma = extraBuffer[0];
-    } else {
-        chroma = 0.02;
-    }
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chroma * baseDepth, 0.0), 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(chroma * baseDepth, 0.0), 0.0).b;
-    let chromaticColor = vec3<f32>(r, g, b);
+    let chroma = 0.006 * baseDepth * u.zoom_params.z;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(chroma, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(chroma, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let chromaticColor = baseColor + vec3<f32>(r.r - b.r, 0.0, b.b - r.b) * 0.15;
 
     // Edge glow
     let ps = vec2<f32>(1.0 / resolution.x, 1.0 / resolution.y);
-    let depthX = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(ps.x, 0.0), 0.0).r;
-    let depthY = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, ps.y), 0.0).r;
+    let depthX = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let depthY = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let depthGrad = length(vec2<f32>(depthX - baseDepth, depthY - baseDepth));
     let edgeGlow = exp(-depthGrad * 30.0) * baseDepth * 2.0;
 
@@ -207,7 +182,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let normalizedWeight = totalWeight / f32(layers);
     
     // Calculate alpha
-    let alpha = calculateVolumetricAlpha(avgLayerDepth, fogDensity, viewDotNormal, normalizedWeight);
+    let alpha = calculateVolumetricAlpha(avgLayerDepth, fogDensity, viewDotNormal, normalizedWeight) * accumulatedAlpha / max(totalWeight, 0.0001);
     
     // Fog
     let fog = exp(-baseDepth * fogDensity * 3.0);
@@ -215,20 +190,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let outColor = mix(finalColor, fogColor, 1.0 - fog);
 
     
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(vec2<u32>(gid.xy)) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
-
-    let __finalRGB = vec4<f32>(outColor, alpha).rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(__finalRGB, vec4<f32>(outColor, alpha).a));
+    let display = vec4<f32>(aces(max(outColor, vec3<f32>(0.0))), alpha);
+    textureStore(writeTexture, vec2<u32>(gid.xy), display);
+    textureStore(dataTextureA, vec2<u32>(gid.xy), display);
     textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
 }

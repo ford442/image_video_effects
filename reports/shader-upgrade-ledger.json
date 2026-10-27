@@ -1776,8 +1776,17 @@
       "history": []
     },
     "heat-haze": {
-      "hash": "d9010c44f2cd08e1",
-      "history": []
+      "hash": "e53621af6927d5ed",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T10:41:07.470Z",
+          "hash": "e53621af6927d5ed",
+          "prev_hash": "d9010c44f2cd08e1",
+          "commit": "c88e020",
+          "note": "2026-10-27 plasma and volumetric batch: native visual ideas documented in shader headers; simulation packing preserved"
+        }
+      ]
     },
     "infinite-zoom-lens": {
       "hash": "721d4389a4d6186e",
@@ -2110,8 +2119,17 @@
       "history": []
     },
     "atmos_volumetric_fog": {
-      "hash": "4a351d32e408c212",
-      "history": []
+      "hash": "0347e19b53a7133a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T10:41:07.470Z",
+          "hash": "0347e19b53a7133a",
+          "prev_hash": "4a351d32e408c212",
+          "commit": "c88e020",
+          "note": "2026-10-27 plasma and volumetric batch: native visual ideas documented in shader headers; simulation packing preserved"
+        }
+      ]
     },
     "audio_geometric_pulse": {
       "hash": "2514ff7f2297393e",
@@ -5944,8 +5962,17 @@
       ]
     },
     "gen-neon-plasma-chrono-bloom": {
-      "hash": "6ba4ecaf5061e935",
-      "history": []
+      "hash": "cb2547257fc9ecd5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T10:41:07.470Z",
+          "hash": "cb2547257fc9ecd5",
+          "prev_hash": "6ba4ecaf5061e935",
+          "commit": "c88e020",
+          "note": "2026-10-27 plasma and volumetric batch: native visual ideas documented in shader headers; simulation packing preserved"
+        }
+      ]
     },
     "gen-neon-snowfall": {
       "hash": "a5404a2705ab5db0",
@@ -7921,8 +7948,17 @@
       "history": []
     },
     "plasma-orb": {
-      "hash": "93726a2ada818a88",
-      "history": []
+      "hash": "21b53906f8524b1c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T10:41:07.470Z",
+          "hash": "21b53906f8524b1c",
+          "prev_hash": "93726a2ada818a88",
+          "commit": "c88e020",
+          "note": "2026-10-27 plasma and volumetric batch: native visual ideas documented in shader headers; simulation packing preserved"
+        }
+      ]
     },
     "psy-swirls": {
       "hash": "5b7162f3d71f82db",
@@ -7987,8 +8023,17 @@
       ]
     },
     "stellar-plasma": {
-      "hash": "3112f529912c5980",
-      "history": []
+      "hash": "1f2fc0138de18f39",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T10:41:07.470Z",
+          "hash": "1f2fc0138de18f39",
+          "prev_hash": "3112f529912c5980",
+          "commit": "c88e020",
+          "note": "2026-10-27 plasma and volumetric batch: native visual ideas documented in shader headers; simulation packing preserved"
+        }
+      ]
     },
     "supernova-core": {
       "hash": "3bce0799205d24a9",
@@ -9656,8 +9701,17 @@
       ]
     },
     "liquid-volumetric-zoom": {
-      "hash": "9d0d78bd5d2d2b19",
-      "history": []
+      "hash": "0cf2f82317dac1b9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T10:41:07.470Z",
+          "hash": "0cf2f82317dac1b9",
+          "prev_hash": "9d0d78bd5d2d2b19",
+          "commit": "c88e020",
+          "note": "2026-10-27 plasma and volumetric batch: native visual ideas documented in shader headers; simulation packing preserved"
+        }
+      ]
     },
     "liquid-warp": {
       "hash": "58c4ec749a2835f4",
@@ -11053,8 +11107,17 @@
       "history": []
     },
     "sim-volumetric-fake-em": {
-      "hash": "2d1a3e135f56ac93",
-      "history": []
+      "hash": "1beb73a6d456ff60",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T10:41:07.470Z",
+          "hash": "1beb73a6d456ff60",
+          "prev_hash": "2d1a3e135f56ac93",
+          "commit": "c88e020",
+          "note": "2026-10-27 plasma and volumetric batch: native visual ideas documented in shader headers; simulation packing preserved"
+        }
+      ]
     },
     "temporal_echo": {
       "hash": "eaab93898342040b",

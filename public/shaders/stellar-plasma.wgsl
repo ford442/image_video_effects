@@ -1,6 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
 //  Stellar Plasma - Endless procedural cosmic nebula (OPTIMIZED)
 //  Category: generative
+//  Ideas: warped dust lanes; ionization rims on nebular density transitions
+//  A packing: ACES display RGBA feedback
+//  Upgraded: 2026-10-27
 //  Features: generative, procedural, loops, audio-reactivity,
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //
@@ -27,26 +30,8 @@
 //  Upgraded: 2026-06-14 (Claude Code Batch 3B), 2026-07-26 (Batch 17)
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=rippleCount, z=resW, w=resH
-  zoom_config: vec4<f32>,  // x=time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=HueShift, y=FlowSpeed, z=ZoomScale, w=MouseGravity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=HueShift, y=FlowSpeed, z=ZoomScale, w=MouseGravity
 
 // OPTIMIZATION: Precomputed hash constants
 const HASH_CONST1: vec3<f32> = vec3<f32>(0.1031, 0.1031, 0.1031);
@@ -140,9 +125,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // OPTIMIZATION: Early exit for distant regions
     if (dist > 3.0) {
-        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(0.0));
         textureStore(writeDepthTexture, global_id.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
-        textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(0.0, 0.0, 0.0, 1.0));
+        textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(0.0));
         return;
     }
 
@@ -243,6 +228,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // fringed highlights their prismatic separation.
     let glowIntensity = 1.0 + audioMid * 0.5;
     color = (spectral * spectral * spectral + 0.6 * spectral * spectral + 0.5 * spectral) * color * glowIntensity;
+    // Dense dust along the same warped field absorbs the nebula behind it.
+    let dustLane = exp(-abs(f - 0.34) * 13.0) * smoothstep(0.35, 0.85, length(r));
+    color *= 1.0 - dustLane * 0.42;
+    // Ionized edges trace the density transition rather than adding a new shape.
+    let ionRim = exp(-abs(f - 0.52) * 22.0) * smoothstep(0.25, 0.8, length(q));
+    color += iqPalette(0.08, phase) * ionRim * (0.12 + audioHigh * 0.1);
 
     let coord = vec2<i32>(global_id.xy);
 
@@ -250,7 +241,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev = textureLoad(dataTextureC, coord, 0);
     color = mix(color, prev.rgb * 0.92, 0.05 + audioLow * 0.01);
 
-    color = acesToneMap(color * 1.2);
+    color = acesToneMap(max(color, vec3<f32>(0.0)) * 1.2);
 
     // Output final color with semantic alpha
     let lumaOut = dot(color, vec3<f32>(0.299, 0.587, 0.114));
