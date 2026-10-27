@@ -39,6 +39,27 @@ _Learn about the person you're helping. Update this as you go._
 - Floor: prelude include on the ten pasted headers; 16×16; exact C; A packing as documented; saved params exact.
 - Gates: Naga, extraBuffer, dead sliders, catalogs. Real-GPU visual QA: external.
 
+
+## 2026-10-27 — cursor/batch-14 tape and block glitch (12 shaders)
+
+- IDs: scanline-tear, vhs-jog, vhs-tracking-mouse, strip-scan-glitch, sliding-tile-glitch, data-stream-corruption, rgb-split-glitch, digital-compression, interactive-glitch-brush, interactive-glitch, interactive-glitch-cubes, glitch-cathedral.
+- Per shader, the ideas actually added:
+  - scanline-tear: sync-pulse serration; chroma delay line. Field phase and burst rotation kept.
+  - vhs-jog: head-switch snow; tracking flag skew. Shuttle and cue bars kept.
+  - vhs-tracking-mouse: track slip; overscan bar. Dash cells and auto-track kept.
+  - strip-scan-glitch: slit smear along the scroll; strip-edge neighbour mix. Hashed strip speed kept.
+  - sliding-tile-glitch: unshifted photo under the grid line; spatial restore. Row/column choice kept.
+  - data-stream-corruption: bright head and exponential tail; dwell inside the held brush. Column rain kept.
+  - rgb-split-glitch: hanging dots on odd lines; herringbone crawl. Y/Cb/Cr delay packing kept.
+  - digital-compression: AC quantization inside the block; mosquito noise on the existing edge. DC corner kept.
+  - interactive-glitch-brush: speed-thinned stroke; snapped horizontal tear. Grenades and conveyor kept.
+  - interactive-glitch: Schmitt lock from C.a; quantized scan packet. Block pulse kept.
+  - interactive-glitch-cubes: face shade from height; wall ring outside the face. Face UV kept.
+  - glitch-cathedral: lead cames at the cell size; pointer channel split and row sort. DCT and rose kept. Cell Size 20 still full quant.
+- Floor: prelude include on all twelve; 16×16; exact C where C is read; A packing as documented; saved params exact.
+- Gates: Naga 12/12, extraBuffer, dead sliders (glitch-cathedral's three baseline sliders now read), catalogs, ledger.
+- Real-GPU visual QA: external.
+
 ## Context
 
 _(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)_

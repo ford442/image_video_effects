@@ -1,30 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Glitch Cathedral — Batch 66
-//  fp128 DCT phase, Floyd-Steinberg via exact C, racing rose-window
-//  pulse, capped click fractures, held deepens quantisation, ACES +
-//  semantic alpha.
+//  Glitch Cathedral
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-27
+//  Ideas: cell-pitch cames; pointer RGB split; row pixel-sort
+//  A packing: quant error in RGB, lead in A.a; ACES on the display write only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -115,7 +99,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let local = vec2<f32>(f32(global_id.x - blockOriginU.x), f32(global_id.y - blockOriginU.y));
   let blockId = vec2<f32>(f32(blockOriginU.x) / 8.0, f32(blockOriginU.y) / 8.0);
 
-  let baseQ = mix(0.015, 0.22, clamp(u.zoom_params.x + bass * 0.55, 0.0, 1.0)) * select(1.0, 1.2, held);
+  // Cell Size is 2..200. Dividing by the default (20) keeps today's full
+  // quant at that default; smaller cells quantize more finely.
+  let cellPx = clamp(u.zoom_params.x, 2.0, 200.0);
+  let qDrive = clamp(cellPx / 20.0, 0.0, 1.0);
+  let baseQ = mix(0.015, 0.22, clamp(qDrive + bass * 0.55, 0.0, 1.0)) * select(1.0, 1.2, held);
   let blockBand = fract(hash12(blockId * 0.37 + vec2<f32>(mids * 1.7, treble * 2.3)) + bass * 0.21);
   let blockQ = baseQ * mix(0.7, 1.9, blockBand);
 
@@ -185,10 +173,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let edgeDist = min(min(local.x, 7.0 - local.x), min(local.y, 7.0 - local.y));
   let leadLine = 1.0 - smoothstep(0.5, 1.6, edgeDist);
-  let roseWindow = rose_pulse(blockId, time, bass);
+  // Pattern Speed default 0.5 keeps the existing rose rate (×2 → ×1).
+  let roseTime = time * max(u.zoom_params.w, 0.0) * 2.0;
+  let roseWindow = rose_pulse(blockId, roseTime, bass);
   var finalRgb = mix(quantized, vec3<f32>(0.06, 0.05, 0.08), leadLine * (0.75 + 0.2 * roseWindow));
   finalRgb = mix(finalRgb, finalRgb * vec3<f32>(1.08, 0.92, 1.12), 0.25 * roseWindow);
-  finalRgb = acesToneMap(finalRgb);
+
+  // ── Idea 1: cell-pitch cames ────────────────────────────────────
+  // A darker lead every Cell Size pixels, on top of the 8px DCT lead.
+  let camePhaseX = fract(f32(coord.x) / cellPx);
+  let camePhaseY = fract(f32(coord.y) / cellPx);
+  let cameDist = min(min(camePhaseX, 1.0 - camePhaseX), min(camePhaseY, 1.0 - camePhaseY)) * cellPx;
+  let came = 1.0 - smoothstep(0.0, 1.4, cameDist);
+  finalRgb = mix(finalRgb, vec3<f32>(0.04, 0.03, 0.05), came * 0.55);
+
+  let pointer = u.zoom_config.yz;
+  let near = 1.0 - smoothstep(0.04, 0.42, length((uv - pointer) * vec2<f32>(aspect, 1.0)));
+
+  // ── Idea 2: pointer RGB split ───────────────────────────────────
+  // RGB Split offsets R and B. The offset grows near the pointer.
+  let split = clamp(u.zoom_params.y, 0.0, 0.2) * (0.35 + 1.65 * near);
+  let splitR = textureSampleLevel(readTexture, u_sampler, clamp_uv(uv + vec2<f32>(split, 0.0)), 0.0).r;
+  let splitB = textureSampleLevel(readTexture, u_sampler, clamp_uv(uv - vec2<f32>(split, 0.0)), 0.0).b;
+  finalRgb = vec3<f32>(mix(finalRgb.r, splitR, 0.7), finalRgb.g, mix(finalRgb.b, splitB, 0.7));
+
+  // ── Idea 3: row pixel-sort ──────────────────────────────────────
+  // Sort Strength pulls the pixel toward the brighter neighbour on the
+  // row. The pull is stronger near the pointer.
+  let sortAmt = clamp(u.zoom_params.z, 0.0, 2.0);
+  let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+  let sortStep = vec2<f32>(2.0 / max(resolution.x, 1.0), 0.0);
+  let leftPx = textureSampleLevel(readTexture, u_sampler, clamp_uv(uv - sortStep), 0.0).rgb;
+  let rightPx = textureSampleLevel(readTexture, u_sampler, clamp_uv(uv + sortStep), 0.0).rgb;
+  let leftL = dot(leftPx, lumaW);
+  let rightL = dot(rightPx, lumaW);
+  let brighter = select(leftPx, rightPx, rightL > leftL);
+  let sortPick = select(finalRgb, brighter, max(leftL, rightL) > dot(finalRgb, lumaW));
+  finalRgb = mix(finalRgb, sortPick, clamp(sortAmt * (0.12 + 0.38 * near), 0.0, 0.9));
+
+  finalRgb = acesToneMap(clamp(finalRgb, vec3<f32>(0.0), vec3<f32>(1.0)));
 
   let quantError = clamp(reconstructed - quantized, vec3<f32>(-1.0), vec3<f32>(1.0));
   let alpha = clamp(source.a * (0.92 + 0.08 * sourceLuma) + clickBurst * 0.08, 0.06, 0.98);

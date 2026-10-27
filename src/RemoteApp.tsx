@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Controls from './components/Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
-import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord } from './syncTypes';
+import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord, UploadFilePayload } from './syncTypes';
+import { useLocalMediaUpload } from './hooks/useLocalMediaUpload';
 import { RemoteControlHeader } from './RemoteControlHeader';
 import { isRemoteChromeHidden, writeRemoteChromeParam } from './utils/remoteChrome';
 
@@ -222,23 +223,16 @@ const RemoteApp: React.FC = () => {
         sendMessage('CMD_SET_MUTED', muted);
     };
 
-    // File Uploads
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        // Read file
-        const buffer = await file.arrayBuffer();
-        sendMessage('CMD_UPLOAD_FILE', {
+    // File Uploads — the bytes go to the main app, which owns the media loaders.
+    const { handleFileChange: handleFileUpload } = useLocalMediaUpload(async (file, type) => {
+        const payload: UploadFilePayload = {
             name: file.name,
-            type: type,
+            type,
             mimeType: file.type,
-            data: buffer
-        });
-
-        // Reset input
-        e.target.value = '';
-    };
+            data: await file.arrayBuffer(),
+        };
+        sendMessage('CMD_UPLOAD_FILE', payload);
+    });
 
     if (!connected) {
         return (

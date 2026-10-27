@@ -41,9 +41,7 @@ export function getShaderCompileService(): ShaderCompileService | null {
   if (!device) return null;
   return {
     supportsSubgroups:
-      getRendererSupportsSubgroups() ||
-      device.features.has('subgroups') ||
-      device.features.has('chromium-experimental-subgroups' as GPUFeatureName),
+      getRendererSupportsSubgroups() || device.features.has('subgroups'),
     compile: (id, code) => compileCheckWgsl(device, id, code),
   };
 }

@@ -5,6 +5,7 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 **Cross-references:**
 - TypeScript layout: [`src/renderer/webgpu/pipeline.ts`](../src/renderer/webgpu/pipeline.ts) (`createComputeBindGroupLayout`)
 - TypeScript resources: [`src/renderer/webgpu/resources.ts`](../src/renderer/webgpu/resources.ts) (`historyTex`, buffers)
+- **Layout contract:** [`src/contracts/bind_group0.json`](../src/contracts/bind_group0.json) — TS builds its entries from it; C++ reads the generated [`wasm_renderer/bind_group0.h`](../wasm_renderer/bind_group0.h) (`npm run gen:bind-group0`; `verify:device-policy` fails when stale)
 - C++ layout: [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) (`CreateBindGroupLayout`)
 - Device limits: [`src/contracts/webgpu_limits.json`](../src/contracts/webgpu_limits.json) ↔ [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
 - Optional features: [`src/contracts/webgpu_optional_features.json`](../src/contracts/webgpu_optional_features.json) ↔ [`collectOptionalDeviceFeatures`](../src/renderer/webgpu/device.ts) ↔ `device.cpp` `requiredFeatures[3]`
@@ -34,6 +35,15 @@ The standalone `?validator` page has no renderer, so its probe device stays loca
 | **Layout size** | **14** bind-group entries (0–13); `maxBindingsPerBindGroup` must be **≥ 14** |
 
 ## Bind group layout (group 0)
+
+Sample types (from `bind_group0.json`, identical in TS and C++):
+
+- Colour bindings 1 / 9 / 13 are `float` for `rgba16float`, and for `rgba32float` only with
+  `float32-filterable`; otherwise `unfilterable-float`. The format policy therefore prefers
+  `rgba16float` on devices without the feature (most shaders sample `readTexture` with `u_sampler`).
+- Depth binding 4 (`r32float`) is **always** `unfilterable-float`: sample it with the
+  non-filtering sampler (binding 5) or `textureLoad`, never `u_sampler`. `verify:naga-wasm`
+  blocks the pairing (naga-reflect check, resolved by binding number).
 
 | Binding | WGSL name | Type | Access |
 |---------|-----------|------|--------|
@@ -205,7 +215,7 @@ See [DEVICE_FEATURES.md](./DEVICE_FEATURES.md) for canvas configure and timestam
 
 | Feature | TypeScript | C++ WASM | Purpose |
 |---------|------------|----------|---------|
-| `float32-filterable` | Requested when adapter supports | Logged only | rgba32float texture sampling on bindings 1/9/13 |
+| `float32-filterable` | Requested when adapter supports | Requested when adapter supports | rgba32float texture sampling on bindings 1/9/13 |
 | `timestamp-query` | Requested when adapter supports; ring-buffered readback in `WebGPUTiming.ts` / `frame.ts` | Requested when available | GPU timing — `available`/`gpu-timestamp` only after valid readback (`hasRealGpuTimings`) |
 | `subgroups` | Requested when available (for WGSL `enable subgroups` shaders) | N/A | **Not used** — `-sg.wgsl` file variants were removed 2026-07-26 |
 

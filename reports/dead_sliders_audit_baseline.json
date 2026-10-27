@@ -341,15 +341,6 @@
       ]
     },
     {
-      "id": "glitch-cathedral",
-      "category": "interactive-mouse",
-      "dead_param_ids": [
-        "patternSpeed",
-        "rgbSplit",
-        "sortStrength"
-      ]
-    },
-    {
       "id": "hex-lens",
       "category": "image",
       "dead_param_ids": [

@@ -47,6 +47,7 @@ const FALLBACK_TEXT: Record<string, string> = {
   'unsupported-p3': 'this browser/display rejected Display P3',
   'unsupported-extended-tone-mapping': 'extended tone mapping was rejected',
   'not-hdr-display': 'not an HDR display, extended tone mapping skipped',
+  'sdr-canvas-format': 'extended tone mapping needs an rgba16float canvas',
 };
 
 /** One-line, user-visible explanation of the applied canvas color (from window.webgpuProbe). */

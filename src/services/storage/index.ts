@@ -33,6 +33,7 @@ export type {
   StorageOperation,
   HealthResponse,
   StorageClientConfig,
+  UploadTokenResponse,
 } from './types';
 
 export {
@@ -44,7 +45,6 @@ export {
   fetchJson,
   fetchText,
   unwrapListResponse,
-  generateHmacSignature,
 } from './http';
 
 export { OperationTracker } from './operations';

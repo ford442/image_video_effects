@@ -1,40 +1,23 @@
-// ═══════════════════════════════════════════════════════════════
-//  Data Stream Corruption - Matrix Rain with Alpha Degradation
-//  Category: retro-glitch
-//
-//  Digital rain effect with progressive corruption:
-//  - Matrix-style character streams
-//  - Mouse brush adds corruption that persists
-//  - Blocky displacement and channel splitting
-//  - Alpha degradation in corrupted regions
-//  - Ghost frames with partial transparency
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Data Stream Corruption
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-27
+//  Ideas: rain head and tail; dwell pressure (§12.2C)
+//  A packing: raw (corruption, 0, 0, alphaHistory); ACES on display only
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3  = fract(vec3<f32>(p.xyx) * .1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -49,7 +32,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // --- Persistence Logic (Corruption Map with Alpha History) ---
     // Read previous frame's state from dataTextureC
-    let oldState = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let oldState = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
     var corruption = oldState.r;
     var alphaHistory = oldState.a;
 
@@ -72,6 +55,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Soft brush edge
         let strength = smoothstep(brushRadius, brushRadius * 0.5, dist);
         corruption += strength * 0.5;
+        // ── Idea 2: dwell pressure (§12.2C) ─────────────────────────
+        // A held pointer climbs the corruption field toward full. A passing
+        // pointer keeps the add above and does not pool.
+        let heldBrush = select(0.0, 1.0, u.zoom_config.w > 0.5);
+        corruption = mix(corruption, 1.0, heldBrush * strength * 0.4);
         // Corruption also affects alpha - creates ghosting
         alphaHistory = min(alphaHistory + strength * 0.3, 1.0);
     }
@@ -89,14 +77,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let numColumns = 80.0;
     let colIndex = floor(uv.x * numColumns + 0.5);
     let colRandom = hash12(vec2<f32>(colIndex, 42.0));
-    let rainSpeed = streamSpeed * (0.5 + 0.5 * colRandom);
+    let bass = plasmaBuffer[0].x;
+    let treble = plasmaBuffer[0].z;
+    let rainSpeed = streamSpeed * (0.5 + 0.5 * colRandom) * (1.0 + bass * 0.3);
     let rainY = uv.y + time * rainSpeed * 0.1;
 
     // Generate characters/blocks
     let numRows = 40.0 * (resolution.y / resolution.x); // Maintain aspect roughly
     let rowIndex = floor(rainY * numRows + 0.5);
     let charRandom = hash12(vec2<f32>(colIndex, rowIndex));
-    let isChar = step(0.4, charRandom); // 60% density
+    let isChar = step(0.4 - treble * 0.06, charRandom); // 60% density, treble fills gaps
 
     // Glitch Displacement based on corruption
     let effectiveCorruption = corruption * maxCorruption;
@@ -128,8 +118,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = vec4<f32>(r, g, b, corruptedAlpha);
 
         // Apply "Digital Stream" overlay with alpha-aware blending
-        let streamColor = vec3<f32>(0.2, 1.0, 0.4); // Matrix green
-        let streamIntensity = isChar * effectiveCorruption * colRandom;
+        // ── Idea 1: rain head and tail ──────────────────────────────
+        // The head of the column is bright. Characters fade down the tail.
+        // Stream Speed still sets how fast the column falls.
+        let headDist = fract(rainY);
+        let headGlow = exp(-headDist * 7.0);
+        let tailFade = exp(-headDist * 1.4);
+        let streamColor = mix(vec3<f32>(0.2, 1.0, 0.4), vec3<f32>(0.75, 1.0, 0.88), headGlow);
+        let streamIntensity = isChar * effectiveCorruption * colRandom * mix(0.2, 1.0, tailFade);
 
         // Brighten characters, darken background with alpha modulation
         let streamBlend = streamIntensity * 0.8;
@@ -145,7 +141,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     // Ensure alpha is valid
-    finalColor = vec4<f32>(finalColor.rgb, clamp(finalColor.a, 0.0, 1.0));
+    let displayRgb = acesToneMap(clamp(finalColor.rgb, vec3<f32>(0.0), vec3<f32>(4.0)));
+    let displayA = clamp(finalColor.a, 0.0, 1.0);
+    finalColor = vec4<f32>(displayRgb, displayA);
 
     textureStore(writeTexture, global_id.xy, finalColor);
 
