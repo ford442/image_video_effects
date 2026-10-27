@@ -5,7 +5,9 @@
 //            per-band-fft, midpoint-curl-advection, bounded-antidiffusion,
 //            wipe-fronts, chromatic-aberration,
 //            depth-aware, upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+//  Upgraded: 2026-10-27
+//  Ideas: flow-aligned history stretching; depth-sensitive history retention
+//  A packing: ACES display RGBA; B retains flow diagnostics
 // ────────────────────────────────────────────────────────────────────────────────
 //  Temporal feedback advected by a flow field. Two structures replace the
 //  original two-tap gradient-free noise flow:
@@ -30,29 +32,8 @@
 //  exact textureLoad with a hand-rolled bilinear fetch.
 // ────────────────────────────────────────────────────────────────────────────────
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,  // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Distortion, y=FlowSpeed, z=Scale, w=Decay
-  ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Distortion, y=FlowSpeed, z=Scale, w=Decay
 
 fn hash(p: vec2<f32>) -> vec2<f32> {
     let p2 = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
@@ -186,6 +167,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ── Advect history (exact load, manual bilinear) ─────────────────────────
     let historyPx = (uv - flow * distortAmt) * dims;
     var historySample = historyBilinear(historyPx, dimsI);
+    let stretch = clamp(length(flow) * distortAmt * 8.0, 0.0, 0.35);
+    let stretchedHistory = historyBilinear(historyPx - flow * distortAmt * dims * 0.5, dimsI);
+    historySample = mix(historySample, stretchedHistory, stretch);
     // Bounded anti-diffusion restores one fraction of the detail lost by
     // bilinear semi-Lagrangian transport, then clamps to the local extrema so
     // no new negative or over-range colour can be invented.
@@ -207,14 +191,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let flowMag = length(flow);
     let flowDir = normalize(flow + vec2<f32>(1e-6));
     let ca = (0.0008 + treble * 0.003) * clamp(flowMag * 0.3, 0.0, 1.0);
-    let vR = textureSampleLevel(readTexture, u_sampler, uv + flowDir * ca, 0.0).r;
+    let vR = textureSampleLevel(readTexture, u_sampler, clamp(uv + flowDir * ca, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let vG = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let vB = textureSampleLevel(readTexture, u_sampler, uv - flowDir * ca, 0.0).b;
+    let vB = textureSampleLevel(readTexture, u_sampler, clamp(uv - flowDir * ca, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     let videoColor = vec3<f32>(vR, vG.g, vB);
 
     // Fresh video is revealed under a held cursor and behind every wipe front.
     let wipeFactor = clamp(smoothstep(0.05, 0.0, mDist) * isMouseDown + wipeFronts, 0.0, 1.0);
-    let keep = decay * (1.0 - wipeFactor);
+    let currentDepth = textureLoad(readDepthTexture, coord, 0).r;
+    let advectedDepth = textureLoad(readDepthTexture, historyCoord, 0).r;
+    let depthRetention = exp(-abs(currentDepth - advectedDepth) * 10.0);
+    let keep = decay * (1.0 - wipeFactor) * depthRetention;
 
     var finalColor = mix(videoColor, historyColor, keep);
     finalColor += vec3<f32>(0.55, 0.75, 1.0) * frontGlow * (0.35 + mids * 0.6);

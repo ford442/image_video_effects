@@ -14,7 +14,8 @@
     "mouse-driven",
     "audio-reactive",
     "metallic",
-    "magnetic-simulation"
+    "magnetic-simulation",
+    "upgraded-rgba"
   ],
   "params": [
     {

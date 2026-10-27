@@ -6,8 +6,8 @@
 //            depth-aware, chromatic-aberration, ACES-tone-map, HDR-ready
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-10
-//  Ideas: capillary ink margin; cooling rind; pahoehoe rope folds; rind vesicles
+//  Upgraded: 2026-10-27
+//  Ideas: soot-borne ash on cooling rind; hot fissure cores
 //  A packing: linear ink trail in A; ACES on display; B stores (lava, cracks, ember, smoke)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -201,6 +201,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rindNoise = fbm(lavaUv * 0.5 - vec2<f32>(flowTime * 0.15, 0.0), max(octaves - 1, 2));
     let rind = smoothstep(0.35, 0.7, rindNoise) * (1.0 - cracks) * (1.0 - lava);
     color = mix(color, color * vec3<f32>(0.25, 0.12, 0.08), rind * 0.8);
+    let settledAsh = smoothstep(0.35, 0.7, smoke) * rind * soot;
+    color = mix(color, SMOKE_TINT * 0.6, settledAsh * 0.5);
+    let fissureCore = smoothstep(0.78, 1.1, crackDiff);
+    color += LAVA_TINT * fissureCore * emberIntensity * 0.65;
     // Idea: pahoehoe ropes — folds on the lava, carried by the same flow.
     let ropePhase = dot(lavaUv, vec2<f32>(7.5, 1.1)) + flowTime * 0.8;
     let rope = pow(max(0.5 + 0.5 * sin(ropePhase), 0.0), 6.0) * lava;

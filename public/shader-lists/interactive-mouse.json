@@ -4528,7 +4528,6 @@
       "audio-reactive",
       "depth-aware",
       "temporal-feedback",
-      "motion-trails",
       "chromatic-aberration",
       "aces-tone-map",
       "upgraded-rgba",

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: real viscosity drag from C history; Chladni nodal crystallization; ferrofluid spikes under the pointer; Faraday capillary lattice on the antinodes; temper-colour oxide on hot crests
+//  Upgraded: 2026-10-27
+//  Ideas: counter-propagating radial mode; crest-aligned specular ridges
 //  A packing: ACES display RGBA (C read back via exact textureLoad as colour history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -68,6 +68,10 @@ fn mapHeight(p: vec2<f32>, audio: f32, bass: f32) -> f32 {
         let amp = 1.0 / (fi * 1.5);
         h += wave * amp;
     }
+
+    let radialBeat = sin(r * base_freq * 1.08 + t * 0.65)
+        * cos(theta * 2.0 - t * 0.25);
+    h += radialBeat * 0.09;
 
     // Idea 3: ferrofluid Rosensweig spikes — the pointer is the magnet; a hexagonal
     // spike lattice rises out of the metal around it, taller on bass hits.
@@ -226,6 +230,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         color = reflectionColor;
         fresnelMean = (fresnel.x + fresnel.y + fresnel.z) / 3.0;
+        let crestRidge = smoothstep(0.015, 0.09, hSurf)
+            * pow(max(dot(refl, normalize(vec3<f32>(1.0, 1.0, 1.0))), 0.0), 24.0);
+        color += vec3<f32>(0.8, 0.9, 1.0) * crestRidge * 0.45;
 
         // Idea 2: Chladni nodal crystallization — distance to the standing wave's zero
         // crossing (|h| / slope) marks the nodal lines; the metal crystallizes there into

@@ -28189,6 +28189,44 @@
     "updated": true,
     "id": "gen-volcanic-ink",
     "url": "shaders/gen-volcanic-ink.wgsl",
+    "params": [
+      {
+        "id": "fissure_density",
+        "name": "Fissure Density",
+        "default": 0.48,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "magma_flow",
+        "name": "Magma Flow",
+        "default": 0.44,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "soot",
+        "name": "Soot",
+        "default": 0.34,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "ember_intensity",
+        "name": "Ember Intensity",
+        "default": 0.52,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "features": [
       "audio-reactive",
       "LOD-scaling",
@@ -28222,6 +28260,44 @@
     "updated": true,
     "id": "gen-von-karman-vortex",
     "url": "shaders/gen-von-karman-vortex.wgsl",
+    "params": [
+      {
+        "id": "flow_speed",
+        "name": "Flow Speed",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "vortex_separation",
+        "name": "Vortex Separation",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "vortex_spacing",
+        "name": "Vortex Spacing",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "colour_hue",
+        "name": "Colour Hue",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
     "features": [
       "audio-reactive"
     ]
@@ -29574,7 +29650,8 @@
       "mouse-driven",
       "audio-reactive",
       "metallic",
-      "magnetic-simulation"
+      "magnetic-simulation",
+      "upgraded-rgba"
     ],
     "params": [
       {

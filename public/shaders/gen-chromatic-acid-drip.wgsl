@@ -4,8 +4,8 @@
 //  Features: acid, chromatic, drip, audio-reactive, mouse-interactive,
 //            semantic-alpha, upgraded-rgba, temporal, chromatic-aberration
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: meniscus coffee-ring on metaball isosurface; gravity-biased blob fall; Plateau-Rayleigh drip neck; channel lag down-gravity; pendant beads; etch scars
+//  Upgraded: 2026-10-27
+//  Ideas: gravity-fed rivulets; metaball effervescence
 //  A packing: HDR display RGBA in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -182,6 +182,9 @@ fn chromaticDrip(uv: vec2<f32>, time: f32, offset: f32, colorShift: f32, phCycle
     // Idea: etch scar — the trailing edge of the drip bites the glass.
     let scar = smoothstep(0.72, 0.94, drip) * (1.0 - iG);
     col = col * (1.0 - scar * 0.55) + vec3<f32>(0.02, 0.0, 0.03) * scar * 0.35;
+    let rivulet = exp(-abs(noiseY) * 7.0) * smoothstep(0.4, 0.95, drip)
+        * (1.0 - iG) * (0.25 + 0.15 * sin(dripLine * 20.0));
+    col += phDripColor(drip, time, colorShift, fallPH * 0.1) * rivulet;
     return col;
 }
 
@@ -274,6 +277,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += edgeColor1 * meniscus1 * 2.2;
     color += edgeColor2 * meniscus2 * 1.8;
     color += edgeColor3 * meniscus3 * 1.6;
+
+    let bubbleUV = refractUV * 12.0 + vec2<f32>(0.0, t * 1.5);
+    let bubbleCell = fract(bubbleUV) - 0.5;
+    let bubbleRadius = length(bubbleCell);
+    let bubbles = exp(-abs(bubbleRadius - 0.25) * 35.0) * (1.0 - blob1);
+    color += edgeColor1 * bubbles * 0.22 * intensity;
 
     let drip1 = chromaticDrip(uv, t, 0.0, colorShift, phCycle, mids);
     let drip2 = chromaticDrip(uv, t * 1.1 + 10.0, 3.33, colorShift + 0.2, phCycle, mids);

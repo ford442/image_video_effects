@@ -3,30 +3,11 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: capillary mode splitting; differential time bands; Rayleigh-Plateau tendril beading; chrono echo shells
+//  Upgraded: 2026-10-27
+//  Ideas: cross-mode capillary interference; grazing-angle liquid rim
 //  A packing: ACES display RGBA (C read back as radial echo in the void)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Math and Noise functions
 fn rot(a: f32) -> mat2x2<f32> {
@@ -83,7 +64,8 @@ fn surfaceModes(p: vec3<f32>, time: f32) -> vec2<f32> {
   let high_mode = sin(theta * 7.0 + time * flowSpeed * 1.35) * cos(latitude * 9.0);
   let split = clamp((surfaceTension - 0.1) / 1.9, 0.0, 1.0);
   let capillary = mix(low_mode * 0.13, low_mode * 0.07 + high_mode * 0.055, split) *
-    surfaceTension * (1.0 + audio.x * 0.12);
+    surfaceTension * (1.0 + audio.x * 0.12)
+    + low_mode * high_mode * 0.025 * surfaceTension;
 
   // Idea 2: latitude bands rotate differentially instead of as a rigid shell.
   let differential_rate = 0.45 + 0.75 * pow(abs(sin(latitude)), 1.5);
@@ -222,6 +204,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let band_edge = pow(abs(modes.y * 2.0 - 1.0), 5.0);
         let band_color = palette(iridescenceShift + modes.y * 0.7 + time * 0.06);
         color += band_color * band_edge * (0.18 + fresnel * 0.42 + audio.z * 0.08);
+        let liquidRim = pow(1.0 - ndotv, 7.0) * (0.65 + 0.35 * modes.y);
+        color += iridescence * liquidRim * 0.4;
 
         // Ambient Occlusion pseudo
         let ao = clamp(map(p + n * 0.5, time) * 2.0, 0.0, 1.0);

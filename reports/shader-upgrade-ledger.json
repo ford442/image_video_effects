@@ -2072,8 +2072,17 @@
       ]
     },
     "vortex-warp": {
-      "hash": "35d75bd5f03c791b",
-      "history": []
+      "hash": "05e94787f488a51c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "05e94787f488a51c",
+          "prev_hash": "35d75bd5f03c791b",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
+        }
+      ]
     },
     "vortex": {
       "hash": "fd028228044e9438",
@@ -3017,7 +3026,7 @@
       ]
     },
     "gen-chromatic-acid-drip": {
-      "hash": "8f6b2c69f5035b7b",
+      "hash": "d221c8db4a122428",
       "history": [
         {
           "event": "upgraded",
@@ -3026,6 +3035,14 @@
           "prev_hash": "7529df3940c01d2c",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "d221c8db4a122428",
+          "prev_hash": "8f6b2c69f5035b7b",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
         }
       ]
     },
@@ -5287,7 +5304,7 @@
       ]
     },
     "gen-liquid-metal-cymatic-resonator": {
-      "hash": "46ee86a9aa8ed55a",
+      "hash": "bbf6a17e9bca307e",
       "history": [
         {
           "event": "upgraded",
@@ -5296,6 +5313,14 @@
           "prev_hash": "81cd67ef016c05b7",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "bbf6a17e9bca307e",
+          "prev_hash": "46ee86a9aa8ed55a",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
         }
       ]
     },
@@ -6600,12 +6625,30 @@
       "history": []
     },
     "gen-quantum-liquid-gold-cymatic-vortex": {
-      "hash": "535e131775e80419",
-      "history": []
+      "hash": "d634f8394af9d99b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "d634f8394af9d99b",
+          "prev_hash": "535e131775e80419",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
+        }
+      ]
     },
     "gen-quantum-liquid-metal-chronosphere": {
-      "hash": "ac7eeaa51f30184a",
-      "history": []
+      "hash": "1662af7c2da5ddfe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "1662af7c2da5ddfe",
+          "prev_hash": "ac7eeaa51f30184a",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
+        }
+      ]
     },
     "gen-quantum-mycelial-neural-web": {
       "hash": "46bdfc1f46f2f4c0",
@@ -7301,7 +7344,7 @@
       ]
     },
     "gen-volcanic-ink": {
-      "hash": "1c8003278a223f00",
+      "hash": "8b52e465817b90fa",
       "history": [
         {
           "event": "upgraded",
@@ -7310,11 +7353,19 @@
           "prev_hash": "115ec9f666966acb",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "8b52e465817b90fa",
+          "prev_hash": "1c8003278a223f00",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
         }
       ]
     },
     "gen-von-karman-vortex": {
-      "hash": "83d56eda921f31db",
+      "hash": "ebd9e3cd3164a6d5",
       "history": [
         {
           "event": "upgraded",
@@ -7323,6 +7374,14 @@
           "prev_hash": "3e60fdd96dbf903e",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "ebd9e3cd3164a6d5",
+          "prev_hash": "83d56eda921f31db",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
         }
       ]
     },
@@ -7749,8 +7808,17 @@
       ]
     },
     "liquid_magnetic_ferro": {
-      "hash": "4b29cd63d152efc6",
-      "history": []
+      "hash": "d2f08e0d6dc1d70a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "d2f08e0d6dc1d70a",
+          "prev_hash": "4b29cd63d152efc6",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
+        }
+      ]
     },
     "magnetic-flux-garden": {
       "hash": "4d6911e0659a4a05",
@@ -9449,8 +9517,17 @@
       ]
     },
     "interactive-magnetic-ripple": {
-      "hash": "4cf2e880c7c73d59",
-      "history": []
+      "hash": "158ea6d9b36400d8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "158ea6d9b36400d8",
+          "prev_hash": "4cf2e880c7c73d59",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
+        }
+      ]
     },
     "interactive-pixel-wind": {
       "hash": "109eef0521de826a",
@@ -9553,8 +9630,17 @@
       "history": []
     },
     "liquid-time-warp": {
-      "hash": "958ece0eb33fc4f2",
-      "history": []
+      "hash": "2dde3858dcba1cc8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T08:58:43.599Z",
+          "hash": "2dde3858dcba1cc8",
+          "prev_hash": "958ece0eb33fc4f2",
+          "commit": "219f8c3",
+          "note": "2026-10-27 liquid vortex batch (GPT-6.1 Terra) — native idea cards in agents/swarm-outputs/copilot-2026-10-27-liquid-batch"
+        }
+      ]
     },
     "liquid-touch": {
       "hash": "0a227e18a43dab9f",

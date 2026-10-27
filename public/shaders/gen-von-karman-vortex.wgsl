@@ -12,8 +12,8 @@
 //    and brightness pulses; mids morph separation and color cycling;
 //    treble adds high-frequency sparkle. Mouse positions the obstacle.
 // ═══════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-10-10
-//  Ideas: wake deficit; alternating core pulse; boundary-layer skin; recirculation bubble
+//  Upgraded: 2026-10-27
+//  Ideas: traveling streamline dye packets; obstacle shear-layer ribbons
 //  A packing: display RGBA (trail blend)
 //  zoom_params: x=flow_speed, y=vortex_separation, z=vortex_spacing, w=hue
 
@@ -210,6 +210,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         * exp(-acrossY * acrossY / max(h * h * 6.0, 0.01))
         * exp(-downX * 0.35);
     col *= 1.0 - wake * 0.62;
+    let dyePacket = pow(max(0.5 + 0.5 * cos(downX * 8.0 - time * U * 5.0), 0.0), 5.0);
+    col += streamline_color(psi * 0.05, hueShift, spd) * dyePacket * lineGlow * wake * 0.45;
+    let shearOffset = abs(acrossY) - (0.075 + downX * 0.12);
+    let shearRibbon = exp(-shearOffset * shearOffset * 180.0)
+        * smoothstep(0.0, 0.12, downX) * exp(-max(downX, 0.0) * 1.1);
+    col += vec3<f32>(0.35, 0.65, 0.95) * shearRibbon * 0.35;
 
     let pulse = core_pulse(warpedPos, time, U, h, spacing, obst);
     col += vec3<f32>(0.82, 0.90, 1.0) * clamp(pulse, 0.0, 1.2) * 0.5;

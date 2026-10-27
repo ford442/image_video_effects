@@ -4,7 +4,9 @@
 //  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
 //            angular-chromatic-dispersion, temporal-smear, depth-aware,
 //            upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 60)
+//  Upgraded: 2026-10-27
+//  Ideas: shear-driven radial inflow; depth-sensitive history retention
+//  A packing: ACES display RGBA
 //
 //  This shader already met the pool standard (ACES, exact-load feedback,
 //  guarded ripple loop, plasmaBuffer audio, dataTextureA writeback, semantic
@@ -45,26 +47,8 @@
 //  along the local flow direction, which turns fast swirls into motion smear.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Strength, y=Radius, z=SpiralTwist, w=Turbulence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Strength, y=Radius, z=SpiralTwist, w=Turbulence
 
 const TAU: f32 = 6.28318530717958647692;
 
@@ -225,7 +209,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                       + abs(shockAngle) * 0.4
                       + abs(eyeShear) * 0.5;
 
-    let rotatedDiff = rotate2(diffAspect, totalAngle);
+    let inflow = clamp(abs(strength) * rankineProfile * (1.0 - rankine) * 0.06, 0.0, 0.16);
+    let flowDiff = diffAspect * (1.0 - inflow);
+    let rotatedDiff = rotate2(flowDiff, totalAngle);
     let finalUV = center + vec2<f32>(rotatedDiff.x / aspect, rotatedDiff.y);
 
     // Tangential flow direction at this pixel — used for the temporal smear.
@@ -238,21 +224,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dispersion = (0.012 + treble * 0.03)
                    * max(percent, shockGlow * 0.4)
                    * clamp(abs(totalAngle), 0.0, 3.0);
-    let dR = rotate2(diffAspect, totalAngle + dispersion);
-    let dB = rotate2(diffAspect, totalAngle - dispersion);
+    let dR = rotate2(flowDiff, totalAngle + dispersion);
+    let dB = rotate2(flowDiff, totalAngle - dispersion);
     let uvR = center + vec2<f32>(dR.x / aspect, dR.y);
     let uvB = center + vec2<f32>(dB.x / aspect, dB.y);
 
-    let sR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0);
-    let sG = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-    let sB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0);
+    let sR = textureSampleLevel(readTexture, u_sampler, clamp(uvR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let sG = textureSampleLevel(readTexture, u_sampler, clamp(finalUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let sB = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
     var color = vec3<f32>(sR.r, sG.g, sB.b);
 
     // ── Temporal smear: previous frame advected along the flow ───────────────
     let prevCoord = clamp(coord - vec2<i32>(flowDir * resolution),
                           vec2<i32>(0), dims - vec2<i32>(1));
     let prev = textureLoad(dataTextureC, prevCoord, 0);
-    let smear = clamp(max(percent, shockGlow * 0.5) * (0.28 + abs(totalAngle) * 0.06), 0.0, 0.62);
+    let depthHere = textureLoad(readDepthTexture, coord, 0).r;
+    let depthPrev = textureLoad(readDepthTexture, prevCoord, 0).r;
+    let depthRetention = exp(-abs(depthHere - depthPrev) * 12.0);
+    let smear = clamp(max(percent, shockGlow * 0.5) * (0.28 + abs(totalAngle) * 0.06), 0.0, 0.62) * depthRetention;
     color = mix(color, max(color, prev.rgb * 0.97), smear);
 
     // Shock fronts glow with a warm rim so the click reads even on dark frames.
