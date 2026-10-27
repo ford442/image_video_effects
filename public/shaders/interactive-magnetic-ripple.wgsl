@@ -3,28 +3,12 @@
 //  Keeps Worley field lines, curl, spring envelopes, exact C state.
 //  Caps click loop at live ripple count, adds held field punch,
 //  oil-slick domain-wall runners. A remains [env, mouseXY, intensity].
+//  Upgraded: 2026-10-27
+//  Ideas: field-line convergence streaks; wave-crest compression
+//  A packing: raw [bass envelope, mouse x, mouse y, ripple intensity]
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -147,18 +131,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mVel = mSmooth - prev.gb;
 
   let pFreq = u.zoom_params.x;
-  let pLineMix = clamp(u.zoom_params.y, 0.0, 1.0);
-  let pSpring = clamp(u.zoom_params.z, 0.0, 1.0);
-  let pSparkle = clamp(u.zoom_params.w, 0.0, 1.0);
+  let pDecay = clamp(u.zoom_params.y, 0.0, 1.0);
+  let pStrength = clamp(u.zoom_params.z, 0.0, 1.0);
+  let pSplit = clamp(u.zoom_params.w, 0.0, 1.0);
+  let pLineMix = 0.5;
 
   let bassPulse = 1.0 + env * 0.5;
   let freq = pFreq * 40.0 * (0.8 + env * 0.4);
-  let dampZeta = 0.12 + pSpring * 0.78;
+  let dampZeta = 0.12 + pDecay * 0.78;
   let springOmega = 2.5 + freq * 0.35;
-  let decay = 0.5 + pSpring * 3.0;
-  let fieldStrength = 0.55 * bassPulse * (1.0 + held * 0.45);
-  let chromaticSplit = 0.04;
-  let sparkGain = 0.3 + pSparkle * 1.6;
+  let decay = 0.5 + pDecay * 3.0;
+  let fieldStrength = (0.15 + pStrength * 0.8) * bassPulse * (1.0 + held * 0.45);
+  let chromaticSplit = pSplit * 0.08;
+  let sparkGain = 0.7;
   let pulseStrength = fieldStrength * (1.0 + env * 0.7);
   let clickBurst = select(0.0, 1.0, mouseDown) * (1.0 + env);
 
@@ -172,7 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dMouse = mSmooth - uv01;
     let dAspect = vec2<f32>(dMouse.x * aspect, dMouse.y);
     let dist = length(dAspect);
-    let dir = select(vec2<f32>(0.0), dMouse / dist, dist > 0.001);
+    let dir = select(vec2<f32>(0.0), dMouse / max(dist, 0.001), dist > 0.001);
     let w = worley(uv01 * 5.0 + vec2<f32>(time * 0.05, -time * 0.04), time);
     let ridge = w.y - w.x;
     let bendAng = (ridge - 0.35) * PI * pLineMix;
@@ -196,6 +181,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fieldLine = sin(angTerm + fbm(uv01 * 5.0, 3) * 3.0 + ridge * 4.0 * pLineMix);
     let fieldLineMask = smoothstep(0.3, 0.0, abs(fieldLine)) * exp(-dist * 3.0);
     totalDisp += dir * fieldLineMask * pulseStrength * 0.02;
+    let convergence = fieldLineMask * smoothstep(0.1, 0.8, length(magPull));
+    totalDisp += dir * convergence * pulseStrength * 0.015;
+    rippleIntensity += convergence * 0.5;
+    let compression = smoothstep(0.35, 0.9, ripple * rippleAtten);
+    totalDisp += dir * compression * pulseStrength * 0.012;
     rippleIntensity += fieldLineMask * pulseStrength + spark * fieldLineMask * 5.0;
     crestMask += fieldLineMask * smoothstep(0.6, 1.0, ridge) * 0.5;
   }
@@ -207,9 +197,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rp = u.ripples[i];
     if (rp.z <= 0.0) { continue; }
     let rAge = time - rp.z;
+    if (rAge < 0.0) { continue; }
     let rDiff = vec2<f32>((rp.x - uv01.x) * aspect, rp.y - uv01.y);
     let rDist = length(rDiff);
-    let rDir = select(vec2<f32>(0.0), vec2<f32>(rDiff.x / aspect, rDiff.y) / rDist, rDist > 0.001);
+    let rDir = select(vec2<f32>(0.0), vec2<f32>(rDiff.x / aspect, rDiff.y) / max(rDist, 0.001), rDist > 0.001);
     let rEnv = springEnvelope(rAge * 0.6, dampZeta, 4.0 + freq * 0.1) * exp(-rDist * decay);
     let rRipple = cos(rDist * freq * 0.6 - rAge * 5.0) * rEnv;
     totalDisp += rDir * rRipple * 0.035;
@@ -241,8 +232,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color, color * slick * 1.18, 0.12 + crest * 0.18 + held * 0.08);
   color += slick * crest * 0.12;
 
-  let trailDecay = 0.94 + env * 0.04;
-  color = mix(prev.rgb * trailDecay, color, 0.18 + rippleIntensity * 0.15);
   color = acesToneMap(color * (0.95 + mids * 0.15));
   let fog = 1.0 - exp(-depth * fieldStrength * 2.0);
   color = mix(color, vec3<f32>(luma(color) * (1.0 - fog * 0.3)), fog * 0.25);

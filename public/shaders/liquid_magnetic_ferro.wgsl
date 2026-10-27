@@ -1,5 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  liquid_magnetic_ferro.wgsl - Magnetic Ferrofluid Simulation
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-10-27
+//  Ideas: spike-base meniscus rings; directional magnetic striations
+//  A packing: raw [field x, field y, magnitude, 1]
 //
 //  Agent: Interactivist + Algorithmist (Batch 16 upgrade)
 //  Techniques:
@@ -13,26 +18,7 @@
 //  Target: 4.7★ rating
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -130,7 +116,8 @@ fn metallicColor(normal: vec2<f32>, lightDir: vec2<f32>, viewDir: vec2<f32>, bas
 
 // Tone mapping
 fn toneMap(x: vec3<f32>) -> vec3<f32> {
-    return x / (1.0 + x);
+    let v = max(x, vec3<f32>(0.0));
+    return clamp((v * (2.51 * v + 0.03)) / (v * (2.43 * v + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -214,6 +201,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fieldDir = safeNormalize(field, vec2<f32>(1.0, 0.0));
     let linePattern = abs(sin(atan2(fieldDir.y, fieldDir.x) * 10.0 + time));
     color += vec3<f32>(0.2, 0.4, 0.8) * smoothstep(0.8, 1.0, linePattern) * 0.3;
+    let meniscus = exp(-abs(spikes) * 3.0) * fluidBase * smoothstep(0.1, 0.8, spikeSharpness);
+    color += vec3<f32>(0.24, 0.38, 0.5) * meniscus * 0.3;
+    let striationPhase = dot(uv, vec2<f32>(-fieldDir.y, fieldDir.x)) * spikeFreq;
+    let striation = pow(max(0.5 + 0.5 * cos(striationPhase), 0.0), 8.0);
+    color += vec3<f32>(0.12, 0.2, 0.3) * striation * fluidBase;
 
     // Soft cyan glow where the magnetic field is intense (dipole cores)
     let fieldMag = length(field);
@@ -231,7 +223,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color *= vignette;
 
     // ── Writes ──
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+    let alpha = clamp(0.15 + fluidBase * 0.45 + min(abs(spikes), 1.0) * 0.35, 0.0, 0.95);
+    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
     // Depth: clamp >= 0.0 (spike height can go negative via sign(pattern))
     textureStore(writeDepthTexture, coord, vec4<f32>(max(height, 0.0), 0.0, 0.0, 1.0));
     // Sim state: RAW smoothed field for next frame's viscosity feedback.

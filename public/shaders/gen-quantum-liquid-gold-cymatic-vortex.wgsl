@@ -1,31 +1,12 @@
 // ----------------------------------------------------------------
 // Quantum Liquid-Gold Cymatic-Vortex
 // Category: generative
-// Upgraded: 2026-09-27
-// Ideas: liquid gold droplet ejections from cymatic peaks; subsurface heat incandescence at singularity core
-// A packing: ACES display RGBA
+// Upgraded: 2026-10-27
+// Ideas: concentric mode interference; flow-aligned gold crest glints
+// A packing: HDR linear RGB and alpha
 // ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Vortex Speed, .y = Viscosity, .z = Cymatic Intensity, .w = Gold Purity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Vortex Speed, .y = Viscosity, .z = Cymatic Intensity, .w = Gold Purity
 
 // --- CONSTANTS ---
 const MAX_STEPS: i32 = 100;
@@ -123,7 +104,9 @@ fn getDist(p_in: vec3<f32>, bass: f32, cymatic: f32) -> f32 {
     // Cymatic patterns
     let cymaticFreq = 10.0 + bass * 20.0;
     let cymaticWave = sin(dist * cymaticFreq - u.config.x * 5.0) * cos(twistedAngle * 8.0);
-    let cymaticDisp = cymaticWave * cymatic * 0.1 * exp(-dist * 0.5);
+    let overtone = sin(dist * cymaticFreq * 1.55 + u.config.x * 3.0)
+        * cos(twistedAngle * 4.0);
+    let cymaticDisp = (cymaticWave + overtone * 0.22) * cymatic * 0.1 * exp(-dist * 0.5);
 
     // Fluid noise
     let noiseDisp = fbm(vec3<f32>(p.x * noiseScale, p.y + u.config.x, p.z * noiseScale), 4) * 0.5;
@@ -218,6 +201,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = baseColor * dif * ao;
         col += envReflection * 0.5 * goldPurity;
         col += vec3<f32>(spec) * pureGold;
+        let surfaceRadius = length(p.xz);
+        let flowAngle = atan2(p.z, p.x) + u.zoom_params.x * 2.0 * u.config.x / (surfaceRadius + 0.1);
+        let crestGlint = pow(max(0.5 + 0.5 * cos(flowAngle * 8.0), 0.0), 8.0)
+            * pow(max(dot(n, halfVector), 0.0), 16.0) * cymatic;
+        col += pureGold * crestGlint * 0.45;
 
         // Idea 1: Liquid gold droplet ejections popping up from cymatic peaks
         let cymaticPeak = smoothstep(0.8, 1.0, sin(length(p.xz) * (10.0 + bass*20.0) - u.config.x * 5.0));
