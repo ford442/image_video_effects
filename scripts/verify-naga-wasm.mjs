@@ -56,20 +56,13 @@ function parseArgs(argv) {
   return args;
 }
 
-/** Renderer-owned WGSL bundled by scripts/gen-compositor-wgsl.mjs (not catalog shaders). */
-const COMPOSITOR_DIR = path.join(SHADER_DIR, '_compositor');
-
-/** Catalog ids, i.e. every .wgsl under public/shaders (flat, templates included), plus _compositor/. */
+/** Catalog ids, i.e. every .wgsl under public/shaders (flat, templates included). */
 function allShaderFiles() {
-  const flat = fs
+  return fs
     .readdirSync(SHADER_DIR)
     .filter((f) => f.endsWith('.wgsl'))
     .sort()
     .map((f) => path.join(SHADER_DIR, f));
-  const compositor = fs.existsSync(COMPOSITOR_DIR)
-    ? fs.readdirSync(COMPOSITOR_DIR).filter((f) => f.endsWith('.wgsl')).sort().map((f) => path.join(COMPOSITOR_DIR, f))
-    : [];
-  return [...flat, ...compositor];
 }
 
 function changedShaderFiles(baseRef) {
@@ -124,8 +117,7 @@ function withLibraryDependents(files) {
   return [...result];
 }
 
-const shaderId = (file) =>
-  path.dirname(file) === COMPOSITOR_DIR ? `_compositor/${path.basename(file, '.wgsl')}` : path.basename(file, '.wgsl');
+const shaderId = (file) => path.basename(file, '.wgsl');
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));

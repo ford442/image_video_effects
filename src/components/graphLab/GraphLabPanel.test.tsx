@@ -246,33 +246,6 @@ describe('GraphLabPanel', () => {
       expect(screen.getByTestId('graph-lab-diagnostics-clear')).toBeInTheDocument();
     });
 
-    it('starts a hash flagship with the spatial hash requested, locked while a node reads it', () => {
-      renderPanel();
-      startFrom('murmuration');
-      expect(screen.getByTestId('sim-ring-hash')).toBeChecked();
-      expect(screen.getByTestId('sim-ring-hash')).toBeDisabled();
-      expect(screen.getByTestId('sim-ring-hash-note')).toHaveTextContent('@group(1) @binding(3) simHash');
-      expect(screen.getByTestId('role-reads-simHash')).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.queryByTestId('role-writes-simHash')).not.toBeInTheDocument();
-      expect(JSON.parse(window.localStorage.getItem(DRAFT_STORAGE_KEY) as string).envelope.simRing).toMatchObject({
-        stateCount: 65536,
-        spatialHash: true,
-      });
-    });
-
-    it('leaves a plain ring (DLA) without a hash and lets it be requested', () => {
-      renderPanel();
-      startFrom('dla-crystals');
-      expect(screen.getByTestId('sim-ring-hash')).not.toBeChecked();
-      expect(screen.queryByTestId('sim-ring-hash-note')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('role-reads-simHash')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByTestId('sim-ring-hash'));
-      expect(screen.getByTestId('sim-ring-hash')).toBeChecked();
-      expect(screen.getByTestId('role-reads-simHash')).toHaveAttribute('aria-pressed', 'false');
-      fireEvent.click(screen.getByTestId('role-reads-simHash'));
-      expect(screen.getByTestId('sim-ring-hash')).toBeDisabled();
-    });
-
     it('turns the ring on for a plain graph and off again', () => {
       renderPanel();
       expect(screen.queryByTestId('role-reads-simState')).not.toBeInTheDocument();

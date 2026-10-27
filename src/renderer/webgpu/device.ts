@@ -11,19 +11,12 @@ import { publishWebGpuProbe, runWebGpuBootProbe } from '../webgpuBootProbe';
 import { AdapterGpuType, DeviceFormatCapabilities } from '../../config/formatPolicy';
 import type { AdapterIdentity } from '../../config/adapterIdentity';
 import canvasConfigureContract from '../../contracts/canvas_configure.json';
-import optionalFeaturesContract from '../../contracts/webgpu_optional_features.json';
-import type { FeatureLevel, LimitsTier } from '../webgpuDevicePolicy';
 
 export interface WebGPUDeviceInitResult {
   ok: true;
   device: GPUDevice;
   context: GPUCanvasContext;
-  /** The applied swapchain format (rgba16float for the HDR canvas). */
   canvasFormat: GPUTextureFormat;
-  /** The preferred format every SDR configure uses (#1512). */
-  preferredCanvasFormat: GPUTextureFormat;
-  /** The swapchain was accepted with STORAGE_BINDING for the compute present (#1512). */
-  storagePresent: boolean;
   canvasW: number;
   canvasH: number;
   supportsSubgroups: boolean;
@@ -36,35 +29,11 @@ export interface WebGPUDeviceInitResult {
   adapterAttemptLabel: string | null;
   /** Probe result: swapchain accepts COPY_SRC (enables canvas → VideoFrame capture). */
   canvasCopySrc: boolean;
-  canvasColorOptIns: CanvasColorOptInsState;
+  canvasColorOptIns: Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping'>;
   canvasColorFallback?: CanvasColorFallbackReason;
   /** Removes the boot probe's log-only uncapturederror listener (see WebGpuProbeHandoff). */
   detachUncapturedLog?: () => void;
-  /** Capability tier 2 (#1512): what the device was actually granted. */
-  tier2: DeviceTier2;
 }
-
-/** Capability tier 2 (#1512): optional features, feature level and limits tiers of the live device. */
-export interface DeviceTier2 {
-  featureLevel: FeatureLevel;
-  /** Created under compatibility validation (the compat rung). */
-  compat: boolean;
-  shaderF16: boolean;
-  bgra8unormStorage: boolean;
-  float32Blendable: boolean;
-  dualSourceBlending: boolean;
-  limitsTiers: LimitsTier[];
-}
-
-export const CORE_TIER2: DeviceTier2 = {
-  featureLevel: 'core',
-  compat: false,
-  shaderF16: false,
-  bgra8unormStorage: false,
-  float32Blendable: false,
-  dualSourceBlending: false,
-  limitsTiers: [],
-};
 
 export interface WebGPUDeviceInitFailure {
   ok: false;
@@ -81,8 +50,6 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     device: handoff.device,
     context: handoff.context,
     canvasFormat: handoff.canvasFormat,
-    preferredCanvasFormat: handoff.preferredCanvasFormat ?? handoff.canvasFormat,
-    storagePresent: handoff.storagePresent ?? false,
     canvasW: handoff.canvasW,
     canvasH: handoff.canvasH,
     supportsSubgroups: handoff.supportsSubgroups,
@@ -97,15 +64,8 @@ function outcomeFromHandoff(handoff: WebGpuProbeHandoff): WebGPUDeviceInitResult
     canvasColorOptIns: handoff.canvasColorOptIns,
     canvasColorFallback: handoff.canvasColorFallback,
     detachUncapturedLog: handoff.detachUncapturedLog,
-    tier2: handoff.tier2 ?? CORE_TIER2,
   };
 }
-
-/**
- * Capability tier 2 (#1512), requested after the C++-mirrored three when the adapter offers
- * them. TS only (webgpu_optional_features.json tier2; the WASM backend stays frozen).
- */
-export const TIER2_OPTIONAL_FEATURES = optionalFeaturesContract.tier2.requestOrder as readonly GPUFeatureName[];
 
 /** Pixelocity optional features requested when the adapter offers them. */
 const PIXELOCITY_OPTIONAL_FEATURES = [
@@ -113,12 +73,11 @@ const PIXELOCITY_OPTIONAL_FEATURES = [
   'timestamp-query',
   'subgroups',
   'chromium-experimental-subgroups',
-  ...TIER2_OPTIONAL_FEATURES,
 ] as const;
 
 /**
  * Collect optional device features to request (mirrors wasm_renderer/device.cpp order).
- * timestamp-query is always-on when available (#1007 / #1030). The tier-2 features follow.
+ * timestamp-query is always-on when available (#1007 / #1030).
  */
 export function collectOptionalDeviceFeatures(adapter: GPUAdapter): GPUFeatureName[] {
   const features: GPUFeatureName[] = [];
@@ -132,29 +91,7 @@ export function collectOptionalDeviceFeatures(adapter: GPUAdapter): GPUFeatureNa
   if (subgroupFeatureName) {
     features.push(subgroupFeatureName);
   }
-  for (const feature of TIER2_OPTIONAL_FEATURES) {
-    if (adapter.features.has(feature)) features.push(feature);
-  }
   return features;
-}
-
-/** What the device was granted of tier 2 (granted, not offered: a device only has what it asked for). */
-export function readDeviceTier2(
-  device: GPUDevice,
-  featureLevel: FeatureLevel,
-  compat: boolean,
-  limitsTiers: LimitsTier[],
-): DeviceTier2 {
-  const has = (name: string) => device.features.has(name as GPUFeatureName);
-  return {
-    featureLevel,
-    compat,
-    shaderF16: has('shader-f16'),
-    bgra8unormStorage: has('bgra8unorm-storage'),
-    float32Blendable: has('float32-blendable'),
-    dualSourceBlending: has('dual-source-blending'),
-    limitsTiers,
-  };
 }
 
 /** Compact diagnostics string for enabled Pixelocity-requested features. */
@@ -173,39 +110,6 @@ export interface CanvasConfigureOptIns {
   displayP3?: boolean;
   /** Request toneMapping { mode: 'extended' } (display-p3 opt-in + HDR display only). */
   extendedToneMapping?: boolean;
-  /**
-   * Swap the canvas format for rgba16float (#1512, optIn.hdrCanvas). Honored only together
-   * with displayP3 + extendedToneMapping: extended tone mapping is inert on an 8-bit canvas.
-   */
-  hdrCanvas?: boolean;
-  /** Add STORAGE_BINDING so the present can write a bgra8unorm swapchain from compute (#1512). */
-  storagePresent?: boolean;
-}
-
-/** The colour opt-ins a renderer remembers and re-applies on every configure. */
-export type CanvasColorOptInsState = Pick<CanvasConfigureOptIns, 'displayP3' | 'extendedToneMapping' | 'hdrCanvas'>;
-
-/** True when these opt-ins put the swapchain in rgba16float (the HDR canvas). */
-export function isHdrCanvas(optIns: CanvasConfigureOptIns): boolean {
-  return !!(optIns.displayP3 && optIns.extendedToneMapping && optIns.hdrCanvas);
-}
-
-/** The swapchain format a configure with these opt-ins produces (preferred unless HDR). */
-export function effectiveCanvasFormat(preferred: GPUTextureFormat, optIns: CanvasConfigureOptIns = {}): GPUTextureFormat {
-  return isHdrCanvas(optIns) ? (canvasConfigureContract.optIn.hdrCanvas.format as GPUTextureFormat) : preferred;
-}
-
-/** `?canvas_format=bgra8unorm|rgba8unorm` overrides getPreferredCanvasFormat() (tests, storage present). */
-export function resolveCanvasFormatOverride(search: string): GPUTextureFormat | null {
-  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-  const v = params.get('canvas_format');
-  return v === 'bgra8unorm' || v === 'rgba8unorm' ? v : null;
-}
-
-/** `?storage_present=0` keeps the render-pass present even where storage present is possible. */
-export function storagePresentDisabledByUrl(search: string): boolean {
-  const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
-  return params.get(canvasConfigureContract.optIn.storagePresent.urlParam) === '0';
 }
 
 /** One canvas capability per canvas_configure.json optIn entry (shared with C++ canvas_configure.h). */
@@ -230,23 +134,21 @@ function textureUsageBits(names: readonly string[]): GPUTextureUsageFlags {
  * Canvas context configure options (parity with WASM JS_CreateSurfaceFromCanvas).
  * Values come from src/contracts/canvas_configure.json. The default path writes
  * only alphaMode + usage; colorSpace/toneMapping stay browser defaults (srgb /
- * standard) unless explicitly opted in. `format` is the preferred format; the
- * hdrCanvas opt-in swaps it for the contract's rgba16float (effectiveCanvasFormat).
+ * standard) unless explicitly opted in.
  */
 export function buildCanvasConfigureOptions(
   device: GPUDevice,
   format: GPUTextureFormat,
   optIns: CanvasConfigureOptIns = {},
 ): GPUCanvasConfiguration {
-  const usageNames = [
-    ...(optIns.copySrc ? canvasConfigureContract.optIn.copySrc.usage : canvasConfigureContract.usage),
-    ...(optIns.storagePresent ? canvasConfigureContract.optIn.storagePresent.usage : []),
-  ];
+  const usageNames = optIns.copySrc
+    ? canvasConfigureContract.optIn.copySrc.usage
+    : canvasConfigureContract.usage;
   const config: GPUCanvasConfiguration = {
     device,
-    format: effectiveCanvasFormat(format, { ...optIns, hdrCanvas: !!optIns.hdrCanvas }),
+    format,
     alphaMode: canvasConfigureContract.alphaMode as GPUCanvasAlphaMode,
-    usage: textureUsageBits([...new Set(usageNames)]),
+    usage: textureUsageBits(usageNames),
   };
   if (optIns.displayP3) {
     config.colorSpace = canvasConfigureContract.optIn.displayP3.colorSpace as PredefinedColorSpace;

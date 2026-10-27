@@ -50,12 +50,3 @@ export interface AutoTransitionConfig {
   beatInput?: 'mic' | 'element';
   mediaElement?: HTMLMediaElement;
 }
-
-/** Options for firing the next transition by hand (controller, OSC, the Auto Transition button). */
-export interface TriggerTransitionOptions {
-  /**
-   * Dissolve a shader change from the picture on screen instead of cutting (OSC `crossfade`).
-   * Absent keeps today's behavior, so existing MIDI / key bindings do not start fading.
-   */
-  crossfade?: boolean;
-}

@@ -178,8 +178,7 @@ export interface HealthResponse {
 export interface StorageClientConfig {
   webhookUrl: string;
   staticUrl: string;
-  /** storage_manager endpoint that signs webhook payloads server-side. */
-  signUrl: string;
+  secret: string;
   apiUrl: string;
   shaderFilesBaseUrl: string;
 }

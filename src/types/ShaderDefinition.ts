@@ -7,8 +7,7 @@ export type ShaderDefinitionGraphRole =
   | 'dataB'
   | 'dataC'
   | 'simState'
-  | 'simIndex'
-  | 'simHash';
+  | 'simIndex';
 
 /**
  * One shader_definitions/<category>/<id>.json file. Source of truth for the catalog: scripts/generate_shader_lists.js copies it into public/shader-lists/<category>.json (minus x-meta). Cross-field rules JSON Schema cannot express (id == file stem, id/url stem, category == folder, unique param ids, default within [min, max]) live in scripts/validate_shader_definitions.mjs. TypeScript type: src/types/ShaderDefinition.ts (generated).
@@ -149,14 +148,10 @@ export interface ShaderDefinitionGraph {
   }[];
 }
 /**
- * Opt-in @group(1) sim-ring request (see bind_group1.json). stateCount sizes the ring; spatialHash additionally asks for the optional simHash binding (bind_group1.json spatialHash) and requires a graph node that reads the simHash role.
+ * Opt-in @group(1) sim-ring request (see bind_group1.json). Only stateCount is consumed.
  */
 export interface ShaderDefinitionSimRing {
   stateCount: number;
-  /**
-   * Allocate the 128×128 spatial hash (binding 3 simHash) and have the frame planner rebuild it before the first node that reads the simHash role. Default off.
-   */
-  spatialHash?: boolean;
   agent?: string;
   packing?: string;
 }

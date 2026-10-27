@@ -55,7 +55,6 @@ function baseProps(overrides: Partial<AppShellProps> = {}): AppShellProps {
     setActiveGenerativeShader: noop,
     fileInputImageRef: { current: null },
     fileInputVideoRef: { current: null },
-    onLocalFileChange: noop,
     isAiVjMode: false,
     toggleAiVj: noop,
     aiVjStatus: 'idle',
@@ -164,22 +163,6 @@ describe('AppShell chrome', () => {
   it('shows Open Remote on non-public hosts', () => {
     render(<AppShell {...baseProps()} />);
     expect(screen.getByRole('button', { name: /open remote/i })).toBeInTheDocument();
-  });
-});
-
-describe('AppShell upload inputs', () => {
-  it('hands a picked image / video file to onLocalFileChange (no longer a no-op)', () => {
-    const onLocalFileChange = vi.fn();
-    render(<AppShell {...baseProps({ onLocalFileChange })} />);
-    const image = new File(['x'], 'a.png', { type: 'image/png' });
-    const video = new File(['y'], 'b.mp4', { type: 'video/mp4' });
-
-    fireEvent.change(screen.getByTestId('upload-image-input'), { target: { files: [image] } });
-    fireEvent.change(screen.getByTestId('upload-video-input'), { target: { files: [video] } });
-
-    expect(onLocalFileChange).toHaveBeenCalledTimes(2);
-    expect(onLocalFileChange.mock.calls[0]?.[1]).toBe('image');
-    expect(onLocalFileChange.mock.calls[1]?.[1]).toBe('video');
   });
 });
 

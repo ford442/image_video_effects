@@ -9,17 +9,13 @@ import {
     oscWsUrlFromSearch,
 } from '../../../services/osc/oscFlags';
 import type { OscActionsHandle, OscBridgeStatus } from '../../../services/osc/oscBridge';
-import { transitionOptionsForCue } from '../../../services/osc/oscCues';
-import type { TriggerTransitionOptions } from '../../../types/aiVj';
 
 export interface UseOscControlOptions {
     modes: RenderMode[];
     availableModes: ShaderEntry[];
     setMode: (index: number, mode: RenderMode) => void;
     onSetSlotParam?: (slot: number, param: string, value: number) => void;
-    /** Compositor opacity of a slot, 0..1 (#1512). */
-    onSetSlotOpacity?: (slot: number, value: number) => void;
-    onTriggerNextTransition?: (options?: TriggerTransitionOptions) => Promise<void> | void;
+    onTriggerNextTransition?: () => Promise<void> | void;
     setAudioReactiveAmount?: (amount: number) => void;
 }
 
@@ -50,7 +46,6 @@ export function useOscControl({
     availableModes,
     setMode,
     onSetSlotParam,
-    onSetSlotOpacity,
     onTriggerNextTransition,
     setAudioReactiveAmount,
 }: UseOscControlOptions): UseOscControlReturn {
@@ -70,18 +65,11 @@ export function useOscControl({
         setSlotParam: (slot, param, value) => {
             if (slot < modes.length) onSetSlotParam?.(slot, param, value);
         },
-        setSlotOpacity: (slot, value) => {
-            if (slot < modes.length) onSetSlotOpacity?.(slot, value);
-        },
         setSlotShader: (slot, shaderId) => {
             if (slot >= modes.length) return;
             if (shaderId === 'none' || availableModes.some(m => m.id === shaderId)) setMode(slot, shaderId);
         },
-        triggerTransition: (name) => {
-            // Only a named cue ("crossfade") changes the call; a bare trigger stays a cut.
-            const options = transitionOptionsForCue(name);
-            void (options ? onTriggerNextTransition?.(options) : onTriggerNextTransition?.());
-        },
+        triggerTransition: () => { void onTriggerNextTransition?.(); },
         setAudioAmount: (value) => setAudioReactiveAmount?.(value),
     };
     const handleRef = useRef<OscActionsHandle>(handle);

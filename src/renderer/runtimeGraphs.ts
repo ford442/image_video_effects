@@ -23,8 +23,6 @@ export const GRAPH_LAB_RUNTIME_ID = 'graphlab-draft';
 /** A runtime graph's sim-ring request: the definition `simRing` field, as consumed. */
 export interface RuntimeSimRingRequest {
   stateCount: number;
-  /** Ask for the optional spatial hash (simRing.spatialHash). Absent / false → no hash is allocated. */
-  spatialHash?: boolean;
 }
 
 const overlay = new Map<string, MultipassGraphDef>();
@@ -42,12 +40,7 @@ export function setRuntimeGraph(
 ): void {
   if (graph) overlay.set(id, graph);
   else overlay.delete(id);
-  if (graph && simRing) {
-    simRingOverlay.set(id, {
-      stateCount: simRing.stateCount,
-      ...(simRing.spatialHash === true ? { spatialHash: true } : {}),
-    });
-  }
+  if (graph && simRing) simRingOverlay.set(id, { stateCount: simRing.stateCount });
   else simRingOverlay.delete(id);
 }
 
@@ -64,16 +57,6 @@ export function getRuntimeSimRingRequest(shaderId: string): number | undefined {
   if (direct) return direct.stateCount;
   for (const [ownerId, req] of Array.from(simRingOverlay)) {
     if (overlay.get(ownerId)?.nodes.some((n) => n.entry === shaderId)) return req.stateCount;
-  }
-  return undefined;
-}
-
-/** Whether a runtime graph asks for the spatial hash for `shaderId`; undefined when none claims it. */
-export function getRuntimeSimHashRequest(shaderId: string): boolean | undefined {
-  const direct = simRingOverlay.get(shaderId);
-  if (direct) return direct.spatialHash === true;
-  for (const [ownerId, req] of Array.from(simRingOverlay)) {
-    if (overlay.get(ownerId)?.nodes.some((n) => n.entry === shaderId)) return req.spatialHash === true;
   }
   return undefined;
 }

@@ -1,4 +1,4 @@
-import { dispatchOscMessage, OscActionsHandle, routeOscMessage, transitionOptionsForCue } from './oscRouter';
+import { dispatchOscMessage, OscActionsHandle, routeOscMessage } from './oscRouter';
 
 const msg = (address: string, ...args: Array<number | string | boolean | null>) => ({ address, args });
 
@@ -52,11 +52,9 @@ describe('dispatchOscMessage', () => {
       setSlotParam: vi.fn(),
       triggerTransition: vi.fn(),
       setSlotShader: vi.fn(),
-      setSlotOpacity: vi.fn(),
       setAudioAmount: vi.fn(),
     };
     dispatchOscMessage(msg('/pixelocity/slot/3/param/w', 0.5), handle);
-    dispatchOscMessage(msg('/pixelocity/slot/2/opacity', 1.5), handle);
     dispatchOscMessage(msg('/pixelocity/slot/0/shader', 'none'), handle);
     dispatchOscMessage(msg('/pixelocity/transition', 1), handle);
     dispatchOscMessage(msg('/pixelocity/audio/amount', 0.25), handle);
@@ -64,48 +62,5 @@ describe('dispatchOscMessage', () => {
     expect(handle.setSlotShader).toHaveBeenCalledWith(0, 'none');
     expect(handle.triggerTransition).toHaveBeenCalledTimes(1);
     expect(handle.setAudioAmount).toHaveBeenCalledWith(0.25);
-    expect(handle.setSlotOpacity).toHaveBeenCalledWith(2, 1);
-  });
-});
-
-describe('transition cues', () => {
-  const makeHandle = (): OscActionsHandle => ({
-    setSlotParam: vi.fn(),
-    setSlotOpacity: vi.fn(),
-    triggerTransition: vi.fn(),
-    setSlotShader: vi.fn(),
-    setAudioAmount: vi.fn(),
-  });
-
-  it('passes the crossfade cue through to the transition handle', () => {
-    const handle = makeHandle();
-    const action = dispatchOscMessage(msg('/pixelocity/transition', 'crossfade'), handle);
-    expect(action).toEqual({ type: 'triggerTransition', name: 'crossfade' });
-    expect(handle.triggerTransition).toHaveBeenCalledTimes(1);
-    expect(handle.triggerTransition).toHaveBeenCalledWith('crossfade');
-  });
-
-  it('a nameless trigger calls the handle with no argument, exactly as before', () => {
-    const handle = makeHandle();
-    dispatchOscMessage(msg('/pixelocity/transition'), handle);
-    dispatchOscMessage(msg('/pixelocity/transition', 1), handle);
-    expect(handle.triggerTransition).toHaveBeenCalledTimes(2);
-    for (const call of (handle.triggerTransition as ReturnType<typeof vi.fn>).mock.calls) {
-      expect(call).toEqual([]);
-    }
-  });
-
-  it('a button release fires nothing', () => {
-    const handle = makeHandle();
-    expect(dispatchOscMessage(msg('/pixelocity/transition', 0), handle)).toBeNull();
-    expect(handle.triggerTransition).not.toHaveBeenCalled();
-  });
-
-  it('only the crossfade cue asks for a dissolve', () => {
-    expect(transitionOptionsForCue('crossfade')).toEqual({ crossfade: true });
-    expect(transitionOptionsForCue(' CrossFade ')).toEqual({ crossfade: true });
-    expect(transitionOptionsForCue()).toBeUndefined();
-    expect(transitionOptionsForCue('')).toBeUndefined();
-    expect(transitionOptionsForCue('wipe')).toBeUndefined();
   });
 });

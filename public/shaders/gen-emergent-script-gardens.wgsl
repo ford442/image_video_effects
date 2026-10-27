@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven,
 //            golden-ratio-branching, phyllotaxis, overgrowth-trails
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-10, 2026-10-25
-//  Ideas: Fibonacci parastichy veins on the opposing spiral family; ligature bridges to +X neighbor; serif terminals; ink bleed; dry-brush bristle gaps along the stroke tangent (kasure); capillary meniscus fillet from exact-C.a curvature (§12.2D surface tension)
+//  Upgraded: 2026-10-10
+//  Ideas: Fibonacci parastichy veins on the opposing spiral family; ligature bridges to +X neighbor; serif terminals; ink bleed
 //  A packing: pre-ACES color RGB + totalInk in A.a; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -51,32 +51,20 @@ fn ruleAngle(p: vec2<f32>, t: f32, bass: f32, mids: f32, treble: f32, curvature:
     return (slow - 0.5) * TAU + (local - 0.5) * PI * curvature + (script - 0.5) * treble * PI + bass * 0.4;
 }
 
-fn brushStroke(uv: vec2<f32>, seed: vec2<f32>, lengthScale: f32, inkWidth: f32, angle: f32, bend: f32, dry: f32) -> f32 {
+fn brushStroke(uv: vec2<f32>, seed: vec2<f32>, lengthScale: f32, inkWidth: f32, angle: f32, bend: f32) -> f32 {
     let d = uv - seed;
     let ca = cos(angle);
     let sa = sin(angle);
     let along = d.x * ca + d.y * sa;
-    let across = -d.x * sa + d.y * ca;
-    // Exact support box: body is zero outside [0, len+0.02] and the width is zero once
-    // |across| >= inkWidth + the 1.6*inkWidth wobble. Same output, skips pow/sin per miss.
-    if (along <= 0.0 || along >= lengthScale + 0.02 || abs(across) >= inkWidth * 2.6) { return 0.0; }
-    let curvedAcross = across + sin(along * 22.0 + bend) * inkWidth * 1.6;
+    let curvedAcross = -d.x * sa + d.y * ca + sin(along * 22.0 + bend) * inkWidth * 1.6;
     let body = smoothstep(0.0, 0.018, along) * smoothstep(lengthScale + 0.02, lengthScale, along);
-    let tn = clamp(along / max(lengthScale, 0.001), 0.0, 1.0);
-    let taper = pow(sin(tn * PI), 0.65);
-    var width = smoothstep(inkWidth, 0.0, abs(curvedAcross)) * taper;
-    // ── Idea 1: dry-brush bristle gaps (kasure) ──────────────────────────
-    // A loaded brush runs dry toward the tail: hairs part and paper shows through in
-    // streaks that run along the stroke tangent (noise is fast across, slow along).
-    let bristle = smoothNoise(vec2<f32>(curvedAcross / max(inkWidth, 1e-4) * 1.9 + seed.x * 61.0,
-                                        along * 35.0 + seed.y * 47.0));
-    let gap = smoothstep(0.3, 0.62, bristle);
-    width = width * mix(1.0, gap, dry * smoothstep(0.4, 1.0, tn));
+    let taper = pow(sin(clamp(along / max(lengthScale, 0.001), 0.0, 1.0) * PI), 0.65);
+    let width = smoothstep(inkWidth, 0.0, abs(curvedAcross)) * taper;
     return body * width;
 }
 
 fn glyphGarden(uv: vec2<f32>, cluster: vec2<f32>, t: f32, bass: f32, mids: f32, treble: f32,
-               strokeDensity: f32, curvature: f32, inkWidth: f32, dry: f32) -> f32 {
+               strokeDensity: f32, curvature: f32, inkWidth: f32) -> f32 {
     var ink = 0.0;
     // Bass drives number of growth iterations (phyllotactic spiral density)
     let count = i32(clamp(4.0 + strokeDensity * 8.0 + bass * 6.0, 4.0, 20.0));
@@ -96,16 +84,16 @@ fn glyphGarden(uv: vec2<f32>, cluster: vec2<f32>, t: f32, bass: f32, mids: f32, 
                     + (h.x - 0.5) * PI * 0.7 + fi * (PHYLLOTAXIS * 0.05);
         let len = (0.028 + h.y * 0.07 + bass * 0.025) * bloom;
         let bend = t * (0.5 + mids) + fi + h.x * TAU;
-        ink += brushStroke(uv, seed, len, inkWidth * (0.65 + h.x * 0.8), angle, bend, dry);
+        ink += brushStroke(uv, seed, len, inkWidth * (0.65 + h.x * 0.8), angle, bend);
         // Idea: serif terminal — a short crossbar at the end of the primary stroke.
         let tip = seed + vec2<f32>(cos(angle), sin(angle)) * len;
-        ink += brushStroke(uv, tip, len * 0.22, inkWidth * 0.85, angle + PI * 0.5, 0.0, 0.0) * 0.75;
+        ink += brushStroke(uv, tip, len * 0.22, inkWidth * 0.85, angle + PI * 0.5, 0.0) * 0.75;
 
         // Idea 1 — Fibonacci parastichy veins: opposing spiral family (τ − 137.5°)
         let oppositeTheta = fi * (TAU - PHYLLOTAXIS) + clusterHash.y * TAU;
         let orbit2 = vec2<f32>(cos(oppositeTheta), sin(oppositeTheta)) * goldenR * 0.92;
         ink += brushStroke(uv, cluster + orbit2, len * 0.45, inkWidth * 0.38,
-                           oppositeTheta + PI * 0.5, bend, 0.0) * 0.55;
+                           oppositeTheta + PI * 0.5, bend) * 0.55;
     }
 
     return clamp(ink, 0.0, 1.0);
@@ -131,8 +119,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let gardenScale = mix(4.0, 11.0, u.zoom_params.z);
     let palette = u.zoom_params.w;
     let inkWidth = mix(0.0035, 0.014, strokeDensity) * (1.0 + mids * 0.25);
-    // Paper ink runs drier than neon tubing (Ink / Neon keeps its role as the look selector).
-    let dryBrush = mix(0.9, 0.45, palette);
 
     let mouse = vec2<f32>(u.zoom_config.y * aspect, u.zoom_config.z);
     let mouseDown = step(0.5, u.zoom_config.w);
@@ -167,13 +153,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let cluster = (neighbor + 0.5 + jitter) / gardenScale;
             let mouseBoost = exp(-length(cluster - mouse) * length(cluster - mouse) * 24.0) * 0.55;
             let ink = glyphGarden(p, cluster, time, bass, mids, treble,
-                                  clamp(strokeDensity + mouseBoost, 0.0, 1.0), curvature, inkWidth, dryBrush);
+                                  clamp(strokeDensity + mouseBoost, 0.0, 1.0), curvature, inkWidth);
             // Idea 2 — ligature bridges: a short brush toward the +X neighbor
             let nextCluster = (neighbor + vec2<f32>(1.0, 0.0) + 0.5 + jitter) / gardenScale;
             let ligDelta = nextCluster - cluster;
             let ligLen = length(ligDelta);
             let ligAngle = atan2(ligDelta.y, ligDelta.x);
-            let ligature = brushStroke(p, cluster, ligLen * 0.55, inkWidth * 0.32, ligAngle, 0.0, dryBrush * 0.6) * 0.42;
+            let ligature = brushStroke(p, cluster, ligLen * 0.55, inkWidth * 0.32, ligAngle, 0.0) * 0.42;
             let inkAll = ink + ligature;
             if (inkAll > 0.0) {
                 let h = hash22(neighbor * 0.23 + 0.5);
@@ -190,34 +176,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     let prev = textureLoad(dataTextureC, coord, 0);
-    // ── Idea 2: capillary meniscus (§12.2D surface tension) ──────────────
-    // Wet ink pulls into a fillet where strokes meet. κ = div(∇a/|∇a|) of last frame's
-    // ink field (exact C.a taps, spacing ≈ stroke half-width); concave interface (κ<0)
-    // is filled. Self-limiting: a filled crotch is no longer concave next frame.
-    let hpx = i32(clamp(round(inkWidth * res.y * 0.8), 1.0, 6.0));
-    let cmax = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
-    let a0 = prev.a;
-    let aE = textureLoad(dataTextureC, clamp(coord + vec2<i32>(hpx, 0), vec2<i32>(0), cmax), 0).a;
-    let aW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-hpx, 0), vec2<i32>(0), cmax), 0).a;
-    let aN = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -hpx), vec2<i32>(0), cmax), 0).a;
-    let aS = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, hpx), vec2<i32>(0), cmax), 0).a;
-    let aNE = textureLoad(dataTextureC, clamp(coord + vec2<i32>(hpx, -hpx), vec2<i32>(0), cmax), 0).a;
-    let aNW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-hpx, -hpx), vec2<i32>(0), cmax), 0).a;
-    let aSE = textureLoad(dataTextureC, clamp(coord + vec2<i32>(hpx, hpx), vec2<i32>(0), cmax), 0).a;
-    let aSW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-hpx, hpx), vec2<i32>(0), cmax), 0).a;
-    let gx = (aE - aW) * 0.5;
-    let gy = (aS - aN) * 0.5;
-    let gxx = aE + aW - 2.0 * a0;
-    let gyy = aS + aN - 2.0 * a0;
-    let gxy = (aSE - aNE - aSW + aNW) * 0.25;
-    let g2 = gx * gx + gy * gy;
-    let kappaIn = (gxx * gy * gy - 2.0 * gx * gy * gxy + gyy * gx * gx) / max(g2 * sqrt(g2), 1e-4);
-    let iface = smoothstep(0.03, 0.2, sqrt(g2));
-    let fillet = clamp(kappaIn * f32(hpx) * 0.6, 0.0, 1.0) * iface;
-    let meniscus = fillet * 0.12 * mix(1.0, 0.5, palette);
     // Temporal feedback creates "overgrowth" trails
     let persistence = mix(0.76, 0.93, palette) + bass * 0.04;
-    totalInk = clamp(max(totalInk + plantedSeed + meniscus, prev.a * persistence), 0.0, 1.0);
+    totalInk = clamp(max(totalInk + plantedSeed, prev.a * persistence), 0.0, 1.0);
 
     let normalizedChroma = chroma / max(dot(chroma, vec3<f32>(0.3333)), 0.001);
     let paper = vec3<f32>(0.94, 0.91, 0.84) + hash12(p * 260.0) * 0.025;

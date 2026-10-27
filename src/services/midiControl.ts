@@ -20,35 +20,24 @@ export interface MIDIConnectionEventLike {
   port: MIDIInputLike;
 }
 
-type MIDIMessageListener = (event: MIDIMessageEventLike) => void;
-type MIDIStateListener = (event: MIDIConnectionEventLike) => void;
-
-/**
- * Listeners go through add/removeEventListener, never `onmidimessage =`: several adapters
- * (Live Control, attract-mode engagement) share the same physical inputs, and a property
- * assignment lets the last subscriber win and `disable()` silence everyone.
- */
 export interface MIDIInputLike {
   id: string;
   name?: string;
   manufacturer?: string;
-  addEventListener(type: 'midimessage', listener: MIDIMessageListener): void;
-  removeEventListener(type: 'midimessage', listener: MIDIMessageListener): void;
+  onmidimessage: ((event: MIDIMessageEventLike) => void) | null;
   open(): Promise<MIDIInputLike>;
   close(): Promise<MIDIInputLike>;
 }
 
 export interface MIDIAccessLike {
   inputs: Map<string, MIDIInputLike>;
-  addEventListener(type: 'statechange', listener: MIDIStateListener): void;
-  removeEventListener(type: 'statechange', listener: MIDIStateListener): void;
+  onstatechange: ((event: MIDIConnectionEventLike) => void) | null;
 }
 
 function isMIDIInputLike(port: unknown): port is MIDIInputLike {
   if (!port || typeof port !== 'object') return false;
-  const p = port as Partial<MIDIInputLike> & { type?: string };
-  if (p.type !== undefined && p.type !== 'input') return false;
-  return typeof p.id === 'string' && typeof p.open === 'function' && typeof p.addEventListener === 'function';
+  const p = port as Partial<MIDIInputLike>;
+  return typeof p.id === 'string' && typeof p.open === 'function';
 }
 
 function normalizeMIDIData(raw: Uint8Array | number[]): number[] {
@@ -149,12 +138,8 @@ export interface MidiControlAdapterOptions {
 export class MidiControlAdapter {
   private access: MIDIAccessLike | null = null;
   private listeners = new Set<ControlEventCallback>();
-  /** Per-input listener this adapter added, so disable() removes only its own. */
-  private subscribedInputs = new Map<MIDIInputLike, MIDIMessageListener>();
-  private stateListener: MIDIStateListener | null = null;
+  private subscribedInputs = new Set<MIDIInputLike>();
   private pairer: Midi14BitPairer | null = null;
-  /** Bumped by disable(): a requestAccess() still in flight then resolves to a no-op. */
-  private generation = 0;
 
   constructor(initialAccess?: MIDIAccessLike, options: MidiControlAdapterOptions = {}) {
     this.setPair14Bit(options.pair14Bit ?? false);
@@ -171,12 +156,9 @@ export class MidiControlAdapter {
     };
     if (!nav.requestMIDIAccess) return false;
 
-    const generation = this.generation;
     try {
       const access = await nav.requestMIDIAccess({ sysex: false });
-      // disable() ran while the permission prompt was pending (effect cleanup): hook nothing.
-      if (generation !== this.generation) return false;
-      if (!this.access) this.attachAccess(access as unknown as MIDIAccessLike);
+      this.attachAccess(access as unknown as MIDIAccessLike);
       return true;
     } catch {
       return false;
@@ -184,15 +166,12 @@ export class MidiControlAdapter {
   }
 
   disable(): void {
-    this.generation++;
-    for (const [input, listener] of this.subscribedInputs) {
-      input.removeEventListener('midimessage', listener);
+    if (!this.access) return;
+    this.access.onstatechange = null;
+    for (const input of this.subscribedInputs) {
+      input.onmidimessage = null;
     }
     this.subscribedInputs.clear();
-    if (this.access && this.stateListener) {
-      this.access.removeEventListener('statechange', this.stateListener);
-    }
-    this.stateListener = null;
     this.access = null;
   }
 
@@ -225,25 +204,23 @@ export class MidiControlAdapter {
     this.access.inputs.forEach((input) => {
       this.hookInput(input);
     });
-    this.stateListener = (event) => {
-      if (isMIDIInputLike(event.port)) this.hookInput(event.port);
+    this.access.onstatechange = (event) => {
+      if (isMIDIInputLike(event.port) && event.port.onmidimessage === null) {
+        this.hookInput(event.port);
+      }
     };
-    this.access.addEventListener('statechange', this.stateListener);
   }
 
   private hookInput(input: MIDIInputLike): void {
     if (this.subscribedInputs.has(input)) return;
-    const listener: MIDIMessageListener = (event) => {
+    this.subscribedInputs.add(input);
+    input.onmidimessage = (event) => {
       const data = normalizeMIDIData(event.data);
       const controlEvent = this.pairer ? this.pairer.translate(data) : translateMIDIMessage(data);
       if (controlEvent) {
         this.emit(controlEvent);
       }
     };
-    this.subscribedInputs.set(input, listener);
-    input.addEventListener('midimessage', listener);
-    // Unlike assigning onmidimessage, addEventListener does not implicitly open the port.
-    void input.open().catch(() => { /* port went away; statechange re-hooks it */ });
   }
 
   private emit(event: ControlEvent): void {
