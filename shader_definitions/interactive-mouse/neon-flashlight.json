@@ -2,7 +2,7 @@
   "id": "neon-flashlight",
   "name": "Neon Flashlight",
   "url": "shaders/neon-flashlight.wgsl",
-  "description": "Depth-edge neon flashlight with animated cone ribs, radial sweeps, held beam squeeze, click flashes, and three-band spectral pulses.",
+  "description": "A neon beam at the pointer that lights the photo and traces edges, with an umbra, a penumbra, and a specular catch. The core falls off as inverse-square and desaturates toward white; the rim keeps the neon hue.",
   "params": [
     {
       "id": "radius",

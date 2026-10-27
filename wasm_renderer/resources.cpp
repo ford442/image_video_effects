@@ -85,6 +85,8 @@ bool WebGPURenderer::TryCreateHistoryTexture(uint32_t width, uint32_t height, ui
     PopResult pop;
     auto popCb = [](WGPUPopErrorScopeStatus status, WGPUErrorType type,
                     WGPUStringView message, void* userdata1, void* /*userdata2*/) {
+        // Cancelled = instance dropped after a timed-out wait: `pop` is a dead slot.
+        if (status == WGPUPopErrorScopeStatus_CallbackCancelled) return;
         auto* out = static_cast<PopResult*>(userdata1);
         if (status != WGPUPopErrorScopeStatus_Success || type == WGPUErrorType_OutOfMemory
             || type == WGPUErrorType_Internal) {
@@ -99,9 +101,13 @@ bool WebGPURenderer::TryCreateHistoryTexture(uint32_t width, uint32_t height, ui
     });
     WGPUFutureWaitInfo popWait = WGPU_FUTURE_WAIT_INFO_INIT;
     popWait.future = popFuture;
-    wgpuInstanceWaitAny(instance_.get(), 1, &popWait, UINT64_MAX);
+    const WGPUWaitStatus waitStatus =
+        wgpuInstanceWaitAny(instance_.get(), 1, &popWait, wasm_internal::kErrorScopeWaitTimeoutNs);
+    if (waitStatus != WGPUWaitStatus_Success) {
+        printf("[WASM] historyTex error-scope WaitAny status=%d — treat as OOM\n", (int)waitStatus);
+    }
 
-    if (!historyTexture_.get() || pop.hadError || deviceLost_) {
+    if (!historyTexture_.get() || pop.hadError || deviceLost_ || waitStatus != WGPUWaitStatus_Success) {
         historyTexture_.reset();
         return false;
     }

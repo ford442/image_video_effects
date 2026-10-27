@@ -1,7 +1,7 @@
 import { Renderer, RendererConfig, GPUTimings, UncappedBenchResult, DeviceLossInfo } from './Renderer';
 import type { WASMRenderer } from './WASMRenderer';
 import { isWasmBackend } from './wasmBackend';
-import { WebGPURenderer } from './WebGPURenderer';
+import type { WebGPURenderer } from './WebGPURenderer';
 import { InputSource, RenderMode, ShaderEntry, SlotParams } from './types';
 import { AdaptivePerformanceController } from './adaptivePerformance';
 import {

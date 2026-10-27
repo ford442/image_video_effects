@@ -9,7 +9,7 @@
     "raymarching",
     "audio-reactive"
   ],
-  "description": "An infinitely shattering and reforming matrix of absolute-zero hyper-fractals that bleed iridescent thermal plasma when fractured by heavy bass frequencies. Hoarfrost dendrites trace the fracture seams, and a cyan sublimation sheath marks where ice meets plasma.",
+  "description": "A Sierpinski-fold ice fractal around a magenta plasma core. Facets glow in crossed-polariser grain colours, the core shows through the ice with a dispersive fringe, and hoarfrost dendrites, rime terraces and plasma tongues mark the fractures.",
   "workgroup_size": [
     16,
     16,
@@ -58,7 +58,11 @@
   "updated": true,
   "id": "gen-cryogenic-frost-plasma-matrix",
   "url": "shaders/gen-cryogenic-frost-plasma-matrix.wgsl",
-  "features": [],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
   "x-meta": {
     "upgrade": {
       "params": [

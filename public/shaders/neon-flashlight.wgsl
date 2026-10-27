@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: mouse-driven, neon, edge-light, audio-pulse, depth-fog, edge-reveal, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-11
-//  Ideas: umbra vs penumbra cone; specular catch on edges inside the cone
+//  Upgraded: 2026-09-11, 2026-10-27
+//  Ideas: umbra vs penumbra cone; specular catch on edges inside the cone; inverse-square core (§12.2F); hot core
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
@@ -77,7 +58,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let outerR = beamRadius * (1.0 - held * 0.15);
     let umbra = 1.0 - smoothstep(innerR * 0.85, innerR, mouseDist);
     let penumbra = (1.0 - smoothstep(innerR, outerR, mouseDist)) * (1.0 - umbra);
-    let beamFalloff = umbra + penumbra * 0.45;
+    // ── Idea: inverse-square core (§12.2F) — finite hotspot, cone still ends at the penumbra.
+    let r0 = max(beamRadius * 0.5, 0.02);
+    let inv = 1.0 / ((mouseDist * mouseDist) / (r0 * r0) + 1.0);
+    let beamFalloff = umbra * (0.35 + 0.65 * inv) + penumbra * 0.45 * inv;
 
     var clickFront = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -87,10 +71,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         clickFront += exp(-age * 1.8) * exp(-abs(length(uv - event.xy) - age * 0.4) * 65.0);
     }
 
-    let l = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
-    let r = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb;
-    let t = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).rgb;
-    let b = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).rgb;
+    let l = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(pixelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(pixelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let t = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let edge = length(r - l) + length(b - t) * 0.5;
 
     let pulse = 1.0 + bass * 0.8 + treble * 0.4;
@@ -104,7 +88,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coneRibs = pow(0.5 + 0.5 * sin(atan2(uv.y - mousePos.y, uv.x - mousePos.x) * 18.0 + time * 2.0), 5.0) * beamFalloff;
     let sweep = exp(-abs(fract(mouseDist * 3.0 - time * (0.12 + mids * 0.2)) - 0.5) * 16.0);
     let specCatch = pow(edge * 3.0, 1.6) * (umbra + penumbra * 0.3);
-    let emission = audioNeon * (
+    // ── Idea: hot core — umbra goes white, penumbra keeps the neon hue.
+    let beamTint = mix(audioNeon, vec3<f32>(0.92, 0.96, 1.0), umbra * inv);
+    let emission = beamTint * (
         edge * beamFalloff * intensity * pulse
         + specCatch * intensity * 1.4
         + coneRibs * 0.22

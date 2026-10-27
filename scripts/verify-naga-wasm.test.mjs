@@ -227,3 +227,35 @@ test('the whole catalog matches the recorded ratchet exactly', () => {
     'known-failure count drifted from the contract ratchet',
   );
 });
+
+const DEPTH_WGSL = (sampler) => `
+@group(0) @binding(0) var mySampler: sampler;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(4) var depthTex: texture_2d<f32>;
+@group(0) @binding(5) var nf: sampler;
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+  // textureSampleLevel(depthTex, mySampler, ...) in a comment is ignored
+  let d = textureSampleLevel(depthTex, ${sampler}, vec2<f32>(0.5), 0.0).r;
+  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(d));
+}
+`;
+
+test('naga-reflect: depth sampled with the (renamed) filtering sampler is blocked', () => {
+  withTempDir((dir) => {
+    const bad = path.join(dir, 'depth-filtering.wgsl');
+    fs.writeFileSync(bad, DEPTH_WGSL('mySampler'));
+    const r = runGate(['--files', bad, '--contract', contractWith(dir, [])]);
+    assert.equal(r.status, 1, r.stdout);
+    assert.match(r.stdout, /depth-filtering\.wgsl:9 samples depthTex .* filtering sampler mySampler/);
+  });
+});
+
+test('naga-reflect: depth sampled with the non-filtering sampler passes', () => {
+  withTempDir((dir) => {
+    const good = path.join(dir, 'depth-nonfiltering.wgsl');
+    fs.writeFileSync(good, DEPTH_WGSL('nf'));
+    const r = runGate(['--files', good, '--contract', contractWith(dir, [])]);
+    assert.equal(r.status, 0, r.stdout);
+  });
+});

@@ -13,6 +13,16 @@ on:
       - 'public/wasm/**'
       - 'tests/wasm-*'
       - '.github/workflows/wasm.yml'
+      # Files that define the build or generate its headers.
+      - 'src/contracts/wasm_compile_flags.json'
+      - 'src/contracts/wasm_exports.json'
+      - 'src/contracts/bind_group0.json'
+      - 'src/contracts/canvas_configure.json'
+      - 'src/contracts/webgpu_limits.json'
+      - 'src/wasm/bridge/**'
+      - 'scripts/format-wasm-compile-flags.js'
+      - 'scripts/emcc-version-gate.sh'
+      - 'scripts/gen-*-header.js'
   schedule:
     # Weekly, Monday 06:17 UTC. Scheduled runs always use the default branch (main).
     - cron: '17 6 * * 1'
@@ -48,7 +58,7 @@ jobs:
       with:
         # Pinned — must equal emsdkVersion in src/contracts/wasm_compile_flags.json
         # (enforced by verify:wasm-invariants and emcc-version-gate.sh). Never `latest`.
-        version: 6.0.12
+        version: 6.0.13
         actions-cache-folder: 'emsdk-cache'
     
     - name: Build WASM renderer
@@ -57,31 +67,8 @@ jobs:
     - name: Validate WASM artifacts
       run: npm run wasm:validate
 
-    # Committed artifact must match a fresh pinned build (replaces the old mtime
-    # heuristic). Blocking: ci.yml's Jest suites run against the committed
-    # public/wasm/, so a stale artifact must not sit on main (#1343).
-    - name: Compare built WASM to committed artifact
-      run: |
-        for art in pixelocity_wasm.wasm pixelocity_wasm_jspi.wasm; do
-          built=$(sha256sum "public/wasm/$art" | cut -d' ' -f1)
-          committed=$(git show "HEAD:public/wasm/$art" | sha256sum | cut -d' ' -f1)
-          echo "$art built=$built committed=$committed"
-          if [ "$built" != "$committed" ]; then
-            echo "::warning file=public/wasm/$art::Committed WASM artifact is stale; rebuild with emsdk 6.0.12 (npm run wasm:build) and commit public/wasm/."
-            exit 1
-          fi
-        done
-
-    - name: Verify WASM bridge copies match TypeScript SoT
-      run: npm run verify:wasm-bridge-sync
-    
-    - name: Run WASM unit smoke tests
-      run: |
-        echo "WASM Vitest gate: filter=WASM (job fails on any test failure; no || true)"
-        npm run test:wasm:unit
-      env:
-        CI: true
-    
+    # Uploaded before the stale-artifact compare so a PR that changes the C++
+    # can commit these CI-built files when no local emsdk is available.
     - name: Upload WASM build artifacts
       uses: actions/upload-artifact@v4
       with:
@@ -97,6 +84,31 @@ jobs:
           src/wasm/wasm_bridge.ts
           src/wasm/wasm_bridge.d.ts
         retention-days: 7
+
+    # Committed artifact must match a fresh pinned build (replaces the old mtime
+    # heuristic). Blocking: ci.yml's Jest suites run against the committed
+    # public/wasm/, so a stale artifact must not sit on main (#1343).
+    - name: Compare built WASM to committed artifact
+      run: |
+        for art in pixelocity_wasm.wasm pixelocity_wasm_jspi.wasm; do
+          built=$(sha256sum "public/wasm/$art" | cut -d' ' -f1)
+          committed=$(git show "HEAD:public/wasm/$art" | sha256sum | cut -d' ' -f1)
+          echo "$art built=$built committed=$committed"
+          if [ "$built" != "$committed" ]; then
+            echo "::warning file=public/wasm/$art::Committed WASM artifact is stale; rebuild with the pinned emsdk (npm run wasm:build) or take public/wasm/ from this job's wasm-artifacts upload, and commit it."
+            exit 1
+          fi
+        done
+
+    - name: Verify WASM bridge copies match TypeScript SoT
+      run: npm run verify:wasm-bridge-sync
+    
+    - name: Run WASM unit smoke tests
+      run: |
+        echo "WASM Vitest gate: filter=WASM (job fails on any test failure; no || true)"
+        npm run test:wasm:unit
+      env:
+        CI: true
 
   test-wasm-e2e:
     runs-on: ubuntu-latest

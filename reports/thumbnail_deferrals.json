@@ -42,16 +42,6 @@
       "reason": "gpu-capture-pending"
     },
     {
-      "id": "gen-neural-dust",
-      "added_by": "thumbnail-campaign",
-      "deferred_at": "2026-09-26",
-      "expires": "2026-10-26",
-      "reason": "gpu-capture-pending",
-      "renewals": 1,
-      "renewed_at": "2026-09-26",
-      "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
-    },
-    {
       "id": "gen-orb",
       "added_by": "thumbnail-campaign",
       "deferred_at": "2026-09-26",
@@ -190,6 +180,14 @@
       "added_by": "Jules",
       "deferred_at": "2026-10-20",
       "expires": "2026-11-19",
+      "reason": "gpu-capture-pending",
+      "failure_note": "New shader requires GPU capture for thumbnail"
+    },
+    {
+      "id": "gen-stellar-mycelium-overdrive",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-23",
+      "expires": "2026-11-22",
       "reason": "gpu-capture-pending",
       "failure_note": "New shader requires GPU capture for thumbnail"
     }

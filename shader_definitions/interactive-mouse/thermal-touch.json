@@ -3,7 +3,7 @@
   "name": "Thermal Touch",
   "url": "shaders/thermal-touch.wgsl",
   "category": "interactive-mouse",
-  "description": "Heat diffusion simulation with Gaussian blur approximation, blackbody radiation color mapping, persistent mouse heat trails, and HDR glow with ACES tone mapping.",
+  "description": "The pointer and clicks deposit inverse-square heat into a field that conducts with a 9-point laplacian and cools. The plate is a blackbody image with glow and isotherms. Image brightness is the temperature floor.",
   "params": [
     {
       "id": "heat-intensity",
@@ -46,5 +46,43 @@
     "blackbody",
     "filter",
     "image-processing"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Heat Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Ambient Temp",
+          "default": 0.2,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Cooling Rate",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

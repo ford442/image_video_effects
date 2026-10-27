@@ -3,31 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, click-reactive, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: cue/review noise bars; pause-mode field flutter; reverse-play colour phase error
+//  Upgraded: 2026-09-28, 2026-10-27
+//  Ideas: cue/review noise bars; pause-mode field flutter; reverse-play colour phase error; head-switch noise band; tracking flag skew
 //  A packing: pre-ACES linear display RGB + alpha; C read back as colour (max-hold streak + pause field)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Noise, y=DistortionFreq, z=ColorBleed, w=Scanlines
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Noise, y=DistortionFreq, z=ColorBleed, w=Scanlines
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -104,6 +86,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let headRollX = (headRollPhase - 0.5) / 0.055;
     let headSwitchRoll = exp(-(headRollX * headRollX)) * distortion_strength;
     uv.y = fract(uv.y + vertical_tracking + time * 0.05 * distortion_strength * direction + headSwitchRoll * 0.035 * direction);
+
+    // ── Idea 2: tracking flag skew ──────────────────────────────────
+    // Tracking error bends the top of the frame. The shift falls off
+    // toward the bottom. Mouse Y still owns the vertical offset above.
+    uv.x += vertical_tracking * (1.0 - uv_raw.y) * 0.85;
 
     var tapeSlip = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -192,6 +179,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fieldColor = select(color, heldField, fieldParity == 1) + flutter;
         color = mix(color, fieldColor, pauseAmt);
     }
+
+    // ── Idea 1: head-switch noise band ───────────────────────────────
+    // The head switch dumps a short snow bar on the bottom rows, and only
+    // while the shuttle is actually moving. Cue bars stay evenly spaced.
+    let headSwitchBand = smoothstep(0.972, 0.998, uv_raw.y) * smoothstep(0.08, 0.4, shuttle);
+    let headSwitchSnow = noise(vec2<f32>(uv_raw.x * resolution.x * 0.22, floor(time * 30.0)));
+    color = mix(color, vec3<f32>(headSwitchSnow), headSwitchBand * 0.92);
 
     // Scanlines — on the screen row, not the rolled tape row
     let scanline = sin(uv_raw.y * resolution.y * 0.5 * PI);

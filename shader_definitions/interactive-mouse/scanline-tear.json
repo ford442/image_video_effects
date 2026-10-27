@@ -2,7 +2,7 @@
   "id": "scanline-tear",
   "name": "Scanline Tear",
   "url": "shaders/scanline-tear.wgsl",
-  "description": "NTSC interlace simulation with sprung tracking focus, held boost, capped sync-loss ripples, exact C field memory, regional FFT phase, and ACES output.",
+  "description": "NTSC interlace simulation with sprung tracking focus, held boost, capped sync-loss ripples, exact C field memory, and ACES output. H-sync tears include a saw that resets at the left edge, and colour-burst error delays chroma a few texels left of luma.",
   "workgroup_size": [
     16,
     16,

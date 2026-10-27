@@ -256,6 +256,9 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       this.snap = event.snapshot;
       // A lost worker never comes back; only a new backend (new worker) renders again.
       this.initialized = !this.lost && event.snapshot.initialized;
+      // The snapshot is authoritative: the worker's pipeline LRU (#1449) evicts, so
+      // replace rather than merge or evicted ids would read as cached forever.
+      this.cachedIds.clear();
       for (const id of event.snapshot.cachedShaderIds) this.cachedIds.add(id);
     } else if (event.type === 'error') {
       reportError(event.error);

@@ -3,7 +3,7 @@
   "name": "Neural Dust",
   "category": "generative",
   "url": "shaders/gen-neural-dust.wgsl",
-  "description": "Drifting luminous particle field driven by domain-warped FBM. Audio reactivity controls density and jitter, while mouse gravity attracts nearby dust motes.",
+  "description": "Drifting domain-warped dust motes that fire like neurons: spikes flash and relay through myelinated axons node to node, cascading across the network. Audio depolarises motes; hold the mouse to excite and attract them.",
   "features": [
     "generative",
     "fbm-noise",

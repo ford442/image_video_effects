@@ -3,9 +3,10 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: pectoral fin-membrane flutter blended into the leviathan hull; electroreceptor ampullae sparks clustered around the snout
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-19
+//  Ideas: pectoral fin-membrane flutter blended into the leviathan hull; electroreceptor ampullae sparks clustered around the snout;
+//         polished plate wear from SDF curvature (§12.2E); seam light from step-count AO (§12.2E)
+//  A packing: ACES display RGBA; alpha = 0.9 nebula void / 0.98 hull + glow (C not read)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: .x = Time Offset, .y = Audio Reactivity, .z = Aurora, .w = Evolution Speed
@@ -99,7 +100,7 @@ fn swimDistortion(p_in: vec3<f32>, time: f32) -> vec3<f32> {
 
     // Mouse orbit
     let mouse = u.zoom_config.yz;
-    let rx = (mouse.y - 0.5) * PI;
+    let rx = (0.5 - mouse.y) * PI; // y=0 top; flipped with uv.y in main() (pointer up = nose up)
     let ry = -(mouse.x - 0.5) * PI * 2.0;
     let rotX = rotate2D(rx);
     let rotY = rotate2D(ry);
@@ -131,7 +132,10 @@ fn map(p_in: vec3<f32>, time: f32) -> f32 {
     // Modulo arithmetic for repeating ribs along the spine
     var ribP = p;
     ribP.z = (fract(ribP.z * 1.5) - 0.5) / 1.5;
-    let ribs = sdCapsule(ribP, vec3<f32>(0.0, -1.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), 0.15 + (p.z+4.0)*0.05);
+    // Ribs only along the body (HEAD repeated them along the whole z axis → an endless
+    // rib column through the frame).
+    let ribs = max(sdCapsule(ribP, vec3<f32>(0.0, -1.0, 0.0), vec3<f32>(0.0, 1.0, 0.0), 0.15 + (p.z+4.0)*0.05),
+                   abs(p.z - 0.0) - 4.0);
     // Combine with smin to integrate ribs organically
     d = smin(d, ribs, 0.2);
 
@@ -144,7 +148,9 @@ fn map(p_in: vec3<f32>, time: f32) -> f32 {
     // 3. Temporal wake (KIFS fractals) trailing behind
     if (p_in.z < -2.0) {
         var fractP = p_in;
-        fractP.z += time * 3.0; // move back
+        // Wake shells stream backwards and repeat every 6 units (HEAD translated one shell
+        // by time*3 with no repetition, so it left the wake zone after ~3 s for good).
+        fractP.z = (fract((p_in.z + time * 3.0) / 6.0) - 0.5) * 6.0;
         for (var i = 0; i < 3; i++) {
             fractP = abs(fractP) - vec3<f32>(0.5, 0.5, 0.5);
             var tempXY = vec2<f32>(fractP.x, fractP.y) * rotate2D(0.5);
@@ -165,7 +171,8 @@ fn map_glow(p_in: vec3<f32>, time: f32) -> f32 {
      let p = swimDistortion(p_in, time);
      var ribP = p;
      ribP.z = (fract(ribP.z * 1.5) - 0.5) / 1.5;
-     let ribGlow = sdCapsule(ribP, vec3<f32>(0.0, -1.2, 0.0), vec3<f32>(0.0, 1.2, 0.0), 0.1);
+     let ribGlow = max(sdCapsule(ribP, vec3<f32>(0.0, -1.2, 0.0), vec3<f32>(0.0, 1.2, 0.0), 0.1),
+                       abs(p.z) - 4.0);
      let finP = vec3<f32>(abs(p.x), p.y, p.z);
      let finFlap = sin(time * 2.6 + p.z * 2.8) * 0.24;
      let finGlow = sdCapsule(finP, vec3<f32>(0.9, 0.15, 1.9), vec3<f32>(1.75, 0.25 + finFlap, 0.4), 0.16);
@@ -245,7 +252,8 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
         return;
     }
 
-    let uv = (vec2<f32>(GlobalInvocationID.xy) - 0.5 * texSize) / texSize.y;
+    // Row 0 is the top of the frame: flip so +y is up.
+    let uv = vec2<f32>(f32(GlobalInvocationID.x) - 0.5 * texSize.x, 0.5 * texSize.y - f32(GlobalInvocationID.y)) / texSize.y;
 
     // Parameters
     let time = u.config.x * u.zoom_params.w + u.zoom_params.x;
@@ -253,9 +261,14 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
     let audioReact = audio.x * u.zoom_params.y;
     let brightness = u.zoom_params.z;
 
-    // Camera Setup
-    let ro = vec3<f32>(0.0, 0.0, -12.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // Camera Setup — 3/4 side view (HEAD sat at (0,0,-12) looking straight down the body
+    // axis from behind the tail, so the leviathan rendered as a disc with a rib stripe).
+    let ro = vec3<f32>(13.5, 4.4, 6.0);
+    let camTarget = vec3<f32>(0.0, -0.2, -0.9);
+    let cw = normalize(camTarget - ro);
+    let cu = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), cw));
+    let cv = cross(cw, cu);
+    let rd = normalize(cu * uv.x + cv * uv.y + cw * 0.95);
 
     // Perform Raymarch
     let res = raymarch(ro, rd, time);
@@ -273,9 +286,14 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
     col += vec3<f32>(0.05, 0.1, 0.15) * volDen * 0.1;
 
 
+    // Base cyan/magenta, pulsing with audio (shared by the rib glow and the seam light)
+    let glowCol = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(1.0, 0.0, 0.8),
+        sin(time * 0.5 + audio.y * 0.2) * 0.5 + 0.5);
+
     if (res.hit) {
         let p = ro + rd * res.dist;
         let n = getNormal(p, time);
+        let d0 = map(p, time);
 
         // Lighting
         let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
@@ -287,14 +305,44 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
         // Base Cyber-Obsidian color
         var matCol = vec3<f32>(0.02, 0.03, 0.05);
 
+        // ── Idea 5: step-count AO (§12.2E) — 5 taps along the normal measure how buried
+        // the surface is between the rib plates and fin roots.
+        var occ = 0.0;
+        var aoW = 1.0;
+        for (var k = 1; k <= 5; k++) {
+            let h = f32(k) * 0.1;
+            occ += (h - map(p + n * h, time)) * aoW;
+            aoW *= 0.5;
+        }
+        let ao = clamp(1.0 - 3.5 * occ, 0.0, 1.0);
+
+        // ── Idea 4: SDF curvature (§12.2E) — κ ≈ (Σ d(p±e·axis) − 6d)/e²; the convex
+        // crests of the flexing plates (rib edges, fin leading edges, head ridge) are worn to
+        // polished glass, the concave seams stay raw obsidian.
+        let ce = 0.07;
+        let lap = map(p + vec3<f32>(ce, 0.0, 0.0), time) + map(p - vec3<f32>(ce, 0.0, 0.0), time)
+                + map(p + vec3<f32>(0.0, ce, 0.0), time) + map(p - vec3<f32>(0.0, ce, 0.0), time)
+                + map(p + vec3<f32>(0.0, 0.0, ce), time) + map(p - vec3<f32>(0.0, 0.0, ce), time)
+                - 6.0 * d0;
+        let kappa = lap / (ce * ce);
+        let wear = smoothstep(0.3, 2.5, kappa);
+
         // Add lighting
-        col = matCol * (diff * 0.5 + 0.5) + vec3<f32>(1.0) * spec * 0.2;
+        col = (matCol * (diff * 0.5 + 0.5) + vec3<f32>(1.0) * spec * 0.2) * ao;
+
+        // Polished crests: sharp key-light glint + a soft lift tinted by the aurora.
+        let glint = pow(max(dot(n, halfDir), 0.0), 64.0);
+        let auroraTint = mix(vec3<f32>(0.55, 0.75, 0.95), glowCol, 0.35);
+        col += wear * ao * (vec3<f32>(1.0, 0.95, 0.9) * glint * 2.5
+                          + auroraTint * (0.3 + 0.7 * diff) * brightness);
+
+        // Seam light: the occluded joints between plates leak the rib bioluminescence,
+        // so energy shows up where the armour opens (and pulses with the bass).
+        let seam = smoothstep(0.08, 0.5, 1.0 - ao) * (1.0 - wear);
+        col += glowCol * seam * 1.1 * (1.0 + audioReact * 1.5) * brightness;
     }
 
     // Add Bioluminescent Glow (Acoustic Symbiosis)
-    // Base cyan/magenta, pulsing with audio
-    let glowCol = mix(vec3<f32>(0.0, 0.8, 1.0), vec3<f32>(1.0, 0.0, 0.8),
-        sin(time * 0.5 + audio.y * 0.2) * 0.5 + 0.5);
     col += glowCol * res.glow * 0.05 * (1.0 + audioReact * 2.0) * brightness;
     let wakeCol = mix(vec3<f32>(0.1, 0.65, 1.0), vec3<f32>(0.9, 0.12, 1.0),
         0.5 + 0.5 * sin(time * 0.7));
@@ -312,11 +360,14 @@ fn main(@builtin(global_invocation_id) GlobalInvocationID: vec3<u32>) {
     col = mix(col, vec3<f32>(0.01, 0.02, 0.03), 1.0 - exp(-0.02 * res.dist));
 
     // Tone mapping (ACES approx)
+    col = max(col, vec3<f32>(0.0));
     col = clamp((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14),
         vec3<f32>(0.0), vec3<f32>(1.0));
 
     let coord = vec2<i32>(GlobalInvocationID.xy);
-    let alpha = clamp(select(0.04, 0.3, res.hit) + res.glow * 0.01 + res.wake_glow * 0.018, 0.0, 1.0);
+    // The void nebula is part of the picture: opaque medium, full coverage on the hull
+    // (HEAD's 0.04 / 0.3 composited as a pale wash).
+    let alpha = clamp(select(0.9, 0.98, res.hit) + res.glow * 0.01 + res.wake_glow * 0.018, 0.0, 1.0);
     let display = vec4<f32>(col, alpha);
     let source_depth = textureLoad(readDepthTexture, coord, 0).r;
     let depth = select(source_depth, clamp(1.0 - res.dist / MAX_DIST, 0.0, 1.0), res.hit);
