@@ -2,7 +2,7 @@
   "id": "energy-shield",
   "name": "Energy Shield",
   "url": "shaders/energy-shield.wgsl",
-  "description": "A sci-fi hexagonal force field that lights up under the cursor, trails activation history, and detonates expanding impact rings on click. Hex edges shimmer with oil-slick iridescence instead of flat cyan; a stronger Fresnel rim reads as a curved shield surface. Held press tightens the hex grid and sharpens cell edges. Bass pulses the standing wave and overall glow; treble crackles along the hex rims. Exact textureLoad trail state, ACES on the display path, semantic alpha from shield activation.",
+  "description": "Hex force field that lights under the cursor, shades the facet facing the pointer, and desaturates the photo under each impact ring.",
   "features": [
     "mouse-driven",
     "held-interaction",

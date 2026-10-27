@@ -3,7 +3,7 @@
   "name": "Neon Edge Radar",
   "category": "interactive-mouse",
   "url": "shaders/neon-edge-radar.wgsl",
-  "description": "Mouse-centered radar sweep with depth-aware edge detection, audio-reactive neon emission, ACES tone mapping, IGN dither, Fresnel rim, volumetric fog, hue-preserve clamp and blackbody hotspots.",
+  "description": "PPI beam that lights edges, with a wake, range rings, and a held interrogate. Returns fall off with range, and the wake carries receiver speckle.",
   "workgroup_size": [16, 16, 1],
   "params": [
     {

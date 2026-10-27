@@ -1,29 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Data Stream — Batch 61
-//  Matrix data strips: spring wake, hex glyphs, cyber palette,
-//  capped ripples, held turbulence, ACES + regional FFT bins.
+//  Matrix data strips: hex glyphs, cyber palette, capped ripples,
+//  held turbulence, ACES.
+//  Upgraded: 2026-10-27
+//  Ideas: leading head on each falling cell; column dropout
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -69,33 +53,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / max(resolution.y, 0.001);
     let held = u.zoom_config.w > 0.5;
 
-    // Spring-following wake center in persistent-safe slots [133..138].
-    let rawMouse = u.zoom_config.yz;
-    let hasSpringState = arrayLength(&extraBuffer) > 138u;
-    var mousePos = rawMouse;
-    if (hasSpringState && extraBuffer[138] > 0.5) {
-        mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
-        var springPos = mousePos;
-        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        if (extraBuffer[138] <= 0.5) {
-            springPos = rawMouse;
-            springVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-            let omega = 8.5;
-            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-            springVel += accel * dt;
-            springPos += springVel * dt;
-        }
-        extraBuffer[133] = springPos.x;
-        extraBuffer[134] = springPos.y;
-        extraBuffer[135] = springVel.x;
-        extraBuffer[136] = springVel.y;
-        extraBuffer[137] = time;
-        extraBuffer[138] = 1.0;
-    }
+    // extraBuffer is cleared by the CPU every frame, so the old spring
+    // never left the pointer. The wake is the cursor.
+    let mousePos = u.zoom_config.yz;
 
     // Aspect-correct interaction keeps the wake circular on wide canvases.
     let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
@@ -110,8 +70,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rand = fract(sin(stripIdx * 12.9898) * 43758.5453);
 
     // Vertical Flow
-    let stripBin = (u32(abs(stripIdx)) % 8u) + 1u;
-    let fftStrip = plasmaBuffer[stripBin].x;
+    // plasmaBuffer[1..] is never uploaded. Strips take turns on the three live bands.
+    let stripBand = u32(abs(stripIdx)) % 3u;
+    let fftStrip = select(select(bass, mids, stripBand == 1u), treble, stripBand == 2u) * (0.65 + 0.35 * rand);
     let flowSpeed = (rand * 0.5 + 0.5) * speed * 0.5 * (1.0 + fftStrip * 0.28);
     // Mouse slows down or speeds up flow? Or deflects?
     // Let's make mouse create a "wake" that pushes pixels sideways
@@ -162,8 +123,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gridSize = vec2<f32>(24.0 + density * 40.0, (24.0 + density * 40.0) * aspect);
     let cellUV = fract(uv * gridSize);
     let glyph = glyphMask(cellUV, stripIdx + time * 0.1);
-    var outputColor = finalRGB + vec3<f32>(0.0, bright * glow + clickGlow * glow * 0.65, clickGlow * glow * 0.12);
-    outputColor = mix(outputColor, outputColor + cyberPalette(stripIdx * 0.05 + time * 0.03) * 0.25, glyph * glow * 0.4);
+    // ── Idea 1: leading head. The fall is downward, so the bottom of the
+    // cell is the bright head and the top is the tail.
+    let head = mix(0.22, 1.0, smoothstep(0.05, 0.92, cellUV.y));
+    // ── Idea 2: column dropout, scaled by Turbulence.
+    let dropSeed = fract(sin(stripIdx * 91.7 + floor(time * 2.5) * 13.1) * 43758.5453);
+    let dropout = step(0.965, dropSeed) * turbulence;
+    var outputColor = finalRGB + vec3<f32>(0.0, bright * glow * head + clickGlow * glow * 0.65, clickGlow * glow * 0.12);
+    outputColor = mix(outputColor, outputColor + cyberPalette(stripIdx * 0.05 + time * 0.03) * 0.25, glyph * glow * 0.4 * head);
+    outputColor = outputColor * (1.0 - dropout * 0.88);
     outputColor = acesToneMap(outputColor * (0.95 + bass * 0.08));
 
     // Alpha: digital glow and stream brightness drive compositing weight

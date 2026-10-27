@@ -2,7 +2,7 @@
   "id": "data-stream",
   "name": "Digital Stream",
   "url": "shaders/data-stream.wgsl",
-  "description": "Matrix data strips with hex glyphs, spring wake, cyber palette, capped click ripples, held turbulence boost, regional FFT strip bins, and ACES output.",
+  "description": "Falling matrix strips. Each cell is brightest at its leading edge, and Turbulence drops whole columns for a moment.",
   "workgroup_size": [
     16,
     16,

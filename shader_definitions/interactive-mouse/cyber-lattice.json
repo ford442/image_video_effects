@@ -13,7 +13,7 @@
     "click-reactive",
     "thin-film-traffic"
   ],
-  "description": "Layered perspective lattice rails carry thin-film cell traffic through spring-followed held deformation and expanding click waves.",
+  "description": "Two perspective lattices with thin-film traffic. Near-rail crossings catch a solder joint, and the far lattice hides behind the near one.",
   "params": [
     {
       "name": "Grid Scale",

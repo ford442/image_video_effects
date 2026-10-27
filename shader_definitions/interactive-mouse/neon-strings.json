@@ -2,7 +2,7 @@
   "id": "neon-strings",
   "name": "Neon Strings — Blackbody Wire",
   "url": "shaders/neon-strings.wgsl",
-  "description": "Plucked-string vibration with a stylized heated-wire palette driven by squared displacement. Traveling pluck packets, harmonic afterimage streaks, and click-launched string impulses move across the wire bank while audio drives vibrato and shimmer.",
+  "description": "Heated wires plucked by the pointer. Higher partials run sharp as Tension drops, and the neighbouring string takes part of the pluck.",
   "params": [
     {
       "id": "stringCount",

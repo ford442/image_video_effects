@@ -5,8 +5,8 @@
 //            radar-sweep, edge-detection, depth-aware, aces-tone-map,
 //            ign-dither, hue-preserve-clamp, blackbody-temperature
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: analytic one-sided sweep wake behind the beam; three range rings where crossing edges pop white; hold to interrogate (beam parks on the cursor bearing, 2x wide)
+//  Upgraded: 2026-10-05, 2026-10-27
+//  Ideas: analytic one-sided sweep wake behind the beam; three range rings where crossing edges pop white; hold to interrogate (beam parks on the cursor bearing, 2x wide); soft inverse-square return (§12.2F); receiver speckle in the wake
 //  A packing: display RGBA; (0,0) = (accumulated beam angle, 0, 0, sentinel -7)
 // ═══════════════════════════════════════════════════════════════════
 //  Black field; luma+depth edges are lit only under a rotating gaussian beam
@@ -166,7 +166,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let fog = volumetricFog(depth, 0.6);   // FIX: constant density
 
-    var color = huePreserveClamp(emission + rimColor + hotSpot + ringLine + contactGlow) * (1.0 + bass) * fog;
+    // ── Idea 4: soft inverse-square return (§12.2F). Contacts dim with range.
+    let radarFall = 1.0 / (1.0 + rangeDist * rangeDist * 6.0);
+    // ── Idea 5: receiver speckle, only inside the wake.
+    let speckle = hash21(vec2<f32>(pixel) * 0.37 + floor(time * 18.0)) * wake * radarFall * intensity * 0.08;
+    var color = huePreserveClamp((emission + rimColor + hotSpot + ringLine + contactGlow) * radarFall) * (1.0 + bass) * fog;
+    color = color + vec3<f32>(0.55, 1.0, 0.7) * speckle;
     color = acesToneMap(clamp(color, vec3<f32>(0.0), vec3<f32>(16.0)));
     color += (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
 

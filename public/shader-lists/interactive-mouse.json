@@ -1345,7 +1345,7 @@
     "id": "cursor-aura",
     "name": "Cursor Aura",
     "url": "shaders/cursor-aura.wgsl",
-    "description": "Glowing aura around cursor with customizable colors, edge detection, and audio-reactive bass pulsing.",
+    "description": "Soft coloured disc around the pointer. The photo under the core darkens, and the feather bleaches toward the glow hue.",
     "params": [
       {
         "id": "size",
@@ -1492,7 +1492,7 @@
     "id": "cyber-hex-armor",
     "name": "Cyber Hex Armor",
     "url": "shaders/cyber-hex-armor.wgsl",
-    "description": "Articulated hex armor retracts around the pointer while beveled seams and audio-routed circuit traffic carry expanding click waves.",
+    "description": "Hex plates that pull back around the pointer. Seams shadow the alloy, and a retracting plate shows a hinge pin.",
     "params": [
       {
         "id": "hex_size",
@@ -1568,7 +1568,7 @@
       "click-reactive",
       "thin-film-traffic"
     ],
-    "description": "Layered perspective lattice rails carry thin-film cell traffic through spring-followed held deformation and expanding click waves.",
+    "description": "Two perspective lattices with thin-film traffic. Near-rail crossings catch a solder joint, and the far lattice hides behind the near one.",
     "params": [
       {
         "name": "Grid Scale",
@@ -1900,7 +1900,7 @@
     "id": "cyber-trace",
     "name": "Cyber Trace",
     "url": "shaders/cyber-trace.wgsl",
-    "description": "A glowing neon trail that follows your mouse cursor and reacts to clicks, overlaid on the video feed.",
+    "description": "Neon trail painted by the pointer. The stamp follows the trail already in history, and the photo darkens in a groove under the line.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2045,7 +2045,7 @@
     "id": "data-stream",
     "name": "Digital Stream",
     "url": "shaders/data-stream.wgsl",
-    "description": "Matrix data strips with hex glyphs, spring wake, cyber palette, capped click ripples, held turbulence boost, regional FFT strip bins, and ACES output.",
+    "description": "Falling matrix strips. Each cell is brightest at its leading edge, and Turbulence drops whole columns for a moment.",
     "workgroup_size": [
       16,
       16,
@@ -2706,7 +2706,7 @@
     "id": "energy-shield",
     "name": "Energy Shield",
     "url": "shaders/energy-shield.wgsl",
-    "description": "A sci-fi hexagonal force field that lights up under the cursor, trails activation history, and detonates expanding impact rings on click. Hex edges shimmer with oil-slick iridescence instead of flat cyan; a stronger Fresnel rim reads as a curved shield surface. Held press tightens the hex grid and sharpens cell edges. Bass pulses the standing wave and overall glow; treble crackles along the hex rims. Exact textureLoad trail state, ACES on the display path, semantic alpha from shield activation.",
+    "description": "Hex force field that lights under the cursor, shades the facet facing the pointer, and desaturates the photo under each impact ring.",
     "features": [
       "mouse-driven",
       "held-interaction",
@@ -5083,7 +5083,7 @@
     "id": "laser-burn",
     "name": "Laser Burn",
     "url": "shaders/laser-burn.wgsl",
-    "description": "Temporal burn accumulation with ember glow and audio spark showers. Mouse beam chars the surface persistently; embers fade slower than heat for lingering glow. Treble creates flying spark particles near the beam, bass deepens the char.",
+    "description": "Pointer beam that chars the picture. Heat conducts into neighbouring texels, and the char edge holds a brighter oxide lip.",
     "params": [
       {
         "id": "beamSize",
@@ -7546,7 +7546,7 @@
     "name": "Neon Edge Radar",
     "category": "interactive-mouse",
     "url": "shaders/neon-edge-radar.wgsl",
-    "description": "Mouse-centered radar sweep with depth-aware edge detection, audio-reactive neon emission, ACES tone mapping, IGN dither, Fresnel rim, volumetric fog, hue-preserve clamp and blackbody hotspots.",
+    "description": "PPI beam that lights edges, with a wake, range rings, and a held interrogate. Returns fall off with range, and the wake carries receiver speckle.",
     "workgroup_size": [
       16,
       16,
@@ -7847,7 +7847,7 @@
     "id": "neon-strings",
     "name": "Neon Strings — Blackbody Wire",
     "url": "shaders/neon-strings.wgsl",
-    "description": "Plucked-string vibration with a stylized heated-wire palette driven by squared displacement. Traveling pluck packets, harmonic afterimage streaks, and click-launched string impulses move across the wire bank while audio drives vibrato and shimmer.",
+    "description": "Heated wires plucked by the pointer. Higher partials run sharp as Tension drops, and the neighbouring string takes part of the pluck.",
     "params": [
       {
         "id": "stringCount",
@@ -8216,7 +8216,7 @@
     "id": "oscilloscope-overlay",
     "name": "Oscilloscope Overlay",
     "url": "shaders/oscilloscope-overlay.wgsl",
-    "description": "Overlays a real-time luminance waveform of the image scanline at the mouse cursor's vertical position, now with a smoothed bass envelope, treble sparkle, audio-reactive color temperature, HDR tone mapping, and IGN dithering.",
+    "description": "Scope trace of the scanline under the cursor. The beam blanks at the right edge, and last frame's trace ghosts in the phosphor.",
     "params": [
       {
         "id": "amplitude",
@@ -9419,7 +9419,7 @@
     "id": "quantum-cursor",
     "name": "Quantum Cursor",
     "url": "shaders/quantum-cursor.wgsl",
-    "description": "Quantized reality field around the cursor with chromatic distortion and audio-reactive pulse.",
+    "description": "Mosaic field around the pointer. The boundary steps to the block pitch, and bright pixels collapse back toward the photo as Chaos falls.",
     "params": [
       {
         "id": "radius",
@@ -10887,7 +10887,7 @@
     "id": "signal-tuner",
     "name": "Signal Tuner",
     "url": "shaders/signal-tuner.wgsl",
-    "description": "TV-style signal interference around the cursor: rows wobble with an R/B split inside the tuning radius, clicks launch retuning rings, and history ghosts only inside the zone. Upgraded with off-station snow (Static Noise mixes treble-flickered snow where the wobble is strongest), an RF multipath ghost (a delayed-path copy offset right by Frequency), and detune beat bands (slow moire bands where the row wobble nears the raster pitch).",
+    "description": "Tuner wobble, snow, ghost, and beat bands around the pointer. A sync stub sits at the left of the row, and chroma swims downward with Static.",
     "params": [
       {
         "id": "frequency",

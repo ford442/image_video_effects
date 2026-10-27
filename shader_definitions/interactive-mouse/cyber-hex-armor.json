@@ -2,7 +2,7 @@
   "id": "cyber-hex-armor",
   "name": "Cyber Hex Armor",
   "url": "shaders/cyber-hex-armor.wgsl",
-  "description": "Articulated hex armor retracts around the pointer while beveled seams and audio-routed circuit traffic carry expanding click waves.",
+  "description": "Hex plates that pull back around the pointer. Seams shadow the alloy, and a retracting plate shows a hinge pin.",
   "params": [
     {
       "id": "hex_size",
