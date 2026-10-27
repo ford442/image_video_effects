@@ -1,31 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Echo Ripple — Batch 60
-//  Thin-film / bioluminescent harmonics, held gravity bowl, capped
-//  click ripples (50), exact-load C advection, ACES display.
-//  A packing: dataTextureA = [mixedRGB, bassEnvelope]
-//             (history.a feeds bass_env; display RGB lives in A.rgb)
-//  Unused: dataTextureB. Workgroup 16×16×1. Bindings 0–12 canonical.
+//  Echo Ripple
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-26
+//  Ideas: staggered echo delay; cancellation nodes
+//  A packing: [mixed RGB, bass envelope]
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -90,11 +72,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasma.x;
     let mids = plasma.y;
     let treble = plasma.z;
-    // Optional FFT bins for local shimmer (engine fills 1–8 when available).
-    var binShimmer = 0.0;
-    if (arrayLength(&plasmaBuffer) > 4u) {
-        binShimmer = (plasmaBuffer[1].x + plasmaBuffer[2].y + plasmaBuffer[3].z + plasmaBuffer[4].x) * 0.25;
-    }
+    // Treble phase. plasmaBuffer[1..] is not written by the engine.
+    let binShimmer = treble * (0.5 + 0.5 * sin(time * 1.7 + uv01.x * 6.0));
 
     let history = textureLoad(dataTextureC, pixel, 0);
     let envBass = bass_env(history.a, bass, 0.8, 0.15);
@@ -120,17 +99,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rippleCount = min(u32(u.config.y), 50u);
     var totalWave = wave;
     var echoFilm = 0.0;
+    var echoSum = 0.0;
+    var echoAmp = 0.0;
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let r = u.ripples[i];
         let age = time - r.z;
         let phase = f32(i) * 0.7;
-        let rw = echoWave(uv01, r.xy, aspect, frequency, speed, age, phase);
+        // ── Idea 1: staggered echo delay — later rings travel slower
+        let echoSpeed = speed / (1.0 + 0.28 * f32(i));
+        let rw = echoWave(uv01, r.xy, aspect, frequency, echoSpeed, age, phase);
         let ageFade = exp(-max(age, 0.0) * 0.7);
         totalWave += rw * ageFade;
-        // Secondary thin-film harmonic per echo center.
+        echoSum += rw * ageFade;
+        echoAmp += abs(rw) * ageFade;
+        // Secondary thin-film harmonic per echo center, on the same delayed speed.
         let rd = (uv01 - r.xy) * vec2<f32>(aspect, 1.0);
         let rdist = length(rd);
-        echoFilm += abs(sin(rdist * frequency * 3.0 - age * speed * 2.1 + phase))
+        echoFilm += abs(sin(rdist * frequency * 3.0 - age * echoSpeed * 2.1 + phase))
                   * smoothstep(0.55, 0.0, rdist) * ageFade;
     }
 
@@ -178,6 +163,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 + vec3<f32>(0.55, 0.25, 1.0) * echoFilm * 0.08 * (0.4 + mids);
     color += film * (harmonic * 0.22 + wake * 0.28 + held * bowl * 0.12) * (0.5 + mids + treble * 0.5 + binShimmer * 0.3);
     color += bioGlow;
+
+    // ── Idea 2: cancellation nodes — opposing echoes desaturate; one echo does not
+    let cancel = smoothstep(0.15, 0.7, echoAmp) * (1.0 - smoothstep(0.0, 0.35, abs(echoSum) / max(echoAmp, 0.001)));
+    color = mix(color, vec3<f32>(luma(color)), clamp(cancel, 0.0, 0.65));
 
     // Exact-load temporal advection (preserve feedback contract).
     let advect = displacement * 0.02;

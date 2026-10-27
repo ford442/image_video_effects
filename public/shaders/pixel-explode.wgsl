@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: tumbling shards; drop shadows of lifted tiles on the navy gap; bevelled tiles with true lift depth
+//  Upgraded: 2026-10-26 (prev 2026-10-05)
+//  Ideas: tumbling shards; drop shadows of lifted tiles on the navy gap; bevelled tiles with true lift depth; throw stretch; corner chip
 //  A packing: ACES display RGBA (unread — no C feedback)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -23,9 +23,14 @@ fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
 }
 
 // Rotate an aspect-space offset into a tile's frame and back to uv units.
-fn tile_frame(d_uv: vec2<f32>, aspect: f32, cs: vec2<f32>) -> vec2<f32> {
+// stretch > 1 lengthens the tile along throwAxis (aspect space) before the spin.
+fn thrown_rel(d_uv: vec2<f32>, aspect: f32, throwAxis: vec2<f32>, stretch: f32, cs: vec2<f32>) -> vec2<f32> {
     let p = d_uv * vec2<f32>(aspect, 1.0);
-    return vec2<f32>(p.x * cs.y + p.y * cs.x, -p.x * cs.x + p.y * cs.y) / vec2<f32>(aspect, 1.0);
+    let along = dot(p, throwAxis);
+    let lateral = p - throwAxis * along;
+    let stretched = throwAxis * (along / max(stretch, 0.001)) + lateral;
+    let spun = vec2<f32>(stretched.x * cs.y + stretched.y * cs.x, -stretched.x * cs.x + stretched.y * cs.y);
+    return spun / vec2<f32>(aspect, 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -129,18 +134,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             // 'Speed' keeps them turning slowly while airborne.
             let spin  = (cellHash - 0.5) * 2.4 * total_strength + sin(wphase * 0.5) * 0.25 * total_strength;
             let cs    = vec2<f32>(sin(spin), cos(spin));
-            let rel   = tile_frame(uv - new_center, aspect, cs);
+            // ── Idea 4: throw stretch — airborne tiles lengthen along the blast
+            let throwVec = offset * vec2<f32>(aspect, 1.0);
+            let throwLen = length(throwVec);
+            let throwAxis = select(vec2<f32>(1.0, 0.0), throwVec / max(throwLen, 1e-5), throwLen > 1e-5);
+            let stretch = 1.0 + total_strength * 1.35;
+            let rel   = thrown_rel(uv - new_center, aspect, throwAxis, stretch, cs);
             let diff  = abs(rel);
 
             // Branchless z-buffer and pixel coverage check
             let inParticle = select(0.0, 1.0, diff.x < particle_half_size.x && diff.y < particle_half_size.y);
+            // ── Idea 5: corner chip — the corner facing the throw is missing
+            let localFromCenter = rel / max(particle_half_size * 2.0, vec2<f32>(0.0001));
+            let throwLocal = vec2<f32>(throwAxis.x * cs.y + throwAxis.y * cs.x, -throwAxis.x * cs.x + throwAxis.y * cs.y);
+            let facing = dot(localFromCenter, throwLocal) / max(length(localFromCenter) * max(length(throwLocal), 1e-4), 1e-4);
+            let chip = smoothstep(0.55, 0.92, length(localFromCenter) * 2.0) * smoothstep(0.35, 0.8, facing) * smoothstep(0.4, 0.85, total_strength);
+            let covered = inParticle * (1.0 - step(0.62, chip));
             let z_depth    = dist;
             let lift       = total_strength;
 
-            // Idea 2: drop shadow — the same rotated tile, offset down-right by
+            // Idea 2: drop shadow — the same stretched tile, offset down-right by
             // its lift (light from the top-left), with a soft box edge.
             let shadow_off = vec2<f32>(1.0, 1.4) * cell_size * (0.35 + 1.1 * lift) * lift;
-            let srel = abs(tile_frame(uv - new_center - shadow_off, aspect, cs)) - particle_half_size;
+            let srel = abs(thrown_rel(uv - new_center - shadow_off, aspect, throwAxis, stretch, cs)) - particle_half_size;
             let sbox = max(srel.x / cell_size.x, srel.y / cell_size.y);
             let s_cov = (1.0 - smoothstep(-0.15, 0.25, sbox)) * smoothstep(0.02, 0.2, lift);
             if (s_cov > shadow) {
@@ -148,7 +164,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 shadow_lift = lift;
             }
 
-            if (inParticle > 0.5 && z_depth < closest_z) {
+            if (covered > 0.5 && z_depth < closest_z) {
                 closest_z = z_depth;
                 hit = 1.0;
                 hit_lift = lift;
