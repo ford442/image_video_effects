@@ -2,7 +2,7 @@
   "id": "sequin-flip",
   "name": "Sequin Flip",
   "url": "shaders/sequin-flip.wgsl",
-  "description": "Articulated sequins flip under hover, held brush, and click fronts, revealing GGX microfacet gold or silver backs with three-band sparkle motion.",
+  "description": "Sequins flip under the pointer onto gold or silver backs. Each disk has a stitch hole, and a sequin turned sideways is a bright slit.",
   "params": [
     {
       "id": "grid_size",

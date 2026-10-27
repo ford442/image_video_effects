@@ -2,7 +2,7 @@
   "id": "interactive-halftone-spin",
   "name": "Interactive Halftone Spin",
   "url": "shaders/interactive-halftone-spin.wgsl",
-  "description": "Spinning CMYK halftone screens with rotational arc-smear and a CMYK ink after-image. A remains [C, M, Y, K] coverage.",
+  "description": "Spinning CMYK screens with arc-smear and an ink after-image. Overprinted cyan, magenta and yellow leave a paper hole, and new ink on old ink prints darker. A remains CMYK coverage.",
   "params": [
     {
       "id": "scale",

@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: luma-weighted advection; wind shadow from upwind luma
+//  Upgraded: 2026-10-26 (prev 2026-09-09)
+//  Ideas: luma-weighted advection; wind shadow from upwind luma; gust sheets; transverse ripples
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Interactive Pixel Wind
 // Param1: Wind Strength
@@ -125,7 +106,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let upwindLuma = dot(textureSampleLevel(readTexture, u_sampler, upwindUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
     // Idea 2 — wind shadow: occluded pixels get less offset
     let shadow = 1.0 - smoothstep(0.45, 0.88, upwindLuma) * 0.55;
-    let offset = (windDir * strength * lumaW + turbOffset) * shadow;
+    // ── Idea 3: gust sheets — the gust field already computed gates the mean wind
+    let gustSheet = smoothstep(0.42, 0.78, gust);
+    // ── Idea 4: transverse ripples — ridges across the wind, like combed sand
+    let cross = vec2<f32>(-windN.y, windN.x);
+    let ridge = sin(dot(uv, cross) * (40.0 + turbulence * 50.0) + time * 0.3);
+    var offset = (windDir * strength * lumaW + turbOffset) * shadow;
+    offset = offset * mix(0.35, 1.15, gustSheet);
+    offset = offset + windN * ridge * strength * 0.22;
 
     // Sample current frame with offset
     let baseUV = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -148,6 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spectral = palette(gust + time * 0.04 + shift + mids * 0.12);
     var hdr = mix(color.rgb, history.rgb, clamp(trails * 0.85, 0.0, 0.95));
     hdr = hdr * (0.94 + speedGlow * 0.18);
+    hdr = hdr * (1.0 + ridge * 0.08 * smoothstep(0.0, 0.04, length(offset)));
     hdr = hdr + spectral * streak * speedGlow * (0.35 + overall * 0.7);
     hdr = hdr + vec3<f32>(0.18, 0.34, 0.8) * pow(gust, 3.0) * turbulence * 0.22;
 

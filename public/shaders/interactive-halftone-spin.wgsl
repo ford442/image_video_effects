@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: rotational arc-smear of spinning screens; honest CMYK after-image decoded from C coverage
+//  Upgraded: 2026-10-27
+//  Ideas: arc-smear; CMYK after-image; rosette paper hole; wet-ink tack
 //  A packing: [C, M, Y, K] screen coverage with light persistence (C is decoded as ink, not RGB)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rgb2cmyk(c: vec3<f32>) -> vec4<f32> {
   var k = 1.0 - max(max(c.r, c.g), c.b);
@@ -140,6 +121,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coverage = vec4<f32>(outC, outM, outY, outK);
 
   var finalRGB = cmyk2rgb(coverage);
+  // ── Idea: rosette hole. C, M and Y together, without K, leave a paper center.
+  let cluster = outC * outM * outY * (1.0 - outK);
+  finalRGB = mix(finalRGB, vec3<f32>(1.0), cluster * 0.42);
 
   let packets = pow(max(0.0, sin(uv_aspect.x * 24.0 - time * (7.0 + mids * 4.0))), 12.0);
   let slick = hsv2rgb(vec3<f32>(fract(0.12 + influence * 0.2 + mids * 0.15 + time * 0.07), 0.7, 1.0));
@@ -153,6 +137,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let moved = clamp(length(prev - coverage) * 0.5, 0.0, 1.0);
   let ghostAmt = 0.10 + moved * (0.12 + held * influence * 0.18);
   finalRGB = mix(finalRGB, min(finalRGB, ghostRGB), ghostAmt);
+  // ── Idea: wet tack. New ink landing on last frame's ink prints darker.
+  let tack = clamp((coverage.x * prev.x + coverage.y * prev.y + coverage.z * prev.z) / 3.0, 0.0, 1.0);
+  finalRGB = mix(finalRGB, finalRGB * 0.68, tack * 0.55);
 
   let display = aces(max(finalRGB, vec3<f32>(0.0)) * 1.6);
   // Alpha = ink laid down: bare paper is translucent, dense overprint opaque.

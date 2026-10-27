@@ -2,7 +2,7 @@
   "id": "interactive-glitch-cubes",
   "name": "Interactive Glitch Cubes",
   "url": "shaders/interactive-glitch-cubes.wgsl",
-  "description": "Image-mapped cubes with exact prior-state settling, beveled grout, conveyor packets, held extrusion, oil-slick edge runners, and bounded click fronts. A packs [rgb, settledHeight].",
+  "description": "Image-mapped cubes with exact prior-state settling, beveled grout, conveyor packets, held extrusion, and bounded click fronts. Extruded faces shade lighter toward the top and grow a darkened side wall. A packs [rgb, settledHeight].",
   "params": [
     {
       "id": "size",

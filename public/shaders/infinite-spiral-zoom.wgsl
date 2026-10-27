@@ -3,29 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, click-reactive, audio-reactive, temporal, chromatic, depth-aware
 //  Complexity: Very High
-//  Upgraded: 2026-08-02 (Batch 30)
+//  Upgraded: 2026-10-27
+//  Ideas: Droste frame on the log wrap; zoom trail loaded upstream along the radius
+//  A packing: soft-ceiling display RGBA. History is an exact load.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0)  var u_sampler: sampler;
-@group(0) @binding(1)  var readTexture: texture_2d<f32>;
-@group(0) @binding(2)  var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3)  var<uniform> u: Uniforms;
-@group(0) @binding(4)  var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5)  var non_filtering_sampler: sampler;
-@group(0) @binding(6)  var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(a.x*b.x - a.y*b.y, a.x*b.y + a.y*b.x);
@@ -109,7 +92,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // ── Idea: zoom trail — last frame is read upstream along the radial zoom, not this texel.
+    let radial = p / max(length(p), 0.0001);
+    let hop = radial * sign(zoomSpeed) * (1.5 + abs(zoomSpeed) * 2.0);
+    let histMax = vec2<i32>(resolution) - vec2<i32>(1);
+    let histCoord = clamp(vec2<i32>(vec2<f32>(global_id.xy) - hop), vec2<i32>(0), histMax);
+    let prev = textureLoad(dataTextureC, histCoord, 0);
     let theta = thetaState + clamp(clickTwist, -0.8, 0.8);
 
     let bVec  = mobStrength * vec2<f32>(cos(theta), sin(theta));
@@ -118,8 +106,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let twist  = (mids - 0.5) * 1.5 + 0.3;
     let uvBase = logPolarUV(p, zoomSpeed, twist, time, branches);
-    let fftBin = (u32(fract(uvBase.y) * 8.0) % 8u) + 1u;
-    let fftVoice = clamp(plasmaBuffer[fftBin].x, 0.0, 1.0);
+    // Dead bins: plasmaBuffer[1..] is never uploaded. Treble still ticks the branch seams.
+    let fftVoice = clamp(plasmaBuffer[0].z, 0.0, 1.0) * (0.5 + 0.5 * sin(uvBase.y * 18.0));
 
     // Depth-scaled chromatic aberration
     let depthChroma = chromatic * (1.0 + depth * 0.5);
@@ -144,6 +132,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Temporal trail persistence
     let prevCol = prev.rgb;
     color = mix(color, prevCol * 0.9, 0.04 + bass * 0.015);
+    // ── Idea: Droste frame where the log-radius fractional part wraps.
+    let frameBand = smoothstep(0.045, 0.0, fract(uvBase.x)) + smoothstep(0.955, 1.0, fract(uvBase.x));
+    color = mix(color, color * 0.18, clamp(frameBand, 0.0, 1.0));
 
     // Tile-seam edge glow
     let fx = fract(uvBase.x * 8.0);

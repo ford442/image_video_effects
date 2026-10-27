@@ -3,32 +3,14 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: strain-thinned yarn and opening gaps under the pull; two-ply twist striation; heathered per-stitch fibre tint
+//  Upgraded: 2026-10-27
+//  Ideas: strain-thinned yarn; two-ply twist; heather; purl rows; lint in the gaps
 //  A packing: ACES display RGBA; B keeps the documented material masks (yarn, pull/ridge, shimmer, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=StitchSize, y=PullStrength, z=PullRadius, w=TextureDepth
 
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=StitchSize, y=PullStrength, z=PullRadius, w=TextureDepth
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn hash12(p: vec2<f32>) -> f32 {
   let h = sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453;
@@ -107,7 +89,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let topYarn = smoothstep(0.38 * yarnWidth, 0.0, abs(local.y - loopArc));
   let underYarn = smoothstep(0.34 * yarnWidth, 0.0, abs(local.y - underArc));
   let crossover = smoothstep(0.24, 0.0, abs(local.x)) * smoothstep(0.65, 0.05, abs(local.y));
-  let yarnMask = clamp(max(topYarn, underYarn * 0.78) + crossover * 0.18, 0.0, 1.0);
+  // ── Idea: purl rows. Odd courses turn the back loop outward.
+  let purl = select(0.0, 1.0, oddRow);
+  let yarnMask = clamp(max(topYarn * mix(1.0, 0.62, purl), underYarn * mix(0.78, 1.12, purl)) + crossover * 0.18, 0.0, 1.0);
   let gapMask = 1.0 - yarnMask;
   let fiberNoise =
     sin(local.x * 24.0 + local.y * 31.0 + time * 1.5) * 0.06 +
@@ -148,6 +132,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor = finalColor + vec3<f32>(fiberNoise) * 0.12;
   finalColor = finalColor + yarnTint * shimmer * (0.40 + 0.60 * textureDepth);
   finalColor += vec3<f32>(0.35, 0.18, 0.08) * clickRidge * (0.15 + textureDepth * 0.25);
+  // ── Idea: lint. Fibres stick out of the yarn into the gap.
+  let lint = (1.0 - yarnMask) * smoothstep(0.62, 0.28, abs(local.y - loopArc));
+  finalColor = finalColor + baseColor * lint * 0.28;
 
   var finalAlpha = mix(0.42, 0.90, yarnMask);
   finalAlpha = mix(finalAlpha, finalAlpha * 0.74, pullMask * pullStrength);

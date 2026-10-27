@@ -2,33 +2,15 @@
 //  poly-art
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-21
-//  Ideas: finished facet edges (perpendicular-bisector border distance);
-//         per-facet flat-shading; bug fix: added the missing bounds guard
-//  A packing: display RGBA passthrough (no history)
+//  Upgraded: 2026-10-27
+//  Ideas: facet edges; flat shading; detail-sized cells; lit bevel on the crease
+//  A packing: ACES display RGBA. C is not read.
 // ═══════════════════════════════════════════════════════════════════
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Simple pseudo-random
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -49,7 +31,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let bass = plasmaBuffer[0].x;
 
-  let cellSize = u.zoom_params.x * 50.0 + 10.0; // Cells across
+  let baseCell = u.zoom_params.x * 50.0 + 10.0; // Cells across
+  // ── Idea: busy detail gets smaller facets; flat colour stays coarse.
+  let detailL = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let detailN = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(2.0 / resolution.x, 1.0 / resolution.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let detail = clamp(abs(detailL - detailN) * 8.0, 0.0, 1.0);
+  let cellSize = baseCell * mix(1.16, 0.68, detail);
   let edgeWidth = u.zoom_params.y * 0.1;
   let randomness = u.zoom_params.z;
   let influence = u.zoom_params.w;
@@ -158,10 +145,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let edgeVal = m_dist2 - m_dist;
       let edgeMask = smoothstep(edgeWidth, 0.0, edgeVal);
       color = vec4<f32>(mix(color.rgb, color.rgb * 0.15, edgeMask), color.a);
+      // ── Idea: lit bevel. The crease facing the light catches a thin highlight.
+      let toFrag = f_st - m_point;
+      let edgeDir = toFrag / max(length(toFrag), 1e-4);
+      let facing = dot(edgeDir, normalize(vec2<f32>(0.35, 0.55)));
+      let bevel = edgeMask * clamp(facing, 0.0, 1.0);
+      color = vec4<f32>(mix(color.rgb, min(color.rgb * 1.45, vec3<f32>(1.35)), bevel * 0.75), color.a);
   }
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
+  let display = vec4<f32>(aces(max(color.rgb, vec3<f32>(0.0))), color.a);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), display);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), display);
 
   // Pass depth
   var d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

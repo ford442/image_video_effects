@@ -3,32 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-04
-//  Ideas: tonal-art-map hatch layers (single → cross → diagonal); persistent watercolour wash from C; dried-edge pigment rim
+//  Upgraded: 2026-10-04, 2026-10-27
+//  Ideas: tonal-art-map hatch layers (single → cross → diagonal); persistent watercolour wash from C; dried-edge pigment rim; contour pen; wash granulation (§12.2C)
 //  A packing: raw fields (edge, wash, sketchBase, alpha) — C.g is read back as the wash
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn luminance(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
@@ -122,6 +103,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let edgeDarken = vec3<f32>(0.95, 0.92, 0.88) * (1.0 - edge * 0.25);
   sketchColor = sketchColor * edgeDarken;
   sketchColor = sketchColor * (1.0 - tam * 0.38 * (0.8 + bass * 0.2));
+  // ── Idea: contour pen — a dark outline on the edge the hatch already measures.
+  let contour = smoothstep(0.28, 0.62, edge);
+  sketchColor = mix(sketchColor, vec3<f32>(0.08, 0.07, 0.06), contour * 0.8);
 
   // Mouse reveal (pencil adds strokes)
   let brushDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
@@ -140,7 +124,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   // Away from the live brush the wash is thinner pigment on toothy paper.
-  let washPigment = mix(sourceColor, vec3<f32>(0.96, 0.94, 0.89), 0.18) * (1.0 - paperNoise * 1.5);
+  var washPigment = mix(sourceColor, vec3<f32>(0.96, 0.94, 0.89), 0.18) * (1.0 - paperNoise * 1.5);
+  // ── Idea: wash granulation (§12.2C) — tooth punches mid-wetness; dry paper and the rim stay smooth.
+  let tooth = clamp(paperNoise / 0.06, 0.0, 1.0);
+  let gran = smoothstep(0.12, 0.38, wash) * (1.0 - smoothstep(0.55, 0.85, wash));
+  washPigment = washPigment * (1.0 - gran * tooth * 0.55);
   let liveColor = mix(washPigment, mix(smudgeColor, sourceColor, 0.7), clamp(revealProgress, 0.0, 1.0));
   // Idea 3: dried edge. Pigment migrates to the drying front of a wash and
   // leaves a darker rim where the wash thins out.

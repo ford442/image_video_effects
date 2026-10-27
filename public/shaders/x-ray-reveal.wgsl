@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, click-reactive, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: Beer-Lambert density / bone window; collimator blades with penumbra + crosshair; dose-dependent quantum mottle
+//  Upgraded: 2026-10-05, 2026-10-27
+//  Ideas: Beer-Lambert density / bone window; collimator blades with penumbra + crosshair; dose-dependent quantum mottle; anode heel; anti-scatter grid
 //  A packing: ACES display RGBA (C not read; A mirrors writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -63,6 +63,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bone = smoothstep(0.62, 0.88, plate);
     xray = xray * (0.55 + 0.75 * plate);
     xray = mix(xray, vec3<f32>(0.88, 0.97, 1.0) * plate, bone * 0.7);
+    // ── Idea: anode heel — the plate darkens toward +x inside the lens.
+    let heelT = clamp(rel.x / max(lensRadius, 0.05) * 0.5 + 0.5, 0.0, 1.0);
+    xray = xray * mix(1.0, 0.64, heelT);
 
     // Edge detection (Sobel-ish, clamped taps)
     let offset = 1.0 / resolution;
@@ -117,6 +120,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Composite: x-ray inside the field, dimmed photo outside
     let dimmedBase = baseColor * 0.8;
     var finalColor = mix(dimmedBase, xray, mask);
+    // ── Idea: anti-scatter grid — faint vertical lines, only inside the collimated field.
+    let bucky = smoothstep(0.88, 0.98, sin(uv.x * resolution.x * 0.42));
+    finalColor = mix(finalColor, finalColor * 0.76, bucky * mask * 0.5);
 
     // Idea 2 (cont.): light-field crosshair centring the collimated field
     let crossLine = 1.0 - smoothstep(0.0, 0.0018, min(abs(rel.x), abs(rel.y)));

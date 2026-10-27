@@ -7,7 +7,7 @@
     "audio-reactive",
     "upgraded-rgba"
   ],
-  "description": "Navigate an infinitely tiling hyperbolic plane via Möbius transformations driven by mouse position. The image maps onto a Poincaré disk with tiles shrinking toward the boundary.",
+  "description": "The photo rides a Poincar\u00e9 disk scrolled by a mouse M\u00f6bius transform. Horocycle gutters repeat radially, and Boundary Glow splits red and blue by a Cauchy scale.",
   "params": [
     {
       "id": "navigationSpeed",

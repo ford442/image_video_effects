@@ -2,31 +2,12 @@
 //  Perspective Tilt
 //  Category: distortion
 //  Features: mouse-driven, upgraded-rgba
-//  Upgraded: 2026-09-08
-//  Ideas: vanishing falloff with hit distance; grazing Scheimpflug soften
+//  Upgraded: 2026-10-27
+//  Ideas: vanishing falloff; grazing Scheimpflug; cos⁴ field falloff (§12.2A); card-edge bevel
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Tilt Sensitivity, y=Distance, z=Pitch Enable, w=PlaneScale
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Tilt Sensitivity, y=Distance, z=Pitch Enable, w=PlaneScale
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -148,7 +129,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let smear = vec2<f32>(planeRight.x, -planeUp.y) * graze * 0.012;
                 let softA = textureSampleLevel(readTexture, u_sampler, clamp(texUV + smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
                 let softB = textureSampleLevel(readTexture, u_sampler, clamp(texUV - smear, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-                let rgb = mix(hit.rgb, (softA.rgb + softB.rgb) * 0.5, clamp(graze * 1.4, 0.0, 0.75)) * vanish;
+                // ── Idea: cos⁴ of the angle off the optical axis (§12.2A). rayDir.z is that cosine.
+                let cos4 = pow(clamp(rayDir.z, 0.0, 1.0), 4.0);
+                // ── Idea: card edge — a dark bevel where the print meets the void.
+                let edgePx = min(min(texU, 1.0 - texU), min(texV, 1.0 - texV));
+                let cardEdge = smoothstep(0.0, 0.02, edgePx);
+                let rgb = mix(hit.rgb, (softA.rgb + softB.rgb) * 0.5, clamp(graze * 1.4, 0.0, 0.75)) * vanish * mix(0.62, 1.0, cos4) * mix(0.28, 1.0, cardEdge);
                 let cover = 0.55 + vanish * 0.45;
                 color = vec4<f32>(acesToneMap(rgb), clamp(cover * hit.a + graze * 0.15, 0.12, 1.0));
                 let texDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, texUV, 0.0).r;

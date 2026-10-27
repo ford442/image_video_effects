@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Chunks From: fractal-image-surf
-//  Upgraded: 2026-10-05
-//  Ideas: 1) Burning Ship joins the surf (3-way UV morph, slow drift) 2) escape-lip foam from smooth escape count 3) cardioid walk of Julia c on mids
+//  Upgraded: 2026-10-27
+//  Ideas: Burning Ship surf; escape-lip foam; cardioid walk; orbit-trap veins (§12.2E); calm interior lake
 //  A packing: ACES display RGBA (nothing reads C; HEAD stored det/warp/spec/alpha)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -55,35 +55,41 @@ fn smoothEscape(p: vec2<f32>, i: u32) -> f32 {
   return max(f32(i) + 1.0 - log2(log2Mod), 0.0);
 }
 
-// Helpers return (final z, smooth escape count).
-fn julia_iter(z: vec2<f32>, c: vec2<f32>, maxIter: u32) -> vec3<f32> {
+// Helpers return (final z.xy, smooth escape count, orbit-trap distance).
+fn julia_iter(z: vec2<f32>, c: vec2<f32>, maxIter: u32) -> vec4<f32> {
   var p = z;
   var n = f32(maxIter);
+  var trap = 1e9;
   for (var i: u32 = 0u; i < maxIter; i = i + 1u) {
     p = cmul(p, p) + c;
+    trap = min(trap, length(p));
     if (dot(p, p) > 16.0) { n = smoothEscape(p, i); break; }
   }
-  return vec3<f32>(p, n);
+  return vec4<f32>(p.x, p.y, n, trap);
 }
 
-fn mandelbrot_iter(z: vec2<f32>, maxIter: u32) -> vec3<f32> {
+fn mandelbrot_iter(z: vec2<f32>, maxIter: u32) -> vec4<f32> {
   var p = vec2<f32>(0.0, 0.0);
   var n = f32(maxIter);
+  var trap = 1e9;
   for (var i: u32 = 0u; i < maxIter; i = i + 1u) {
     p = cmul(p, p) + z;
+    trap = min(trap, length(p));
     if (dot(p, p) > 16.0) { n = smoothEscape(p, i); break; }
   }
-  return vec3<f32>(p, n);
+  return vec4<f32>(p.x, p.y, n, trap);
 }
 
-fn burning_ship_iter(z: vec2<f32>, c: vec2<f32>, maxIter: u32) -> vec3<f32> {
+fn burning_ship_iter(z: vec2<f32>, c: vec2<f32>, maxIter: u32) -> vec4<f32> {
   var p = z;
   var n = f32(maxIter);
+  var trap = 1e9;
   for (var i: u32 = 0u; i < maxIter; i = i + 1u) {
     p = cmul(vec2<f32>(abs(p.x), abs(p.y)), vec2<f32>(abs(p.x), abs(p.y))) + c;
+    trap = min(trap, length(p));
     if (dot(p, p) > 16.0) { n = smoothEscape(p, i); break; }
   }
-  return vec3<f32>(p, n);
+  return vec4<f32>(p.x, p.y, n, trap);
 }
 
 // Escape-lip: escaped late (near the set boundary) but not interior.
@@ -175,11 +181,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2: wave crest lifts the surf slightly (escape-time height field).
   let crestLift = vec2<f32>(0.0, -0.006) * crest * (1.0 - lip * 0.5);
   let surfUV = layer1 * (1.0 - w1) + layer2 * (w1 - w2) + layer3 * w2 + crestLift;
-  let sampleUV = clamp(surfUV, vec2<f32>(0.001), vec2<f32>(0.999));
+  // ── Idea: calm lake — an orbit that never escaped holds the photo still.
+  let lake = select(0.0, 1.0, rJ.z >= maxN - 0.5) * (1.0 - w1)
+           + select(0.0, 1.0, rM.z >= maxN - 0.5) * (w1 - w2)
+           + select(0.0, 1.0, rB.z >= maxN - 0.5) * w2;
+  let sampleUV = clamp(mix(surfUV, uv, lake * 0.82), vec2<f32>(0.001), vec2<f32>(0.999));
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
   let spec = pow(max(det - 0.4, 0.0), 3.0) * (0.6 + treble * 0.6);
-  let hdrSpec = vec3<f32>(0.75, 0.88, 1.0) * spec;
+  // ── Idea: orbit-trap veins from the closest approach inside the existing loops (§12.2E).
+  let trap = rJ.w * (1.0 - w1) + rM.w * (w1 - w2) + rB.w * w2;
+  let vein = exp(-trap * 7.0);
+  let hdrSpec = vec3<f32>(0.75, 0.88, 1.0) * spec + vec3<f32>(0.62, 0.8, 1.0) * vein * 0.42;
 
   // Idea 2: escape-lip foam — broken up by the (now smooth) FBM so it reads as
   // spray on the fractal's breaking edge, plus a glint along the lip itself.

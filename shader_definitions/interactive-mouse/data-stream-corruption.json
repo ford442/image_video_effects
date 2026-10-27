@@ -2,7 +2,7 @@
   "id": "data-stream-corruption",
   "name": "Data Stream Corruption",
   "url": "shaders/data-stream-corruption.wgsl",
-  "description": "Vertical data streams fall like rain; your mouse leaves a trail of corrupted code blocks.",
+  "description": "Vertical data streams fall like rain, bright at the head and fading down the tail. The pointer leaves a trail of corrupted code blocks, and holding the brush pools that corruption. A stores the corruption field.",
   "params": [
     {
       "id": "speed",
@@ -36,7 +36,9 @@
   "features": [
     "mouse-driven",
     "temporal-persistence",
-    "glitch"
+    "glitch",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
