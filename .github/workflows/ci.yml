@@ -27,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
       env:
-        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
+        ONNXRUNTIME_NODE_INSTALL: "skip"
 
     # Before anything below regenerates them: the committed registry, shader lists, alias
     # maps, ShaderDefinition type and standalone validator must equal a fresh regeneration.
@@ -330,7 +330,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
       env:
-        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
+        ONNXRUNTIME_NODE_INSTALL: "skip"
     
     - name: Run ESLint
       run: npm run lint
@@ -369,7 +369,7 @@ jobs:
     - name: Install dependencies
       run: npm ci
       env:
-        ONNXRUNTIME_NODE_INSTALL_SKIP: "true"
+        ONNXRUNTIME_NODE_INSTALL: "skip"
 
     - name: Generate shader lists
       run: node scripts/generate_shader_lists.js
