@@ -3823,7 +3823,7 @@
     "id": "infinite-spiral-zoom",
     "name": "Möbius–Droste Spiral",
     "url": "shaders/infinite-spiral-zoom.wgsl",
-    "description": "Möbius transformation composed with log-polar mapping for Droste self-similar infinite zoom. Temporal Möbius drift, audio-driven zoom speed, depth-scaled chromatic aberration, and multi-fold symmetry.",
+    "description": "Möbius drift into a log-polar Droste zoom. A dark frame marks each log-radius wrap, and the trail is loaded upstream along the zoom instead of from the same texel.",
     "params": [
       {
         "id": "zoomSpeed",
@@ -6673,7 +6673,7 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
-    "description": "Navigate an infinitely tiling hyperbolic plane via Möbius transformations driven by mouse position. The image maps onto a Poincaré disk with tiles shrinking toward the boundary.",
+    "description": "The photo rides a Poincaré disk scrolled by a mouse Möbius transform. Horocycle gutters repeat radially, and Boundary Glow splits red and blue by a Cauchy scale.",
     "params": [
       {
         "id": "navigationSpeed",
@@ -6792,7 +6792,7 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
-    "description": "Mouse position controls the Julia set constant c for real-time fractal morphing. Click ripples pin configurations that blend together over the input image palette.",
+    "description": "The pointer sets the Julia constant and the photo is the palette. A distance rim traces the boundary, and the palette also follows the argument of z so the arms pick different colours.",
     "params": [
       {
         "id": "zoom",
@@ -8158,7 +8158,7 @@
     "name": "Origami Fold",
     "category": "interactive-mouse",
     "url": "shaders/origami-fold.wgsl",
-    "description": "Upgraded paper folding with mountain/valley crease patterns, dihedral angle constraints, Kawasaki-Justin flat-foldable vertices, paper fiber texture, shadow casting, HDR specular highlights on creases, ACES tone mapping, and chromatic edge darkening. Bass drives fold animation speed, mouse performs folds (mountain vs valley by click parity), depth controls paper layer ordering.",
+    "description": "One crease through the pointer, mountain or valley. Valley creases sink and mountain creases catch a ridge light, and the open half takes a short cast shadow beside the fold.",
     "params": [
       {
         "id": "foldSpeed",
@@ -9047,7 +9047,7 @@
     "id": "polar-warp-interactive",
     "name": "Polar Warp",
     "url": "shaders/polar-warp-interactive.wgsl",
-    "description": "Recursive liquid polar tunnel bands with interference mandalas, smooth seeded sparkles, held singularity deformation, bounded click spirals, chromatic grading, and truthful A state packed as [bassEnvelope, mouseX, mouseY, alpha].",
+    "description": "Polar tunnel around the pointer with spiral, pinch, and click twist. The power map bleaches where it stretches the photo, and the atan2 branch cut is a dark seam. A stores smoothed bass and the pointer.",
     "updated": true,
     "features": [
       "mouse-driven",
@@ -11808,7 +11808,7 @@
     "id": "swirling-void",
     "name": "Swirling Void",
     "url": "shaders/swirling-void.wgsl",
-    "description": "General relativistic Kerr metric frame-dragging vortex with accretion disk Doppler beaming, blackbody thermal gradient, photon sphere deflection, and exact-load photon ring persistence.",
+    "description": "Kerr frame-drag around a dark horizon, with a hot disk and a photon ring. Near the ring the sample locks onto the photon sphere, and the disk cuts off on a bright orbit at three times the horizon. A holds pre-ACES colour for the trail.",
     "features": [
       "mouse-driven",
       "audio-reactive",

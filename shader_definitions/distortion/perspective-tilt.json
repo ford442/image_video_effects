@@ -2,7 +2,7 @@
   "id": "perspective-tilt",
   "name": "Perspective Tilt",
   "url": "shaders/perspective-tilt.wgsl",
-  "description": "Rotates the image plane in 3D space based on mouse position (Pitch/Yaw). Zoom param adjusts distance.",
+  "description": "The photo lies on a plane yawed and pitched by the pointer. Field brightness falls as cos\u2074 off the optical axis, and the print has a dark bevel at its edge.",
   "params": [
     {
       "id": "tilt_sensitivity",

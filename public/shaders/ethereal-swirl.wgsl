@@ -5,8 +5,8 @@
 //  and feedback creates silky trails like a living dreamscape.
 //  Category: distortion
 //  Features: audio-reactive, temporal, upgraded-rgba
-//  Upgraded: 2026-10-05
-//  Ideas: 1) billow clouds (interpolated value-noise FBM, |n| billow on upper octaves) 2) advected trails (C read upstream along the FBM flow, persistence = decay) 3) depth-folded hue (hue offset by depth × cloud density)
+//  Upgraded: 2026-10-27
+//  Ideas: billow clouds; advected trails; depth-folded hue; silver lining on the billow edge; wind smear of the photo along the flow
 //  A packing: ACES display RGBA (alpha = footage coverage × cloud density); trails mix post-ACES
 // ────────────────────────────────────────────────────────────────────────────────
 #include "_prelude.wgsl"
@@ -169,8 +169,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthFold = (depthVal - 0.5) * cloudDensity * 0.35;
     let hue = fract(baseHue + cloudDensity * 0.2 + depthFold + 1.0);
 
+    // ── Idea: wind smear — one step downstream along the flow the clouds already follow.
+    let smearUV = clamp(uv + flowVec * (0.015 + flowSpeed * 0.12), vec2<f32>(0.0), vec2<f32>(1.0));
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let srcColor = src.rgb;
+    let srcSmear = textureSampleLevel(readTexture, u_sampler, smearUV, 0.0);
+    let srcColor = mix(src.rgb, srcSmear.rgb, clamp(flowSpeed * 1.6, 0.0, 0.55));
     let luminance = dot(srcColor, vec3<f32>(0.2126, 0.7152, 0.0722));
     let sat = mix(0.6, 1.0, luminance);
     let val = mix(0.4, 1.0, luminance);
@@ -181,7 +184,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  7️⃣  Blend clouds with the original footage
     // ────────────────────────────────────────────────────────────────────────
     let blendFactor = clamp(cloudDensity * smoothstep(0.1, 0.5, luminance) * BLEND_STR * (1.0 + bass * 0.3), 0.0, 1.0);
-    let blendedColor = mix(srcColor, cloudColor, blendFactor);
+    var blendedColor = mix(srcColor, cloudColor, blendFactor);
+    // ── Idea: silver lining — density*(1-density) peaks on the billow edge and lights along the flow.
+    let rim = cloudDensity * (1.0 - cloudDensity) * 4.0;
+    let flowDir = flowVec / max(length(flowVec), 1e-4);
+    let lit = clamp(dot(flowDir, vec2<f32>(0.55, 0.84)), 0.0, 1.0);
+    blendedColor = blendedColor + vec3<f32>(0.72, 0.84, 1.0) * rim * lit * 0.45;
 
     // ACES on display RGB; history in C is already display, so trails mix post-ACES.
     let display = acesToneMap(blendedColor * 1.1);

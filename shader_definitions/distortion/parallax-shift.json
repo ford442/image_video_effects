@@ -1,7 +1,7 @@
 {
   "id": "parallax-shift",
   "url": "shaders/parallax-shift.wgsl",
-  "description": "Uses luminance as depth to create a mouse-controlled 3D parallax effect.",
+  "description": "Depth layers of the photo shift off the focus plane. Each layer takes one relief step from the depth residual, and a layer hidden by a nearer surface darkens.",
   "params": [
     {
       "id": "strength",

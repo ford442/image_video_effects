@@ -2,7 +2,7 @@
   "id": "julia-warp",
   "name": "Julia Warp",
   "url": "shaders/julia-warp.wgsl",
-  "description": "Derivative-aware Julia orbit traps drive refractive distortion, animated complex-parameter control, held zoom, spectral orbit light, and age-bounded shockwaves.",
+  "description": "The photo refracts along a Julia orbit. Points that never escape barely move, and the distance estimate draws a dark contour on the boundary.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -11,7 +11,8 @@
     "orbit-traps",
     "refractive-distortion",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "warp",
