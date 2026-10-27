@@ -1566,8 +1566,17 @@
       "history": []
     },
     "ethereal-swirl": {
-      "hash": "2731331315d11ace",
-      "history": []
+      "hash": "af52abc8d3d42ab3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "af52abc8d3d42ab3",
+          "prev_hash": "2731331315d11ace",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "fluid-grid": {
       "hash": "e07d78d7af7ba1ae",
@@ -1587,8 +1596,17 @@
       ]
     },
     "fractal-image-surf": {
-      "hash": "ba48f288d31ce90e",
-      "history": []
+      "hash": "00ccdfb1ddd9ddab",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "00ccdfb1ddd9ddab",
+          "prev_hash": "ba48f288d31ce90e",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "fractal-kaleidoscope": {
       "hash": "fe62d673e8d77ce6",
@@ -1652,8 +1670,17 @@
       "history": []
     },
     "julia-warp": {
-      "hash": "dd29cb645633dc6b",
-      "history": []
+      "hash": "c1f82c32be405ab5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "c1f82c32be405ab5",
+          "prev_hash": "dd29cb645633dc6b",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "kaleidoscope": {
       "hash": "27015d68dbcb1145",
@@ -1672,8 +1699,17 @@
       "history": []
     },
     "log-polar-droste": {
-      "hash": "809ec149bbec65b8",
-      "history": []
+      "hash": "bb4f267c477cdb7e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "bb4f267c477cdb7e",
+          "prev_hash": "809ec149bbec65b8",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "luma-glass": {
       "hash": "b9e78c6d3950e12e",
@@ -1697,12 +1733,30 @@
       "history": []
     },
     "parallax-shift": {
-      "hash": "0b2c953989f06b9a",
-      "history": []
+      "hash": "8fee8dcb8786d987",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "8fee8dcb8786d987",
+          "prev_hash": "0b2c953989f06b9a",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "perspective-tilt": {
-      "hash": "65f159bbbfc3744a",
-      "history": []
+      "hash": "9c13d6974f1e4bbd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "9c13d6974f1e4bbd",
+          "prev_hash": "65f159bbbfc3744a",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "phase-shift": {
       "hash": "d7c2f0a3593ca84a",
@@ -8528,8 +8582,17 @@
       "history": []
     },
     "infinite-spiral-zoom": {
-      "hash": "a7139361d2da4369",
-      "history": []
+      "hash": "cd6a320f365ed331",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "cd6a320f365ed331",
+          "prev_hash": "a7139361d2da4369",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "infinite-video-feedback": {
       "hash": "536f69ddc71ea95d",
@@ -8875,16 +8938,34 @@
       ]
     },
     "mouse-hyperbolic-navigator": {
-      "hash": "7593f63b1afdb920",
-      "history": []
+      "hash": "188c4694317c42f3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "188c4694317c42f3",
+          "prev_hash": "7593f63b1afdb920",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "mouse-ink-bleed": {
       "hash": "04146eb0a20bc9e9",
       "history": []
     },
     "mouse-julia-morph": {
-      "hash": "d6e9ef097d2786ba",
-      "history": []
+      "hash": "0e8ba6b40f69a97e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "0e8ba6b40f69a97e",
+          "prev_hash": "d6e9ef097d2786ba",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "mouse-kaleidoscope-tunnel": {
       "hash": "3f2c5938894bd04e",
@@ -9037,8 +9118,17 @@
       ]
     },
     "origami-fold": {
-      "hash": "68eba54e47612b13",
-      "history": []
+      "hash": "792914ba174416f1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "792914ba174416f1",
+          "prev_hash": "68eba54e47612b13",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "oscilloscope-overlay": {
       "hash": "cb008fe7a4d43813",
@@ -9150,8 +9240,17 @@
       "history": []
     },
     "polar-warp-interactive": {
-      "hash": "2835822ecb4bc2a1",
-      "history": []
+      "hash": "9a15b278421510c7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "9a15b278421510c7",
+          "prev_hash": "2835822ecb4bc2a1",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "poly-art": {
       "hash": "b2d8b19e294c0e47",
@@ -9390,8 +9489,17 @@
       "history": []
     },
     "swirling-void": {
-      "hash": "24589339f7a5bf55",
-      "history": []
+      "hash": "676dedaec388f5ff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:53:38.908Z",
+          "hash": "676dedaec388f5ff",
+          "prev_hash": "24589339f7a5bf55",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        }
+      ]
     },
     "synthwave-grid-warp": {
       "hash": "7f4adb3cc2bd3a55",
