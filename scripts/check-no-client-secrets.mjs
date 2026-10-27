@@ -4,7 +4,7 @@
  * bundle. The storage webhook HMAC secret used to be inlined via
  * REACT_APP_WEBHOOK_SECRET; uploads now use server-issued tokens.
  *
- * Usage: node scripts/check-no-client-secrets.mjs [distDir]   (default: dist)
+ * Usage: node scripts/check-no-client-secrets.mjs [outDir]   (default: build, Vite's outDir)
  *
  * Also greps for the *values* of STORAGE_WEBHOOK_SECRET / REACT_APP_WEBHOOK_SECRET
  * when they are set in the environment (CI can pass the real secret in), so a
@@ -53,7 +53,7 @@ export function scanForSecrets(distDir, env = process.env) {
 }
 
 function main() {
-  const distDir = path.resolve(ROOT, process.argv[2] ?? 'dist');
+  const distDir = path.resolve(ROOT, process.argv[2] ?? 'build');
   if (!fs.existsSync(distDir)) {
     console.error(`❌ ${path.relative(ROOT, distDir)} does not exist — run the build first`);
     process.exit(1);

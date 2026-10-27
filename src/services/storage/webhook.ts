@@ -4,7 +4,7 @@
  * Each write is authorized by a short-lived token that storage_manager issues
  * for that action + name (`POST {webhookUrl}/upload-token`). The HMAC signing
  * secret lives only on the server: it used to be inlined into the client bundle
- * (REACT_APP_WEBHOOK_SECRET), which let anyone read it and forge uploads.
+ * through a REACT_APP_* env var, which let anyone read it and forge uploads.
  */
 
 import { assertOk, resolveStaticUrl } from './http';

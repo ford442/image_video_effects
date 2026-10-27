@@ -67,15 +67,15 @@ jobs:
       env:
         CI: true
     
+    # No emcc and no SKIP_WASM_BUILD: prebuild uses the committed public/wasm/*
+    # unless BUILD_WASM=1 (WASM is frozen R&D, #1329).
     - name: Build project
       run: npm run build
-      env:
-        SKIP_WASM_BUILD: '1'
 
     # The storage webhook secret used to be inlined into the bundle; uploads now
     # use server-issued tokens. Fails if the marker (or the secret value, when the
-    # repo secret is configured) is found anywhere in dist/.
-    - name: Verify no secrets in dist/
+    # repo secret is configured) is found anywhere in the build output (build/).
+    - name: Verify no secrets in the bundle (build/)
       run: npm run verify:no-client-secrets
       env:
         STORAGE_WEBHOOK_SECRET: ${{ secrets.STORAGE_WEBHOOK_SECRET }}

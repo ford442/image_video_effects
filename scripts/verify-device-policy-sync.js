@@ -801,15 +801,17 @@ function verifyWasmBuildVariants(flags) {
     fail('wasm_compile_flags.json top-level sFlags is the ASYNCIFY fallback: must contain ASYNCIFY and no JSPI*');
   }
   const j = flags.jspi;
-  if (!j || !Array.isArray(j.sFlags) || !Array.isArray(j.jspiExports)) {
-    fail('wasm_compile_flags.json must define jspi { sFlags, jspiExports, jsOutputName }');
+  if (!j || !Array.isArray(j.jspiExports)) {
+    fail('wasm_compile_flags.json must define jspi { jspiExports, jsOutputName }');
     return;
   }
+  if ('sFlags' in j) {
+    fail('wasm_compile_flags.json jspi.sFlags must not exist: the JSPI graph derives its sFlags from the fallback (ASYNCIFY→JSPI)');
+  }
+  const { variantGraph } = require('./format-wasm-compile-flags.js');
   const expected = flags.sFlags.map((f) => (f === 'ASYNCIFY' ? 'JSPI' : f));
-  if (JSON.stringify(j.sFlags) !== JSON.stringify(expected)) {
-    fail(
-      `wasm_compile_flags.json jspi.sFlags must equal fallback sFlags with ASYNCIFY→JSPI.\n  expected ${JSON.stringify(expected)}\n  got      ${JSON.stringify(j.sFlags)}`,
-    );
+  if (JSON.stringify(variantGraph(flags, 'jspi').sFlags) !== JSON.stringify(expected)) {
+    fail('format-wasm-compile-flags.js variantGraph(jspi).sFlags must be the fallback sFlags with ASYNCIFY→JSPI');
   }
   if (!j.jsOutputName || j.jsOutputName === flags.jsOutputName) {
     fail('wasm_compile_flags.json jspi.jsOutputName must be set and differ from the fallback jsOutputName');

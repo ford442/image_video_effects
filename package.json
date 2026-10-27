@@ -17,7 +17,7 @@
   "scripts": {
     "prestart": "npm run gen",
     "start": "vite",
-    "prebuild": "npm run wasm:build && npm run gen",
+    "prebuild": "bash wasm_renderer/prebuild.sh && npm run gen",
     "build": "vite build",
     "build:manifest": "tsx --tsconfig scripts/tsconfig.scripts.json scripts/build-unified-manifest.ts",
     "build:search-index": "node scripts/build-shader-search-index.mjs",

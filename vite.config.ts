@@ -29,7 +29,7 @@ const KNOWN_APP_ENV = [
  */
 export const CLIENT_SECRET_ENV_PATTERN = /SECRET|PASSWORD|PRIVATE|CREDENTIAL|_TOKEN\b|API_KEY/i;
 
-// Same cross-origin isolation as production (build.sh .htaccess, #1314), so
+// Same cross-origin isolation as production (tools/deploy/build.sh .htaccess, #1314), so
 // `npm start` / `vite preview` exercise the SharedArrayBuffer input ring of the render worker.
 const ISOLATION_HEADERS = {
   'Cross-Origin-Opener-Policy': 'same-origin',

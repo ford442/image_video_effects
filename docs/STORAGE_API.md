@@ -114,7 +114,7 @@ The browser never holds a signing secret. `REACT_APP_WEBHOOK_SECRET` used to be
 inlined into the bundle and used for `X-Hub-Signature-256`, so anyone could read
 it from the JS and forge uploads. Vite now refuses to expose secret-looking
 `REACT_APP_*` vars, and CI fails if the marker or the secret value appears in
-`dist/` (`npm run verify:no-client-secrets`). **The old secret must be rotated**
+`build/` (`npm run verify:no-client-secrets`). **The old secret must be rotated**
 on the storage_manager side; treat it as public.
 
 ### `POST {webhookUrl}/upload-token`
