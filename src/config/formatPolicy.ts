@@ -184,6 +184,19 @@ function canUseRgba16Float(caps: DeviceFormatCapabilities): boolean {
   return caps.supportsRgba16FloatStorage && caps.supportsFloat16Array;
 }
 
+/**
+ * Sample type for the colour-format texture bindings (1/9/13). Keyed on the
+ * *format*: rgba16float is always filterable; rgba32float only with the
+ * `float32-filterable` device feature. Most shaders pair `readTexture` with the
+ * filtering `u_sampler`, which is a validation error on `unfilterable-float`.
+ */
+export function colorTextureSampleType(
+  colorFormat: InternalColorFormat,
+  hasFloat32Filterable: boolean,
+): GPUTextureSampleType {
+  return colorFormat === 'rgba32float' && !hasFloat32Filterable ? 'unfilterable-float' : 'float';
+}
+
 /** Default capabilities before adapter init (unmeasured FP32 storage; FP16 assumed for unit tests). */
 export const DEFAULT_FORMAT_CAPABILITIES: DeviceFormatCapabilities = {
   adapterGpuType: 'unknown',
@@ -199,7 +212,11 @@ export function resolveColorFormat(
   mode: RenderQualityMode,
   caps: DeviceFormatCapabilities = DEFAULT_FORMAT_CAPABILITIES,
 ): InternalColorFormat {
+  // rgba32float without float32-filterable can only be bound unfilterable, which breaks
+  // every shader sampling readTexture through u_sampler — prefer FP16 whenever legal.
+  const fp32Filterable = caps.hasFloat32Filterable;
   if (mode === 'ultra') {
+    if (!fp32Filterable && canUseRgba16Float(caps)) return BALANCED_COLOR_FORMAT;
     return ULTRA_COLOR_FORMAT;
   }
   if (mode === 'balanced' || mode === 'battery') {
@@ -207,11 +224,12 @@ export function resolveColorFormat(
     return ULTRA_COLOR_FORMAT;
   }
 
-  // auto — discrete desktop starts FP32 only when storage was measured legal
+  // auto — discrete desktop starts FP32 only when storage was measured legal and filterable
   if (
     caps.adapterGpuType === 'discrete'
     && !caps.isMobile
     && caps.supportsRgba32FloatStorage
+    && fp32Filterable
   ) {
     return ULTRA_COLOR_FORMAT;
   }

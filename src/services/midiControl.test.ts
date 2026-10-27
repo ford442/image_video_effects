@@ -3,6 +3,8 @@ import {
   MIDIAccessLike,
   MIDIInputLike,
   MIDIMessageEventLike,
+  MIDIMessageListener,
+  MIDIStateChangeListener,
   subscribeKeyEvents,
   captureKeyOnce,
   translateMIDIMessage,
@@ -10,31 +12,38 @@ import {
 } from './midiControl';
 import { ControlEvent } from './controlBindings';
 
-function makeFakeInput(id: string, name = 'Fake Input'): MIDIInputLike {
+type FakeInput = MIDIInputLike & { listeners: Set<MIDIMessageListener> };
+type FakeAccess = MIDIAccessLike & { stateListeners: Set<MIDIStateChangeListener> };
+
+function makeFakeInput(id: string, name = 'Fake Input'): FakeInput {
+  const listeners = new Set<MIDIMessageListener>();
   return {
     id,
     name,
     manufacturer: 'Test',
-    onmidimessage: null,
+    listeners,
+    addEventListener: (_type: 'midimessage', l: MIDIMessageListener) => { listeners.add(l); },
+    removeEventListener: (_type: 'midimessage', l: MIDIMessageListener) => { listeners.delete(l); },
     open: vi.fn().mockResolvedValue({} as MIDIInputLike),
     close: vi.fn().mockResolvedValue({} as MIDIInputLike),
   };
 }
 
-function makeFakeAccess(inputs: MIDIInputLike[]): MIDIAccessLike {
+function makeFakeAccess(inputs: MIDIInputLike[]): FakeAccess {
   const map = new Map<string, MIDIInputLike>();
   inputs.forEach((input) => map.set(input.id, input));
+  const stateListeners = new Set<MIDIStateChangeListener>();
   return {
     inputs: map,
-    onstatechange: null,
+    stateListeners,
+    addEventListener: (_type: 'statechange', l: MIDIStateChangeListener) => { stateListeners.add(l); },
+    removeEventListener: (_type: 'statechange', l: MIDIStateChangeListener) => { stateListeners.delete(l); },
   };
 }
 
-function sendMessage(input: MIDIInputLike, data: number[]): void {
+function sendMessage(input: FakeInput, data: number[]): void {
   const event: MIDIMessageEventLike = { data };
-  if (input.onmidimessage) {
-    input.onmidimessage(event);
-  }
+  input.listeners.forEach((l) => l(event));
 }
 
 describe('translateMIDIMessage', () => {
@@ -147,6 +156,65 @@ describe('MidiControlAdapter', () => {
     sendMessage(input, [0xb0, 1, 127]);
     expect(events).toHaveLength(0);
     expect(adapter.getDevices()).toEqual([]);
+  });
+
+  test('two adapters on one input both receive events; disabling one keeps the other (regression)', () => {
+    const input = makeFakeInput('input-1');
+    const access = makeFakeAccess([input]);
+    const a = new MidiControlAdapter(access);
+    const b = new MidiControlAdapter(access);
+    const aEvents: ControlEvent[] = [];
+    const bEvents: ControlEvent[] = [];
+    a.subscribe((e) => aEvents.push(e));
+    b.subscribe((e) => bEvents.push(e));
+
+    sendMessage(input, [0xb0, 1, 127]);
+    expect(aEvents).toHaveLength(1);
+    expect(bEvents).toHaveLength(1);
+
+    a.disable();
+    sendMessage(input, [0xb0, 1, 0]);
+    expect(aEvents).toHaveLength(1);
+    expect(bEvents).toHaveLength(2);
+    expect(input.listeners.size).toBe(1);
+    expect(access.stateListeners.size).toBe(1);
+  });
+
+  test('hooks hot-plugged inputs via statechange, once per adapter', () => {
+    const access = makeFakeAccess([]);
+    const adapter = new MidiControlAdapter(access);
+    const events: ControlEvent[] = [];
+    adapter.subscribe((e) => events.push(e));
+
+    const late = makeFakeInput('late');
+    access.stateListeners.forEach((l) => l({ port: late }));
+    access.stateListeners.forEach((l) => l({ port: late }));
+    sendMessage(late, [0xb0, 2, 127]);
+
+    expect(late.listeners.size).toBe(1);
+    expect(late.open).toHaveBeenCalled();
+    expect(events).toHaveLength(1);
+  });
+
+  test('disable() before requestAccess resolves leaves no hooks behind (regression)', async () => {
+    const input = makeFakeInput('input-1');
+    const access = makeFakeAccess([input]);
+    let resolveAccess: (a: MIDIAccessLike) => void = () => {};
+    const requestMIDIAccess = vi.fn(() => new Promise<MIDIAccessLike>((r) => { resolveAccess = r; }));
+    Object.defineProperty(navigator, 'requestMIDIAccess', { value: requestMIDIAccess, configurable: true });
+    try {
+      const adapter = new MidiControlAdapter();
+      const pending = adapter.requestAccess();
+      adapter.disable();
+      resolveAccess(access);
+
+      await expect(pending).resolves.toBe(false);
+      expect(input.listeners.size).toBe(0);
+      expect(access.stateListeners.size).toBe(0);
+      expect(adapter.getDevices()).toEqual([]);
+    } finally {
+      delete (navigator as { requestMIDIAccess?: unknown }).requestMIDIAccess;
+    }
   });
 
   test('requestAccess returns false when navigator.requestMIDIAccess is missing', async () => {

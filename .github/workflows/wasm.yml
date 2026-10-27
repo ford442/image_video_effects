@@ -13,6 +13,16 @@ on:
       - 'public/wasm/**'
       - 'tests/wasm-*'
       - '.github/workflows/wasm.yml'
+      # Files that define the build or generate its headers.
+      - 'src/contracts/wasm_compile_flags.json'
+      - 'src/contracts/wasm_exports.json'
+      - 'src/contracts/bind_group0.json'
+      - 'src/contracts/canvas_configure.json'
+      - 'src/contracts/webgpu_limits.json'
+      - 'src/wasm/bridge/**'
+      - 'scripts/format-wasm-compile-flags.js'
+      - 'scripts/emcc-version-gate.sh'
+      - 'scripts/gen-*-header.js'
   schedule:
     # Weekly, Monday 06:17 UTC. Scheduled runs always use the default branch (main).
     - cron: '17 6 * * 1'

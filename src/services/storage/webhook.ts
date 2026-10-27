@@ -1,16 +1,40 @@
 /**
- * HMAC-signed webhook writes to the VPS storage manager.
+ * Webhook writes to the VPS storage manager.
+ *
+ * Each write is authorized by a short-lived token that storage_manager issues
+ * for that action + name (`POST {webhookUrl}/upload-token`). The HMAC signing
+ * secret lives only on the server: it used to be inlined into the client bundle
+ * (REACT_APP_WEBHOOK_SECRET), which let anyone read it and forge uploads.
  */
 
-import { assertOk, generateHmacSignature, resolveStaticUrl } from './http';
+import { assertOk, resolveStaticUrl } from './http';
 import type {
   EffectConfigPayload,
   ShaderItem,
   StorageClientConfig,
   StorageSaveOptions,
   StorageSaveResponse,
+  UploadTokenResponse,
   VideoConfigPayload,
 } from './types';
+
+/** Ask storage_manager for a token scoped to one write. */
+export async function requestUploadToken(
+  config: Pick<StorageClientConfig, 'webhookUrl'>,
+  options: Pick<StorageSaveOptions, 'action' | 'name'>
+): Promise<string> {
+  const response = await fetch(`${config.webhookUrl}/upload-token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: options.action, name: options.name }),
+  });
+  await assertOk(response);
+  const body = (await response.json()) as Partial<UploadTokenResponse>;
+  if (typeof body.token !== 'string' || body.token.length === 0) {
+    throw new Error('storage_manager returned no upload token');
+  }
+  return body.token;
+}
 
 export async function webhookSave(
   config: StorageClientConfig,
@@ -23,13 +47,13 @@ export async function webhookSave(
     timestamp: new Date().toISOString(),
   });
 
-  const signature = await generateHmacSignature(payload, config.secret);
+  const token = await requestUploadToken(config, options);
 
   const response = await fetch(`${config.webhookUrl}/image-effects`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Hub-Signature-256': signature,
+      Authorization: `Bearer ${token}`,
     },
     body: payload,
   });

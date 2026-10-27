@@ -212,7 +212,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     color *= vignette * 0.95 + 0.05;
 
     // Chromatic aberration
-    let depth = textureSampleLevel(depthTexture, nearestSampler, uv, 0.0).r;
+    let depth = textureSampleLevel(depthTexture, nearestClampSampler, uv, 0.0).r;
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
