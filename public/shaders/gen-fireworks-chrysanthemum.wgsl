@@ -4,8 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-11
-//  Ideas: pistil heart (inner ring slower/denser); sphere foreshorten via latitude z-phase; petal barbs; color break
+//  Upgraded: 2026-10-27
+//  Ideas: circumferential petal burn wave; split-tip florets
+//  Retained: pistil heart; spherical latitudes; petal barbs; color break
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -61,6 +62,21 @@ fn chrysanthemumColor(ringT: f32, spread: f32, seed: f32, age: f32) -> vec3<f32>
   return col;
 }
 
+fn petalBurn(angle: f32, ringT: f32, age: f32) -> f32 {
+  let wave = 0.5 + 0.5 * cos(angle * 3.0 - age * 5.0 + ringT * TAU);
+  return 0.75 + 0.5 * wave * smoothstep(0.1, 0.5, age);
+}
+
+fn splitFloret(uv: vec2<f32>, tip: vec2<f32>, velocity: vec2<f32>, ringT: f32, age: f32) -> f32 {
+  let side = vec2<f32>(-velocity.y, velocity.x) / max(length(velocity), 0.0001);
+  let splitAge = max(0.0, age - 0.55 - ringT * 0.25);
+  let offset = side * min(splitAge * 0.035, 0.045);
+  let fall = vec2<f32>(0.0, -min(splitAge * splitAge * 0.04, 0.08));
+  let light = smoothstep(0.0, 0.15, splitAge) * exp(-splitAge * 1.8) * smoothstep(0.25, 0.65, ringT);
+  return softGlow(uv, tip + offset + fall, 0.003, light)
+    + softGlow(uv, tip - offset + fall, 0.003, light);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -98,9 +114,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed = hash1(si * 31.0 + 7.0);
     let seed2 = hash1(si * 53.0 + 11.0);
 
-    let cycle = basePeriod * (0.72 + seed * 0.45);
-    let birth = floor((time * (1.05 + bass * 0.35) + seed * 1.4) / cycle) * cycle - seed * 1.4;
-    let age = time - birth;
+    let cycle = 6.5 + basePeriod * (0.72 + seed * 0.45);
+    let age = fract(time * 1.05 / cycle + seed) * cycle;
     if (age < 0.0 || age > 6.5) { continue; }
 
     let baseX = (seed - 0.5) * 1.7;
@@ -166,8 +181,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let breakAge = 1.05 + jSeed * 0.45;
           let changed = smoothstep(breakAge, breakAge + 0.18, layerAge) * smoothstep(0.35, 0.7, ringT);
           sparkCol = mix(sparkCol, chrysanthemumColor(fract(ringT + 0.42), colorSpread, jSeed, layerAge), changed);
+          sparkCol *= petalBurn(angle, ringT, layerAge);
           col += sparkCol * glow * (0.85 + treble * 0.5);
           col += sparkCol * streak * energy;
+          col += mix(sparkCol, vec3<f32>(1.0, 0.55, 0.18), 0.4)
+            * splitFloret(uv, sp, vel, ringT, layerAge) * lifeFade * energy * 0.75;
           // Petal barbs — short side ticks on the outer rays.
           let barbOff = abs(dot(uv - sp, vec2<f32>(-vDir.y, vDir.x)));
           let barb = exp(-abs(barbOff - 0.012) * 160.0) * exp(-abs(dot(uv - sp, vDir)) * 36.0) * smoothstep(0.4, 0.75, ringT);
@@ -213,9 +231,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let mang = (mkf / f32(mSparks)) * TAU + mks;
           let mspd = (0.18 + mRingT * 0.82) * mEnergy;
           let mvel = vec2<f32>(cos(mang), sin(mang)) * mspd * cos(mLat);
-          let mpos = sparkPos(mCenter + vec2<f32>(0.0, sin(mLat) * 0.16 * mEnergy), mvel, mbAge - mlf * 0.05, 0.9, 0.18);
-          let mg = softGlow(uv, mpos, 0.006, mFade * mEnergy);
-          col += chrysanthemumColor(mRingT, colorSpread, mks, mbAge) * mg;
+          let layerAge = max(0.0, mbAge - mlf * 0.05);
+          let mpos = sparkPos(mCenter + vec2<f32>(0.0, sin(mLat) * 0.16 * mEnergy), mvel, layerAge, 0.9, 0.18);
+          let mg = softGlow(uv, mpos, 0.006, mFade * mEnergy) * smoothstep(0.0, 0.04, layerAge);
+          let petalColor = chrysanthemumColor(mRingT, colorSpread, mks, mbAge) * petalBurn(mang, mRingT, layerAge);
+          col += petalColor * mg;
+          col += mix(petalColor, vec3<f32>(1.0, 0.55, 0.18), 0.4)
+            * splitFloret(uv, mpos, mvel, mRingT, layerAge) * mFade * mEnergy * 0.75;
         }
       }
     }
@@ -231,7 +253,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col *= clamp(vig, 0.15, 1.0) * (0.7 + depth * 0.55);
 
   col = acesToneMap(col * 1.1);
-  let alpha = clamp(length(col) * 1.15 + 0.14, 0.14, 0.97);
+  let luminance = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let alpha = 0.14 + 0.83 * (1.0 - exp(-luminance * 2.5));
   let genDepth = clamp(1.0 - length(col) * 0.22, 0.05, 0.98);
 
   textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));

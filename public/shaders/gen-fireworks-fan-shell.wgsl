@@ -4,8 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-10
-//  Ideas: peacock eye spots on even fanT; two-row palmette (inner short / outer long); unfolding sweep across the fan; gold guard-stick ribs
+//  Upgraded: 2026-10-27
+//  Ideas: sector color handoff; falling silver fan fringe
+//  Retained: peacock eyes; two-row palmette; unfolding sweep; gold guard ribs
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -73,6 +74,18 @@ fn hexBokeh(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
   return softGlow(uv, c, r, i)*(0.7 + 0.3*smoothstep(r*0.5, r*1.5, length(q)));
 }
 
+fn fanColor(baseHue: f32, fanT: f32, age: f32) -> vec3<f32> {
+  let handoff = smoothstep(fanT + 0.5, fanT + 0.85, age * 0.65);
+  return mix(palette(baseHue), palette(baseHue + 0.18 + fanT * 0.12), handoff * 0.35);
+}
+
+fn silverFringe(uv: vec2<f32>, tip: vec2<f32>, age: f32, seed: f32) -> f32 {
+  let shed = smoothstep(0.3, 0.7, age) * (1.0 - smoothstep(1.4, 2.5, age));
+  let offset = vec2<f32>((seed - 0.5) * 0.012, -0.02 - 0.035 * age);
+  return softGlow(uv, tip + offset, 0.0025, shed)
+    + softGlow(uv, tip + offset * 1.8, 0.002, shed * 0.5);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ---- screen setup ----
@@ -96,12 +109,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ---- previous frame inputs (single sample each) ----
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
-  let camera = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  let camera = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
   // ---- night sky base ----
   var col = vec3<f32>(0.01, 0.008, 0.024);
   col += starField(uv, time);
-  col += camera * 0.04;
+  col += camera.rgb * camera.a * 0.04;
 
   var heat: f32 = 0.0;  // accumulated spark energy -> generated depth
 
@@ -109,9 +122,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var s: i32 = 0; s < 7; s = s + 1) {
     let si = f32(s);
     let seed = hash1(si * 31.0 + 3.0);
-    let cycle = 2.1 * (0.85 + seed * 0.35);
-    let birth = floor((time * 0.7 + seed * 1.5) / cycle) * cycle - seed * 1.5;
-    let age = time - birth;
+    let cycle = 6.0 + 2.1 * (0.85 + seed * 0.35);
+    let age = fract(time * 0.7 / cycle + seed) * cycle;
     if (age < 0.0 || age > 6.0) { continue; }
 
     let bx = (seed - 0.5) * 1.55;
@@ -179,10 +191,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         // main spark
         let h = fract(js + hueCycle + time * 0.02);
-        let sc = palette(h) * (0.85 + treble * 0.25);
+        let sc = fanColor(h, fanT, rAge) * (0.85 + treble * 0.25);
         let glow = softGlow(uv, sp, 0.005 + js * 0.004, fade * energy * (0.85 + treble * 0.4));
         col += sc * glow;
         heat += glow * 0.35;
+        let fringe = silverFringe(uv, sp, rAge, js) * fade * energy * (0.4 + treble * 0.2);
+        col += vec3<f32>(0.82, 0.9, 1.0) * fringe;
+        heat += fringe * 0.25;
 
         // Idea 1 — peacock eye (ocellus): even rays, cooler node at mid-age
         let eyeGate = select(0.0, 1.0, (j % 2) == 0) * exp(-abs(rAge - 1.8) * 3.0);
@@ -218,10 +233,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         sp += mWind * 0.08 * mb * mb;
         let h = fract(f32(k) * 0.1 + hueCycle);
         let mGlow = softGlow(uv, sp, 0.006, mFade * power);
-        col += palette(h) * mGlow;
+        let sc = fanColor(h, fanT, mb);
+        col += sc * mGlow;
         heat += mGlow * 0.3;
+        let fringe = silverFringe(uv, sp, mb, hash1(f32(k))) * mFade * power * (0.4 + treble * 0.2);
+        col += vec3<f32>(0.82, 0.9, 1.0) * fringe;
+        heat += fringe * 0.25;
         let eyeGate = select(0.0, 1.0, (k % 2) == 0) * exp(-abs(mb - 1.4) * 3.0);
-        col += mix(palette(h), vec3<f32>(0.32, 0.52, 0.95), 0.7) * softGlow(uv, sp, 0.014, mFade * power * eyeGate * 0.7);
+        col += mix(sc, vec3<f32>(0.32, 0.52, 0.95), 0.7) * softGlow(uv, sp, 0.014, mFade * power * eyeGate * 0.7);
       }
     }
   }

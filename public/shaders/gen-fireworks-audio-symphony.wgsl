@@ -4,8 +4,9 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-10
-//  Ideas: onset-only primary (bassPulse gates the big shell); band-tinted stars; per-shell onset latch + spectral-centroid hue (A texels 0..5,0); wavefront-lit stars (ring at burstAge*0.9)
+//  Upgraded: 2026-10-27
+//  Ideas: antiphonal secondary voices; treble staccato chains
+//  Retained: onset primary; band-tinted stars; energy/centroid latch; wavefront-lit stars
 //  A packing: ACES display RGBA; top-row texels (0..5,0) = shell latch vec4(energy, centroid, cycleId+1, 0), (6,0) = smoothed bass envelope; everything else display history
 // ═══════════════════════════════════════════════════════════════════
 
@@ -112,12 +113,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed = hash1(si * 29.0 + 3.0);
     let seed2 = hash1(si * 47.0 + 9.0);
 
-    let baseCycle = 2.4 / (launchDensity + bassPulse * 1.5);
-    let cycle = baseCycle * (0.8 + seed * 0.4);
-    let birth = floor((time + seed * 2.0) / cycle) * cycle - seed * 2.0;
-    let age = time - birth;
+    let baseCycle = 2.4 / launchDensity;
+    let cycle = 7.5 + baseCycle * (0.8 + seed * 0.4);
+    let shellClock = time / cycle + seed;
+    let age = fract(shellClock) * cycle;
 
-    let burstDelay = 1.1 + seed * 0.6 - bassPulse * 0.2;
+    let burstDelay = 1.1 + seed * 0.6;
     let burstAge = max(0.0, age - burstDelay);
     // Idea 1 — onset-only primary: idle mortar stays small; bassPulse opens the big shell
     let idleEnergy = bassDrive * (0.35 + bass * 0.22) * (0.8 + seed2 * 0.3);
@@ -130,8 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // texel (s,0) (written only by that invocation) and is read via exact dataTextureC.
     let bandSum = bass + mids + treble;
     let liveCentroid = select(0.33, treble / (bandSum + 0.001), bandSum > 0.02);
-    // bassPulse-free id: the cycle length above shifts on onsets, which would defeat the latch
-    let cycleId = floor((time + seed * 2.0) / (2.4 / launchDensity * (0.8 + seed * 0.4))) + 1.0;
+    let cycleId = floor(shellClock) + 1.0;
     let latch = textureLoad(dataTextureC, vec2<i32>(s, 0), 0);
     let frozen = latch.z == cycleId && burstAge > 0.0 && latch.x > 0.0;
     let shellEnergy = select(liveEnergy, clamp(latch.x, 0.0, 6.0), frozen);
@@ -186,7 +186,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let secDelay = 0.2 + sf * 0.15;
         let secAge = max(0.0, burstAge - secDelay);
         if (secAge <= 0.0 || secAge > 3.5) { continue; }
-        let secCenter = center + vec2<f32>(cos(sf * 2.4), sin(sf * 1.9)) * 0.08 * shellEnergy;
+        let voiceSide = select(-1.0, 1.0, (sec % 2) == 0);
+        let secCenter = center + (vec2<f32>(cos(sf * 2.4), sin(sf * 1.9)) * 0.08
+          + vec2<f32>(voiceSide * 0.07 * midsLayering, 0.0)) * shellEnergy;
+        let voiceTint = select(vec3<f32>(0.6, 0.8, 1.0), vec3<f32>(1.0, 0.72, 0.42), voiceSide > 0.0);
         let secN = i32(20.0 + shellEnergy * 25.0);
         for (var k: i32 = 0; k < secN; k = k + 1) {
           let kf = f32(k);
@@ -195,7 +198,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           let vel = vec2<f32>(cos(ang), sin(ang)) * (0.35 + ks * 0.35) * shellEnergy;
           let sp = sparkPos(secCenter, vel, secAge, 0.9, 0.28);
           let g = softGlow(uv, sp, 0.005, smoothstep(3.2, 0.2, secAge) * shellEnergy);
-          col += shellColor(hue + ks * 0.3 + sf * 0.15, 0.3) * g;
+          let answer = 0.7 + 0.3 * pow(0.5 + 0.5 * sin(secAge * 7.0 - sf * PI), 2.0);
+          col += mix(shellColor(hue + ks * 0.3 + sf * 0.15, 0.3), voiceTint, midsLayering * 0.3) * g * answer;
         }
       }
 
@@ -204,10 +208,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       for (var m: i32 = 0; m < microN; m = m + 1) {
         let mf = f32(m);
         let ms = hash1(si * 53.0 + mf * 7.0);
-        let mAng = ms * TAU + time * 3.0;
+        let mAng = ms * TAU;
         let mVel = vec2<f32>(cos(mAng), sin(mAng)) * (0.25 + ms * 0.45);
         let mPos = sparkPos(center, mVel, burstAge * 0.8, 0.7, 0.35);
-        col += vec3<f32>(0.9, 0.96, 1.0) * softGlow(uv, mPos, 0.003, fade * treble * trebleSparkle * 1.1);
+        let staccato = pow(0.5 + 0.5 * sin(burstAge * 18.0 + ms * TAU), 6.0);
+        let noteStrength = fade * treble * trebleSparkle * (0.35 + staccato);
+        col += vec3<f32>(0.9, 0.96, 1.0) * softGlow(uv, mPos, 0.003, noteStrength);
+        let beadPos = sparkPos(center, mVel, max(0.0, burstAge * 0.8 - 0.09), 0.7, 0.35);
+        col += shellColor(hue, 0.2) * softGlow(uv, beadPos, 0.0025, noteStrength * 0.65);
       }
     }
   }
@@ -241,7 +249,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mAng = ms * TAU;
         let mVel = vec2<f32>(cos(mAng), sin(mAng)) * (0.2 + ms * 0.4);
         let mPos = sparkPos(mCenter, mVel, mbAge * 0.7, 0.6, 0.3);
-        col += vec3<f32>(0.9, 0.96, 1.0) * softGlow(uv, mPos, 0.003, mFade * treble * 1.2);
+        let staccato = pow(0.5 + 0.5 * sin(mbAge * 18.0 + ms * TAU), 6.0);
+        let noteStrength = mFade * treble * trebleSparkle * (0.35 + staccato);
+        col += vec3<f32>(0.9, 0.96, 1.0) * softGlow(uv, mPos, 0.003, noteStrength);
+        let beadPos = sparkPos(mCenter, mVel, max(0.0, mbAge * 0.7 - 0.09), 0.6, 0.3);
+        col += shellColor(mHue, 0.2) * softGlow(uv, beadPos, 0.0025, noteStrength * 0.65);
       }
     }
   }

@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-10-11
-//  Ideas: base wick column; ignition chemiluminescence; buoyant puffing pinch-off; schlieren heat haze; inner cone; soot streak
+//  Upgraded: 2026-10-27
+//  Ideas: fuel-front reaction lace; shear-rolled flame tongues
+//  Retained: wick; ignition band; puffing; schlieren haze; inner cone; soot
 //  A packing: raw sim state (temperature, fuel, vx, age); ACES on display only
 //  Description: Fluid advection flame simulation with temperature-based
 //    alpha translucency. Hot regions are bright and slightly translucent,
@@ -150,11 +151,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseHeat = smoothstep(0.15, 0.0, mouseDist) * (0.3 + mouseDown * 0.7);
 
   // Smooth bass for flame height, RMS for turbulence
-  var prevBass = extraBuffer[133];
-  var prevRMS = extraBuffer[134];
+  var prevBass = 0.0;
+  var prevRMS = 0.0;
+  if (arrayLength(&extraBuffer) > 134u) {
+    prevBass = extraBuffer[133];
+    prevRMS = extraBuffer[134];
+  }
   let smoothBass = bass_env(prevBass, bass, 0.12, 0.03);
   let smoothRMS = bass_env(prevRMS, rms, 0.1, 0.04);
-  if (gid.x == 0u && gid.y == 0u) {
+  if (gid.x == 0u && gid.y == 0u && arrayLength(&extraBuffer) > 134u) {
     extraBuffer[133] = smoothBass;
     extraBuffer[134] = smoothRMS;
   }
@@ -200,7 +205,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vel = velocityField(vec3<f32>(uv, time * 0.1), time, audioTurb);
 
   // Advection: sample from upstream
-  let advectUV = uv - vel * ps * 3.0;
+  let shearVelocity = vec2<f32>(clamp(velocityX, -1.0, 1.0) * 0.6, 0.0);
+  let advectUV = uv - (vel + shearVelocity) * ps * 3.0;
   let advectCoord = clamp(vec2<i32>(advectUV * res), vec2<i32>(0), maxCoord);
   let advected = textureLoad(dataTextureC, advectCoord, 0);
 
@@ -220,6 +226,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let curl = (right.b - left.b) * 0.5 - (up.r - down.r) * 0.5;
   let vorticity = curl * audioTurb * 0.15;
   temperature = temperature + vorticity;
+  let thermalSlope = clamp((up.r - down.r) * 0.5, -0.5, 0.5);
+  let rollPhase = sin(uv.y * 22.0 - time * 1.8 + uv.x * 9.0);
+  velocityX = velocityX * 0.94 + thermalSlope * rollPhase * audioTurb * 0.12;
 
   // ═══ COMBUSTION ═══
   let burnRate = mix(0.02, 0.08, flameHeight);
@@ -284,6 +293,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea 2 — chemiluminescence at the ignition band
   let igniteEdge = smoothstep(0.08, 0.16, tempNorm) * (1.0 - smoothstep(0.16, 0.32, tempNorm));
   flameColor = flameColor + vec3<f32>(0.22, 0.48, 1.05) * igniteEdge * (0.55 + wick * 0.8);
+  let fuelGradient = length(vec2<f32>(right.g - left.g, up.g - down.g));
+  let reactionSheet = smoothstep(0.015, 0.18, fuelGradient) * smoothstep(0.12, 0.35, temperature)
+    * (1.0 - smoothstep(0.65, 1.4, temperature)) * smoothstep(0.02, 0.2, fuel);
+  flameColor += vec3<f32>(0.16, 0.55, 1.1) * reactionSheet * (0.6 + mids * 0.2);
 
   // Inner cone — cooler premixed core hugging the wick, inside the ignition band.
   let coneArg = (uv.x - 0.5) / 0.032;
@@ -329,7 +342,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Temporal smoothing for flicker reduction
   var finalColor = flameColor;
-  let smoothAlpha = clamp(finalAlpha * (0.94 + treble * 0.06) + haze * 0.12, 0.0, 0.85);
+  let smoothAlpha = clamp(finalAlpha * (0.94 + treble * 0.06) + haze * 0.12 + reactionSheet * 0.1, 0.0, 0.85);
 
   // Depth for chromatic + pass-through
   let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

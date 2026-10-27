@@ -7,32 +7,13 @@
 //            alpha-layered, physical-transmittance, luminance-key,
 //            upgraded-rgba, audio-reactive
 //  Complexity: Medium
-//  Upgraded: 2026-09-13
-//  Ideas: flam3 color-by-transform; final rotate+scale affine
+//  Upgraded: 2026-10-27
+//  Ideas: orbit-trap filaments; transform-residence color layering
+//  Retained: flam3 color-by-transform; final rotate+scale affine
 //  A packing: ACES display RGBA; bass envelope extraBuffer[133]
 // ═══════════════════════════════════════════════════════════════════
 
-// ── IMMUTABLE 13-BINDING CONTRACT ──────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -66,7 +47,7 @@ fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 fn gravityWell(pos: vec2<f32>, wellPos: vec2<f32>, strength: f32) -> vec2<f32> {
     let d = wellPos - pos;
     let dist2 = dot(d, d) + 0.01;
-    return normalize(d) * strength / dist2;
+    return d / max(length(d), 0.0001) * strength / dist2;
 }
 fn flamePalette(t: f32) -> vec3<f32> {
     let stops = array<vec3<f32>, 5>(
@@ -78,7 +59,7 @@ fn flamePalette(t: f32) -> vec3<f32> {
     );
     let idx = clamp(t, 0.0, 1.0) * 4.0;
     let i = i32(clamp(idx, 0.0, 3.0));
-    return mix(stops[i], stops[i + 1], fract(idx));
+    return mix(stops[i], stops[i + 1], idx - f32(i));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -134,7 +115,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spawnMask = smoothstep(0.62, 0.88, luma(video.rgb) + treble * 0.15);
 
     var density = 0.0;
-    var orbit = vec2<f32>(0.0);
+    var orbitFilaments = 0.0;
+    var residenceColor = vec3<f32>(0.0);
+    var residenceWeight = 0.0;
     var xfColor = 0.0;
 
     for (var i = 0; i < iterations; i++) {
@@ -165,10 +148,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fs = sin(fang);
         tp = vec2<f32>(tp.x * fc - tp.y * fs, tp.x * fs + tp.y * fc) * 0.97;
 
+        let returnDistance = length(tp - p);
+        let trapDistance = min(abs(tp.x), abs(tp.y - 0.25));
+        let filament = exp(-trapDistance * 70.0) * exp(-returnDistance * 1.8);
+        orbitFilaments += filament;
+        let contribution = exp(-dot(tp, tp) * 8.0);
+        residenceColor += flamePalette(0.25 + f32(idx) * 0.2) * contribution;
+        residenceWeight += contribution;
         p = tp;
         let d2 = dot(p, p);
         density += exp(-d2 * 8.0);
-        orbit += p;
         // Idea 1 — color-by-transform (which of the four affine maps last fired)
         xfColor = mix(xfColor, f32(idx) / 3.0, 0.35);
     }
@@ -177,6 +166,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flameTemp = clamp(density * 3.0, 0.0, 1.0);
     let xformTint = flamePalette(fract(xfColor * 0.85 + flameTemp * 0.4));
     var color = mix(flamePalette(flameTemp), xformTint, 0.42) * (0.3 + density * 2.5);
+    let branchColor = residenceColor / max(residenceWeight, 0.0001);
+    color = mix(color, branchColor * (0.3 + density * 2.5), 0.28);
+    let filaments = orbitFilaments / max(f32(iterations), 1.0);
+    color += mix(branchColor, vec3<f32>(1.0, 0.88, 0.5), 0.4) * filaments * heat * 1.4;
 
     // HDR bloom
     color += flamePalette(flameTemp * 0.7) * density * density * 0.8;
