@@ -17,7 +17,6 @@ import {
   readGpuUncapturedErrors,
   startStaticServer,
   stopStaticServer,
-  waitForBootDefaultShader,
 } from './helpers/rendererHarness';
 
 const PORT = 3462;
@@ -65,7 +64,6 @@ async function boot(page: Page, mode: Mode = 'main'): Promise<void> {
   );
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
-  await waitForBootDefaultShader(page); // or Liquid replaces a stack's slot 0
 }
 
 async function loadStack(page: Page, ids: string[], input: 'generative' | 'image' | 'video' | 'webcam' = 'generative') {
@@ -194,7 +192,6 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
     const result = await page.evaluate(async () => {
       const api = (window as any).__pixelocity__;
       const ids = ['kaleidoscope', 'cyber-ripples'];
-      const before = api.getSlotState(0)?.shaderId ?? null; // the boot default, once it landed
       api.renderer.warmShaders(ids.map((id) => ({ id, url: `./shaders/${id}.wgsl` })));
       const deadline = performance.now() + 60_000;
       while (performance.now() < deadline && !ids.every((id) => api.renderer.isShaderCached(id))) {
@@ -202,14 +199,11 @@ test.describe('engine2 on SwiftShader WebGPU', () => {
       }
       return {
         cached: ids.map((id) => api.renderer.isShaderCached(id)),
-        before,
         slot0: api.getSlotState(0)?.shaderId ?? null,
       };
     });
     expect(result.cached).toEqual([true, true]);
-    // Warming binds nothing: slot 0 still holds what it held before.
-    expect(result.slot0).toBe(result.before);
-    expect(['kaleidoscope', 'cyber-ripples']).not.toContain(result.slot0);
+    expect(result.slot0).toBeNull();
     expect(await readGpuUncapturedErrors(page)).toEqual([]);
   });
 

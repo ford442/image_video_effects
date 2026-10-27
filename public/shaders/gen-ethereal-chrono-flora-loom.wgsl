@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10, 2026-10-25
-//  Ideas: warp-thread helices along the loom axis; weft shuttle bead at flow speed; chrono-petal clock face; temporal gear-tooth rims; 2nd pass (2026-10-25): soft inverse-square shuttle lamp lights the petals it passes (§12.2F); warp-thread pluck wave where the shuttle crosses (§12.1 device artifact). HEAD fix: upside-down view.
+//  Upgraded: 2026-10-10
+//  Ideas: warp-thread helices along the loom axis; weft shuttle bead at flow speed; chrono-petal clock face; temporal gear-tooth rims
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -83,14 +83,8 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 
     // Idea 1 — warp threads: two helices running the length of the loom.
     let threadR = 0.03 * density;
-    // Idea 4 (2nd pass B) — warp-thread pluck: the shuttle's passage sets the tension
-    // wave travelling along the threads; it shivers the helix radius near shuttle.z.
-    let shut = shuttlePos(t);
-    let dz = p_mod.z - shut.z;
-    let pluck = 0.07 * exp(-dz * dz) * sin(dz * 7.0 - u.config.x * 6.0);
-    let helixR = 1.15 + pluck;
-    let helixA = vec2<f32>(cos(p_mod.z * 2.4 + t), sin(p_mod.z * 2.4 + t)) * helixR;
-    let helixB = vec2<f32>(cos(p_mod.z * 2.4 + t + 3.14159), sin(p_mod.z * 2.4 + t + 3.14159)) * helixR;
+    let helixA = vec2<f32>(cos(p_mod.z * 2.4 + t), sin(p_mod.z * 2.4 + t)) * 1.15;
+    let helixB = vec2<f32>(cos(p_mod.z * 2.4 + t + 3.14159), sin(p_mod.z * 2.4 + t + 3.14159)) * 1.15;
     let d_warp = min(length(p_mod.xy - helixA), length(p_mod.xy - helixB)) - threadR;
 
     // Idea 1: Chrono-petal clock face
@@ -104,7 +98,7 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     d = smin(d, d_clock, 0.15);
 
     // Idea 2 — weft shuttle riding the twist at Flow Speed.
-    let d_shuttle = length(p - shut) - 0.07;
+    let d_shuttle = length(p - shuttlePos(t)) - 0.07;
 
     var mat = 1.0;
     if (d_shuttle < d) {
@@ -137,8 +131,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
-    // HEAD fix: flip y so the key light (+y) lights the top and the view is upright.
-    let uv = vec2<f32>(f32(id.x) - 0.5 * res.x, 0.5 * res.y - f32(id.y)) / res.y;
+    let uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
 
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     var rd = normalize(vec3<f32>(uv, 1.0));
@@ -203,13 +196,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let baseCol = palette(length(p) * 0.1 + u.zoom_params.w);
         col = baseCol * dif * amb;
-
-        // Idea 3 (2nd pass A) — soft inverse-square shuttle lamp (§12.2F): the weft bead is
-        // a travelling light, warming the petals and thread it passes. Core radius 0.6.
-        let toShuttle = shuttle - p;
-        let lamp = 1.0 / (dot(toShuttle, toShuttle) + 0.6);
-        let lampDif = clamp(dot(n, normalize(toShuttle + vec3<f32>(1e-4))), 0.0, 1.0) * 0.6 + 0.4;
-        col += (vec3<f32>(1.0, 0.8, 0.5) * 0.7 + baseCol * 0.3) * lamp * lampDif * 0.6 * (0.4 + 0.6 * glowAmt) * (1.0 + audioBass * 0.5);
 
         if (mat > 3.5) {
             col += vec3<f32>(0.5, 0.8, 1.0) * (0.8 + audioBass);

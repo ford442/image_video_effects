@@ -48,11 +48,7 @@ export type HostedRenderer = Pick<
   | 'setSlotShader'
   | 'setSlotEnabled'
   | 'setSlotMode'
-  | 'setSlotOutput'
   | 'getSlotState'
-  | 'getCompositorStats'
-  | 'setHdrPresent'
-  | 'getHdrPresent'
   | 'setInputSource'
   | 'updateDepthMap'
   | 'setTransferredVideo'
@@ -65,7 +61,6 @@ export type HostedRenderer = Pick<
   | 'setSourceAutoExposure'
   | 'applyTestRenderState'
   | 'setCanvasCopySrc'
-  | 'startCrossfade'
   | 'setDisplayP3'
   | 'getCanvasColorState'
   | 'warmShaders'
@@ -161,7 +156,6 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     if (input.audio) r.updateAudioData(input.audio[0], input.audio[1], input.audio[2]);
     if (input.bins) r.updateAudioFrequencyBins(input.bins);
     for (const [slot, p1, p2, p3, p4] of input.slotParams ?? []) r.setSlotParams(slot, p1, p2, p3, p4);
-    for (const [slot, output] of input.slotOutputs ?? []) r.setSlotOutput(slot, output);
     if (input.clearRipples) r.clearRipples();
     for (const [x, y] of input.ripples ?? []) r.addRipple(x, y);
     if (input.videoStats) video?.setUpstreamStats(input.videoStats);
@@ -190,8 +184,6 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     nodeScales: r.getNodeScales(),
     scalableNodes: r.getScalableNodes(),
     slots: Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => r.getSlotState(i)),
-    compositor: r.getCompositorStats(),
-    hdrPresent: r.getHdrPresent(),
     graphReport: r.getLastGraphReport(),
     chores: r.getGpuChoresBreadcrumbs(),
     cachedShaderIds: r.getPipelineCacheStats().cachedIds,
@@ -265,15 +257,9 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     }),
     setAdaptiveQuality: ({ enabled, targetFps }) => withRenderer((r) => r.setAdaptiveQuality(enabled, targetFps)),
     setSourceAutoExposure: ({ enabled }) => withRenderer((r) => r.setSourceAutoExposure(enabled)),
-    setHdrPresent: ({ settings }) => withRenderer((r) => {
-      r.setHdrPresent(settings);
-    }),
     applyTestRenderState: ({ state }) => withRenderer((r) => r.applyTestRenderState(state)),
     setCanvasCopySrc: ({ enabled }) => withRenderer((r) => {
       r.setCanvasCopySrc(enabled);
-    }),
-    startCrossfade: ({ durationMs }) => withRenderer((r) => {
-      r.startCrossfade(durationMs);
     }),
     warmShaders: ({ entries }) => withRenderer((r) => r.warmShaders(entries)),
     simulateDeviceLoss: () => withRenderer((r) => {
@@ -285,17 +271,12 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   };
 
   const rpcs: RpcHandlers = {
-    init: async ({ canvas, config, colorOptIns, appBaseUrl, pageSearch, inputRing: ringBuffer, generation: initGeneration }) => {
+    init: async ({ canvas, config, colorOptIns, appBaseUrl, inputRing: ringBuffer, generation: initGeneration }) => {
       // One renderer (one GPUDevice) per worker: recovery spawns a new worker.
       if (renderer || lostRenderer) throw new Error('render worker is already initialized');
       generation = initGeneration ?? null;
       deps.setFetchBase(appBaseUrl);
-      const probe = await deps.runProbe(
-        canvas,
-        config.width,
-        config.height,
-        pageSearch ? { colorOptIns, search: pageSearch } : { colorOptIns },
-      );
+      const probe = await deps.runProbe(canvas, config.width, config.height, { colorOptIns });
       const breadcrumb = deps.toBreadcrumb(probe);
       if (!probe.ok || !probe.handoff) {
         return { ok: false, probe: breadcrumb, lastInitError: probe.lastError ?? 'WebGPU boot probe failed' };

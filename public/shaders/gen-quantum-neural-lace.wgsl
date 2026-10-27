@@ -3,14 +3,31 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27, 2026-10-25
-//  Ideas: per-node stochastic firing with refractory decay; nodes of Ranvier (saltatory packets); conducted spike hopping outward from the firing node one internode per step (§12.1 t2/t7); soft inverse-square soma spill on neighbouring strands (§12.2F)
-//  HEAD fixes: eye sat on the z-axis inside a strand cylinder (every ray hit at t=0 -> blank white); camera basis was rotated 180 degrees; key light came from behind the lattice
+//  Upgraded: 2026-09-27
+//  Ideas: per-node stochastic firing with refractory decay; nodes of Ranvier (saltatory packets)
 //  A packing: HDR trail RGB (pre-ACES, read back from C), alpha = coverage
 // ═══════════════════════════════════════════════════════════════════
 
-#include "_prelude.wgsl"
-// zoom_params: x=Lattice Density, y=Pulse Speed, z=Fiber Chaos, w=Energy Level
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+    config: vec4<f32>,       // x=time, y=rippleCount, z=resW, w=resH
+    zoom_config: vec4<f32>,  // x=time, yz=mouse_uv, w=mouseDown
+    zoom_params: vec4<f32>,  // x=Lattice Density, y=Pulse Speed, z=Fiber Chaos, w=Energy Level
+    ripples: array<vec4<f32>, 50>,
+};
 
 // --- SDF Primitives ---
 
@@ -39,16 +56,6 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let d = 0.59;
     let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
-}
-
-// Per-node firing clock, shared by the node flash and the conducted spike so
-// both read the same phase. Returns (phase since last fire, rate, node fires?).
-fn fireClock(seed: f32, time: f32, pulseSpeed: f32, bass: f32) -> vec3<f32> {
-    let fireRate = 0.25 + pulseSpeed * 0.9 + bass * 0.35;
-    let rate = fireRate * (0.7 + seed * 0.6);
-    let ph = fract(time * rate + seed * 7.13);
-    let on = step(0.3, fract(seed * 13.7));
-    return vec3<f32>(ph, rate, on);
 }
 
 fn rotate2D(p: vec2<f32>, angle: f32) -> vec2<f32> {
@@ -156,7 +163,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let pixel = vec2<i32>(global_id.xy);
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
-    uv.y = -uv.y; // pixel y runs down; world up is +y
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -184,16 +190,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let forward_speed = 1.8 + pulseSpeed * 2.5 + bass * 1.2;
     let cam_offset = vec3<f32>(0.0, 0.0, warpT * forward_speed);
 
-    // Fly in the free corridor between strands: strands run along each cell's
-    // axes through its centre, so an eye on those axes starts inside a cylinder.
-    let cellSize = 8.0 / mix(2.0, 6.0, u.zoom_params.x);
-    let anchor = cam_offset + vec3<f32>(0.36 * cellSize, 0.3 * cellSize, 0.0);
-
-    let ro = cam_pos + anchor;
-    let target_pos = anchor;
+    let ro = cam_pos + cam_offset;
+    let target_pos = cam_offset;
     let forward = normalize(target_pos - ro);
-    let right = normalize(cross(forward, vec3<f32>(0.0, 1.0, 0.0)));
-    let up = cross(right, forward);
+    let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
+    let up = cross(forward, right);
     let rd = normalize(forward + right * uv.x + up * uv.y);
 
     var res = raymarch(ro, rd);
@@ -208,7 +209,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let isNode = mat >= 2.0;
         let gapMask = select(clamp((mat - 1.0) * 2.0, 0.0, 1.0), 0.0, isNode);
 
-        let light_dir = normalize(vec3<f32>(0.5, 0.8, 0.5));
+        let light_dir = normalize(vec3<f32>(0.5, 0.8, -0.5));
         let diff = max(dot(n, light_dir), 0.0);
         let view_dir = normalize(ro - p);
         let halfway = normalize(light_dir + view_dir);
@@ -235,41 +236,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // exponential refractory decay; bass quickens the firing rate.
         if (isNode) {
             let seed = fract(mat);
-            let fc = fireClock(seed, time, pulseSpeed, bass);
-            let fire = exp(-fc.x * 9.0) * fc.z;
+            let fireRate = 0.25 + pulseSpeed * 0.9 + bass * 0.35;
+            let ph = fract(time * fireRate * (0.7 + seed * 0.6) + seed * 7.13);
+            let fire = exp(-ph * 9.0) * step(0.3, fract(seed * 13.7));
             color += mix(vec3<f32>(0.6, 0.9, 1.0), vec3<f32>(1.0, 0.85, 0.6), seed) * fire * 3.0 * (0.4 + glowIntensity);
         }
-
-        // The cell this surface point belongs to, and its soma's firing clock.
-        // Same seed/phase as the node flash above (seed = hash31(id) * 0.99).
-        let cellHalf = 4.0 / mix(2.0, 6.0, u.zoom_params.x);
-        let cellSz = cellHalf * 2.0;
-        let cellId = floor((p + cellHalf) / cellSz);
-        let lp = (fract((p + cellHalf) / cellSz) - 0.5) * cellSz;
-        let somaClock = fireClock(hash31(cellId) * 0.99, time, pulseSpeed, bass);
-        let somaFire = exp(-somaClock.x * 9.0) * somaClock.z;
-
-        // ── Idea 3: conducted spike (§12.1 t2/t7). The firing soma launches an
-        // action potential outward along ITS strands, one Ranvier internode per
-        // step (saltatory), brightest at the front and fading behind it.
-        let radial = vec3<f32>(length(lp.yz), length(lp.xz), length(lp.xy));
-        let axisX = radial.x <= radial.y && radial.x <= radial.z;
-        let axisY = !axisX && radial.y <= radial.z;
-        let axial = select(select(lp.z, lp.y, axisY), lp.x, axisX);
-        let segLen = cellSz * 0.25;                       // matches the 4-per-cell Ranvier banding
-        let segIdx = floor(abs(axial) / segLen);
-        let frontIdx = floor(somaClock.x * 8.0);          // front reaches the cell edge at phase 0.25
-        let behindFront = frontIdx - segIdx;
-        let conduct = somaClock.z * select(1.0, 0.0, isNode) * step(0.0, behindFront)
-                    * exp(-max(behindFront, 0.0) * 0.9) * exp(-somaClock.x * 3.5);
-        color += vec3<f32>(0.7, 1.0, 1.0) * conduct * 2.2 * (0.4 + glowIntensity) * (1.0 + treble * 0.5);
-
-        // ── Idea 4: soft inverse-square soma spill (§12.2F). The firing soma
-        // is a point source with a core radius r0, so strands and the node
-        // body near it brighten as r0²/(d²+r0²) — no singularity at the core.
-        let r0 = cellSz * 0.12;
-        let spill = somaFire * (r0 * r0) / (dot(lp, lp) + r0 * r0);
-        color += vec3<f32>(1.0, 0.85, 0.55) * spill * 1.2 * (0.4 + glowIntensity);
 
         let rim = pow(1.0 - max(dot(n, view_dir), 0.0), 3.0);
         color += vec3<f32>(0.5, 0.0, 0.8) * rim * 0.5;
@@ -286,11 +257,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let histCoord = clamp(pixel - vec2<i32>(vec2<f32>(cos(warpT * 0.6), sin(warpT * 0.55)) * (2.0 + pulseSpeed * 3.0)),
                           vec2<i32>(0), vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1));
     let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
-    // Leaky integrator: steady-state gain = inject / (1 - decay). HEAD injected the
-    // full colour (gain ~6.9x) which saturated every lit surface once the lattice
-    // actually rendered; inject 0.22 keeps the trails at ~1.5x.
-    let trailDecay = 0.83 + pulseSpeed * 0.05;
-    let temporal = clamp(color * 0.22 + prev * trailDecay, vec3<f32>(0.0), vec3<f32>(5.5));
+    let temporal = clamp(color + prev * (0.83 + pulseSpeed * 0.05), vec3<f32>(0.0), vec3<f32>(5.5));
 
     let depth = select(1.0, clamp(t / 100.0, 0.05, 0.98), t < 100.0);
     let alpha = clamp(length(temporal) * 0.9 + 0.1, 0.1, 1.0);

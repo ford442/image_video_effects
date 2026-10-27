@@ -23,8 +23,6 @@ TypeScript WebGPU renderer split mirrors the C++ WASM layout (#965).
 | [`webgpu/WebGPUMediaInput.ts`](webgpu/WebGPUMediaInput.ts) | Image/video upload |
 | [`webgpu/webgpuConstants.ts`](webgpu/webgpuConstants.ts) | Shared constants and slot types |
 | [`webgpu/frameState.ts`](webgpu/frameState.ts) | Renderer-owned state adapter for frame modules |
-| [`webgpu/presentHold.ts`](webgpu/presentHold.ts) | Cue crossfade: one frozen `rgba8unorm` picture mixed in by the present pass (TS only — the C++ present path keeps hard cuts) |
-| [`crossfadeArm.ts`](crossfadeArm.ts) | Page-side policy: a cue arms, then fires once on the first shader-identity change |
 | [`webgpuDevicePolicy.ts`](webgpuDevicePolicy.ts) | Adapter contract (shared with C++) |
 | [`../gpuChores/`](../gpuChores/) | Tier 4b pre-FX analysis (histogram / reduce / LUT / downsample); adopts this device |
 

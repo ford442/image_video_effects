@@ -73,11 +73,8 @@ describe('exported definitions through scripts/buildMultipassRegistry.js', () =>
 
   it('emits the runtime-overlay resolvers the Lab depends on', () => {
     const { source } = build();
-    expect(source).toContain(
-      "import { getRuntimeGraph, getRuntimeSimHashRequest, getRuntimeSimRingRequest } from './runtimeGraphs';",
-    );
+    expect(source).toContain("import { getRuntimeGraph, getRuntimeSimRingRequest } from './runtimeGraphs';");
     expect(source).toContain('const runtime = getRuntimeSimRingRequest(shaderId);');
-    expect(source).toContain('const runtime = getRuntimeSimHashRequest(shaderId);');
     expect(source).toContain('return getRuntimeGraph(shaderId) ?? GRAPH_REGISTRY[shaderId] ?? null;');
     expect(source).toContain('return resolveGraphForShader(shaderId) !== null;');
   });

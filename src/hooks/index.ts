@@ -35,9 +35,6 @@ export type { UseShaderBootOptions } from './useShaderBoot';
 export { useAiVjHandlers } from './useAiVjHandlers';
 export type { UseAiVjHandlersOptions, UseAiVjHandlersReturn } from './useAiVjHandlers';
 
-export { useLocalMediaUpload, useLocalMediaLoader } from './useLocalMediaUpload';
-export type { LocalMediaKind, LocalMediaHandler, UseLocalMediaLoaderOptions } from './useLocalMediaUpload';
-
 export { useWebcam } from './useWebcam';
 export type { UseWebcamOptions, UseWebcamReturn } from './useWebcam';
 

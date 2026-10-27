@@ -10,7 +10,6 @@ import {
     decodeChain,
 } from './layerChainShare';
 import { SlotParams } from '../renderer/types';
-import { DEFAULT_SLOT_OUTPUT, type SlotOutput } from '../renderer/slotOutput';
 
 function makeParams(overrides: Partial<SlotParams> = {}): SlotParams {
     return { ...DEFAULT_SLOT_PARAMS, ...overrides };
@@ -23,42 +22,6 @@ function encodeRaw(obj: unknown): string {
 }
 
 describe('layerChainShare', () => {
-    describe('compositor output (b / o / m, #1512)', () => {
-        const blend = (patch: Partial<SlotOutput>): SlotOutput => ({ ...DEFAULT_SLOT_OUTPUT, mode: 'blend', ...patch });
-
-        it('round-trips blend, opacity and mask through the URL', () => {
-            const modes = ['liquid-metal', 'cosmic-flow', 'crystal-facets', 'none', 'none', 'none'];
-            const slotParams = modes.map(() => makeParams());
-            const slotOutputs: SlotOutput[] = [
-                { ...DEFAULT_SLOT_OUTPUT },
-                blend({ blend: 'screen', opacity: 0.5, mask: 'slot2', maskInvert: true, feather: 0.25 }),
-                { ...DEFAULT_SLOT_OUTPUT, mode: 'mask' },
-                ...modes.slice(3).map(() => ({ ...DEFAULT_SLOT_OUTPUT })),
-            ];
-            const slotModes = ['chained', 'parallel', 'parallel', 'chained', 'chained', 'chained'] as const;
-            const chain = buildSharedChain(modes, slotParams, { slotModes: [...slotModes], slotOutputs });
-            expect(chain.slots[0]).toEqual({ shaderId: 'liquid-metal' });
-            expect(chain.slots[1]).toMatchObject({ b: 'screen', o: 0.5, m: '~slot2', f: 0.25 });
-            expect(chain.slots[2]).toMatchObject({ b: 'mask' });
-
-            const decoded = decodeChain(encodeChain(chain))!;
-            const expanded = expandSharedChain(decoded);
-            expect(expanded.slotOutputs).toEqual(slotOutputs);
-            expect(expanded.slotModes).toEqual([...slotModes]);
-        });
-
-        it('decodes a pre-compositor link as replace everywhere', () => {
-            const decoded = decodeChain(encodeRaw({ v: 1, slots: [{ shaderId: 'a' }, { shaderId: 'b', mode: 'parallel' }] }))!;
-            expect(expandSharedChain(decoded).slotOutputs).toEqual([{ ...DEFAULT_SLOT_OUTPUT }, { ...DEFAULT_SLOT_OUTPUT }]);
-        });
-
-        it('drops a malformed output field but keeps the slot', () => {
-            const decoded = decodeChain(encodeRaw({ v: 1, slots: [{ shaderId: 'a', b: 'add', o: 'loud', m: 'slot9' }] }))!;
-            expect(decoded.slots).toHaveLength(1);
-            expect(expandSharedChain(decoded).slotOutputs[0]).toEqual(blend({ blend: 'add' }));
-        });
-    });
-
     describe('round-trip', () => {
         it('encodes and decodes a simple chain losslessly', () => {
             const chain: SharedChain = {

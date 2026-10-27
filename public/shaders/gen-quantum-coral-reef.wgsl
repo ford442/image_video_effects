@@ -1,10 +1,6 @@
 // ----------------------------------------------------------------
 // Quantum Coral Reef
 // Category: generative
-// Features: audio-reactive, mouse-driven, upgraded-rgba
-// Upgraded: 2026-10-25
-// Ideas: KIFS orbit trap (§12.2E) -> brain-coral growth ridges + hue split; SDF curvature (§12.2E) -> luminous convex polyp crowns, dark crevices; Beer-Lambert water column (§12.2F) -> red absorbed first, blue in-scatter
-// A packing: ACES display RGBA (alpha = coverage / water translucency)
 // ----------------------------------------------------------------
 #include "_prelude.wgsl"
 
@@ -76,14 +72,11 @@ fn smoothNoise3(x: vec3<f32>) -> f32 {
 struct MapResult {
     d: f32,
     mat: f32,   // material id / glow mask
-    trap: f32,  // Idea 1: KIFS orbit trap (min |q|/scale over the fold loop)
 }
 
 var<private> g_glow: f32 = 0.0;
 var<private> g_time: f32 = 0.0;
 var<private> g_mousePos: vec3<f32>;
-const CAM_X: f32 = 4.0;
-const CAM_Y: f32 = 4.0;
 
 // ----------------------------------------------------------------
 // Map / SDF
@@ -132,7 +125,6 @@ fn map(p_in: vec3<f32>) -> MapResult {
     // KIFS fractal core
     var q = p;
     var scale = 1.0;
-    var trap = 1e3;
 
     for(var i: i32 = 0; i < i32(paramComplexity); i = i + 1) {
         q = abs(q) - vec3<f32>(1.2, 0.8, 1.0) * (0.8 + 0.2*pulse);
@@ -140,9 +132,6 @@ fn map(p_in: vec3<f32>) -> MapResult {
         q = vec3<f32>(qxy, q.z);
         let qxz = q.xz * rot2D(0.3 - g_time * 0.05);
         q = vec3<f32>(qxz.x, q.y, qxz.y);
-
-        // ── Idea 1: orbit trap (§12.2E) — scale-compensated distance of the folded point to the origin
-        trap = min(trap, length(q) / scale);
 
         let k = 1.5;
         q *= k;
@@ -166,29 +155,21 @@ fn map(p_in: vec3<f32>) -> MapResult {
     var res: MapResult;
     res.d = d * 0.8; // conservative step
     res.mat = glowMask;
-    res.trap = trap;
     return res;
 }
 
 // ----------------------------------------------------------------
-// Normal + curvature (Idea 2: SDF curvature, §12.2E)
-// xyz = normal, w = kappa ~ (sum d(p +- e axis) - 6 d) / e^2  (> 0 convex tip, < 0 crevice)
-// map() accumulates g_glow, so the taps are made glow-neutral.
+// Normal Calculation
 // ----------------------------------------------------------------
-fn calcNormalCurv(p: vec3<f32>) -> vec4<f32> {
-    let glow0 = g_glow;
-    let e = 0.03;
-    let d0 = map(p).d;
-    let dxp = map(p + vec3<f32>(e, 0.0, 0.0)).d;
-    let dxn = map(p - vec3<f32>(e, 0.0, 0.0)).d;
-    let dyp = map(p + vec3<f32>(0.0, e, 0.0)).d;
-    let dyn = map(p - vec3<f32>(0.0, e, 0.0)).d;
-    let dzp = map(p + vec3<f32>(0.0, 0.0, e)).d;
-    let dzn = map(p - vec3<f32>(0.0, 0.0, e)).d;
-    g_glow = glow0;
-    let n = normalize(vec3<f32>(dxp - dxn, dyp - dyn, dzp - dzn) + vec3<f32>(1e-6));
-    let kappa = (dxp + dxn + dyp + dyn + dzp + dzn - 6.0 * d0) / (e * e);
-    return vec4<f32>(n, kappa);
+fn calcNormal(p: vec3<f32>) -> vec3<f32> {
+    let e = vec2<f32>(0.001, 0.0);
+    let d = map(p).d;
+    let n = vec3<f32>(
+        map(p + e.xyy).d - d,
+        map(p + e.yxy).d - d,
+        map(p + e.yyx).d - d
+    );
+    return normalize(n);
 }
 
 // ----------------------------------------------------------------
@@ -208,10 +189,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let m = (mouseUV - 0.5) * vec2<f32>(dims.x/min(dims.x,dims.y), dims.y/min(dims.x,dims.y));
 
     // Camera setup
-    // HEAD fix: the camera started inside the solid (every ray hit at t~0 -> flat crumpled wash).
-    // It now flies down the open lane between reef columns (cell corner), upright (rd.y = -uv.y).
-    let ro = vec3<f32>(CAM_X, CAM_Y, -5.0 + g_time * mix(0.5, 2.0, u.zoom_params.z));
-    var rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0));
+    let ro = vec3<f32>(0.0, 0.0, -5.0 + g_time * mix(0.5, 2.0, u.zoom_params.z));
+    var rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
 
     // Slight camera sway
     let rdxz = rd.xz * rot2D(sin(g_time * 0.2) * 0.2);
@@ -229,7 +208,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let maxIter = 80;
     var hit = false;
     var mRes: MapResult;
-    mRes.d = 1.0; mRes.mat = 0.0; mRes.trap = 1.0;
 
     for(var i = 0; i < maxIter; i = i + 1) {
         let p = ro + rd * t;
@@ -245,8 +223,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if (hit) {
         let p = ro + rd * t;
-        let nk = calcNormalCurv(p);
-        let n = nk.xyz;
+        let n = calcNormal(p);
 
         let lightDir = normalize(vec3<f32>(0.5, 1.0, -0.5));
         let diff = max(dot(n, lightDir), 0.0);
@@ -258,31 +235,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Bioluminescence mapping
         let bioColor1 = vec3<f32>(0.0, 1.0, 0.8); // Cyan
         let bioColor2 = vec3<f32>(1.0, 0.1, 0.5); // Neon Pink
-        // ── Idea 1: orbit-trap growth ridges (§12.2E) — contour lines of the KIFS trap read as
-        // brain-coral ridges, and split the cyan/pink hue so colonies are banded, not just noisy.
-        let ridgePhase = abs(fract(mRes.trap * 7.0) - 0.5) * 2.0;     // 0 on a ridge crest, 1 in a groove
-        let ridge = 1.0 - smoothstep(0.0, 0.35, ridgePhase);
-        let hueSel = clamp(mix(smoothNoise3(p * 0.2 + g_time), fract(mRes.trap * 3.0), 0.5), 0.0, 1.0);
-        let bioColor = mix(bioColor1, bioColor2, hueSel);
+        let bioColor = mix(bioColor1, bioColor2, smoothNoise3(p * 0.2 + g_time));
 
         let glowIntens = mRes.mat * 2.0;
         baseCol = mix(baseCol, bioColor, glowIntens);
 
-        // ── Idea 2: SDF curvature (§12.2E) — convex polyp crowns light up, crevices fall into shadow
-        let convex = clamp(nk.w * 0.06, 0.0, 1.0);
-        let concave = clamp(-nk.w * 0.06, 0.0, 1.0);
-
-        col = baseCol * (diff * 0.5 + 0.1) * (1.0 - 0.55 * concave);
+        col = baseCol * (diff * 0.5 + 0.1);
         col += bioColor * fresnel * 0.8;
         col += bioColor * glowIntens;
-        col += bioColor * ridge * (0.12 + 0.25 * glowIntens);
-        col += mix(bioColor, vec3<f32>(1.0), 0.35) * convex * (0.25 + 0.5 * glowIntens);
 
-        // ── Idea 3: Beer-Lambert water column (§12.2F) — red goes first, then green; the
-        // lost light is replaced by blue in-scatter (replaces the linear smoothstep fog).
-        let sigma = vec3<f32>(0.11, 0.045, 0.02);
-        let trans = exp(-sigma * t);
-        col = col * trans + vec3<f32>(0.005, 0.02, 0.05) * (vec3<f32>(1.0) - trans);
+        // Fog
+        col = mix(col, vec3<f32>(0.005, 0.02, 0.05), smoothstep(10.0, maxDist, t));
     }
 
     // Global emissive glow accumulation
@@ -293,8 +256,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trebleBloom = audio.z * 0.1 * u.zoom_params.w;
     col += vec3<f32>(1.0, 0.5, 0.2) * trebleBloom * smoothstep(1.0, 0.0, length(uv));
 
-    // ACES Tonemapping (clamped input: the catalog ACES fit maps negatives to bright)
-    col = max(col, vec3<f32>(0.0));
+    // ACES Tonemapping
     let a = 2.51;
     let b = 0.03;
     let c = 2.43;
@@ -302,10 +264,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let e = 0.14;
     col = clamp((col * (a * col + b)) / (col * (c * col + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 
-    // Semantic alpha: solid coral is opaque, open water is translucent and glows with the accumulated bloom.
-    let alpha = select(clamp(0.45 + g_glow * 0.02, 0.45, 0.85), 1.0, hit);
-    let outPix = vec2<i32>(global_id.xy);
-    textureStore(writeTexture, outPix, vec4<f32>(col, alpha));
-    textureStore(writeDepthTexture, outPix, vec4<f32>(select(0.0, 1.0 - clamp(t / maxDist, 0.0, 1.0), hit), 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, outPix, vec4<f32>(col, alpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(col, 1.0));
 }
