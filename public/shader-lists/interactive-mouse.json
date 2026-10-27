@@ -1787,7 +1787,7 @@
     "id": "cyber-ripples",
     "name": "Cyber Ripples",
     "url": "shaders/cyber-ripples.wgsl",
-    "description": "Interactive cursor-driven ripples fused with domain-warped FBM turbulence, audio-driven cyber palette shifting, SDF ring masking, click shockwaves, bass envelope feedback trails, depth-aware compositing, and ACES tone mapping.",
+    "description": "Interactive cursor-driven ripples fused with domain-warped FBM turbulence, audio-driven cyber palette shifting, SDF ring masking, click shockwaves, bass envelope feedback trails, depth-aware compositing, and ACES tone mapping. Ring brightness is stepped, and the chromatic split snaps to the block grid.",
     "params": [
       {
         "id": "speed",
@@ -2583,7 +2583,7 @@
     "id": "echo-ripple",
     "name": "Echo Ripple",
     "url": "shaders/echo-ripple.wgsl",
-    "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing.",
+    "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing. Later echoes lag, and opposing echoes desaturate.",
     "updated": true,
     "params": [
       {
@@ -4547,7 +4547,7 @@
     "id": "interactive-pixel-wind",
     "name": "Pixel Wind",
     "url": "shaders/interactive-pixel-wind.wgsl",
-    "description": "Wind effect driven by cursor direction.",
+    "description": "Wind effect driven by cursor direction. Gusts gate the wind in sheets, and the flow combs transverse ripples.",
     "params": [
       {
         "id": "strength",
@@ -5347,7 +5347,7 @@
     "id": "liquid-touch",
     "name": "Liquid Touch",
     "url": "shaders/liquid-touch.wgsl",
-    "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam.",
+    "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam. Warm patches dome, and a steep contact line sticks.",
     "features": [
       "mouse-driven",
       "held-drag",
@@ -5360,7 +5360,8 @@
       "marangoni-flow",
       "microfoam",
       "semantic-alpha",
-      "aces"
+      "aces",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6711,7 +6712,7 @@
     "name": "Mouse Ink Bleed",
     "url": "shaders/mouse-ink-bleed.wgsl",
     "category": "interactive-mouse",
-    "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing. Wet ink wicks along paper fibres in hairline feathers and leaves a dark tide-line rim where the wet front dries.",
+    "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing. Wet ink wicks along paper fibres in hairline feathers and leaves a dark tide-line rim where the wet front dries. A held brush pools, and the wet deposit granulates into the paper tooth.",
     "tags": [
       "ink",
       "bleed",
@@ -7047,7 +7048,7 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
-    "description": "Mouse drags leave colorful paint splatters sampled from the image. Paint spreads, mixes, and dries over time. Click ripples create explosive paint bursts.",
+    "description": "Mouse drags leave colorful paint splatters sampled from the image. Paint spreads, mixes, and dries over time. Click ripples create explosive paint bursts. Fast throws stretch into streaks, and wet rims collect pigment.",
     "params": [
       {
         "id": "splatterSize",
@@ -12186,7 +12187,7 @@
     "id": "velocity-field-paint",
     "name": "Velocity Field — Vorticity Confinement",
     "url": "shaders/velocity-field-paint.wgsl",
-    "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence. Velocity self-advects semi-Lagrangian, confinement uses the stored curl field, and moving regions are combed into streamline paint streaks.",
+    "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence. Velocity self-advects semi-Lagrangian, confinement uses the stored curl field, and moving regions are combed into streamline paint streaks. Momentum takes a MacCormack correction, and confinement drops where the flow is shearing.",
     "features": [
       "mouse-driven",
       "audio-reactive",

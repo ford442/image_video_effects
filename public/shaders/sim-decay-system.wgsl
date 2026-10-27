@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: simulation, cellular-automata, corrosion, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: filiform rust veins along edge tangent; oxide bloom from corrosion
+//  Upgraded: 2026-10-26 (prev 2026-09-12)
+//  Ideas: filiform rust veins along edge tangent; oxide bloom from corrosion; underfilm creep; pitting
 //  A packing: raw (decay, material, corrosion, protection)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -89,6 +70,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edgeGrad = detectEdgeGrad(uv, pixel);
     let edges = edgeGrad.z;
     let isEdge = step(0.1, edges);
+    let gLen = max(length(edgeGrad.xy), 0.0001);
+    let tangent = vec2<f32>(-edgeGrad.y, edgeGrad.x) / gLen;
     
     // Count decayed neighbors (for cellular automata spread)
     var decayedNeighbors = 0.0;
@@ -96,7 +79,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         for (var x: i32 = -1; x <= 1; x++) {
             if (x == 0 && y == 0) { continue; }
             let neighborDecay = stateAt(coord + vec2<i32>(x, y), dims).r;
-            decayedNeighbors += step(0.5, neighborDecay);
+            // ── Idea 3: underfilm creep — along the edge counts more than across it
+            let off = vec2<f32>(f32(x), f32(y));
+            let align = abs(dot(off / max(length(off), 0.001), tangent));
+            let creep = select(1.0, mix(0.4, 1.8, align), isEdge > 0.5);
+            decayedNeighbors += step(0.5, neighborDecay) * creep;
         }
     }
     
@@ -141,6 +128,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
         newMaterial = (source.r * 0.3 + source.g * 0.6 + source.b * 0.1);
     }
+
+    // ── Idea 4: pitting — rare mid-material sites nucleate away from edges
+    let pitNoise = hash12(floor(uv * 96.0));
+    let pit = step(0.998, pitNoise) * smoothstep(0.2, 0.45, newMaterial) * (1.0 - isEdge) * (1.0 - protection);
+    newDecay = clamp(newDecay + pit * materialDecayRate * 12.0, 0.0, 1.0);
     
     // Store decay state
     corrosion = clamp(corrosion * 0.996 + newDecay * edges * 0.006, 0.0, 1.0);
@@ -175,8 +167,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     decayedColor += rust * colorShift * (0.55 + corrosion * 0.8);
 
     // Idea 1 — filiform rust veins along the edge tangent
-    let gLen = max(length(edgeGrad.xy), 0.0001);
-    let tangent = vec2<f32>(-edgeGrad.y, edgeGrad.x) / gLen;
     let veinPhase = dot(uv, tangent) * 92.0 + hash12(floor(uv * 48.0)) * 6.283185307;
     let vein = pow(abs(sin(veinPhase)), 8.0) * smoothstep(0.08, 0.28, edges) * newDecay;
     decayedColor = mix(decayedColor, vec3<f32>(0.55, 0.22, 0.07), vein * 0.65);

@@ -2,7 +2,7 @@
   "id": "black-hole",
   "name": "Gravitational Lensing",
   "url": "shaders/black-hole.wgsl",
-  "description": "Stylized gravitational-lensing distortion with held-pointer pull, orbiting horizon runners, inward light packets, audio modulation, and bounded click fronts.",
+  "description": "Stylized gravitational-lensing distortion with held-pointer pull, orbiting horizon runners, inward light packets, audio modulation, and bounded click fronts. A photon-orbit caustic rings the horizon, and light there reddens.",
   "features": [
     "mouse-driven",
     "audio-reactive",

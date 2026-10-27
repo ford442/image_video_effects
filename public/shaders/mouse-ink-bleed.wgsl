@@ -8,31 +8,13 @@
 //  Complexity: Medium
 //  Created: 2026-05-30
 //  Updated: 2026-07-12 (retry expansion)
-//  Upgraded: 2026-10-04
-//  Ideas: paper-fibre wicking of a wet-ink field; tide-line pigment rim at the drying front
+//  Upgraded: 2026-10-26 (prev 2026-10-04)
+//  Ideas: paper-fibre wicking of a wet-ink field; tide-line pigment rim at the drying front; paper granulation (§12.2C); dwell pool (§12.2C)
 //  A packing: (trail rgb, wet-ink amount) — HEAD stored a per-pixel bass envelope in .a
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
@@ -186,7 +168,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dryRate = mix(0.975, 0.996, clamp(u.zoom_params.z, 0.0, 1.0));
     let prevWet = clamp(prev.a, 0.0, 1.0);
     let wetSpread = prevWet + (wetNbr - prevWet) * wick;
-    let newWet = clamp(max(wetSpread * dryRate, inkRadius * 0.9 + shockStrength * 0.15), 0.0, 1.0);
+    let wetBase = clamp(max(wetSpread * dryRate, inkRadius * 0.9 + shockStrength * 0.15), 0.0, 1.0);
+    // ── Idea 4: dwell pool (§12.2C) — a held brush fills the wetness under it
+    let dwell = (1.0 - smoothstep(max(spread * 0.02, 0.001), spread * 0.45, dist)) * clamp(isPress, 0.0, 1.0);
+    let newWet = clamp(wetBase + dwell * (1.0 - wetBase) * 0.12, 0.0, 1.0);
 
     var trail = mix(prev.rgb * decay, color, 0.08 + inkRadius * 0.25);
     let carry = wick * smoothstep(0.02, 0.25, wetNbr) * step(prevWet, wetNbr) * 0.5;
@@ -201,6 +186,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rim = smoothstep(0.03, 0.18, wetGrad) * smoothstep(0.04, 0.25, newWet) * (1.0 - smoothstep(0.55, 0.9, newWet));
     color = color * (1.0 - rim * 0.5 * colorIntensity);
     trail = mix(trail, trail * 0.55, rim * 0.25);
+
+    // ── Idea 3: paper granulation (§12.2C) — tooth skips pigment; turbulence scales the bite
+    let tooth = hash21(uv * vec2<f32>(220.0, 170.0));
+    let grainHole = smoothstep(0.55, 0.82, tooth) * turbulence * newWet;
+    trail = mix(trail, trail * 0.45, grainHole * 0.65);
+    color = mix(color, color * 0.55, grainHole * 0.8);
+    color = mix(color, color * inkTint * 1.8, dwell * 0.35);
 
     let fog = 1.0 - exp(-depth * 2.5);
     color = mix(color, color * 0.65 + vec3<f32>(0.02), fog * 0.35);

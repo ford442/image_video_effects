@@ -2,7 +2,7 @@
   "id": "echo-ripple",
   "name": "Echo Ripple",
   "url": "shaders/echo-ripple.wgsl",
-  "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing.",
+  "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing. Later echoes lag, and opposing echoes desaturate.",
   "updated": true,
   "params": [
     {
