@@ -72,7 +72,6 @@ const PIXELOCITY_OPTIONAL_FEATURES = [
   'float32-filterable',
   'timestamp-query',
   'subgroups',
-  'chromium-experimental-subgroups',
 ] as const;
 
 /**
@@ -200,11 +199,8 @@ export function appendAdapterSummaryFields(
 }
 
 export function resolveSubgroupFeatureName(adapter: GPUAdapter): GPUFeatureName | null {
-  if (adapter.features.has('subgroups')) return 'subgroups';
-  if (adapter.features.has('chromium-experimental-subgroups' as GPUFeatureName)) {
-    return 'chromium-experimental-subgroups' as GPUFeatureName;
-  }
-  return null;
+  // Standard name only: the chromium-experimental-subgroups fallback is obsolete.
+  return adapter.features.has('subgroups') ? 'subgroups' : null;
 }
 
 export async function initializeWebGPUDevice(

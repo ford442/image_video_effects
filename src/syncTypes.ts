@@ -33,6 +33,14 @@ export interface SyncMessage {
     payload?: any;
 }
 
+/** Payload of `CMD_UPLOAD_FILE` (Remote -> Main). */
+export interface UploadFilePayload {
+    name: string;
+    type: 'image' | 'video';
+    mimeType: string;
+    data: ArrayBuffer;
+}
+
 export interface VideoRecord {
     id?: string;
     url: string;

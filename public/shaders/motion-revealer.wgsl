@@ -3,29 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, optical-flow, motion-trails, depth-aware, upgraded-rgba, temporal
 //  Complexity: High
-//  Upgraded: 2026-08-16 (Batch 52: Lucas-Kanade structure tensor, spectral streaklines, exact C load)
+//  Upgraded: 2026-08-16, 2026-10-27
+//  Ideas: coherence-gated streak (§12.2A); motion hold from C.a
+//  A packing: (live RGB, low-passed motion) — C.rgb is previous colour, C.a is previous motion
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Sensitivity, y=TrailLen, z=GlowStr, w=ChromaSep
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Sensitivity, y=TrailLen, z=GlowStr, w=ChromaSep
 
 fn aces_film(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -87,6 +71,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lambda_diff = sqrt((E - G) * (E - G) + 4.0 * F * F);
   let theta = atan2(2.0 * F, E - G + lambda_diff) * 0.5;
   let flow_dir = vec2<f32>(cos(theta), sin(theta));
+  // ── Idea: coherence gate (§12.2A) — isotropic patches do not invent a streak direction.
+  let coherence = lambda_diff / max(E + G, 1e-4);
+  let flow_use = flow_dir * smoothstep(0.18, 0.55, coherence);
 
   // Temporal frame difference motion magnitude
   let diff_mag = length(live_color - prev_color);
@@ -113,21 +100,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let total_motion = clamp(motion_raw + mouse_mask * 0.3 + click_motion, 0.0, 3.0);
-  let reveal_mask = smoothstep(0.04, 0.35, total_motion);
+  // ── Idea: motion hold — C.a low-passes the difference so a patch stays open after it stops.
+  let prev_motion = select(0.0, prev_raw.a, prev_raw.a <= 3.0);
+  let motion_lp = mix(prev_motion, total_motion, 0.38);
+  let reveal_mask = smoothstep(0.04, 0.35, motion_lp);
 
   // Spectral streaklines integration along optical flow
   var trail_r = 0.0;
   var trail_g = 0.0;
   var trail_b = 0.0;
   let steps = 6;
-  let max_offset = flow_dir * (trail_len * 0.06 * depth_factor);
+  let max_offset = flow_use * (trail_len * 0.06 * depth_factor);
 
   for (var k = 0; k < steps; k += 1) {
     let weight = f32(steps - k) / f32(steps);
     let sample_uv = uv + max_offset * (f32(k) / f32(steps));
-    let uvr = clamp(sample_uv + flow_dir * chroma_sep * weight, vec2<f32>(0.001), vec2<f32>(0.999));
+    let uvr = clamp(sample_uv + flow_use * chroma_sep * weight, vec2<f32>(0.001), vec2<f32>(0.999));
     let uvg = clamp(sample_uv, vec2<f32>(0.001), vec2<f32>(0.999));
-    let uvb = clamp(sample_uv - flow_dir * chroma_sep * weight, vec2<f32>(0.001), vec2<f32>(0.999));
+    let uvb = clamp(sample_uv - flow_use * chroma_sep * weight, vec2<f32>(0.001), vec2<f32>(0.999));
 
     trail_r += textureSampleLevel(readTexture, u_sampler, uvr, 0.0).r * weight;
     trail_g += textureSampleLevel(readTexture, u_sampler, uvg, 0.0).g * weight;
@@ -144,10 +134,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var final_color = mix(live_color * 0.15, trail_color + glow, reveal_mask);
   final_color = aces_film(final_color);
 
-  let out_rgba = vec4<f32>(final_color, src_alpha);
+  let out_alpha = clamp(src_alpha * 0.25 + reveal_mask * 0.62 + coherence * 0.13, 0.0, 1.0);
+  let out_rgba = vec4<f32>(final_color, out_alpha);
   let out_depth = clamp(depth_tex + reveal_mask * 0.25, 0.0, 1.0);
 
   textureStore(writeTexture, coord, out_rgba);
-  textureStore(dataTextureA, coord, vec4<f32>(live_color, total_motion));
+  textureStore(dataTextureA, coord, vec4<f32>(live_color, motion_lp));
   textureStore(writeDepthTexture, coord, vec4<f32>(out_depth, 0.0, 0.0, 0.0));
 }

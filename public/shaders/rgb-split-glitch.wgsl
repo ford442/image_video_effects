@@ -4,29 +4,12 @@
 //  Features: upgraded-rgba, depth-aware, audio-reactive
 //  Complexity: High
 //  Scientific: YUV 4:2:0 chroma subsampling with delayed chroma planes, Nyquist alias fold-back, MPEG-style block ringing, and mouse-driven color bleed
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-23, 2026-10-27
+//  Ideas: hanging dots; chroma crawl
+//  A packing: A is (Y, block Cb, block Cr, delayed Cr); B is the diagnostic; ACES on display only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -63,6 +46,10 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract(h);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
@@ -94,7 +81,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let blockRgb = textureSampleLevel(readTexture, u_sampler, chromaUV, 0.0).rgb;
   let blockYuv = rgbToYCbCr(blockRgb);
 
-  let previous = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let previous = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
   let cbDelayed1 = previous.g;
   let crDelayed1 = previous.b;
   let crDelayed2 = previous.a;
@@ -112,11 +99,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let freqMeasure = abs(rightY - leftY) + abs(downY - upY) + abs(diagA - diagB);
   let aliasStrength = smoothstep(0.15, 0.70, freqMeasure * (1.0 + glitch));
-  let herringbone = sin((uv.x + uv.y) * resolution.x * (0.28 + 1.3 * aliasSeverity) + time * (6.0 + 12.0 * treble)) *
-                    sin((uv.x - uv.y) * resolution.y * (0.24 + 1.4 * aliasSeverity) - time * 4.0);
+  // ── Idea 2: chroma crawl ────────────────────────────────────────
+  // The herringbone flips phase on alternate lines and drifts upward.
+  // Jitter Noise still sets how hard the alias is, and now how fast it crawls.
+  let crawl = f32(i32(coord.y) & 1) * PI + time * aliasSeverity * 1.6;
+  let herringbone = sin((uv.x + uv.y) * resolution.x * (0.28 + 1.3 * aliasSeverity) + time * (6.0 + 12.0 * treble) + crawl) *
+                    sin((uv.x - uv.y) * resolution.y * (0.24 + 1.4 * aliasSeverity) - time * 4.0 - crawl * 0.35);
   cb += herringbone * aliasStrength * (0.02 + 0.08 * aliasSeverity + 0.05 * bass);
   cr -= herringbone * aliasStrength * (0.03 + 0.10 * aliasSeverity + 0.04 * bass);
   y += herringbone * aliasStrength * 0.04;
+
+  // ── Idea 1: hanging dots ────────────────────────────────────────
+  // A luma step across a chroma sample leaves a dot on every other line.
+  let lineOdd = f32(i32(coord.y) & 1);
+  let hanging = abs(rightY - leftY) * abs(cb - cr) * lineOdd * aliasSeverity;
+  y += hanging * 0.85;
 
   let blockCenterUV = clampUV((floor(coord / 8.0) * 8.0 + vec2<f32>(4.0, 4.0)) / resolution);
   let blockCenterY = rgbToYCbCr(textureSampleLevel(readTexture, u_sampler, blockCenterUV, 0.0).rgb).x;
@@ -146,7 +143,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(0.82 + 0.10 * digitalDamage + 0.04 * bass, 0.0, 1.0);
   let depthProxy = clamp(depthSample * 0.40 + aliasStrength * 0.35 + digitalDamage * 0.35, 0.0, 1.0);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(acesToneMap(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0))), alpha));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(y, blockYuv.y, blockYuv.z, crDelayed1));
   textureStore(dataTextureB, global_id.xy, vec4<f32>(aliasStrength, boundary, bleed, digitalDamage));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthProxy, 0.0, 0.0, 1.0));

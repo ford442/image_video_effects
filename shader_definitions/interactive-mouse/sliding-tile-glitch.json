@@ -3,7 +3,7 @@
   "name": "Sliding Tile Glitch",
   "category": "interactive-mouse",
   "url": "shaders/sliding-tile-glitch.wgsl",
-  "description": "Grid tiles slide along directional conveyors when excited by mouse proximity, clicks, and bass transients. Features spring-damper cursor dynamics, chromatic tear, restoring decay, exact-C phosphor trails, and ACES tonemapping.",
+  "description": "Grid tiles slide along directional conveyors when excited by mouse proximity, clicks, and bass transients. The grid line shows the unshifted photo underneath, and Restoration settles distant tiles before tiles under the pointer. Spring-damper cursor, chromatic tear, exact-C trails, and ACES tonemapping.",
   "features": [
     "mouse-driven",
     "audio-reactive",

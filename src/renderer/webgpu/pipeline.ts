@@ -11,7 +11,8 @@ import {
   CONSERVATIVE_BINDING_USAGE,
   ShaderBindingUsage,
 } from '../ShaderCompilation';
-import type { InternalColorFormat } from '../../config/formatPolicy';
+import { colorTextureSampleType, type InternalColorFormat } from '../../config/formatPolicy';
+import bindGroup0Contract from '../../contracts/bind_group0.json';
 import { BLIT_WGSL, GENERATIVE_BLIT_WGSL, SCALE_COPY_WGSL, VIDEO_COPY_WGSL } from '../ShaderTemplates';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import { HISTORY_DEPTH } from './webgpuConstants';
@@ -205,36 +206,53 @@ export class WebGPUShaderManager {
   }
 }
 
+type BindGroup0Kind = keyof typeof bindGroup0Contract.kinds;
+
+/** One @group(0) layout entry from src/contracts/bind_group0.json (shared with C++). */
+export function bindGroup0LayoutEntry(
+  binding: { binding: number; kind: string },
+  colorFormat: InternalColorFormat,
+  hasF32Filt: boolean,
+): GPUBindGroupLayoutEntry {
+  const spec = bindGroup0Contract.kinds[binding.kind as BindGroup0Kind] as {
+    sampler?: GPUSamplerBindingType;
+    texture?: { sampleType: string; viewDimension: GPUTextureViewDimension };
+    storageTexture?: { access: GPUStorageTextureAccess; format: string };
+    buffer?: GPUBufferBindingType;
+  } | undefined;
+  if (!spec) throw new Error(`bind_group0.json: unknown kind ${binding.kind}`);
+  const base = { binding: binding.binding, visibility: GPUShaderStage.COMPUTE };
+  if (spec.sampler) return { ...base, sampler: { type: spec.sampler } };
+  if (spec.buffer) return { ...base, buffer: { type: spec.buffer } };
+  if (spec.storageTexture) {
+    const { access, format } = spec.storageTexture;
+    return {
+      ...base,
+      storageTexture: { access, format: format === 'color-format' ? colorFormat : (format as GPUTextureFormat) },
+    };
+  }
+  if (!spec.texture) throw new Error(`bind_group0.json: kind ${binding.kind} declares no resource`);
+  const { sampleType, viewDimension } = spec.texture;
+  return {
+    ...base,
+    texture: {
+      // Keyed on the format, not just the feature: rgba16float is always filterable.
+      sampleType: sampleType === 'color-format'
+        ? colorTextureSampleType(colorFormat, hasF32Filt)
+        : (sampleType as GPUTextureSampleType),
+      ...(viewDimension === '2d' ? {} : { viewDimension }),
+    },
+  };
+}
+
 export function createComputeBindGroupLayout(
   device: GPUDevice,
   hasF32Filt: boolean,
   colorFormat: InternalColorFormat = 'rgba32float',
 ): WebGPUComputeLayout {
-  const fST: GPUTextureSampleType = hasF32Filt ? 'float' : 'unfilterable-float';
-  const V = GPUShaderStage.COMPUTE;
-
   const bindGroupLayout = device.createBindGroupLayout({
     label: 'computeBGL',
-    entries: [
-      { binding: 0, visibility: V, sampler: { type: 'filtering' } },
-      { binding: 1, visibility: V, texture: { sampleType: fST } },
-      { binding: 2, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 3, visibility: V, buffer: { type: 'uniform' } },
-      { binding: 4, visibility: V, texture: { sampleType: 'unfilterable-float' } },
-      { binding: 5, visibility: V, sampler: { type: 'non-filtering' } },
-      { binding: 6, visibility: V, storageTexture: { access: 'write-only', format: 'r32float' } },
-      { binding: 7, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 8, visibility: V, storageTexture: { access: 'write-only', format: colorFormat } },
-      { binding: 9, visibility: V, texture: { sampleType: fST } },
-      { binding: 10, visibility: V, buffer: { type: 'storage' } },
-      { binding: 11, visibility: V, sampler: { type: 'comparison' } },
-      { binding: 12, visibility: V, buffer: { type: 'read-only-storage' } },
-      {
-        binding: 13,
-        visibility: V,
-        texture: { sampleType: fST, viewDimension: '2d-array' },
-      },
-    ],
+    entries: bindGroup0Contract.bindings.map((b) => bindGroup0LayoutEntry(b, colorFormat, hasF32Filt)),
   });
 
   const pipelineLayout = device.createPipelineLayout({

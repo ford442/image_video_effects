@@ -2,7 +2,7 @@
   "id": "x-ray-reveal",
   "name": "X-Ray Reveal",
   "url": "shaders/x-ray-reveal.wgsl",
-  "description": "Interactive X-Ray lens that reveals an inverted, edge-enhanced internal structure.",
+  "description": "A collimated x-ray lens: inverted plate, bone window, penumbra, crosshair, and quantum mottle. The anode side of the field is darker, and a fine vertical anti-scatter grid sits on the plate.",
   "params": [
     {
       "id": "lens_size",

@@ -170,6 +170,13 @@ export interface StorageOperation {
   itemName?: string;
 }
 
+/** Short-lived, server-issued authorization for one webhook write. */
+export interface UploadTokenResponse {
+  token: string;
+  /** ISO timestamp or epoch milliseconds. */
+  expires_at?: string | number;
+}
+
 export interface HealthResponse {
   status: string;
   service: string;
@@ -178,7 +185,6 @@ export interface HealthResponse {
 export interface StorageClientConfig {
   webhookUrl: string;
   staticUrl: string;
-  secret: string;
   apiUrl: string;
   shaderFilesBaseUrl: string;
 }

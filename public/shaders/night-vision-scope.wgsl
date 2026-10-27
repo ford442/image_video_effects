@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: MCP scintillation; bright-source blooming
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-09, 2026-10-27
+//  Ideas: MCP scintillation; bright-source blooming; phosphor lag; fixed-pattern noise
+//  A packing: ACES display RGBA (C.g is last frame's green)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * .1031);
@@ -60,33 +41,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scanline_str = u.zoom_params.w * (1.0 + treble * 0.4);
 
     let time = u.config.x;
-    let rawMouse = u.zoom_config.yz;
-
-    let hasSpringState = arrayLength(&extraBuffer) > 138u;
-    var mouse = rawMouse;
-    if (hasSpringState && extraBuffer[138] > 0.5) {
-        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
-        var springPos = mouse;
-        var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        if (extraBuffer[138] <= 0.5) {
-            springPos = rawMouse;
-            springVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-            let omega = 6.5;
-            let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-            springVel += accel * dt;
-            springPos += springVel * dt;
-        }
-        extraBuffer[133] = springPos.x;
-        extraBuffer[134] = springPos.y;
-        extraBuffer[135] = springVel.x;
-        extraBuffer[136] = springVel.y;
-        extraBuffer[137] = time;
-        extraBuffer[138] = 1.0;
-    }
+    let mouse = u.zoom_config.yz;
 
     let d_vec = uv - mouse;
     let d_aspect = vec2<f32>(d_vec.x * aspect, d_vec.y);
@@ -109,7 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let distortion_str = -0.2 * scope_mask;
     let distorted_uv = uv + d_vec * distortion_str;
-    var color = textureSampleLevel(readTexture, u_sampler, distorted_uv, 0.0).rgb;
+    var color = textureSampleLevel(readTexture, u_sampler, clamp(distorted_uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 
     let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let nv_color = vec3<f32>(0.0, 1.0, 0.0) * lum * (1.5 + brightness);
@@ -130,9 +85,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1 — MCP scintillation (sparse microchannel sparks).
     let scint = smoothstep(0.965, 0.995, hash12(uv * 240.0 + vec2<f32>(time * 17.0, 4.2))) * (0.35 + treble * 0.4);
 
-    let scanBin = (u32(floor(uv.y * 96.0)) % 8u) + 1u;
-    let fftScan = plasmaBuffer[scanBin].x;
-    let scanline = sin(uv.y * 800.0 + time * (10.0 + fftScan * 3.0)) * 0.5 + 0.5;
+    let scanline = sin(uv.y * 800.0 + time * (10.0 + treble * 3.0)) * 0.5 + 0.5;
 
     let outside_color = nvBloom * 0.3 * (0.8 + 0.4 * noise) * (0.8 + 0.2 * scanline);
     let inside_color = nvBloom * (0.9 + 0.1 * noise) * (0.95 + 0.05 * scanline);
@@ -142,6 +95,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vign = 1.0 - length((uv - 0.5) * vec2<f32>(aspect, 1.0)) * 0.8;
     final_color = final_color * clamp(vign, 0.0, 1.0);
     final_color = mix(final_color, vec3<f32>(noise), clamp(grain_amt * 0.2, 0.0, 0.35));
+    // ── Idea: fixed-pattern noise — vertical streaks that do not reshuffle each frame.
+    let fpn = hash12(vec2<f32>(floor(uv.x * resolution.x), 2.0)) - 0.5;
+    final_color = final_color * (1.0 + fpn * grain_amt * 0.28);
     final_color = final_color * (1.0 - scanline_str * (1.0 - scanline) * 0.5);
     final_color += vec3<f32>(0.12, 1.0, 0.25) * clickFlare * (0.35 + treble * 0.25);
 
@@ -149,6 +105,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let peak = max(max(final_color.r, final_color.g), final_color.b);
     final_color *= min(1.0, 1.7 / max(peak, 0.001));
     final_color = aces(final_color);
+    // ── Idea: phosphor lag — green holds the brighter of this frame and last frame, more as gain rises.
+    let prevG = clamp(textureLoad(dataTextureC, coord, 0).g, 0.0, 1.0);
+    let heldG = mix(final_color.g, max(final_color.g, prevG), 0.28 + clamp(brightness, 0.0, 1.5) * 0.1);
+    final_color = vec3<f32>(final_color.r, heldG, final_color.b);
 
     let alpha = clamp(dot(final_color, vec3<f32>(0.299, 0.587, 0.114)) + scope_mask * 0.3 + scint * 0.2, 0.0, 1.0);
     let finalOut = vec4<f32>(final_color, alpha);

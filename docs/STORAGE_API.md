@@ -8,7 +8,7 @@ Backend: `storage_manager/app.py` (FastAPI on VPS, GCS-backed)
 | Env var | Purpose |
 |---------|---------|
 | `REACT_APP_API_BASE_URL` | REST API root (default `https://storage.noahcohn.com`) |
-| `REACT_APP_STORAGE_VPS_URL` | HMAC webhook root (default `https://storage.noahcohn.com/webhook`) |
+| `REACT_APP_STORAGE_VPS_URL` | Webhook root (default `https://storage.noahcohn.com/webhook`) |
 | `REACT_APP_STATIC_NGINX_URL` | Static file reads for saved metadata/outputs |
 | `REACT_APP_SHADER_FILES_BASE_URL` | WGSL CDN fallback (default `https://test.1ink.us/image_video_effects/`) |
 
@@ -108,11 +108,29 @@ Streams song/video/audio media.
 
 ---
 
-## Webhook writes (HMAC)
+## Webhook writes (server-issued upload tokens)
+
+The browser never holds a signing secret. `REACT_APP_WEBHOOK_SECRET` used to be
+inlined into the bundle and used for `X-Hub-Signature-256`, so anyone could read
+it from the JS and forge uploads. Vite now refuses to expose secret-looking
+`REACT_APP_*` vars, and CI fails if the marker or the secret value appears in
+`build/` (`npm run verify:no-client-secrets`). **The old secret must be rotated**
+on the storage_manager side; treat it as public.
+
+### `POST {webhookUrl}/upload-token`
+
+storage_manager issues a short-lived token scoped to one write. It keeps the
+HMAC secret (or any other key) server-side and decides who may write (origin
+check, rate limit, session).
+
+**Body** `{ "action": "save_shader", "name": "my-preset" }`
+
+**Response 200** `{ "token": "<opaque>", "expires_at": "2026-10-27T12:00:00Z" }` — a
+token should live for about a minute and be accepted once, for that `action` + `name`.
 
 ### `POST {webhookUrl}/image-effects`
 
-**Headers:** `Content-Type: application/json`, `X-Hub-Signature-256: sha256={hex}`
+**Headers:** `Content-Type: application/json`, `Authorization: Bearer <token>`
 
 **Body**
 
