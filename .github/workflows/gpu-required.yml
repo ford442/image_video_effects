@@ -27,6 +27,8 @@ on:
           - wasm-benchmark
           - renderer-parity
           - wasm-encode-parity
+          - compositor-golden
+          - compositor-golden-swiftshader
       runner_label:
         description: Runner label with a real GPU (self-hosted)
         type: string
@@ -100,6 +102,22 @@ jobs:
         env:
           CI: true
           WASM_GPU_TESTS: ${{ inputs.strict && '1' || '0' }}
+
+      # Layer compositor golden frames + f16 / f32 equivalence (#1512 Part C). The real-GPU
+      # run needs the self-hosted runner; the SwiftShader run is the same spec on a software
+      # adapter and works on any runner (ubuntu-latest included).
+      - name: Run compositor golden frames (real GPU)
+        if: inputs.suite == 'compositor-golden'
+        run: npx playwright test tests/compositor-golden.swiftshader.spec.ts --project=gpu-golden
+        env:
+          CI: true
+          WASM_GPU_TESTS: '1'
+
+      - name: Run compositor golden frames (SwiftShader)
+        if: inputs.suite == 'compositor-golden-swiftshader'
+        run: npx playwright test tests/compositor-golden.swiftshader.spec.ts --project=swiftshader
+        env:
+          CI: true
 
       - name: Upload reports
         if: always()

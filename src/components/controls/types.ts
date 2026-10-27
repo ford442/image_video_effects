@@ -4,6 +4,9 @@ import { VideoRecord } from '../../syncTypes';
 import type { SharedChain } from '../../services/layerChainShare';
 import type { RenderQualityMode } from '../../config/performancePolicy';
 import type { ImageRecord } from '../../types/aiVj';
+import type { UseSlotCompositingReturn } from '../../hooks/useSlotCompositing';
+import type { UseHdrToneMapReturn } from '../../hooks/useHdrToneMap';
+import type { UseCanvasColorReturn } from '../../hooks/useCanvasColor';
 
 export interface ShaderCoordData {
     coordinate: number;
@@ -14,6 +17,12 @@ export interface ShaderCoordData {
 }
 
 export interface ControlsProps {
+    /** Layer strip (#1512): slot modes + compositing layers; absent → no layer row. */
+    compositing?: UseSlotCompositingReturn;
+    /** HDR canvas tonemap settings (shown while the canvas is HDR). */
+    hdrToneMap?: UseHdrToneMapReturn;
+    /** Display P3 / HDR canvas toggle and its applied state. */
+    canvasColor?: UseCanvasColorReturn;
     modes: RenderMode[];
     setMode: (index: number, mode: RenderMode) => void;
     activeSlot: number;

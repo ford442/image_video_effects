@@ -19,6 +19,7 @@ import type { WebGPUFrameState } from './frameState';
 import { compileFramePlan, executeFramePlan, FramePlan } from './framePlan';
 import { profilePass } from './WebGPUTiming';
 import { ShaderSlot } from './webgpuConstants';
+import type { DirectPresentFrame } from './directPresent';
 
 export { getFeedbackCopyOrder } from './framePlan';
 export type { FeedbackCopySource } from './framePlan';
@@ -146,6 +147,8 @@ export function dispatchFrameSlots(
   encoder: GPUCommandEncoder,
   plan: FrameSlotDispatchPlan,
   beforeSlot?: (encoder: GPUCommandEncoder, slot: ShaderSlot) => void,
+  /** Direct present (#1512): the final slot writes the swapchain; the caller skips the blit. */
+  direct: DirectPresentFrame | null = null,
 ): FrameSlotDispatchResult {
   logDispatchPlan(state, plan.parallel, plan.chained);
   if (plan.anyUsesSimRing) state.writeSimRingParams();
@@ -169,9 +172,11 @@ export function dispatchFrameSlots(
       scaledW: state.scaledW,
       scaledH: state.scaledH,
       islands: state.getIslands?.() ?? null,
+      compositor: state.getCompositor?.() ?? null,
     },
     {
       beforeSlot,
+      ...(direct ? { computeOverride: direct.override } : {}),
       timestampWrites: timing.supportsTimestampQuery
         ? (op, _index, _count, effectiveScale) =>
             profilePass(timing, {
@@ -187,6 +192,9 @@ export function dispatchFrameSlots(
         : undefined,
       profileResample: timing.supportsTimestampQuery
         ? (label) => profilePass(timing, { kind: 'resample', label })
+        : undefined,
+      profileComposite: timing.supportsTimestampQuery
+        ? (label) => profilePass(timing, { kind: 'composite', label })
         : undefined,
     },
   );

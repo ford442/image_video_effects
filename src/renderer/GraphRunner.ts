@@ -115,6 +115,7 @@ export class GraphRunner {
         computeCount: report.executed,
         output: 'writeTex',
         graphReports: [report],
+        stackLayers: 0,
       },
       {
         textures: {

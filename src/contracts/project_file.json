@@ -1,13 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pixelocity.app/contracts/project_file.v1.schema.json",
+  "$id": "https://pixelocity.app/contracts/project_file.v2.schema.json",
   "title": "Pixelocity project file",
-  "description": "A user-owned, local project file for the recoverable parts of a Pixelocity VJ session.",
+  "description": "A user-owned, local project file for the recoverable parts of a Pixelocity VJ session. v2 (#1512) adds the per-slot compositor fields b/o/m/k and render.hdr; a v1 file is migrated in one step (src/services/project/migrate.ts migrateV1ToV2).",
   "type": "object",
   "additionalProperties": false,
   "required": ["schemaVersion", "app", "createdAt", "chain", "activeSlot", "source", "render"],
   "properties": {
-    "schemaVersion": { "const": 1 },
+    "schemaVersion": { "const": 2 },
     "app": {
       "type": "object",
       "additionalProperties": false,
@@ -49,7 +49,18 @@
         "shaderId": { "type": ["string", "null"], "maxLength": 128 },
         "params": { "$ref": "#/$defs/slotParams" },
         "enabled": { "type": "boolean" },
-        "mode": { "enum": ["chained", "parallel"] }
+        "mode": { "enum": ["chained", "parallel"] },
+        "b": {
+          "description": "Compositor output (#1512): 'mask' (a matte other slots can use) or a blend mode; absent = replace.",
+          "enum": ["mask", "normal", "add", "screen", "multiply", "overlay", "soft-light", "difference", "luma-key", "depth-key"]
+        },
+        "o": { "description": "Layer opacity; absent = 1.", "type": "number", "minimum": 0, "maximum": 1 },
+        "m": {
+          "description": "Mask ref [!]<src>[~<feather>]: src l (luma), d (depth), s0..s5 (a slot's matte); '!' inverts.",
+          "type": "string",
+          "pattern": "^(!)?(l|d|s[0-5])(~(\\d*\\.?\\d+))?$"
+        },
+        "k": { "description": "Key threshold for luma-key / depth-key; absent = the mode default.", "type": "number", "minimum": 0, "maximum": 1 }
       }
     },
     "sharedChain": {
@@ -96,7 +107,17 @@
       "additionalProperties": false,
       "properties": {
         "renderScale": { "type": "number", "minimum": 0.25, "maximum": 1 },
-        "quality": { "enum": ["battery", "balanced", "ultra", "auto"] }
+        "quality": { "enum": ["battery", "balanced", "ultra", "auto"] },
+        "hdr": {
+          "description": "Final tonemap of the HDR (rgba16float, extended tone mapping) canvas; ignored on SDR output.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["paperWhiteNits", "peakNits"],
+          "properties": {
+            "paperWhiteNits": { "type": "number", "minimum": 80, "maximum": 10000 },
+            "peakNits": { "type": "number", "minimum": 80, "maximum": 10000 }
+          }
+        }
       }
     },
     "trigger": {

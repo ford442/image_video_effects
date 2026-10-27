@@ -10,7 +10,10 @@
  *   - requiredLimits seeding on wgpuAdapterRequestDevice
  *
  * Keep MINIMUM_COMPUTE_LIMITS in sync with src/contracts/webgpu_limits.json and
- * device.cpp CheckLimit + requiredLimits.
+ * device.cpp CheckLimit + requiredLimits (the frozen C++ mirror). The TS policy
+ * itself validates and requests the probed limits tier instead (#1512,
+ * webgpu_limits.json limitsTiers): MINIMUM_COMPUTE_LIMITS only restates spec
+ * defaults on a core adapter.
  * See docs/BINDING_CONTRACT.md for the full bind-group + device policy contract.
  */
 
@@ -18,11 +21,10 @@ import webgpuLimitsContract from '../contracts/webgpu_limits.json';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
 /**
- * Minimum limits implied by the 14-entry compute bind group (bindings 0–13).
- * Source of truth: src/contracts/webgpu_limits.json (sync-checked in CI).
- *
- * maxTextureDimension2D is the comfortable floor (8192), never derived from
- * canvas max(w,h), maxBufferSize, pixel count, or a mis-ordered init pointer.
+ * The C++ backend's minimum limits for the 14-entry compute bind group (bindings 0–13).
+ * Source of truth: src/contracts/webgpu_limits.json (sync-checked in CI against
+ * device.cpp). Every value is at or below the core spec default, so the TS boot
+ * probe validates LIMITS_TIERS.base instead and never requests these (#1512).
  */
 export const MINIMUM_COMPUTE_LIMITS = {
   ...webgpuLimitsContract.minimumComputeLimits,
@@ -31,8 +33,10 @@ export const MINIMUM_COMPUTE_LIMITS = {
 } as const;
 
 export type AdapterContractOptions = {
-  /** @deprecated Unused for maxTextureDimension2D (fixed 8192 floor). Kept for call-site compat. */
+  /** @deprecated Not used: maxTextureDimension2D is a fixed floor. Kept for call-site compat. */
   maxCanvasDim: number;
+  /** The adapter came from the compatibility rung (diagnostics; the requirements are the same). */
+  compat?: boolean;
 };
 
 export type AdapterContractResult = {
@@ -44,34 +48,63 @@ export type AdapterContractResult = {
 export type AdapterAttempt = {
   powerPreference?: GPUPowerPreference;
   forceFallbackAdapter: boolean;
+  /** 'compatibility' asks for a compat-mode adapter (GL ES / older GPUs; #1512). */
+  featureLevel?: 'compatibility';
   label: string;
 };
 
-/** Four-step ladder matching C++ ADAPTER_ATTEMPT_LADDER in device.cpp. */
+/**
+ * The C++ ADAPTER_ATTEMPT_LADDER (device.cpp) plus a TS-only last rung (#1512):
+ * `featureLevel: 'compatibility'`, so Android GL ES / older Chromebooks still get
+ * an adapter. A browser that does not know featureLevel ignores it.
+ */
 export const ADAPTER_ATTEMPT_LADDER: readonly AdapterAttempt[] = [
   { powerPreference: 'high-performance', forceFallbackAdapter: false, label: 'HighPerformance' },
   { powerPreference: undefined, forceFallbackAdapter: false, label: 'Undefined' },
   { powerPreference: 'low-power', forceFallbackAdapter: false, label: 'LowPower' },
   { powerPreference: undefined, forceFallbackAdapter: true, label: 'Undefined+forceFallback' },
+  { powerPreference: undefined, forceFallbackAdapter: false, featureLevel: 'compatibility', label: 'Compatibility' },
 ] as const;
 
-type LimitCheck = {
-  name: keyof GPUSupportedLimits;
-  required: number;
+// ── Limits tiers (#1512) ─────────────────────────────────────────────────────
+
+export type LimitsTier = 'base' | 'deep-workgroup' | 'big-buffer';
+
+type TierLimits = Partial<Record<keyof GPUSupportedLimits, number>>;
+
+/** webgpu_limits.json limitsTiers: what the renderer really needs, per tier. */
+export const LIMITS_TIERS: Record<LimitsTier, TierLimits> = {
+  base: {
+    ...webgpuLimitsContract.limitsTiers.base.limits,
+    maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE,
+  },
+  'deep-workgroup': webgpuLimitsContract.limitsTiers['deep-workgroup'].limits,
+  'big-buffer': webgpuLimitsContract.limitsTiers['big-buffer'].limits,
 };
 
-const LIMIT_CHECKS: LimitCheck[] = [
-  { name: 'maxTextureDimension2D', required: MINIMUM_COMPUTE_LIMITS.maxTextureDimension2D },
-  { name: 'maxBindingsPerBindGroup', required: MINIMUM_COMPUTE_LIMITS.maxBindingsPerBindGroup },
-  { name: 'maxSampledTexturesPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxSampledTexturesPerShaderStage },
-  { name: 'maxSamplersPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxSamplersPerShaderStage },
-  { name: 'maxStorageTexturesPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxStorageTexturesPerShaderStage },
-  { name: 'maxStorageBuffersPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxStorageBuffersPerShaderStage },
-  { name: 'maxUniformBuffersPerShaderStage', required: MINIMUM_COMPUTE_LIMITS.maxUniformBuffersPerShaderStage },
-  { name: 'maxComputeWorkgroupSizeX', required: MINIMUM_COMPUTE_LIMITS.maxComputeWorkgroupSizeX },
-  { name: 'maxComputeWorkgroupSizeY', required: MINIMUM_COMPUTE_LIMITS.maxComputeWorkgroupSizeY },
-  { name: 'maxComputeInvocationsPerWorkgroup', required: MINIMUM_COMPUTE_LIMITS.maxComputeInvocationsPerWorkgroup },
-];
+/** Spec defaults a device gets without asking, per feature level. */
+export const SPEC_DEFAULT_LIMITS: Record<'core' | 'compatibility', TierLimits> = webgpuLimitsContract.specDefaults;
+
+function meetsAll(limits: Partial<GPUSupportedLimits> | undefined, want: TierLimits): boolean {
+  if (!limits) return false;
+  return Object.entries(want).every(([name, value]) =>
+    ((limits as Record<string, number | undefined>)[name] ?? 0) >= (value ?? 0));
+}
+
+/** Highest tier the limits reach: big-buffer needs deep-workgroup too. */
+export function resolveLimitsTier(limits: Partial<GPUSupportedLimits> | undefined): LimitsTier {
+  if (!meetsAll(limits, LIMITS_TIERS['deep-workgroup'])) return 'base';
+  return meetsAll(limits, LIMITS_TIERS['big-buffer']) ? 'big-buffer' : 'deep-workgroup';
+}
+
+/**
+ * The base tier. maxTextureDimension2D is a fixed floor (4096, the minimum viable
+ * size), never scaled by a canvas size: a mis-ordered init once fed a heap pointer
+ * (~79984) into the C++ check as a "canvas dimension".
+ */
+export function baseTierRequirements(): TierLimits {
+  return { ...LIMITS_TIERS.base };
+}
 
 /** 32×32 / 1024-invocation limits requested when the adapter offers them (webgpu_limits.json). */
 export const DEEP_WORKGROUP_LIMITS = webgpuLimitsContract.deepWorkgroupLimits;
@@ -92,21 +125,29 @@ export function meetsDeepWorkgroupLimits(limits: Partial<WorkgroupLimits> | unde
 }
 
 /**
- * Build requiredLimits for requestDevice() — mirrors device.cpp requiredLimits seeding.
- * `maxCanvasDim` is accepted for call-site compatibility but does not drive
- * maxTextureDimension2D (fixed comfortable floor from the contract).
+ * Build requiredLimits for requestDevice(): only what exceeds the spec default
+ * for the adapter's feature level (#1512). A core device already has every base
+ * limit, so a core request is just the deep-workgroup limits (when offered) and
+ * the adapter's buffer sizes; a compatibility device additionally asks for the
+ * base limits above the compat defaults (in practice 256 invocations per workgroup).
  *
- * Pass `adapterLimits` to also request the deep-workgroup limits when the adapter
- * offers them, and the adapter's buffer-size limits. WebGPU never grants more than
- * requested, so omitting this caps the device at 256 invocations and 256 MiB
- * buffers even on an adapter that offers more.
+ * WebGPU never grants more than requested, so omitting `adapterLimits` caps the
+ * device at the defaults even on an adapter that offers more.
  */
 export function buildRequiredLimits(
   _maxCanvasDim?: number,
   adapterLimits?: Partial<WorkgroupLimits & BufferSizeLimits>,
+  options: { compat?: boolean } = {},
 ): GPUDeviceDescriptor['requiredLimits'] {
+  const defaults = SPEC_DEFAULT_LIMITS[options.compat ? 'compatibility' : 'core'];
+  const aboveDefault: Record<string, number> = {};
+  for (const [name, value] of Object.entries(baseTierRequirements())) {
+    if (value !== undefined && value > ((defaults as Record<string, number | undefined>)[name] ?? 0)) {
+      aboveDefault[name] = value;
+    }
+  }
   return {
-    ...MINIMUM_COMPUTE_LIMITS,
+    ...aboveDefault,
     ...(meetsDeepWorkgroupLimits(adapterLimits) ? DEEP_WORKGROUP_LIMITS : {}),
     ...bufferSizeRequest(adapterLimits),
   };
@@ -134,20 +175,23 @@ function bufferSizeRequest(
 }
 
 /**
- * Validate adapter.limits against the compute bind contract before device creation
- * (device.cpp CheckLimit table).
+ * Validate adapter.limits against what the renderer actually needs (the base
+ * limits tier) before device creation. Every base limit is within the core spec
+ * defaults, so a conformant core adapter always passes; on the compatibility rung
+ * this catches, e.g., a 128-invocation adapter that cannot run the 16×16 catalog.
  */
 export function assertAdapterMeetsContract(
   adapter: GPUAdapter,
-  _opts?: AdapterContractOptions,
+  opts?: AdapterContractOptions,
 ): AdapterContractResult {
   const failures: string[] = [];
-  const limits = adapter.limits;
+  const limits = adapter.limits as unknown as Record<string, number>;
 
-  for (const check of LIMIT_CHECKS) {
-    const actual = limits[check.name] as number;
-    if (actual < check.required) {
-      failures.push(`${check.name}: need >= ${check.required}, adapter has ${actual}`);
+  void opts;
+  for (const [name, required] of Object.entries(baseTierRequirements())) {
+    const actual = limits[name];
+    if (required !== undefined && typeof actual === 'number' && actual < required) {
+      failures.push(`${name}: need >= ${required}, adapter has ${actual}`);
     }
   }
 

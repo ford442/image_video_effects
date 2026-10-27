@@ -6,6 +6,7 @@
  */
 
 import { UNIFORM_FLOATS } from '../UniformBuffer';
+import { arrayBindingDescriptor } from './compat';
 import type { InternalColorFormat } from '../../config/formatPolicy';
 import {
   EXTRA_FLOATS,
@@ -104,6 +105,8 @@ export function createTextures(
         GPUTextureUsage.STORAGE_BINDING |
         GPUTextureUsage.COPY_DST |
         GPUTextureUsage.COPY_SRC,
+      // Compat devices fix the view dimension at creation; binding 13 is always a 2d-array.
+      ...arrayBindingDescriptor(device),
     }));
 
     const sourceTex = track(device.createTexture({

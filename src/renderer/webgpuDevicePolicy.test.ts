@@ -1,10 +1,14 @@
 import {
+  ADAPTER_ATTEMPT_LADDER,
   assertAdapterMeetsContract,
   buildRequiredLimits,
   BUFFER_SIZE_LIMIT_FLOORS,
   DEEP_WORKGROUP_LIMITS,
+  LIMITS_TIERS,
   meetsDeepWorkgroupLimits,
   MINIMUM_COMPUTE_LIMITS,
+  resolveLimitsTier,
+  SPEC_DEFAULT_LIMITS,
 } from './webgpuDevicePolicy';
 import { UNIFORM_BUFFER_LAYOUT } from './types';
 
@@ -57,23 +61,20 @@ function makeAdapter(limits: Partial<GPUSupportedLimits> = {}): GPUAdapter {
 
 describe('webgpuDevicePolicy', () => {
   describe('buildRequiredLimits', () => {
-    it('always includes explicit requiredLimits matching C++ CreateDevice policy', () => {
-      const limits = buildRequiredLimits(1920);
-      expect(limits).toMatchObject({
-        maxTextureDimension2D: 8192,
-        maxBindingsPerBindGroup: 14,
-        maxSampledTexturesPerShaderStage: 3,
-        maxSamplersPerShaderStage: 3,
-        maxStorageTexturesPerShaderStage: 4,
-        maxStorageBuffersPerShaderStage: 2,
-        maxUniformBuffersPerShaderStage: 1,
-        maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE,
-        maxComputeWorkgroupSizeX: 16,
-        maxComputeWorkgroupSizeY: 16,
-        maxComputeInvocationsPerWorkgroup: 256,
-      });
-      expect(limits!.maxUniformBufferBindingSize).toBe(MINIMUM_COMPUTE_LIMITS.maxUniformBufferBindingSize);
-      expect(limits!.maxTextureDimension2D).toBe(MINIMUM_COMPUTE_LIMITS.maxTextureDimension2D);
+    it('requests nothing a core device already has: every base-tier limit is within the core defaults (#1512)', () => {
+      expect(buildRequiredLimits(1920)).toEqual({});
+      for (const [name, value] of Object.entries(LIMITS_TIERS.base)) {
+        expect(value, name).toBeLessThanOrEqual(SPEC_DEFAULT_LIMITS.core[name as keyof typeof SPEC_DEFAULT_LIMITS.core]!);
+      }
+      // MINIMUM_COMPUTE_LIMITS (the C++ mirror) restates core defaults too: nothing in it can fail on core.
+      for (const [name, value] of Object.entries(MINIMUM_COMPUTE_LIMITS)) {
+        expect(value, name).toBeLessThanOrEqual(SPEC_DEFAULT_LIMITS.core[name as keyof typeof SPEC_DEFAULT_LIMITS.core]!);
+      }
+      expect(LIMITS_TIERS.base.maxUniformBufferBindingSize).toBe(UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE);
+    });
+
+    it('asks a compatibility device for the base limits above the compat defaults', () => {
+      expect(buildRequiredLimits(1920, undefined, { compat: true })).toEqual({ maxComputeInvocationsPerWorkgroup: 256 });
     });
 
     it('requests 32x32 / 1024 invocations when the adapter offers them', () => {
@@ -88,8 +89,7 @@ describe('webgpuDevicePolicy', () => {
         maxComputeInvocationsPerWorkgroup: 1024,
       });
       expect(buildRequiredLimits(1920, deep)).toMatchObject(DEEP_WORKGROUP_LIMITS);
-      // Base limits are still present alongside the deep block.
-      expect(buildRequiredLimits(1920, deep)!.maxBindingsPerBindGroup).toBe(14);
+      expect(LIMITS_TIERS['deep-workgroup']).toEqual(DEEP_WORKGROUP_LIMITS);
     });
 
     it('keeps 16x16 / 256 when the adapter falls short on any deep limit', () => {
@@ -100,11 +100,10 @@ describe('webgpuDevicePolicy', () => {
         maxComputeWorkgroupSizeY: 16,
       });
       for (const limits of [shallow, narrowY, undefined]) {
-        expect(buildRequiredLimits(1920, limits)).toMatchObject({
-          maxComputeWorkgroupSizeX: 16,
-          maxComputeWorkgroupSizeY: 16,
-          maxComputeInvocationsPerWorkgroup: 256,
-        });
+        // Not requested at all: the core default (256 / 256×256) already covers 16×16 / 256.
+        const required = buildRequiredLimits(1920, limits)!;
+        expect(required).not.toHaveProperty('maxComputeInvocationsPerWorkgroup');
+        expect(required).not.toHaveProperty('maxComputeWorkgroupSizeX');
       }
       expect(meetsDeepWorkgroupLimits(narrowY)).toBe(false);
     });
@@ -132,9 +131,9 @@ describe('webgpuDevicePolicy', () => {
 
     it('does not canvas-scale maxTextureDimension2D (no pointer / pixel-count need)', () => {
       // Regression: mis-ordered initWasmRenderer args once fed a heap pointer (~79984)
-      // into the WASM CheckLimit need. The JS mirror must stay on the named 8192 floor.
-      expect(buildRequiredLimits(79984)!.maxTextureDimension2D).toBe(8192);
-      expect(buildRequiredLimits(2048)!.maxTextureDimension2D).toBe(8192);
+      // into the WASM CheckLimit need. The fixed 4096 floor is within every default.
+      expect(buildRequiredLimits(79984)).not.toHaveProperty('maxTextureDimension2D');
+      expect(buildRequiredLimits(79984, undefined, { compat: true })).not.toHaveProperty('maxTextureDimension2D');
     });
   });
 
@@ -161,11 +160,37 @@ describe('webgpuDevicePolicy', () => {
       expect(result.failures.some((f) => f.includes('maxBindingsPerBindGroup'))).toBe(true);
     });
 
-    it('checks maxTextureDimension2D against the named 8192 floor, not canvas dim', () => {
-      const adapter = makeAdapter({ maxTextureDimension2D: 4096 });
-      const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 1024 });
+    it('checks maxTextureDimension2D against the 4096 floor, not canvas dim', () => {
+      expect(assertAdapterMeetsContract(makeAdapter({ maxTextureDimension2D: 4096 }), { maxCanvasDim: 79984 }).ok).toBe(true);
+      const result = assertAdapterMeetsContract(makeAdapter({ maxTextureDimension2D: 2048 }), { maxCanvasDim: 1024 });
       expect(result.ok).toBe(false);
-      expect(result.failures.some((f) => f.includes('maxTextureDimension2D') && f.includes('8192'))).toBe(true);
+      expect(result.failures.some((f) => f.includes('maxTextureDimension2D') && f.includes('4096'))).toBe(true);
+    });
+
+    it('fails a compatibility adapter that cannot run 16×16 (256-invocation) workgroups', () => {
+      const adapter = makeAdapter({ maxComputeInvocationsPerWorkgroup: 128 });
+      const result = assertAdapterMeetsContract(adapter, { maxCanvasDim: 1024, compat: true });
+      expect(result.ok).toBe(false);
+      expect(result.failures.join(' ')).toContain('maxComputeInvocationsPerWorkgroup');
+    });
+  });
+
+  describe('limits tiers (#1512)', () => {
+    it('reports base / deep-workgroup / big-buffer from the device limits', () => {
+      expect(resolveLimitsTier(makeLimits())).toBe('base');
+      const deep = { maxComputeInvocationsPerWorkgroup: 1024, maxComputeWorkgroupSizeX: 1024, maxComputeWorkgroupSizeY: 1024 };
+      expect(resolveLimitsTier(makeLimits(deep))).toBe('deep-workgroup');
+      expect(resolveLimitsTier(makeLimits({ ...deep, maxBufferSize: 2 ** 31 }))).toBe('big-buffer');
+      // Big buffers without deep workgroups stay "base": the tier name is cumulative.
+      expect(resolveLimitsTier(makeLimits({ maxBufferSize: 2 ** 31 }))).toBe('base');
+      expect(resolveLimitsTier(undefined)).toBe('base');
+    });
+
+    it('ends the adapter ladder with the compatibility rung', () => {
+      expect(ADAPTER_ATTEMPT_LADDER.map((a) => a.label)).toEqual([
+        'HighPerformance', 'Undefined', 'LowPower', 'Undefined+forceFallback', 'Compatibility',
+      ]);
+      expect(ADAPTER_ATTEMPT_LADDER.at(-1)).toMatchObject({ featureLevel: 'compatibility', forceFallbackAdapter: false });
     });
   });
 });

@@ -12,10 +12,18 @@ import type { LocalMediaKind } from '../../hooks/useLocalMediaUpload';
 import { STORAGE_API_URL } from '../../config/appConfig';
 import { RenderQualityMode } from '../../config/performancePolicy';
 import { isPublicPixelocityHost } from '../../utils/publicHost';
+import type { UseSlotCompositingReturn } from '../../hooks/useSlotCompositing';
+import type { UseHdrToneMapReturn } from '../../hooks/useHdrToneMap';
+import type { UseCanvasColorReturn } from '../../hooks/useCanvasColor';
 
 const LiveStudioTab = lazy(() => import(/* webpackChunkName: "live-studio" */ '../LiveStudioTab'));
 
 export interface AppShellProps {
+    /** Layer strip state (#1512): slot modes + compositing layers. */
+    compositing?: UseSlotCompositingReturn;
+    /** HDR canvas tonemap (paper white / peak). */
+    hdrToneMap?: UseHdrToneMapReturn;
+    canvasColor?: UseCanvasColorReturn;
     activeTab: 'main' | 'live-studio';
     setActiveTab: (tab: 'main' | 'live-studio') => void;
     showSidebar: boolean;
@@ -156,6 +164,9 @@ export interface AppShellProps {
 
 export function AppShell(props: AppShellProps) {
     const {
+        compositing,
+        hdrToneMap,
+        canvasColor,
         activeTab,
         setActiveTab,
         showSidebar,
@@ -430,6 +441,9 @@ export function AppShell(props: AppShellProps) {
                         onSetGenerativeShowcaseDelay={onSetGenerativeShowcaseDelay}
                         onPreviewImportShader={onPreviewImportShader}
                         onImportStatus={onImportStatus}
+                        compositing={compositing}
+                        hdrToneMap={hdrToneMap}
+                        canvasColor={canvasColor}
                     />
                 </aside>
                 <main className="canvas-container">

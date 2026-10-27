@@ -409,20 +409,33 @@ describe('negotiateCanvasColor', () => {
     expect(r.reason).toBeUndefined();
   });
 
-  it('never reports extended tone mapping on an 8-bit canvas (regression: advertised but no-op)', async () => {
+  it('only ever configures extended tone mapping on an rgba16float swapchain (regression: advertised but no-op)', async () => {
     const context = makeMockContext();
     Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'extended' } }) });
     const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
-    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard', reason: 'sdr-canvas-format' });
-    expect(r.applied.extendedToneMapping).toBe(false);
-    expect(configs(context).some((c) => c.toneMapping?.mode === 'extended')).toBe(false);
+    // #1512: the HDR rung swaps in the rgba16float swapchain, so extended is real.
+    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'extended', canvasFormat: 'rgba16float' });
+    expect(r.applied).toEqual({ displayP3: true, extendedToneMapping: true, hdrCanvas: true });
+    const extended = configs(context).filter((c) => c.toneMapping?.mode === 'extended');
+    expect(extended.length).toBeGreaterThan(0);
+    expect(extended.every((c) => c.format === 'rgba16float')).toBe(true);
+  });
+
+  it('keeps the 8-bit swapchain when only p3 is requested (SDR display)', async () => {
+    const context = makeMockContext();
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: false });
+    expect(r).toMatchObject({ canvasFormat: 'bgra8unorm', toneMapping: 'standard' });
+    expect(configs(context).every((c) => c.format === 'bgra8unorm')).toBe(true);
   });
 
   it('steps down to p3/standard when extended tone mapping is rejected', async () => {
     const context = makeMockContext();
     Object.assign(context, { getConfiguration: () => ({ colorSpace: 'display-p3', toneMapping: { mode: 'standard' } }) });
-    const r = await negotiateCanvasColor(device(), context, 'rgba16float', { displayP3: true, extendedToneMapping: true });
-    expect(r).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard', reason: 'unsupported-extended-tone-mapping' });
+    const r = await negotiateCanvasColor(device(), context, 'bgra8unorm', { displayP3: true, extendedToneMapping: true });
+    expect(r).toMatchObject({
+      colorSpace: 'display-p3', toneMapping: 'standard', canvasFormat: 'bgra8unorm', reason: 'unsupported-extended-tone-mapping',
+    });
+    expect(configs(context).at(-1)?.format).toBe('bgra8unorm');
   });
 
   it('notes an SDR display when p3 is accepted without extended tone mapping requested', async () => {
@@ -446,6 +459,7 @@ describe('negotiateCanvasColor', () => {
     window.webgpuProbe = { ok: true, finishedAt: '', userAgent: '', userAgentBrands: [], attempts: [], canvasColorFallback: 'unsupported-p3' };
     updateWebGpuProbeColor({
       requested: { displayP3: true }, applied: { displayP3: true }, colorSpace: 'display-p3', toneMapping: 'standard',
+      canvasFormat: 'bgra8unorm',
     });
     expect(window.webgpuProbe).toMatchObject({ canvasColorSpace: 'display-p3', canvasToneMapping: 'standard' });
     expect(window.webgpuProbe?.canvasColorFallback).toBeUndefined();
