@@ -2,8 +2,11 @@
 
 ## Overview
 
-By default, Pixelocity's 3 shader slots run **chained** (sequentially):
-- Slot 0 output → Slot 1 input → Slot 1 output → Slot 2 input
+Pixelocity has **6 physical shader slots** (`maxPhysicalSlots` in
+[`src/contracts/slot_limits.json`](../src/contracts/slot_limits.json), `PHYSICAL_SLOT_LIMIT` in TS,
+`MAX_SHADER_SLOTS` in C++). The performance tier's `maxActiveSlots` (1–3) is a separate, lower
+soft cap on how many run at once. By default slots run **chained** (sequentially):
+- Slot 0 output → Slot 1 input → Slot 1 output → Slot 2 input → … → Slot 5
 - This is correct for layered effects (e.g., liquid → distortion)
 
 With **parallel slot groups**, independent effects can run concurrently on the GPU:

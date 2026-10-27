@@ -38,7 +38,9 @@ function variantGraph(contract, variant) {
   if (variant === 'jspi') {
     const j = contract.jspi;
     if (!j) throw new Error('wasm_compile_flags.json has no `jspi` graph');
-    return { sFlags: j.sFlags, jsOutputName: j.jsOutputName, jspiExports: j.jspiExports || [] };
+    // Derived from the fallback so the two graphs cannot drift (no jspi.sFlags copy).
+    const sFlags = contract.sFlags.map((f) => (f === 'ASYNCIFY' ? 'JSPI' : f));
+    return { sFlags, jsOutputName: j.jsOutputName, jspiExports: j.jspiExports || [] };
   }
   throw new Error(`unknown variant "${variant}" (expected ${VARIANTS.join('|')})`);
 }

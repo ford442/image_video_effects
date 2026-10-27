@@ -78,6 +78,8 @@ bash "$REPO_ROOT/scripts/emcc-version-gate.sh"
 node "$REPO_ROOT/scripts/gen-canvas-configure-header.js" --check
 # webgpu_limits.h is generated from src/contracts/webgpu_limits.json (committed).
 node "$REPO_ROOT/scripts/gen-webgpu-limits-header.js" --check
+# bind_group0.h is generated from src/contracts/bind_group0.json (committed).
+node "$REPO_ROOT/scripts/gen-bind-group0-header.js" --check
 
 # Single-pass compile+link via emcc.
 # --use-port=emdawnwebgpu runs emdawnwebgpu.py's process_args() exactly once

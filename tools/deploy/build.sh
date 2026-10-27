@@ -1,9 +1,11 @@
 #!/bin/bash
 set -euo pipefail
+# Deploy build wrapper: production build + DreamHost .htaccess. Run from anywhere.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 echo "=== Building image_video_effects ==="
 
-# Run the full React/WASM build (includes wasm:build, shader lists, manifest)
+# Run the full app build (shader lists, manifest; committed WASM unless BUILD_WASM=1)
 npm run build
 
 # Generate .htaccess for Apache cache control (required for DreamHost deployment)

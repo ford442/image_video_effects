@@ -465,8 +465,8 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 if (videoSourceUrl) {
                     src = videoSourceUrl; // Uploaded video (blob:)
                 } else if (selectedVideo) {
-                    // Handle both local files and full bucket URLs
-                    src = selectedVideo.startsWith('http')
+                    // Handle local files, full bucket URLs and uploaded blob: URLs
+                    src = /^(https?:|blob:)/.test(selectedVideo)
                         ? selectedVideo
                         : `videos/${selectedVideo}`;
                 }
@@ -713,7 +713,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 width={INTERNAL_RENDER_RESOLUTION}
                 height={INTERNAL_RENDER_RESOLUTION}
                 onPointerMove={handleCanvasMouseMove}
-                onPointerDown={handleMouseDown} onMouseDown={handleMouseDown}
+                onPointerDown={handleMouseDown}
                 onPointerUp={handleMouseUp}
                 onPointerLeave={handleMouseLeave}
                 style={canvasStyle}
