@@ -1,26 +1,9 @@
 // Stipple Engraving — tone-aware low-discrepancy stipple and directional hatching.
+// Upgraded: 2026-10-27
+// Ideas: elliptical stipple along the hatch tangent; burr beside the engraved line
 // A/C stores ACES display RGBA. B is unused. Depth remains engraved ink density.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -84,13 +67,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dotCoverage = smoothstep(threshold - 0.055, threshold + 0.055, tone * (0.82 + audio.x * 0.1));
   let dotCell = fract(stipplePixel) - 0.5;
   let dotRadius = 0.08 + sqrt(tone) * 0.42;
-  let stippleDot = dotCoverage * (1.0 - smoothstep(dotRadius - 0.08, dotRadius + 0.08, length(dotCell)));
+  // ── Idea: elliptical stipple. Dots stretch along the hatch tangent.
+  let along = dot(dotCell, tangent);
+  let across = dot(dotCell, vec2<f32>(-tangent.y, tangent.x));
+  let ellipse = length(vec2<f32>(along * 0.7, across * 1.28));
+  let stippleDot = dotCoverage * (1.0 - smoothstep(dotRadius - 0.08, dotRadius + 0.08, ellipse));
 
   let hatchCoordinate = dot(pixel, tangent) / (2.8 + density * 1.7);
   let crossCoordinate = dot(pixel, vec2<f32>(-tangent.y, tangent.x)) / (4.5 + density);
   let hatchA = pow(0.5 + 0.5 * sin(hatchCoordinate * TAU), 10.0);
   let hatchB = pow(0.5 + 0.5 * sin((hatchCoordinate + crossCoordinate * 0.42) * TAU), 12.0);
   let hatch = (hatchA * smoothstep(0.38, 0.78, tone) + hatchB * smoothstep(0.68, 0.96, tone)) * (0.45 + gradientMagnitude * 4.0);
+  // ── Idea: burr. The burin throws a pale shoulder to one side of the cut.
+  let burrCoord = dot(pixel + vec2<f32>(-tangent.y, tangent.x) * 1.7, tangent) / (2.8 + density * 1.7);
+  let burr = pow(0.5 + 0.5 * sin(burrCoord * TAU), 16.0) * smoothstep(0.45, 0.85, tone) * 0.34;
 
   let pointerDelta = (uv - mouse) * aspectVec;
   let pointerDistance = length(pointerDelta);
@@ -114,7 +104,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let paper = vec3<f32>(0.93, 0.89, 0.78) * absorption;
   let ink = vec3<f32>(0.022, 0.026, 0.045) * (0.8 + hash21(floor(pixel * 0.5)) * 0.25);
   let rustInk = vec3<f32>(0.18, 0.045, 0.015) * (0.4 + audio.z * 0.35);
-  let inkMask = clamp((stippleDot + hatch * 0.55) * inkStrength * (1.0 - burnish * 0.38) + heldPool * 0.72 + engravingRing * 0.58, 0.0, 1.0);
+  let inkMask = clamp((stippleDot + hatch * 0.55 + burr) * inkStrength * (1.0 - burnish * 0.38) + heldPool * 0.72 + engravingRing * 0.58, 0.0, 1.0);
   var hdr = mix(paper, ink + rustInk * (hatch + engravingRing), inkMask);
   hdr += source.rgb * burnish * 0.12;
   hdr += vec3<f32>(0.22, 0.15, 0.08) * burnish * (1.0 - heldPool) * 0.16;

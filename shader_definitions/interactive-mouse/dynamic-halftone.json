@@ -2,7 +2,7 @@
   "id": "dynamic-halftone",
   "name": "Dynamic Halftone",
   "url": "shaders/dynamic-halftone.wgsl",
-  "description": "Halftone dot print that swells under the cursor: Euclidean dot shapes, pooling ink and ragged paper rims.",
+  "description": "Halftone dots that swell, pool and rag under the pointer, stretch toward it, and grow where the photo changes.",
   "params": [
     {
       "id": "density",

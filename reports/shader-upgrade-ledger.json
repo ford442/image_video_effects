@@ -8198,8 +8198,17 @@
       "history": []
     },
     "charcoal-rub": {
-      "hash": "6e83c4a9717b32c6",
-      "history": []
+      "hash": "0a0e14854be31893",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "0a0e14854be31893",
+          "prev_hash": "6e83c4a9717b32c6",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        }
+      ]
     },
     "chroma-depth-tunnel": {
       "hash": "ca085c4c059a4e06",
@@ -8261,7 +8270,7 @@
       "history": []
     },
     "cmyk-halftone-interactive": {
-      "hash": "d247b10d37003852",
+      "hash": "c55509f436f23a61",
       "history": [
         {
           "event": "upgraded",
@@ -8270,6 +8279,14 @@
           "prev_hash": "1a0810a684d8ae7b",
           "commit": "9f26f634",
           "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "c55509f436f23a61",
+          "prev_hash": "d247b10d37003852",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
         }
       ]
     },
@@ -8282,8 +8299,17 @@
       "history": []
     },
     "cross-stitch": {
-      "hash": "4c5c6b62c98874ba",
-      "history": []
+      "hash": "a19a6db803fa5d6c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "a19a6db803fa5d6c",
+          "prev_hash": "4c5c6b62c98874ba",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        }
+      ]
     },
     "crystal-freeze": {
       "hash": "bacfc868f411f1c9",
@@ -8405,7 +8431,7 @@
       "history": []
     },
     "dynamic-halftone": {
-      "hash": "ce53ec0879228ce6",
+      "hash": "0a040819fbd327f1",
       "history": [
         {
           "event": "upgraded",
@@ -8414,6 +8440,14 @@
           "prev_hash": "aaf0eb839e96776f",
           "commit": "9f26f634",
           "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "0a040819fbd327f1",
+          "prev_hash": "ce53ec0879228ce6",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
         }
       ]
     },
@@ -8454,8 +8488,17 @@
       "history": []
     },
     "foil-impression": {
-      "hash": "5d5b9d0995037e08",
-      "history": []
+      "hash": "acbad7782dc5588b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "acbad7782dc5588b",
+          "prev_hash": "5d5b9d0995037e08",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        }
+      ]
     },
     "glass-bead-curtain": {
       "hash": "955a626dd81bdf38",
@@ -8520,8 +8563,17 @@
       "history": []
     },
     "impasto-swirl": {
-      "hash": "1595d1cd18f792e7",
-      "history": []
+      "hash": "a27413c940cffdeb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "a27413c940cffdeb",
+          "prev_hash": "1595d1cd18f792e7",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        }
+      ]
     },
     "infinite-fractal-feedback": {
       "hash": "e89ca21ca4f5e3bd",
@@ -8586,7 +8638,7 @@
       "history": []
     },
     "interactive-halftone-spin": {
-      "hash": "d9dcf0f332b6c7bb",
+      "hash": "36d2c6201d0a28af",
       "history": [
         {
           "event": "upgraded",
@@ -8595,6 +8647,14 @@
           "prev_hash": "4c2c4314993383fb",
           "commit": "9f26f634",
           "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "36d2c6201d0a28af",
+          "prev_hash": "d9dcf0f332b6c7bb",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
         }
       ]
     },
@@ -8652,7 +8712,7 @@
       "history": []
     },
     "knitted-fabric": {
-      "hash": "6a0c3dea34149aef",
+      "hash": "cb7345f21a731aac",
       "history": [
         {
           "event": "upgraded",
@@ -8661,6 +8721,14 @@
           "prev_hash": "26c718a80a2a93dd",
           "commit": "9f26f634",
           "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "cb7345f21a731aac",
+          "prev_hash": "6a0c3dea34149aef",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
         }
       ]
     },
@@ -9049,8 +9117,17 @@
       "history": []
     },
     "paper-cutout": {
-      "hash": "14f9c9d527bd1847",
-      "history": []
+      "hash": "5379ba277830b3c0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "5379ba277830b3c0",
+          "prev_hash": "14f9c9d527bd1847",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        }
+      ]
     },
     "parallax-glow-compositor": {
       "hash": "c46d82e9f5406fa4",
@@ -9154,8 +9231,17 @@
       "history": []
     },
     "poly-art": {
-      "hash": "b2d8b19e294c0e47",
-      "history": []
+      "hash": "e3f9de3952773697",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "e3f9de3952773697",
+          "prev_hash": "b2d8b19e294c0e47",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        }
+      ]
     },
     "prismatic-3d-compositor": {
       "hash": "ef53dab57c4d4538",
@@ -9309,8 +9395,17 @@
       ]
     },
     "sequin-flip": {
-      "hash": "71f2d7f7e9e35100",
-      "history": []
+      "hash": "7f4fa5e4db8bed19",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "7f4fa5e4db8bed19",
+          "prev_hash": "71f2d7f7e9e35100",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        }
+      ]
     },
     "signal-tuner": {
       "hash": "87b4c459f462df35",
@@ -9382,8 +9477,17 @@
       "history": []
     },
     "stipple-engraving": {
-      "hash": "e3d91393011e85b1",
-      "history": []
+      "hash": "dfd5a2c32de410cd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T01:49:44.927Z",
+          "hash": "dfd5a2c32de410cd",
+          "prev_hash": "e3d91393011e85b1",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        }
+      ]
     },
     "strip-scan-glitch": {
       "hash": "0798b44bceb29906",

@@ -2,7 +2,7 @@
   "id": "stipple-engraving",
   "name": "Stipple Engraving",
   "url": "shaders/stipple-engraving.wgsl",
-  "description": "Tone-aware low-discrepancy stippling combines directional hatching, paper absorption, cursor burnishing, held ink pooling, and click-driven engraving rings.",
+  "description": "Tone stipple and directional hatching. Dots stretch along the engraved line, and the burin throws a pale burr to one side. The pointer burnishes the plate.",
   "features": [
     "mouse-driven",
     "audio-reactive",
