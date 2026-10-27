@@ -8449,8 +8449,17 @@
       ]
     },
     "cursor-aura": {
-      "hash": "3f8656c9c6f35174",
-      "history": []
+      "hash": "d7684b9e43228323",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "d7684b9e43228323",
+          "prev_hash": "3f8656c9c6f35174",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "cyber-focus": {
       "hash": "c10c070691f4e33e",
@@ -8461,12 +8470,30 @@
       "history": []
     },
     "cyber-hex-armor": {
-      "hash": "0dc9fbc365adc60a",
-      "history": []
+      "hash": "8f22d26cd6451db1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "8f22d26cd6451db1",
+          "prev_hash": "0dc9fbc365adc60a",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "cyber-lattice": {
-      "hash": "515c723a255de976",
-      "history": []
+      "hash": "d953662a662e1fe4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "d953662a662e1fe4",
+          "prev_hash": "515c723a255de976",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "cyber-magnifier": {
       "hash": "3efaba3039e551c1",
@@ -8516,8 +8543,17 @@
       "history": []
     },
     "cyber-trace": {
-      "hash": "2a1c478f004340ed",
-      "history": []
+      "hash": "56702183d178cd90",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "56702183d178cd90",
+          "prev_hash": "2a1c478f004340ed",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "data-slicer-interactive": {
       "hash": "6eb392a83b8db0ac",
@@ -8537,8 +8573,17 @@
       ]
     },
     "data-stream": {
-      "hash": "b50755d1aa1a489f",
-      "history": []
+      "hash": "ab97668e036004d9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "ab97668e036004d9",
+          "prev_hash": "b50755d1aa1a489f",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "digital-compression": {
       "hash": "c463859bb00352b9",
@@ -8621,8 +8666,17 @@
       "history": []
     },
     "energy-shield": {
-      "hash": "e34195e7e49d6306",
-      "history": []
+      "hash": "0f5c806f22d06c38",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "0f5c806f22d06c38",
+          "prev_hash": "e34195e7e49d6306",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "entropy-grid": {
       "hash": "cc188746bbbdc20c",
@@ -8948,8 +9002,17 @@
       ]
     },
     "laser-burn": {
-      "hash": "4bff97e88dc8b475",
-      "history": []
+      "hash": "248a1e522bf8f73c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "248a1e522bf8f73c",
+          "prev_hash": "4bff97e88dc8b475",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "light-leaks": {
       "hash": "d3a61eb91e88c548",
@@ -9332,7 +9395,7 @@
       "history": []
     },
     "neon-edge-radar": {
-      "hash": "0eee57333425530c",
+      "hash": "fe918431c0367268",
       "history": [
         {
           "event": "upgraded",
@@ -9341,6 +9404,14 @@
           "prev_hash": "1b99af4585ba4dd3",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "fe918431c0367268",
+          "prev_hash": "0eee57333425530c",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
         }
       ]
     },
@@ -9396,8 +9467,17 @@
       ]
     },
     "neon-strings": {
-      "hash": "b530edf6a70b1036",
-      "history": []
+      "hash": "f5090b71b7a7286d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "f5090b71b7a7286d",
+          "prev_hash": "b530edf6a70b1036",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "neon-warp": {
       "hash": "2d2ea4bac5879afb",
@@ -9456,8 +9536,25 @@
       ]
     },
     "oscilloscope-overlay": {
-      "hash": "cb008fe7a4d43813",
-      "history": []
+      "hash": "062728dc17883d23",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "447adbf08eb51a2f",
+          "prev_hash": "cb008fe7a4d43813",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:10:36.727Z",
+          "hash": "062728dc17883d23",
+          "prev_hash": "447adbf08eb51a2f",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "paper-burn": {
       "hash": "01c31f32342f014d",
@@ -9653,8 +9750,17 @@
       ]
     },
     "quantum-cursor": {
-      "hash": "951e735a566b2e5a",
-      "history": []
+      "hash": "29c15d6464a77c2a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "29c15d6464a77c2a",
+          "prev_hash": "951e735a566b2e5a",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "quantum-flux": {
       "hash": "2edb14a3f9c3f594",
@@ -9815,8 +9921,17 @@
       ]
     },
     "signal-tuner": {
-      "hash": "87b4c459f462df35",
-      "history": []
+      "hash": "77bc615ecd094b01",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-27T02:06:10.340Z",
+          "hash": "77bc615ecd094b01",
+          "prev_hash": "87b4c459f462df35",
+          "commit": "561dd256",
+          "note": "2026-10-27 cursor/cyber-hud-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-cyber-hud-twelve/NOTES.md"
+        }
+      ]
     },
     "sketch-reveal": {
       "hash": "5397b7c5d571defa",

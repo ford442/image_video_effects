@@ -18,6 +18,26 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-18: sent Cursor batch-04 (aurora-rift-pass1 through wave-equation-rgba-fluid).
   - 2026-10-18: sent Cursor batch-05 (fabric-of-reality through fire_smoke_volumetric).
   - 2026-10-18: sent Cursor batch-06 (spectrogram-displace-pass1 through gen-fluffy-raincloud). The single-pass spectrogram stays in this batch. `gen-fluffy-raincloud` is `gen_fluffy_raincloud.wgsl`.
+  - 2026-10-27: sent the cyber HUD twelve (oscilloscope-overlay through cyber-hex-armor). Previous tape-and-block glitch twelve is PR 1538.
+
+## 2026-10-27 — cyber HUD twelve (12 shaders)
+
+- IDs: oscilloscope-overlay, energy-shield, laser-burn, neon-edge-radar, data-stream, quantum-cursor, signal-tuner, cyber-lattice, cyber-trace, cursor-aura, neon-strings, cyber-hex-armor.
+- Per shader, the ideas actually added:
+  - oscilloscope-overlay: flyback blank at the right edge; phosphor tail from last frame's trace. Scanline, graticule, and sparkle kept.
+  - energy-shield: facet shade toward the pointer; impact ring desaturates the photo. Hex grid, oil-slick, and click rings kept.
+  - laser-burn: heat conducts into neighbours; oxide lip on the char edge. Char, ember, and click brands kept.
+  - neon-edge-radar: soft inverse-square range falloff (§12.2F); wake speckle. Wake, rings, and hold kept.
+  - data-stream: leading edge of each cell is brightest; Turbulence drops a whole column. Strip flow and glyphs kept.
+  - quantum-cursor: mask steps to the block pitch; bright pixels collapse toward the photo as Chaos falls. Mosaic and shuffle kept.
+  - signal-tuner: sync stub at the left of the row; chroma swims down with Static. Snow, ghost, and beat bands kept.
+  - cyber-lattice: solder joint at near-rail crossings; far lattice hides behind the near one. Thin film and traffic kept.
+  - cyber-trace: stamp follows the trail tangent (§12.2C); photo darkens in a groove under the line. History accumulate kept.
+  - cursor-aura: photo under the core darkens; feather bleaches toward the glow hue. Edge taps and hue kept.
+  - neon-strings: higher partials run sharp as Tension drops; the neighbour takes part of the pluck. Nodes and end pins kept.
+  - cyber-hex-armor: seams shadow the alloy; a retracting plate shows a hinge pin. Plate retract and bevel kept.
+- Floor: `#include "_prelude.wgsl"` / 16×16 / exact C / A packing as documented in NOTES.md / saved params exact.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalog gate pass. `npm run test:ci` 1433 passed; two RendererManager tests failed once under load and passed on a rerun of that file. `SKIP_WASM_BUILD=1 npm run build` compiled.
   - 2026-10-27: sent Cursor batch-15 (log-polar-droste through julia-warp, 12 polar, fractal, and perspective shaders). Notes in `docs/agents/swarm-outputs/grok-2026-10-27-batch-15/`.
 
 ## 2026-10-27 — cursor/batch-15 (12 shaders)

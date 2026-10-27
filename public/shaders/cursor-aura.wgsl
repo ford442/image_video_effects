@@ -9,29 +9,14 @@
 //    z 'Edge Softness' now widens the aura edge feather (was hidden mix),
 //    w 'Color Hue' now hue-rotates the glow color (was hidden pulse speed,
 //    default 0.5 lands exactly on the original blue). Added click aura
-//    rings, directional spectral edge shimmer, smoothed bass envelope.
+//    rings, directional spectral edge shimmer.
+//  Upgraded: 2026-10-27
+//  Ideas: core spend under the disc; penumbra bleach in the feather
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=AuraSize, y=GlowIntensity, z=EdgeSoftness, w=ColorHue
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=AuraSize, y=GlowIntensity, z=EdgeSoftness, w=ColorHue
 
 // Cosine-palette hue remap (IQ): hue = 0.5 reproduces the original blue
 // (0.0, 0.5, 1.0) exactly; sweeping 0..1 rotates through the spectrum.
@@ -52,19 +37,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Per-bin mids: one FFT mid bin per 4-tap direction so the edge
-  // shimmer becomes directional (L/R bins drive horizontal edges,
-  // T/B bins drive vertical edges).
-  let midL = plasmaBuffer[2].y;
-  let midR = plasmaBuffer[3].y;
-  let midT = plasmaBuffer[4].y;
-  let midB = plasmaBuffer[5].y;
-
-  // Smoothed bass envelope — persistent shader state is restricted to
-  // extraBuffer[133..255] (engine FFT bins occupy [5..132]).
-  let prevEnv = extraBuffer[133];
-  let bassEnv = mix(prevEnv, bass, 0.2);
-  extraBuffer[133] = bassEnv;
+  // plasmaBuffer[1..] is never uploaded, and extraBuffer is cleared every
+  // frame. Horizontal and vertical shimmer are two phases of the live mids.
+  let midH = mids * (0.65 + 0.35 * sin(time * 1.7));
+  let midV = mids * (0.65 + 0.35 * cos(time * 1.3));
+  let midL = midH;
+  let midR = mids - midH * 0.5;
+  let midT = midV;
+  let midB = mids - midV * 0.5;
+  let bassEnv = bass;
 
   // ── Slider params (rewired to honest, shader-specific constants) ──
   //  x 'Aura Size'      → aura radius, swollen by the bass envelope
@@ -97,7 +78,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mask = 1.0 - smoothstep(currentRadius, currentRadius + feather, dist);
 
   // Base Color
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  var baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // ── Idea 1: core spend. The photo under the disc darkens with Intensity.
+  baseColor = vec4<f32>(baseColor.rgb * (1.0 - mask * intensity * 0.28), baseColor.a);
 
   // Effect Color (Edge Detection / High Pass) — 4-tap kernel verbatim
   let offset = 1.0 / max(resolution.x, 0.001);
@@ -125,6 +108,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Combine — fixed 50/50 blend (the old hidden z behavior, now constant)
   let inside = mix(baseColor, effectColor, mixVal);
+
+  // ── Idea 2: penumbra bleach. The feather pulls the photo toward the glow hue.
+  let penumbra = mask * (1.0 - mask) * 4.0;
+  let bleached = mix(baseColor.rgb, glowColor, clamp(penumbra * 0.55, 0.0, 0.65));
+  let insideBleach = vec4<f32>(mix(inside.rgb, bleached, penumbra), inside.a);
 
   // Treble shimmer: fine spectral sparkle across the aura interior
   let shimmerPhase = dot(uvCorrected, vec2<f32>(37.0, 53.0)) + time * (3.0 + treble * 4.0);
@@ -154,10 +142,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Ring alpha can exceed 1.0 pre-clamp — the final clamp handles it.
-  let preFinal = mix(baseColor, inside, mask) + ringColor
+  let preFinal = mix(baseColor, insideBleach, mask) + ringColor
                + vec4<f32>(auraFill + clickRings * intensity * 2.0, 0.0);
   let finalAlpha = clamp(preFinal.a, 0.0, 1.0);
-  let finalColor = vec4<f32>(preFinal.rgb, finalAlpha);
+  let acesRgb = max(preFinal.rgb, vec3<f32>(0.0));
+  let mapped = clamp((acesRgb * (2.51 * acesRgb + 0.03)) / (acesRgb * (2.43 * acesRgb + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+  let finalColor = vec4<f32>(mapped, finalAlpha);
 
   // Depth read and mandatory writes
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

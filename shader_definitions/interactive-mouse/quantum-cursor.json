@@ -2,7 +2,7 @@
   "id": "quantum-cursor",
   "name": "Quantum Cursor",
   "url": "shaders/quantum-cursor.wgsl",
-  "description": "Quantized reality field around the cursor with chromatic distortion and audio-reactive pulse.",
+  "description": "Mosaic field around the pointer. The boundary steps to the block pitch, and bright pixels collapse back toward the photo as Chaos falls.",
   "params": [
     {
       "id": "radius",

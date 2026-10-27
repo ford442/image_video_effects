@@ -4,31 +4,13 @@
 //  Features: pluckable-strings, mouse-velocity, harmonics, audio-reactive, blackbody, upgraded-rgba
 //  Complexity: High
 //  Created: Phase B
-//  Upgraded: 2026-09-11
-//  Ideas: standing-wave node darkening; nut/bridge end-pins
+//  Upgraded: 2026-09-11, 2026-10-27
+//  Ideas: standing-wave node darkening; nut/bridge end-pins; inharmonic stiffness; sympathetic neighbour
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=StringCount, y=Tension, z=Intensity, w=CoolRate
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=StringCount, y=Tension, z=Intensity, w=CoolRate
 
 const PI:  f32 = 3.14159265358979;
 const TAU: f32 = 6.28318530717959;
@@ -74,13 +56,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let x = uv.x;
     let phaseOff = strIdx * PHI;
     let h1 = sin(PI * x) * cos(time * fundFreq * PI * 2.0 + phaseOff);
-    let h2 = sin(2.0 * PI * x) * cos(time * fundFreq * 2.0 * PI * 2.0 + phaseOff);
-    let h3 = sin(3.0 * PI * x) * cos(time * fundFreq * 3.0 * PI * 2.0 + phaseOff);
+    // ── Idea 1: inharmonic stiffness. Higher partials run sharp as Tension drops.
+    let stiff = 0.02 / max(tension, 0.05);
+    let h2 = sin(2.0 * PI * x) * cos(time * fundFreq * 2.0 * (1.0 + stiff) * PI * 2.0 + phaseOff);
+    let h3 = sin(3.0 * PI * x) * cos(time * fundFreq * 3.0 * (1.0 + stiff * 2.2) * PI * 2.0 + phaseOff);
     let amp = h1 + 0.5 * h2 + 0.25 * h3;
 
     let pluckX = mouse.x;
     let dx = abs(uv.x - pluckX);
-    let pluckEnv = exp(-dx * 8.0 / max(tension, 0.05)) * sameStr * (mouseDown * 0.7 + 0.3);
+    // ── Idea 2: the neighbouring string takes a fraction of the pluck.
+    let neighbor = step(abs(strIdx - mouseStr), 1.5) * (1.0 - sameStr);
+    let pluckEnv = exp(-dx * 8.0 / max(tension, 0.05)) * (sameStr + neighbor * 0.28) * (mouseDown * 0.7 + 0.3);
     let packetDirection = select(-1.0, 1.0, fract(strIdx * PHI) > 0.5);
     let packetPhase = fract((x - pluckX) * packetDirection - time * (1.2 + tension * 2.8) + 0.5);
     let packet = exp(-pow((packetPhase - 0.5) / 0.11, 2.0)) * sameStr * (0.25 + mouseDown * 0.75);
