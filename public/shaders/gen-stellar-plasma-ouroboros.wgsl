@@ -5,11 +5,13 @@
 //           Fresnel-rim-lighting, audio-reactive, depth-aware,
 //           upgraded-rgba, mouse-driven
 // Upgraded: 2026-06-28 — Visualist Batch (OkLab + blackbody + Fresnel)
-// Upgraded: 2026-09-27
+// Upgraded: 2026-10-19
 // Ideas: peristaltic plasma bolus hinging the scale plates outward;
 //        seam light leaking through the hex gaps, gated by the bolus phase;
-//        scale-edge sputter aurora; magnetotail streamer ribbons
-// A packing: display RGBA (ACES)
+//        scale-edge sputter aurora; magnetotail streamer ribbons;
+//        glass scales transmit the plasma river (§12.2F Fresnel–Schlick + Beer–Lambert chord);
+//        plasma corona in-scatter around the coil (§12.2F soft inverse-square, HG phase)
+// A packing: display RGBA (ACES); alpha = shell/glow/corona coverage, 0.85 void
 // ----------------------------------------------------------------
 
 #include "_prelude.wgsl"
@@ -66,7 +68,8 @@ fn sdHexPrism(p: vec3<f32>, h: vec2<f32>) -> f32 {
 }
 
 fn sdCylinder(p: vec3<f32>, c: vec2<f32>) -> f32 {
-    return length(p.xz) - c.x;
+    // Tube along z (the coil axis); HEAD used p.xz, which drew a vertical pillar.
+    return length(p.xy) - c.x;
 }
 
 fn pModPolar(p: vec2<f32>, repetitions: f32) -> vec2<f32> {
@@ -85,31 +88,35 @@ fn srgb_to_linear(c: vec3<f32>) -> vec3<f32> {
 fn linear_to_srgb(c: vec3<f32>) -> vec3<f32> {
     return pow(c, vec3<f32>(1.0 / 2.2));
 }
+// HEAD wrote these matrices row-by-row into column-major mat3x3 (transposed) and used the
+// forward M2 again instead of its inverse on the way back → green-tinted garbage. Rows are
+// now wrapped in transpose(), and oklab_to_linear uses M2⁻¹. (M1 is the XYZ→LMS form; the
+// pair stays mutually inverse, which is all the mix needs.)
 fn linear_to_oklab(c: vec3<f32>) -> vec3<f32> {
-    let lms = mat3x3<f32>(
+    let lms = transpose(mat3x3<f32>(
         0.8189330101, 0.3618667424, -0.1288597137,
         0.0329845436, 0.9293118715,  0.0361456387,
         0.0482003018, 0.2643662691,  0.6338517070
-    ) * c;
+    )) * c;
     let lms_ = sign(lms) * pow(abs(lms), vec3<f32>(1.0 / 3.0));
-    return mat3x3<f32>(
+    return transpose(mat3x3<f32>(
         0.2104542553,  0.7936177850, -0.0040720468,
         1.9779984951, -2.4285922050,  0.4505937099,
         0.0259040371,  0.7827717662, -0.8086757660
-    ) * lms_;
+    )) * lms_;
 }
 fn oklab_to_linear(c: vec3<f32>) -> vec3<f32> {
-    let lms_ = mat3x3<f32>(
-        0.2104542553,  0.7936177850, -0.0040720468,
-        1.9779984951, -2.4285922050,  0.4505937099,
-        0.0259040371,  0.7827717662, -0.8086757660
-    ) * c;
+    let lms_ = transpose(mat3x3<f32>(
+        1.0,  0.3963377774,  0.2158037573,
+        1.0, -0.1055613458, -0.0638541728,
+        1.0, -0.0894841775, -1.2914855480
+    )) * c;
     let lms = lms_ * lms_ * lms_;
-    return mat3x3<f32>(
+    return max(transpose(mat3x3<f32>(
         1.2270138511, -0.5577992887,  0.2812561490,
        -0.0405801784,  1.1122568696, -0.0716766787,
        -0.0763812845, -0.4214819784,  1.5861632204
-    ) * lms;
+    )) * lms, vec3<f32>(0.0));
 }
 fn oklab_mix(a: vec3<f32>, b: vec3<f32>, t: f32) -> vec3<f32> {
     let a_ok = linear_to_oklab(srgb_to_linear(a));
@@ -137,6 +144,19 @@ fn bolusAt(z: f32, time: f32) -> f32 {
     return exp(-w * w * 30.0);
 }
 
+// IDEA 5: Schlick reflectance for glass scales (n = 1.5 → F0 = 0.04).
+fn schlickF(cosI: f32) -> f32 {
+    let m = 1.0 - clamp(cosI, 0.0, 1.0);
+    let m2 = m * m;
+    return 0.04 + 0.96 * m2 * m2 * m;
+}
+
+// IDEA 6: Henyey–Greenstein phase, normalised so g=0 → 1.
+fn hgPhase(cosT: f32, g: f32) -> f32 {
+    let g2 = g * g;
+    return (1.0 - g2) / pow(max(1.0 + g2 - 2.0 * g * cosT, 1e-3), 1.5);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -148,7 +168,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
 
-    let uv = (fragCoord * 2.0 - res) / res.y;
+    // Row 0 = screen top: flip so +Y is up (mouse flipped to match below).
+    var uv = (fragCoord * 2.0 - res) / res.y;
+    uv.y = -uv.y;
 
     let scaleDensity = u.zoom_params.x;
     let plasmaIntensity = u.zoom_params.y;
@@ -165,7 +187,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Mouse Y-flipped: screen-top (zoom_config.z=0) = +Y/up
     let mouseX = (u.zoom_config.y * 2.0 - 1.0) * res.x / res.y;
-    let mouseY = (u.zoom_config.z * 2.0 - 1.0);
+    let mouseY = (1.0 - u.zoom_config.z * 2.0);
     let mousePos = vec3<f32>(mouseX * 8.0, mouseY * 8.0, 0.0);
 
     let mouseDist = distance(ro + rd * 10.0, mousePos);
@@ -182,6 +204,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var hitSurface = false;
     var hitT = 0.0;
     var seamCov = 0.0;
+    var corona = vec3<f32>(0.0);
+    var coronaCov = 0.0;
+    // Slider is a ring count; a fractional count (e.g. the 0.5 default the app sends when no
+    // params are saved) tears pModPolar, so snap to whole plates.
+    let ringCount = max(floor(scaleDensity + 0.5), 1.0);
 
     for (var i = 0; i < 100; i++) {
         var p = ro + rd * t;
@@ -189,7 +216,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let pathDistort = vec3<f32>(sin(p.z * 0.2 + time) * 3.0, cos(p.z * 0.2 + time * 0.8) * 3.0, 0.0);
         p -= pathDistort;
 
-        let rot1 = rotate2D(p.z * 0.1 + time * 0.5);
+        let rotA = p.z * 0.1 + time * 0.5;
+        let rot1 = rotate2D(rotA);
         let temp_p_xy = rot1 * p.xy;
         p.x = temp_p_xy.x;
         p.y = temp_p_xy.y;
@@ -197,8 +225,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let cylD = sdCylinder(p, vec2<f32>(2.0, 0.0));
 
         var q = p;
-        q.z = fract(q.z * (scaleDensity / 10.0)) - 0.5;
-        let polar_xy = pModPolar(q.xy, scaleDensity);
+        q.z = fract(q.z * (ringCount / 10.0)) - 0.5;
+        let polar_xy = pModPolar(q.xy, ringCount);
         q.x = polar_xy.x;
         q.y = polar_xy.y;
 
@@ -217,14 +245,53 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let innerPlasma = sdCylinder(p, vec2<f32>(1.8, 0.0));
 
+        // ── Idea 6: plasma corona. The river is a line source on the coil axis; the
+        // ionised sheath around the coil scatters it toward the eye. Soft inverse-square
+        // in the distance to the axis, HG forward phase between rd and the light direction
+        // (world-space direction from the axis to the sample), weighted by step length.
+        let rAx = length(p.xy);
+        let toAxLocal = -p.xy / max(rAx, 1e-3);
+        let toAx = toAxLocal * rot1; // inverse rotation (transpose) back to world xy
+        let cosT = dot(rd, -vec3<f32>(toAx, 0.0)); // light travels from axis outward
+        let srcI = (0.9 + 1.2 * bolusAt(p.z, time)) * (1.0 + audioReactivity * 0.6);
+        let rOut = max(rAx - 1.8, 0.0);
+        let coronaL = srcI / (rOut * rOut * 1.5 + 0.5);
+        let stepLen = max(d * 0.5, 0.02);
+        let coronaD = coronaL * hgPhase(cosT, 0.55) * stepLen * 0.03 * plasmaIntensity;
+        // ionised sheath scatters blue-violet against the amber glass
+        corona += vec3<f32>(0.35, 0.55, 1.2) * (0.8 + 0.6 * bolusAt(p.z, time)) * coronaD;
+        coronaCov += coronaD;
+
         if (d < 0.01) {
             let n_fbm = fbm(p * 2.0 + vec3<f32>(0.0, 0.0, time * 2.0));
             // OkLab mix between cool and hot tones
             let cool = vec3<f32>(0.1, 0.2, 0.3);
             let hot = blackbody(0.6 + n_fbm * 0.4);
-            col = oklab_mix(cool, hot, n_fbm);
-            let refl = reflect(rd, normalize(p));
+            // n_fbm is signed; an unclamped t extrapolated past `cool` into negative
+            // linear light (pale-green NaN-ish wash). Clamp the mix weight.
+            col = oklab_mix(cool, hot, clamp(0.5 + n_fbm * 1.4, 0.0, 1.0));
+            // Local tube normal (rotated back to world); HEAD used normalize(p) incl. z.
+            let nL = normalize(p.xy);
+            let nW = normalize(vec3<f32>(nL * rot1, 0.0));
+            let refl = reflect(rd, nW);
             col += textureSampleLevel(readTexture, u_sampler, refl.xy, 0.0).rgb * 0.5;
+
+            // ── Idea 5: glass scales. Fresnel–Schlick splits the plate into a reflected part
+            // (the surface colour above) and a transmitted part: the plasma river under the
+            // plate, seen through the glass with Beer–Lambert absorption over the chord
+            // shell-thickness / cos(theta). Grazing plates go mirror-dark, face-on plates glow
+            // amber-through with the core's blackbody colour; the bolus heats what shows through.
+            // Each scale is a cabochon: thin glass at the seam, thickest mid-plate, so plate
+            // edges glow bright and centres sink to deep amber.
+            let cosI = abs(dot(rd, nW));
+            let F = schlickF(cosI);
+            let plateThick = 0.06 + 0.34 * smoothstep(0.0, 0.35, hexD);
+            let chord = plateThick / max(cosI, 0.2);
+            let sigma = vec3<f32>(1.1, 2.6, 5.5); // amber glass: passes red, eats blue
+            let transm = exp(-sigma * chord);
+            let n_core = fbm(p * 5.0 - vec3<f32>(0.0, 0.0, time * 5.0 + audioReactivity * 10.0));
+            let coreEm = blackbody(0.35 + 0.45 * bolus + 0.35 * n_core) * (1.0 + 2.4 * bolus) * plasmaIntensity * 0.6;
+            col = col * (0.18 + F * 1.6) + coreEm * transm * (1.0 - F);
 
             // IDEA 2: seam light. Plasma leaks through the hex gaps: |hexD| contour,
             // ember between boluses, hot while the bolus passes.
@@ -240,8 +307,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             hitSurface = true;
             hitT = t;
 
-            // Approximate normal for Fresnel
-            surfaceNormal = normalize(p);
+            surfaceNormal = nW;
             break;
         }
 
@@ -261,11 +327,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     if (!hitPlasma && d >= 0.01) {
-        let stars = pow(fbm(rd * 100.0), 10.0);
+        // fbm is signed; pow(neg, 10) is NaN on real GPUs and would erase the corona added below.
+        let stars = pow(max(fbm(rd * 100.0), 0.0), 10.0);
         col = vec3<f32>(stars);
     }
 
-    col += glow;
+    col += glow + corona;
 
     // Fresnel rim on the ouroboros structure
     if (length(surfaceNormal) > 0.01) {
@@ -278,8 +345,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // ACES display (exposure 0.8 keeps the old clamp look close while HDR glow rolls off)
     let hdrLuma = dot(max(glow, vec3<f32>(0.0)), vec3<f32>(0.299, 0.587, 0.114));
     let glowA = 1.0 - exp(-1.5 * hdrLuma);
-    let cover = max(max(select(0.0, 1.0, hitSurface), glowA), seamCov);
-    let alpha = mix(0.2, 1.0, clamp(cover, 0.0, 1.0));
+    let coronaA = 1.0 - exp(-2.0 * coronaCov);
+    let cover = max(max(max(select(0.0, 1.0, hitSurface), glowA), seamCov), coronaA);
+    let alpha = mix(0.85, 1.0, clamp(cover, 0.0, 1.0));
     col = acesToneMap(max(col, vec3<f32>(0.0)) * 0.8);
 
     let outCol = vec4<f32>(col, alpha);

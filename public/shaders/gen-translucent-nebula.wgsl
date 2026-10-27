@@ -7,9 +7,11 @@
 //    translucency. FBM and Worley noise create nebula structure.
 //    Dense cores are opaque while edges fade to transparent.
 //    Star sparkle reacts to treble; nebula pulses with bass.
-//  Upgraded: 2026-10-10
-//  Ideas: Rayleigh-Taylor plume fingers; ionization-front shell bands; protostar accretion disks; supernova shockwave bow-shocks
-//  A packing: ACES display RGBA in A
+//  Upgraded: 2026-10-19
+//  Ideas: Rayleigh-Taylor plume fingers; ionization-front shell bands; protostar accretion disks; supernova shockwave bow-shocks;
+//         embedded stars light the gas (§12.2F soft inverse-square, blackbody star colours);
+//         Rayleigh reflection haze + reddened starlight through the dust (§12.2F Rayleigh)
+//  A packing: A.rgb = pre-ACES colour (x/(1+0.3x)), A.a = gas density alpha (history); writeTexture alpha = 0.85 + 0.15 density
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -148,10 +150,41 @@ fn starField(uv: vec2<f32>, seed: f32, treble: f32) -> vec3<f32> {
   return stars;
 }
 
-// ═══ CHUNK: bass envelope smoothing ═══
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-  let k = select(release, attack, bass > prev);
-  return mix(prev, bass, k);
+// ═══ CHUNK: blackbody star colour (Helland fit, kelvin → linear-ish RGB) ═══
+fn starTint(kelvin: f32) -> vec3<f32> {
+  let t = kelvin / 100.0;
+  let hot = t > 66.0;
+  let tw = max(t - 60.0, 1e-3);
+  let r = select(1.0, clamp(1.292936 * pow(tw, -0.1332047), 0.0, 1.0), hot);
+  let g = select(clamp(0.3900816 * log(max(t, 1.0)) - 0.6318414, 0.0, 1.0),
+                 clamp(1.1298909 * pow(tw, -0.0755148), 0.0, 1.0), hot);
+  let b = select(clamp(0.5432068 * log(max(t - 10.0, 1.0)) - 1.1962541, 0.0, 1.0), 1.0, t >= 66.0);
+  return vec3<f32>(r, g, b);
+}
+
+// Rayleigh weights (650/λ)^4 at 650/550/450 nm, normalised to mean 1.
+const RAYLEIGH_W = vec3<f32>(0.41, 0.80, 1.79);
+
+// Idea 5: one embedded star's light on a gas sample. Soft inverse-square I/(r² + r₀²);
+// hot stars (ionising ≈ 1) turn nearby gas into Hα/Hβ pink emission, the rest of the light
+// is dust reflection, Rayleigh-blued (Idea 6). Returns emission rgb.
+fn starOnGas(p: vec3<f32>, sp: vec3<f32>, col: vec3<f32>, intensity: f32, ionising: f32) -> vec3<f32> {
+  let dv = p - sp;
+  let fall = 1.0 / (dot(dv, dv) + 0.012);
+  let lk = col * fall;
+  let ionFrac = ionising * smoothstep(0.6, 3.0, fall * intensity * 10.0);
+  return vec3<f32>(1.0, 0.28, 0.40) * dot(lk, vec3<f32>(0.33)) * ionFrac * 2.0
+       + lk * RAYLEIGH_W * (1.0 - ionFrac);
+}
+
+// Idea 5/6: the star's own disc — soft inverse-square core + halo, dimmed and reddened by
+// the gas in front of it: exp(−τ·w_λ), τ = −ln(transmittance).
+fn starDisc(sd: vec2<f32>, tint: vec3<f32>, intensity: f32, trans: f32) -> vec3<f32> {
+  let r2 = dot(sd, sd);
+  let core = intensity * 0.0009 / (r2 + 0.00004);
+  let halo = intensity * 0.06 / (r2 * 40.0 + 0.4);
+  let tau = -log(max(trans, 0.02)) * 1.6;
+  return tint * (core + halo) * exp(-tau * RAYLEIGH_W);
 }
 
 var<private> time: f32;
@@ -191,12 +224,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseDown = u.zoom_config.w;
   let centerOffset = (mousePos - 0.5) * 0.5;
 
-  // Smooth bass for pulsing
-  var prevBass = extraBuffer[1];
-  let smoothBass = bass_env(prevBass, bass, 0.1, 0.03);
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[1] = smoothBass;
-  }
+  // Bass for pulsing. HEAD kept an envelope in extraBuffer[1], which is re-uploaded every
+  // frame (never persists) and raced across invocations; use the live band directly.
+  let smoothBass = bass * 0.5;
+
+  // ── Idea 5: embedded stars. Three stars sit inside the cloud at fixed screen positions
+  // and depths (they ride the view; the gas flows past them). Spectral types O / B / K.
+  let aspect = res.x / res.y;
+  let drift = vec2<f32>(time * 0.01, time * 0.005);
+  // Screen position, layer depth (zDepth units), intensity; O 32000 K, B 15000 K, K 4200 K.
+  let s0UV = vec2<f32>(0.58, 0.44); let s0Z = 0.45; let s0I = 0.055;
+  let s1UV = vec2<f32>(0.26, 0.70); let s1Z = 0.75; let s1I = 0.035;
+  let s2UV = vec2<f32>(0.80, 0.24); let s2Z = 0.2;  let s2I = 0.02;
+  let s0T = starTint(32000.0);
+  let s1T = starTint(15000.0);
+  let s2T = starTint(4200.0);
+  let starPulse = 1.0 + smoothBass * 0.5;
+  let s0P = vec3<f32>((s0UV - 0.5) * cloudScale + centerOffset + drift, s0Z * 2.0);
+  let s1P = vec3<f32>((s1UV - 0.5) * cloudScale + centerOffset + drift, s1Z * 2.0);
+  let s2P = vec3<f32>((s2UV - 0.5) * cloudScale + centerOffset + drift, s2Z * 2.0);
+  var s0Tr = 1.0; var s1Tr = 1.0; var s2Tr = 1.0;
 
   // Temporal feedback
   let prevState = textureLoad(dataTextureC, coord, 0);
@@ -224,6 +271,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let d = nebulaDensity(p, time, smoothBass) * densityParam;
     let layerAlpha = d * zStep * 2.5;
     var layerCol = nebulaColor(d, zDepth, colorShift);
+
+    // ── Idea 5: soft inverse-square starlight, I/(r² + r₀²), received by this layer's gas.
+    // Close to the hot O/B stars the gas is ionised and glows Hα/Hβ pink; further out the
+    // dust only scatters, and ── Idea 6: Rayleigh scattering (λ⁻⁴) makes that reflection
+    // light blue — the red-core / blue-halo split of a real star-forming region.
+    let starGas = starOnGas(p, s0P, s0T * s0I * starPulse, s0I, 1.0)
+                + starOnGas(p, s1P, s1T * s1I * starPulse, s1I, 0.6)
+                + starOnGas(p, s2P, s2T * s2I * starPulse, s2I, 0.0);
+    layerCol += starGas * (0.3 + 0.6 * d);
+    // transmittance of the gas in front of each star (before this layer composites)
+    s0Tr = select(s0Tr, 1.0 - accumDensity, zDepth <= s0Z);
+    s1Tr = select(s1Tr, 1.0 - accumDensity, zDepth <= s1Z);
+    s2Tr = select(s2Tr, 1.0 - accumDensity, zDepth <= s2Z);
     let plumeTint = smoothstep(0.55, 0.9, d) * pow(max(0.5 + 0.5 * sin(p.y * 7.5 - time * 1.3), 0.0), 2.0);
     let ionBand = smoothstep(0.2, 0.04, abs(fract(length(p) * 1.5 - time * 0.17) - 0.5) * 2.0);
     layerCol += vec3<f32>(0.35, 0.95, 0.75) * ionBand * 0.18;
@@ -256,17 +316,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   accumDensity = clamp(accumDensity + gasBoost * 0.3, 0.0, 1.0);
 
   // ═══ STAR FIELD ═══
+  // ── Idea 6: background stars are extinguished per channel through the gas column:
+  // gray optical depth τ = −ln(T), reddened by the Rayleigh weights.
+  let tauBg = -log(max(1.0 - accumDensity * 0.85, 0.02));
   let stars = starField(uv, 42.0, treble) * starDensity;
-  let starVisibility = 1.0 - accumDensity * 0.85;
-  accumColor = accumColor + stars * starVisibility;
-  
-  // Idea 1: protostar accretion disks (tiny glowing rings scattered in the gas)
+  accumColor = accumColor + stars * exp(-tauBg * RAYLEIGH_W);
+
+  // ── Idea 5/6: the embedded stars themselves — soft inverse-square core + halo, seen
+  // through the gas in front of them, which dims and reddens them (exp(−τ·w_λ)).
+  let ar = vec2<f32>(aspect, 1.0);
+  accumColor += (starDisc((uv - s0UV) * ar, s0T, s0I, s0Tr)
+              + starDisc((uv - s1UV) * ar, s1T, s1I, s1Tr)
+              + starDisc((uv - s2UV) * ar, s2T, s2I, s2Tr)) * (1.0 + smoothBass * 0.6);
+
+  // Idea 1: protostar accretion disks — inclined disks with a lit centre, only where the
+  // gas is dense enough to collapse (HEAD stamped screen-grid ring outlines over the void).
   let protoUV = uv * 30.0 + vec2<f32>(time * 0.1);
   let protoHash = hash12(floor(protoUV));
-  let protoDist = length(fract(protoUV) - 0.5);
-  let protoRing = smoothstep(0.3, 0.4, protoDist) * smoothstep(0.5, 0.4, protoDist);
-  let protoStar = step(0.98, protoHash) * protoRing * (0.5 + 0.5 * sin(time * 5.0 + protoHash * 10.0));
-  accumColor += vec3<f32>(1.0, 0.5, 0.2) * protoStar * 2.0;
+  let pf = fract(protoUV) - 0.5;
+  let pa = protoHash * 40.0;
+  let pr = vec2<f32>(pf.x * cos(pa) - pf.y * sin(pa), (pf.x * sin(pa) + pf.y * cos(pa)) * 2.6);
+  let protoDist = length(pr);
+  let protoRing = smoothstep(0.18, 0.28, protoDist) * smoothstep(0.42, 0.3, protoDist) + smoothstep(0.12, 0.0, length(pf)) * 0.8;
+  let protoGate = smoothstep(0.35, 0.75, accumDensity);
+  let protoStar = step(0.97, protoHash) * protoRing * protoGate * (0.6 + 0.4 * sin(time * 5.0 + protoHash * 10.0));
+  accumColor += vec3<f32>(1.0, 0.5, 0.2) * protoStar * 1.4;
   
   // Idea 2: supernova shockwave bow-shocks (fast sweeping arc)
   let shockDist = length(uv - 0.5);
@@ -308,6 +382,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let caStr = 0.003 * (1.0 + smoothBass) + depthVal * 0.001;
   finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  // Display alpha: floor 0.85 so thin gas doesn't composite the page through as a wash;
+  // the density semantics stay in A.a.
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, mix(0.85, 1.0, finalAlpha)));
   textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }

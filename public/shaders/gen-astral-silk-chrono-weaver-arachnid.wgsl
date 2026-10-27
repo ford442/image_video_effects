@@ -4,31 +4,15 @@
 //  Features: raymarched, mouse-driven, audio-reactive, upgraded-rgba, temporal-feedback
 //  Complexity: High
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-09-27
-//  Ideas: leg-anchored radial spokes (exact ray-segment silk); orb-web capture spiral tugged by the gait; hub shockwave fronts through the silk
-//  A packing: HDR linear RGB (pre-ACES) + semantic alpha
+//  Upgraded: 2026-10-19
+//  Ideas: leg-anchored radial spokes (exact ray-segment silk); orb-web capture spiral tugged by the gait; hub shockwave fronts through the silk;
+//         viscid glue beads on the capture spiral (Plateau–Rayleigh spacing), each bead an Airy-disc glint (§12.2F Airy disc);
+//         pedicel + leg-socket crevices shaded by step-count AO on the spider SDF (§12.2E step-count AO)
+//  A packing: HDR linear RGB (pre-ACES) + semantic alpha (spider 1.0, void 0.88 + silk luminance)
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/Click, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic
-    zoom_params: vec4<f32>,  // x=Hue, y=ChronoSpeed+Anim, z=ThreadThickness, w=CoreIntensity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Hue, y=ChronoSpeed+Anim, z=ThreadThickness, w=CoreIntensity
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a); let c = cos(a);
@@ -101,11 +85,36 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
         mapSpider(p + e.yyx) - mapSpider(p - e.yyx)));
 }
 
+// Idea 5: step-count AO — five taps along the normal into the spider's own SDF.
+// δ reaches 0.63 (the body is r 0.65, abdomen r 0.9): a convex sphere never
+// self-occludes (map(p+n·h) = h), so only the waist and leg sockets darken.
+fn aoFive(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0; var sca = 1.0;
+    for (var i = 1; i <= 5; i++) {
+        let h = 0.03 + 0.6 * f32(i) / 5.0;
+        occ += (h - mapSpider(p + n * h)) * sca;
+        sca *= 0.6;
+    }
+    return clamp(1.0 - 1.6 * occ, 0.0, 1.0);
+}
+
+// Idea 4: Airy pattern (2·J1(x)/x)² with the Numerical Recipes rational J1 (x < 8),
+// so the first bright ring (x ≈ 5.1) is right; zero beyond the second dark ring.
+fn airy(x: f32) -> f32 {
+    let xs = clamp(abs(x), 1e-4, 7.0);
+    let y = xs * xs;
+    let n1 = xs * (72362614232.0 + y * (-7895059235.0 + y * (242396853.1 + y * (-2972611.439 + y * (15704.48260 + y * -30.16036606)))));
+    let d1 = 144725228442.0 + y * (2300535672.0 + y * (18583304.74 + y * (99447.43394 + y * (376.9991397 + y))));
+    let v = 2.0 * (n1 / d1) / xs;
+    return v * v * step(abs(x), 7.0);
+}
+
 // Exact closest approach between the view ray [0, tMax] and silk segment a→b.
-// Returns (glow, hub radius of the closest silk point). Replaces HEAD's single
-// sample at ro + rd*t*0.6, which made the threads jump at the silhouette.
+// Returns (glow, hub radius of the closest silk point, h along a→b, centre-line
+// distance). Replaces HEAD's single sample at ro + rd*t*0.6, which made the
+// threads jump at the silhouette.
 fn silkSeg(ro: vec3<f32>, rd: vec3<f32>, tMax: f32, a: vec3<f32>, b: vec3<f32>,
-           radius: f32, k: f32) -> vec2<f32> {
+           radius: f32, k: f32) -> vec4<f32> {
     let ba = b - a;
     let oa = ro - a;
     let bb = max(dot(ba, ba), 1e-6);
@@ -115,9 +124,9 @@ fn silkSeg(ro: vec3<f32>, rd: vec3<f32>, tMax: f32, a: vec3<f32>, b: vec3<f32>,
     var h = clamp((baoa - d1 * rdoa) / max(bb - d1 * d1, 1e-6), 0.0, 1.0);
     let s = clamp(d1 * h - rdoa, 0.0, tMax);
     h = clamp(dot(ba, oa + rd * s) / bb, 0.0, 1.0);
-    let dist = length(oa + rd * s - ba * h) - radius;
+    let cdist = length(oa + rd * s - ba * h);
     let q = a + ba * h;
-    return vec2<f32>(exp(-dist * k), length(q.xz));
+    return vec4<f32>(exp(-(cdist - radius) * k), length(q.xz), h, cdist);
 }
 
 // Idea 3: shockwave fronts — two travelling rings leave the hub on a clock and
@@ -139,7 +148,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let fragCoord = vec2<f32>(f32(global_id.x), f32(global_id.y));
     let iResolution = vec2<f32>(u.config.z, u.config.w);
-    var uv = (fragCoord - 0.5 * iResolution) / iResolution.y;
+    // Screen y grows downward; flip so world +y is up (HEAD drew the web overhead,
+    // the abdomen above the body — the whole spider upside-down).
+    var uv = (vec2<f32>(fragCoord.x, iResolution.y - fragCoord.y) - 0.5 * iResolution) / iResolution.y;
 
     // FIX: zoom_config.yz is already 0..1 — HEAD divided it by resolution, pinning
     // m at (-1,-1) and the camera near overhead. Mouse (0.5,0.5) = 3/4 view.
@@ -162,6 +173,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     ro = vec3<f32>(ro.x*rotY[0][0]+ro.z*rotY[1][0], ro.y, ro.x*rotY[0][1]+ro.z*rotY[1][1]);
     rd = vec3<f32>(rd.x, rd.y*rotX[0][0]+rd.z*rotX[1][0], rd.y*rotX[0][1]+rd.z*rotX[1][1]);
     rd = vec3<f32>(rd.x*rotY[0][0]+rd.z*rotY[1][0], rd.y, rd.x*rotY[0][1]+rd.z*rotY[1][1]);
+    // Aim at the web plane rather than the body so the orb web, not empty sky, fills the frame.
+    ro.y -= 0.6;
 
     // === Animated leg & thread positions (chrono-weaving motion) ===
     let legPhase = time * chrono * 0.6 * (1.0 + bass * 0.4);
@@ -212,7 +225,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Fresnel rim on body
         let n = calcNormal(pHit);
         let fres = pow(1.0 - max(dot(n, -rd), 0.0), 4.0);
-        col = silkCol * (1.0 + fres * 1.5);
+        // ── Idea 5: step-count AO — the pedicel waist between cephalothorax and
+        // abdomen and the eight leg sockets fall into shadow, so the spider reads
+        // as jointed chitin instead of one flat glowing blob.
+        let ao = aoFive(pHit, n);
+        // The body is emissive and ACES compresses it, so the AO scales the
+        // emission itself and also gates the Fresnel rim (crevice normals are grazing).
+        col = silkCol * (1.0 + fres * 1.5 * ao) * (0.1 + 0.9 * ao * ao);
     } else {
         // Cosmic dust + faint nebula background
         let dust = fbm(rd * 6.0 + vec3<f32>(time * 0.03));
@@ -234,7 +253,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ang = f32(s) * 1.047 + time * 0.15 * chrono;
         let threadA = vec3<f32>(0.0, 0.2, 0.0);
         let threadB = vec3<f32>(sin(ang) * 3.5, -1.5 + cos(ang * 0.6) * 1.2, cos(ang) * 3.5);
-        let g = silkSeg(ro, rd, tMax, threadA, threadB, silkR, silkK);
+        let g = silkSeg(ro, rd, tMax, threadA, threadB, silkR, silkK).xy;
         let threadGlow = g.x * 0.9 * (1.0 + treble * 0.5);
         let threadCol = hsv2rgb(vec3<f32>(hue + f32(s) * 0.07, 0.85, 1.0));
         col += threadCol * threadGlow * (0.7 + 0.3 * sin(time * 4.0 * chrono + f32(s)))
@@ -244,7 +263,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1: leg-anchored radial spokes — each leg tip holds a spoke out to the
     // anchor ring, so the gait visibly tugs the web the spider is weaving.
     for (var l = 0u; l < 8u; l++) {
-        let g = silkSeg(ro, rd, tMax, gTips[l], gAnchors[l], silkR * 0.8, silkK);
+        let g = silkSeg(ro, rd, tMax, gTips[l], gAnchors[l], silkR * 0.8, silkK).xy;
         let spokeCol = hsv2rgb(vec3<f32>(hue + 0.03 + f32(l) * 0.02, 0.8, 1.0));
         col += spokeCol * g.x * 0.75 * (1.0 + shockFront(g.y, shockClock) * shockAmp);
     }
@@ -253,6 +272,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // spokes, spacing tightening toward the hub (pow 1.4). Chord ends ride the
     // spokes, so the inner turns jitter with the leg gait and the outer stay taut.
     let spiralCol = hsv2rgb(vec3<f32>(hue - 0.05, 0.6, 1.0));
+    // ── Idea 4: viscid glue beads. The capture spiral (not the dry radials) is coated
+    // in glue that breaks up Plateau–Rayleigh-style into droplets spaced λ ≈ 9·r along
+    // the thread; each droplet is a ball lens that throws a point glint, drawn with an
+    // Airy-disc profile. Treble makes the beads shiver along the thread.
+    let spiralR = silkR * 0.55;
+    let beadLambda = 9.02 * spiralR;
+    let beadAiry = spiralR * 2.2;          // radius of the first dark ring
+    let beadGain = 3.2 * (0.6 + 0.4 * coreInt) * (1.0 + treble * 0.6);
+    var beads = 0.0;
     for (var i = 0u; i < 48u; i++) {
         let s0 = f32(i) / 48.0;
         let s1 = f32(i + 1u) / 48.0;
@@ -262,9 +290,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let u1 = 0.14 + 0.8 * pow(s1, 1.4);
         let a = mix(gTips[j0], gAnchors[j0], u0);
         let b = mix(gTips[j1], gAnchors[j1], u1);
-        let g = silkSeg(ro, rd, tMax, a, b, silkR * 0.55, silkK * 1.3);
-        col += spiralCol * g.x * 0.45 * (1.0 + shockFront(g.y, shockClock) * shockAmp);
+        let g = silkSeg(ro, rd, tMax, a, b, spiralR, silkK * 1.3);
+        let shock = 1.0 + shockFront(g.y, shockClock) * shockAmp;
+        col += spiralCol * g.x * 0.45 * shock;
+        let along = g.z * length(b - a) / beadLambda + f32(i) * 0.37 + sin(time * 9.0 + f32(i)) * 0.04 * treble;
+        let da = (fract(along) - 0.5) * beadLambda;
+        beads += airy(3.8317 * sqrt(da * da + g.w * g.w) / beadAiry) * shock;
     }
+
+    col += mix(spiralCol, vec3<f32>(1.0), 0.6) * beads * beadGain;
 
     let coord = vec2<i32>(global_id.xy);
 
@@ -283,7 +317,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let lum = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     // Semantic alpha: spider opaque; silk/void coverage by luminance.
-    let alpha = select(clamp(lum * 1.4 + 0.05, 0.0, 1.0), 1.0, hit);
+    // FIX: void alpha was ~0.05, washing the frame to white over a light page.
+    let alpha = select(clamp(0.88 + lum * 0.3, 0.0, 1.0), 1.0, hit);
 
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
     // FIX: near = 1, miss = 0 (HEAD wrote t/12, inverted).

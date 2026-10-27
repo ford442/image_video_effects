@@ -9,7 +9,7 @@
     "translucent",
     "worley-noise"
   ],
-  "description": "Volumetric gas clouds with density-based alpha translucency. FBM and Worley noise create organic nebula structure where dense cores are opaque and edges fade to transparent. Star sparkle reacts to treble and nebula pulses with bass.",
+  "description": "Volumetric gas clouds with density-based translucency, lit by embedded stars: pink ionised gas around hot stars, blue dust reflection, reddened starlight through the dense pillars.",
   "workgroup_size": [
     16,
     16,
@@ -20,7 +20,49 @@
   "updated": true,
   "id": "gen-translucent-nebula",
   "url": "shaders/gen-translucent-nebula.wgsl",
-  "features": [],
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "cloudDensity",
+      "name": "Cloud Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "cloudScale",
+      "name": "Cloud Scale",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "colorShift",
+      "name": "Color Shift",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "starDensity",
+      "name": "Star Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "x-meta": {
     "upgrade": {
       "params": [

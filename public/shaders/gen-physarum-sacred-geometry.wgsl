@@ -3,11 +3,20 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Flower-of-Life compass; Tero tube reinforcement; shuttle streaming; five-fold dislocation scar
-//  A packing: ACES display RGBA in A (alpha = pheromone trail density, fed back from C.a as the Physarum trail field)
+//  Upgraded: 2026-10-19
+//  Ideas: Flower-of-Life compass; Tero tube reinforcement; shuttle streaming; five-fold dislocation scar;
+//         isotropic 9-point Laplacian diffusion + vein cross-section (sol core / gel wall) from −∇²₉ (§12.2D);
+//         plasmodial sheet filling the vesica petals bounded by live arcs (§12.1 t2)
+//  A packing: ACES display RGBA in A (alpha = pheromone trail density in [0,1], fed back from C.a as the
+//             Physarum trail field; saturating deposit keeps it off the clamp); corner texel A.r =
+//             TRAIL_SENTINEL (C without it = another shader's data → trail starts empty);
+//             writeTexture alpha = 0.88 + 0.12·trail (display only)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
+
+// A.r of the corner texel: marks C as this shader's own trail (f16-exact, never a display value).
+const TRAIL_SENTINEL: f32 = -0.6875;
+var<private> trailOwned: f32 = 0.0;
 // zoom_params: x=Intensity, y=Speed, z=Scale, w=Mouse Influence
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -96,7 +105,7 @@ fn sense(pos: vec2<f32>, angleOffset: f32, sensorDist: f32) -> f32 {
     let inBounds = step(0.0, sensorPos.x) * step(sensorPos.x, res.x - 1.0) *
                    step(0.0, sensorPos.y) * step(sensorPos.y, res.y - 1.0);
     let clampedPos = clamp(sensorPos, vec2<f32>(0.0), res - 1.0);
-    let trail = textureLoad(dataTextureC, vec2<i32>(clampedPos), 0).a;
+    let trail = textureLoad(dataTextureC, vec2<i32>(clampedPos), 0).a * trailOwned;
     let uv = sensorPos / res;
     let warp = domainWarp(uv * 4.0, u.config.x * 0.1);
     let foodColor = textureSampleLevel(readTexture, u_sampler, clamp(warp, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
@@ -129,7 +138,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let moveSpeed = 1.5 * (speed / 0.5) * pxScale;        // px/frame, 1.5 at default (old moveSpeed)
     let S = fres.y * mix(0.04, 0.12, scale);              // Flower-of-Life lattice spacing = circle radius
     let sensorDist = S * 0.18 * (0.5 + speed);
-    let sigma = max(1.1, 1.1 * pxScale);
+    // Strand width scales with the lattice (1.1 px at 512 px / Scale 0.5, where
+    // S ≈ 41 px). A fixed ≥1.1 px floor made strands a fixed pixel width while S
+    // shrank with the canvas, so small canvases bled back into blob speckle.
+    let sigma = max(0.6, S * 0.0268);
     let maxOff = S * 0.07;
     let p = vec2<f32>(coords) + 0.5;
 
@@ -148,6 +160,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let reach = S * 0.08 + maxOff + mousePush + 4.0 * sigma;
     let j0 = i32(floor(p.y / rowH + 0.5));
     var deposit = 0.0;
+    var cover = 0.0;        // Idea 6: how many compass discs contain this pixel
+    var arcTrail = 0.0;     // Idea 6: trail on the arcs that bound this petal
+    let maxCoord = res - vec2<i32>(1);
+    // C still holds the previous shader's data texture on the first frame after a
+    // switch (usually alpha 1). Read as trail, that full field sat above the
+    // conductance onset, decayed at 0.985 and was still a ~0.3–0.5 haze 60 frames
+    // later. The corner texel of A carries a sentinel; without it, start empty.
+    let owned = select(0.0, 1.0, abs(textureLoad(dataTextureC, maxCoord, 0).r - TRAIL_SENTINEL) < 1e-3);
+    trailOwned = owned;
     for (var dj = -2; dj <= 2; dj = dj + 1) {
         let j = j0 + dj;
         let xOff = select(0.0, S * 0.5, (abs(j) % 2) == 1);
@@ -156,7 +177,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let i = i0 + di;
             let center = vec2<f32>(f32(i) * S + xOff, f32(j) * rowH);
             let cellId = vec2<f32>(f32(i), f32(j));
-            if (abs(length(p - center) - S) > reach) { continue; }
+            let dc = length(p - center);
+            if (dc < S) {
+                cover += 1.0;
+                let proj = center + (p - center) / max(dc, 1e-3) * S;
+                arcTrail += textureLoad(dataTextureC, clamp(vec2<i32>(proj), vec2<i32>(0), maxCoord), 0).a * owned;
+            }
+            if (abs(dc - S) > reach) { continue; }
             let orbitDir = select(-1.0, 1.0, hash21(cellId + vec2<f32>(7.1, 3.3)) > 0.5);
             let phase0 = hash21(cellId) * 6.28318;
             let omega = moveSpeed * 60.0 / S;
@@ -214,59 +241,104 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    // Blur & decay with branchless border weighting (trail lives in C.a)
-    var sum = 0.0;
-    var count = 0.0;
+    // ── Native idea 5: isotropic 9-point Laplacian (§12.2D) ─────────────
+    // The 3×3 box blur diffused 40%/frame with an axis bias; at 0.985 decay the
+    // strands bled into a saturated blob field and the compass circles never
+    // read. Diffuse with the isotropic stencil (0.2 edges, 0.05 corners, −1
+    // centre; clamped coords = no-flux border) at a rate that keeps strands thin.
+    let prevTrail = textureLoad(dataTextureC, coords, 0).a * owned;
+    var edgeSum = 0.0;
+    var cornerSum = 0.0;
     for (var i = -1; i <= 1; i = i + 1) {
         for (var j = -1; j <= 1; j = j + 1) {
-            let nCoord = coords + vec2<i32>(i, j);
-            let inBounds = select(0.0, 1.0, nCoord.x >= 0 && nCoord.y >= 0 && nCoord.x < res.x && nCoord.y < res.y);
-            let samplePos = clamp(nCoord, vec2<i32>(0), res - vec2<i32>(1));
-            sum += inBounds * textureLoad(dataTextureC, samplePos, 0).a;
-            count += inBounds;
+            let tap = textureLoad(dataTextureC, clamp(coords + vec2<i32>(i, j), vec2<i32>(0), maxCoord), 0).a * owned;
+            let isEdge = select(0.0, 1.0, (i == 0) != (j == 0));
+            let isCorner = select(0.0, 1.0, i != 0 && j != 0);
+            edgeSum += tap * isEdge;
+            cornerSum += tap * isCorner;
         }
     }
-    let blurResult = sum / max(count, 1.0);
-    let prevTrail = textureLoad(dataTextureC, coords, 0).a;
+    let lap9 = 0.2 * edgeSum + 0.05 * cornerSum - prevTrail;
+    let blurResult = prevTrail + lap9;          // isotropic neighbour mean
 
     // ── Native idea 2: Tero flux-adaptive tubes ─────────────────────────
     // dD/dt = f(|Q|) - D: strands carrying flux gain conductance (slower decay,
     // stronger deposition); idle strands thin out and are pruned.
-    let conductance = smoothstep(0.06, 0.6, blurResult);
-    let decayRate = mix(0.94, 0.985, conductance);
-    let diffused = mix(prevTrail, blurResult, 0.4) * decayRate;
+    // Reinforcement starts at strand level (0.2), not at 0.06: from 0.06 the
+    // faint jitter/diffusion haze also got slower decay + 2.5× deposit, so over
+    // minutes the whole field ratcheted up (median trail 0.08 → 0.43).
+    let conductance = smoothstep(0.2, 0.7, blurResult);
+    let decayRate = mix(0.965, 0.985, conductance);
+    // Diffusion spread over a trail lifetime must also scale with S² (0.12 at S ≈ 41 px).
+    let diffK = clamp(0.12 * (S / 41.0) * (S / 41.0), 0.005, 0.5);
+    let diffused = (prevTrail + diffK * lap9) * decayRate;
     let teroGain = 0.6 + 0.9 * conductance;
 
     // Pheromone deposition by agents passing this pixel
     let uv = vec2<f32>(coords) / fres;
     let geo = sacredMask(uv, time);
-    let depositGain = 0.5 * (1.0 + geo) * teroGain * mix(0.55, 1.45, intensity) * (1.0 + bass * 0.4);
-    let trailDensity = clamp(diffused + deposit * depositGain, 0.0, 1.0);
+    // An agent crossing a pixel deposits for ~σ√(2π)/v frames; HEAD's flat 0.5
+    // per frame summed to ~2.6 and clamped every strand into a 7 px blob. Deposit
+    // per unit path length instead, so one pass lays ~0.6 and strands stay thin.
+    let pathNorm = clamp(moveSpeed / (sigma * 2.5066), 0.03, 1.0) * 1.2;
+    let depositGain = 0.5 * pathNorm * (1.0 + geo) * teroGain * mix(0.55, 1.45, intensity) * (1.0 + bass * 0.4);
+    // Saturating deposit: a tube can only thicken into the space it has left
+    // (×(1 − trail)), so strands settle at a bounded level instead of piling
+    // into the hard clamp at 1; a tiny evaporation floor returns the unvisited
+    // background to 0. (×1.5 keeps the early-growth density of the old linear add.)
+    let depAmt = clamp(deposit * depositGain * 1.5, 0.0, 1.0);
+    let trailDensity = clamp(diffused + depAmt * (1.0 - diffused) - 0.0006, 0.0, 1.0);
 
     // Procedural color mapping with geometry + orbit trap accents
     let trap = mandelbrotTrap((uv - 0.5) * 2.5);
     let accent = exp(-trap * 5.0) * (0.5 + treble * 0.5);
-    let t = trailDensity * 2.0 + geo * 0.6 + accent * 0.4;
+    // Display trail: the saturating law leaves short-run peaks ~13% below the
+    // old clamp at 1, so the colour terms see trail × 1.15. The palette index also takes
+    // half the 3×3 mean: 2 palette cycles per unit trail turned pixel-scale
+    // trail noise into rainbow speckle.
+    let trailVis = clamp(trailDensity * 1.15, 0.0, 1.0);
+    let trailCol = clamp(mix(trailDensity, blurResult, 0.5) * 1.15, 0.0, 1.0);
+    let t = trailCol * 2.0 + geo * 0.6 + accent * 0.4;
     let a = vec3<f32>(0.5, 0.5, 0.5);
     let b = vec3<f32>(0.5, 0.5, 0.5);
     let c = vec3<f32>(1.0, 1.0, 1.0);
     let d = vec3<f32>(0.263, 0.416, 0.557);
     var colorVec = a + b * cos(6.28318 * (c * t + d));
     // Thick, high-conductance tubes glow (protoplasmic streaming)
-    colorVec += colorVec * smoothstep(0.45, 1.0, trailDensity) * conductance * (0.35 + mids * 0.3);
+    colorVec += colorVec * smoothstep(0.45, 1.0, trailVis) * conductance * (0.35 + mids * 0.3);
     // Idea: shuttle streaming — brightness pulses along thick, high-conductance tubes.
     let streamPhase = dot(uv, vec2<f32>(14.0, 8.0)) * 10.0 - time * (1.4 + speed * 3.2);
     let stream = pow(max(0.5 + 0.5 * sin(streamPhase), 0.0), 5.0);
-    colorVec += colorVec * stream * conductance * trailDensity * (0.28 + mids * 0.2);
+    colorVec += colorVec * stream * conductance * trailVis * (0.28 + mids * 0.2);
     // Idea: five-fold dislocation — one hashed lattice site breaks the hex compass.
     let defectId = floor(p / max(S, 1.0));
     let defect = step(0.975, hash21(defectId + vec2<f32>(2.2, 9.4))) * exp(-length(fract(p / max(S, 1.0)) - 0.5) * 7.0);
     colorVec = mix(colorVec, vec3<f32>(0.95, 0.42, 0.22), defect * 0.55);
 
+    // ── Native idea 5b: tube cross-section from the same −∇²₉ ───────────
+    // A Physarum vein is a gel ectoplasm wall around a streaming sol core. The
+    // Laplacian is negative on a strand's ridge and positive on its flanks, so
+    // the core gets the yellow sol glow and the flanks a darker ochre gel rim.
+    let core = max(smoothstep(0.01, 0.08, -lap9) * smoothstep(0.1, 0.5, trailVis),
+                   smoothstep(0.7, 1.0, trailVis) * 0.7);
+    let wall = smoothstep(0.01, 0.07, lap9) * smoothstep(0.04, 0.3, blurResult);
+    colorVec = mix(colorVec, colorVec * 0.4 + vec3<f32>(0.32, 0.2, 0.04), wall * 0.65);
+    colorVec += vec3<f32>(1.0, 0.86, 0.32) * core * (0.45 + mids * 0.35) * (0.6 + 0.4 * conductance);
+
+    // ── Native idea 6: plasmodial sheet in the vesica petals ─────────────
+    // The compass discs overlap into the Flower-of-Life petal tiling (odd vs even
+    // cover count). Real plasmodium fills small meshes enclosed by its veins with
+    // a thin protoplasm sheet before pruning them, so each petal fills with a
+    // translucent yellow film as strongly as its bounding arcs carry trail.
+    let petal = abs(fract(cover * 0.5) * 2.0 - 1.0);      // 1 for odd cover, 0 for even
+    let sheet = petal * smoothstep(0.2, 0.6, arcTrail * 1.15 / max(cover, 1.0)) * (1.0 - smoothstep(0.2, 0.7, trailVis));
+    let sheetCol = vec3<f32>(0.8, 0.64, 0.16);
+
     // Composite with original video
     let vidColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let coverage = clamp(trailDensity + geo * 0.4 + accent * 0.3, 0.0, 1.0);
-    let mixed = mix(vidColor.rgb, colorVec, clamp(trailDensity + geo * 0.25, 0.0, 1.0));
+    let coverage = clamp(trailVis + geo * 0.4 + accent * 0.3 + sheet * 0.3, 0.0, 1.0);
+    var mixed = mix(vidColor.rgb, colorVec, clamp(trailVis + geo * 0.25, 0.0, 1.0));
+    mixed = mix(mixed, sheetCol, sheet * 0.42 * (1.0 + bass * 0.3));
 
     // Held mouse: warm oat-flake glow at the food source
     var food = vec3<f32>(0.0);
@@ -277,14 +349,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let controlled = applyGenerativePrimaryControls(vec4<f32>(mixed + food, 1.0));
     let display = acesToneMap(controlled.rgb * (1.0 + bass * 0.1));
-    let finalColor = vec4<f32>(display, trailDensity);
+    // A.a stays the raw trail (it is the sim state read back from C.a); the
+    // display alpha floors at 0.88 so the dark substrate is not a white-page wash.
+    var finalColor = vec4<f32>(display, trailDensity);
+    if (all(coords == maxCoord)) { finalColor.r = TRAIL_SENTINEL; }
+    let displayOut = vec4<f32>(display, clamp(0.88 + trailDensity * 0.12, 0.0, 1.0));
 
     // Depth-aware output
     let _depth_uv = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
     let _depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, _depth_uv, 0.0).r;
     let outDepth = mix(_depth, 0.2 + trailDensity * 0.6, coverage);
 
-    textureStore(writeTexture, coords, finalColor);
+    textureStore(writeTexture, coords, displayOut);
     textureStore(writeDepthTexture, coords, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coords, finalColor);
 }

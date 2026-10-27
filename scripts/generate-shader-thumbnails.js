@@ -666,6 +666,7 @@ async function captureAll(harness, browser, args, shaders, manifest, summary, fa
         inputSource === 'image' && currentSource !== 'image' ? imageUrl : null,
       );
       currentSource = inputSource;
+      await harness.applySlotParams(page, zoomParams);
       await harness.applyTestState(page, {
         time: args.time,
         mouseX: 0.5,

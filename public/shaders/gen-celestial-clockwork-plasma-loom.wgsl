@@ -3,9 +3,11 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: escapement ratchet sparks at meshing tooth contacts; catenary plasma-bay sag between over-under loom threads
-//  A packing: ACES display RGBA with exact-C temporal blend
+//  Upgraded: 2026-10-19
+//  Ideas: escapement ratchet sparks at meshing tooth contacts; catenary plasma-bay sag between over-under loom threads;
+//         burnished tooth crowns + grimed gullets (§12.2E SDF curvature from the normal taps);
+//         time-weathered chronoglass patina, film thickness = time-dilation field (§12.2F thin-film phase)
+//  A packing: ACES display RGBA with exact-C temporal blend; alpha = 0.86 void / 0.96 hit + glow
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -76,8 +78,8 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Mouse Interaction (Time Dilation Field)
     let mouse = u.zoom_config.yz;
-    // Map mouse from 0..1 to -1..1 loosely based on screen space
-    let m_pos = vec3<f32>((mouse.x - 0.5) * 2.0 * 5.0, (mouse.y - 0.5) * 2.0 * 5.0, 0.0);
+    // Map mouse from 0..1 to -1..1 loosely based on screen space (y up, like uv)
+    let m_pos = vec3<f32>((mouse.x - 0.5) * 2.0 * 5.0, (0.5 - mouse.y) * 2.0 * 5.0, 0.0);
     let m_dist = length(p - m_pos);
 
     // Localized twisting
@@ -182,13 +184,16 @@ fn map(p_in: vec3<f32>) -> f32 {
     return d;
 }
 
-fn calcNormal(p: vec3<f32>) -> vec3<f32> {
-    let e = vec2<f32>(0.001, 0.0);
-    return normalize(vec3<f32>(
-        map(p + e.xyy) - map(p - e.xyy),
-        map(p + e.yxy) - map(p - e.yxy),
-        map(p + e.yyx) - map(p - e.yyx)
-    ));
+// Normal + SDF curvature from the same six central-difference taps.
+// xyz = normal, w = κ ≈ (Σ d(p±e·axis) − 6·d(p)) / e² (Laplacian of the SDF).
+fn calcNormalCurv(p: vec3<f32>, d0: f32) -> vec4<f32> {
+    let e = vec2<f32>(0.01, 0.0);
+    let xp = map(p + e.xyy); let xn = map(p - e.xyy);
+    let yp = map(p + e.yxy); let yn = map(p - e.yxy);
+    let zp = map(p + e.yyx); let zn = map(p - e.yyx);
+    let n = normalize(vec3<f32>(xp - xn, yp - yn, zp - zn));
+    let kappa = (xp + xn + yp + yn + zp + zn - 6.0 * d0) / (e.x * e.x);
+    return vec4<f32>(n, kappa);
 }
 
 // Background Fractal Void
@@ -207,7 +212,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    // Screen y grows downward; flip so world +y (and the key light) is up.
+    let uv = (vec2<f32>(f32(global_id.x), resolution.y - f32(global_id.y)) - 0.5 * resolution) / resolution.y;
     let time = u.config.x;
 
     // Reset context
@@ -237,7 +243,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     if (t < max_dist) {
         let p = ro + rd * t;
-        let n = calcNormal(p);
+        let nk = calcNormalCurv(p, d);
+        let n = nk.xyz;
         let v = -rd;
 
         let mat = ctx.mat_id;
@@ -257,7 +264,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Edge emission (Starfire gold)
             let edge_emit = vec3<f32>(1.0, 0.7, 0.2) * fre * 2.0;
 
-            col = base_col * dif + ref_col * 0.5 + edge_emit;
+            // ── Idea 6: time-weathered chronoglass patina (§12.2F thin-film phase).
+            // Old glass grows an iridescent weathering film; here it is thickest where the
+            // time-dilation field (the same one that twists the gears) has aged the ring.
+            let mouse = u.zoom_config.yz;
+            let m_pos = vec3<f32>((mouse.x - 0.5) * 10.0, (0.5 - mouse.y) * 10.0, 0.0);
+            let dilation = exp(-length(p - m_pos) * 0.5) * u.zoom_params.w * 2.0;
+            let weather = 0.5 + 0.5 * noise(p * 2.3);
+            let film_nm = 240.0 + 520.0 * clamp(dilation, 0.0, 1.0) * (0.55 + 0.45 * weather) + 60.0 * sin(time * 0.2);
+            let cos_i = max(dot(n, v), 0.0);
+            let cos_t = sqrt(max(1.0 - (1.0 - cos_i * cos_i) / (1.52 * 1.52), 0.0));
+            let film_phase = 4.0 * 3.14159265 * 1.52 * film_nm * cos_t / vec3<f32>(650.0, 550.0, 450.0);
+            let film_c = cos(film_phase * 0.5);
+            let film_rgb = film_c * film_c;
+            let patina = clamp(dilation * 0.9 + 0.15, 0.0, 1.0) * (0.35 + 0.65 * weather);
+            let glass = base_col * dif + ref_col * 0.5;
+            col = mix(glass, film_rgb * (0.25 + 0.9 * fre + 0.5 * dif), patina * 0.75) + edge_emit;
+
+            // ── Idea 5: burnished tooth crowns, grimed gullets (§12.2E SDF curvature).
+            // κ of the plain ring tube ≈ 1/thickness ≈ 6.7; the carved tooth edges are sharper
+            // (κ ≫ 7) and rub against the meshing ring, the concave notches (κ < 0) collect grime.
+            let crown = smoothstep(14.0, 40.0, nk.w);
+            let gullet = smoothstep(-1.0, -9.0, nk.w);
+            col *= 1.0 - 0.7 * gullet;
+            col += vec3<f32>(1.0, 0.78, 0.42) * crown * (0.35 + 1.6 * dif + 1.2 * fre);
             col += vec3<f32>(1.0, 0.62, 0.18) * ctx.spark * 1.8;
         } else if (mat == 2.0) {
             // Plasma Threads
@@ -295,7 +325,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyDecay = 0.94;
     let color = mix(history.rgb, col, historyBlend);
     let has_hit = t < max_dist;
-    let current_alpha = clamp(select(0.04, 0.28, has_hit) + ctx.glow * 0.015 + ctx.shuttle * 0.45 + ctx.spark * 0.18, 0.0, 1.0);
+    let current_alpha = clamp(select(0.86, 0.96, has_hit) + ctx.glow * 0.015 + ctx.shuttle * 0.45 + ctx.spark * 0.18, 0.0, 1.0);
     let alpha = max(history.a * historyDecay, current_alpha);
     let depth = select(0.0, clamp(1.0 - t / max_dist, 0.0, 1.0), has_hit);
 
