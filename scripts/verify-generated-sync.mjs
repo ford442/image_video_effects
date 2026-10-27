@@ -8,7 +8,6 @@
  *   public/shader-id-aliases.json (+ src/utils copy)   (written by generate_shader_lists.js)
  *   src/types/ShaderDefinition.ts, src/contracts/shaderDefinition.validate.js
  *                                               scripts/generate-shader-definition-types.mjs
- *   src/renderer/webgpu/compositorShaders.generated.ts   scripts/gen-compositor-wgsl.mjs
  *
  * The generators write in place, so this snapshots the files, regenerates, compares, and always
  * restores the snapshot: running it never leaves the tree modified. Deliberately not covered:
@@ -34,7 +33,6 @@ const FIXED = [
   'src/utils/shader-id-aliases.json',
   'src/types/ShaderDefinition.ts',
   'src/contracts/shaderDefinition.validate.js',
-  'src/renderer/webgpu/compositorShaders.generated.ts',
 ].map((f) => path.join(ROOT, f));
 
 const read = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null);
@@ -84,7 +82,6 @@ async function main() {
   try {
     run('node', ['scripts/buildMultipassRegistry.js']);
     run('node', ['scripts/generate_shader_lists.js']);
-    run('node', ['scripts/gen-compositor-wgsl.mjs']);
     const typeOutputs = await generateTypes();
     for (const [f, text] of Object.entries(typeOutputs)) fs.writeFileSync(f, text);
 
@@ -107,7 +104,7 @@ async function main() {
     console.error(
       '\nRegenerate and commit:\n' +
         '  node scripts/buildMultipassRegistry.js && node scripts/generate_shader_lists.js && \\\n' +
-        '  node scripts/generate-shader-definition-types.mjs && node scripts/gen-compositor-wgsl.mjs',
+        '  node scripts/generate-shader-definition-types.mjs',
     );
     process.exit(1);
   }

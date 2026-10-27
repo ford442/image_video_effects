@@ -22,8 +22,6 @@ from their sources:
                  `#include "_prelude.wgsl"` without a network request. The app
                  deploy does not ship public/shaders and the storage sync never
                  uploads `_` libraries, so a sibling fetch is not reliable.
-                 It also carries the hand-written _half.wgsl (#1512), whose
-                 aliases the renderer rewrites for `// @requires f16` shaders.
 
 Usage:
     python3 scripts/generate_shader_libs.py           # write every output
@@ -48,7 +46,6 @@ PRELUDE_PATH = PROJECT_ROOT / "public" / "shaders" / "_prelude.wgsl"
 UNIFORMS_CONTRACT_PATH = PROJECT_ROOT / "src" / "contracts" / "uniforms_layout.json"
 HASH_LIBRARY_PATH = PROJECT_ROOT / "public" / "shaders" / "_hash_library.wgsl"
 HASH_PATH = PROJECT_ROOT / "public" / "shaders" / "_hash.wgsl"
-HALF_PATH = PROJECT_ROOT / "public" / "shaders" / "_half.wgsl"
 LIBRARIES_TS_PATH = PROJECT_ROOT / "src" / "wasm" / "bridge" / "wgslLibraries.ts"
 
 HASH_HEADER = """\
@@ -178,16 +175,14 @@ import type {{ WgslIncludeResolver }} from './wgslInclude.js';
 /**
  * Generated WGSL libraries compiled into the bundle.
  *
- * `_prelude.wgsl` describes the bind-group layout of the renderer in this same
- * bundle, so the bundled copy is the authoritative one: a shader served from the
- * CDN, the storage API or a blob: URL resolves its prelude without a network
- * request. `_half.wgsl` (#1512) carries the f16 aliases the renderer rewrites
- * (src/renderer/wgslF16.ts), so it travels with that code. Every other library is
- * still fetched as a sibling of the shader that includes it.
+ * Only `_prelude.wgsl` is here. It describes the bind-group layout of the
+ * renderer in this same bundle, so the bundled copy is the authoritative one: a
+ * shader served from the CDN, the storage API or a blob: URL resolves its
+ * prelude without a network request. Every other library is still fetched as a
+ * sibling of the shader that includes it.
  */
 export const BUNDLED_WGSL_LIBRARIES: Readonly<Record<string, string>> = Object.freeze({{
   '_prelude.wgsl': {prelude},
-  '_half.wgsl': {half},
 }});
 
 /** Wraps a resolver so bundled libraries never reach the network. */
@@ -203,16 +198,13 @@ export function withBundledLibraries(fallback: WgslIncludeResolver): WgslInclude
 
 
 def render_libraries_ts() -> str:
-    return LIBRARIES_TS_TEMPLATE.format(
-        prelude=json.dumps(render_prelude(), ensure_ascii=False),
-        half=json.dumps(HALF_PATH.read_text(encoding="utf-8"), ensure_ascii=False),
-    )
+    return LIBRARIES_TS_TEMPLATE.format(prelude=json.dumps(render_prelude(), ensure_ascii=False))
 
 
 OUTPUTS = [
     (PRELUDE_PATH, render_prelude, "bindgroup_checker.py EXPECTED_BINDINGS"),
     (HASH_PATH, render_hash, "_hash_library.wgsl"),
-    (LIBRARIES_TS_PATH, render_libraries_ts, "the generated _prelude.wgsl and _half.wgsl"),
+    (LIBRARIES_TS_PATH, render_libraries_ts, "the generated _prelude.wgsl"),
 ]
 
 

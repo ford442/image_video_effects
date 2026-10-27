@@ -21,7 +21,6 @@ import { useLiveControl } from './hooks/useLiveControl';
 import { useOscControl } from './hooks/useOscControl';
 import { useSetRecorder } from '../../hooks/useSetRecorder';
 import { useProjectFile } from '../../hooks/useProjectFile';
-import { useSlotLayersContext } from '../../hooks/useSlotLayers';
 import { useCoordinateNavigation } from './hooks/useCoordinateNavigation';
 import { useShaderMenuOptions } from './hooks/useShaderMenuOptions';
 import { useAiVjAutoTransition } from './hooks/useAiVjAutoTransition';
@@ -29,7 +28,6 @@ import { SidebarGroup } from './SidebarGroup';
 import { SidebarSearch } from './SidebarSearch';
 import { findEffects, matchesQuery } from './sidebarFilter';
 import { usePersistedToggle } from '../../hooks/usePersistedToggle';
-import type { SharedChain } from '../../services/layerChainShare';
 import type { RenderMode } from '../../renderer/types';
 import type { ControlsProps } from './types';
 import { defaultSlotParams } from '../../app/constants/defaultSlotParams';
@@ -122,7 +120,6 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onApplySharedChain,
     getCurrentChain,
     onTriggerNextTransition,
-    onArmCrossfade,
     onRandomizeSlot,
     onSetSlotParam,
     renderQualityMode = 'auto',
@@ -142,19 +139,8 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onImportStatus,
 }) => {
     const autoTransition = useAiVjAutoTransition();
-    // Recalling a saved VJ set dissolves from the picture on screen over the transition
-    // duration (0 keeps the hard cut). Param edits and project loads do not go through here.
-    const recallDurationMs = autoTransition.autoTransitionDurationMs;
-    const recallSharedChain = onApplySharedChain
-        ? (chain: SharedChain) => {
-            onArmCrossfade?.(recallDurationMs);
-            onApplySharedChain(chain);
-        }
-        : undefined;
     const [studioOpen, setStudioOpen] = usePersistedToggle('vj.studio', true);
     const [filterQuery, setFilterQuery] = useState('');
-    // Slot layering (#1512): opacity is a binding / OSC target and part of the project chain.
-    const slotLayers = useSlotLayersContext();
 
     const {
         coordMap,
@@ -174,7 +160,6 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         setAutoTransitionEnabled: autoTransition.setAutoTransitionEnabled,
         onSetSlotParam,
         onRandomizeSlot,
-        onSetSlotOpacity: slotLayers?.setSlotOpacity,
         onRandomizeAllSlots,
         onTriggerNextTransition,
         onStartAutoTransition,
@@ -190,7 +175,6 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         availableModes,
         setMode,
         onSetSlotParam,
-        onSetSlotOpacity: slotLayers?.setSlotOpacity,
         onTriggerNextTransition,
         setAudioReactiveAmount,
     });
@@ -199,8 +183,6 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     const projectFile = useProjectFile({
         modes,
         slotParams,
-        slotModes: slotLayers?.slotModes,
-        slotOutputs: slotLayers?.slotOutputs,
         activeSlot,
         inputSource,
         currentImageUrl,
@@ -484,7 +466,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     onCopyChainShareLink={onCopyChainShareLink}
                     onShareVjSet={onShareVjSet}
                     onSaveVjSet={onSaveVjSet}
-                    onApplySharedChain={recallSharedChain}
+                    onApplySharedChain={onApplySharedChain}
                     getCurrentChain={getCurrentChain}
                     onUpdateStack={onUpdateStack}
                     onUpdateParams={onUpdateParams}
@@ -518,10 +500,9 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     onSavePreset={onSavePreset}
                     onShareVjSet={onShareVjSet}
                     onSaveVjSet={onSaveVjSet}
-                    onApplySharedChain={recallSharedChain}
+                    onApplySharedChain={onApplySharedChain}
                     getCurrentChain={getCurrentChain}
                     onCopyChainShareLink={onCopyChainShareLink}
-                    onTriggerNextTransition={onTriggerNextTransition}
                     {...autoTransition}
                 />
             ) : null,

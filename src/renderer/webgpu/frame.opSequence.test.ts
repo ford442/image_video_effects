@@ -179,14 +179,6 @@ describe('frame encoding contract', () => {
     expect(fake.counters.submits).toBe(2);
   });
 
-  it('a zero-slot frame still asks for the compositor, which frees its textures (#1512)', () => {
-    const { state, renderer } = build(caseOf('zeroSlots'));
-    const getCompositor = vi.fn(() => null);
-    state.getCompositor = getCompositor;
-    renderer.renderFrame(state);
-    expect(getCompositor).toHaveBeenCalledTimes(1);
-  });
-
   it('reports one submit per frame through the instrumented device counters', () => {
     const { fake, state, renderer } = build((s, f) => {
       s.setSlots(SIX.map((id) => ({ id })));

@@ -2,8 +2,8 @@
 
 ## Overview
 
-By default, Pixelocity's 6 shader slots (`PHYSICAL_SLOT_LIMIT`, `slot_limits.json`) run **chained** (sequentially):
-- Slot 0 output → Slot 1 input → Slot 1 output → Slot 2 input → …
+By default, Pixelocity's 3 shader slots run **chained** (sequentially):
+- Slot 0 output → Slot 1 input → Slot 1 output → Slot 2 input
 - This is correct for layered effects (e.g., liquid → distortion)
 
 With **parallel slot groups**, independent effects can run concurrently on the GPU:
@@ -74,7 +74,7 @@ Frame Render:
   │     │  readTex→   │  │  readTex→   │  │  readTex→   │  │
   │     │  writeTex   │  │  writeTex   │  │  writeTex   │  │
   │     └─────────────┘  └─────────────┘  └─────────────┘  │
-  │     (Last one wins, or the layer compositor, below)     │
+  │     (Last parallel slot wins - use for overlays)        │
   │                                                         │
   │  3. Copy writeTex → readTex                             │
   │                                                         │
@@ -157,7 +157,9 @@ device.queue.submit([encoder.finish()]);
 
 ### Limitations
 
-1. **Compositing is opt-in per slot**: with every output on *Replace* (the default) parallel slots write the same texture and the last one wins, exactly as before. Give a slot a blend mode, opacity or mask (below) and the group is composited instead.
+1. **No automatic compositing**: Parallel slots write to the same output texture. The last one wins.
+   - For alpha blending, use a dedicated compositing shader
+   - Or chain effects that need to blend
 
 2. **Same input**: All parallel slots read from `readTex` at the start of the parallel group
    - They don't see each other's output
@@ -167,45 +169,6 @@ device.queue.submit([encoder.finish()]);
    - NVIDIA/AMD discrete GPUs: Good overlap
    - Integrated/Apple Silicon: Moderate overlap
    - Mobile: Limited by tile-based rendering
-
-## Layer compositor (#1512)
-
-Each slot has an **output** (`SlotOutput`, `src/renderer/slotOutput.ts`). It only matters in a parallel group:
-
-| Field | Values | Default |
-|-------|--------|---------|
-| `mode` | `replace` (the layer covers what is below), `blend`, `mask` (never drawn: a matte for another slot) | `replace` |
-| `blend` | `normal`, `add`, `screen`, `multiply`, `overlay`, `soft-light`, `difference`, `luma-key`, `depth-key` | `normal` |
-| `opacity` | 0–1 | 1 |
-| `mask` | `none`, `luma` (the layer's own luma), `depth` (the depth map), `slot<n>` (slot n's alpha; a `mask`-mode slot gives its luma × alpha) | `none` |
-| `maskInvert` | boolean | false |
-| `feather` | 0–1 (0–32 working-size texels of blur) | 0 |
-| `keyThreshold` | 0–1, the luma-key / depth-key threshold (±0.08 smoothstep) | 0.5 |
-
-When any slot of a group is not `replace`, the frame plan (`framePlan.ts`) adds a `layerCopy` after each slot of the group, which copies writeTex into that slot's layer of a 2D-array texture. After the group, one `composite` op runs:
-
-1. Every mask the layers ask for is drawn into an r8unorm texture per slot (`_compositor/mask.wgsl`), with a separable blur when feathered (`feather.wgsl`).
-2. **One compute pass** (`_compositor/composite.wgsl`) starts from the group's input and applies the layers in slot order. A `replace` layer overwrites; a `blend` layer mixes `blend(base, layer)` in by `opacity × mask` (× the key ramp).
-
-Then the usual writeTex → readTex copy runs. All math is in linear light and in the internal format (rgba16float / rgba32float), so HDR values survive. Screen and soft-light keep values above 1.0 rather than clipping them. Chained slots are untouched, and an all-`replace` group compiles to exactly the old ops. The GPU side (`slotCompositor.ts` and its WGSL) is the lazy `compositor` chunk, loaded the first time a group composites, so the main bundle carries only the planner. Until the chunk arrives (a frame or two) that group renders last-one-wins. If the compositor cannot allocate (OOM scope) it reports `error` in `getCompositorStats()` and the group falls back to last-one-wins the same way.
-
-**Where to set it:**
-
-- **UI:** the layer strip under each slot in the slot stack panel (`SlotLayerStrip`): chained/parallel, layer mode, opacity, mask, feather, key threshold and an audio band for opacity.
-- **API:** `renderer.setSlotOutput(i, patch)` / `getSlotOutput(i)` (worker: sent with the next `frameInput`), and `__pixelocity__.setSlotOutput` in test mode.
-- **Automation:** opacity is a binding target (`setSlotOpacity`, MIDI / gamepad), an OSC address (`/pixelocity/slot/{n}/opacity`), and can follow an audio band.
-- **Persistence:** project files v2 and chain URLs carry it (b= blend or `mask`, o= opacity, m= mask with `~` for inverted, f= feather, k= key; see [VJ_STUDIO.md](./VJ_STUDIO.md)). Device-loss recovery replays it ([RENDER_WORKER.md](./RENDER_WORKER.md#device-loss)).
-
-The CPU reference `compositeReference.ts` mirrors the shader. The unit tests pin it, and the golden-frame suite checks the GPU against it on SwiftShader and on the GPU runner ([GPU_RUNNER.md](./GPU_RUNNER.md)).
-
-```typescript
-// Two parallel slots: plasma screened over aurora at 50 %, only where plasma is bright.
-renderer.setSlotShader(0, 'gen-aurora-silk');
-renderer.setSlotShader(1, 'plasma');
-renderer.setSlotMode(0, 'parallel');
-renderer.setSlotMode(1, 'parallel');
-renderer.setSlotOutput(1, { mode: 'blend', blend: 'screen', opacity: 0.5, mask: 'luma', feather: 0.25 });
-```
 
 ## Best Practices
 
@@ -245,7 +208,5 @@ renderer.setSlotMode(1, 'parallel');
 // Distortion reads video, warps it
 renderer.setSlotShader(2, 'lens-distort');
 renderer.setSlotMode(2, 'parallel');
-// Result: the distorted video (last one wins) — unless slot 2 blends:
-renderer.setSlotOutput(2, { mode: 'blend', blend: 'overlay', opacity: 0.6 });
-// Result: RD patterns with the distorted video overlaid at 60 %
+// Result: RD patterns AND distorted video overlaid (last wins)
 ```

@@ -1,9 +1,7 @@
 import { buildVjSetExport } from '../vjSetExport';
-import { expandSharedChain, type SharedChain } from '../layerChainShare';
-import { DEFAULT_SLOT_OUTPUT } from '../../renderer/slotOutput';
+import type { SharedChain } from '../layerChainShare';
 import { migrateProjectFile } from './migrate';
 import { validateProjectFile } from './validate';
-import type { ProjectFileV1 } from './types';
 
 const chain: SharedChain = {
   v: 1,
@@ -12,10 +10,10 @@ const chain: SharedChain = {
 const fixedNow = () => new Date('2026-10-11T00:00:00.000Z');
 
 describe('project file migration', () => {
-  it('lifts a bare SharedChain into the current version', () => {
+  it('lifts a bare SharedChain into v1', () => {
     const migrated = migrateProjectFile(chain, fixedNow);
     expect(migrated.project).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 1,
       createdAt: '2026-10-11T00:00:00.000Z',
       chain,
       activeSlot: 0,
@@ -45,55 +43,6 @@ describe('project file migration', () => {
     expect(migrated.project?.timeline).toEqual(payload);
     expect(migrated.project?.createdAt).toBe('2026-10-10T12:00:00.000Z');
     expect(validateProjectFile(migrated.project).ok).toBe(true);
-  });
-
-  it('migrates a v1 project to v2: same session, every slot a replace layer (#1512)', () => {
-    const v1: ProjectFileV1 = {
-      schemaVersion: 1,
-      app: { name: 'pixelocity', version: '0.1.0' },
-      createdAt: '2026-10-11T00:00:00.000Z',
-      chain: { v: 1, slots: [
-        { shaderId: 'demo', params: { zoomParam1: 0.25 } },
-        { shaderId: 'over', mode: 'parallel', enabled: false },
-      ] },
-      activeSlot: 1,
-      source: { kind: 'image', ref: 'https://example.com/a.png' },
-      render: { quality: 'balanced' },
-      audio: { mappings: [{ trigger: { source: 'key', id: 'KeyA' }, action: { type: 'randomizeAll' } }] },
-    };
-    const migrated = migrateProjectFile(JSON.parse(JSON.stringify(v1)));
-    expect(migrated.reason).toBeUndefined();
-    expect(migrated.project).toEqual({ ...v1, schemaVersion: 2 });
-    const validated = validateProjectFile(migrated.project);
-    expect(validated.ok).toBe(true);
-    if (!validated.ok) return;
-    expect(validated.project.schemaVersion).toBe(2);
-    expect(expandSharedChain(validated.project.chain).slotOutputs).toEqual([
-      { ...DEFAULT_SLOT_OUTPUT },
-      { ...DEFAULT_SLOT_OUTPUT },
-    ]);
-    // A v1 file never had compositor keys; any that appear are not trusted.
-    const smuggled = migrateProjectFile({ ...v1, chain: { v: 1, slots: [{ shaderId: 'demo', b: 'add', o: 0.1 }] } });
-    expect(smuggled.project?.chain.slots[0]).toEqual({ shaderId: 'demo' });
-  });
-
-  it('keeps layer outputs on v0 input from this build (bare chain, VJ-set export)', () => {
-    const layered: SharedChain = {
-      v: 1,
-      slots: [
-        { shaderId: 'demo', mode: 'parallel' },
-        { shaderId: 'over', mode: 'parallel', b: 'screen', o: 0.5, m: '~luma', f: 0.25 },
-      ],
-    };
-    const expected = { ...DEFAULT_SLOT_OUTPUT, mode: 'blend', blend: 'screen', opacity: 0.5, mask: 'luma', maskInvert: true, feather: 0.25 };
-    for (const raw of [layered, buildVjSetExport('Layered', layered)]) {
-      const migrated = migrateProjectFile(JSON.parse(JSON.stringify(raw)), fixedNow);
-      expect(migrated.project?.chain.slots[1]).toMatchObject({ b: 'screen', o: 0.5, m: '~luma', f: 0.25 });
-      const validated = validateProjectFile(migrated.project);
-      expect(validated.ok).toBe(true);
-      if (!validated.ok) return;
-      expect(expandSharedChain(validated.project.chain).slotOutputs[1]).toEqual(expected);
-    }
   });
 
   it('returns null with a reason for an unknown project version', () => {

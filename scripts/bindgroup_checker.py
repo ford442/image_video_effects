@@ -59,8 +59,6 @@ TEMPLATE_FILES = [
     # functions with no bindings.
     "_prelude.wgsl",
     "_hash.wgsl",
-    # Half-precision helpers (#1512): functions and aliases, no bindings.
-    "_half.wgsl",
     "_template_canonical_compute.wgsl",
     "_template_shared_memory.wgsl",
     "_template_workgroup_atomics.wgsl",
@@ -596,13 +594,7 @@ def parse_shader_source(content, filepath):
     pattern = re.compile(r'textureStore\(\s*(\w+)\s*,', re.MULTILINE)
     result["texture_store_targets"] = pattern.findall(content)
     
-    # A simState-domain agent pass (@group(1) sim ring) produces its output in the
-    # simState buffer, not in a texture, so it has no textureStore to find.
-    writes_sim_state = (
-        re.search(r"@group\(\s*1\s*\)", strip_wgsl_comments(content)) is not None
-        and re.search(r"\bsimState\s*\[[^\]]*\]\s*=(?!=)", strip_wgsl_comments(content)) is not None
-    )
-    if not result["texture_store_targets"] and not writes_sim_state:
+    if not result["texture_store_targets"]:
         result["status"] = "incompatible"
         result["errors"].append("No textureStore calls found")
 
