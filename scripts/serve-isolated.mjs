@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * serve-isolated.mjs — static server for build/ with the production
- * cross-origin-isolation headers (build.sh .htaccess, #1314). Used by the
+ * cross-origin-isolation headers (tools/deploy/build.sh .htaccess, #1314). Used by the
  * SwiftShader e2e to exercise the render worker's SharedArrayBuffer input
  * ring; python's http.server cannot send these headers.
  *

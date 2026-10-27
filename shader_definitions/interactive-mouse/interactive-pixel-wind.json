@@ -2,7 +2,7 @@
   "id": "interactive-pixel-wind",
   "name": "Pixel Wind",
   "url": "shaders/interactive-pixel-wind.wgsl",
-  "description": "Wind effect driven by cursor direction.",
+  "description": "Wind effect driven by cursor direction. Gusts gate the wind in sheets, and the flow combs transverse ripples.",
   "params": [
     {
       "id": "strength",

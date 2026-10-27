@@ -8,6 +8,7 @@ import type { AIStatus, AutoTransitionConfig, ImageRecord } from '../../types/ai
 import { VideoRecord } from '../../syncTypes';
 import { VideoSegment } from '../../services/videoSegmentManager';
 import { SharedChain } from '../../services/layerChainShare';
+import type { LocalMediaKind } from '../../hooks/useLocalMediaUpload';
 import { STORAGE_API_URL } from '../../config/appConfig';
 import { RenderQualityMode } from '../../config/performancePolicy';
 import { isPublicPixelocityHost } from '../../utils/publicHost';
@@ -58,6 +59,8 @@ export interface AppShellProps {
     setActiveGenerativeShader: (id: string) => void;
     fileInputImageRef: RefObject<HTMLInputElement | null>;
     fileInputVideoRef: RefObject<HTMLInputElement | null>;
+    /** `change` handler for the hidden upload inputs (see useLocalMediaUpload). */
+    onFileSelected: (e: React.ChangeEvent<HTMLInputElement>, kind: LocalMediaKind) => void;
     isAiVjMode: boolean;
     toggleAiVj: () => void;
     aiVjStatus: AIStatus;
@@ -195,6 +198,7 @@ export function AppShell(props: AppShellProps) {
         setActiveGenerativeShader,
         fileInputImageRef,
         fileInputVideoRef,
+        onFileSelected,
         isAiVjMode,
         toggleAiVj,
         aiVjStatus,
@@ -494,8 +498,8 @@ export function AppShell(props: AppShellProps) {
                 </main>
             </div>
             )}
-            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={() => {}} />
-            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={() => {}} />
+            <input type="file" ref={fileInputImageRef} accept="image/*" style={{display:'none'}} onChange={(e) => onFileSelected(e, 'image')} data-testid="upload-image-input" />
+            <input type="file" ref={fileInputVideoRef} accept="video/*" style={{display:'none'}} onChange={(e) => onFileSelected(e, 'video')} data-testid="upload-video-input" />
         </>
     );
 }

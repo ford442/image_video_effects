@@ -2,7 +2,7 @@
   "id": "sonar-pulse",
   "name": "Sonar Pulse",
   "url": "shaders/sonar-pulse.wgsl",
-  "description": "Radial sonar waves emitting from the cursor that distort and scan the image. Now with audio reactivity.",
+  "description": "Radial sonar waves from the cursor that distort and scan the image, with a secondary beat, chromatic echo, and click pings. Long waves outrun short ones, and the pulse falls off as a cylindrical wave.",
   "params": [
     {
       "id": "speed",

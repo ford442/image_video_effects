@@ -2,7 +2,7 @@
   "id": "sim-heat-haze-field",
   "name": "Heat Haze Field",
   "url": "shaders/sim-heat-haze-field.wgsl",
-  "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns.",
+  "description": "Temperature simulation with convection currents. Desert mirage effect with rising heat patterns. Hot ground folds an inferior mirage, and schlieren brighten one side of the temperature gradient.",
   "feedbackPacking": "A/C = temperature, gradient.xy, refractive activity; raw thermal state via exact bounded loads",
   "features": [
     "simulation",

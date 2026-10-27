@@ -68,7 +68,7 @@ Status is reported in `getDiagnostics().deviceRecovery` and `__pixelocity__.getD
 
 ## Cross-origin isolation and the SharedArrayBuffer ring
 
-Production (`build.sh` → `.htaccess`), `npm start` (`vite.config.ts` `server.headers`) and `scripts/serve-isolated.mjs` send:
+Production (`tools/deploy/build.sh` → `.htaccess`), `npm start` (`vite.config.ts` `server.headers`) and `scripts/serve-isolated.mjs` send:
 
 ```
 Cross-Origin-Opener-Policy: same-origin

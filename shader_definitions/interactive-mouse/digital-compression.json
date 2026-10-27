@@ -2,7 +2,7 @@
   "id": "digital-compression",
   "name": "Digital Compression",
   "url": "shaders/digital-compression.wgsl",
-  "description": "YUV block crush with spring focus window, held widen, capped ripples, block-edge geometry, exact C artifact memory, and ACES tone map.",
+  "description": "YUV block crush with a spring focus window, held widen, capped ripples, and block-edge geometry. Bit Crush quantizes the detail inside each block, and Artifacts add mosquito grain on the block edge. ACES tone map. A stores the focus diagnostic, not colour.",
   "workgroup_size": [
     16,
     16,

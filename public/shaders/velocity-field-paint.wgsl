@@ -3,31 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal, fluid-dynamics
 //  Complexity: High
-//  Upgraded: 2026-10-04 (prev 2026-08-16 Batch 52)
-//  Ideas: semi-Lagrangian momentum self-advection; confinement from the stored curl field; streamline paint streaks (LIC)
+//  Upgraded: 2026-10-26 (prev 2026-10-04)
+//  Ideas: semi-Lagrangian momentum self-advection; confinement from the stored curl field; streamline paint streaks (LIC); MacCormack momentum (§12.2D); strain-gated confinement
 //  A packing: raw sim (vel.x, vel.y, omega, speed) — never tonemapped
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Dissipation, y=BrushSize, z=Force, w=VortConfinement
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Dissipation, y=BrushSize, z=Force, w=VortConfinement
 
 fn aces_film(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -121,7 +103,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let grad_omega = vec2<f32>(omega_r - omega_l, omega_u - omega_d) * 0.5;
   let len_grad = length(grad_omega);
   let conf_dir = select(vec2<f32>(0.0), vec2<f32>(grad_omega.y, -grad_omega.x) / max(len_grad, 0.001), len_grad > 0.001);
-  let conf_force = conf_dir * omega * vort_confinement * 0.15;
+  // ── Idea 2: strain gate — confinement only where rotation beats shear
+  let sxx = (c_r.x - c_l.x) * 0.5;
+  let syy = (c_u.y - c_d.y) * 0.5;
+  let sxy = 0.25 * ((c_u.x - c_d.x) + (c_r.y - c_l.y));
+  let strain = sqrt(max(sxx * sxx + syy * syy + 2.0 * sxy * sxy, 0.0));
+  let rotationWins = smoothstep(0.0, 0.015, abs(omega) - strain);
+  let conf_force = conf_dir * omega * vort_confinement * 0.15 * mix(0.2, 1.0, rotationWins);
 
   // Pointer drag vortex injection
   let d_pos = (uv - mouse_pos) * aspect_vec;
@@ -149,9 +137,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // Idea 1 — momentum self-advection: fetch last frame's velocity upstream (same
-  // 0.02 displacement scale the dye uses), so eddies travel with the flow.
-  let adv_vel = velocityAt(clamp(uv - prev_vel * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), res);
+  // ── Idea 4: MacCormack momentum (§12.2D) — one corrective step on the existing backtrace.
+  // The backward step is clamped to the 4-neighbour range so the fix cannot overshoot.
+  let fwd = velocityAt(clamp(uv - prev_vel * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), res);
+  let back = velocityAt(clamp(uv + fwd * 0.02, vec2<f32>(0.0), vec2<f32>(1.0)), res);
+  let nbrMin = min(min(min(c_l, c_r), min(c_u, c_d)), prev_vel);
+  let nbrMax = max(max(max(c_l, c_r), max(c_u, c_d)), prev_vel);
+  let adv_vel = clamp(fwd + 0.5 * (prev_vel - back), nbrMin, nbrMax);
 
   // Momentum integration
   var new_vel = (adv_vel + lap_vel * 0.35 + conf_force + mouse_force + bg_stream + click_force) * dissipation;
@@ -163,7 +155,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let src_alpha = dye_sample.a;
 
   // Chromatic shear sampling along velocity vector
-  let shear_mag = length(new_vel) * 0.04;
+  let shearBoost = mix(1.0, 1.85, (1.0 - rotationWins) * smoothstep(0.004, 0.04, strain));
+  let shear_mag = length(new_vel) * 0.04 * shearBoost;
   let shear_dir = select(vec2<f32>(0.0), normalize(new_vel), length(new_vel) > 0.0001);
   let s_r = textureSampleLevel(readTexture, u_sampler, clamp(advect_coord + shear_dir * shear_mag, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
   let s_g = textureSampleLevel(readTexture, u_sampler, clamp(advect_coord, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g;

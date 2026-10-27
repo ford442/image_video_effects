@@ -45,15 +45,7 @@
   },
   "jsOutputName": "pixelocity_wasm.js",
   "jspi": {
-    "description": "JSPI primary graph. sFlags must equal the fallback sFlags with ASYNCIFY replaced by JSPI (verify:wasm-invariants). jspiExports lists every C export whose call graph can reach wgpuInstanceWaitAny; each becomes Promise-returning and the bridge must ccall it with { async: true } via src/wasm/bridge/call.ts SUSPENDING_EXPORTS. Calling an unlisted export that suspends traps under JSPI. extraFlags and profiles apply on top of these sFlags the same way they apply to the fallback.",
-    "sFlags": [
-      "ALLOW_MEMORY_GROWTH=1",
-      "GROWABLE_ARRAYBUFFERS=0",
-      "NO_EXIT_RUNTIME=1",
-      "MODULARIZE=1",
-      "EXPORT_NAME=PixelocityWASM",
-      "JSPI"
-    ],
+    "description": "JSPI primary graph. Its sFlags are derived, never listed: the top-level (fallback) sFlags with ASYNCIFY replaced by JSPI (scripts/format-wasm-compile-flags.js; verify:wasm-invariants rejects a jspi.sFlags copy). jspiExports lists every C export whose call graph can reach wgpuInstanceWaitAny; each becomes Promise-returning and the bridge must ccall it with { async: true } via src/wasm/bridge/call.ts SUSPENDING_EXPORTS. Calling an unlisted export that suspends traps under JSPI. extraFlags and profiles apply on top of the derived sFlags the same way they apply to the fallback.",
     "jspiExports": [
       "initWasmRenderer",
       "loadShader",

@@ -72,7 +72,7 @@ beforeAll(() => {
     });
 });
 
-test('mouse down emits ripple for mouse-driven shader', () => {
+test('pointer down emits exactly one ripple for mouse-driven shader', () => {
     const mockRenderer = {
         addRipplePoint: vi.fn(),
         firePlasma: vi.fn(),
@@ -115,9 +115,16 @@ test('mouse down emits ripple for mouse-driven shader', () => {
     // @ts-ignore - jsdom doesn't implement getBoundingClientRect the same way
     canvas.getBoundingClientRect = () => rect;
 
+    // A real click dispatches pointerdown and then a compatibility mousedown;
+    // only the pointer event may run the down handler (regression: double ripple).
+    // jsdom's PointerEvent drops clientX/Y, so dispatch a MouseEvent typed pointerdown.
+    act(() => {
+        canvas.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 100, clientY: 50 }));
+    });
     fireEvent.mouseDown(canvas, { clientX: 100, clientY: 50 });
 
-    // Expect addRipplePoint called with normalized coords (0.5, 0.25)
+    // Expect addRipplePoint called once with normalized coords (0.5, 0.25)
+    expect(mockRenderer.addRipplePoint).toHaveBeenCalledTimes(1);
     expect(mockRenderer.addRipplePoint).toHaveBeenCalledWith(0.5, 0.25);
 });
 

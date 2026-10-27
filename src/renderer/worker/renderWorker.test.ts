@@ -709,6 +709,19 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     expect(fatal).not.toHaveBeenCalled();
   });
 
+  it('drops shader ids the worker LRU evicted from isShaderCached (regression)', async () => {
+    const { backend } = await backendWithWorker();
+    expect(await backend.loadShader('ok', 'x')).toBe(true);
+    expect(backend.isShaderCached('ok')).toBe(true);
+    deliverSnapshot(backend, true, ['ok', 'warm']);
+    expect(backend.isShaderCached('warm')).toBe(true);
+    // The worker's pipeline cache evicted 'ok' — the next snapshot no longer lists it.
+    deliverSnapshot(backend, true, ['warm']);
+    expect(backend.isShaderCached('ok')).toBe(false);
+    expect(backend.isShaderCached('warm')).toBe(true);
+    await backend.destroy();
+  });
+
   it('a late rpcResult from the old worker cannot resolve a request on a new backend', async () => {
     const first = await backendWithWorker();
     await first.backend.destroy();
@@ -723,7 +736,7 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
   });
 });
 
-function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): void {
+function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean, cachedShaderIds: string[] = []): void {
   (backend as unknown as { onEvent: (e: RenderEvent) => void }).onEvent({
     type: 'snapshot',
     snapshot: {
@@ -731,7 +744,7 @@ function deliverSnapshot(backend: WorkerWebGPUBackend, initialized: boolean): vo
       passTimings: [], timing: { source: 'wall-clock', periodNs: 1, profiledPasses: 0, overflow: 0 },
       frameStats: { submitsLastFrame: 1, bindGroupsLastFrame: 0, framesRendered: 1 },
       video: { ingestPath: 'none', framesIngested: 0, droppedFrames: 0, missedFrames: 0, queueDepth: 0 },
-      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds: [],
+      nodeScales: {}, scalableNodes: [], slots: [], graphReport: null, chores: {} as never, cachedShaderIds,
       colorFormat: 'rgba16float', historyLayers: 4, workingSizeCap: 1024,
       resolution: { scale: 1, full: { w: 1, h: 1 }, scaled: { w: 1, h: 1 }, pixelReduction: '0%' },
       gpuErrors: [], liveGpuDevices: 1, inputChannel: 'postMessage',

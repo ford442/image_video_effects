@@ -47,6 +47,7 @@
     "cppRewriteFile": "wasm_renderer/wasm_internal.cpp",
     "cppProbeFile": "wasm_renderer/device.cpp",
     "pipelineFile": "wasm_renderer/pipeline.cpp",
+    "bglTableFile": "wasm_renderer/bind_group0.h",
     "bglStorageFormatPattern": "\\{\\s*(?:2|7|8),\\s*BindingKind::StorageRgba,",
     "bglStorageBindingCount": 3,
     "loadShaderRewriteCall": "RewriteWgslStorageFormats\\s*\\(",

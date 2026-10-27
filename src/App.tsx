@@ -35,6 +35,7 @@ import {
 } from './hooks';
 import { useThumbnailManifest } from './hooks/useThumbnailManifest';
 import { useShaderWarmup } from './hooks/useShaderWarmup';
+import { useLocalMediaLoader, useLocalMediaUpload } from './hooks/useLocalMediaUpload';
 import { WEBCAM_FUN_SHADERS, getShaderDefaults } from './app/constants/shaderDefaults';
 import { defaultSlotParams } from './app/constants/defaultSlotParams';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from './renderer/types';
@@ -439,6 +440,20 @@ function MainApp() {
         setStatus,
     });
 
+    const { loadLocalMedia } = useLocalMediaLoader({
+        loadImage: async (url) => {
+            syncInputSourceToRenderer('image');
+            setStatus('Loading image...');
+            await handleLoadImage(url);
+            setStatus('Image loaded');
+        },
+        loadVideo: (url) => {
+            setSelectedVideo(url);
+            syncInputSourceToRenderer('video');
+        },
+    });
+    const { handleFileChange: handleUploadFileChange } = useLocalMediaUpload(loadLocalMedia);
+
     useRemoteSync({
         modes,
         activeSlot,
@@ -466,6 +481,7 @@ function MainApp() {
         handleRandomizeSlot,
         triggerRandomizeAllSlots,
         triggerRoulette,
+        loadLocalMedia,
     });
 
     useTestHarness({ rendererRef, rendererReady });
@@ -700,6 +716,7 @@ function MainApp() {
                 setActiveGenerativeShader={setActiveGenerativeShader}
                 fileInputImageRef={fileInputImageRef}
                 fileInputVideoRef={fileInputVideoRef}
+                onFileSelected={handleUploadFileChange}
                 isAiVjMode={isAiVjMode}
                 toggleAiVj={toggleAiVj}
                 aiVjStatus={aiVjStatus}

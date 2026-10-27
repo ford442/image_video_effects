@@ -2,7 +2,7 @@
   "id": "night-vision-scope",
   "name": "Night Vision Scope",
   "url": "shaders/night-vision-scope.wgsl",
-  "description": "Simulates a night vision intensifier tube with a high-clarity scope area following the mouse.",
+  "description": "A green intensifier tube, sharp inside a disc that follows the pointer, with grain, scanlines, microchannel sparks, and bloom around bright sources. The phosphor lags, and fixed vertical streaks sit under the temporal grain.",
   "params": [
     {
       "id": "scopeSize",

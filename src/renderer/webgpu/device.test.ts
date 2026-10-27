@@ -90,7 +90,7 @@ describe('collectOptionalDeviceFeatures', () => {
     ]);
   });
 
-  it('prefers subgroups over chromium-experimental-subgroups', () => {
+  it('requests only the standard subgroups feature', () => {
     const adapter = makeAdapter([
       'subgroups',
       'chromium-experimental-subgroups' as GPUFeatureName,
@@ -98,11 +98,9 @@ describe('collectOptionalDeviceFeatures', () => {
     expect(collectOptionalDeviceFeatures(adapter)).toEqual(['subgroups']);
   });
 
-  it('falls back to chromium-experimental-subgroups', () => {
+  it('no longer requests the obsolete chromium-experimental-subgroups', () => {
     const adapter = makeAdapter(['chromium-experimental-subgroups' as GPUFeatureName]);
-    expect(collectOptionalDeviceFeatures(adapter)).toEqual([
-      'chromium-experimental-subgroups',
-    ]);
+    expect(collectOptionalDeviceFeatures(adapter)).toEqual([]);
   });
 });
 

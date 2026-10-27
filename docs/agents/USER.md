@@ -38,6 +38,67 @@ _Learn about the person you're helping. Update this as you go._
   - quantized-ripples: deep-water dispersion; crest posterization. Decay modes kept.
 - Floor: prelude include on the eight pasted headers; 16×16; exact C; A packing as documented; saved params exact.
 - Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Real-GPU visual QA: external.
+  - 2026-10-26: sent Cursor batch-12 (mouse-ink-bleed through mouse-paint-splatter, 12 shaders). Notes in `docs/agents/swarm-outputs/grok-2026-10-26-batch-12/`.
+
+## 2026-10-26 — cursor/batch-12 (12 shaders)
+
+- IDs: mouse-ink-bleed, cyber-ripples, velocity-field-paint, echo-ripple, pixel-explode, sim-decay-system, liquid-touch, gravity-well, interactive-pixel-wind, sim-heat-haze-field, black-hole, mouse-paint-splatter.
+- Per shader, the ideas actually added:
+  - mouse-ink-bleed: paper tooth in the wet deposit; held pointer fills wetness. Fibre wick and tide line kept.
+  - cyber-ripples: six brightness steps; chromatic offset snaps to the block. SDF rings and click shocks kept.
+  - velocity-field-paint: one MacCormack correction; confinement drops where strain beats curl. Semi-Lagrangian field kept.
+  - echo-ripple: later echoes travel slower; opposing echoes desaturate. Thin-film harmonics kept.
+  - pixel-explode: airborne tiles lengthen along the throw; the windward corner drops off. Neighbour search kept.
+  - sim-decay-system: tangent neighbours count more on an edge; rare pits nucleate off the edge. Five-stage mix kept.
+  - liquid-touch: temperature adds to vertical velocity; a steep contact line damps velocity. 13-point stencil kept.
+  - gravity-well: disk dims inside 3 rs with a bright lip; red and blue take different deflections. Kepler streaks kept.
+  - interactive-pixel-wind: gust field gates the mean wind; a ridge perpendicular to the wind offsets the picture. Luma weight kept.
+  - sim-heat-haze-field: hot ground folds the sample; a knife-edge brightens one side of the gradient. Upward plume kept.
+  - black-hole: thin bright ring at 1.5× the horizon; redshift drops green and blue. Photon ring and infall kept.
+  - mouse-paint-splatter: the flick is an ellipse; pigment darkens where neighbours are wetter. Cast-off satellites kept.
+- Floor: prelude include on the eleven pasted headers; 16×16; exact C; A packing as documented; saved params exact.
+- Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Real-GPU visual QA: external.
+  - 2026-10-27: sent cursor/reveal-twelve (sonar-reveal through neon-flashlight, 12 pointer-led reveal shaders). Notes in `docs/agents/swarm-outputs/grok-2026-10-27-reveal-twelve/`.
+
+## 2026-10-27 — cursor/reveal-twelve (12 shaders)
+
+- IDs: sonar-reveal, codebreaker-reveal, sonar-pulse, blueprint-reveal, pixel-reveal, sketch-reveal, night-vision-scope, motion-revealer, thermal-touch, digital-reveal, x-ray-reveal, neon-flashlight.
+- Per shader, the ideas actually added:
+  - sonar-reveal: fixed range rings; traveling rings widen with distance. Three detuned rings and the PPI arm kept.
+  - codebreaker-reveal: white head and exponential tail; decrypt hole stored in A.a. Column rain kept.
+  - sonar-pulse: deep-water phase speed; cylindrical amplitude falloff. Sine pulse and chromatic echo kept.
+  - blueprint-reveal: every fifth grid line heavier; registration circle and cross at the pointer. Sobel pens kept.
+  - pixel-reveal: hidden blocks take the brighter tap one cell right; dark seam on the coarse cell. Decode ladder kept.
+  - sketch-reveal: dark contour on the existing edge; mid-wetness speckled by paper tooth. Hatch layers kept.
+  - night-vision-scope: phosphor holds last frame's green; stable vertical streaks under the grain. Scope disc kept.
+  - motion-revealer: streaks follow the tensor only where coherence is high; motion hold in C.a. Six-tap streaks kept.
+  - thermal-touch: 9-point laplacian on C.r; inverse-square pointer heat and isotherms. Blackbody ramp kept. A.r is raw heat.
+  - digital-reveal: hash-length drops with gaps; glyphs wipe from the top of the cell. Mask decay kept.
+  - x-ray-reveal: transmission falls along +x inside the lens; faint vertical grid on the field. Beer-Lambert window kept.
+  - neon-flashlight: inverse-square core; umbra desaturates toward white. Umbra, penumbra, and catchlight kept.
+- Floor: prelude include on the ten pasted headers; 16×16; exact C; A packing as documented; saved params exact.
+- Gates: Naga, extraBuffer, dead sliders, catalogs. Real-GPU visual QA: external.
+
+
+## 2026-10-27 — cursor/batch-14 tape and block glitch (12 shaders)
+
+- IDs: scanline-tear, vhs-jog, vhs-tracking-mouse, strip-scan-glitch, sliding-tile-glitch, data-stream-corruption, rgb-split-glitch, digital-compression, interactive-glitch-brush, interactive-glitch, interactive-glitch-cubes, glitch-cathedral.
+- Per shader, the ideas actually added:
+  - scanline-tear: sync-pulse serration; chroma delay line. Field phase and burst rotation kept.
+  - vhs-jog: head-switch snow; tracking flag skew. Shuttle and cue bars kept.
+  - vhs-tracking-mouse: track slip; overscan bar. Dash cells and auto-track kept.
+  - strip-scan-glitch: slit smear along the scroll; strip-edge neighbour mix. Hashed strip speed kept.
+  - sliding-tile-glitch: unshifted photo under the grid line; spatial restore. Row/column choice kept.
+  - data-stream-corruption: bright head and exponential tail; dwell inside the held brush. Column rain kept.
+  - rgb-split-glitch: hanging dots on odd lines; herringbone crawl. Y/Cb/Cr delay packing kept.
+  - digital-compression: AC quantization inside the block; mosquito noise on the existing edge. DC corner kept.
+  - interactive-glitch-brush: speed-thinned stroke; snapped horizontal tear. Grenades and conveyor kept.
+  - interactive-glitch: Schmitt lock from C.a; quantized scan packet. Block pulse kept.
+  - interactive-glitch-cubes: face shade from height; wall ring outside the face. Face UV kept.
+  - glitch-cathedral: lead cames at the cell size; pointer channel split and row sort. DCT and rose kept. Cell Size 20 still full quant.
+- Floor: prelude include on all twelve; 16×16; exact C where C is read; A packing as documented; saved params exact.
+- Gates: Naga 12/12, extraBuffer, dead sliders (glitch-cathedral's three baseline sliders now read), catalogs, ledger.
+- Real-GPU visual QA: external.
 
 ## Context
 

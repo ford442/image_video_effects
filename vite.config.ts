@@ -19,10 +19,17 @@ const KNOWN_APP_ENV = [
   'REACT_APP_STORAGE_VPS_PORT',
   'REACT_APP_STORAGE_VPS_URL',
   'REACT_APP_VERSION',
-  'REACT_APP_WEBHOOK_SECRET',
 ];
 
-// Same cross-origin isolation as production (build.sh .htaccess, #1314), so
+/**
+ * Everything in `define` is inlined into the public bundle, so a secret-looking
+ * REACT_APP_* var (e.g. the old REACT_APP_WEBHOOK_SECRET) is never forwarded,
+ * even when it is still set in a local .env. `npm run verify:no-client-secrets`
+ * greps dist/ for the same thing in CI.
+ */
+export const CLIENT_SECRET_ENV_PATTERN = /SECRET|PASSWORD|PRIVATE|CREDENTIAL|_TOKEN\b|API_KEY/i;
+
+// Same cross-origin isolation as production (tools/deploy/build.sh .htaccess, #1314), so
 // `npm start` / `vite preview` exercise the SharedArrayBuffer input ring of the render worker.
 const ISOLATION_HEADERS = {
   'Cross-Origin-Opener-Policy': 'same-origin',
@@ -33,6 +40,10 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'REACT_APP_');
   const define: Record<string, string> = {};
   for (const key of new Set([...KNOWN_APP_ENV, ...Object.keys(env)])) {
+    if (CLIENT_SECRET_ENV_PATTERN.test(key)) {
+      console.warn(`[vite] not exposing ${key} to the client bundle (looks like a secret)`);
+      continue;
+    }
     const value = env[key] ?? process.env[key];
     // Vitest copies `process.env.*` defines onto the real process.env as strings,
     // turning an unset var into the truthy string "undefined". Node has a real

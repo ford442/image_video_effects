@@ -22,6 +22,13 @@ struct ShaderBindingUsage {
     bool writesDepth = false;  // binding 6 (depth write); gates depthWrite → depthRead feedback
 };
 
+// Finite budget for every error-scope pop WaitAny (format/COPY_SRC probes,
+// history texture, CreateComputePipeline). A pop resolves in milliseconds; a
+// wedged device must fail soft instead of suspending forever. Pop callbacks
+// ignore CallbackCancelled, so a timed-out future that is cancelled when the
+// instance drops never writes the caller's (dead) stack slot.
+constexpr uint64_t kErrorScopeWaitTimeoutNs = 1'000'000'000ull;
+
 // Timestamp query indices (keep in sync with timing.cpp / WebGPURenderer.ts).
 constexpr int32_t kTsFrameStart    = 0;
 constexpr int32_t kTsComputeEnd    = 1;
