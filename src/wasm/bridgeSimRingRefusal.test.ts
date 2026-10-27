@@ -63,21 +63,6 @@ describe('WASM bridge — group-1 refusal', () => {
     expect(warn).toHaveBeenCalledWith(expect.stringContaining(`[WASM] ${op}:`));
   });
 
-  // The flagships' catalog urls point at their first entry. They declare binding 3 (simHash) or
-  // the base ring; either way the bridge skips them before LoadShader, with the include-expanded source.
-  it.each(['murmuration-flock', 'photon-bins-march'])('skips the %s flagship entry without calling into the module', async (id) => {
-    const module = wasmRef.module as ReturnType<typeof mockModule>;
-    const wgsl = await readExpandedShader(id);
-    if (wgsl === null) throw new Error(`public/shaders/${id}.wgsl is missing`);
-    const errorsBefore = state.loadErrorCount;
-    expect(await loadShader(id, wgsl)).toBe(false);
-    expect(await reloadShader(id, wgsl)).toBe(false);
-    expect(module.ccall).not.toHaveBeenCalled();
-    expect(state.lastLoadError).toMatch(/@group\(1\)/);
-    expect(state.loadErrorCount).toBe(errorsBefore + 2);
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('[WASM] loadShader:'));
-  });
-
   it('refuses @group(1) that arrives alongside an expanded prelude include', async () => {
     const module = wasmRef.module as ReturnType<typeof mockModule>;
     const wgsl = await expandShaderSource(

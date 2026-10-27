@@ -713,7 +713,7 @@ const WebGPUCanvas: React.FC<WebGPUCanvasProps> = ({
                 width={INTERNAL_RENDER_RESOLUTION}
                 height={INTERNAL_RENDER_RESOLUTION}
                 onPointerMove={handleCanvasMouseMove}
-                onPointerDown={handleMouseDown}
+                onPointerDown={handleMouseDown} onMouseDown={handleMouseDown}
                 onPointerUp={handleMouseUp}
                 onPointerLeave={handleMouseLeave}
                 style={canvasStyle}

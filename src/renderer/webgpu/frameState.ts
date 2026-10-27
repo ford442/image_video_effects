@@ -18,11 +18,8 @@ import {
 import { WebGPUTimestampQueries } from './WebGPUTiming';
 import type { GraphSimRingBindings } from '../GraphRunner';
 import type { SimRing } from './simRing';
-import { SIM_HASH_HEAD_BYTES } from './simHash';
 import { ShaderSlot } from './webgpuConstants';
 import type { FrameIslands } from './framePlan';
-import type { FrameCompositor } from './compositor';
-import type { PresentVariant } from './presentVariants';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
@@ -67,10 +64,6 @@ export interface WebGPUFrameState {
   getBindingUsage: (id: string) => ShaderBindingUsage;
   /** True when `id` was compiled against the group-1 sim-ring layout. */
   usesSimRing: (id: string) => boolean;
-  /** True when `id` was compiled against the 4-binding (simHash) group-1 layout. */
-  usesSimHash: (id: string) => boolean;
-  /** The compiled simHash scatter pass, or null before a hash shader compiled. */
-  getSimHashBuildPipeline: () => GPUComputePipeline | null;
   /** Armed sim ring bindings, or null when no ring is allocated. */
   getSimRing: () => GraphSimRingBindings | null;
   /** Upload simParams and advance the ring frame counter (once per frame). */
@@ -91,10 +84,6 @@ export interface WebGPUFrameState {
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   /** Scaled-island resources, or null when no node is demoted. */
   getIslands?: () => FrameIslands | null;
-  /** Layer compositor for this frame, or null when no parallel slot composites (#1512). */
-  getCompositor?: () => FrameCompositor | null;
-  /** HDR or storage present for this frame, or null for the standard blit (#1512). */
-  getPresentVariant?: () => PresentVariant | null;
 
   ripples: Ripple[];
   mouseX: number;
@@ -169,7 +158,6 @@ export interface WebGPUFrameHost {
   slots: ShaderSlot[];
   shaderManager: WebGPUShaderManager;
   getSimRing: () => GraphSimRingBindings | null;
-  getSimHashBuildPipeline: () => GPUComputePipeline | null;
   writeSimRingParams: () => void;
   getTextureSet: () => WebGPUTextureSet;
   getBufferSet: () => WebGPUBufferSet;
@@ -186,8 +174,6 @@ export interface WebGPUFrameHost {
   framePassBudget: number;
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   getIslands?: () => FrameIslands | null;
-  getCompositor?: () => FrameCompositor | null;
-  getPresentVariant?: () => PresentVariant | null;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -270,8 +256,6 @@ export interface FrameContext {
   framePassBudget: number;
   nodeScale?: (slotIndex: number, nodeId: string) => number;
   getIslands?: () => FrameIslands | null;
-  getCompositor?: () => FrameCompositor | null;
-  getPresentVariant?: () => PresentVariant | null;
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
@@ -285,21 +269,8 @@ export interface FrameContext {
 function simRingBindings(ring: SimRing | undefined): GraphSimRingBindings | null {
   const bindGroup = ring?.getBindGroup();
   if (!ring || !bindGroup || !ring.stateBuffer || !ring.indexBuffer) return null;
-  const hashBuffers = ring.getHashBuffers();
-  const hashBindGroup = ring.getHashBindGroup();
-  const hashBuildBindGroup = ring.getHashBuildBindGroup();
   return {
     bindGroup,
-    hash:
-      hashBuffers && hashBindGroup && hashBuildBindGroup
-        ? {
-            bindGroup: hashBindGroup,
-            buildBindGroup: hashBuildBindGroup,
-            buffer: hashBuffers.hashBuffer,
-            emptyBuffer: hashBuffers.emptyBuffer,
-            headBytes: SIM_HASH_HEAD_BYTES,
-          }
-        : null,
     stateBuffer: ring.stateBuffer,
     indexBuffer: ring.indexBuffer,
     stateCount: ring.stateCount,
@@ -351,9 +322,8 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     get slots() { return d.slots; },
     get shaderManager() { return d.pipeline.shaderManager; },
     getSimRing: () => simRingBindings(d.simRing),
-    getSimHashBuildPipeline: () => d.pipeline.getSimHashBuildResources()?.pipeline ?? null,
     writeSimRingParams: () => {
-      if (d.device && d.simRing?.allocated) d.simRing.writeParams(d.device.queue, d.scaledW, d.scaledH);
+      if (d.device && d.simRing?.allocated) d.simRing.writeParams(d.device.queue);
     },
     getTextureSet: () => d.resources.getTextureSet(),
     getBufferSet: () => d.resources.getBufferSet(),
@@ -373,8 +343,6 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     get framePassBudget() { return d.framePassBudget; },
     nodeScale: (slot, nodeId) => d.nodeScale?.(slot, nodeId) ?? 1,
     getIslands: () => d.getIslands?.() ?? null,
-    getCompositor: () => d.getCompositor?.() ?? null,
-    getPresentVariant: () => d.getPresentVariant?.() ?? null,
     get ripples() { return d.ripples; },
     get mouseX() { return d.mouseX; },
     get mouseYShader() { return d.mouseYShader; },
@@ -458,8 +426,6 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     hasPipeline: (id) => h.shaderManager.hasPipeline(id),
     getBindingUsage: (id) => h.shaderManager.getBindingUsage(id),
     usesSimRing: (id) => h.shaderManager.usesSimRing(id),
-    usesSimHash: (id) => h.shaderManager.usesSimHash(id),
-    getSimHashBuildPipeline: () => h.getSimHashBuildPipeline(),
     getSimRing: () => h.getSimRing(),
     writeSimRingParams: () => h.writeSimRingParams(),
     createBindGroupForPass: (read, write) => h.createBindGroupForPass(read, write),
@@ -470,8 +436,6 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get framePassBudget() { return h.framePassBudget; },
     nodeScale: (slot, nodeId) => h.nodeScale?.(slot, nodeId) ?? 1,
     getIslands: () => h.getIslands?.() ?? null,
-    getCompositor: () => h.getCompositor?.() ?? null,
-    getPresentVariant: () => h.getPresentVariant?.() ?? null,
     get ripples() { return h.ripples; },
     get mouseX() { return h.mouseX; },
     get mouseYShader() { return h.mouseYShader; },

@@ -182,7 +182,7 @@ describe('canvas_configure.json contract', () => {
     }
   });
 
-  it('declares backends for every capability (copySrc on both, color + v4 present TS-only)', () => {
+  it('declares backends for every capability (copySrc on both, color TS-only)', () => {
     const backends = Object.fromEntries(
       Object.entries(canvasConfigureContract.optIn).map(([k, v]) => [k, v.backends]),
     );
@@ -190,13 +190,8 @@ describe('canvas_configure.json contract', () => {
       copySrc: ['ts', 'wasm'],
       displayP3: ['ts'],
       extendedToneMapping: ['ts'],
-      hdrCanvas: ['ts'],
-      storagePresent: ['ts'],
     });
-    expect(canvasConfigureContract.version).toBe(4);
     expect(canvasConfigureContract.optIn.extendedToneMapping.requires).toBe('displayP3');
-    expect(canvasConfigureContract.optIn.hdrCanvas).toMatchObject({ format: 'rgba16float', requires: 'extendedToneMapping' });
-    expect(canvasConfigureContract.optIn.storagePresent).toMatchObject({ format: 'bgra8unorm', requiresFeature: 'bgra8unorm-storage' });
   });
 
   it('keeps the generated C++ header in sync with the JSON', () => {
@@ -325,9 +320,8 @@ describe('initializeWebGPUDevice', () => {
     expect(adapter.requestDevice).toHaveBeenCalledWith(
       expect.objectContaining({
         requiredFeatures: ['float32-filterable', 'timestamp-query'],
-        // A core adapter: no base limit restates a spec default (#1512 limits tiers).
-        requiredLimits: expect.not.objectContaining({
-          maxBindingsPerBindGroup: expect.anything(),
+        requiredLimits: expect.objectContaining({
+          maxBindingsPerBindGroup: 14,
           maxUniformBufferBindingSize: UNIFORM_BUFFER_LAYOUT.TOTAL_SIZE,
         }),
       }),

@@ -3,8 +3,7 @@ import type { ControlBinding } from '../controlBindings';
 import type { SharedChain } from '../layerChainShare';
 import type { VjSetExportPayload } from '../vjSetExport';
 
-/** v2 (#1512): chain slots may carry compositor output fields (b / o / m / f / k). */
-export const PROJECT_FILE_SCHEMA_VERSION = 2 as const;
+export const PROJECT_FILE_SCHEMA_VERSION = 1 as const;
 export const PROJECT_APP_NAME = 'pixelocity' as const;
 
 export type ProjectSourceKind = 'image' | 'video' | 'webcam' | 'generative' | 'stream' | 'none';
@@ -26,9 +25,8 @@ export interface ProjectAudioSettings {
   mappings?: ControlBinding[];
 }
 
-/** The first project format (#1393): no compositor fields on chain slots. */
 export interface ProjectFileV1 {
-  schemaVersion: 1;
+  schemaVersion: typeof PROJECT_FILE_SCHEMA_VERSION;
   app: {
     name: typeof PROJECT_APP_NAME;
     version: string;
@@ -43,12 +41,7 @@ export interface ProjectFileV1 {
   timeline?: VjSetExportPayload;
 }
 
-/** Current format: v1 plus per-slot compositor output in the chain (layerChainShare.ts). */
-export interface ProjectFileV2 extends Omit<ProjectFileV1, 'schemaVersion'> {
-  schemaVersion: typeof PROJECT_FILE_SCHEMA_VERSION;
-}
-
-export type ProjectFile = ProjectFileV2;
+export type ProjectFile = ProjectFileV1;
 
 export interface ProjectBuildState {
   chain: SharedChain;
@@ -76,7 +69,7 @@ export type ProjectValidationResult =
   | { ok: false; errors: string[] };
 
 export type ProjectMigrationResult =
-  | { project: ProjectFile; reason?: undefined }
+  | { project: ProjectFileV1; reason?: undefined }
   | { project: null; reason: string };
 
 export type ProjectParseResult =

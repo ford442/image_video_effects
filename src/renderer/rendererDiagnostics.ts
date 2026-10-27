@@ -31,8 +31,6 @@ export function buildRendererDiagnostics(
     getVideoIngestStats?: () => import('./media/videoFramePump').VideoIngestStats;
     getGpuErrors?: () => string[];
     getCanvasColorState?: () => import('./webgpuBootProbe').CanvasColorState | null;
-    getCompositorStats?: () => import('./webgpu/compositor').CompositorStats;
-    getHdrPresent?: () => import('./webgpu/presentVariants').HdrPresentSettings;
     getInputEcho?: () => NonNullable<RendererDiagnostics['webgpu']>['input'];
     renderThread?: 'main' | 'worker';
     inputChannel?: 'sab' | 'postMessage';
@@ -61,8 +59,6 @@ export function buildRendererDiagnostics(
         video: active.getVideoIngestStats?.(),
         ...(active.getCanvasColorState ? { canvas: active.getCanvasColorState() } : {}),
         ...(active.getGpuErrors ? { gpuErrors: active.getGpuErrors() } : {}),
-        ...(active.getCompositorStats ? { compositor: active.getCompositorStats() } : {}),
-        ...(active.getHdrPresent ? { hdrPresent: active.getHdrPresent() } : {}),
         ...(active.getInputEcho ? { input: active.getInputEcho() } : {}),
       },
       ...(lastFailedWasmRenderer ? { wasm: lastFailedWasmRenderer.getDiagnostics() } : {}),

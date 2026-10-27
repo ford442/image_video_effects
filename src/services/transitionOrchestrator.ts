@@ -1,4 +1,4 @@
-import { crossfadeMix, easeInOutSine, lerpParamMap, ParamMap, ParamMapSchema, snapToStep } from '../utils/transitionMath';
+import { easeInOutSine, lerpParamMap, ParamMap, ParamMapSchema, snapToStep } from '../utils/transitionMath';
 
 type OrchestratorState = 'IDLE' | 'WAITING' | 'TRANSITIONING';
 
@@ -19,22 +19,10 @@ export interface TransitionTarget {
   shaderSignature?: string;
 }
 
-/** A cue that changes shader identity needs the outgoing picture frozen for this long. */
-export interface TransitionHoldRequest {
-  durationMs: number;
-}
-
 export interface TransitionTickResult {
   params: ParamMap[];
   settled: boolean;
   progress: number;
-  /**
-   * Weight of the frozen outgoing picture (1 = hold, 0 = live): `progress` through the
-   * easing, run backwards (crossfadeMix). 0 unless this transition changes shader identity.
-   */
-  mix: number;
-  /** Set on exactly one tick: the first of a transition that changes shader identity. */
-  hold: TransitionHoldRequest | null;
 }
 
 const cloneMaps = (maps: ParamMap[]): ParamMap[] => maps.map((m) => ({ ...m }));
@@ -67,9 +55,6 @@ export class TransitionOrchestrator {
   private targetParams: ParamMap[] = [];
   private schema: TransitionSchemaSlot[] = [];
   private shaderSignature = '';
-  /** The running transition changes shader identity: its picture dissolves, its params jump. */
-  private dissolving = false;
-  private holdPending = false;
   private beats: number[] = [];
   private readonly maxBeats = 64;
   private targetFactory: (() => TransitionTarget | null | Promise<TransitionTarget | null>) | null = null;
@@ -99,8 +84,6 @@ export class TransitionOrchestrator {
 
   public stop() {
     this.state = 'IDLE';
-    this.dissolving = false;
-    this.holdPending = false;
     this.waitingElapsed = 0;
     this.transitionElapsed = 0;
     this.previousNow = null;
@@ -114,8 +97,6 @@ export class TransitionOrchestrator {
     this.targetParams = cloneMaps(next.params);
     this.schema = next.schema;
     this.shaderSignature = next.shaderSignature;
-    this.dissolving = false;
-    this.holdPending = false;
     this.transitionElapsed = 0;
     this.waitingElapsed = 0;
     if (this.state !== 'IDLE') {
@@ -144,17 +125,6 @@ export class TransitionOrchestrator {
 
   public updateConfig(config: TransitionOrchestratorConfig) {
     this.config = config;
-  }
-
-  /**
-   * What a cue to `shaderSignature` needs from the picture. Sliders ease on their own, so a
-   * param-only cue (same signature) needs nothing; a new shader identity needs the outgoing
-   * picture held for the transition duration. A duration of 0 is a hard cut: no hold.
-   */
-  public requestHold(shaderSignature: string | undefined): TransitionHoldRequest | null {
-    if (!shaderSignature || shaderSignature === this.shaderSignature) return null;
-    const durationMs = this.config.durationMs;
-    return durationMs > 0 ? { durationMs } : null;
   }
 
   public async trigger(target?: TransitionTarget): Promise<boolean> {
@@ -207,37 +177,26 @@ export class TransitionOrchestrator {
     );
     this.currentParams = next;
 
-    // One hold per transition, on its first tick; the picture then dissolves with the same curve.
-    const hold = this.holdPending ? { durationMs: this.config.durationMs } : null;
-    this.holdPending = false;
-
     if (linearProgress >= 1) {
       const snapped = snapMapsToSchema(this.targetParams, this.schema);
       this.currentParams = snapped;
       this.startParams = cloneMaps(snapped);
       this.targetParams = cloneMaps(snapped);
       this.state = 'WAITING';
-      this.dissolving = false;
       this.waitingElapsed = 0;
       this.transitionElapsed = 0;
-      return { params: cloneMaps(snapped), settled: true, progress: 1, mix: 0, hold };
+      return { params: cloneMaps(snapped), settled: true, progress: 1 };
     }
 
-    const mix = this.dissolving ? crossfadeMix(linearProgress, easing) : 0;
-    return { params: cloneMaps(next), settled: false, progress: linearProgress, mix, hold };
+    return { params: cloneMaps(next), settled: false, progress: linearProgress };
   }
 
   private beginTransition(target: TransitionTarget) {
-    // Decided against the signature the transition leaves, before it is replaced below.
-    const hold = this.requestHold(target.shaderSignature);
     if (target.schema) this.schema = target.schema;
     if (target.shaderSignature) this.shaderSignature = target.shaderSignature;
 
     const snappedTarget = snapMapsToSchema(target.params, this.schema);
-    this.dissolving = hold !== null;
-    this.holdPending = hold !== null;
-    // Param maps of two different stacks cannot be lerped; the dissolve carries that cue.
-    this.startParams = cloneMaps(this.dissolving ? snappedTarget : this.currentParams);
+    this.startParams = cloneMaps(this.currentParams);
     this.targetParams = cloneMaps(snappedTarget);
     this.transitionElapsed = 0;
     this.waitingElapsed = 0;

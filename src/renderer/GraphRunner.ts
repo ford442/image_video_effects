@@ -35,25 +35,9 @@ export interface GraphRunReport {
   errors: string[];
 }
 
-/** The optional spatial hash of the sim ring (bind_group1.json `spatialHash`). */
-export interface GraphSimHashBindings {
-  /** Group-1 bind group for entries that declare simHash (4 bindings). */
-  bindGroup: GPUBindGroup;
-  /** Bind group 0 of the scatter pass (simState read, simHash write, params). */
-  buildBindGroup: GPUBindGroup;
-  buffer: GPUBuffer;
-  /** Heads pre-filled with the empty sentinel; copied over the heads before each scatter. */
-  emptyBuffer: GPUBuffer;
-  /** cellCount × 4 bytes. */
-  headBytes: number;
-}
-
 /** Group-1 sim ring handed to the graph (src/contracts/bind_group1.json). */
 export interface GraphSimRingBindings {
-  /** Group-1 bind group for entries that declare only bindings 0–2. */
   bindGroup: GPUBindGroup;
-  /** Present only when a simHash-declaring shader armed the ring. */
-  hash?: GraphSimHashBindings | null;
   stateBuffer: GPUBuffer;
   indexBuffer: GPUBuffer;
   /** Allocated vec4 elements (post OOM ladder). */
@@ -81,10 +65,6 @@ export interface GraphRunnerContext {
   shaderId?: string;
   /** True when the entry's pipeline was built against the group-1 layout. */
   usesSimRing?: (shaderId: string) => boolean;
-  /** True when the entry's pipeline was built against the 4-binding (simHash) group-1 layout. */
-  usesSimHash?: (shaderId: string) => boolean;
-  /** The compiled scatter pass that rebuilds simHash (null before a hash shader compiled). */
-  getSimHashBuildPipeline?: () => GPUComputePipeline | null;
   /** Armed sim ring, or null/undefined when none is allocated. */
   simRing?: GraphSimRingBindings | null;
   /**
@@ -110,8 +90,6 @@ export class GraphRunner {
       },
       getWorkgroupSize: ctx.getWorkgroupSize,
       usesSimRing: (id) => !!ctx.usesSimRing?.(id),
-      usesSimHash: (id) => !!ctx.usesSimHash?.(id),
-      getSimHashBuildPipeline: ctx.getSimHashBuildPipeline,
       simRing: ctx.simRing ?? null,
       maxPassesPerFrame: ctx.maxPassesPerFrame,
       framePassBudget: Number.POSITIVE_INFINITY,
@@ -137,7 +115,6 @@ export class GraphRunner {
         computeCount: report.executed,
         output: 'writeTex',
         graphReports: [report],
-        composites: [],
       },
       {
         textures: {

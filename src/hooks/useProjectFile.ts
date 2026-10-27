@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import type { RenderQualityMode } from '../config/performancePolicy';
-import type { InputSource, RenderMode, ShaderEntry, SlotMode, SlotParams } from '../renderer/types';
-import type { SlotOutput } from '../renderer/slotOutput';
+import type { InputSource, RenderMode, ShaderEntry, SlotParams } from '../renderer/types';
 import type { VideoRecord } from '../syncTypes';
 import type { ImageRecord } from '../types/aiVj';
 import type { ControlBinding } from '../services/controlBindings';
@@ -23,9 +22,6 @@ import {
 export interface UseProjectFileOptions {
   modes: RenderMode[];
   slotParams: SlotParams[];
-  /** Chained / parallel and compositor output per slot (#1512); saved in the chain (v2). */
-  slotModes?: SlotMode[];
-  slotOutputs?: SlotOutput[];
   activeSlot: number;
   inputSource: InputSource;
   currentImageUrl?: string;
@@ -141,10 +137,7 @@ async function applyPlan(plan: ProjectApplyPlan, options: UseProjectFileOptions)
 
 export function useProjectFile(options: UseProjectFileOptions): UseProjectFileReturn {
   const exportProject = useCallback(() => {
-    const chain = buildSharedChain(options.modes, options.slotParams, {
-      slotModes: options.slotModes,
-      slotOutputs: options.slotOutputs,
-    });
+    const chain = buildSharedChain(options.modes, options.slotParams);
     let timeline: VjSetExportPayload | undefined;
     if (options.timeline && options.recorderState !== 'recording') {
       timeline = buildVjSetExport('Project recording', chain, {

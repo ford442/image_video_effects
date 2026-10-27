@@ -38,9 +38,9 @@
   },
   "bundledLibraries": {
     "module": "src/wasm/bridge/wgslLibraries.ts",
-    "names": ["_prelude.wgsl", "_half.wgsl"],
+    "names": ["_prelude.wgsl"],
     "generatedBy": "scripts/generate_shader_libs.py (checked by its --check mode)",
-    "reason": "The prelude describes the bind-group layout of the renderer in the same bundle, so the bundled copy is authoritative. Both runtime seams resolve it from the bundle before trying a sibling URL: the app deploy does not ship public/shaders, the storage sync never uploads `_` libraries, and blob: or storage-API sources have no sibling directory. _half.wgsl (#1512) is bundled too: its alias lines are rewritten by the renderer for `// @requires f16` shaders (src/renderer/wgslF16.ts), so the text the rewrite expects ships with the code that rewrites it. Every other library is still fetched as a sibling of the file that includes it."
+    "reason": "The prelude describes the bind-group layout of the renderer in the same bundle, so the bundled copy is authoritative. Both runtime seams resolve it from the bundle before trying a sibling URL: the app deploy does not ship public/shaders, the storage sync never uploads `_` libraries, and blob: or storage-API sources have no sibling directory. Every other library is still fetched as a sibling of the file that includes it."
   },
   "migration": {
     "tracker": "src/contracts/prelude_migration.json",

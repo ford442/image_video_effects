@@ -88,10 +88,6 @@ export interface RendererDiagnostics {
     canvas?: import('./webgpuBootProbe').CanvasColorState | null;
     /** Uncaptured GPU errors in the render worker (page hooks cannot see that device). */
     gpuErrors?: string[];
-    /** Layer compositor memory, passes and unresolved masks (#1512). */
-    compositor?: import('./webgpu/compositor').CompositorStats;
-    /** HDR present paper white / peak in nits (#1512; used while the canvas is rgba16float). */
-    hdrPresent?: import('./webgpu/presentVariants').HdrPresentSettings;
     /** Input currently held by the renderer (worker mode; proves the input channel). */
     input?: { mouse: [number, number]; mouseDown: boolean; audio: [number, number, number]; slot0: number[] } | null;
   };

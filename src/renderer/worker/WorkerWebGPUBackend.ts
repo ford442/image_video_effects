@@ -31,9 +31,6 @@ import { createFrameStats, type FrameStats } from '../webgpu/deviceCounters';
 import { resolveCanvasColorOptIns } from '../webgpu/device';
 import { snapNodeScale } from '../webgpu/nodeScale';
 import type { SlotMode } from '../webgpu/webgpuConstants';
-import { DEFAULT_SLOT_OUTPUT, patchSlotOutput, type SlotOutput } from '../slotOutput';
-import type { CompositorStats } from '../webgpu/compositor';
-import { DEFAULT_HDR_PRESENT, normalizeHdrPresent, type HdrPresentSettings } from '../webgpu/presentVariants';
 import type { WebGPUBackendApi } from '../webgpuBackendApi';
 import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
 import {
@@ -51,11 +48,7 @@ import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
 
 const FFT_BINS = 128;
 
-type SlotShadow = { shaderId: string | null; enabled: boolean; mode: SlotMode; output: SlotOutput };
-
-const EMPTY_COMPOSITOR_STATS: CompositorStats = {
-  layers: 0, masks: 0, textureMiB: 0, composites: 0, error: null, warnings: [],
-};
+type SlotShadow = { shaderId: string | null; enabled: boolean; mode: SlotMode };
 
 const WALL_CLOCK_TIMINGS: GPUTimings = {
   parallelTime: 0,
@@ -121,11 +114,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     shaderId: null,
     enabled: false,
     mode: 'chained' as SlotMode,
-    output: { ...DEFAULT_SLOT_OUTPUT },
   }));
-  /** Slots whose compositor output changed since the last flush. */
-  private readonly dirtyOutputs = new Set<number>();
-  private hdrPresent: HdrPresentSettings = { ...DEFAULT_HDR_PRESENT };
   private readonly slotParams: [number, number, number, number][] = Array.from(
     { length: PHYSICAL_SLOT_LIMIT },
     (): [number, number, number, number] => [0.5, 0.5, 0.5, 0.5],
@@ -139,7 +128,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private video: HTMLVideoElement | null = null;
   private pump: VideoFramePump | null = null;
   private cpuImage: HTMLImageElement | HTMLCanvasElement | null = null;
-  private cachedIds = new Set<string>();
+  private readonly cachedIds = new Set<string>();
   private readonly audio = { bass: 0, mid: 0, treble: 0, freqBins: new Float32Array(FFT_BINS) };
   private lastFrameImage = '';
   /** SAB input ring when the page and the worker are cross-origin isolated (#1314 C3). */
@@ -200,7 +189,6 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
         config: this.config,
         colorOptIns: resolveCanvasColorOptIns(undefined, undefined, loadDisplayP3()),
         appBaseUrl: absoluteUrl('.'),
-        ...(typeof location !== 'undefined' && location.search ? { pageSearch: location.search } : {}),
         generation: this.deviceGeneration,
         ...(ringBuffer ? { inputRing: ringBuffer } : {}),
       });
@@ -268,9 +256,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
       this.snap = event.snapshot;
       // A lost worker never comes back; only a new backend (new worker) renders again.
       this.initialized = !this.lost && event.snapshot.initialized;
-      // Replace, never merge: the worker's pipeline LRU (#1449) evicts, and a merged set would
-      // keep reporting evicted shaders as cached (graphLab runDraft then skips the reload).
-      this.cachedIds = new Set(event.snapshot.cachedShaderIds);
+      for (const id of event.snapshot.cachedShaderIds) this.cachedIds.add(id);
     } else if (event.type === 'error') {
       reportError(event.error);
     } else if (event.type === 'deviceLost') {
@@ -300,7 +286,6 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     this.ring = null;
     this.pending = {};
     this.dirtySlots.clear();
-    this.dirtyOutputs.clear();
     clearRendererDevice(info.kind === 'worker-died' ? 'render worker crashed' : 'device lost', this);
     this.unregisterCompiler?.();
     this.unregisterCompiler = null;
@@ -345,15 +330,6 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
         if (p) input.slotParams.push([slot, p[0], p[1], p[2], p[3]]);
       }
       this.dirtySlots.clear();
-    }
-    // Outputs always travel in frameInput (the SAB ring carries params, not outputs).
-    if (this.dirtyOutputs.size > 0) {
-      input.slotOutputs = [];
-      for (const slot of this.dirtyOutputs) {
-        const output = this.slots[slot]?.output;
-        if (output) input.slotOutputs.push([slot, { ...output }]);
-      }
-      this.dirtyOutputs.clear();
     }
     const pump = this.pump;
     if (pump) {
@@ -489,17 +465,15 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   }
 
   setActiveShader(id: string): void {
-    // Outputs survive a shader change, as they do in WebGPURenderer.
-    this.slots.forEach((slot, i) => {
-      this.slots[i] = { shaderId: i === 0 ? id : null, enabled: i === 0, mode: 'chained', output: slot.output };
-    });
+    this.slots[0] = { shaderId: id, enabled: true, mode: 'chained' };
+    for (let i = 1; i < PHYSICAL_SLOT_LIMIT; i++) this.slots[i] = { shaderId: null, enabled: false, mode: 'chained' };
     this.client?.send({ type: 'setActiveShader', id });
   }
 
   setSlotShader(index: number, id: string): void {
     const slot = this.slots[index];
     if (!slot) return;
-    this.slots[index] = { shaderId: id, enabled: !!id, mode: slot.mode, output: slot.output };
+    this.slots[index] = { shaderId: id, enabled: !!id, mode: slot.mode };
     this.client?.send({ type: 'setSlotShader', index, id });
   }
 
@@ -521,37 +495,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
 
   getSlotState(index: number): SlotShadow | null {
     const slot = this.slots[index];
-    return slot ? { ...slot, output: { ...slot.output } } : null;
-  }
-
-  /** Optimistic shadow + one coalesced frameInput per main frame (opacity automation is per frame). */
-  setSlotOutput(index: number, patch: Partial<SlotOutput>): SlotOutput | null {
-    const slot = this.slots[index];
-    if (!slot) return null;
-    slot.output = patchSlotOutput(slot.output, patch);
-    this.dirtyOutputs.add(index);
-    this.markDirty();
-    return { ...slot.output };
-  }
-
-  getSlotOutput(index: number): SlotOutput | null {
-    const output = this.slots[index]?.output;
-    return output ? { ...output } : null;
-  }
-
-  /** Optimistic: the worker clamps the same way (presentVariants.normalizeHdrPresent). */
-  setHdrPresent(settings: Partial<HdrPresentSettings>): HdrPresentSettings {
-    this.hdrPresent = normalizeHdrPresent({ ...this.hdrPresent, ...settings });
-    this.client?.send({ type: 'setHdrPresent', settings: this.hdrPresent });
-    return { ...this.hdrPresent };
-  }
-
-  getHdrPresent(): HdrPresentSettings {
-    return { ...this.hdrPresent };
-  }
-
-  getCompositorStats(): CompositorStats {
-    return this.snap?.compositor ? { ...this.snap.compositor } : { ...EMPTY_COMPOSITOR_STATS };
+    return slot ? { ...slot } : null;
   }
 
   setInputSource(source: InputSource): void {
@@ -693,17 +637,6 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   setCanvasCopySrc(enabled: boolean): boolean {
     if (enabled && !this.supportsCanvasCopySrc()) return false;
     this.client?.send({ type: 'setCanvasCopySrc', enabled });
-    return true;
-  }
-
-  /**
-   * Cue crossfade: the worker freezes the picture it last presented and dissolves it into
-   * the next frames. Fire-and-forget; false when nothing was sent (lost, not started). A
-   * duration of 0 is sent too: it is a hard cut that also ends a fade still running.
-   */
-  startCrossfade(durationMs: number): boolean {
-    if (!this.client || this.lost || !Number.isFinite(durationMs) || durationMs < 0) return false;
-    this.client.send({ type: 'startCrossfade', durationMs });
     return true;
   }
 

@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useRef, RefObject, Dispatch, SetState
 import { RenderMode, ShaderEntry, SlotParams } from '../renderer/types';
 import { RendererManager } from '../renderer/RendererManager';
 import { useAudioAnalyzer } from './useAudioAnalyzer';
-import { AudioBandSource, AudioSlotInput, computeAudioSlotUpdates, resolveAudioTargets } from '../utils/audioParamMapping';
-import type { SlotOutput } from '../renderer/slotOutput';
+import { AudioSlotInput, computeAudioSlotUpdates, resolveAudioTargets } from '../utils/audioParamMapping';
 import { baseFor, isHeld } from '../services/audioParamHold';
 
 export interface UseAudioReactiveParamsOptions {
@@ -15,10 +14,6 @@ export interface UseAudioReactiveParamsOptions {
     setStatus: (status: string) => void;
     /** Quality-tier slot cap; falls back to the renderer's policy. */
     maxActiveSlots?: number;
-    /** Fader opacity per slot (#1512): the base the audio band gates. */
-    slotOutputs?: SlotOutput[];
-    /** Band that drives each slot's opacity while audio reactivity is on (null = fader only). */
-    opacityAudio?: Array<AudioBandSource | null>;
 }
 
 export interface UseAudioReactiveParamsReturn {
@@ -36,8 +31,6 @@ export function useAudioReactiveParams({
     getShaderDefaults,
     setStatus,
     maxActiveSlots,
-    slotOutputs,
-    opacityAudio,
 }: UseAudioReactiveParamsOptions): UseAudioReactiveParamsReturn {
     const [audioReactiveParams, setAudioReactiveParams] = useState(false);
     const [audioReactiveAmount, setAudioReactiveAmount] = useState(0.8);
@@ -96,17 +89,7 @@ export function useAudioReactiveParams({
         });
         // updateSlotParam already pushes to the renderer; one write per slot.
         for (const { slot, updates: u } of updates) updateSlotParam(slot, u);
-
-        // Layer opacity: the band gates the fader value, renderer-side only (the fader keeps its base).
-        opacityAudio?.forEach((band, slot) => {
-            if (!band) return;
-            const base = slotOutputs?.[slot]?.opacity ?? 1;
-            const level = Math.min(1, Math.max(0, bands[band]));
-            manager.setSlotOutput(slot, { opacity: base * (1 - audioReactiveAmount + audioReactiveAmount * level) });
-        });
     }, [
-        slotOutputs,
-        opacityAudio,
         audioReactiveParams,
         audioReactiveAmount,
         maxActiveSlots,
@@ -131,22 +114,6 @@ export function useAudioReactiveParams({
 
         return () => cancelAnimationFrame(rafId);
     }, [audioReactiveParams, updateAudioReactiveParams]);
-
-    // Turning audio off leaves each banded layer at its last gated opacity (on the renderer and
-    // in the manager's replay cache): put the fader value back, once, on that transition.
-    const layerRef = useRef({ slotOutputs, opacityAudio });
-    layerRef.current = { slotOutputs, opacityAudio };
-    const wasReactiveRef = useRef(false);
-    useEffect(() => {
-        const was = wasReactiveRef.current;
-        wasReactiveRef.current = audioReactiveParams;
-        if (audioReactiveParams || !was) return;
-        const manager = rendererRef.current;
-        const { slotOutputs: outputs, opacityAudio: bands } = layerRef.current;
-        bands?.forEach((band, slot) => {
-            if (band) manager?.setSlotOutput(slot, { opacity: outputs?.[slot]?.opacity ?? 1 });
-        });
-    }, [audioReactiveParams, rendererRef]);
 
     useEffect(() => {
         if (audioReactiveParams) {

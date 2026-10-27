@@ -175,7 +175,7 @@ describe('bind_group1.json contract', () => {
       'var<storage, read_write> simIndex: array<u32>',
     );
     expect(validateGroup1Declarations(wrongType).join()).toMatch(/binding\(1\)/);
-    const extra = `${SIM_WGSL}\n@group(1) @binding(4) var<storage, read> more: array<u32>;`;
+    const extra = `${SIM_WGSL}\n@group(1) @binding(3) var<storage, read> more: array<u32>;`;
     expect(validateGroup1Declarations(extra).join()).toMatch(/outside the sim-ring contract/);
     expect(validateBindGroup('bad', extra).valid).toBe(false);
   });

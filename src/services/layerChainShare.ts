@@ -6,12 +6,6 @@
  */
 
 import { SlotParams, SlotMode } from '../renderer/types';
-import {
-    DEFAULT_SLOT_OUTPUT,
-    decodeSlotOutputCompact,
-    encodeSlotOutputCompact,
-    type SlotOutput,
-} from '../renderer/slotOutput';
 
 export const SHARED_CHAIN_VERSION = 1;
 export const MAX_SHARED_SLOTS = 6;
@@ -36,15 +30,6 @@ export interface SharedChainSlot {
     params?: Partial<SlotParams>;
     enabled?: boolean;
     mode?: SlotMode;
-    /**
-     * Compositor output, compact (#1512; slotOutput.ts). Absent = replace. `b` is the blend
-     * mode (or `mask`), `o` opacity, `m` mask source (`~` = inverted), `f` feather, `k` key.
-     */
-    b?: string;
-    o?: number;
-    m?: string;
-    f?: number;
-    k?: number;
 }
 
 export interface SharedChain {
@@ -84,7 +69,6 @@ export function buildSharedChain(
     options?: {
         enabled?: boolean[];
         slotModes?: SlotMode[];
-        slotOutputs?: Array<SlotOutput | undefined>;
         defaultsLookup?: SlotParamDefaultsLookup;
     }
 ): SharedChain {
@@ -104,50 +88,21 @@ export function buildSharedChain(
         if (options?.slotModes && options.slotModes[i] && options.slotModes[i] !== 'chained') {
             slot.mode = options.slotModes[i];
         }
-        if (shaderId) Object.assign(slot, sharedSlotOutputFields(options?.slotOutputs?.[i]));
         slots.push(slot);
     }
 
     return { v: SHARED_CHAIN_VERSION, slots };
 }
 
-/** The compact `b` / `o` / `m` / `f` / `k` fields for one slot (empty for replace). */
-export function sharedSlotOutputFields(output: SlotOutput | undefined): Pick<SharedChainSlot, 'b' | 'o' | 'm' | 'f' | 'k'> {
-    const compact = encodeSlotOutputCompact(output);
-    const fields: Pick<SharedChainSlot, 'b' | 'o' | 'm' | 'f' | 'k'> = {};
-    if (compact.b !== undefined) fields.b = compact.b;
-    if (compact.o !== undefined) fields.o = Number(compact.o);
-    if (compact.m !== undefined) fields.m = compact.m;
-    if (compact.f !== undefined) fields.f = Number(compact.f);
-    if (compact.k !== undefined) fields.k = Number(compact.k);
-    return fields;
-}
-
-/** A slot's compositor output (DEFAULT_SLOT_OUTPUT when it carries none). */
-export function slotOutputFromSharedSlot(slot: SharedChainSlot): SlotOutput {
-    const asText = (v: unknown) => (v === undefined ? undefined : String(v));
-    return decodeSlotOutputCompact(
-        { b: asText(slot.b), o: asText(slot.o), m: asText(slot.m), f: asText(slot.f), k: asText(slot.k) },
-        MAX_SHARED_SLOTS,
-    ) ?? { ...DEFAULT_SLOT_OUTPUT };
-}
-
 /** Re-expands a decoded SharedChain back into App-shaped state arrays. */
 export function expandSharedChain(
     chain: SharedChain,
     defaultsLookup?: SlotParamDefaultsLookup
-): {
-    modes: Array<string | null>;
-    slotParams: SlotParams[];
-    enabled: boolean[];
-    slotModes: SlotMode[];
-    slotOutputs: SlotOutput[];
-} {
+): { modes: Array<string | null>; slotParams: SlotParams[]; enabled: boolean[]; slotModes: SlotMode[] } {
     const modes: Array<string | null> = [];
     const slotParams: SlotParams[] = [];
     const enabled: boolean[] = [];
     const slotModes: SlotMode[] = [];
-    const slotOutputs: SlotOutput[] = [];
 
     for (const slot of chain.slots.slice(0, MAX_SHARED_SLOTS)) {
         const defaults = getDefaultsFor(slot.shaderId, defaultsLookup);
@@ -155,10 +110,9 @@ export function expandSharedChain(
         slotParams.push(expandParams(slot.params, defaults));
         enabled.push(slot.enabled !== false);
         slotModes.push(slot.mode === 'parallel' ? 'parallel' : 'chained');
-        slotOutputs.push(slotOutputFromSharedSlot(slot));
     }
 
-    return { modes, slotParams, enabled, slotModes, slotOutputs };
+    return { modes, slotParams, enabled, slotModes };
 }
 
 // ─── Wire encoding (base64url of minified JSON) ───────────────────────────────
@@ -210,19 +164,6 @@ function isSharedChainSlot(value: unknown): value is SharedChainSlot {
     return true;
 }
 
-const OUTPUT_FIELD_TYPES: Record<'b' | 'o' | 'm' | 'f' | 'k', 'string' | 'number'> = {
-    b: 'string', o: 'number', m: 'string', f: 'number', k: 'number',
-};
-
-/** Drop compositor fields of the wrong type (a bad opacity loses the opacity, not the slot). */
-function sanitizeOutputFields(slot: SharedChainSlot): SharedChainSlot {
-    const out = { ...slot } as Record<string, unknown>;
-    for (const [key, type] of Object.entries(OUTPUT_FIELD_TYPES)) {
-        if (out[key] !== undefined && typeof out[key] !== type) delete out[key];
-    }
-    return out as unknown as SharedChainSlot;
-}
-
 /** Migrates an older-version payload to the current schema. Returns null if unrecognized. */
 function migrate(raw: any): SharedChain | null {
     if (!raw || typeof raw !== 'object' || typeof raw.v !== 'number' || !Array.isArray(raw.slots)) {
@@ -235,7 +176,7 @@ function migrate(raw: any): SharedChain | null {
         return null;
     }
 
-    const slots = (raw.slots.filter(isSharedChainSlot) as SharedChainSlot[]).map(sanitizeOutputFields);
+    const slots = raw.slots.filter(isSharedChainSlot) as SharedChainSlot[];
     if (slots.length !== raw.slots.length) {
         console.warn('[layerChainShare] dropped malformed slot entries during decode');
     }

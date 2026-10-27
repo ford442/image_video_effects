@@ -311,11 +311,11 @@
     "graphRole": {
       "title": "ShaderDefinitionGraphRole",
       "type": "string",
-      "enum": ["read", "color", "dataA", "dataB", "dataC", "simState", "simIndex", "simHash"]
+      "enum": ["read", "color", "dataA", "dataB", "dataC", "simState", "simIndex"]
     },
     "simRing": {
       "title": "ShaderDefinitionSimRing",
-      "description": "Opt-in @group(1) sim-ring request (see bind_group1.json). stateCount sizes the ring; spatialHash additionally asks for the optional simHash binding (bind_group1.json spatialHash) and requires a graph node that reads the simHash role.",
+      "description": "Opt-in @group(1) sim-ring request (see bind_group1.json). Only stateCount is consumed.",
       "type": "object",
       "additionalProperties": false,
       "required": ["stateCount"],
@@ -323,10 +323,6 @@
         "stateCount": {
           "type": "integer",
           "minimum": 1
-        },
-        "spatialHash": {
-          "description": "Allocate the 128×128 spatial hash (binding 3 simHash) and have the frame planner rebuild it before the first node that reads the simHash role. Default off.",
-          "type": "boolean"
         },
         "agent": {
           "type": "string"

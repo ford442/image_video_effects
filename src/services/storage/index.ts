@@ -44,7 +44,7 @@ export {
   fetchJson,
   fetchText,
   unwrapListResponse,
-  requestWebhookSignature,
+  generateHmacSignature,
 } from './http';
 
 export { OperationTracker } from './operations';

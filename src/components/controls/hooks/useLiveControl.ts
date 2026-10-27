@@ -25,8 +25,6 @@ export interface UseLiveControlOptions {
     setAutoTransitionEnabled: Dispatch<SetStateAction<boolean>>;
     onSetSlotParam?: (slot: number, param: string, value: number) => void;
     onRandomizeSlot?: (slot: number) => void;
-    /** Compositor opacity of a slot, 0..1 (#1512). */
-    onSetSlotOpacity?: (slot: number, value: number) => void;
     onRandomizeAllSlots?: () => void;
     onTriggerNextTransition?: () => Promise<void> | void;
     onStartAutoTransition?: (config: AutoTransitionConfig) => Promise<boolean> | boolean;
@@ -73,7 +71,6 @@ export function useLiveControl({
     setAutoTransitionEnabled,
     onSetSlotParam,
     onRandomizeSlot,
-    onSetSlotOpacity,
     onRandomizeAllSlots,
     onTriggerNextTransition,
     onStartAutoTransition,
@@ -104,7 +101,6 @@ export function useLiveControl({
     const liveHandleRef = useRef<LiveActionsHandle>({
         setSlotParam: () => {},
         randomizeSlot: () => {},
-        setSlotOpacity: () => {},
         randomizeAll: () => {},
         triggerTransition: () => {},
         toggleAutoTransition: () => {},
@@ -163,7 +159,6 @@ export function useLiveControl({
         liveHandleRef.current = {
             setSlotParam: (slot, param, value) => onSetSlotParam?.(slot, param, value),
             randomizeSlot: (slot) => onRandomizeSlot?.(slot),
-            setSlotOpacity: (slot, value) => onSetSlotOpacity?.(slot, value),
             randomizeAll: () => onRandomizeAllSlots?.(),
             triggerTransition: () => { void onTriggerNextTransition?.(); },
             toggleAutoTransition: () => {
@@ -178,7 +173,6 @@ export function useLiveControl({
     }, [
         onSetSlotParam,
         onRandomizeSlot,
-        onSetSlotOpacity,
         onRandomizeAllSlots,
         onTriggerNextTransition,
         onStopAutoTransition,

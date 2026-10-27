@@ -10,40 +10,31 @@ import {
 } from './midiControl';
 import { ControlEvent } from './controlBindings';
 
-type FakeInput = MIDIInputLike & { listeners: Set<(e: MIDIMessageEventLike) => void> };
-type FakeAccess = MIDIAccessLike & {
-  stateListeners: Set<(e: { port: MIDIInputLike }) => void>;
-};
-
-function makeFakeInput(id: string, name = 'Fake Input'): FakeInput {
-  const listeners = new Set<(e: MIDIMessageEventLike) => void>();
+function makeFakeInput(id: string, name = 'Fake Input'): MIDIInputLike {
   return {
     id,
     name,
     manufacturer: 'Test',
-    listeners,
-    addEventListener: (_type: 'midimessage', l: (e: MIDIMessageEventLike) => void) => { listeners.add(l); },
-    removeEventListener: (_type: 'midimessage', l: (e: MIDIMessageEventLike) => void) => { listeners.delete(l); },
+    onmidimessage: null,
     open: vi.fn().mockResolvedValue({} as MIDIInputLike),
     close: vi.fn().mockResolvedValue({} as MIDIInputLike),
   };
 }
 
-function makeFakeAccess(inputs: MIDIInputLike[]): FakeAccess {
+function makeFakeAccess(inputs: MIDIInputLike[]): MIDIAccessLike {
   const map = new Map<string, MIDIInputLike>();
   inputs.forEach((input) => map.set(input.id, input));
-  const stateListeners = new Set<(e: { port: MIDIInputLike }) => void>();
   return {
     inputs: map,
-    stateListeners,
-    addEventListener: (_type: 'statechange', l: (e: { port: MIDIInputLike }) => void) => { stateListeners.add(l); },
-    removeEventListener: (_type: 'statechange', l: (e: { port: MIDIInputLike }) => void) => { stateListeners.delete(l); },
+    onstatechange: null,
   };
 }
 
-function sendMessage(input: FakeInput, data: number[]): void {
+function sendMessage(input: MIDIInputLike, data: number[]): void {
   const event: MIDIMessageEventLike = { data };
-  input.listeners.forEach((l) => l(event));
+  if (input.onmidimessage) {
+    input.onmidimessage(event);
+  }
 }
 
 describe('translateMIDIMessage', () => {
@@ -156,64 +147,6 @@ describe('MidiControlAdapter', () => {
     sendMessage(input, [0xb0, 1, 127]);
     expect(events).toHaveLength(0);
     expect(adapter.getDevices()).toEqual([]);
-  });
-
-  test('two adapters on the same input both receive events (no last-subscriber-wins)', () => {
-    const input = makeFakeInput('input-1');
-    const access = makeFakeAccess([input]);
-    const a = new MidiControlAdapter(access);
-    const b = new MidiControlAdapter(access);
-    const gotA: ControlEvent[] = [];
-    const gotB: ControlEvent[] = [];
-    a.subscribe((e) => gotA.push(e));
-    b.subscribe((e) => gotB.push(e));
-
-    sendMessage(input, [0xb0, 1, 127]);
-    expect(gotA).toHaveLength(1);
-    expect(gotB).toHaveLength(1);
-
-    // Disabling one adapter must not silence the other.
-    a.disable();
-    sendMessage(input, [0xb0, 1, 0]);
-    expect(gotA).toHaveLength(1);
-    expect(gotB).toHaveLength(2);
-    expect(input.listeners.size).toBe(1);
-    expect(access.stateListeners.size).toBe(1);
-  });
-
-  test('hooks inputs that connect later via statechange, once', () => {
-    const access = makeFakeAccess([]);
-    const adapter = new MidiControlAdapter(access);
-    const got: ControlEvent[] = [];
-    adapter.subscribe((e) => got.push(e));
-    const late = makeFakeInput('late');
-    access.stateListeners.forEach((l) => l({ port: late }));
-    access.stateListeners.forEach((l) => l({ port: late }));
-    expect(late.listeners.size).toBe(1);
-    expect(late.open).toHaveBeenCalled();
-    sendMessage(late, [0x90, 60, 127]);
-    expect(got).toHaveLength(1);
-  });
-
-  test('disable() before requestAccess resolves hooks nothing (effect cleanup race)', async () => {
-    const input = makeFakeInput('input-1');
-    const access = makeFakeAccess([input]);
-    let resolveAccess: (a: MIDIAccessLike) => void = () => {};
-    const nav = navigator as unknown as { requestMIDIAccess?: () => Promise<MIDIAccessLike> };
-    const prev = nav.requestMIDIAccess;
-    nav.requestMIDIAccess = () => new Promise<MIDIAccessLike>((r) => { resolveAccess = r; });
-    try {
-      const adapter = new MidiControlAdapter();
-      const pending = adapter.requestAccess();
-      adapter.disable();
-      resolveAccess(access);
-      await expect(pending).resolves.toBe(false);
-      expect(input.listeners.size).toBe(0);
-      expect(access.stateListeners.size).toBe(0);
-      expect(adapter.getDevices()).toEqual([]);
-    } finally {
-      nav.requestMIDIAccess = prev;
-    }
   });
 
   test('requestAccess returns false when navigator.requestMIDIAccess is missing', async () => {
