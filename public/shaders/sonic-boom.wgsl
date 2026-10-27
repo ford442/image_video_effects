@@ -5,29 +5,13 @@
 //            shock-diamonds, condensation-fog, aces-tone-map,
 //            sprung-shock-center, click-mach-bursts, per-ring-fft
 //  Complexity: High
-//  Upgraded: 2026-08-02 (Batch 29)
+//  Upgraded: 2026-10-27
+//  Ideas: N-wave pressure signature; Mach crescent in the wake
+//  A packing: ACES display RGBA; C.r is the previous display red (ring tail)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=RingRadius, y=RingWidth, z=Distortion, w=ChromSplit
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=RingRadius, y=RingWidth, z=Distortion, w=ChromSplit
 
 // Slider contract (shader_definitions/distortion/sonic-boom.json — ids/defaults locked):
 //   P1 x = Ring Radius  (0..1,      default 0.2)  -> mach-cone radius
@@ -65,10 +49,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids   = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Per-ring FFT voices: each PHI ring rides its own spectral bin (±20% amp).
-  let voice0 = plasmaBuffer[2].x;
-  let voice1 = plasmaBuffer[4].x;
-  let voice2 = plasmaBuffer[6].x;
+  // Each PHI ring takes one band of plasmaBuffer[0]. Bins above [0] are not voices.
+  let voice0 = clamp(bass, 0.0, 1.0);
+  let voice1 = clamp(mids, 0.0, 1.0);
+  let voice2 = clamp(treble, 0.0, 1.0);
 
   let radius   = u.zoom_params.x;
   let width    = u.zoom_params.y;
@@ -118,10 +102,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let d0 = (dist - radius) * invWH;
   let d1 = (dist - radius / PHI) * invWH;
   let d2 = (dist - radius / (PHI * PHI)) * invWH;
-  let ring0 = exp(-d0 * d0 * 4.0) * (0.8 + 0.4 * voice0);
+  // ── Idea 1: N-wave pressure signature ────────────────────────────
+  // Outside the primary radius the front is steep. Inside it, the
+  // rarefaction is wider. Inner PHI echoes stay symmetric gaussians.
+  let d0n = select(d0 * 0.62, d0 * 1.65, d0 >= 0.0);
+  let ring0 = exp(-d0n * d0n * 4.0) * (0.8 + 0.4 * voice0);
   let ring1 = exp(-d1 * d1 * 6.0) * 0.55 * (0.8 + 0.4 * voice1);
   let ring2 = exp(-d2 * d2 * 8.0) * 0.30 * (0.8 + 0.4 * voice2);
-  var ringSum = ring0 + ring1 + ring2;
+  // ── Idea 2: Mach crescent ────────────────────────────────────────
+  // A moving shock is loud in the wake and quiet ahead. A still cursor
+  // (spring velocity near zero) keeps the round PHI stack.
+  let flight = sVel * aspect;
+  let flightSp = length(flight);
+  let flightDir = flight / max(flightSp, 1e-4);
+  let wake = clamp(dot(dir, -flightDir) * 0.5 + 0.5, 0.0, 1.0);
+  let wakeGain = mix(0.28, 1.0, wake);
+  let moving = smoothstep(0.004, 0.03, flightSp);
+  var ringSum = (ring0 + ring1 + ring2) * mix(1.0, wakeGain, moving);
 
   // Click mach bursts: each live ripple fires a secondary expanding shock
   // ring from its click point (radius grows at mach speed ~0.5/s, strength
@@ -154,15 +151,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let condensation = exp(-coneDist * coneDist * 2.0) * atmDensity * (0.3 + bass * 0.4) * select(0.0, 1.0, machNum > 0.95);
   let fogScatter = condensation * 0.5 * (1.0 + mids * 0.5);
 
-  let prevTail = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
+  let prevTail = textureLoad(dataTextureC, coord, 0).r;
   let ringFinal = max(ringSum, prevTail * 0.82);
 
   // The strongest click burst pushes radially from its own launch point;
   // the main PHI stack and temporal tail retain the sprung shock direction.
+  // On the primary ring the N-wave pulls on the inner shoulder.
   let mainWeight = max(ringFinal - burstSum, 0.0);
   let flow = dir * mainWeight + burstDir * burstSum;
   let flowDir = flow / max(length(flow), 1e-4);
-  let distortion = flowDir * ringFinal * strength * 0.12 * (1.0 + mids * 0.3);
+  let nSign = mix(1.0, select(-0.45, 1.0, d0 >= 0.0), clamp(ring0 * 1.4, 0.0, 1.0));
+  let distortion = flowDir * ringFinal * strength * 0.12 * (1.0 + mids * 0.3) * nSign;
   let velocity = ringFinal * strength * (1.0 + bass * 0.5);
   let caStrength = split * (1.0 + velocity * 3.0);
   let doppler = (ring0 - ring2) * split * 10.0;

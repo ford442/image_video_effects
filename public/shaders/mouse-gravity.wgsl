@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, chromatic-aberration, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: frame-dragging swirl with drag-velocity smear; Doppler-beamed photon ring from the lensed sky; tidal spaghettification near the hole
+//  Upgraded: 2026-10-27
+//  Ideas: Einstein ring on the critical curve; Shapiro delay from the previous frame
 //  A packing: display RGBA; texel (0,0) = (prevMouse.xy, prevTime, valid); texel (1,0) = (smoothed pointer velocity.xy in aspect-uv/s, 0, valid)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -127,6 +127,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let core = smoothstep(radius * 0.2, radius * 0.5, dist);
     color = mix(vec3<f32>(0.0), color, mix(1.0, core, darkness));
 
+    // ── Idea 1: Einstein ring ───────────────────────────────────────
+    // The lens factor is 1 - strength * exp(-d/r). Where that crosses
+    // zero the image inverts, and the lensed photo piles into a caustic.
+    // The ring is drawn only once that curve has cleared the dark core.
+    let invS = 1.0 / max(strength, 1.001);
+    let critRaw = -radius * log(max(invS, 1e-4));
+    let hasCrit = select(0.0, 1.0, strength > 1.02);
+    let einstein = smoothstep(0.012, 0.0, abs(dist - critRaw)) * hasCrit * smoothstep(radius * 0.18, radius * 0.42, critRaw);
+    color = color + gS.rgb * einstein * (0.65 + treble * 0.25);
+
     // Idea 2: Doppler-beamed photon ring — the ring is the lensed sky wrapped
     // around the horizon, rotating with the hole's spin; the approaching side
     // (left) is beamed brighter and bluer, the receding side dim and red.
@@ -144,9 +154,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let display = aces(max(color, vec3<f32>(0.0)));
 
+    // ── Idea 2: Shapiro delay ───────────────────────────────────────
+    // Light near the mass arrives late: mix the previous display inside
+    // the well. The two state texels are not colour.
+    let prevFrame = textureLoad(dataTextureC, coord, 0);
+    let statePx = select(0.0, 1.0, (coord.x <= 1) && (coord.y == 0));
+    let delayMix = well * clamp(strength * 0.18, 0.0, 0.32) * (1.0 - statePx);
+    let delayed = mix(display, max(prevFrame.rgb, vec3<f32>(0.0)), delayMix);
+
     // Lensing-mask alpha: brighter near the warped core, luma-keyed elsewhere
-    let alpha = clamp(dot(display, vec3<f32>(0.299, 0.587, 0.114)) * gS.a + (1.0 - core) * darkness * 0.5 + ringGlow * 0.3, 0.0, 1.0);
-    let finalOut = vec4<f32>(display, alpha);
+    let alpha = clamp(dot(delayed, vec3<f32>(0.299, 0.587, 0.114)) * gS.a + (1.0 - core) * darkness * 0.5 + ringGlow * 0.3, 0.0, 1.0);
+    let finalOut = vec4<f32>(delayed, alpha);
     textureStore(writeTexture, coord, finalOut);
 
     // A: display RGBA, except the two state texels the next frame reads back.

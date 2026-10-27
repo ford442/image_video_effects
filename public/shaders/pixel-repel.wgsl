@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, curl-noise, spectral-ca, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: true spectral taps across the 7-tap spread; pile-up rim from disp divergence; drag wake from real pointer velocity
+//  Upgraded: 2026-10-27
+//  Ideas: pixel snap of the spectral taps; rarefaction shadow where pixels spread
 //  A packing: texel (0,0) = (prevMouse.xy, prevTime, valid); texel (1,0) = (smoothed pointer velocity uv/s .xy, 0, 0); other texels = ACES display RGBA (unread)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -141,7 +141,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i: i32 = 0; i < 7; i = i + 1) {
     let s = f32(i) / 6.0;
     let fi = s * 2.0 - 1.0;
-    let tapUV = clamp(uv - disp * (1.0 + fi * spread), vec2<f32>(0.0), vec2<f32>(1.0));
+    let cont = clamp(uv - disp * (1.0 + fi * spread), vec2<f32>(0.0), vec2<f32>(1.0));
+    // ── Idea 1: pixel snap ──────────────────────────────────────────
+    // Cell size grows with Strength. Smoothing blends back to the
+    // continuous warp and still sets the wake length above.
+    let cellPx = mix(1.0, 5.0, strength);
+    let snapped = (floor(cont * resF / cellPx) + 0.5) * cellPx / resF;
+    let tapUV = clamp(mix(snapped, cont, smoothing), vec2<f32>(0.0), vec2<f32>(1.0));
     let samp = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0);
     let dr = (s - 0.1) / 0.3; let dg = (s - 0.5) / 0.3; let db = (s - 0.9) / 0.3;
     let wv = vec3<f32>(exp(-dr * dr), exp(-dg * dg), exp(-db * db));
@@ -152,9 +158,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let displaced = acc / max(wsum, vec3<f32>(1e-4));
   srcA = srcA / max(wsum.g, 1e-4);
 
-  let lum = dot(displaced, vec3<f32>(0.299, 0.587, 0.114));
+  // ── Idea 2: rarefaction shadow ──────────────────────────────────
+  // Positive divergence is pixels leaving. The crest above still
+  // brightens the pile (negative divergence).
+  let rare = smoothstep(0.4, 3.0, divg);
+  let shadowed = displaced * (1.0 - rare * 0.4);
+  let lum = dot(shadowed, vec3<f32>(0.299, 0.587, 0.114));
   let crest = vec3<f32>(1.0, 0.96, 0.88) * pile * (0.35 + lum * 0.4) * (1.0 + treble * 1.5);
-  let boosted = displaced + crest + vec3<f32>(lum * 0.08 * mids);
+  let boosted = shadowed + crest + vec3<f32>(lum * 0.08 * mids);
   let tone = aces_tonemap(max(boosted * (1.0 + bass * 0.3), vec3<f32>(0.0)));
   // Coverage of the displaced sheet: opaque photo, slightly denser where pushed/piled.
   let alpha = clamp(srcA * mix(0.9, 1.0, max(effStr, pile)), 0.0, 1.0);
