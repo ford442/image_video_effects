@@ -9,7 +9,7 @@ import { isWasmBlockedAfterOom } from '../config/vramBudget';
 import { Renderer, RendererConfig } from './Renderer';
 import { JSRenderer } from './JSRenderer';
 import type { WASMRenderer } from './WASMRenderer';
-import { WebGPURenderer } from './WebGPURenderer';
+import type { WebGPURenderer } from './WebGPURenderer';
 import type { WebGpuProbeHandoff } from './webgpuBootProbe';
 import { isWebGpuBackend } from './webgpuBackendApi';
 import { isCanvasTransferred, WorkerWebGPUBackend } from './worker/WorkerWebGPUBackend';
@@ -109,6 +109,15 @@ export async function releaseRendererGpu(renderer: Renderer): Promise<void> {
 }
 
 /**
+ * The main-thread TS WebGPU renderer (`?renderer=main`, or the fallback when the render
+ * worker is unavailable). The worker path is the default, so this is a lazy chunk.
+ */
+async function createPageWebGpuRenderer(config: RendererConfig): Promise<WebGPURenderer> {
+  const { WebGPURenderer } = await import(/* webpackChunkName: "main-renderer" */ './WebGPURenderer');
+  return new WebGPURenderer(config);
+}
+
+/**
  * Factory for the three renderer backends — keeps RendererManager free of `new` branches.
  * The WASM renderer is R&D-frozen (`?renderer=wasm` only), so it is a separate chunk loaded here
  * on demand instead of shipping in the main bundle.
@@ -119,7 +128,7 @@ export async function createRendererForType(
   renderThread: RenderThread = resolveRenderThread(),
 ): Promise<Renderer> {
   if (type === 'webgpu') {
-    return renderThread === 'worker' ? new WorkerWebGPUBackend(config) : new WebGPURenderer(config);
+    return renderThread === 'worker' ? new WorkerWebGPUBackend(config) : createPageWebGpuRenderer(config);
   }
   if (type === 'wasm') {
     const { WASMRenderer: WasmRendererClass } = await import(/* webpackChunkName: "wasm-renderer" */ './WASMRenderer');
@@ -202,9 +211,13 @@ export async function performBackendSwitch(input: BackendSwitchInput): Promise<B
     if (!success && renderer.renderThread === 'worker' && !isCanvasTransferred(canvas)) {
       // The worker never took the canvas (no worker WebGPU, spawn failure): render on the page.
       console.warn('[RendererManager] Render worker unavailable — rendering on the page');
-      const pageRenderer = new WebGPURenderer(config);
-      success = await pageRenderer.init(canvas, input.webGpuHandoff);
-      renderer = pageRenderer;
+      try {
+        const pageRenderer = await createPageWebGpuRenderer(config);
+        success = await pageRenderer.init(canvas, input.webGpuHandoff);
+        renderer = pageRenderer;
+      } catch (err) {
+        console.warn('[RendererManager] could not load the main-thread renderer:', err);
+      }
     }
   } else {
     success = await renderer.init(canvas);

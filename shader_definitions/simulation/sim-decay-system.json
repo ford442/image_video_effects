@@ -2,7 +2,7 @@
   "id": "sim-decay-system",
   "name": "Decay System",
   "url": "shaders/sim-decay-system.wgsl",
-  "description": "Multi-layer decay and corrosion simulation. Image corrodes from edges inward with different materials.",
+  "description": "Multi-layer decay and corrosion simulation. Image corrodes from edges inward with different materials. Decay creeps along edges, and rare pits nucleate off the edge.",
   "features": [
     "simulation",
     "cellular-automata",

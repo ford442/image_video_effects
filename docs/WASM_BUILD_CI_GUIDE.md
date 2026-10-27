@@ -4,18 +4,21 @@
 
 ### Full production build (`npm run build`)
 
-CRA copies `public/` into the output **during** `craco build`, so WASM artifacts must exist **before** that step. The `prebuild` hook runs this sequence **once**:
+Vite copies `public/` into `build/`, so WASM artifacts must exist **before** that step. WASM is frozen R&D (#1080, #1329), so the
+`prebuild` hook (`wasm_renderer/prebuild.sh`) does **not** need emcc by default:
 
 ```
-wasm:build → generate_shader_lists → build:manifest → craco build
+prebuild.sh (sync JS bridge; use committed public/wasm/*) → gen → vite build
 ```
 
-`npm run build` invokes `craco build` only — it does **not** call `wasm:build` again. A second compile would be redundant: artifacts are already in `public/wasm/` and are copied into `build/wasm/` by CRA.
+Set `BUILD_WASM=1` to recompile instead (`prebuild.sh` then runs `wasm_renderer/build.sh` once):
 
 ```bash
-npm run build                    # full path (requires emsdk, or see SKIP below)
-SKIP_WASM_BUILD=1 npm run build  # headless VMs: skip emcc, use committed public/wasm/
+npm run build               # no emcc needed: committed public/wasm/* artifacts
+BUILD_WASM=1 npm run build  # recompile WASM first (requires emsdk)
 ```
+
+`SKIP_WASM_BUILD=1` is still honoured by `npm run wasm:build` for CI jobs that only want the bridge sync.
 
 ### WASM-only compile (`npm run wasm:build`)
 
@@ -65,7 +68,7 @@ There is no CMake build. A release `npm run wasm:build` writes both `public/wasm
 - **Local gate:** `build.sh` runs `scripts/emcc-version-gate.sh`; a mismatched emcc fails the build. Emscripten 6.x glue does not embed its version, so `wasm:validate` can only check the pin exists (and would fail if a future glue embeds a mismatched version).
 - **Finding emsdk:** an `emcc` already on `PATH` (CI's `setup-emsdk`, or a shell that sourced `emsdk_env.sh`) is used as is. Otherwise `wasm_renderer/emsdk_env_locate.sh` sources the first of `$EMSDK_ENV`, `$EMSDK/emsdk_env.sh`, `<repo>/emsdk`, `~/emsdk`, `/usr/local/emsdk`. With several emsdks installed, point `EMSDK_ENV` at the one you want; the gate refuses any version but the pin.
 - **Cache:** `EM_CACHE` defaults to `/tmp/emscripten_cache`; set it to keep per-emsdk caches apart.
-- **Cloud VMs / Jules:** `SKIP_WASM_BUILD=1`. Do not compile with 3.1.x.
+- **Cloud VMs / Jules:** plain `npm run build` (no `BUILD_WASM`). Do not compile with 3.1.x.
 - **Bumping:** edit the JSON + `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR, note size deltas in `wasm_renderer/BUILD_FLAG_EXPERIMENTS.md`.
 
 ## Build profiles (2026-10)
@@ -90,19 +93,15 @@ check compares `public/wasm/pixelocity_wasm.wasm` with a fresh **release** build
 `npm run wasm:validate`, WASM Jest smoke tests, and uploads artifacts.
 
 **CI — `test-wasm-e2e` job (`wasm.yml`):** downloads the `wasm` job's artifacts, sets
-`SKIP_WASM_BUILD=1`, then runs `npm run build`. `prebuild` sees the skip and does not
-recompile; the downloaded `public/wasm/` is copied into `build/` by CRA.
+then runs `npm run build`. `prebuild` does not recompile without `BUILD_WASM=1`; the
+downloaded `public/wasm/` is copied into `build/` by Vite.
 
-**CI — `test` job (`ci.yml`, every PR):** builds with `SKIP_WASM_BUILD=1` against the
+**CI — `test` job (`ci.yml`, every PR):** builds against the
 **committed** `public/wasm/` artifacts and runs `npm run wasm:validate` on them. It does not
 compile WASM.
 
-**Local:** `wasm_renderer/build.sh` **fails (exit 1) when `emcc` is missing**. Install emsdk
-or use committed artifacts with an explicit skip:
-
-```bash
-SKIP_WASM_BUILD=1 npm run build   # headless VMs without emsdk
-```
+**Local:** `npm run build` needs no emcc. `npm run wasm:build` / `BUILD_WASM=1 npm run build`
+(`wasm_renderer/build.sh`) **fail (exit 1) when `emcc` is missing**. Install emsdk to rebuild.
 
 ### When `wasm:validate` runs
 
@@ -239,7 +238,7 @@ Tracking table:
 - **Build command**: `npm run wasm:build` (requires emsdk; fails without it)
 - **Validation**: `npm run wasm:validate`
 - **CI** (`wasm.yml`, WASM-path PRs + weekly): `wasm` job builds + validates + Jest smoke; `test-wasm-e2e` runs Playwright smoke
-- **Skip (explicit)**: `SKIP_WASM_BUILD=1` for machines without emsdk using committed artifacts
+- **App build**: `npm run build` uses committed artifacts; `BUILD_WASM=1` opts into a rebuild
 - **Artifact layout**: [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md)
 - **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)
 

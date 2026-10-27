@@ -2,7 +2,7 @@
   "id": "liquid-touch",
   "name": "Liquid Touch",
   "url": "shaders/liquid-touch.wgsl",
-  "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam.",
+  "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam. Warm patches dome, and a steep contact line sticks.",
   "features": [
     "mouse-driven",
     "held-drag",
@@ -15,7 +15,8 @@
     "marangoni-flow",
     "microfoam",
     "semantic-alpha",
-    "aces"
+    "aces",
+    "upgraded-rgba"
   ],
   "params": [
     {

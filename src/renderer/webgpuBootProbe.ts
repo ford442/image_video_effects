@@ -249,7 +249,9 @@ export type CanvasColorOptIns = Pick<CanvasConfigureOptIns, 'displayP3' | 'exten
 export type CanvasColorFallbackReason =
   | 'unsupported-p3'
   | 'unsupported-extended-tone-mapping'
-  | 'not-hdr-display';
+  | 'not-hdr-display'
+  /** Extended tone mapping only does anything on an rgba16float canvas (#1512). */
+  | 'sdr-canvas-format';
 
 export interface CanvasColorNegotiation {
   requested: CanvasColorOptIns;
@@ -282,6 +284,8 @@ export function describeCanvasColorFallback(reason: CanvasColorFallbackReason): 
       return 'extended tone mapping was rejected';
     case 'not-hdr-display':
       return 'not an HDR display, extended tone mapping skipped';
+    case 'sdr-canvas-format':
+      return 'extended tone mapping needs an rgba16float canvas';
   }
 }
 
@@ -311,7 +315,11 @@ export async function negotiateCanvasColor(
     return result(none);
   }
 
-  const ladder = requested.extendedToneMapping
+  // An 8-bit swapchain (getPreferredCanvasFormat) clamps to [0,1], so 'extended'
+  // would be accepted by configure() yet change nothing — never report it there.
+  const formatCanExtend = format === 'rgba16float';
+  const tryExtended = !!requested.extendedToneMapping && formatCanExtend;
+  const ladder = tryExtended
     ? [{ displayP3: true, extendedToneMapping: true }, { displayP3: true, extendedToneMapping: false }]
     : [{ displayP3: true, extendedToneMapping: false }];
 
@@ -327,9 +335,11 @@ export async function negotiateCanvasColor(
     console.log(
       `[WebGPU Probe] canvas colorSpace=display-p3 toneMapping=${optIns.extendedToneMapping ? 'extended' : 'standard'}`,
     );
-    const reason = requested.extendedToneMapping && !optIns.extendedToneMapping
-      ? 'unsupported-extended-tone-mapping'
-      : !requested.extendedToneMapping ? 'not-hdr-display' : undefined;
+    const reason: CanvasColorFallbackReason | undefined = !requested.extendedToneMapping
+      ? 'not-hdr-display'
+      : !formatCanExtend
+        ? 'sdr-canvas-format'
+        : !optIns.extendedToneMapping ? 'unsupported-extended-tone-mapping' : undefined;
     return result(optIns, reason);
   }
 
@@ -585,6 +595,27 @@ export async function runWebGpuBootProbe(
       continue;
     }
 
+    // Inside a try: a rejection here must not leak the device (it is not handed off).
+    let formatCapabilities: DeviceFormatCapabilities;
+    try {
+      formatCapabilities = await probeFormatCapabilities(adapter, {
+        isMobile: isMobileDevice(),
+        device,
+      });
+    } catch (e) {
+      record.error = e instanceof Error ? e.message : String(e);
+      record.failedStage = 'probePipeline';
+      try {
+        context.unconfigure();
+      } catch {
+        /* ignore */
+      }
+      device.destroy();
+      logAttempt(attempt, record);
+      attempts.push(record);
+      continue;
+    }
+
     logAttempt(attempt, record);
     attempts.push(record);
 
@@ -593,10 +624,6 @@ export async function runWebGpuBootProbe(
     const supportsDeepWorkgroup = meetsDeepWorkgroupLimits(device.limits);
     const adapterIdentity = readAdapterIdentity(adapter);
     const adapterGpuType = inferAdapterGpuType(adapterIdentity);
-    const formatCapabilities = await probeFormatCapabilities(adapter, {
-      isMobile: isMobileDevice(),
-      device,
-    });
 
     // Identity first: allowsFullWorkingSize matches the Pascal blocklist against this string.
     let adapterSummary =

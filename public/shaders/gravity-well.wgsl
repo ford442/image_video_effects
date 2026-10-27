@@ -4,31 +4,16 @@
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, photon-sphere, relativistic-doppler
 //  Complexity: Very High
 //  Scientific: Schwarzschild-like radial lensing with photon-sphere rings, gravitational redshift, and Doppler-bright accretion flow.
-//  Upgraded: 2026-05-23, 2026-09-21
-//  Ideas: lensed far-side disk halo over the shadow; Keplerian shear streaks (Ω ∝ r^-1.5)
-//  A packing: lensing fields (deflection/3, rings, diskMask, shadow); C unread
+//  Upgraded: 2026-10-26 (prev 2026-09-21)
+//  Ideas: lensed far-side disk halo over the shadow; Keplerian shear streaks (Ω ∝ r^-1.5); ISCO lip; chromatic deflection
+//  A packing: lensing fields (deflection/3, rings, diskMask, shadow); C unread; ACES on display only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(1e-4)), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn sampleColor(uv: vec2<f32>) -> vec4<f32> {
   return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
@@ -102,8 +87,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let deflection = clamp(4.0 * rs / impact + higherOrder * 6.0 * rs * rs / (impact * impact), 0.0, 3.0);
   let sourceRadius = r + deflection * rs * 0.55;
   let sampleUV = center + vec2<f32>(radialDir.x * sourceRadius / aspect, radialDir.y * sourceRadius);
+  // ── Idea 2: chromatic deflection — lensing order splits red and blue off the green ray
+  let split = 0.05 * higherOrder;
+  let radiusR = r + deflection * (1.0 + split) * rs * 0.55;
+  let radiusB = r + deflection * (1.0 - split) * rs * 0.55;
+  let sampleUVR = center + vec2<f32>(radialDir.x * radiusR / aspect, radialDir.y * radiusR);
+  let sampleUVB = center + vec2<f32>(radialDir.x * radiusB / aspect, radialDir.y * radiusB);
 
   let background = sampleColor(sampleUV);
+  let backgroundRGB = vec3<f32>(sampleColor(sampleUVR).r, background.g, sampleColor(sampleUVB).b);
   let backgroundDepth = sampleDepth(sampleUV);
 
   let gravRedshift = 1.0 / sqrt(max(1.0 - rs / max(r, rs * 1.02), 0.05)) - 1.0;
@@ -143,8 +135,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let diskAngle = atan2(diskPlane.y, diskPlane.x);
   let omega = 2.2 * pow(rs * 1.6 / max(diskRadius, rs * 1.6), 1.5);
   let streaks = keplerStreaks(diskAngle, radialNorm, omega, u.config.x);
-  let diskEmission = blackbodyRGB(observedTemp) * diskMask * pow(doppler, 3.0) * gravFactor * flare * 1.4
+  let diskBody = blackbodyRGB(observedTemp) * diskMask * pow(doppler, 3.0) * gravFactor * flare * 1.4
     * mix(1.0, 0.35 + streaks * 1.1, 0.5);
+  // ── Idea 1: ISCO lip — the plunge inside 3 rs dims; a bright ring sits on the orbit
+  let isco = rs * 3.0;
+  let plunge = 1.0 - smoothstep(isco - rs * 0.35, isco, diskRadius);
+  let iscoD = (diskRadius - isco) / max(rs * 0.16, 0.001);
+  let iscoLip = exp(-iscoD * iscoD);
+  let diskEmission = diskBody * mix(1.0, 0.42, plunge)
+    + blackbodyRGB(mix(observedTemp, 9000.0, 0.5)) * iscoLip * flare * (0.55 + bass * 0.25) * (1.0 - shadow);
 
   // Idea 1 — lensed far side. Light from the disk behind the hole is bent up and over
   // (and under) the shadow, so the back of the disk shows as a thin arc hugging the
@@ -166,11 +165,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let ringColor = blackbodyRGB(10500.0) * (einsteinRing * 1.8 + photonRing * 1.2 * (1.0 + bass * 0.4));
   let secondaryColor = blackbodyRGB(6500.0) * secondaryImage * 0.45;
 
-  let finalColor = background.rgb * redTint * (1.0 - shadow) + ringColor + secondaryColor + diskEmission + haloEmission;
+  let finalColor = backgroundRGB * redTint * (1.0 - shadow) + ringColor + secondaryColor + diskEmission + haloEmission;
   let finalAlpha = clamp(max(background.a, diskMask * 0.55 + einsteinRing * 0.35 + haloBand * haloArc * 0.3 + shadow), 0.0, 1.0);
   let outDepth = clamp(backgroundDepth * (1.0 - shadow) + shadow, 0.0, 1.0);
 
-  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(acesFilm(max(finalColor, vec3<f32>(0.0))), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(deflection / 3.0, einsteinRing + photonRing, diskMask, shadow));
   textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }

@@ -305,7 +305,7 @@
     "id": "blueprint-reveal",
     "name": "Blueprint Reveal",
     "url": "shaders/blueprint-reveal.wgsl",
-    "description": "Blueprint drafting from Sobel edges: strong edges inked as bold contours, weak ones as thin construction lines, far-depth edges dashed as hidden lines. The cursor and clicks reveal the photo through a decaying ink mask that develops into a Prussian-blue cyanotype as it fades.",
+    "description": "Blueprint drafting from Sobel edges: strong edges inked as bold contours, weak ones as thin construction lines, far-depth edges dashed as hidden lines. The construction grid has heavier major lines, and a registration mark sits on the pointer. The cursor and clicks reveal the photo through a decaying ink mask that develops into a Prussian-blue cyanotype as it fades.",
     "params": [
       {
         "id": "edgeStrength",
@@ -1061,6 +1061,7 @@
       "interactive"
     ],
     "name": "Codebreaker Reveal",
+    "description": "Matrix rain covers the photo. A disc at the pointer, plus click bursts, decrypts it. Each falling cell has a white head and a green tail, and the open hole lingers after the disc moves on, closing at a rate set by Rain Speed.",
     "updated": true
   },
   {
@@ -1787,7 +1788,7 @@
     "id": "cyber-ripples",
     "name": "Cyber Ripples",
     "url": "shaders/cyber-ripples.wgsl",
-    "description": "Interactive cursor-driven ripples fused with domain-warped FBM turbulence, audio-driven cyber palette shifting, SDF ring masking, click shockwaves, bass envelope feedback trails, depth-aware compositing, and ACES tone mapping.",
+    "description": "Interactive cursor-driven ripples fused with domain-warped FBM turbulence, audio-driven cyber palette shifting, SDF ring masking, click shockwaves, bass envelope feedback trails, depth-aware compositing, and ACES tone mapping. Ring brightness is stepped, and the chromatic split snaps to the block grid.",
     "params": [
       {
         "id": "speed",
@@ -2000,7 +2001,7 @@
     "id": "data-stream-corruption",
     "name": "Data Stream Corruption",
     "url": "shaders/data-stream-corruption.wgsl",
-    "description": "Vertical data streams fall like rain; your mouse leaves a trail of corrupted code blocks.",
+    "description": "Vertical data streams fall like rain, bright at the head and fading down the tail. The pointer leaves a trail of corrupted code blocks, and holding the brush pools that corruption. A stores the corruption field.",
     "params": [
       {
         "id": "speed",
@@ -2034,7 +2035,9 @@
     "features": [
       "mouse-driven",
       "temporal-persistence",
-      "glitch"
+      "glitch",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -2111,7 +2114,7 @@
     "id": "digital-compression",
     "name": "Digital Compression",
     "url": "shaders/digital-compression.wgsl",
-    "description": "YUV block crush with spring focus window, held widen, capped ripples, block-edge geometry, exact C artifact memory, and ACES tone map.",
+    "description": "YUV block crush with a spring focus window, held widen, capped ripples, and block-edge geometry. Bit Crush quantizes the detail inside each block, and Artifacts add mosquito grain on the block edge. ACES tone map. A stores the focus diagnostic, not colour.",
     "workgroup_size": [
       16,
       16,
@@ -2315,7 +2318,7 @@
     "name": "Digital Rain Reveal",
     "category": "interactive-mouse",
     "url": "shaders/digital-reveal.wgsl",
-    "description": "Matrix rain with glyph shapes hides the image; sprung brush reveals content. Held enlarges brush, clicks add capped ripples, regional FFT colors, depth-weighted reveal, ACES composite.",
+    "description": "Glyph rain hides the photo in finite drops with gaps. A brush, enlarged while held, and clicks open a hole that fades from an exact mask; glyphs wipe apart from the top of each cell as the photo comes through.",
     "workgroup_size": [
       16,
       16,
@@ -2364,7 +2367,6 @@
       "chromatic-drops",
       "click-reactive",
       "held-drag",
-      "spring-cursor",
       "glyph-shapes",
       "aces-tone-map"
     ],
@@ -2583,7 +2585,7 @@
     "id": "echo-ripple",
     "name": "Echo Ripple",
     "url": "shaders/echo-ripple.wgsl",
-    "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing.",
+    "description": "Oil-slick thin-film rings with bioluminescent wake harmonics, stronger held gravity bowl, capped click history (50), exact-load feedback advection, and ACES display preserving [displayRGB, bassEnvelope] A packing. Later echoes lag, and opposing echoes desaturate.",
     "updated": true,
     "params": [
       {
@@ -3308,7 +3310,7 @@
     "id": "glitch-cathedral",
     "name": "Glitch Cathedral",
     "url": "shaders/glitch-cathedral.wgsl",
-    "description": "Stained-glass geometric patterns with glitch artifacts; mouse triggers channel separation and pixel sorting.",
+    "description": "Stained-glass DCT blocks with Floyd-Steinberg error, lead cames at the cell size, and a rose-window pulse. Near the pointer, RGB Split separates channels and Sort Strength pulls pixels toward the brighter neighbour. Pattern Speed sets the rose rate.",
     "params": [
       {
         "id": "cellSize",
@@ -3343,7 +3345,10 @@
       "interactive",
       "glitch",
       "geometric",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -4211,7 +4216,7 @@
     "id": "interactive-glitch-brush",
     "name": "Glitch Brush",
     "url": "shaders/interactive-glitch-brush.wgsl",
-    "description": "Sprung glitch brush with click grenades, traveling scan-head conveyor, oil-slick phosphor tears, held-drag density, and exact C paint persistence. Display RGBA in A.",
+    "description": "Sprung glitch brush with click grenades, a traveling scan-head, oil-slick phosphor tears, and exact C persistence. Fast strokes thin the brush, and the tear snaps to the block grid. A holds pre-ACES colour.",
     "params": [
       {
         "id": "brush_size",
@@ -4270,7 +4275,7 @@
     "id": "interactive-glitch-cubes",
     "name": "Interactive Glitch Cubes",
     "url": "shaders/interactive-glitch-cubes.wgsl",
-    "description": "Image-mapped cubes with exact prior-state settling, beveled grout, conveyor packets, held extrusion, oil-slick edge runners, and bounded click fronts. A packs [rgb, settledHeight].",
+    "description": "Image-mapped cubes with exact prior-state settling, beveled grout, conveyor packets, held extrusion, and bounded click fronts. Extruded faces shade lighter toward the top and grow a darkened side wall. A packs [rgb, settledHeight].",
     "params": [
       {
         "id": "size",
@@ -4333,7 +4338,7 @@
     "id": "interactive-glitch",
     "name": "Interactive Glitch",
     "url": "shaders/interactive-glitch.wgsl",
-    "description": "Continuously pulsing digital glitch blocks with fast scan tears, held-pointer amplification, real audio, and click-launched corruption fronts.",
+    "description": "Pulsing digital glitch blocks with scan tears, held-pointer amplification, audio, and click-launched fronts. A block that crosses the pulse stays torn until the pulse drops, and the scan packet steps in whole block rows. A.a is that latch.",
     "params": [
       {
         "id": "intensity",
@@ -4548,7 +4553,7 @@
     "id": "interactive-pixel-wind",
     "name": "Pixel Wind",
     "url": "shaders/interactive-pixel-wind.wgsl",
-    "description": "Wind effect driven by cursor direction.",
+    "description": "Wind effect driven by cursor direction. Gusts gate the wind in sheets, and the flow combs transverse ripples.",
     "params": [
       {
         "id": "strength",
@@ -5348,7 +5353,7 @@
     "id": "liquid-touch",
     "name": "Liquid Touch",
     "url": "shaders/liquid-touch.wgsl",
-    "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam.",
+    "description": "An exact-load height-field solver with a 13-point biharmonic capillary stencil, nonlinear mean-curvature pressure, Marangoni flow, dispersive droplet waves, touch coalescence, and curvature-driven microfoam. Warm patches dome, and a steep contact line sticks.",
     "features": [
       "mouse-driven",
       "held-drag",
@@ -5361,7 +5366,8 @@
       "marangoni-flow",
       "microfoam",
       "semantic-alpha",
-      "aces"
+      "aces",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6412,7 +6418,7 @@
     "name": "Motion Revealer",
     "url": "shaders/motion-revealer.wgsl",
     "category": "interactive-mouse",
-    "description": "Lucas-Kanade optical flow structure tensor motion detector with spectral streakline integration, bioluminescent particle wake, and exact-load temporal frame difference.",
+    "description": "Motion in the photo, the pointer, and clicks opens a streaked reveal along the optical-flow direction. Streaks follow the structure tensor only where it is coherent, and the reveal holds for a few frames after the motion stops.",
     "features": [
       "mouse-driven",
       "optical-flow",
@@ -6712,7 +6718,7 @@
     "name": "Mouse Ink Bleed",
     "url": "shaders/mouse-ink-bleed.wgsl",
     "category": "interactive-mouse",
-    "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing. Wet ink wicks along paper fibres in hairline feathers and leaves a dark tide-line rim where the wet front dries.",
+    "description": "Organic ink that bleeds and diffuses outward from the mouse position with domain-warped FBM turbulence, temporal trails, audio envelope reactivity, and depth-aware compositing. Wet ink wicks along paper fibres in hairline feathers and leaves a dark tide-line rim where the wet front dries. A held brush pools, and the wet deposit granulates into the paper tooth.",
     "tags": [
       "ink",
       "bleed",
@@ -7048,7 +7054,7 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
-    "description": "Mouse drags leave colorful paint splatters sampled from the image. Paint spreads, mixes, and dries over time. Click ripples create explosive paint bursts.",
+    "description": "Mouse drags leave colorful paint splatters sampled from the image. Paint spreads, mixes, and dries over time. Click ripples create explosive paint bursts. Fast throws stretch into streaks, and wet rims collect pigment.",
     "params": [
       {
         "id": "splatterSize",
@@ -7617,7 +7623,7 @@
     "id": "neon-flashlight",
     "name": "Neon Flashlight",
     "url": "shaders/neon-flashlight.wgsl",
-    "description": "Depth-edge neon flashlight with animated cone ribs, radial sweeps, held beam squeeze, click flashes, and three-band spectral pulses.",
+    "description": "A neon beam at the pointer that lights the photo and traces edges, with an umbra, a penumbra, and a specular catch. The core falls off as inverse-square and desaturates toward white; the rim keeps the neon hue.",
     "params": [
       {
         "id": "radius",
@@ -8021,7 +8027,7 @@
     "id": "night-vision-scope",
     "name": "Night Vision Scope",
     "url": "shaders/night-vision-scope.wgsl",
-    "description": "Simulates a night vision intensifier tube with a high-clarity scope area following the mouse.",
+    "description": "A green intensifier tube, sharp inside a disc that follows the pointer, with grain, scanlines, microchannel sparks, and bloom around bright sources. The phosphor lags, and fixed vertical streaks sit under the temporal grain.",
     "params": [
       {
         "id": "scopeSize",
@@ -8792,7 +8798,7 @@
     "name": "Pixel Reveal",
     "url": "shaders/pixel-reveal.wgsl",
     "category": "interactive-mouse",
-    "description": "Pixel sorting with threshold-based reveal and temporal noise accumulation. Revealed pixels decay back to hidden over time. Glitch chromatic separation on edges, scanline bands, film grain, and depth-controlled pixel perspective.",
+    "description": "A mosaic that remembers the pointer, refines on a resolution ladder, and dithers colour by that same ladder. Hidden blocks sort bright pixels one cell along the scan, and a dark mortar marks the coarse tile edges. Revealed pixels decay back to hidden over time.",
     "params": [
       {
         "id": "pixelSize",
@@ -9406,7 +9412,8 @@
       "mouse-driven",
       "depth-aware",
       "haptic-response",
-      "multi-touch-interference"
+      "multi-touch-interference",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -10471,7 +10478,7 @@
     "id": "rgb-split-glitch",
     "name": "RGB Split Glitch",
     "url": "shaders/rgb-split-glitch.wgsl",
-    "description": "Splits RGB channels based on mouse proximity.",
+    "description": "4:2:0 composite split: full-res luma, half-res chroma, temporal chroma delay, herringbone alias, and block ringing, stronger near the pointer. Alternate lines grow hanging dots on luma steps, and the herringbone crawls upward with jitter.",
     "params": [
       {
         "id": "split",
@@ -10505,7 +10512,9 @@
     "features": [
       "mouse-driven",
       "glitch",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -10638,7 +10647,7 @@
     "id": "scanline-tear",
     "name": "Scanline Tear",
     "url": "shaders/scanline-tear.wgsl",
-    "description": "NTSC interlace simulation with sprung tracking focus, held boost, capped sync-loss ripples, exact C field memory, regional FFT phase, and ACES output.",
+    "description": "NTSC interlace simulation with sprung tracking focus, held boost, capped sync-loss ripples, exact C field memory, and ACES output. H-sync tears include a saw that resets at the left edge, and colour-burst error delays chroma a few texels left of luma.",
     "workgroup_size": [
       16,
       16,
@@ -10939,7 +10948,7 @@
     "name": "Sketch Reveal",
     "category": "interactive-mouse",
     "url": "shaders/sketch-reveal.wgsl",
-    "description": "Gradient-directed pencil sketch with tonal-art-map hatching (single, cross and diagonal layers by darkness), paper tooth and graphite sheen. The cursor lays a watercolour wash of the photo that dries slowly from exact history and leaves a darker pigment rim at its edge. Depth controls stroke scale.",
+    "description": "Gradient-directed pencil sketch with tonal-art-map hatching (single, cross and diagonal layers by darkness), a contour outline, paper tooth and graphite sheen. The cursor lays a watercolour wash of the photo that dries slowly from exact history, granulates in the mid-wetness, and leaves a darker pigment rim at its edge. Depth controls stroke scale.",
     "params": [
       {
         "id": "brushSize",
@@ -10992,7 +11001,7 @@
     "name": "Sliding Tile Glitch",
     "category": "interactive-mouse",
     "url": "shaders/sliding-tile-glitch.wgsl",
-    "description": "Grid tiles slide along directional conveyors when excited by mouse proximity, clicks, and bass transients. Features spring-damper cursor dynamics, chromatic tear, restoring decay, exact-C phosphor trails, and ACES tonemapping.",
+    "description": "Grid tiles slide along directional conveyors when excited by mouse proximity, clicks, and bass transients. The grid line shows the unshifted photo underneath, and Restoration settles distant tiles before tiles under the pointer. Spring-damper cursor, chromatic tear, exact-C trails, and ACES tonemapping.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -11168,7 +11177,7 @@
     "id": "sonar-pulse",
     "name": "Sonar Pulse",
     "url": "shaders/sonar-pulse.wgsl",
-    "description": "Radial sonar waves emitting from the cursor that distort and scan the image. Now with audio reactivity.",
+    "description": "Radial sonar waves from the cursor that distort and scan the image, with a secondary beat, chromatic echo, and click pings. Long waves outrun short ones, and the pulse falls off as a cylindrical wave.",
     "params": [
       {
         "id": "speed",
@@ -11227,7 +11236,7 @@
       "audio-driven",
       "upgraded-rgba"
     ],
-    "description": "Reveals the original image in a sonar disc around the mouse over a dimmed, tinted world, with concentric ring fronts and click shockwaves. A PPI radar sweep arm rotates from the pointer trailing a phosphor afterglow wedge; image edges flash as contact blips when a ring or shock front passes over them; and the Echo Mix return drifts outward from the pointer over frames. Bass, mids and treble shove the rings, shift the rim colour and add sparkle.",
+    "description": "Reveals the original image in a sonar disc around the mouse over a dimmed, tinted world, with concentric ring fronts and click shockwaves. A PPI radar sweep arm rotates from the pointer trailing a phosphor afterglow wedge; image edges flash as contact blips when a ring or shock front passes over them; and the Echo Mix return drifts outward from the pointer over frames. Fixed range rings sit at one-third and two-thirds of the reveal radius, and each traveling ring widens with distance. Bass, mids and treble shove the rings, shift the rim colour and add sparkle.",
     "params": [
       {
         "name": "Reveal Size",
@@ -11750,7 +11759,7 @@
     "id": "strip-scan-glitch",
     "name": "Strip Scan Glitch",
     "url": "shaders/strip-scan-glitch.wgsl",
-    "description": "Slices the image into vertical strips that scroll at hashed, brightness-weighted speeds with sideways tears, RGB split and a bass scan bar; mouse X sets strip density and mouse Y the scroll speed. Ideas: vertical-blanking seam (each strip's wrap shows a black blanking bar with sync-pulse ticks and a soft smear on the rows either side), held brake (holding the pointer drags the strips under the cursor to a freeze-frame halt with treble flutter, releasing back to speed), and speed-streak ghost (fast strips leave a short vertical smear read from the previous frame). ACES display.",
+    "description": "Slices the image into vertical strips that scroll at hashed, brightness-weighted speeds with sideways tears, RGB split and a bass scan bar; mouse X sets strip density and mouse Y the scroll speed. Fast strips integrate a short slit of source rows, and the strip edge leaks the neighbour in proportion to RGB Split. Also: vertical-blanking seam, held brake, and a speed-streak ghost from the previous frame. ACES display.",
     "params": [
       {
         "id": "strips",
@@ -12033,7 +12042,7 @@
     "name": "Thermal Touch",
     "url": "shaders/thermal-touch.wgsl",
     "category": "interactive-mouse",
-    "description": "Heat diffusion simulation with Gaussian blur approximation, blackbody radiation color mapping, persistent mouse heat trails, and HDR glow with ACES tone mapping.",
+    "description": "The pointer and clicks deposit inverse-square heat into a field that conducts with a 9-point laplacian and cools. The plate is a blackbody image with glow and isotherms. Image brightness is the temperature floor.",
     "params": [
       {
         "id": "heat-intensity",
@@ -12187,7 +12196,7 @@
     "id": "velocity-field-paint",
     "name": "Velocity Field — Vorticity Confinement",
     "url": "shaders/velocity-field-paint.wgsl",
-    "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence. Velocity self-advects semi-Lagrangian, confinement uses the stored curl field, and moving regions are combed into streamline paint streaks.",
+    "description": "2D Navier-Stokes momentum advection with 4-neighbor vorticity confinement (Fedkiw et al.), viscous Laplace damping, chromatic shear dispersion, and exact-load velocity state persistence. Velocity self-advects semi-Lagrangian, confinement uses the stored curl field, and moving regions are combed into streamline paint streaks. Momentum takes a MacCormack correction, and confinement drops where the flow is shearing.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -12390,7 +12399,7 @@
     "id": "vhs-jog",
     "name": "VHS Jog Wheel",
     "url": "shaders/vhs-jog.wgsl",
-    "description": "Stylized VHS tracking and jogging with rapid head-switch rolls, horizontal tape-history streaks, and click tape-slip events. Mouse X is the shuttle: fast cue/review shows evenly spaced noise bars scrolling against play, backward shuttle adds a per-band colour phase error that settles as speed drops, and X near the centre is still-frame with a field flutter (odd rows from the held picture, jittering a row). Mouse Y controls tracking.",
+    "description": "Stylized VHS tracking and jogging with rapid head-switch rolls, horizontal tape-history streaks, and click tape-slip events. Mouse X is the shuttle: fast cue/review shows evenly spaced noise bars scrolling against play, a snow bar sits on the bottom rows while the shuttle is up, backward shuttle adds a per-band colour phase error that settles as speed drops, and X near the centre is still-frame with a field flutter (odd rows from the held picture, jittering a row). Mouse Y controls tracking and flags the top of the frame sideways.",
     "params": [
       {
         "id": "noise",
@@ -12440,7 +12449,7 @@
     "id": "vhs-tracking-mouse",
     "name": "VHS Tracking",
     "url": "shaders/vhs-tracking-mouse.wgsl",
-    "description": "A horizontal tracking-noise band at mouse height with wobble, RGB split and treble flashes; clicks tear the tape. The band's noise is row-aligned dash dropouts (bright/dark streaks along scan lines), mouse X is the tracking knob (off-centre widens the band and lengthens the dashes) and holding the button auto-tracks the band down to a lock line over about a second. Inside the band the AGC lifts blacks and drains chroma. Audio-reactive intensity.",
+    "description": "A horizontal tracking-noise band at mouse height with wobble, RGB split and treble flashes; clicks tear the tape. The band's noise is row-aligned dash dropouts (bright/dark streaks along scan lines), mouse X is the tracking knob (off-centre widens the band, lengthens the dashes, slips the picture onto the adjacent track, and opens a black overscan bar on the side the head left) and holding the button auto-tracks the band down to a lock line over about a second. Inside the band the AGC lifts blacks and drains chroma. Audio-reactive intensity.",
     "params": [
       {
         "id": "barHeight",
@@ -12917,7 +12926,7 @@
     "id": "x-ray-reveal",
     "name": "X-Ray Reveal",
     "url": "shaders/x-ray-reveal.wgsl",
-    "description": "Interactive X-Ray lens that reveals an inverted, edge-enhanced internal structure.",
+    "description": "A collimated x-ray lens: inverted plate, bone window, penumbra, crosshair, and quantum mottle. The anode side of the field is darker, and a fine vertical anti-scatter grid sits on the plate.",
     "params": [
       {
         "id": "lens_size",

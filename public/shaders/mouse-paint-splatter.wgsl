@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, temporal, paint-simulation, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: cast-off satellites; dry craquelure
+//  Upgraded: 2026-10-26 (prev 2026-09-09)
+//  Ideas: cast-off satellites; dry craquelure; throw ellipse; wet-edge rim (§12.2C)
 //  A packing: paint.rgb + wetness.a; (0,0) mouse stash kept
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -84,10 +65,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   wetness = wetness * (1.0 - dryRate * 0.016);
   wetness = max(wetness, 0.0);
 
-  if (mouseDown > 0.5 && mousePos.x >= 0.0) {
-    let dist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
+    if (mouseDown > 0.5 && mousePos.x >= 0.0) {
+    let aspectDelta = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let brushSize = splatterSize * (1.0 + mouseVel * 5.0);
-    let splatter = smoothstep(brushSize, 0.0, dist);
+    // ── Idea 3: throw ellipse — length keeps the speed growth; width stays near the size slider
+    let velDir = select(vec2<f32>(1.0, 0.0), mouseDelta / max(mouseVel, 1e-5), mouseVel > 1e-4);
+    let along = abs(dot(aspectDelta, velDir));
+    let across = length(aspectDelta - velDir * dot(aspectDelta, velDir));
+    let minor = splatterSize * (1.0 + mouseVel * 0.35);
+    let ell = sqrt((along / max(brushSize, 1e-4)) * (along / max(brushSize, 1e-4)) + (across / max(minor, 1e-4)) * (across / max(minor, 1e-4)));
+    let splatter = 1.0 - smoothstep(0.0, 1.0, ell);
 
     if (splatter > 0.001) {
       let brushColor = textureSampleLevel(readTexture, u_sampler, mousePos, 0.0).rgb * colorIntensity;
@@ -141,6 +128,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let avgWet = (n.a + s.a + e.a + w.a) * 0.25;
     paintColor = mix(paintColor, avgColor, spreadAmount * wetness);
     wetness = mix(wetness, avgWet, spreadAmount * 0.5);
+    // ── Idea 4: wet-edge rim (§12.2C) — pigment darkens where neighbours are wetter
+    let rim = smoothstep(0.04, 0.2, avgWet - wetness) * smoothstep(0.02, 0.16, avgWet);
+    paintColor = paintColor * (1.0 - rim * 0.45);
   }
 
   let baseImage = textureSampleLevel(readTexture, u_sampler, uv, 0.0);

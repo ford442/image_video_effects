@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Strategy: Luma-gradient particle advection + curl noise + spectral CA
-//  Upgraded: 2026-10-05
-//  Ideas: advection memory (C = accumulated displacement, relaxes back); edge-weighted creep; isoline drift near the cursor
+//  Upgraded: 2026-10-27
+//  Ideas: contour adhesion of the displacement memory; soft-knee luma drive
 //  A packing: raw fields, no tone map — (memDisp.xy in uv, |instant force| uv, luma contrast)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -104,7 +104,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2: edge-weighted creep — force scales with |grad|, so contours ooze
   // and flat regions rest (HEAD normalized noise-level gradients to full force).
   let edgeW = smoothstep(0.004, 0.08, gradLen);
-  let lumaForce = repelDir * edgeW * forceMag * lumaWeight * (lC - 0.3) * 0.15 * depthParallax;
+  // ── Idea 2: soft-knee luma drive ────────────────────────────────
+  // Above mid-grey the push compresses, so a clipped highlight does not
+  // fling the picture. Dark attraction (negative raw) is unchanged.
+  let rawLuma = lC - 0.3;
+  let knee = select(rawLuma, 0.45 + (rawLuma - 0.45) / (1.0 + (rawLuma - 0.45) * 4.0), rawLuma > 0.45);
+  let lumaForce = repelDir * edgeW * forceMag * lumaWeight * knee * 0.15 * depthParallax;
 
   // Mouse vortex force
   let aspect = resolution.x / resolution.y;
@@ -142,7 +147,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   memPrev = memPrev + load_mem(max(coord - vec2<i32>(0, 1), vec2<i32>(0)));
   memPrev = memPrev * 0.2;
   let drive = lumaForce * 1.5 + vortexUV * 0.5;
-  var mem = memPrev * 0.96 + drive * 0.04;
+  // ── Idea 1: contour adhesion ────────────────────────────────────
+  // A strong gradient accepts new drive slowly and keeps the last push.
+  // Flat luma forgets it. Force Magnitude still scales `drive`.
+  let relax = mix(0.08, 0.012, edgeW);
+  var mem = memPrev * (1.0 - relax) + drive * relax;
   let memLen = length(mem);
   mem = mem * min(1.0, 0.05 / max(memLen, 1e-5));
 

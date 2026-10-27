@@ -9,7 +9,9 @@
  * build.sh (no hardcoded export lists; build.sh is the only build, CMakeLists.txt was removed);
  * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
  * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
- * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal.
+ * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal;
+ * bind_group0.json ↔ pipeline.ts createComputeBindGroupLayout ↔ generated bind_group0.h ↔
+ * pipeline.cpp ↔ _prelude.wgsl binding names.
  */
 
 const fs = require('fs');
@@ -799,15 +801,17 @@ function verifyWasmBuildVariants(flags) {
     fail('wasm_compile_flags.json top-level sFlags is the ASYNCIFY fallback: must contain ASYNCIFY and no JSPI*');
   }
   const j = flags.jspi;
-  if (!j || !Array.isArray(j.sFlags) || !Array.isArray(j.jspiExports)) {
-    fail('wasm_compile_flags.json must define jspi { sFlags, jspiExports, jsOutputName }');
+  if (!j || !Array.isArray(j.jspiExports)) {
+    fail('wasm_compile_flags.json must define jspi { jspiExports, jsOutputName }');
     return;
   }
+  if ('sFlags' in j) {
+    fail('wasm_compile_flags.json jspi.sFlags must not exist: the JSPI graph derives its sFlags from the fallback (ASYNCIFY→JSPI)');
+  }
+  const { variantGraph } = require('./format-wasm-compile-flags.js');
   const expected = flags.sFlags.map((f) => (f === 'ASYNCIFY' ? 'JSPI' : f));
-  if (JSON.stringify(j.sFlags) !== JSON.stringify(expected)) {
-    fail(
-      `wasm_compile_flags.json jspi.sFlags must equal fallback sFlags with ASYNCIFY→JSPI.\n  expected ${JSON.stringify(expected)}\n  got      ${JSON.stringify(j.sFlags)}`,
-    );
+  if (JSON.stringify(variantGraph(flags, 'jspi').sFlags) !== JSON.stringify(expected)) {
+    fail('format-wasm-compile-flags.js variantGraph(jspi).sFlags must be the fallback sFlags with ASYNCIFY→JSPI');
   }
   if (!j.jsOutputName || j.jsOutputName === flags.jsOutputName) {
     fail('wasm_compile_flags.json jspi.jsOutputName must be set and differ from the fallback jsOutputName');
@@ -1181,8 +1185,75 @@ function verifyBindGroup1() {
   }
 }
 
+/**
+ * bind_group0.json is the single source for the compute @group(0) layout:
+ * TS builds its entries from the JSON, C++ from the generated bind_group0.h.
+ * Neither side may keep a hand-written table (that is how depth drifted to
+ * 'float' in C++ while TS used 'unfilterable-float').
+ */
+function verifyBindGroup0() {
+  const gen = require('./gen-bind-group0-header.js');
+  const c = gen.loadContract();
+  let want;
+  try {
+    want = gen.renderHeader(c);
+  } catch (e) {
+    fail(e.message);
+    return;
+  }
+  const headerFile = gen.headerPath(c);
+  const have = fs.existsSync(headerFile) ? fs.readFileSync(headerFile, 'utf8') : '';
+  if (have !== want) fail(`${c.cpp.header} is stale or missing; run: npm run gen:bind-group0`);
+
+  const cpp = fs.readFileSync(path.join(ROOT, 'wasm_renderer/pipeline.cpp'), 'utf8');
+  if (!/#include "bind_group0\.h"/.test(cpp)) fail('pipeline.cpp must #include "bind_group0.h"');
+  if (/ComputeBinding\s+kComputeBindings\s*\[\]\s*=/.test(cpp) || /enum class BindingKind\b/.test(cpp)) {
+    fail('pipeline.cpp must not define its own kComputeBindings / BindingKind — they come from bind_group0.h');
+  }
+  if (/sampleType\s*=\s*WGPUTextureSampleType_Float\s*;/.test(cpp)) {
+    fail('pipeline.cpp must derive compute sample types from bind_group0::KindSampleRule, not hard-code Float');
+  }
+
+  const tsFile = 'src/renderer/webgpu/pipeline.ts';
+  const ts = fs.readFileSync(path.join(ROOT, tsFile), 'utf8');
+  if (!/import bindGroup0Contract from '\.\.\/\.\.\/contracts\/bind_group0\.json'/.test(ts)) {
+    fail(`${tsFile} must import bind_group0.json`);
+  }
+  const fn = ts.slice(ts.indexOf('export function createComputeBindGroupLayout('));
+  const body = fn.slice(0, fn.indexOf('\n}\n'));
+  if (!/bindGroup0Contract\.bindings\.map/.test(body) || /\{\s*binding:\s*\d+\s*,\s*visibility/.test(body)) {
+    fail(`${tsFile} createComputeBindGroupLayout must build its entries from bindGroup0Contract.bindings`);
+  }
+
+  // The prelude declares bindings 0..12 under the contract's names.
+  const prelude = fs.readFileSync(path.join(ROOT, 'public/shaders/_prelude.wgsl'), 'utf8');
+  for (const b of c.bindings) {
+    const m = prelude.match(new RegExp(`@group\\(0\\)\\s*@binding\\(${b.binding}\\)\\s*var(?:<[^>]*>)?\\s+(\\w+)`));
+    if (m && m[1] !== b.name) fail(`_prelude.wgsl @binding(${b.binding}) is ${m[1]} but bind_group0.json names it ${b.name}`);
+  }
+}
+
+/**
+ * Every wgpuInstanceWaitAny in wasm_renderer/ needs a finite budget: UINT64_MAX
+ * hangs init (or a shader load) forever inside ASYNCIFY/JSPI when a future never
+ * resolves. See the rationale above kAdapterWaitTimeoutNs in device.cpp.
+ */
+function verifyFiniteWaitAny() {
+  const dir = path.join(ROOT, 'wasm_renderer');
+  for (const f of fs.readdirSync(dir).filter((n) => /\.(cpp|h)$/.test(n))) {
+    const src = stripCppComments(fs.readFileSync(path.join(dir, f), 'utf8'));
+    for (const m of src.matchAll(/wgpuInstanceWaitAny\s*\(([^;]*)\)\s*;/g)) {
+      if (/UINT64_MAX|WGPU_LIMIT_U64_UNDEFINED/.test(m[1])) {
+        fail(`wasm_renderer/${f}: wgpuInstanceWaitAny(${m[1].replace(/\s+/g, ' ').trim()}) must use a finite timeout`);
+      }
+    }
+  }
+}
+
 if (!ONLY_WASM_INVARIANTS) {
   verifyOptionalFeatures();
+  verifyFiniteWaitAny();
+  verifyBindGroup0();
   verifyBindGroup1();
   verifyCanvasConfigure();
   verifySlotLimits();
@@ -1198,7 +1269,7 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + canvas_configure + slot_limits + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + bind_group1 + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
+  '✅ Device policy sync OK (limits + optional features + bind_group0 + canvas_configure + slot_limits + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + bind_group1 + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
 /** True when `rel` is tracked by git (a committed artifact, not a fresh CI build). */
@@ -1413,12 +1484,15 @@ function verifyWasmRuntimeInvariants() {
 
     const pipelineFile = fmt.pipelineFile || 'wasm_renderer/pipeline.cpp';
     const pipelineCpp = fs.readFileSync(path.join(ROOT, pipelineFile), 'utf8');
+    // The binding table itself is generated from bind_group0.json into bglTableFile.
+    const bglTableFile = fmt.bglTableFile || pipelineFile;
+    const bglTable = fs.readFileSync(path.join(ROOT, bglTableFile), 'utf8');
     const bglPat = new RegExp(fmt.bglStorageFormatPattern || 'RgbaStorageFormat\\(colorFormat_\\)', 'g');
-    const bglHits = pipelineCpp.match(bglPat) || [];
+    const bglHits = bglTable.match(bglPat) || [];
     const wantBgl = fmt.bglStorageBindingCount != null ? fmt.bglStorageBindingCount : 3;
     if (bglHits.length < wantBgl) {
       fail(
-        `${pipelineFile} kComputeBindings must declare bindings 2/7/8 as BindingKind::StorageRgba ` +
+        `${bglTableFile} kComputeBindings must declare bindings 2/7/8 as BindingKind::StorageRgba ` +
           `(layout format = RgbaStorageFormat(colorFormat_)); found ${bglHits.length} of ${wantBgl}`,
       );
     }

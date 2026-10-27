@@ -3,32 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-04
-//  Ideas: dashed hidden lines on far depth; bold contour vs thin construction pen weights; cyanotype toning as the reveal fades
+//  Upgraded: 2026-10-04, 2026-10-27
+//  Ideas: dashed hidden lines on far depth; bold contour vs thin construction pen weights; cyanotype toning as the reveal fades; major grid; registration mark
 //  A packing: raw fields (revealMask, 0, 0, alpha) — C.r is read back exactly as the ink mask
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.3 + mids * 0.1;
@@ -142,6 +123,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gridLineY = smoothstep(0.9, 0.95, sin(uv.y * gridSize * 3.14159));
     let grid = max(gridLineX, gridLineY) * gridOpacity * (0.25 + bass * 0.08);
     blueprint += vec3<f32>(grid);
+    // ── Idea: major grid — every fifth line of the same grid is heavier.
+    let majorX = smoothstep(0.97, 0.995, sin(uv.x * gridSize * aspect * 3.14159 * 0.2));
+    let majorY = smoothstep(0.97, 0.995, sin(uv.y * gridSize * 3.14159 * 0.2));
+    blueprint += vec3<f32>(max(majorX, majorY) * gridOpacity * (0.55 + bass * 0.06));
 
     // Audio surge: bass creates ink ripples from mouse
     let surgePhase = dist * 20.0 - bass * 3.0;
@@ -151,6 +136,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 3: cyanotype toning. As the ink mask fades back toward blueprint,
     // the revealed photo first develops into a Prussian-blue print of itself.
     let live = max(revealMask, clickInk);
+    // ── Idea: registration mark — circle and cross at the pointer, on the sheet only.
+    let markRing = 1.0 - smoothstep(0.0, 0.0032, abs(dist - 0.016));
+    let markArm = (1.0 - smoothstep(0.0, 0.002, min(abs(distVec.x), abs(distVec.y))))
+                * smoothstep(0.005, 0.014, dist) * (1.0 - smoothstep(0.04, 0.055, dist));
+    blueprint += vec3<f32>(0.72, 0.88, 1.0) * (markRing + markArm) * (1.0 - live) * 0.7;
     let photoLuma = dot(baseColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
     let cyanotype = mix(vec3<f32>(0.04, 0.11, 0.30), vec3<f32>(0.86, 0.92, 0.95), smoothstep(0.08, 0.92, photoLuma));
     let toneAmt = (1.0 - smoothstep(0.5, 0.92, temporalMask)) * (1.0 - live * 0.6);

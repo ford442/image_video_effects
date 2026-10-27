@@ -2,7 +2,7 @@
   "id": "blueprint-reveal",
   "name": "Blueprint Reveal",
   "url": "shaders/blueprint-reveal.wgsl",
-  "description": "Blueprint drafting from Sobel edges: strong edges inked as bold contours, weak ones as thin construction lines, far-depth edges dashed as hidden lines. The cursor and clicks reveal the photo through a decaying ink mask that develops into a Prussian-blue cyanotype as it fades.",
+  "description": "Blueprint drafting from Sobel edges: strong edges inked as bold contours, weak ones as thin construction lines, far-depth edges dashed as hidden lines. The construction grid has heavier major lines, and a registration mark sits on the pointer. The cursor and clicks reveal the photo through a decaying ink mask that develops into a Prussian-blue cyanotype as it fades.",
   "params": [
     {
       "id": "edgeStrength",
