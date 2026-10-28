@@ -28707,7 +28707,8 @@
       "hdr",
       "audio-reactive",
       "temporal-coherence",
-      "fbm-noise"
+      "fbm-noise",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -31097,7 +31098,9 @@
       "mouse-driven",
       "temporal",
       "chromatic",
-      "depth-aware"
+      "depth-aware",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

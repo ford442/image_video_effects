@@ -8575,7 +8575,8 @@
       "quantum-foam",
       "bilateral-filter",
       "edge-preserving",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba"
     ],
     "params": [
       {

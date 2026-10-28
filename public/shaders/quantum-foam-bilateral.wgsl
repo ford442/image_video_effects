@@ -6,6 +6,9 @@
 //  Chunks From: quantum-foam.wgsl, conv-bilateral-dream.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-3 — Convolution Post-Processor
+//  Upgraded: 2026-10-28
+//  Ideas: depth-range bilateral weights; membrane-protected diffusion
+//  A packing: display RGBA (no C feedback)
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum foam chromatic parallax diffusion with edge-preserving
 //  bilateral smoothing. Cell boundaries and emissive edges remain
@@ -17,26 +20,8 @@
 //           0.0 = fully smoothed region
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FoamScale, y=FlowSpeed, z=DiffusionRate, w=Detail
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FoamScale, y=FlowSpeed, z=DiffusionRate, w=Detail
 
 // ═══ CHUNK: hash3 (from quantum-foam.wgsl) ═══
 fn hash3(p: vec3<f32>) -> f32 {
@@ -107,6 +92,11 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
   return rgb + vec3<f32>(v - c);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let c = max(x, vec3<f32>(0.0));
+  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let res = u.config.zw;
@@ -123,13 +113,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let detail = u.zoom_params.w;
   let octaveCount = i32(detail * 4.0 + 3.0);
 
-  let bilateralSpatial = mix(0.5, 3.0, u.zoom_config.x);
-  let bilateralColor = mix(0.05, 0.5, u.zoom_config.y);
-  let bilateralBlend = u.zoom_config.z;
+  let bilateralSpatial = mix(0.5, 3.0, clamp(diffusionRate, 0.0, 1.0));
+  let bilateralColor = 0.185;
+  let bilateralBlend = clamp(diffusionRate, 0.0, 1.0);
 
   // ── Source sampling ──
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let srcColor = src.rgb;
 
   // ── Quantum foam core ──
   let curl = curlNoise(uv * foamScale * 0.5, time * flowSpeed);
@@ -205,8 +196,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       let colorDist = length(neighborFoam - centerColor);
       let rangeWeight = exp(-colorDist * colorDist / (2.0 * bilateralColor * bilateralColor + 0.001));
-
-      let weight = spatialWeight * rangeWeight;
+      let neighborDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
+      let depthDelta = neighborDepth - depth;
+      let depthRangeWeight = exp(-depthDelta * depthDelta / (2.0 * 0.05 * 0.05));
+      let weight = spatialWeight * rangeWeight * depthRangeWeight;
       accumColor = accumColor + neighborFoam * weight;
       accumWeight = accumWeight + weight;
     }
@@ -223,8 +216,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colorShift = length(smoothed - centerColor);
   let edgeConfidence = 1.0 - smoothstep(0.0, 0.2, colorShift);
 
-  let finalColor = mix(foamColor, smoothed, bilateralBlend);
+  let membrane = 1.0 - smoothstep(0.0, 0.12, cell.y - cell.x);
+  let finalColor = acesToneMap(mix(foamColor, smoothed, bilateralBlend * (1.0 - membrane * 0.8)));
+  let alpha = clamp(src.a * (0.5 + edgeConfidence * 0.5) + (1.0 - src.a) * emission * 0.25, 0.0, 1.0);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, edgeConfidence));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, alpha));
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
