@@ -6,32 +6,14 @@
 //  Chunks From: previous supernova work + audio season patterns
 //  Created: 2026-03-22
 //  Updated: 2026-05-31
-//  Upgraded: 2026-09-27
-//  Ideas: Sedov-Taylor shell slowdown (age to the 2/5); reverse-shock rim on the inner edge
+//  Upgraded: 2026-09-27, 2026-10-27
+//  Ideas: radial ejecta fingers; shock-compressed shell knots
 //  A packing: ACES display RGBA (no field feedback)
 //  By: Grok (audio-driven shockwave evolution + mouse as gravitational perturber)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>, // x=Explosion Energy, y=Shell Density, z=Chaos, w=Gas Opacity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Explosion Energy, y=Shell Density, z=Chaos, w=Gas Opacity
 
 // Noise functions
 fn hash31(p: vec3<f32>) -> f32 {
@@ -190,7 +172,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         // Add turbulence detail
         let detail = fbm(vec3<f32>(pTurb * 20.0, t * 0.5 + fi), 3);
-        let turbDensity = d * (0.7 + 0.3 * detail);
+        let knotPhase = angle * (12.0 + fi * 2.0) + fi * 1.7 + t * 0.08;
+        let knots = pow(0.5 + 0.5 * cos(knotPhase + detail * 3.0), 5.0);
+        let turbDensity = d * (0.7 + 0.3 * detail + 0.35 * knots);
         
         // Color with temperature
         let shellCol = temperatureColor(clamp(temp, 0.0, 1.0));
@@ -203,6 +187,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let reverse = smoothstep(thickness * 0.55, 0.0, abs(r * fingerMod - innerR));
         let reverseCol = temperatureColor(clamp(temp + 0.28, 0.0, 1.0));
         col = col + reverseCol * reverse * 0.55;
+        let fingerPhase = angle * (9.0 + fi) + fi * 2.0 + fingers * 4.0;
+        let fingerRidges = pow(0.5 + 0.5 * cos(fingerPhase), 12.0);
+        let fingerEnvelope = smoothstep(innerR - thickness * 3.0, innerR, r) *
+            (1.0 - smoothstep(shellRadius, shellRadius + thickness, r));
+        let ejecta = fingerRidges * fingerEnvelope * chaos * 0.35;
+        col += shellCol * ejecta;
+        totalDensity = min(totalDensity + ejecta + reverse * 0.25, 1.0);
     }
     
     // Central star/core

@@ -3,31 +3,13 @@
 //  Category: simulation
 //  Features: mouse-driven, depth-aware, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: streamer tips at high-charge empty-neighbor ends; residual scorch along cooled channels
+//  Upgraded: 2026-09-12, 2026-10-27
+//  Ideas: directional branch corona; persistent junction carbonization
 //  A packing: raw (charge, age, curl bias, scorch)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BranchComplexity, y=DecaySpeed, z=Intensity, w=DepthAttraction
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BranchComplexity, y=DecaySpeed, z=Intensity, w=DepthAttraction
 
 // ─── Noise / curl helpers ─────────────────────────────────────────
 
@@ -117,6 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Audio reactivity — bass triggers discharge energy
     let bass = select(0.0, plasmaBuffer[0].x, arrayLength(&plasmaBuffer) > 0u);
+    let mids = select(0.0, plasmaBuffer[0].y, arrayLength(&plasmaBuffer) > 0u);
     let treble = select(0.0, plasmaBuffer[0].z, arrayLength(&plasmaBuffer) > 0u);
 
     // Read current state (exact C load)
@@ -173,7 +156,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     // Curl alignment: prefer spreading in flow direction
                     let alignment   = dot(normalize(nOffset), flowDir) * 0.5 + 0.5;
                     // Depth attraction: bias toward foreground pixels
-                    let nDepth      = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + nOffset * px, 0.0).r;
+                    let nDepth      = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + nOffset * px, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
                     let depthBonus  = nDepth * depthAttraction * 0.4;
                     // Audio: bass pulses increase spread chance
                     let audioBonus  = bass * 0.15;
@@ -216,14 +199,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tip = charge * (1.0 - nAvg) * smoothstep(0.72, 0.96, charge);
 
     // Idea 2 — residual scorch along cooled channels
-    scorch = max(scorch * 0.978, age * smoothstep(0.08, 0.55, 1.0 - charge) * 0.16);
+    let junction = smoothstep(0.45, 0.8, nAvg) * smoothstep(0.2, 0.7, charge);
+    scorch = max(scorch * 0.978, age * smoothstep(0.08, 0.55, 1.0 - charge) * (0.16 + junction * 0.18));
     scorch = clamp(scorch, 0.0, 1.0);
 
     let bias = flowDir.x * 0.5 + 0.5;
     textureStore(dataTextureA, coord, vec4<f32>(charge, age, bias, scorch));
 
     // ── Render ───────────────────────────────────────────────────
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Soft atmospheric glow — sample charge from a wider neighbourhood
     var glowSum = 0.0;
@@ -239,15 +223,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         glowSum += gCharge * select(0.04, 0.12, gCharge > 0.8);
     }
     let atmosphericGlow = vec3<f32>(0.1, 0.35, 1.0) * glowSum * intensity * 0.5;
+    let chargeGradient = vec2<f32>(nR - nL, nD - nU);
+    let directionalCorona = abs(dot(chargeGradient, flowDir)) * charge * 0.24 * intensity * (1.0 + mids * 0.3);
 
     // Primary arc colour
     let arcCol = arcColour(charge, age, intensity);
     let tipCol = vec3<f32>(1.35, 1.55, 2.1) * tip * intensity * (0.7 + treble * 0.4);
 
     // RGBA alpha encodes discharge intensity + scorch coverage
-    let dischargeAlpha = clamp(charge * 2.0 + tip * 0.4 + scorch * 0.25, 0.0, 1.0);
+    let dischargeAlpha = clamp(max(baseColor.a * (1.0 - scorch * 0.55),
+        charge * 2.0 + tip * 0.4 + scorch * 0.25), 0.0, 1.0);
 
-    var finalRGB = baseColor * (1.0 - scorch * 0.55) + arcCol + atmosphericGlow + tipCol;
+    var finalRGB = baseColor.rgb * (1.0 - scorch * 0.55) + arcCol + atmosphericGlow + tipCol +
+        vec3<f32>(0.12, 0.42, 1.0) * directionalCorona;
     finalRGB = aces(max(finalRGB, vec3<f32>(0.0)));
     textureStore(writeTexture, coord, vec4<f32>(finalRGB, dischargeAlpha));
 
