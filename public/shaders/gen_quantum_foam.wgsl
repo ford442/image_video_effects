@@ -12,28 +12,12 @@
 //    - Spring-dampered vacuum polarity warp (extraBuffer[133..136])
 //  
 //  Target: 4.6★ rating
+//  Upgraded: 2026-10-28
+//  Ideas: correlated pair endpoints; traveling entanglement pulses
+//  A packing: display RGBA history
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const PHI: f32 = 1.61803398875;
@@ -114,8 +98,10 @@ fn quantumFoam(uv: vec2<f32>, time: f32, scale: f32) -> vec3<f32> {
 }
 
 // Entanglement web - connecting correlated regions
-fn entanglementWeb(uv: vec2<f32>, time: f32, density: f32) -> f32 {
+fn entanglementWeb(uv: vec2<f32>, time: f32, density: f32) -> vec3<f32> {
     var web = 0.0;
+    var endpoints = 0.0;
+    var pulses = 0.0;
     let numConnections = i32(density * 20.0);
     
     for (var i: i32 = 0; i < numConnections; i = i + 1) {
@@ -133,15 +119,19 @@ fn entanglementWeb(uv: vec2<f32>, time: f32, density: f32) -> f32 {
         // Distance to line segment
         let pa = uv - p1;
         let ba = p2 - p1;
-        let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
         let dist = length(pa - ba * h);
         
         // Entanglement strength (thicker where correlated)
         let strength = hash2(seed + 50.0);
-        web += smoothstep(0.01 + strength * 0.02, 0.0, dist) * strength;
+        let strand = smoothstep(0.01 + strength * 0.02, 0.0, dist) * strength;
+        web += strand;
+        endpoints += (exp(-length(pa) * 55.0) + exp(-length(uv - p2) * 55.0)) * strength;
+        let phase = fract(h - time * 0.18 + strength);
+        pulses += strand * exp(-abs(phase - 0.5) * 18.0);
     }
     
-    return web;
+    return vec3<f32>(web, endpoints, pulses);
 }
 
 // Tone mapping
@@ -165,7 +155,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let time = u.config.x * 5.0; // Fast motion upgrade
+    let timeRaw = u.config.x;
+    let time = timeRaw * 5.0; // Fast motion upgrade
     
     // ═══ SAMPLE INPUT FROM PREVIOUS LAYER ═══
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
@@ -184,6 +175,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ═══ HONEST AUDIO (plasmaBuffer, not mouse-Y proxy) ═══
     // Bass drives the virtual pair-production rate and the vacuum burst.
     let bass = clamp(plasmaBuffer[0].x, 0.0, 2.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 2.0);
+    let treble = clamp(plasmaBuffer[0].z, 0.0, 2.0);
     let pairRate = 1.0 + bass * 1.5;
     let burst = 1.0 + bass * 1.2;
     // Per-bin FFT [1..8] modulates entanglement-web density spatially:
@@ -232,7 +225,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rippleCount = min(u32(u.config.y), 50u);
     for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
         let strike = u.ripples[ri];
-        let age = time - strike.z;
+        let age = timeRaw - strike.z;
         if (age > 0.0 && age < 5.0) {
             let dist = length(uv - strike.xy);
             let wavefront = age * 0.55;
@@ -244,7 +237,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Add entanglement web (FFT-local density + strike perturbation)
     let strikeDensity = clamp(localDensity + shock * 0.5, 0.0, 1.0);
     let web = entanglementWeb(warpedUV, time * evolutionSpeed * 0.5, strikeDensity);
-    generatedColor += vec3<f32>(web * 0.8, web * 0.9, web * 1.2);
+    generatedColor += vec3<f32>(web.x * 0.8, web.x * 0.9, web.x * 1.2);
+    generatedColor += vec3<f32>(1.1, 0.8, 0.55) * web.y * (0.45 + treble * 0.12)
+                    + vec3<f32>(0.45, 0.85, 1.2) * web.z * (0.65 + mids * 0.15);
     generatedColor += vec3<f32>(0.6, 0.8, 1.2) * shock * 0.6; // strike flash
     
     // Bass-driven vacuum burst
@@ -276,7 +271,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // ═══ BLEND WITH INPUT ═══
     let finalColor = mix(inputColor.rgb, generatedColor, opacity);
-    let finalAlpha = max(inputColor.a, opacity);
+    let coverage = clamp(dot(generatedColor, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.6
+                         + web.x * 0.15 + web.y * 0.1, 0.0, 1.0) * opacity;
+    let finalAlpha = inputColor.a + (1.0 - inputColor.a) * coverage;
     
     // Output
     textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));

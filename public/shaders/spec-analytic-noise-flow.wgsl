@@ -5,7 +5,9 @@
 //  Complexity: High
 //  Chunks From: chunk-library (hash12)
 //  Created: 2026-04-18
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-10-28
+//  Ideas: flow-aligned transport dashes; gradient-protected quiet basins
+//  A packing: raw velocity RG, noise B, validity A
 //  Optimized: 2026-07-22 — iso-contour ridges, bass surge, temporal
 //             streamline smoothing (free analytic gradient exploitation)
 //  By: Agent 3C — Spectral Computation Pioneer
@@ -19,26 +21,7 @@
 //  temporally smoothed streamlines.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -112,9 +95,15 @@ fn contourRidge(value: f32, gradMag: f32, count: f32, sharpen: f32) -> f32 {
     return 1.0 - smoothstep(0.0, width, phase);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
 
@@ -139,7 +128,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let isMouseDown = u.zoom_config.w > 0.5;
 
     // Sample base image for advection source
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Analytic noise flow field (value in .x, gradient free in .yz)
     let p = uv * flowScale + time * flowSpeed;
@@ -166,16 +155,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // dataTextureA stores velocity in .rg; it resurfaces one frame later
     // through dataTextureC. This is a SEPARATE read path from the light
     // color feedback below. Exponential frame-to-frame smoothing stops
-    // streamline shimmer; bass surges briefly reopen the filter so kicks
-    // still punch through instead of lagging behind the music.
-    let prevVel = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rg;
+    // streamline shimmer; bass surges briefly reopen the filter.
+    let previousState = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
+    let prevVel = previousState.rg;
     let velSmooth = clamp(0.65 - bassEnv * 0.25, 0.15, 0.75);
-    velocity = mix(velocity, prevVel, velSmooth);
+    velocity = mix(velocity, prevVel, velSmooth * step(0.5, previousState.a));
 
     // ─── Advect sample position along the (smoothed) flow ───
     // Bass surge: advection distance scales with the bass envelope.
     let advectedUV = uv + velocity * advectionStr * (1.0 + bassEnv);
-    let warpedColor = textureSampleLevel(readTexture, u_sampler, fract(advectedUV), 0.0).rgb;
+    let warpedColor = textureSampleLevel(readTexture, u_sampler, clamp(advectedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
     // Flow visualization: color by direction
     let flowAngle = atan2(velocity.y, velocity.x) / 6.28318 + 0.5;
@@ -186,8 +175,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     );
 
     // Blend warped image with flow visualization
-    let blendFactor = 0.6;
-    var outColor = mix(warpedColor, flowColor * 0.5 + warpedColor * 0.5, blendFactor);
+    let activity = smoothstep(0.05, 0.8, length(noise1.yz));
+    let blendFactor = 0.6 * (0.25 + 0.75 * activity);
+    var outColor = mix(warpedColor.rgb, flowColor * 0.5 + warpedColor.rgb * 0.5, blendFactor);
 
     // ─── Iso-contour ridges from the analytic gradient ───
     // Gradient magnitude is a free byproduct of noiseWithDerivative.
@@ -198,6 +188,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ridge = contourRidge(noise1.x, gradMag, contourCount, treble);
     let ridgeColor = vec3<f32>(0.85, 0.92, 1.0) * ridge * (0.25 + mids * 0.30);
     outColor += ridgeColor * (0.35 + curlAmount * 0.65);
+    let flowDir = velocity / max(length(velocity), 0.001);
+    let dashPhase = dot(p, flowDir) * 9.0 - time * flowSpeed * 2.0;
+    let transportDash = pow(0.5 + 0.5 * cos(dashPhase), 8.0) * ridge * activity;
+    outColor += flowColor * transportDash * (0.12 + advectionStr * 0.8);
 
     // Legacy soft streamline band (kept for the shader's soul).
     // Fades out as Curl rises so the crisp contour ridges take over
@@ -212,20 +206,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ─── Chromatic dispersion ───
     let chrStrength = 0.004 + bass * 0.008;
-    let chrR = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(chrStrength * (1.0 + mids * 0.5), 0.0), 0.0).r;
-    let chrG = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, chrStrength * (1.0 + treble * 0.3)), 0.0).g;
-    let chrB = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-chrStrength * 0.7 * (1.0 + bass * 0.4), chrStrength * 0.3), 0.0).b;
+    let chrR = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(chrStrength * (1.0 + mids * 0.5), 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let chrG = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, chrStrength * (1.0 + treble * 0.3)), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    let chrB = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(-chrStrength * 0.7 * (1.0 + bass * 0.4), chrStrength * 0.3), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     let chrColor = vec3<f32>(chrR, chrG, chrB);
     outColor = mix(outColor, chrColor, 0.2 + bass * 0.15);
-
-    // ─── Temporal color feedback (light ~3% mix, kept intact) ───
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    outColor = mix(outColor, prev.rgb * 0.9, 0.03 + bass * 0.01);
 
     // Depth output: flow magnitude mapped to a soft depth field so the
     // depth-aware pipeline sees fast streamlines as closer ridges.
     let flowDepth = length(velocity) * 0.5 + 0.25;
-    textureStore(writeTexture, gid.xy, vec4<f32>(outColor, length(velocity)));
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(flowDepth, 0.0, 0.0, 0.0));
+    let alpha = clamp(mix(baseColor.a, warpedColor.a, 0.5) + (1.0 - baseColor.a) * clamp(ridge * 0.2 + speedGlow, 0.0, 1.0), 0.0, 1.0);
+    textureStore(writeTexture, gid.xy, vec4<f32>(acesToneMap(outColor), alpha));
+    textureStore(writeDepthTexture, gid.xy, vec4<f32>(clamp(flowDepth, 0.0, 1.0), 0.0, 0.0, 0.0));
     textureStore(dataTextureA, gid.xy, vec4<f32>(velocity, noise1.x, 1.0));
 }

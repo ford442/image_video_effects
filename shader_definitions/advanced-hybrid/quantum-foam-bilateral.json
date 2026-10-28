@@ -8,7 +8,8 @@
     "quantum-foam",
     "bilateral-filter",
     "edge-preserving",
-    "randomization-safe"
+    "randomization-safe",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -61,6 +62,42 @@
     "abstract"
   ],
   "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Foam Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Flow Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Diffusion Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Detail",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    },
     "legacy": {
       "advanced_params": [
         {

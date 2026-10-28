@@ -18,7 +18,9 @@
     "mouse-driven",
     "temporal",
     "chromatic",
-    "depth-aware"
+    "depth-aware",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

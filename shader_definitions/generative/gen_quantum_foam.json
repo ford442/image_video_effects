@@ -14,7 +14,8 @@
     "hdr",
     "audio-reactive",
     "temporal-coherence",
-    "fbm-noise"
+    "fbm-noise",
+    "upgraded-rgba"
   ],
   "params": [
     {

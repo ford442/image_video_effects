@@ -766,8 +766,17 @@
       "history": []
     },
     "quantum-foam-bilateral": {
-      "hash": "88e01d3e4178700e",
-      "history": []
+      "hash": "6043aff430144ccd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-28T11:06:28.782Z",
+          "hash": "6043aff430144ccd",
+          "prev_hash": "88e01d3e4178700e",
+          "commit": "a180916",
+          "note": "2026-10-28 tensor and foam: coherence steering and depth detail; junctions and bubble walls; pair endpoints and pulses; flow dashes and quiet basins; depth-weighted and membrane-preserving diffusion"
+        }
+      ]
     },
     "retro-phosphor-hdr": {
       "hash": "a4e9b6943ab6b328",
@@ -7815,8 +7824,17 @@
       "history": []
     },
     "gen_quantum_foam": {
-      "hash": "e1f2b56e79e951d7",
-      "history": []
+      "hash": "928285361d7307b6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-28T11:06:28.782Z",
+          "hash": "928285361d7307b6",
+          "prev_hash": "e1f2b56e79e951d7",
+          "commit": "a180916",
+          "note": "2026-10-28 tensor and foam: coherence steering and depth detail; junctions and bubble walls; pair endpoints and pulses; flow dashes and quiet basins; depth-weighted and membrane-preserving diffusion"
+        }
+      ]
     },
     "gen-rainbow-smoke": {
       "hash": "861ed28401b85fe6",
@@ -8111,8 +8129,17 @@
       "history": []
     },
     "quantum-foam-lattice": {
-      "hash": "b273b2584023e1b0",
-      "history": []
+      "hash": "0cc02032aa0ccfa4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-28T11:06:28.782Z",
+          "hash": "0cc02032aa0ccfa4",
+          "prev_hash": "b273b2584023e1b0",
+          "commit": "a180916",
+          "note": "2026-10-28 tensor and foam: coherence steering and depth detail; junctions and bubble walls; pair endpoints and pulses; flow dashes and quiet basins; depth-weighted and membrane-preserving diffusion"
+        }
+      ]
     },
     "recursive-ancestral-terrains": {
       "hash": "70c15b1014d58500",
@@ -8144,8 +8171,17 @@
       "history": []
     },
     "spec-analytic-noise-flow": {
-      "hash": "ea62c98b27423706",
-      "history": []
+      "hash": "3f0c6a4071805ba4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-28T11:06:28.782Z",
+          "hash": "3f0c6a4071805ba4",
+          "prev_hash": "ea62c98b27423706",
+          "commit": "a180916",
+          "note": "2026-10-28 tensor and foam: coherence steering and depth detail; junctions and bubble walls; pair endpoints and pulses; flow dashes and quiet basins; depth-weighted and membrane-preserving diffusion"
+        }
+      ]
     },
     "spec-distance-field-text": {
       "hash": "6021502c6d5fc31a",
@@ -8966,8 +9002,17 @@
       "history": []
     },
     "tensor-flow-sculpting": {
-      "hash": "9290058493fe2249",
-      "history": []
+      "hash": "f0a1630bc65669cd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-28T11:06:28.782Z",
+          "hash": "f0a1630bc65669cd",
+          "prev_hash": "9290058493fe2249",
+          "commit": "a180916",
+          "note": "2026-10-28 tensor and foam: coherence steering and depth detail; junctions and bubble walls; pair endpoints and pulses; flow dashes and quiet basins; depth-weighted and membrane-preserving diffusion"
+        }
+      ]
     },
     "tesseract-fold": {
       "hash": "620ceb95291ab10f",

@@ -7,10 +7,13 @@
 //  Created: 2026-05-23
 //  By: Claude Sonnet 4.6 (swarm optimization pass 2026-05-31)
 //  upgraded-rgba
+//  Upgraded: 2026-10-28
+//  Ideas: coherence-steered tensor noise; depth-edge-aware detail restoration
+//  A packing: raw positive/negative eigenvalues, warp magnitude, validity
 // ═══════════════════════════════════════════════════════════════════
 //  CHUNK: IGN dither (Interleaved Gradient Noise, added 2026-05-31)
 #include "_prelude.wgsl"
-// zoom_params: x=StrainScale, y=DetailPreserve, z=DepthWeight, w=TensorMode
+// zoom_params: x=StrainScale, y=DetailPreserve, z=FlowSpeed, w=TensorMode
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -91,7 +94,8 @@ fn tensorEigen(a: f32, b: f32, d: f32) -> Eigen2 {
     
     // Branchless vector calculation
     let bIsSmall = step(abs(b), 1e-6);
-    let vp = mix(normalize(vec2<f32>(lp - d, b)), vec2<f32>(1.0, 0.0), bIsSmall);
+    let v = vec2<f32>(lp - d, b);
+    let vp = mix(v / max(length(v), 1e-6), vec2<f32>(1.0, 0.0), bIsSmall);
     
     var e: Eigen2;
     e.lam_pos = lp;
@@ -137,7 +141,7 @@ fn rippleDisp(uv: vec2<f32>, t: f32, cnt: u32, lodFactor: f32) -> vec2<f32> {
         let wave = sin(dist * 28.0 - age * 6.0) * exp(-dist * 5.0) * exp(-age * 1.1);
         // Branchless distance check
         let valid = step(0.001, dist);
-        d = d + normalize(uv - r.xy) * wave * (1.0 - age / 4.0) * 0.015 * valid;
+        d = d + (uv - r.xy) / max(dist, 0.001) * wave * (1.0 - age / 4.0) * 0.015 * valid;
     }
     return d;
 }
@@ -194,12 +198,17 @@ fn depthNormal(uv: vec2<f32>, tx: vec2<f32>, lodFactor: f32) -> vec3<f32> {
     if (lodFactor > 0.8) {
         return vec3<f32>(0.0, 0.0, 1.0);
     }
-    
+
     let dR = sampleDepth(uv + vec2<f32>(tx.x, 0.0));
     let dL = sampleDepth(uv - vec2<f32>(tx.x, 0.0));
     let dU = sampleDepth(uv + vec2<f32>(0.0, tx.y));
     let dD = sampleDepth(uv - vec2<f32>(0.0, tx.y));
     return normalize(vec3<f32>(dL - dR, dD - dU, 0.1));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -213,11 +222,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let t    = u.config.x;
     let tx   = 1.0 / res;
     let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters — bass amplifies stress field intensity
     let strainScale    = (u.zoom_params.x * 0.08 + 0.005) * (1.0 + bass * 0.5);
     let detailPreserve = u.zoom_params.y;
-    let depthWeight    = u.zoom_params.z;
+    let flowSpeed      = u.zoom_params.z;
     let tensorMode     = u.zoom_params.w;
 
     // Calculate distance from center for LOD
@@ -251,7 +262,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sinT = sin(t);
     let cosT = cos(t * 1.3);
 
-    let noiseFlow = vnoise(uv * 4.0 + vec2<f32>(t * 0.1, t * 0.07)) - 0.5;
+    let coherence = clamp(abs(eigen.lam_pos - eigen.lam_neg) /
+                          (abs(eigen.lam_pos) + abs(eigen.lam_neg) + 1e-5), 0.0, 1.0);
+    let noiseDomain = uv * 4.0 + eigen.vec_pos * coherence * (dX + dY) * 4.0;
+    let noiseFlow = vnoise(noiseDomain + vec2<f32>(t * 0.1, t * 0.07) * (0.25 + flowSpeed * 2.5) * (1.0 + mids * 0.2)) - 0.5;
     let flowAmp   = strainScale * (1.0 + noiseFlow * 0.5);
 
     // Reuse cached eigen values
@@ -265,27 +279,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let totalWarp = tensorWarp + normalFlow + rDisp;
     let warpedUV  = clamp(uv + totalWarp, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // OPTIMIZATION: Early exit for minimal distortion
     let warpMag = length(totalWarp);
-    if (warpMag < 0.001 && lodFactor > 0.9) {
-        let colCenter = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-        textureStore(writeTexture, gid.xy, colCenter);
-        textureStore(writeDepthTexture, gid.xy, vec4<f32>(h, 0.0, 0.0, 1.0));
-        return;
-    }
 
     let colWarped = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
     let colCenter = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     
     // OPTIMIZATION: Reduce laplacian samples at high LOD
     let lap = colCenter.rgb
-        - ( textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(tx.x, 0.0), 0.0).rgb
-          + textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(tx.x, 0.0), 0.0).rgb
-          + textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, tx.y), 0.0).rgb
-          + textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, tx.y), 0.0).rgb
+        - ( textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(tx.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+          + textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(tx.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+          + textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, tx.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+          + textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, tx.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
         ) * 0.25;
 
-    let result = clamp(colWarped.rgb + lap * detailPreserve * 2.5, vec3<f32>(0.0), vec3<f32>(1.0));
+    let reliefBreak = clamp(length(vec2<f32>(dX, dY)) * 12.0, 0.0, 1.0);
+    let safeDetail = detailPreserve * (1.0 - reliefBreak * 0.8);
+    let result = clamp(colWarped.rgb + lap * safeDetail * 2.5, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // OPTIMIZATION: LOD-based FBM octaves
     let fbmOctaves = i32(mix(4.0, 2.0, lodFactor));
@@ -303,16 +312,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Reuse cached eigen values + precomputed sinT/cosT
     let sColor = stressColor(eigen.lam_pos, eigen.lam_neg, sinT, cosT);
-    let sBlend = length(tensorWarp) * 4.0 * (1.0 - detailPreserve) * 0.5;
+    let sBlend = length(tensorWarp) * 4.0 * (1.0 - detailPreserve) * 0.5 * (1.0 + treble * 0.2);
 
     var finalResult = mix(result, colFBM.rgb, fbmBlend);
-    finalResult = mix(finalResult, finalResult + lap * 1.5, edgeMask * detailPreserve * 0.5);
+    finalResult = mix(finalResult, finalResult + lap * 1.5, edgeMask * safeDetail * 0.5);
     finalResult = finalResult * NdotL + sColor * clamp(sBlend, 0.0, 0.15);
     finalResult = clamp(finalResult, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // IGN dither to suppress banding in shadow/edge compression zones
     let ign = fract(52.9829189 * fract(dot(vec2<f32>(gid.xy), vec2<f32>(0.06711056, 0.00583715))));
-    let dithered = clamp(finalResult + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
+    let dithered = clamp(acesToneMap(finalResult) + (ign - 0.5) * (1.0 / 255.0), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // ═══ INPUT-AWARE ALPHA ═══
     let effectIntensity = clamp(warpMag, 0.0, 1.0);
