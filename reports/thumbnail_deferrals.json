@@ -1,6 +1,13 @@
 {
   "entries": [
     {
+      "id": "aetherial-chromatic-tesseract",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-10-29",
+      "expires": "2026-11-28",
+      "reason": "gpu-capture-pending"
+    },
+    {
       "id": "gen-acoustic-obsidian-resonator",
       "added_by": "Jules",
       "deferred_at": "2026-10-12",
@@ -9,12 +16,27 @@
       "failure_note": "Needs WebGPU to render"
     },
     {
+      "id": "gen-aetherial-chromatic-tesseract",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-10-29",
+      "expires": "2026-11-28",
+      "reason": "gpu-capture-pending"
+    },
+    {
       "id": "gen-aetheric-tachyon-lattice",
       "added_by": "Jules",
       "deferred_at": "2026-10-15",
       "expires": "2026-11-14",
       "reason": "other",
       "failure_note": "Needs WebGPU to render"
+    },
+    {
+      "id": "gen-bioluminescent-neural-coral-matrix",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-20",
+      "expires": "2026-11-19",
+      "reason": "gpu-capture-pending",
+      "failure_note": "New shader requires GPU capture for thumbnail"
     },
     {
       "id": "gen-liquid-metal-chrono-flora",
@@ -40,6 +62,14 @@
       "deferred_at": "2026-10-18",
       "expires": "2026-11-17",
       "reason": "gpu-capture-pending"
+    },
+    {
+      "id": "gen-magmatic-cyber-hex-lattice",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-27",
+      "expires": "2026-11-26",
+      "reason": "gpu-capture-pending",
+      "failure_note": "New shader requires GPU capture for thumbnail"
     },
     {
       "id": "gen-orb",
@@ -142,6 +172,14 @@
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
     },
     {
+      "id": "gen-stellar-mycelium-overdrive",
+      "added_by": "Jules",
+      "deferred_at": "2026-10-23",
+      "expires": "2026-11-22",
+      "reason": "gpu-capture-pending",
+      "failure_note": "New shader requires GPU capture for thumbnail"
+    },
+    {
       "id": "gen-symbiotic-cyber-fungal-core-reactor",
       "added_by": "thumbnail-campaign",
       "deferred_at": "2026-09-26",
@@ -174,30 +212,6 @@
       "deferred_at": "2026-10-16",
       "expires": "2026-11-15",
       "reason": "gpu-capture-pending"
-    },
-    {
-      "id": "gen-bioluminescent-neural-coral-matrix",
-      "added_by": "Jules",
-      "deferred_at": "2026-10-20",
-      "expires": "2026-11-19",
-      "reason": "gpu-capture-pending",
-      "failure_note": "New shader requires GPU capture for thumbnail"
-    },
-    {
-      "id": "gen-stellar-mycelium-overdrive",
-      "added_by": "Jules",
-      "deferred_at": "2026-10-23",
-      "expires": "2026-11-22",
-      "reason": "gpu-capture-pending",
-      "failure_note": "New shader requires GPU capture for thumbnail"
-    },
-    {
-      "id": "gen-magmatic-cyber-hex-lattice",
-      "added_by": "Jules",
-      "deferred_at": "2026-10-27",
-      "expires": "2026-11-26",
-      "reason": "gpu-capture-pending",
-      "failure_note": "New shader requires GPU capture for thumbnail"
     }
   ]
 }
