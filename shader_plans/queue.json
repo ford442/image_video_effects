@@ -713,9 +713,12 @@
     {
       "filename": "2026-10-27_aetherial-chromatic-tesseract.md",
       "title": "Aetherial Chromatic Tesseract",
-      "added": "2026-10-27T15:21:31.626573",
-      "status": "completed",
-      "completed_at": "2026-10-27T12:00:00Z"
+      "added": "2026-10-27T15:21:31.626573"
+    },
+    {
+      "filename": "2026-10-28_neural-loom.md",
+      "title": "Neural Loom",
+      "added": "2026-10-28T15:20:39.813573"
     }
   ],
   "current": null,
