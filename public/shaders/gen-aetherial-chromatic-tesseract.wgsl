@@ -51,7 +51,7 @@ fn calcNormal(p: vec3<f32>, time: f32, bass: f32, mids: f32, fold_complexity: f3
     );
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     if (f32(id.x) >= resolution.x || f32(id.y) >= resolution.y) {
@@ -62,10 +62,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let time = u.config.x;
 
     // Parameters
-    let fold_complexity = u.sliderA; // 1.0
-    let iridescence_shift = u.sliderB; // 0.5
-    let gravity_strength = u.sliderC; // 1.0
-    let glow_intensity = u.sliderD; // 1.0
+    let fold_complexity = u.zoom_params.x; // 1.0
+    let iridescence_shift = u.zoom_params.y; // 0.5
+    let gravity_strength = u.zoom_params.z; // 1.0
+    let glow_intensity = u.zoom_params.w; // 1.0
 
     // Audio Reactivity
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);

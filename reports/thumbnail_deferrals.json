@@ -16,6 +16,13 @@
       "failure_note": "Needs WebGPU to render"
     },
     {
+      "id": "gen-aetherial-chromatic-tesseract",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-10-29",
+      "expires": "2026-11-28",
+      "reason": "gpu-capture-pending"
+    },
+    {
       "id": "gen-aetheric-tachyon-lattice",
       "added_by": "Jules",
       "deferred_at": "2026-10-15",
