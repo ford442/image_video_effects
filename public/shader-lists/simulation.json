@@ -2150,7 +2150,7 @@
     "id": "predator-prey",
     "name": "Pixel Ecology",
     "url": "shaders/predator-prey.wgsl",
-    "description": "Cellular-automata food chain of plants, herbivores, and carnivores. Prey lose energy to adjacent predators; animal death composts into plants.",
+    "description": "Cellular-automata food chain of plants, herbivores, and carnivores. Prey lose energy to adjacent predators and carcasses compost into plants; carnivores hunt in packs while herds dilute the bite. Fed parents settle offspring on prey cells, hungry cells pale and breed-ready ones shimmer.",
     "params": [
       {
         "id": "eatProbability",

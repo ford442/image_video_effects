@@ -86,8 +86,17 @@
       "history": []
     },
     "bio-touch-em": {
-      "hash": "0976859f00d729de",
-      "history": []
+      "hash": "4b6a77899c8a8430",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "4b6a77899c8a8430",
+          "prev_hash": "0976859f00d729de",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "bioluminescent-blackbody": {
       "hash": "1be19ad5bb7a5eff",
@@ -110,8 +119,17 @@
       "history": []
     },
     "boids-rgba-ecosystem": {
-      "hash": "61d47c05041e297a",
-      "history": []
+      "hash": "f22c869758c9cace",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "f22c869758c9cace",
+          "prev_hash": "61d47c05041e297a",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "breathing-kaleidoscope-morph": {
       "hash": "c971f6fbc6b83d8e",
@@ -228,8 +246,17 @@
       "history": []
     },
     "cyber-organic-ecosystem": {
-      "hash": "d5d6c5404c155eba",
-      "history": []
+      "hash": "64c855827f36b140",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "64c855827f36b140",
+          "prev_hash": "d5d6c5404c155eba",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "cyber-rain-em": {
       "hash": "c9b64031708fd22d",
@@ -302,8 +329,17 @@
       "history": []
     },
     "digital-moss-rgba": {
-      "hash": "defdaaf435f92c1a",
-      "history": []
+      "hash": "950873ff00b77e06",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "950873ff00b77e06",
+          "prev_hash": "defdaaf435f92c1a",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "digital-reveal-guided": {
       "hash": "0f951bb6c990aeb0",
@@ -491,8 +527,17 @@
       "history": []
     },
     "gen-xeno-botanical-ecosystem": {
-      "hash": "0fa509b1998e0757",
-      "history": []
+      "hash": "2cfc937595da9923",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "2cfc937595da9923",
+          "prev_hash": "0fa509b1998e0757",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "glass-bead-curtain-iridescence": {
       "hash": "f7be30a926908330",
@@ -762,8 +807,17 @@
       ]
     },
     "predator-prey-rgba": {
-      "hash": "5eef2cddf7925537",
-      "history": []
+      "hash": "d4b23e285d8fc259",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "d4b23e285d8fc259",
+          "prev_hash": "5eef2cddf7925537",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "quantum-foam-bilateral": {
       "hash": "6043aff430144ccd",
@@ -950,8 +1004,17 @@
       "history": []
     },
     "bioluminescent": {
-      "hash": "088220166fee0fbf",
-      "history": []
+      "hash": "ac2197560ec62e69",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "ac2197560ec62e69",
+          "prev_hash": "088220166fee0fbf",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "boids": {
       "hash": "0b9faab4cf1cbdad",
@@ -3867,7 +3930,7 @@
       ]
     },
     "gen-emergent-calligraphic-ecosystems": {
-      "hash": "1e37889504ded387",
+      "hash": "38be48c6c0a1b69b",
       "history": [
         {
           "event": "upgraded",
@@ -3876,6 +3939,14 @@
           "prev_hash": "57750b9a8a30dbf6",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "38be48c6c0a1b69b",
+          "prev_hash": "1e37889504ded387",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
         }
       ]
     },
@@ -12185,8 +12256,17 @@
       ]
     },
     "alpha-multi-state-ecosystem": {
-      "hash": "74c0d976a68a2010",
-      "history": []
+      "hash": "ab0fbadbb667ed35",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "ab0fbadbb667ed35",
+          "prev_hash": "74c0d976a68a2010",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "alpha-reaction-diffusion-rgba": {
       "hash": "7d61d75fb3bb4769",
@@ -12380,8 +12460,17 @@
       "history": []
     },
     "predator-prey": {
-      "hash": "410916d9a69e7c9a",
-      "history": []
+      "hash": "702695a4245f499b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T02:38:26.060Z",
+          "hash": "702695a4245f499b",
+          "prev_hash": "410916d9a69e7c9a",
+          "commit": "bd4cbdd7",
+          "note": "2026-10-31 sonnet/batch-05 ecosystem/predator-prey/bio ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-05"
+        }
+      ]
     },
     "quantum-foam-pass1": {
       "hash": "88067e6b4f51bd0c",

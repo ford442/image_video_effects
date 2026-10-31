@@ -18,7 +18,8 @@
   "features": [
     "mouse-driven",
     "temporal",
-    "rgba-state-machine"
+    "rgba-state-machine",
+    "upgraded-rgba"
   ],
   "params": [
     {

@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: reciprocal hunt (prey lose energy to adjacent predators); carcass compost
+//  Upgraded: 2026-09-12, 2026-10-31
+//  Ideas: reciprocal hunt (prey lose energy to adjacent predators); carcass compost; pack hunting vs herd dilution (neighbour-count scaling of eat chance / predation loss); breed-ready shimmer + starvation pallor on the energy already stored; ecotone canopy rim from the neighbour census
 //  A packing: raw (species, energy, age, variant)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -91,6 +91,20 @@ fn findBestNeighbor(coord: vec2<i32>, dims: vec2<i32>, mySpecies: i32, forEating
   return bestNeighbor;
 }
 
+// HEAD fix: only counts neighbours of `kind` whose stored energy clears the Breed Threshold,
+// so the shimmering "breed-ready" cells are the ones that actually found offspring.
+fn readyParents(coord: vec2<i32>, dims: vec2<i32>, kind: i32, threshold: f32) -> i32 {
+  var n = 0;
+  for (var dy = -1; dy <= 1; dy = dy + 1) {
+    for (var dx = -1; dx <= 1; dx = dx + 1) {
+      if (dx == 0 && dy == 0) { continue; }
+      let nb = stateAt(coord + vec2<i32>(dx, dy), dims);
+      n = n + select(0, 1, getSpeciesType(nb.r) == kind && nb.g > threshold);
+    }
+  }
+  return n;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -115,7 +129,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var myType = getSpeciesType(species);
 
   let rand = hash21(uv * 1000.0 + vec2<f32>(time * 100.0));
-  let rand2 = hash21(uv * 2000.0 + vec2<f32>(time * 50.0 + 1.0));
+  // HEAD fix: uv*2000 is exactly 2x the uv*1000 behind `rand`, so rand2 was locked to rand and the
+  // spawn lottery (rand tiny -> rand2 < 0.7) only ever produced plants. Decorrelated lattice below.
+  let rand2 = hash21(vec2<f32>(coord) * 0.7313 + vec2<f32>(time * 37.0 + 11.0, time * 19.0 + 3.0));
+
+  // HEAD fix: death shares no hash with the spawn / birth lotteries. At HEAD births fired on
+  // `rand < ~0.01-0.06` and death on `rand < deathRate` (0.0165 at default), so a newborn died
+  // in its own birth frame (animals composted to plants, plants to empty) and nothing ever lived.
+  let rand3 = hash21(vec2<f32>(coord.yx) * 0.4177 + vec2<f32>(time * 23.0 + 5.0, time * 53.0 + 7.0));
 
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let sourceLum = dot(sourceColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
@@ -176,7 +197,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (myType >= 2) {
       let preyNeighbor = findBestNeighbor(coord, dims, myType, true);
       let preyType = getSpeciesType(preyNeighbor.r);
-      if (canEat(myType, preyType) && rand < eatProbability) {
+      // ── Idea 3: pack hunting — each adjacent carnivore improves a carnivore's strike chance
+      let packBoost = select(1.0, 1.0 + 0.15 * f32(neighbors[3]), myType == 3);
+      if (canEat(myType, preyType) && rand < eatProbability * packBoost) {
         energy = energy + preyNeighbor.g * 0.5;
         energy = min(energy, 1.0);
       }
@@ -185,12 +208,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         energy = energy - 0.003;
       }
       // Idea 1 — herbivores lose energy to adjacent carnivores
+      // ── Idea 3: herd dilution — the same census shares each predator's bite among herd-mates
       if (myType == 2) {
-        energy = energy - f32(neighbors[3]) * eatProbability * 0.022;
+        let dilution = 1.0 / (1.0 + 0.08 * f32(neighbors[2]));
+        energy = energy - f32(neighbors[3]) * eatProbability * 0.022 * dilution;
       }
     }
 
-    if (energy <= 0.0 || age > 1.0 || rand < deathRate) {
+    if (energy <= 0.0 || age > 1.0 || rand3 < deathRate) {
       // Idea 2 — carcass compost: animals become plants instead of empty
       if (myType >= 2) {
         species = PLANT;
@@ -205,8 +230,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       }
     }
 
-    if (myType > 0 && energy > breedThreshold && rand2 < 0.05) {
-      if (neighbors[0] > 0) {
+    if (myType > 0 && energy > breedThreshold && rand2 < 0.12) {
+      // HEAD fix: breeding cost also applies when the only free sites are prey cells
+      let sites = neighbors[0] + select(0, neighbors[myType - 1], myType >= 2);
+      if (sites > 0) {
         energy = energy * 0.5;
       }
     }
@@ -237,6 +264,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
+  // HEAD fix: at HEAD offspring could only be born into EMPTY cells, but plants (and composted
+  // carcasses) fill every cell within seconds, so animals went extinct and the field became a
+  // green carpet. Fed parents now settle on their prey's cell (a grazed plant / a taken herbivore).
+  // Settlement is rate-limited (1% / 0.3% per ready parent) and the parent's halving cost fires at 12%/frame,
+  // so a parent pays roughly what it sows and the pyramid stays plants > herbivores > carnivores.
+  if (myType == 1) {
+    if (rand2 < 0.01 * f32(readyParents(coord, dims, 2, breedThreshold))) {
+      species = HERBIVORE;
+      energy = 0.45;
+      age = 0.0;
+      myType = 2;
+    }
+  } else if (myType == 2) {
+    if (rand2 < 0.003 * f32(readyParents(coord, dims, 3, breedThreshold))) {
+      species = CARNIVORE;
+      energy = 0.55;
+      age = 0.0;
+      myType = 3;
+    }
+  }
+
   textureStore(dataTextureA, coord, vec4<f32>(species, energy, age, variant));
 
   var finalColor = sourceColor.rgb * 0.3;
@@ -254,6 +302,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   if (speciesType > 0) {
     finalColor = finalColor + vec3<f32>(energy * 0.3);
+    // ── Idea 4: starvation pallor — low-energy cells bleach toward grey (reads the stored energy)
+    let hunger = clamp(1.0 - energy / 0.2, 0.0, 1.0);
+    let greyLum = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
+    finalColor = mix(finalColor, vec3<f32>(greyLum), hunger * 0.45);
+    // ── Idea 4: breed-ready shimmer — cells above the Breed Threshold pulse warm
+    let ready = select(0.0, 1.0, energy > breedThreshold && speciesType >= 2);
+    finalColor = finalColor + vec3<f32>(0.22, 0.16, 0.05) * ready * (0.5 + 0.5 * sin(time * 6.0 + variant * 20.0));
+    // ── Idea 5: ecotone canopy rim — interior cells shade down, colony margins keep full light
+    let same = f32(neighbors[speciesType]) / 8.0;
+    finalColor = finalColor * (0.8 + 0.2 * (1.0 - same)) + finalColor * 0.18 * (1.0 - same) * (1.0 - same);
   }
   if (speciesType > 0 && variant > 0.0) {
     let hueShift = variant * 0.2;
