@@ -14,7 +14,9 @@ bash "$SCRIPT_DIR/concat_bridge.sh"
 source "$SCRIPT_DIR/emsdk_env_locate.sh"
 
 # Check if emcc is available early.
-# Missing emcc is a hard failure unless SKIP_WASM_BUILD=1 (headless dev VMs without emsdk).
+# This script is the explicit WASM compile (`npm run wasm:build`, or `BUILD_WASM=1 npm run build`).
+# Plain `npm run build` never calls it, so a missing emcc is a hard failure here.
+# SKIP_WASM_BUILD=1 is a legacy alias kept for old CI/agent habits: bridge sync only, exit 0.
 if ! command -v emcc &> /dev/null; then
     if [ "${SKIP_WASM_BUILD:-}" = "1" ]; then
         echo "[INFO] SKIP_WASM_BUILD=1 — skipping WASM build (emcc not found)."
@@ -24,7 +26,7 @@ if ! command -v emcc &> /dev/null; then
     fi
     echo "❌ Error: emcc not found. Install the Emscripten SDK to build the WASM renderer."
     echo "   See: https://emscripten.org/docs/getting_started/downloads.html"
-    echo "   To skip intentionally (e.g. CI job using pre-built artifacts): SKIP_WASM_BUILD=1 npm run wasm:build"
+    echo "   Plain \`npm run build\` does not need emcc: it ships the committed public/wasm/*."
     exit 1
 fi
 

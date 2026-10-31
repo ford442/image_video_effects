@@ -89,7 +89,7 @@ These are required so the shader can live in the catalog. They are **not** the c
 - Held pointer and capped click fronts **only if they belong on this effect.** A vignette does not need shockwaves. A brush does.
 - Naga-clean WGSL. No reserved identifiers (`target`, `array`, …).
 
-Cloud-VM proof is structural (Naga, extraBuffer, dead sliders, catalogs, Jest, `SKIP_WASM_BUILD=1` build). Real-GPU visual QA is external and still required — do not claim the ideas “look right” from the VM.
+Cloud-VM proof is structural (Naga, extraBuffer, dead sliders, catalogs, Vitest, `npm run build`). Real-GPU visual QA is external and still required — do not claim the ideas “look right” from the VM.
 
 ---
 
@@ -138,7 +138,7 @@ npm run audit:extrabuffer
 npm run audit:dead-sliders -- --files <id1> <id2> …
 node scripts/generate_shader_lists.js
 npm test -- --watchAll=false --ci
-SKIP_WASM_BUILD=1 npm run build
+npm run build
 ```
 
 Notes must list, per shader: Idea Card, what was kept verbatim, A packing, and which ideas are visible in the diff. Structural green without cards is not a complete batch.
@@ -337,7 +337,7 @@ Write:
   - pp-sharpen: bilateral range-weight; unsharp coring. Modes kept. No spring.
   - brush-strokes: bristle tangent; wet-edge C accumulation. Radius param kept.
 - Floor: bindings / 16×16 / exact C / A packing as documented / saved params exact.
-- Gates: Naga N/N, extraBuffer, dead sliders, catalogs, Jest, SKIP_WASM_BUILD=1 build.
+- Gates: Naga N/N, extraBuffer, dead sliders, catalogs, Vitest, `npm run build`.
 - Real-GPU visual QA: external.
 ```
 

@@ -16,7 +16,7 @@ v2 had no `speedupMetric`, no uncapped leg and no isolation; its `speedupRatio` 
 ## Running on a real GPU
 
 ```bash
-SKIP_WASM_BUILD=1 npm run build
+npm run build
 WASM_GPU_TESTS=1 npm run test:wasm:bench
 # un-quantised timestamps (recommended for the gate):
 WASM_GPU_TESTS=1 WASM_BENCH_DEV_FEATURES=1 npm run test:wasm:bench

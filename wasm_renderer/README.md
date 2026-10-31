@@ -151,7 +151,7 @@ cd wasm_renderer
 ./build.sh
 ```
 
-`SKIP_WASM_BUILD=1` skips when `emcc` is missing (uses committed `public/wasm/` artifacts).
+`build.sh` needs `emcc`. The app build (`npm run build`) does not call it unless `BUILD_WASM=1`; it ships the committed `public/wasm/` artifacts.
 
 #### Compile flags (reviewed July 2026)
 
@@ -397,7 +397,7 @@ hardened the init/format/limits handshake:
 - Promotion gates — [`WASM_PROMOTION_TRACKING.md`](../docs/WASM_PROMOTION_TRACKING.md)
 - Edge-GPU manual verification
 - Visual pixel-diff automation
-- `build.sh` requires `emcc` unless `SKIP_WASM_BUILD=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
+- `build.sh` requires `emcc`; `npm run build` does not call it unless `BUILD_WASM=1` (see [`ARTIFACTS.md`](./ARTIFACTS.md))
 
 Full tracking: [`WASM_RENDERER_GAP_ANALYSIS.md`](../docs/WASM_RENDERER_GAP_ANALYSIS.md) · [`STATUS.md`](./STATUS.md)
 

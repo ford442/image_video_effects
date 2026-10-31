@@ -8,7 +8,7 @@
  * purpose, plus a deterministic sample of the catalog. `PX_FULL_CATALOG=1`
  * checks every shader (slow on SwiftShader: each pipeline is JIT-compiled).
  *
- * Needs a production build: `SKIP_WASM_BUILD=1 npm run build`.
+ * Needs a production build: `npm run build`.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { readdirSync, readFileSync } from 'fs';

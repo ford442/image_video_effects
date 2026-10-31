@@ -38,7 +38,7 @@ export async function startStaticServer(buildDir = BUILD_DIR, port = DEFAULT_POR
   const indexHtml = resolve(buildDir, 'index.html');
   if (!existsSync(indexHtml)) {
     throw new Error(
-      `Missing ${indexHtml}. Run "SKIP_WASM_BUILD=1 npm run build" before thumbnail generation.`,
+      `Missing ${indexHtml}. Run "npm run build" before thumbnail generation.`,
     );
   }
 
