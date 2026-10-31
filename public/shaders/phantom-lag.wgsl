@@ -4,7 +4,9 @@
 //  Features: temporal-echo, multi-tap-delay, mouse-velocity-driven, audio-reactive,
 //            chromatic-echo, spring-damper-bass, aces-tone-map, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-07-12
+//  Upgraded: 2026-10-30
+//  Ideas: lag fan with midpoint filament; catch-up collapse
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -21,6 +23,11 @@ fn spring_damper(prev: f32, goal: f32, vel: ptr<function, f32>, k: f32, d: f32) 
   (*vel) = (*vel) + force;
   (*vel) = (*vel) * (1.0 - d);
   return prev + (*vel);
+}
+
+fn loadC(uv: vec2<f32>, res: vec2<f32>) -> vec3<f32> {
+  let c = clamp(vec2<i32>(uv * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  return textureLoad(dataTextureC, c, 0).rgb;
 }
 
 fn sampleEcho(uv: vec2<f32>, chroma: f32) -> vec3<f32> {
@@ -47,11 +54,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let mouseDown = u.zoom_config.w;
 
+  let mouse = u.zoom_config.yz;
+  let hasState = arrayLength(&extraBuffer) > 137u;
+  var prevBass = bassRaw;
   var bassVel = 0.0;
-  let bass = spring_damper(extraBuffer[3], bassRaw, &bassVel, 0.1, 0.08);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[3] = bass;
+  var prevMouse = mouse;
+  if (hasState) {
+    prevBass = extraBuffer[136];
+    bassVel = extraBuffer[137];
+    prevMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
   }
+  let bass = spring_damper(prevBass, bassRaw, &bassVel, 0.1, 0.08);
 
   let decay = clamp(0.85 + u.zoom_params.x * 0.13 + bass * 0.05, 0.0, 0.99);
   let echoDistance = u.zoom_params.y * 0.08 * (1.0 + mids * 0.3);
@@ -59,19 +72,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let hueShift = clamp(u.zoom_params.w, 0.0, 1.0);
   let chromaAmt = 0.002 + treble * 0.004;
 
-  let prevMouse = vec2<f32>(extraBuffer[0], extraBuffer[1]);
-  let mouse = u.zoom_config.yz;
   let mouseVel = mouse - prevMouse;
   let speed = clamp(length(mouseVel) * 60.0, 0.0, 1.5);
 
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[0] = mouse.x;
-    extraBuffer[1] = mouse.y;
-    extraBuffer[2] = speed;
+  if (global_id.x == 0u && global_id.y == 0u && hasState) {
+    extraBuffer[133] = mouse.x;
+    extraBuffer[134] = mouse.y;
+    extraBuffer[135] = speed;
+    extraBuffer[136] = bass;
+    extraBuffer[137] = bassVel;
   }
 
   let velLen = max(length(mouseVel), 1e-4);
   let echoDir = mouseVel / velLen;
+  let perp = vec2<f32>(-echoDir.y, echoDir.x);
   let sharpness = mix(1.0, 0.4, mouseDown);
   let baseStep = echoDir * echoDistance * (1.0 + speed * 0.5) * sharpness;
 
@@ -83,13 +97,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i = 1; i <= 5; i++) {
     let tapActive = step(f32(i), tapCountF);
     let dist = baseStep * f32(i) / pow(PHI, f32(i - 1));
-    let tapUV = clamp(uv - dist, vec2<f32>(0.0), vec2<f32>(1.0));
-    let tap = textureSampleLevel(dataTextureC, u_sampler, tapUV, 0.0).rgb;
+    // ── Idea 1: lag fan ─────────────────────────────────────────────
+    // Taps step off the velocity along its perpendicular, and a midpoint
+    // sample fills the gap so the phantom is a streak rather than copies.
+    let fan = perp * echoDistance * 0.55 * f32(i) * speed;
+    let tapUV = clamp(uv - dist + fan, vec2<f32>(0.0), vec2<f32>(1.0));
+    let midUV = clamp(uv - dist * 0.5 + fan * 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+    let tap = loadC(tapUV, resolution);
+    let filament = loadC(midUV, resolution);
     let tapChroma = sampleEcho(tapUV, chromaAmt * f32(i) * 0.5);
-    let blendedTap = mix(tap, tapChroma, tapActive * 0.35);
+    let blendedTap = mix(mix(tap, filament, 0.4), tapChroma, tapActive * 0.35);
     accum += blendedTap * tapWeight * tapActive;
     w += tapWeight * tapActive;
     tapWeight *= mix(1.0, decay, tapActive);
+    // ── Idea 2: catch-up collapse ───────────────────────────────────
+    // When the pointer slows, older taps lose weight faster than the head.
+    let ageN = f32(i) / 5.0;
+    let settle = mix(1.0, mix(1.0, 0.4, ageN), 1.0 - clamp(speed, 0.0, 1.0));
+    tapWeight *= mix(1.0, settle, tapActive);
   }
   let echoes = accum / max(w, 1e-4);
 
@@ -102,9 +127,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / max(resolution.y, 1.0);
   let dMouse = length((uv - mouse) * vec2<f32>(aspect, 1.0));
   let cursorMask = exp(-dMouse * dMouse * 4.0);
-  let perp = vec2<f32>(-echoDir.y, echoDir.x);
   let stretchUV = clamp(uv + perp * speed * 0.01 * cursorMask, vec2<f32>(0.0), vec2<f32>(1.0));
-  let stretch = textureSampleLevel(dataTextureC, u_sampler, stretchUV, 0.0).rgb;
+  let stretch = loadC(stretchUV, resolution);
   newHistory = mix(newHistory, stretch, cursorMask * speed * 0.4);
 
   newHistory = acesToneMap(newHistory * (0.95 + mids * 0.15));

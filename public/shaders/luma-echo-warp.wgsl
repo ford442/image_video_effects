@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, temporal-echo, depth-attenuation, upgraded-rgba, curl-noise, chromatic-echo
 //  Complexity: High
-//  Upgraded: 2026-10-06
-//  Ideas: terraced luma weight (equal-luma bands warp as rigid terraces); contour ghost lines (band edges echo longer)
+//  Upgraded: 2026-10-30 (prev 2026-10-06)
+//  Ideas: terraced luma weight; contour ghost lines; bright-lead trail; terrace riser shade
 //  A packing: linear echo RGB (pre-tint/sparkle, clamped 0..1.2) + alpha (echo coverage)
 //  History: created 2024-01-01; upgraded 2026-06-28; kimi-swarm 2026-07-19
 // ═══════════════════════════════════════════════════════════════════
@@ -133,9 +133,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Per-channel exact history taps offset along the warp direction.
     let caMag = (0.0012 + bass * 0.0018) * (0.3 + 0.7 * influence);
     let caVec = dir * caMag + warp * 0.05;
-    let histG = loadHist(uv, resolution);
-    let histR = loadHist(clamp(uv + caVec, vec2<f32>(0.0), vec2<f32>(1.0)), resolution).r;
-    let histB = loadHist(clamp(uv - caVec * 0.7, vec2<f32>(0.0), vec2<f32>(1.0)), resolution).b;
+    // ── Idea 1: bright-lead trail ───────────────────────────────────
+    // Highlights sample history further along the warp than shadows, so
+    // bright edges outrun dark ones in the echo.
+    let leadUV = clamp(uv - warp * luma, vec2<f32>(0.0), vec2<f32>(1.0));
+    let histG = loadHist(leadUV, resolution);
+    let histR = loadHist(clamp(leadUV + caVec, vec2<f32>(0.0), vec2<f32>(1.0)), resolution).r;
+    let histB = loadHist(clamp(leadUV - caVec * 0.7, vec2<f32>(0.0), vec2<f32>(1.0)), resolution).b;
     let history = vec4<f32>(histR, histG.g, histB, histG.a);
 
     // IDEA 2 — contour ghost lines: at luma band boundaries of the warped frame the echo
@@ -161,6 +165,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ghost lift: contour pixels whose echo differs from the live frame glow faintly.
     let ghost = contour * clamp(length(history.rgb - warpedColor.rgb) * 6.0, 0.0, 1.0);
     finalRGB = finalRGB * (1.0 + 0.35 * ghost) + vec3<f32>(0.03) * ghost;
+
+    // ── Idea 2: terrace riser shade ─────────────────────────────────
+    // The step between luma terraces darkens on the display. It is not
+    // written back into A, so the shade cannot accumulate.
+    let riser = abs(weight - weightSmooth);
+    let riserShade = clamp(riser * 10.0 * (0.35 + length(warp) * 6.0), 0.0, 0.5);
+    finalRGB = finalRGB * (1.0 - riserShade);
 
     finalRGB = aces(clamp(finalRGB, vec3<f32>(0.0), vec3<f32>(4.0)));
     let alpha = clamp(outputColor.a * 0.7 + influence * 0.2 + bass * 0.08, 0.0, 1.0);

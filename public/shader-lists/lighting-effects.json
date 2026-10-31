@@ -764,6 +764,7 @@
       "exact-history",
       "raw-hdr-feedback",
       "aces-tone-map",
+      "upgraded-rgba",
       "three-band-audio",
       "mouse-driven",
       "held-pointer",

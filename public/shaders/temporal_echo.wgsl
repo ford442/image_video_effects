@@ -1,27 +1,16 @@
-// Temporal Echo — depth-weighted orbital transport with chromatic exact history.
-// A/C stores raw HDR echo RGB plus semantic alpha; writeTexture is ACES display.
+// ═══════════════════════════════════════════════════════════════════
+//  Temporal Echo
+//  Category: lighting-effects
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-30
+//  Ideas: orbital arc smear; afterimage bleach
+//  A packing: raw HDR echo RGB + alpha; ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
+// Depth-weighted orbital transport with chromatic exact history.
 // B and extraBuffer are intentionally unused.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -106,20 +95,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let chromaDir = normalize(tangent + frontVector * 0.4 + vec2<f32>(0.0001)) / aspectVec;
   let spread = chromaSpread * (0.25 + orbitMask * 0.75) * (1.0 + treble * 0.45);
   let previousR = historyAt(echoUV + chromaDir * spread, resolution);
-  let previousG = historyAt(echoUV, resolution);
+  // ── Idea 1: orbital arc smear ───────────────────────────────────
+  // The echo is transported along `tangent`. Two extra exact-C taps a
+  // short arc ahead and behind turn the center sample into a streak.
+  let arcStep = tangent / aspectVec * (0.0035 + chromaSpread * 0.45);
+  let centerHist = historyAt(echoUV, resolution);
+  let arcAhead = historyAt(clamp(echoUV + arcStep, vec2<f32>(0.0), vec2<f32>(1.0)), resolution);
+  let arcBehind = historyAt(clamp(echoUV - arcStep, vec2<f32>(0.0), vec2<f32>(1.0)), resolution);
+  let previousG = mix(centerHist, (arcAhead + arcBehind) * 0.5, 0.6);
   let previousB = historyAt(echoUV - chromaDir * spread, resolution);
   var previousColor = vec3<f32>(previousR.r, previousG.g, previousB.b);
   let previousAlpha = max(previousR.a, max(previousG.a, previousB.a));
 
+  let effectiveDecay = clamp(decayRate * (1.0 - depth * depthInfluence * 0.68) *
+                                   (1.0 - bass * 0.22), 0.004, 0.18);
   var hsv = rgb2hsv(max(previousColor, vec3<f32>(0.0)));
   hsv.x = fract(hsv.x + hueSpeed * (0.009 + mids * 0.006) + echoFront * 0.012);
-  hsv.y = clamp(hsv.y * (0.99 + treble * 0.04), 0.0, 1.0);
+  // ── Idea 2: afterimage bleach ───────────────────────────────────
+  // Persisted color loses saturation as it decays, so old orbital
+  // trails go pale while the live injection stays saturated.
+  hsv.y = clamp(hsv.y * (0.99 + treble * 0.04) * (1.0 - effectiveDecay * 2.2), 0.0, 1.0);
   previousColor = hsv2rgb(hsv);
 
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let brightness = dot(current.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-  let effectiveDecay = clamp(decayRate * (1.0 - depth * depthInfluence * 0.68) *
-                                   (1.0 - bass * 0.22), 0.004, 0.18);
   let persistence = 1.0 - effectiveDecay;
   let injection = clamp(0.07 + brightness * 0.24 + bass * 0.08 +
                         abs(echoFront) * 0.08 + orbitMask * select(0.0, 0.06, held),
