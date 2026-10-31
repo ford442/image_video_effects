@@ -1,78 +1,185 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://pixelocity.app/contracts/project_file.v2.schema.json",
+  "$id": "https://pixelocity.app/contracts/project_file.v3.schema.json",
   "title": "Pixelocity project file",
-  "description": "A user-owned, local project file for the recoverable parts of a Pixelocity VJ session. v2 (#1512) adds the per-slot compositor fields b/o/m/k and render.hdr; a v1 file is migrated in one step (src/services/project/migrate.ts migrateV1ToV2).",
+  "description": "A user-owned, local project file for the recoverable parts of a Pixelocity VJ session. v3 (#1513) adds `modulation` (parameter modulation bus routes); v2 (#1512) added the per-slot compositor fields b/o/m/k and render.hdr. Older files migrate one step at a time (src/services/project/migrate.ts migrateV1ToV2, migrateV2ToV3).",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schemaVersion", "app", "createdAt", "chain", "activeSlot", "source", "render"],
+  "required": [
+    "schemaVersion",
+    "app",
+    "createdAt",
+    "chain",
+    "activeSlot",
+    "source",
+    "render",
+    "modulation"
+  ],
   "properties": {
-    "schemaVersion": { "const": 2 },
+    "schemaVersion": {
+      "const": 3
+    },
     "app": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["name", "version"],
+      "required": [
+        "name",
+        "version"
+      ],
       "properties": {
-        "name": { "const": "pixelocity" },
-        "version": { "type": "string", "minLength": 1, "maxLength": 128 }
+        "name": {
+          "const": "pixelocity"
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
       }
     },
-    "createdAt": { "type": "string", "format": "date-time" },
-    "chain": { "$ref": "#/$defs/sharedChain" },
-    "activeSlot": { "type": "integer", "minimum": 0, "maximum": 5 },
-    "source": { "$ref": "#/$defs/source" },
-    "render": { "$ref": "#/$defs/render" },
-    "audio": { "$ref": "#/$defs/audio" },
-    "timeline": { "$ref": "#/$defs/vjSetExport" }
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "chain": {
+      "$ref": "#/$defs/sharedChain"
+    },
+    "activeSlot": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "render": {
+      "$ref": "#/$defs/render"
+    },
+    "audio": {
+      "$ref": "#/$defs/audio"
+    },
+    "timeline": {
+      "$ref": "#/$defs/vjSetExport"
+    },
+    "modulation": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "#/$defs/modRoute"
+      }
+    }
   },
   "$defs": {
     "slotParams": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "zoomParam1": { "type": "number" },
-        "zoomParam2": { "type": "number" },
-        "zoomParam3": { "type": "number" },
-        "zoomParam4": { "type": "number" },
-        "lightStrength": { "type": "number" },
-        "ambient": { "type": "number" },
-        "normalStrength": { "type": "number" },
-        "fogFalloff": { "type": "number" },
-        "depthThreshold": { "type": "number" }
+        "zoomParam1": {
+          "type": "number"
+        },
+        "zoomParam2": {
+          "type": "number"
+        },
+        "zoomParam3": {
+          "type": "number"
+        },
+        "zoomParam4": {
+          "type": "number"
+        },
+        "lightStrength": {
+          "type": "number"
+        },
+        "ambient": {
+          "type": "number"
+        },
+        "normalStrength": {
+          "type": "number"
+        },
+        "fogFalloff": {
+          "type": "number"
+        },
+        "depthThreshold": {
+          "type": "number"
+        }
       }
     },
     "sharedChainSlot": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["shaderId"],
+      "required": [
+        "shaderId"
+      ],
       "properties": {
-        "shaderId": { "type": ["string", "null"], "maxLength": 128 },
-        "params": { "$ref": "#/$defs/slotParams" },
-        "enabled": { "type": "boolean" },
-        "mode": { "enum": ["chained", "parallel"] },
+        "shaderId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 128
+        },
+        "params": {
+          "$ref": "#/$defs/slotParams"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "mode": {
+          "enum": [
+            "chained",
+            "parallel"
+          ]
+        },
         "b": {
           "description": "Compositor output (#1512): 'mask' (a matte other slots can use) or a blend mode; absent = replace.",
-          "enum": ["mask", "normal", "add", "screen", "multiply", "overlay", "soft-light", "difference", "luma-key", "depth-key"]
+          "enum": [
+            "mask",
+            "normal",
+            "add",
+            "screen",
+            "multiply",
+            "overlay",
+            "soft-light",
+            "difference",
+            "luma-key",
+            "depth-key"
+          ]
         },
-        "o": { "description": "Layer opacity; absent = 1.", "type": "number", "minimum": 0, "maximum": 1 },
+        "o": {
+          "description": "Layer opacity; absent = 1.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
         "m": {
           "description": "Mask ref [!]<src>[~<feather>]: src l (luma), d (depth), s0..s5 (a slot's matte); '!' inverts.",
           "type": "string",
           "pattern": "^(!)?(l|d|s[0-5])(~(\\d*\\.?\\d+))?$"
         },
-        "k": { "description": "Key threshold for luma-key / depth-key; absent = the mode default.", "type": "number", "minimum": 0, "maximum": 1 }
+        "k": {
+          "description": "Key threshold for luma-key / depth-key; absent = the mode default.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
       }
     },
     "sharedChain": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["v", "slots"],
+      "required": [
+        "v",
+        "slots"
+      ],
       "properties": {
-        "v": { "const": 1 },
+        "v": {
+          "const": 1
+        },
         "slots": {
           "type": "array",
           "maxItems": 6,
-          "items": { "$ref": "#/$defs/sharedChainSlot" }
+          "items": {
+            "$ref": "#/$defs/sharedChainSlot"
+          }
         }
       }
     },
@@ -85,20 +192,61 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "properties": {
-        "kind": { "enum": ["image", "video", "webcam", "generative", "stream", "none"] },
-        "ref": { "$ref": "#/$defs/safeRef" },
-        "generativeShaderId": { "type": "string", "minLength": 1, "maxLength": 128 }
+        "kind": {
+          "enum": [
+            "image",
+            "video",
+            "webcam",
+            "generative",
+            "stream",
+            "none"
+          ]
+        },
+        "ref": {
+          "$ref": "#/$defs/safeRef"
+        },
+        "generativeShaderId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
       },
       "allOf": [
         {
-          "if": { "properties": { "kind": { "enum": ["image", "video", "stream"] } } },
-          "then": { "required": ["ref"] }
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "image",
+                  "video",
+                  "stream"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "ref"
+            ]
+          }
         },
         {
-          "if": { "properties": { "kind": { "const": "generative" } } },
-          "then": { "required": ["generativeShaderId"] }
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "generative"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "generativeShaderId"
+            ]
+          }
         }
       ]
     },
@@ -106,16 +254,38 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "renderScale": { "type": "number", "minimum": 0.25, "maximum": 1 },
-        "quality": { "enum": ["battery", "balanced", "ultra", "auto"] },
+        "renderScale": {
+          "type": "number",
+          "minimum": 0.25,
+          "maximum": 1
+        },
+        "quality": {
+          "enum": [
+            "battery",
+            "balanced",
+            "ultra",
+            "auto"
+          ]
+        },
         "hdr": {
           "description": "Final tonemap of the HDR (rgba16float, extended tone mapping) canvas; ignored on SDR output.",
           "type": "object",
           "additionalProperties": false,
-          "required": ["paperWhiteNits", "peakNits"],
+          "required": [
+            "paperWhiteNits",
+            "peakNits"
+          ],
           "properties": {
-            "paperWhiteNits": { "type": "number", "minimum": 80, "maximum": 10000 },
-            "peakNits": { "type": "number", "minimum": 80, "maximum": 10000 }
+            "paperWhiteNits": {
+              "type": "number",
+              "minimum": 80,
+              "maximum": 10000
+            },
+            "peakNits": {
+              "type": "number",
+              "minimum": 80,
+              "maximum": 10000
+            }
           }
         }
       }
@@ -123,10 +293,23 @@
     "trigger": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["source", "id"],
+      "required": [
+        "source",
+        "id"
+      ],
       "properties": {
-        "source": { "enum": ["midi-cc", "midi-note", "key"] },
-        "id": { "type": "string", "minLength": 1, "maxLength": 64 }
+        "source": {
+          "enum": [
+            "midi-cc",
+            "midi-note",
+            "key"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        }
       }
     },
     "action": {
@@ -134,28 +317,59 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "slot", "param"],
+          "required": [
+            "type",
+            "slot",
+            "param"
+          ],
           "properties": {
-            "type": { "const": "setSlotParam" },
-            "slot": { "type": "integer", "minimum": 0, "maximum": 5 },
-            "param": { "type": "string", "minLength": 1, "maxLength": 128 }
+            "type": {
+              "const": "setSlotParam"
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "param": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type", "slot"],
+          "required": [
+            "type",
+            "slot"
+          ],
           "properties": {
-            "type": { "const": "randomizeSlot" },
-            "slot": { "type": "integer", "minimum": 0, "maximum": 5 }
+            "type": {
+              "const": "randomizeSlot"
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["type"],
+          "required": [
+            "type"
+          ],
           "properties": {
-            "type": { "enum": ["randomizeAll", "triggerTransition", "toggleAutoTransition"] }
+            "type": {
+              "enum": [
+                "randomizeAll",
+                "triggerTransition",
+                "toggleAutoTransition"
+              ]
+            }
           }
         }
       ]
@@ -163,10 +377,17 @@
     "binding": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["trigger", "action"],
+      "required": [
+        "trigger",
+        "action"
+      ],
       "properties": {
-        "trigger": { "$ref": "#/$defs/trigger" },
-        "action": { "$ref": "#/$defs/action" }
+        "trigger": {
+          "$ref": "#/$defs/trigger"
+        },
+        "action": {
+          "$ref": "#/$defs/action"
+        }
       }
     },
     "audio": {
@@ -176,7 +397,9 @@
         "mappings": {
           "type": "array",
           "maxItems": 100,
-          "items": { "$ref": "#/$defs/binding" }
+          "items": {
+            "$ref": "#/$defs/binding"
+          }
         }
       }
     },
@@ -185,24 +408,66 @@
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["t", "slot", "kind", "value"],
+          "required": [
+            "t",
+            "slot",
+            "kind",
+            "value"
+          ],
           "properties": {
-            "t": { "type": "number", "minimum": 0 },
-            "slot": { "type": "integer", "minimum": 0, "maximum": 5 },
-            "kind": { "const": "shader" },
-            "value": { "type": "string", "minLength": 1, "maxLength": 128 }
+            "t": {
+              "type": "number",
+              "minimum": 0
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "kind": {
+              "const": "shader"
+            },
+            "value": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
           }
         },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["t", "slot", "kind", "key", "value"],
+          "required": [
+            "t",
+            "slot",
+            "kind",
+            "key",
+            "value"
+          ],
           "properties": {
-            "t": { "type": "number", "minimum": 0 },
-            "slot": { "type": "integer", "minimum": 0, "maximum": 5 },
-            "kind": { "const": "param" },
-            "key": { "enum": ["zoomParam1", "zoomParam2", "zoomParam3", "zoomParam4"] },
-            "value": { "type": "number" }
+            "t": {
+              "type": "number",
+              "minimum": 0
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "kind": {
+              "const": "param"
+            },
+            "key": {
+              "enum": [
+                "zoomParam1",
+                "zoomParam2",
+                "zoomParam3",
+                "zoomParam4"
+              ]
+            },
+            "value": {
+              "type": "number"
+            }
           }
         }
       ]
@@ -210,35 +475,341 @@
     "vjTimeline": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["hz", "durationMs", "events"],
+      "required": [
+        "hz",
+        "durationMs",
+        "events"
+      ],
       "properties": {
-        "hz": { "type": "number", "exclusiveMinimum": 0, "maximum": 120 },
-        "durationMs": { "type": "number", "minimum": 0 },
+        "hz": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 120
+        },
+        "durationMs": {
+          "type": "number",
+          "minimum": 0
+        },
         "events": {
           "type": "array",
           "minItems": 1,
           "maxItems": 200000,
-          "items": { "$ref": "#/$defs/timelineEvent" }
+          "items": {
+            "$ref": "#/$defs/timelineEvent"
+          }
         }
       }
     },
     "vjSetExport": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["exportVersion", "name", "savedAt", "chain", "chainString"],
+      "required": [
+        "exportVersion",
+        "name",
+        "savedAt",
+        "chain",
+        "chainString"
+      ],
       "properties": {
-        "exportVersion": { "const": 1 },
-        "name": { "type": "string", "minLength": 1 },
-        "vibePrompt": { "type": "string" },
-        "savedAt": { "type": "number" },
-        "chain": { "$ref": "#/$defs/sharedChain" },
-        "chainString": { "type": "string", "minLength": 1 },
+        "exportVersion": {
+          "const": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vibePrompt": {
+          "type": "string"
+        },
+        "savedAt": {
+          "type": "number"
+        },
+        "chain": {
+          "$ref": "#/$defs/sharedChain"
+        },
+        "chainString": {
+          "type": "string",
+          "minLength": 1
+        },
         "bindings": {
           "type": "array",
           "maxItems": 100,
-          "items": { "$ref": "#/$defs/binding" }
+          "items": {
+            "$ref": "#/$defs/binding"
+          }
         },
-        "timeline": { "$ref": "#/$defs/vjTimeline" }
+        "timeline": {
+          "$ref": "#/$defs/vjTimeline"
+        }
+      }
+    },
+    "modSource": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "shape",
+            "unit",
+            "rate"
+          ],
+          "properties": {
+            "kind": {
+              "const": "lfo"
+            },
+            "shape": {
+              "enum": [
+                "sine",
+                "tri",
+                "saw",
+                "square",
+                "sh"
+              ]
+            },
+            "unit": {
+              "enum": [
+                "hz",
+                "beats"
+              ]
+            },
+            "rate": {
+              "type": "number"
+            },
+            "phase": {
+              "type": "number"
+            },
+            "seed": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "attack",
+            "decay",
+            "sustain",
+            "release",
+            "gate"
+          ],
+          "properties": {
+            "kind": {
+              "const": "adsr"
+            },
+            "attack": {
+              "type": "number"
+            },
+            "decay": {
+              "type": "number"
+            },
+            "sustain": {
+              "type": "number"
+            },
+            "release": {
+              "type": "number"
+            },
+            "gate": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "from"
+                  ],
+                  "properties": {
+                    "from": {
+                      "const": "onset"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "from",
+                    "key"
+                  ],
+                  "properties": {
+                    "from": {
+                      "const": "external"
+                    },
+                    "key": {
+                      "type": "string"
+                    }
+                  }
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "from",
+                    "every",
+                    "length"
+                  ],
+                  "properties": {
+                    "from": {
+                      "const": "beat"
+                    },
+                    "every": {
+                      "type": "number"
+                    },
+                    "length": {
+                      "type": "number"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "band"
+          ],
+          "properties": {
+            "kind": {
+              "const": "audio"
+            },
+            "band": {
+              "enum": [
+                "bass",
+                "mid",
+                "high",
+                "onset"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "steps",
+            "stepBeats"
+          ],
+          "properties": {
+            "kind": {
+              "const": "sequencer"
+            },
+            "steps": {
+              "type": "array",
+              "minItems": 16,
+              "maxItems": 16,
+              "items": {
+                "type": "number"
+              }
+            },
+            "stepBeats": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "seed",
+            "rate",
+            "step"
+          ],
+          "properties": {
+            "kind": {
+              "const": "random"
+            },
+            "seed": {
+              "type": "number"
+            },
+            "rate": {
+              "type": "number"
+            },
+            "step": {
+              "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "key"
+          ],
+          "properties": {
+            "kind": {
+              "const": "external"
+            },
+            "key": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "modRoute": {
+      "description": "Modulation route (#1513): value = clamp(base + depth * curve(source) + offset, min, max) with the target param's range.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "target",
+        "depth",
+        "offset",
+        "curve"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "$ref": "#/$defs/modSource"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "slot",
+            "param"
+          ],
+          "properties": {
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "param": {
+              "enum": [
+                "p1",
+                "p2",
+                "p3",
+                "p4",
+                "opacity"
+              ]
+            }
+          }
+        },
+        "depth": {
+          "type": "number"
+        },
+        "offset": {
+          "type": "number"
+        },
+        "curve": {
+          "enum": [
+            "linear",
+            "exp",
+            "smooth"
+          ]
+        }
       }
     }
   }

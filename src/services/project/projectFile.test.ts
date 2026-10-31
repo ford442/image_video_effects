@@ -30,9 +30,15 @@ describe('project file export/import', () => {
         trigger: { source: 'midi-cc', id: 'ch1/cc7' },
         action: { type: 'setSlotParam', slot: 2, param: 'zoomParam1' },
       }],
+      modulation: [{
+        id: 'lfo-1', source: { kind: 'lfo', shape: 'tri', unit: 'beats', rate: 2 },
+        target: { slot: 2, param: 'opacity' }, depth: -0.5, offset: 0, curve: 'exp',
+      }],
       createdAt: '2026-10-11T00:00:00.000Z',
       appVersion: 'test-version',
     });
+    expect(project.schemaVersion).toBe(3);
+    expect(project.modulation).toHaveLength(1);
 
     const parsed = parseProjectFile(serializeProjectFile(project));
     expect(parsed.ok).toBe(true);
@@ -52,6 +58,19 @@ describe('project file export/import', () => {
     expect(plan.chain.slots[0]).toEqual(chain.slots[0]);
     expect(plan.chain.slots[2]).toEqual({ shaderId: null });
     expect(plan.warnings.join(' ')).toContain('known-b');
+  });
+
+  it('carries modulation routes into the plan and drops routes on emptied slots (#1513)', () => {
+    const route = (id: string, slot: number) => ({
+      id, source: { kind: 'audio' as const, band: 'bass' as const }, target: { slot, param: 'p1' as const }, depth: 1, offset: 0, curve: 'linear' as const,
+    });
+    const project = buildProjectFile({
+      chain, activeSlot: 0, source: { kind: 'none' }, modulation: [route('keep', 0), route('unknown', 2), route('empty', 1)],
+    });
+    const plan = createProjectApplyPlan(project, { knownShaderIds: new Set(['known-a']) });
+    expect(plan.modulation.map((r) => r.id)).toEqual(['keep']);
+    expect(plan.warnings.join(' ')).toContain('"unknown"');
+    expect(plan.warnings.join(' ')).toContain('"empty"');
   });
 
   it('turns unavailable media into none with a relink warning', () => {

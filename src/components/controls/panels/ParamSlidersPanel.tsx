@@ -2,8 +2,34 @@ import React from 'react';
 import { ShaderEntry, SlotParams } from '../../../renderer/types';
 import { shouldShowMidiControls } from '../../../utils/deviceCapabilities';
 import { hold, release, touch } from '../../../services/audioParamHold';
+import { modulationStore } from '../../../modulation/store';
+import type { ModTargetParam } from '../../../modulation/types';
 
 const INDEX_TO_PARAM: Array<keyof SlotParams> = ['zoomParam1', 'zoomParam2', 'zoomParam3', 'zoomParam4'];
+const MOD_PARAM: Partial<Record<keyof SlotParams, ModTargetParam>> = {
+    zoomParam1: 'p1', zoomParam2: 'p2', zoomParam3: 'p3', zoomParam4: 'p4',
+};
+
+/** "Modulate…": opens the mod-matrix panel pre-targeted at this slider (#1513). */
+function ModulateButton({ slot, paramKey, min, max, name }: { slot: number; paramKey: keyof SlotParams; min: number; max: number; name: string }) {
+    const param = MOD_PARAM[paramKey];
+    if (!param) return null;
+    return (
+        <button
+            type="button"
+            className="gold-outline-btn"
+            style={{ fontSize: '10px', padding: '2px 6px', marginLeft: '6px' }}
+            title="Modulate…"
+            aria-label={`Modulate ${name}`}
+            onClick={() => {
+                modulationStore.setRange({ slot, param }, { min, max });
+                modulationStore.openPanel({ slot, param });
+            }}
+        >
+            ∿
+        </button>
+    );
+}
 
 /**
  * Freeze host audio on a slider while the performer is on it: pointer grab
@@ -96,6 +122,7 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
                             <span style={{ display: 'flex', alignItems: 'center' }}>
                                 {param.name}
                                 <MidiLearnButton paramKey={paramKey} activeSlot={activeSlot} learnActiveParam={learnActiveParam} onStartMidiLearn={onStartMidiLearn} />
+                                <ModulateButton slot={activeSlot} paramKey={paramKey} min={param.min} max={param.max} name={param.name} />
                             </span>
                             <span style={{ color: '#FFD700', fontSize: '11px', fontWeight: 500 }}>{val.toFixed(2)}</span>
                         </label>
@@ -140,6 +167,7 @@ export const ParamSlidersPanel: React.FC<ParamSlidersPanelProps> = ({
                                     <span style={{ display: 'flex', alignItems: 'center' }}>
                                         {fb.name}
                                         <MidiLearnButton paramKey={fb.paramKey} activeSlot={activeSlot} learnActiveParam={learnActiveParam} onStartMidiLearn={onStartMidiLearn} />
+                                        <ModulateButton slot={activeSlot} paramKey={fb.paramKey} min={0} max={1} name={fb.name} />
                                     </span>
                                     <span style={{ color: '#FFD700', fontSize: '11px', fontWeight: 500 }}>{val.toFixed(2)}</span>
                                 </label>

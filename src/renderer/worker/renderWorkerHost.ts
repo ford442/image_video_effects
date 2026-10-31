@@ -14,6 +14,7 @@ import { safeClose, TransferredVideoFrames } from '../media/videoFramePump';
 import { InputRingReader, InputRingSnapshot } from './inputRing';
 import type { RendererConfig } from '../Renderer';
 import { setRuntimeGraph } from '../runtimeGraphs';
+import { getModulationRuntime } from '../../modulation/runtime';
 import type { WebGPURenderer } from '../WebGPURenderer';
 import type { WebGpuProbeOptions, WebGpuProbeResult, WebGpuProbeSerializable } from '../webgpuBootProbe';
 import {
@@ -286,6 +287,13 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     simulateWorkerCrash: () => deps.crash?.('simulated render worker crash (test hook)'),
     // Module-level overlay of this realm (runtimeGraphs.ts): applies even before init finishes.
     setRuntimeGraph: ({ id, graph, simRing }) => setRuntimeGraph(id, graph, simRing ?? null),
+    // The worker realm's modulation bus (modulation/runtime.ts): frame.ts overlays it each frame.
+    setModulation: ({ routes, bpm }) => {
+      const bus = getModulationRuntime();
+      bus.setRoutes(routes);
+      bus.setBpm(bpm);
+    },
+    setModulationExternal: ({ values }) => getModulationRuntime().setExternal(values),
   };
 
   const rpcs: RpcHandlers = {
