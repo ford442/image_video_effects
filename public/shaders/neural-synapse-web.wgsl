@@ -5,7 +5,9 @@
 //            upgraded-rgba, aces-tone-map, depth-aware, interactive
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-06, 2026-10-31
+//  Ideas: damped-wave ring-down at the target node when a pulse arrives (§12.2 D Damped wave equation); myelin sheath/core split that moves sheath energy into a thin hot axon core (§12.2 F Energy-conserving bloom); per-axon conduction velocity and phase so pulses are not synchronised
+//  A packing: ACES display RGBA in A
 //  Interactivist upgrade: 2026-07-22
 //    - Spring-damper mouse attractor (extraBuffer state, damped overshoot)
 //    - Click pulse wave: expanding ring boosts signal gain / synapse glow
@@ -146,14 +148,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let proj = dot(p - nodePos, dir);
       let orth = abs(dot(p - nodePos, perp));
       let onLine = proj > 0.0 && proj < len;
-      let lineGlow = exp(-orth * orth * 200.0) * f32(onLine);
-      let sigTravel = fract((proj / len) - time * pulseSpeed * 0.3);
-      let signal = smoothstep(0.85, 1.0, sigTravel) + smoothstep(0.0, 0.15, sigTravel);
+      let sheath = exp(-orth * orth * 200.0) * f32(onLine);
+      // Idea 2: myelin sheath -> axon core. A share of the sheath energy moves into a thin hot core
+      // (amplitude x sqrt(1400/200) keeps the line integral), so the pulse does not double the highlight.
+      let coreShare = 0.3;
+      let core = exp(-orth * orth * 1400.0) * f32(onLine);
+      let lineGlow = sheath * (1.0 - coreShare) + core * coreShare * 2.65;
+      // Idea 3: per-axon conduction velocity and phase offset (hash seeds differ from the connectivity hash).
+      let axon = hash22(vec2<f32>(fi + 7.3, f32(j) + 1.9));
+      let rate = time * pulseSpeed * 0.3 * (0.6 + 0.8 * axon.x) + axon.y;
+      let sigTravel = fract((proj / len) - rate);
+      // HEAD fix: HEAD summed two smoothsteps that are ~1 over 85% of the line (no visible pulse).
+      // Comet: bright head where sigTravel wraps, 30% tail behind it.
+      let signal = smoothstep(0.7, 1.0, sigTravel);
       // Treble-reactive sparkle: animated grain only on firing synapses.
       let grain = hash21(floor(p * 220.0) + vec2<f32>(floor(time * 23.0), floor(time * 17.0)));
-      let sparkle = lineGlow * signal * treble * smoothstep(0.55, 0.95, grain);
+      let sparkle = core * signal * treble * smoothstep(0.55, 0.95, grain);
+      // Idea 1: damped wave ring-down at node j. The head sits at s = fract(rate); it reached j (s = 1)
+      // age = fract(rate) / (rate per second) ago. h'' = c^2 lap h - k h' has the radial solution
+      // exp(-g age) cos(k (r - c age)) under a front window; the node afterglows and rings behind it.
+      let rateSec = max(pulseSpeed * 0.3 * (0.6 + 0.8 * axon.x), 1e-3);
+      let age = fract(rate) / rateSec;
+      let rj = length(p - jPos);
+      let front = rj - age * 0.3;
+      let ringDown = exp(-age * 2.2) * exp(-front * front * 90.0) * cos(34.0 * front);
+      let afterglow = exp(-age * 3.0) * exp(-rj * rj * 60.0) * (0.6 + 0.4 * cos(16.0 * age));
+      nodeField = nodeField + (max(ringDown, 0.0) * 0.5 + afterglow * 0.4) * (1.0 + ringBoost);
       synapseField = synapseField + lineGlow;
-      signalField = signalField + lineGlow * signal * (0.5 + treble) * gainBoost;
+      signalField = signalField + core * 2.65 * signal * (0.5 + treble) * gainBoost;
       sparkleField = sparkleField + sparkle;
     }
   }

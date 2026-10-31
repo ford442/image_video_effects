@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-14
+//  Upgraded: 2026-09-14, 2026-10-31
 //  Ideas: quantal vesicle release with diffusing neurotransmitter clouds; action-potential spike with refractory afterhyperpolarization; conduction-delay ladders where each synaptic cell injects a small latency into the travelling pulse; astrocytic uptake halo that re-emits transmitter-rich regions as cool cyan sheaths
+//  Ideas (2026-10-31): intercellular cleft mesh from the second-nearest Worley distance (F2-F1) carrying the same conduction phase; energy-conserving bouton/cleft halo (core gives a share to a wide halo, §12.2 F Energy-conserving bloom); Beer-Lambert turbidity of the glutamate cloud (§12.2 F Beer-Lambert)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -118,6 +119,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let i = floor(p);
     let f = fract(p);
     var min_dist = 1.0;
+    var second_dist = 1.0;
     var transmitter = 0.0;
     for (var y = -1; y <= 1; y = y + 1) {
         for (var x = -1; x <= 1; x = x + 1) {
@@ -125,6 +127,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let cell = i + neighbor;
             let pt = hash22(cell);
             let dist = length(neighbor + pt - f);
+            // Idea 1 (promoted intermediate): keep the second-nearest distance F2 as well as F1.
+            second_dist = select(select(second_dist, dist, dist < second_dist), min_dist, dist < min_dist);
             min_dist = select(min_dist, dist, dist < min_dist);
 
             // Idea 1: quantal vesicle release at each synaptic bouton (cell node).
@@ -146,11 +150,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // IDEA 3: per-cell synaptic delay: local conduction latency jitters the pulse phase.
     let conductionDelay = hash12(i + vec2<f32>(13.7, 4.1)) * (0.18 + min_dist * 0.35);
     let pulse_ring = fract(min_dist * 5.0 - t * pulse_speed * 0.1 + input_luma * 0.3 - conductionDelay);
-    let edge_intensity = smoothstep(0.05, 0.0, min_dist);
+    // Idea 2: energy-conserving halo. The bouton core hands a share of its energy to a wide halo
+    // (core*(1-m) + halo*m), so the glow spreads without doubling the exposure.
+    let bloomShare = 0.35;
+    let edge_core = smoothstep(0.05, 0.0, min_dist);
+    let halo_r = smoothstep(0.3, 0.0, min_dist);
+    let edge_intensity = edge_core * (1.0 - bloomShare) + halo_r * halo_r * bloomShare * 1.4;
+    // Idea 1: intercellular cleft mesh. F2 - F1 -> 0 on the border between two neighbouring boutons;
+    // thin membrane line + the same energy split, lit by the conduction phase already computed above.
+    let cleftGap = max(second_dist - min_dist, 0.0);
+    let cleft_r = smoothstep(0.22, 0.0, cleftGap);
+    let cleft = smoothstep(0.05, 0.0, cleftGap) * (1.0 - bloomShare) + cleft_r * cleft_r * bloomShare * 0.5;
     let ap = actionPotential(pulse_ring, treble);
     let wave = ap.x * (1.0 + env * 2.5);
     let ahp = ap.y * smoothstep(0.35, 0.0, min_dist);
-    let intensity = max((edge_intensity + wave) * glow_intensity - ahp * 0.35 * glow_intensity, 0.0);
+    let meshPulse = cleft * (0.3 + 1.6 * ap.x * (1.0 + env));
+    let intensity = max((edge_intensity + wave + meshPulse) * glow_intensity - ahp * 0.35 * glow_intensity, 0.0);
 
     var col = membraneColor(intensity) * (0.35 + intensity);
     // Refractory undershoot: hyperpolarized membrane cools and darkens
@@ -158,7 +173,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Neurotransmitter clouds (glutamate green-gold) around firing boutons
     let nt = clamp(transmitter, 0.0, 1.5);
-    col += vec3<f32>(0.55, 1.0, 0.45) * nt * 0.35 * glow_intensity * (1.0 + bass * 0.4);
+    // Idea 3: Beer-Lambert turbidity. The dyed cloud absorbs red/blue and passes green: T = exp(-sigma*nt).
+    col *= exp(-nt * vec3<f32>(1.1, 0.25, 0.9));
+    // HEAD fix: cloud emission gain 0.35 -> 0.8 (clouds peaked ~0.04 and were invisible at default).
+    col += vec3<f32>(0.55, 1.0, 0.45) * min(nt * 0.8 * glow_intensity, 1.5) * (1.0 + bass * 0.4);
     // IDEA 4: astrocytic uptake sheath around transmitter-rich synapses.
     let uptake = smoothstep(0.08, 0.8, nt) * exp(-min_dist * 9.0);
     col = mix(col, vec3<f32>(0.22, 0.95, 0.72), uptake * 0.22);

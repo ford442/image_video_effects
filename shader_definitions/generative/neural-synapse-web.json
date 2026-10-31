@@ -3,7 +3,7 @@
   "name": "Neural Synapse Web",
   "url": "shaders/neural-synapse-web.wgsl",
   "category": "generative",
-  "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth.",
+  "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth. Pulses ring down at the target node and ride a thin myelinated core.",
   "tags": [
     "generative",
     "neural",

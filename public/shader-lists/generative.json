@@ -20819,7 +20819,7 @@
       "feedback",
       "trails"
     ],
-    "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers. This upgrade adds conduction-delay ladders per synaptic cell and astrocytic uptake halos around transmitter-rich nodes.",
+    "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers. This upgrade adds conduction-delay ladders per synaptic cell and astrocytic uptake halos around transmitter-rich nodes, plus an intercellular cleft mesh and glutamate-cloud absorption.",
     "workgroup_size": [
       16,
       16,
@@ -30290,7 +30290,8 @@
       "generative",
       "geometric-recursion",
       "upgraded-rgba",
-      "pulsing-nodes"
+      "pulsing-nodes",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -30343,7 +30344,7 @@
     "name": "Neural Synapse Web",
     "url": "shaders/neural-synapse-web.wgsl",
     "category": "generative",
-    "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth.",
+    "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth. Pulses ring down at the target node and ride a thin myelinated core.",
     "tags": [
       "generative",
       "neural",
@@ -31623,7 +31624,9 @@
       "mouse-seeding",
       "upgraded-rgba",
       "chromatic-dispersion",
-      "temporal-accumulation"
+      "temporal-accumulation",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "tags": [
       "symbiotic",
