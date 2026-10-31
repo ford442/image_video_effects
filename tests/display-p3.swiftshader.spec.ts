@@ -6,7 +6,7 @@
  * fallback reason (never a dead canvas). Pixels are read back through the renderer because
  * compositor screenshots of a WebGPU canvas are blank on this VM.
  *
- * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2 -- -g "Display P3"`.
+ * Needs a production build: `npm run build && npm run test:engine2 -- -g "Display P3"`.
  */
 import { expect, test, type Page } from '@playwright/test';
 import sharp from 'sharp';

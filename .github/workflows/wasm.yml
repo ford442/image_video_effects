@@ -23,6 +23,7 @@ on:
       - 'scripts/format-wasm-compile-flags.js'
       - 'scripts/emcc-version-gate.sh'
       - 'scripts/gen-*-header.js'
+      - 'scripts/emit-wasm-bridge.mjs'
   schedule:
     # Weekly, Monday 06:17 UTC. Scheduled runs always use the default branch (main).
     - cron: '17 6 * * 1'
@@ -38,12 +39,12 @@ jobs:
       contents: read
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
         node-version: '24'
         cache: 'npm'
@@ -52,7 +53,7 @@ jobs:
       run: npm ci
     
     - name: Setup Emscripten SDK
-      uses: mymindstorm/setup-emsdk@v14
+      uses: mymindstorm/setup-emsdk@v16
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -70,7 +71,7 @@ jobs:
     # Uploaded before the stale-artifact compare so a PR that changes the C++
     # can commit these CI-built files when no local emsdk is available.
     - name: Upload WASM build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: wasm-artifacts
         path: |
@@ -117,10 +118,10 @@ jobs:
     needs: wasm
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v7
       with:
         node-version: '24'
         cache: 'npm'
@@ -129,14 +130,12 @@ jobs:
       run: npm ci
 
     - name: Download WASM artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: wasm-artifacts
     
     - name: Build production app
       run: npm run build
-      env:
-        SKIP_WASM_BUILD: '1'
     
     - name: Install Playwright browsers
       run: npx playwright install chromium
@@ -149,7 +148,7 @@ jobs:
     
     - name: Upload Playwright report
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: wasm-playwright-report
         path: playwright-report/
@@ -157,7 +156,7 @@ jobs:
 
     - name: Upload WASM benchmark report
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: wasm-benchmark-report
         path: test-results/wasm-benchmark-report.json

@@ -153,7 +153,7 @@ export async function startStaticServer(
   const indexHtml = resolve(BUILD_DIR, 'index.html');
   if (!existsSync(indexHtml)) {
     throw new Error(
-      `Missing ${indexHtml}. Run "npm run build" (or SKIP_WASM_BUILD=1 npm run build) before Playwright WASM tests.`
+      `Missing ${indexHtml}. Run "npm run build" before Playwright WASM tests.`
     );
   }
 

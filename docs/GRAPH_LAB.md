@@ -109,7 +109,7 @@ The Lab adds no binding and no allocation path. A sim draft's `{ stateCount }` t
 
 ```bash
 npx vitest run src/graphLab src/components/graphLab src/renderer/multipassGraph src/renderer/runtimeGraphs src/renderer/worker
-SKIP_WASM_BUILD=1 npm run build && npm run test:engine2 -- tests/graph-lab.swiftshader.spec.ts
+npm run build && npm run test:engine2 -- tests/graph-lab.swiftshader.spec.ts
 ```
 
 Unit coverage for the issue's contract: an illegal read never reaches `loadShader` (`runDraft.test.ts`, `GraphLabPanel.test.tsx`); a Lab-edited `repeat` expands to the same frame-plan dispatches as the same `repeat` in JSON, and a sim-ring toggle on group-0 entries never sets `bindSimRing` (`runtimeGraphs.test.ts`).

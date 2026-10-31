@@ -18,7 +18,7 @@ npm run build               # no emcc needed: committed public/wasm/* artifacts
 BUILD_WASM=1 npm run build  # recompile WASM first (requires emsdk)
 ```
 
-`SKIP_WASM_BUILD=1` is still honoured by `npm run wasm:build` for CI jobs that only want the bridge sync.
+`SKIP_WASM_BUILD=1 npm run wasm:build` is a legacy alias (bridge sync only, no emcc). Nothing in CI sets it any more.
 
 ### WASM-only compile (`npm run wasm:build`)
 
@@ -90,10 +90,10 @@ check compares `public/wasm/pixelocity_wasm.wasm` with a fresh **release** build
 ## Build Failures: CI vs Local
 
 **CI — `wasm` job (`wasm.yml`):** installs emsdk, runs `npm run wasm:build` **once**, then
-`npm run wasm:validate`, WASM Jest smoke tests, and uploads artifacts.
+`npm run wasm:validate`, WASM Vitest smoke tests, and uploads artifacts.
 
-**CI — `test-wasm-e2e` job (`wasm.yml`):** downloads the `wasm` job's artifacts, sets
-then runs `npm run build`. `prebuild` does not recompile without `BUILD_WASM=1`; the
+**CI — `test-wasm-e2e` job (`wasm.yml`):** downloads the `wasm` job's artifacts, then
+runs `npm run build`. `prebuild` does not recompile without `BUILD_WASM=1`; the
 downloaded `public/wasm/` is copied into `build/` by Vite.
 
 **CI — `test` job (`ci.yml`, every PR):** builds against the
@@ -166,17 +166,17 @@ See [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md) for the full a
 
 WASM is frozen R&D (#1080), so the `wasm` job lives in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) and runs only:
 
-- on pull requests to `main` that touch `wasm_renderer/**`, `public/wasm/**`, `tests/wasm-*` or `wasm.yml` itself;
+- on pull requests to `main` that touch `wasm_renderer/**`, `public/wasm/**`, `tests/wasm-*`, `wasm.yml` itself, or the files that define the build: `src/contracts/{wasm_compile_flags,wasm_exports,bind_group0,canvas_configure,webgpu_limits}.json`, `src/wasm/bridge/**`, `scripts/format-wasm-compile-flags.js`, `scripts/emcc-version-gate.sh`, `scripts/gen-*-header.js`, `scripts/emit-wasm-bridge.mjs`. A shader-only PR (`public/shaders/**`, `shader_definitions/**`) does not trigger it;
 - weekly on `main` (Monday 06:17 UTC);
 - on demand (`workflow_dispatch`).
 
 Neither WASM job is a required check. Steps:
 
 1. **Setup**: Node.js 24 + npm dependencies
-2. **Emscripten**: emsdk **6.0.12** (pinned) via `mymindstorm/setup-emsdk@v14`
+2. **Emscripten**: emsdk (pinned to `emsdkVersion` in `wasm_compile_flags.json`) via `mymindstorm/setup-emsdk@v16`
 3. **Build**: `npm run wasm:build` compiles from source (fails if emcc missing)
 4. **Validation**: `npm run wasm:validate` — integrity, bridge sync, freshness
-5. **Smoke**: Jest tests matching `WASM` (bridge API surface)
+5. **Smoke**: Vitest tests matching `WASM` (bridge API surface)
 6. **Artifacts**: Uploaded for the `test-wasm-e2e` job
 7. **Status**: If any step fails, CI fails (no silent skips)
 
@@ -237,7 +237,7 @@ Tracking table:
 
 - **Build command**: `npm run wasm:build` (requires emsdk; fails without it)
 - **Validation**: `npm run wasm:validate`
-- **CI** (`wasm.yml`, WASM-path PRs + weekly): `wasm` job builds + validates + Jest smoke; `test-wasm-e2e` runs Playwright smoke
+- **CI** (`wasm.yml`, WASM-path PRs + weekly): `wasm` job builds + validates + Vitest smoke; `test-wasm-e2e` runs Playwright smoke
 - **App build**: `npm run build` uses committed artifacts; `BUILD_WASM=1` opts into a rebuild
 - **Artifact layout**: [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md)
 - **Roadmap**: See [`WASM_RENDERER_GAP_ANALYSIS.md`](./WASM_RENDERER_GAP_ANALYSIS.md) and [#799 roadmap comment](https://github.com/ford442/image_video_effects/issues/799#issuecomment-4678258584)

@@ -89,7 +89,7 @@ machine-absolute. Generate it with `npm run wasm:compdb` (see the clangd section
 - CI `setup-emsdk` `version:` must equal `emsdkVersion` (`npm run verify:wasm-invariants` fails otherwise). Never `latest`.
 - `build.sh` runs `scripts/emcc-version-gate.sh` before `em++` and refuses a mismatched emcc. The minified glue does **not** embed the emcc version, so the gate is on the toolchain, not the artifact.
 - `build.sh` reads the flag JSON and may not hardcode `-s` flags or `--use-port` (enforced by `verify:wasm-invariants`). It is the only build; `CMakeLists.txt` was removed.
-- Cloud VMs / Jules: keep `SKIP_WASM_BUILD=1`. Never commit artifacts from a non-pinned emcc (e.g. 3.1.x). `ALLOW_EMCC_VERSION_MISMATCH=1` exists for local experiments only.
+- Cloud VMs / Jules: plain `npm run build` (no `BUILD_WASM`). Never commit artifacts from a non-pinned emcc (e.g. 3.1.x). `ALLOW_EMCC_VERSION_MISMATCH=1` exists for local experiments only.
 - Bumping the pin: change `emsdkVersion` and `.github/workflows/wasm.yml` together, rebuild, commit artifacts in the same PR.
 
 ## Build commands
@@ -102,16 +102,16 @@ npm run verify:wasm-bridge-sync  # TypeScript SoT vs generated JS
 npm run wasm:clean      # Remove build/ and public/wasm/
 ```
 
-### Skipping WASM build intentionally
-`SKIP_WASM_BUILD=1` still runs bridge concat, then skips emcc.
-
-Headless dev VMs without Emscripten can use committed artifacts:
+### App builds use the committed artifacts
+`npm run build` never compiles WASM: `prebuild.sh` runs the bridge concat and ships the
+committed `public/wasm/*`. `BUILD_WASM=1 npm run build` recompiles first (needs emsdk).
 
 ```bash
-SKIP_WASM_BUILD=1 npm run build
+npm run build               # no emcc needed
+BUILD_WASM=1 npm run build  # recompile, then build
 ```
 
-CI jobs that consume pre-built artifacts from the `wasm` job set this automatically.
+`SKIP_WASM_BUILD=1 npm run wasm:build` is a legacy alias: bridge concat only, no emcc.
 
 ### C++ IDE index (clangd)
 
@@ -134,8 +134,11 @@ leaked `-sUSE_WEBGPU=1`.
 
 ## CI pipeline
 
-1. **`wasm` job** — installs emsdk (`mymindstorm/setup-emsdk@v14`), runs `wasm:build`, `wasm:validate`, `verify:wasm-bridge-sync`, WASM Jest smoke tests, freshness check, uploads artifacts.
-2. **`test` job** — downloads WASM artifacts, runs full unit tests + CRA build with `SKIP_WASM_BUILD=1`, re-validates artifacts (`verify:toolchain-foundation` includes bridge sync).
-3. **`test-wasm-e2e` job** — downloads artifacts, production build, Playwright smoke tests (`tests/wasm-renderer.smoke.spec.ts`).
+`ci.yml` never compiles WASM. Its `test` job builds against the committed `public/wasm/*`
+and runs `wasm:validate` on them. Compiling lives in `wasm.yml` (frozen R&D, path-filtered,
+weekly cron, manual dispatch):
+
+1. **`wasm` job** — installs emsdk (`mymindstorm/setup-emsdk@v16`), runs `wasm:build`, `wasm:validate`, `verify:wasm-bridge-sync`, WASM Vitest smoke tests, freshness check, uploads artifacts.
+2. **`test-wasm-e2e` job** — downloads artifacts, production build, Playwright smoke tests (`tests/wasm-renderer.smoke.spec.ts`).
 
 See [`WASM_BUILD_CI_GUIDE.md`](../docs/WASM_BUILD_CI_GUIDE.md) for troubleshooting.

@@ -43,10 +43,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm'
@@ -55,13 +55,13 @@ jobs:
         run: npm ci
 
       - name: Download WASM artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: wasm-artifacts
 
       - name: Build production app
-        run: SKIP_WASM_BUILD=1 npm run build
+        run: npm run build
 
       - name: Install Playwright Chromium
         run: npx playwright install chromium
@@ -97,7 +97,7 @@ jobs:
 
       - name: Upload thumbnail artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: thumbnails-${{ github.run_id }}
           path: |
@@ -120,7 +120,7 @@ jobs:
             echo "Download the \`thumbnails-${{ github.run_id }}\` artifact for PNGs and failure report."
             echo ""
             echo "For full catalog batches (~700+ missing), run on a **self-hosted runner with WebGPU** or locally:"
-            echo "\`SKIP_WASM_BUILD=1 npm run build && npm run thumbs:generate -- --missing\`"
+            echo "\`npm run build && npm run thumbs:generate -- --missing\`"
             echo ""
             echo "See [docs/THUMBNAIL_PIPELINE.md](docs/THUMBNAIL_PIPELINE.md)."
           } >> "$GITHUB_STEP_SUMMARY"
