@@ -44,7 +44,8 @@
     "held-pointer",
     "click-reactive",
     "psychedelic-color",
-    "display-history"
+    "display-history",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

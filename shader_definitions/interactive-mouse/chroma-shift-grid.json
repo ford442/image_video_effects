@@ -2,7 +2,7 @@
   "id": "chroma-shift-grid",
   "name": "Chroma Shift Grid",
   "url": "shaders/chroma-shift-grid.wgsl",
-  "description": "Grid-based multi-mode chromatic aberration with alpha-channel translucency blending. Uses single UV displacement + spectral tint via mix(), with Voronoi F2-F1 cell pattern variation. Alpha encodes grid distortion strength * cell activity.",
+  "description": "Grid-based multi-mode chromatic aberration. Each cell still lens-distorts, then splits R/G/B along that offset by a Cauchy spectrum. The pointer locally raises lens and chroma amount. Alpha encodes grid distortion strength * cell activity.",
   "features": [
     "mouse-driven",
     "upgraded-rgba"

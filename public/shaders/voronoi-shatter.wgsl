@@ -6,30 +6,11 @@
 //  Chunks From: voronoi-shatter
 //  Created: 2026-05-30
 //  By: Copilot CLI
-//  Upgraded: 2026-09-11
-//  Ideas: click-impact shockwave (u.ripples[] was bound but never read —
-//         clicking did nothing); bass-gated shard chatter jitter
-//  A packing: raw (m_dist, influence, rotAngle/pi, alpha) — unchanged
+//  Upgraded: 2026-09-11, 2026-10-31
+//  Ideas: click-impact shockwave; bass-gated shard chatter; angular inertia; internal fissure
+//  A packing: raw (m_dist, influence, coasted rot/pi, alpha)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Simple Hash
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -136,8 +117,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chatterGate = step(0.8 - bass * 0.5, chatterSeed.x);
     let chatterAngle = (chatterSeed.y - 0.5) * 0.3 * chatterGate * bass;
 
-    // Rotation
-    let rotAngle = influence * rotationStr * 3.14 + shockRot + chatterAngle; // Rotate up to 180 deg, plus shock/chatter
+    // Rotation target, then coast toward it from the angle stored in C.b.
+    let rotTarget = influence * rotationStr * 3.14 + shockRot + chatterAngle;
+    let prevState = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let prevSane = prevState.b == prevState.b && abs(prevState.b) < 4.0;
+    // ── Idea 1: angular inertia ─────────────────────────────────────
+    let rotAngle = select(rotTarget, mix(prevState.b * 3.14, rotTarget, 0.22), prevSane);
 
     // Local coords relative to cell center
     let pixelPosAspect = vec2<f32>(uv.x * aspect, uv.y);
@@ -168,7 +153,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edge = smoothstep(0.18 + gapSize * 0.25, 0.55, m_dist);
     let shardLight = (1.0 - edge) * (0.2 + bass * 0.1);
     let seamGlow = smoothstep(0.3 - gapSize, 0.55, m_dist) * (0.08 + treble * 0.12);
-    let finalColor = baseColor.rgb * (1.0 + shardLight) + vec3<f32>(0.05, 0.09, 0.16) * seamGlow + vec3<f32>(0.85, 0.92, 1.0) * shockEnergy * 0.3;
+    var finalColor = baseColor.rgb * (1.0 + shardLight) + vec3<f32>(0.05, 0.09, 0.16) * seamGlow + vec3<f32>(0.85, 0.92, 1.0) * shockEnergy * 0.3;
+
+    // ── Idea 2: internal fissure ────────────────────────────────────
+    // A stable crack across the shard. Gap size sets the width;
+    // shatter force sets how dark it reads.
+    let crackSeed = hash22(m_id) - 0.5;
+    let crackN = vec2<f32>(-crackSeed.y, crackSeed.x);
+    let crackLen = max(length(crackN), 1e-3);
+    let crackD = abs(dot(localPos, crackN / crackLen)) * density;
+    let fissure = smoothstep(0.045 + gapSize * 0.4, 0.0, crackD) * shatterForce;
+    finalColor = mix(finalColor, finalColor * vec3<f32>(0.18, 0.2, 0.24), clamp(fissure, 0.0, 1.0));
     let finalAlpha = clamp(0.26 + (1.0 - edge) * 0.28 + influence * 0.35 + bass * 0.08 + shockEnergy * 0.2, 0.18, 0.95);
     let depth = clamp(
         textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r + influence * 0.06,
@@ -176,7 +171,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         1.0
     );
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(finalColor), finalAlpha));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(max(finalColor, vec3<f32>(0.0))), finalAlpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(m_dist, influence, rotAngle / 3.14, finalAlpha));
 }

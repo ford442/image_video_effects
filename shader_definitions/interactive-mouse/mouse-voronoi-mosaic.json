@@ -3,7 +3,8 @@
   "name": "Voronoi Mosaic",
   "url": "shaders/mouse-voronoi-mosaic.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "description": "Click positions seed Voronoi cells that rotate, shift, and scale independently. Stained-glass edge effects with per-cell color tinting create an evolving mosaic.",
   "params": [
