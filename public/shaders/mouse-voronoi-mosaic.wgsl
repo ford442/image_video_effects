@@ -1,38 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  mouse-voronoi-mosaic
 //  Category: interactive-mouse
-//  Features: mouse-driven, voronoi, shatter
+//  Features: mouse-driven, voronoi, shatter, upgraded-rgba
 //  Complexity: High
-//  Chunks From: chunk-library.md (hash22)
-//  Created: 2026-04-18
-//  By: Agent 2C
+//  Upgraded: 2026-10-31
+//  Ideas: crown-glass bow (§12.2B); dark lead with inner rim; age patina
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-//  Click positions create Voronoi cell centers. Each cell rotates,
-//  shifts, and scales independently based on distance from its
-//  creating ripple. Stained-glass window effect that evolves.
-//  Alpha channel stores cell edge distance for glass highlights.
-// ═══════════════════════════════════════════════════════════════════
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash22 (from gen_grid.wgsl) ═══
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -45,6 +20,16 @@ fn rot2(a: f32) -> mat2x2<f32> {
   let s = sin(a);
   let c = cos(a);
   return mat2x2<f32>(c, -s, s, c);
+}
+
+fn brownConrady(p: vec2<f32>, k1: f32) -> vec2<f32> {
+  let r2 = dot(p, p);
+  return p * (1.0 + k1 * r2);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn nearestRippleVoronoi(uv: vec2<f32>, aspect: f32) -> vec4<f32> {
@@ -113,6 +98,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   cellUV = rot2(angle) * cellUV;
   cellUV = cellUV + cellCenter + shift;
 
+  // ── Idea 1: crown-glass bow (§12.2B) ────────────────────────────
+  // Shatter strength already scales the pane. A radial bow of that
+  // same local vector is the thickness of crown glass.
+  let bowed = cellCenter + shift + brownConrady(cellUV - cellCenter - shift, shatterStrength * 6.0);
+  cellUV = clamp(bowed, vec2<f32>(0.0), vec2<f32>(1.0));
+
   // Sample image with transformed UV
   var color = textureSampleLevel(readTexture, u_sampler, cellUV, 0.0).rgb;
 
@@ -125,20 +116,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   color = mix(color, color * tint, colorShift * 0.5);
 
-  // Stained-glass edge effect
-  let edge = smoothstep(edgeThickness * 2.0, edgeThickness, abs(distToEdge));
-  let edgeColor = vec3<f32>(0.9, 0.95, 1.0) * edge * glassOpacity * 2.0;
-  color = color + edgeColor;
+  // ── Idea 2: dark lead plus inner rim ────────────────────────────
+  // edgeThickness still sets the band; glassOpacity still scales it.
+  // The came is dark metal. A thin bright rim sits just inside it.
+  let lead = 1.0 - smoothstep(edgeThickness, edgeThickness * 3.5, distToEdge);
+  let rimIn = smoothstep(edgeThickness * 1.1, edgeThickness * 2.2, distToEdge);
+  let rimOut = 1.0 - smoothstep(edgeThickness * 2.2, edgeThickness * 4.2, distToEdge);
+  let rim = rimIn * rimOut;
+  color = mix(color, color * vec3<f32>(0.05, 0.06, 0.08), lead * glassOpacity);
+  color = color + vec3<f32>(0.9, 0.95, 1.0) * rim * glassOpacity * 1.6;
+
+  // ── Idea 3: age patina ──────────────────────────────────────────
+  // A pane that came from a real click dulls as it ages. No click
+  // (cellTime == 0) does not patina the whole frame.
+  let hasCell = step(0.001, cellTime);
+  let age = clamp(elapsed / 6.0, 0.0, 1.0) * hasCell;
+  let paneLuma = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+  color = mix(color, vec3<f32>(paneLuma) * vec3<f32>(0.72, 0.78, 0.62), age * 0.5);
 
   // Mouse proximity brightens cells
   let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
   let mouseGlow = exp(-mouseDist * mouseDist * 50.0) * 0.3;
   color = color + vec3<f32>(0.6, 0.7, 1.0) * mouseGlow;
 
-  // Alpha = cell edge distance (0 at edge, 1 at center)
-  let alpha = clamp(smoothstep(0.0, 0.1, distToEdge), 0.0, 1.0);
+  // Alpha: transmission through the pane, opaque on the lead
+  let alpha = clamp(mix(0.35, 0.95, smoothstep(0.0, 0.08, distToEdge)) * (0.45 + 0.55 * glassOpacity) + lead * 0.2, 0.0, 1.0);
+  let outRgb = aces(max(color, vec3<f32>(0.0)));
+  let outCol = vec4<f32>(outRgb, alpha);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(color, alpha));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), outCol);
 
   // Depth passthrough
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

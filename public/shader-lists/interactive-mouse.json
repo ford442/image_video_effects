@@ -688,7 +688,7 @@
     "id": "chroma-shift-grid",
     "name": "Chroma Shift Grid",
     "url": "shaders/chroma-shift-grid.wgsl",
-    "description": "Grid-based multi-mode chromatic aberration with alpha-channel translucency blending. Uses single UV displacement + spectral tint via mix(), with Voronoi F2-F1 cell pattern variation. Alpha encodes grid distortion strength * cell activity.",
+    "description": "Grid-based multi-mode chromatic aberration. Each cell still lens-distorts, then splits R/G/B along that offset by a Cauchy spectrum. The pointer locally raises lens and chroma amount. Alpha encodes grid distortion strength * cell activity.",
     "features": [
       "mouse-driven",
       "upgraded-rgba"
@@ -7244,7 +7244,8 @@
     "name": "Voronoi Mosaic",
     "url": "shaders/mouse-voronoi-mosaic.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "description": "Click positions seed Voronoi cells that rotate, shift, and scale independently. Stained-glass edge effects with per-cell color tinting create an evolving mosaic.",
     "params": [
@@ -12817,7 +12818,10 @@
     "id": "voronoi-shatter",
     "name": "Voronoi Shatter",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ripple Blocks
 //  Category: visual-effects
-//  Features: ripple, blocks, retro, audio-wave, depth-stack, light-bleed, tactile-ripple
+//  Features: ripple, blocks, retro, audio-wave, depth-stack, light-bleed, tactile-ripple, upgraded-rgba
 //  Complexity: Medium
-//  Updated: 2026-05-31
-//  By: Grok (visual flourish — richer wave propagation, audio stacking, atmospheric light bleed)
-// ═══════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-05-31 (Algorithmist + Visualist + Interactivist + Optimizer)
+//  Upgraded: 2026-05-31, 2026-10-31
+//  Ideas: gutter bleed; cell-held trail
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=GridScale, y=WarpAmount, z=GlowIntensity, w=TrailPersistence
@@ -94,7 +93,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseVec = cellCenter - mouse;
   let mouseDist = length(vec2(mouseVec.x * aspect, mouseVec.y));
   var rippleDist = 0.0;
-  let rc = u32(u.config.y);
+  let rc = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rc; i = i + 1u) {
     let rp = u.ripples[i].xy;
     let rt = t - u.ripples[i].z;
@@ -127,7 +126,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cellColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
 
   // Visualist: HDR lighting & color grading
-  var col = select(vec3(0.0), cellColor.rgb, inBounds);
+  // ── Idea 1: gutter bleed ─────────────────────────────────────────
+  // A shrunken block used to leave a black hole. The gutter keeps a
+  // dim copy of that cell's own colour.
+  let gapCol = cellColor.rgb * (0.18 + 0.12 * glowIntensity);
+  var col = select(gapCol, cellColor.rgb, inBounds);
   let edgeDist = min(min(abs(uvScaled.x - cellMin.x), abs(uvScaled.x - cellMax.x)), min(abs(uvScaled.y - cellMin.y), abs(uvScaled.y - cellMax.y)));
   let rim = exp(-edgeDist * gridScale * 10.0);
   col += vec3(0.4, 0.8, 1.0) * rim * glowIntensity * env;
@@ -135,12 +138,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spark = hash2(cellId + t).x;
   col += vec3(1.0, 0.95, 0.8) * step(0.97 - treble * 0.1, spark) * treble * 2.0;
 
-  // Interactivist: Temporal feedback trails
-  let prevFrame = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-  col = max(col, prevFrame.rgb * trailPersistence * 0.8);
+  // ── Idea 2: cell-held trail ──────────────────────────────────────
+  // One exact load at the cell centre, shared by every pixel of the
+  // block. Trail persistence still scales it.
+  let cellPx = clamp(vec2<i32>(cellCenter * dims), vec2<i32>(0), vec2<i32>(i32(dims.x) - 1, i32(dims.y) - 1));
+  let prevFrame = textureLoad(dataTextureC, cellPx, 0);
+  let prevOk = prevFrame.r == prevFrame.r && prevFrame.g == prevFrame.g && prevFrame.b == prevFrame.b;
+  let prevRgb = select(vec3<f32>(0.0), clamp(prevFrame.rgb, vec3<f32>(0.0), vec3<f32>(4.0)), prevOk);
+  col = max(col, prevRgb * trailPersistence * 0.8);
 
   // Visualist: ACES tone map + hue preserve clamp
-  col = aces(col * 1.2);
+  col = aces(max(col, vec3<f32>(0.0)) * 1.2);
   var alpha = select(0.1, 0.85 + abs(scaleMod) * 0.15, inBounds);
   alpha *= (1.0 - depth * 0.3);
   let lum = dot(col, vec3(0.299, 0.587, 0.114));

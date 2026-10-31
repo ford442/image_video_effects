@@ -4,31 +4,16 @@
 //  Features: mouse-driven, audio-reactive, click-ripples, glass-tiles,
 //            vignette-grain, upgraded-rgba
 //  Complexity: Medium
-//  Created: 2026-05-10
-//  Upgraded: 2026-05-23
-//  Upgraded by: kimi-swarm 2026-07-19
+//  Upgraded: 2026-05-23, 2026-10-31
+//  Ideas: pointer-keyed bevel; neighbour-pane leak into the grout
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
+#include "_prelude.wgsl"
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 const TAU: f32 = 6.28318530718;
 
@@ -111,9 +96,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeDist = max(hexEdgeDist(cellP), 0.0);
   let bevelBand = 1.0 - smoothstep(0.02, 0.30, edgeDist); // 1 near tile edge, 0 interior
 
-  let lightDir = normalize(vec2<f32>(-0.6, 0.8));
+  // ── Idea 1: pointer-keyed bevel ─────────────────────────────────
+  // The dome already shades by cellP. The key now sits at the cursor so
+  // each pane's highlight faces the pointer.
+  let toPointer = (mousePos - centerUV) * aspectVec;
+  let pointerLen = length(toPointer);
+  let lightDir = select(vec2<f32>(-0.6, 0.8), toPointer / max(pointerLen, 1e-4), pointerLen > 0.02);
   let safeCellP = cellP + vec2<f32>(0.0001, -0.0001);
-  let facing = dot(normalize(safeCellP), lightDir);
+  let facing = dot(normalize(safeCellP), normalize(lightDir));
   let bevel = bevelBand * facing * 0.22;
   let dome = (1.0 - smoothstep(0.0, 0.55, length(cellP))) * 0.08;
   let shade = clamp(1.0 + dome + bevel, 0.6, 1.4);
@@ -124,6 +114,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let groutAA = max(1.2 * pxScaled, 0.001);
   let tileMask = smoothstep(0.0, groutAA, edgeDist - groutW);
   tileRgb = mix(tileRgb * 0.35, tileRgb, tileMask);
+
+  // ── Idea 2: neighbour-pane leak ─────────────────────────────────
+  // The lattice centre we did not pick is the adjacent pane. Its colour
+  // stains the grout; the tile interior stays the winning centre.
+  let otherCenter = select(centerA, centerB, distA < distB);
+  let otherUV = clamp(otherCenter / gridScale / aspectVec, vec2<f32>(0.0), vec2<f32>(1.0));
+  let otherCol = textureSampleLevel(readTexture, u_sampler, otherUV, 0.0).rgb;
+  tileRgb = mix(tileRgb, otherCol, (1.0 - tileMask) * 0.55);
 
   // ── Glint sweep: per-tile phase hash, audio-reactive ────────────
   let cellPhase = hash21(center) * TAU;
@@ -141,7 +139,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ringOn = f32(rp.z > 0.0 && elapsed >= 0.0 && elapsed <= 2.5);
     let rd = distance(uv * aspectVec, rp.xy * aspectVec);
     let ring = (1.0 - smoothstep(0.0, 0.05, abs(rd - elapsed * 0.55)))
-             * max(0.0, 1.0 - elapsed / 2.5) * clamp(rp.w, 0.0, 1.0);
+             * max(0.0, 1.0 - elapsed / 2.5);
     rippleGlow = rippleGlow + ringOn * ring;
   }
   rippleGlow = min(rippleGlow, 1.2);
@@ -159,11 +157,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mask = clamp(smoothstep(effFocus, effFocus + edgeWidth, dMouse), 0.0, 1.0);
   let halo = press * 0.30 * (1.0 - smoothstep(0.0, 0.05, abs(dMouse - effFocus - edgeWidth * 0.5)));
 
-  var finalColor = mix(origColor, vec4<f32>(tileRgb, hexColor.a), mask);
-  finalColor = vec4<f32>(
-    clamp(finalColor.rgb + vec3<f32>(halo) * (0.5 + 0.5 * bevelBand), vec3<f32>(0.0), vec3<f32>(1.0)),
-    clamp(finalColor.a, 0.0, 1.0)
-  );
+  let revealed = mix(origColor.rgb, tileRgb, mask);
+  let lit = revealed + vec3<f32>(halo) * (0.5 + 0.5 * bevelBand);
+  let outRgb = aces(max(lit, vec3<f32>(0.0)));
+  let cover = mix(origColor.a, hexColor.a, mask);
+  let alpha = clamp(cover * (0.62 + 0.38 * tileMask) * (0.8 + 0.2 * mask), 0.0, 1.0);
+  let finalColor = vec4<f32>(outRgb, alpha);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
