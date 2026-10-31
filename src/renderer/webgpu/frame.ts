@@ -27,6 +27,7 @@ import { buildGPUTimings } from './WebGPUTiming';
 import { FrameStats, FrameStatsTracker } from './deviceCounters';
 import { createErrorRateLimiter } from './device';
 import { reportError } from '../ErrorHandling';
+import { getModulationRuntime } from '../../modulation/runtime';
 
 export {
   createFrameState,
@@ -143,9 +144,20 @@ export class WebGPUFrameRenderer {
 
     this.statsTracker.onFrameStart(state.device);
     state.beforeFrame?.();
+    // Modulation bus (#1513): overlay modulated p1..p4 / opacity on the slots for this
+    // frame only; the base values the UI set are restored once the frame is encoded.
+    const restoreBase = getModulationRuntime().applyOverlay(state.slots, state.currentTime, state.audioDepth);
+    try {
+      this.encodeFrame(state, state.device);
+    } finally {
+      restoreBase();
+    }
+  }
+
+  private encodeFrame(state: WebGPUFrameState, device: GPUDevice): void {
     state.timestampRuntime.frame.reset();
 
-    const encoder = state.device.createCommandEncoder({ label: 'frame' });
+    const encoder = device.createCommandEncoder({ label: 'frame' });
     this.encodeVideoIngest(state, encoder);
 
     const slotPlan = buildFrameSlotDispatchPlan(state);
