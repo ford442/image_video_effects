@@ -2,31 +2,19 @@
 //  Temporal Echo - Advanced Alpha with Accumulative Alpha
 //  Category: feedback/temporal
 //  Alpha Mode: Accumulative Alpha (Feedback)
-//  Features: advanced-alpha, temporal-feedback, paint-accumulation
-//  Ideas: user-controlled echo depth (temporalOffset, previously dead); bass-transient echo pinning
-//  A packing: accumulated RGBA (unchanged)
+//  Features: advanced-alpha, temporal-feedback, paint-accumulation, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-30
+//  Ideas: user-controlled echo depth; bass-transient echo pinning; history-axis smear; shadow-first stick
+//  A packing: accumulated linear RGBA (C is that accumulation); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ═══ ADVANCED ALPHA FUNCTIONS ═══
 
@@ -127,21 +115,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         clamp(i32((uv.y + f32(past_y) / f32(dim.y)) * f32(dim.y)), 0, i32(dim.y) - 1)
     );
     let past = textureLoad(dataTextureC, pastCoord, 0);
-    
+    // ── Idea 1: history-axis smear ──────────────────────────────────
+    // The echo already lives on a vertical slice of C. One extra row
+    // along that slice turns the point sample into a short streak.
+    // temporalOffset keeps its lag-bias role and also sets the mix.
+    let past2Coord = vec2<i32>(pastCoord.x, clamp(pastCoord.y + 1, 0, i32(dim.y) - 1));
+    let past2 = textureLoad(dataTextureC, past2Coord, 0);
+    let smearedPast = mix(past, past2, temporalOffset * 0.65);
+
     // Apply echo decay
     let decayedPast = vec4<f32>(
-        past.rgb * (1.0 - echoDecay * 0.5),
-        past.a * (1.0 - echoDecay * 0.2)
+        smearedPast.rgb * (1.0 - echoDecay * 0.5),
+        smearedPast.a * (1.0 - echoDecay * 0.2)
     );
     
     // ═══ ACCUMULATIVE ALPHA CALCULATION ═══
     // Calculate new effect alpha based on brightness
     let newAlpha = brightness * depthLayeredAlpha(uv, depthWeight);
+    // ── Idea 2: shadow-first stick ──────────────────────────────────
+    // Dim pixels stop accumulating before bright ones. echoDecay still
+    // fades the stored echo; it only tightens this knee.
+    let stick = smoothstep(0.05, 0.22, brightness);
+    let stuckAlpha = newAlpha * mix(1.0, mix(0.35, 1.0, stick), echoDecay);
     
     // Accumulate with previous frame
     let accumulated = accumulativeAlpha(
         current.rgb,
-        newAlpha,
+        stuckAlpha,
         decayedPast.rgb,
         decayedPast.a,
         accumulationRate
@@ -151,7 +151,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalResult = mix(accumulated, current, 0.05);
     
     textureStore(dataTextureA, coord, finalResult);
-    textureStore(writeTexture, id, finalResult);
+    textureStore(writeTexture, id, vec4<f32>(aces(finalResult.rgb), finalResult.a));
     
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

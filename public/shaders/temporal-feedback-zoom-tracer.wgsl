@@ -5,8 +5,8 @@
 //            upgraded-rgba, fbm-trail-jitter, chromatic-trail-separation,
 //            mouse-driven-zoom-focus, noise-warp
 //  Complexity: Medium
-//  Upgraded: 2026-10-04 (prev 2026-06-28)
-//  Ideas: nested monitor bezels streaming out of the zoom focus; recursion hue drift per feedback pass
+//  Upgraded: 2026-10-30 (prev 2026-10-04)
+//  Ideas: nested monitor bezels; recursion hue drift; field lag; feedback-camera falloff
 //  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
@@ -155,11 +155,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Chromatic trail separation scales with zoom power
   let chromaShift = 0.001 + zp.x * 0.008;
+  // ── Idea 1: field lag ───────────────────────────────────────────
+  // Even rows read one ring age older than odd rows, so the tunnel
+  // carries an interlace comb the way a camera filming a monitor does.
+  let olderAge = min(2u, histDepth - 1u);
+  let fieldAge = select(1u, olderAge, (global_id.y & 1u) == 0u);
   // Idea 2 — recursion hue drift: every pass rotates the history hue a little (mids widen
   // it), so the tunnel's depth layers walk through the spectrum like analog feedback.
   let hueStep = 0.035 + mids * 0.05;
-  let histWarp = hueRotate(sampleHistoryChromatic(warpedUV, historyHead, histDepth, 1u, current, chromaShift), hueStep) * inFrame
+  var histWarp = hueRotate(sampleHistoryChromatic(warpedUV, historyHead, histDepth, fieldAge, current, chromaShift), hueStep) * inFrame
                + vec3<f32>(0.015) * (1.0 - inFrame);
+  // ── Idea 2: feedback-camera falloff ─────────────────────────────
+  // The camera pointed at the monitor darkens toward its own corners.
+  // Applied to the warped history only, so each nested copy carries it.
+  let aspect = res.x / max(res.y, 1.0);
+  let camR = length((uv - focus) * vec2<f32>(aspect, 1.0));
+  let cosTheta = 1.0 / sqrt(1.0 + camR * camR * 4.0);
+  let camFall = cosTheta * cosTheta * cosTheta * cosTheta;
+  histWarp = histWarp * mix(1.0, camFall, 0.55);
 
   // Blend: weighted history + current
   var output = mix(histWarp * persistence, current.rgb, blendAmt);
@@ -167,7 +180,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 1 — nested monitor bezels: on a 3 Hz tick a thin bright bezel is injected at the
   // zoom focus; the zoom-in recursion carries each one outward (rotating with the warp), so
   // the tunnel fills with nested screens streaming toward the viewer.
-  let aspect = res.x / max(res.y, 1.0);
   let bezelHalf = vec2<f32>(0.075 / aspect, 0.075) * (1.0 + bass * 0.25);
   let bq = abs(uv - focus) - bezelHalf;
   let bezelDist = abs(max(bq.x, bq.y));

@@ -5,8 +5,8 @@
 //            upgraded-rgba, per-channel-temporal-offset, noise-displacement,
 //            vignette-falloff, chromatic-ghost
 //  Complexity: Medium
-//  Upgraded: 2026-10-04 (prev 2026-06-28)
-//  Ideas: blue comet-tail integration over ring ages; motion-gated displacement; fractional G delay
+//  Upgraded: 2026-10-30 (prev 2026-10-04)
+//  Ideas: blue comet-tail integration; motion-gated displacement; fractional G delay; leading red; disagreement fringe
 //  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
@@ -141,6 +141,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // G channel: delayed frame with slight temporal angular drift
   let dispG = displacedUV(uv, time, displace * 0.6, 12.0);
+  // ── Idea 1: leading red ─────────────────────────────────────────
+  // Red is sampled opposite the green displacement, and only where the
+  // motion gate is already open, so static areas keep the live red.
+  let leadUV = clamp(uv - (dispG - uv) * 0.65, vec2<f32>(0.0), vec2<f32>(1.0));
+  let leadFrame = textureSampleLevel(readTexture, u_sampler, leadUV, 0.0);
   let histG = mix(
     frameAt(dispG, historyHead, histDepth, ageG, current),
     frameAt(dispG, historyHead, histDepth, ageG2, current),
@@ -158,10 +163,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     tailW += 1.0;
   }
   let histB = tailSum / tailW;
+  // ── Idea 2: disagreement fringe ─────────────────────────────────
+  // Where the green delay and the blue comet disagree, a neutral rim
+  // marks the edge of the ghost.
+  let disagree = smoothstep(0.04, 0.28, abs(histG.g - histB.b));
 
   // Assemble RGB ghost with per-channel temporal offset
   let ghost = vec4<f32>(
-    current.r,
+    mix(current.r, leadFrame.r, motion),
     histG.g * lumaBoost,
     histB.b * lumaBoost,
     clamp(blendAmt + bass * 0.15, 0.0, 1.0),
@@ -172,10 +181,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Vignette darkens the chromatic ghost trails toward the corners
   let vignette = applyVignette(output, uv, 0.35 + zp.w * 0.25);
+  let fringed = mix(vignette, vec3<f32>(rgbToLuma(vignette)), disagree * 0.45);
 
   // Preserve input alpha, boosted by ghost energy
-  let alpha = clamp(current.a * 0.5 + ghostSpread * 3.0 + bass * 0.1, 0.0, 1.0);
-  let finalOut = vec4<f32>(vignette, alpha);
+  let alpha = clamp(current.a * 0.5 + ghostSpread * 3.0 + disagree * 0.25 + bass * 0.1, 0.0, 1.0);
+  let finalOut = vec4<f32>(fringed, alpha);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   textureStore(writeTexture, coord, finalOut);

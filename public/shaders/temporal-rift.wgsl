@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, click-reactive, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: distance-arrival delay; C ghost shear
+//  Upgraded: 2026-10-30 (prev 2026-09-09)
+//  Ideas: distance-arrival delay; C ghost shear; rift lip; rift-widened chroma
 //  A packing: nextHist RGBA (C is previous hist)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * .1031);
@@ -90,6 +71,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rift = 1.0 - smoothstep(0.0, riftWidth, dist);
     // Idea 1 — distance-arrival delay (far pixels stay on C longer).
     let arrival = smoothstep(riftWidth * 2.4, 0.0, dist);
+    // ── Idea 1: rift lip ────────────────────────────────────────────
+    // The torn edge shears more than the interior, tangential to the pointer.
+    let lip = rift * (1.0 - rift) * 4.0;
+    let lipTangent = vec2<f32>(-distVec.y, distVec.x) / max(dist, 0.0001);
+    let lipShear = vec2<f32>(lipTangent.x / aspect, lipTangent.y) * lip * 0.012;
 
     var clickRift = 0.0;
     var clickShear = 0.0;
@@ -107,12 +93,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let fftIndex = (u32(clamp(uv.y, 0.0, 0.999) * 8.0) % 8u) + 1u;
     let fftVoice = clamp(plasmaBuffer[fftIndex].x, 0.0, 1.0);
-    let separation = chromaSep * (1.0 + fftVoice * 0.5) + clamp(clickShear, -0.02, 0.02);
+    // ── Idea 2: rift-widened chroma ─────────────────────────────────
+    // The existing channel split grows inside the tear.
+    let separation = (chromaSep * (1.0 + fftVoice * 0.5) + clamp(clickShear, -0.02, 0.02)) * (1.0 + rift * 1.25);
 
     let histHere = textureLoad(dataTextureC, coord, 0);
     let maxC = vec2<i32>(resolution) - vec2<i32>(1);
-    // Idea 2 — C ghost shear along sprung velocity.
-    let shear = mouseVelocity * (0.04 + treble * 0.02);
+    // Idea 2 — C ghost shear along sprung velocity, plus the lip offset.
+    let shear = mouseVelocity * (0.04 + treble * 0.02) + lipShear;
     let shearCoord = clamp(vec2<i32>((uv + shear) * resolution), vec2<i32>(0), maxC);
     let histShear = textureLoad(dataTextureC, shearCoord, 0);
     let histRuv = clamp(coord + vec2<i32>(i32(separation * resolution.x), 0), vec2<i32>(0), maxC);

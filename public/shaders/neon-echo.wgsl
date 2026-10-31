@@ -3,31 +3,12 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, temporal, depth-aware, phosphor-halation, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: exact-C persistence; two-component P7 phosphor tail
+//  Upgraded: 2026-10-30 (prev 2026-09-11)
+//  Ideas: exact-C persistence; two-component P7 phosphor tail; ignition flash; phosphor slot mask
 //  A packing: raw persistence RGB + alpha (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn luminance(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
@@ -143,6 +124,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloom = halation * spectralTint * (0.15 + 0.65 * u.zoom_params.w) * smoothstep(0.08, 0.9, persistenceLuma);
   let scanFlicker = 0.96 + 0.04 * sin((uv.y * resolution.y + time * 240.0) * (1.0 + treble * 6.0));
   displayColor = displayColor * scanFlicker + bloom;
+  // ── Idea 1: ignition flash ──────────────────────────────────────
+  // The frame a pixel crosses the excitation threshold, the tube flashes
+  // white on the display only. The stored tail stays the colored persistence.
+  let flash = smoothstep(0.0, 0.35, injectionStrength) * (0.15 + 0.25 * bass);
+  displayColor = displayColor + vec3<f32>(flash);
+  // ── Idea 2: phosphor slot mask ──────────────────────────────────
+  // Vertical RGB triads. Strength follows the halation slider. Display
+  // only, so the mask does not bake into the stored tail.
+  let slot = global_id.x % 3u;
+  let slotMask = vec3<f32>(
+    select(0.72, 1.0, slot == 0u),
+    select(0.72, 1.0, slot == 1u),
+    select(0.72, 1.0, slot == 2u)
+  );
+  displayColor = displayColor * mix(vec3<f32>(1.0), slotMask, u.zoom_params.w * 0.55);
   let aa = 2.51; let bb = 0.03; let cc = 2.43; let dd = 0.59; let ee = 0.14;
   let mapped = clamp((displayColor * (aa * displayColor + bb)) / (displayColor * (cc * displayColor + dd) + ee), vec3<f32>(0.0), vec3<f32>(1.0));
 

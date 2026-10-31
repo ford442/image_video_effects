@@ -1,31 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Infinite Video Feedback
 //  Category: interactive-mouse
-//  Features: mouse-driven, temporal-persistence, upgraded-rgba
+//  Features: mouse-driven, temporal-persistence, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-10-30 (prev 2026-05-23)
+//  Ideas: generation softness; frame-edge fold
+//  A packing: linear feedback RGBA in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=AccumulationRate, y=RecursionDepth, z=DepthWeight, w=ColorShift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Feedback Decay, y=Zoom Scale, z=Rotation, w=Color Shift
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -52,6 +36,25 @@ fn accumulativeAlpha(
 fn depthLayeredAlpha(depth: f32, depthWeight: f32) -> f32 {
     let depthAlpha = mix(0.5, 1.0, depth);
     return mix(1.0, depthAlpha, depthWeight);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn loadC(p: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+    let c = clamp(vec2<i32>(p * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+    return textureLoad(dataTextureC, c, 0);
+}
+
+// ── Idea 2 helper: mirror a coordinate that leaves the frame ──────
+fn fold01(p: f32) -> f32 {
+    let x = abs(p);
+    let period = floor(x);
+    let fracPart = x - period;
+    let odd = (i32(period) & 1) == 1;
+    return select(fracPart, 1.0 - fracPart, odd);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -122,7 +125,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let current = textureLoad(readTexture, coord, 0);
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let prev = loadC(uv, resolution);
     
     // Infinite recursion effect
     var accumulatedColor = vec3<f32>(0.0);
@@ -138,18 +141,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let relative = (uv - feedbackCenter) * vec2<f32>(aspect, 1.0);
         let rotatedAspect = vec2<f32>(relative.x * cs - relative.y * sn, relative.x * sn + relative.y * cs);
         let recursiveUV = (rotatedAspect / vec2<f32>(aspect, 1.0)) / scale + feedbackCenter;
-        
-        if (recursiveUV.x >= 0.0 && recursiveUV.x <= 1.0 && recursiveUV.y >= 0.0 && recursiveUV.y <= 1.0) {
-            let recursiveSample = textureSampleLevel(dataTextureC, u_sampler, recursiveUV, 0.0);
-            let weight = pow(0.7, fi) * (1.0 + sectorVoice * 0.2);
-            let hueShift = vec3<f32>(
-                recursiveSample.r * (1.0 + colorShift * sin(fi)),
-                recursiveSample.g,
-                recursiveSample.b * (1.0 + colorShift * cos(fi))
-            );
-            accumulatedColor += hueShift * weight;
-            totalWeight += weight;
-        }
+
+        // ── Idea 2: frame-edge fold ─────────────────────────────────
+        // Recursion that leaves the frame mirrors back in, the way a
+        // camera aimed at its own output folds at the bezel.
+        let foldedUV = vec2<f32>(fold01(recursiveUV.x), fold01(recursiveUV.y));
+        let centerS = loadC(foldedUV, resolution);
+        // ── Idea 1: generation softness ─────────────────────────────
+        // Deeper passes mix a neighbor tap, so each copy loses detail.
+        let soft = loadC(clamp(foldedUV + vec2<f32>(fi + 1.0, 0.0) / resolution, vec2<f32>(0.0), vec2<f32>(1.0)), resolution);
+        let recursiveSample = mix(centerS, soft, clamp(fi * 0.18, 0.0, 0.7));
+        let weight = pow(0.7, fi) * (1.0 + sectorVoice * 0.2);
+        let hueShift = vec3<f32>(
+            recursiveSample.r * (1.0 + colorShift * sin(fi)),
+            recursiveSample.g,
+            recursiveSample.b * (1.0 + colorShift * cos(fi))
+        );
+        accumulatedColor += hueShift * weight;
+        totalWeight += weight;
     }
     
     let finalColor = accumulatedColor / max(totalWeight, 0.001);
@@ -168,7 +177,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let result = vec4<f32>(clamp(rgbResult, vec3<f32>(0.0), vec3<f32>(2.0)), finalAlpha);
     
     textureStore(dataTextureA, coord, result);
-    textureStore(writeTexture, global_id.xy, result);
+    textureStore(writeTexture, global_id.xy, vec4<f32>(aces(result.rgb), finalAlpha));
     
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0, 0, 0.0));
 }

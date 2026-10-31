@@ -3,8 +3,8 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04 (prev 2026-05-31)
-//  Ideas: true per-age spiral about the cursor; onion-skin outlines in each layer's hue
+//  Upgraded: 2026-10-30 (prev 2026-10-04)
+//  Ideas: true per-age spiral; onion-skin outlines; peg-bar shift; inter-stamp smear
 //  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
@@ -127,9 +127,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rel = (warpUV - mouse) * vec2<f32>(aspect, 1.0) / (1.0 + f32(age) * warpAmt * 0.4);
     let spun = vec2<f32>(rel.x * cos(spinA) - rel.y * sin(spinA), rel.x * sin(spinA) + rel.y * cos(spinA));
     let sampleUV = clamp(mouse + spun / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    // ── Idea 1: peg-bar shift ───────────────────────────────────────
+    // Older onion sheets step along X, so they don't register with the newest.
+    let peg = (f32(age) - 1.0) * warpAmt * 0.35;
+    let pegUV = clamp(sampleUV + vec2<f32>(peg, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Sample the history frame
-    let frame = frameAt(sampleUV, historyHead, histDepth, age, base);
+    let frame = frameAt(pegUV, historyHead, histDepth, age, base);
+    // ── Idea 2: inter-stamp smear ───────────────────────────────────
+    // Mix this sheet with the next-older frame at the same peg so motion
+    // between stamps reads as a short blur. Outlines stay on `frame`.
+    let olderAge = min(age + 1u, max(reach, 1u));
+    let older = frameAt(pegUV, historyHead, histDepth, olderAge, base);
+    let smeared = mix(frame, older, 0.35 * t);
 
     // Per-layer hue-rotated tint
     let hue  = fract(f32(age) / f32(ECHO_SLOTS) + time * 0.04);
@@ -141,12 +151,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — onion-skin outlines: each layer's luminance edges are inked in its own
     // hue, like an animator's onion skin, so past frames read as outlined time-stamps.
     let lc = dot(frame.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let lx = dot(frameAt(clamp(sampleUV + vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, age, base).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let ly = dot(frameAt(clamp(sampleUV + vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, age, base).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let lx = dot(frameAt(clamp(pegUV + vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, age, base).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let ly = dot(frameAt(clamp(pegUV + vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, age, base).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
     let edge = smoothstep(0.04, 0.18, length(vec2<f32>(lx - lc, ly - lc)));
     onionRGB += tint.rgb * edge * weight;
     onionAmt += edge * weight;
-    accumulated += frame * tint * weight;
+    accumulated += smeared * tint * weight;
     totalWeight += weight;
   }
 

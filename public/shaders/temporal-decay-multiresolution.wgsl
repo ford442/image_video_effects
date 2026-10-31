@@ -3,8 +3,8 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-04 (prev 2026-05-23)
-//  Ideas: decay-shaped exponential timescale kernels; time-inversion click echo rings
+//  Upgraded: 2026-10-30 (prev 2026-10-04)
+//  Ideas: decay-shaped timescale kernels; time-inversion click rings; cross-scale cascade; stationary mute
 //  A packing: display RGB, A = ultra-slow luminance
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
@@ -169,6 +169,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (medW > 0.0) { medK /= medW; } else { medK = oldest; }
   if (slowW > 0.0) { slowK /= slowW; } else { slowK = oldest; }
 
+  // ── Idea 2: stationary mute ─────────────────────────────────────
+  // Measured before the cascade, so "still" means the timescales already
+  // agree. Collapse those windows toward the ultra-slow luma.
+  let stillL = (ultraAvg.r + ultraAvg.g + ultraAvg.b) / 3.0;
+  let agree = 1.0 - smoothstep(0.02, 0.18, length(fastK.rgb - slowK.rgb));
+
+  // ── Idea 1: cross-scale cascade ─────────────────────────────────
+  // What a fast window forgets leaks into the next slower one, so motion
+  // does not vanish between timescales. Leak rides the decay sliders.
+  let leakFM = clamp((1.0 - decayFast) * 2.0, 0.0, 0.45);
+  let leakMS = clamp((1.0 - decayMedium) * 2.0, 0.0, 0.45);
+  medK = mix(medK, fastK, leakFM);
+  slowK = mix(slowK, medK, leakMS);
+
+  let stillC = vec4<f32>(vec3<f32>(stillL), fastK.a);
+  fastK = mix(fastK, stillC, agree * 0.65);
+  medK = mix(medK, vec4<f32>(vec3<f32>(stillL), medK.a), agree * 0.65);
+  slowK = mix(slowK, vec4<f32>(vec3<f32>(stillL), slowK.a), agree * 0.65);
+
   // Idea 2 — time-inversion echo rings: inside a click's echo front the channels swap
   // timescales (R reads slow, B reads fast), so the ring passes as inverted colour-time.
   let swapT = smoothstep(0.15, 0.7, clickEcho);
@@ -180,7 +199,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = max(current.g, medK.g  * decayMedium);
   let b = max(current.b, bSrc    * decaySlow);
   // Alpha channel encodes ultra-slow luminance (useful for downstream slots)
-  let a = (ultraAvg.r + ultraAvg.g + ultraAvg.b) / 3.0;
+  let a = stillL;
 
   let multiRes = vec4<f32>(r, g, b, a);
   let localOrigBlend = clamp(origBlend - mouseLens * 0.15 - clickEcho * 0.25, 0.0, 1.0);

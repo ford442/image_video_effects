@@ -1,16 +1,8 @@
 {
-  "generated": "2026-10-26T04:49:23.455336+00:00",
-  "files_scanned": 1439,
+  "generated": "2026-10-30T23:12:48.139992+00:00",
+  "files_scanned": 1442,
   "new_violations": [],
   "known_violations": [
-    {
-      "file": "public/shaders/electric-eel-storm.wgsl",
-      "line": 207,
-      "expr": "3",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
     {
       "file": "public/shaders/gen-celestial-weave.wgsl",
       "line": 103,
@@ -25,14 +17,6 @@
       "expr": "0",
       "op": "=",
       "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/gen-translucent-nebula.wgsl",
-      "line": 198,
-      "expr": "1",
-      "op": "=",
-      "index": 1,
       "class": "reserved"
     },
     {
@@ -98,46 +82,6 @@
       "op": "=",
       "index": 7,
       "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/oscilloscope-overlay.wgsl",
-      "line": 131,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/phantom-lag.wgsl",
-      "line": 53,
-      "expr": "3",
-      "op": "=",
-      "index": 3,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/phantom-lag.wgsl",
-      "line": 68,
-      "expr": "0",
-      "op": "=",
-      "index": 0,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/phantom-lag.wgsl",
-      "line": 69,
-      "expr": "1",
-      "op": "=",
-      "index": 1,
-      "class": "reserved"
-    },
-    {
-      "file": "public/shaders/phantom-lag.wgsl",
-      "line": 70,
-      "expr": "2",
-      "op": "=",
-      "index": 2,
-      "class": "reserved"
     },
     {
       "file": "public/shaders/pixel-stretch-cross.wgsl",
