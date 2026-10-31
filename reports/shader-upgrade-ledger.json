@@ -462,8 +462,17 @@
       "history": []
     },
     "gen-neural-fractal-hdr": {
-      "hash": "1ca6e9ef7f2491fa",
-      "history": []
+      "hash": "615f700776e00576",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "615f700776e00576",
+          "prev_hash": "1ca6e9ef7f2491fa",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
+        }
+      ]
     },
     "gen-quasicrystal-iridescence": {
       "hash": "b34023bbb13bfb58",
@@ -934,8 +943,17 @@
       "history": []
     },
     "astral-veins": {
-      "hash": "96a6e3a86792f740",
-      "history": []
+      "hash": "dfaa21b5cb6ce798",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "dfaa21b5cb6ce798",
+          "prev_hash": "96a6e3a86792f740",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
+        }
+      ]
     },
     "aurora-rift-2": {
       "hash": "17d6bb2c15478862",
@@ -1340,8 +1358,17 @@
       ]
     },
     "neural-dreamscape": {
-      "hash": "6e4f56e5ce4feb03",
-      "history": []
+      "hash": "2d065124dc1ef752",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "2d065124dc1ef752",
+          "prev_hash": "6e4f56e5ce4feb03",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
+        }
+      ]
     },
     "neural-resonance": {
       "hash": "f4215b0d7cd193e6",
@@ -3633,7 +3660,7 @@
       ]
     },
     "gen-cybernetic-mycelium-neural-web": {
-      "hash": "babe6394b1f5fc32",
+      "hash": "4a1f461872d08c87",
       "history": [
         {
           "event": "upgraded",
@@ -3642,6 +3669,14 @@
           "prev_hash": "0caf8cefa81bb71d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "4a1f461872d08c87",
+          "prev_hash": "babe6394b1f5fc32",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
         }
       ]
     },
@@ -4582,7 +4617,7 @@
       ]
     },
     "gen-fractal-chrono-dendrite-forge": {
-      "hash": "5119f37d90a1ecc7",
+      "hash": "63dc26244d8fed80",
       "history": [
         {
           "event": "upgraded",
@@ -4591,6 +4626,14 @@
           "prev_hash": "6e46cbc365db917f",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "63dc26244d8fed80",
+          "prev_hash": "5119f37d90a1ecc7",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
         }
       ]
     },
@@ -6205,7 +6248,7 @@
       ]
     },
     "gen-neural-network-glow-synaptic-pulse": {
-      "hash": "e10fe9250f31b4a9",
+      "hash": "957bcb2ce4089a12",
       "history": [
         {
           "event": "upgraded",
@@ -6214,6 +6257,14 @@
           "prev_hash": "e56510894989fe28",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "957bcb2ce4089a12",
+          "prev_hash": "e10fe9250f31b4a9",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
         }
       ]
     },
@@ -6816,8 +6867,17 @@
       ]
     },
     "gen-quantum-mycelial-neural-web": {
-      "hash": "46bdfc1f46f2f4c0",
-      "history": []
+      "hash": "0c8916571672292d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "0c8916571672292d",
+          "prev_hash": "46bdfc1f46f2f4c0",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
+        }
+      ]
     },
     "gen-quantum-mycelium": {
       "hash": "a25156e0a248d938",
@@ -8101,12 +8161,30 @@
       ]
     },
     "neural-mandala": {
-      "hash": "d2b2dd3da5bf022f",
-      "history": []
+      "hash": "bcf3c3b7386d3ec2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "bcf3c3b7386d3ec2",
+          "prev_hash": "d2b2dd3da5bf022f",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
+        }
+      ]
     },
     "neural-synapse-web": {
-      "hash": "bba3e1a4ccf9626b",
-      "history": []
+      "hash": "1d25021d95599ab2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "1d25021d95599ab2",
+          "prev_hash": "bba3e1a4ccf9626b",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
+        }
+      ]
     },
     "phase-memory-weave": {
       "hash": "e532b6902489aab1",
@@ -8253,8 +8331,17 @@
       ]
     },
     "symbiotic-light-propagation-networks": {
-      "hash": "e7eed819c22d7915",
-      "history": []
+      "hash": "851da8d6068c605b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-10-31T01:40:55.854Z",
+          "hash": "851da8d6068c605b",
+          "prev_hash": "e7eed819c22d7915",
+          "commit": "dae6a8f4",
+          "note": "2026-10-31 sonnet/batch-04 neural/synapse/mycelial/dendrite ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-31-sonnet-batch-04"
+        }
+      ]
     },
     "topological-acoustic-knots": {
       "hash": "d61ded7e8da02fa7",

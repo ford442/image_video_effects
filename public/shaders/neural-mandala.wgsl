@@ -4,28 +4,16 @@
 //  Quasi-random hue distribution with golden-ratio stepping
 //  Interactivist pass 2026-07-22: mouse spring re-centering, click shock
 //  rings (ripples[]), per-ring FFT bins, sub-symmetry fold.
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-31
+//  Ideas: soma territories from a nearest-node orbit trap with Worley borders (E); golden-angle phyllotactic nucleus in the core, pulse travelling outward (E)
+//  A packing: ACES display RGBA (alpha = glow coverage)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=RingCount, y=Complexity, z=PulseSpeed, w=Connections
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=RingCount, y=Complexity, z=PulseSpeed, w=Connections
 
 const PI     = 3.14159265358979323846;
 const TAU    = 6.28318530717958647692;
@@ -105,25 +93,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = res.x / res.y;
   let pRaw = (uv - 0.5) * vec2<f32>(aspect, 1.0);
 
-  // ── Mouse spring re-centering (persistent state in extraBuffer[133..136]) ──
-  // While the mouse is held, the mandala center is pulled toward the cursor
-  // with a damped spring; on release it eases back to the screen center.
+  // ── Mouse re-centering (stateless) ──
+  // While the mouse is held the mandala centre sits at the cursor (scaled).
+  // HEAD kept a spring in extraBuffer[133..136], which is zeroed every frame,
+  // so the pull never accumulated; the goal itself is the intended pose.
   let mouseDown = step(0.5, u.zoom_config.w);
   let mouseCentered = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
-  let springGoal = mouseCentered * 0.55 * mouseDown;
-  let springDT = 0.016;
-  let springK = 90.0;
-  let springDamp = 9.0;
-  var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  springVel = springVel + ((springGoal - springPos) * springK - springVel * springDamp) * springDT;
-  springPos = springPos + springVel * springDT;
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-  }
+  let springPos = mouseCentered * 0.55 * mouseDown;
   let p = pRaw - springPos;
 
   // ── Click shock rings: each recorded click emits an expanding wavefront ──
@@ -151,12 +127,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = vec3<f32>(0.02, 0.01, 0.04);
   var glow = 0.0;
+  // Idea 1 orbit trap: nearest / second-nearest node distance + nearest hue
+  var trapD1 = 1e3;
+  var trapD2 = 1e3;
+  var trapColor = vec3<f32>(0.0);
 
   for (var ri = 0; ri < ringCount; ri = ri + 1) {
     let r = f32(ri);
     // Per-ring audio: inner rings ride the bass bins, outer rings the treble
     // bins, instead of the whole mandala following the global bands.
-    let ringEnergy = plasmaBuffer[u32(ri) % 8u + 1u].x;
+    // (plasmaBuffer[1..] is never uploaded, so blend the three live bands by ring depth)
+    let ringT = r / max(f32(ringCount - 1), 1.0);
+    let ringEnergy = 0.6 * mix(mix(bass, mids, clamp(ringT * 2.0, 0.0, 1.0)), treble, clamp(ringT * 2.0 - 1.0, 0.0, 1.0));
     // Domain-warped FBM for organic ring radius distortion
     let warp = warpedFBM(p * 4.0 + r, time * 0.08) * 0.015;
     let radius = 0.05 + r * 0.06 + warp + shock * 0.025;
@@ -209,17 +191,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
       color = color + nodeColor * nodeGlow * (0.6 + ringEnergy * 0.6 + treble * 0.2);
       glow = glow + nodeGlow;
+
+      // Idea 1: promote nodeDist into a nearest-node trap (no extra loop)
+      let nearer = nodeDist < trapD1;
+      trapD2 = select(min(trapD2, nodeDist), trapD1, nearer);
+      trapColor = select(trapColor, nodeColor, nearer);
+      trapD1 = min(trapD1, nodeDist);
     }
 
     color = color + vec3<f32>(0.2, 0.5, 0.9) * ringMask * (0.3 + ringEnergy * 0.3);
     glow = glow + ringMask * 0.3;
   }
 
+  // Idea 1: soma territories — faint cell body around the nearest node and a
+  // Worley border where two territories meet (d2 - d1 -> 0).
+  let territory = exp(-trapD1 * 24.0) * 0.18 * (0.5 + complexity * 0.5);
+  let border = smoothstep(0.006, 0.0, trapD2 - trapD1) * 0.12 * (0.3 + connectionDensity);
+  color = color + trapColor * territory + vec3<f32>(0.25, 0.5, 0.9) * border;
+  glow = glow + territory * 0.5 + border * 0.5;
+
+  // Idea 2: phyllotactic nucleus — 13 golden-angle boutons inside the first ring,
+  // each pulsing a little later than the last so the beat travels outward.
+  let pr = length(p);
+  if (pr < 0.05) {
+    for (var gi = 0; gi < 13; gi = gi + 1) {
+      let fg = f32(gi);
+      let ga = fg * 2.39996323 + time * 0.05;
+      let gp = vec2<f32>(cos(ga), sin(ga)) * 0.0095 * sqrt(fg + 0.5);
+      let gd = length(p - gp);
+      let gPulse = 0.5 + 0.5 * sin(time * pulseSpeed * 2.0 - fg * 0.7);
+      let gHue = fract(fg * PHI * INV_PI + time * 0.02);
+      let gh = abs(fract(vec3<f32>(gHue) + vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - vec3<f32>(3.0));
+      let gCol = clamp(gh - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0));
+      let gGlow = smoothstep(0.0065, 0.0, gd) * (0.5 + 0.8 * gPulse + bass * 0.5);
+      color = color + gCol * gGlow;
+      glow = glow + gGlow * 0.5;
+    }
+  }
+
   // Visible shock shimmer along the expanding wavefronts
   color = color + vec3<f32>(0.9, 0.95, 1.0) * shock * 0.35;
   glow = glow + shock * 0.4;
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
   // Clamp accumulated color pre-tint (luma-echo-warp lesson) before feedback
   let accum = min(color, vec3<f32>(1.2));
   color = mix(accum, prev.rgb * 0.92, 0.05 + bass * 0.01);
