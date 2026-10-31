@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, field-simulation, organic, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: mitosis twin pulse; membrane depolarization wave
+//  Upgraded: 2026-09-11, 2026-10-31
+//  Ideas: mitosis twin pulse; membrane depolarization wave; cell dipole polarization (each Voronoi cell lights on its downstream-of-field hemisphere); Plummer-softened point-charge fields (row: F Soft inverse-square)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   let k = vec2<f32>(
@@ -37,20 +18,25 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
   return fract(sin(k) * 43758.5453);
 }
 
-fn voronoi(p: vec2<f32>) -> f32 {
+// xyz = (distance, vector to nearest feature point)
+fn voronoi(p: vec2<f32>) -> vec3<f32> {
   let i = floor(p);
   let f = fract(p);
   var minDist = 1.0;
+  var minVec = vec2<f32>(0.0);
   for (var y: i32 = -1; y <= 1; y = y + 1) {
     for (var x: i32 = -1; x <= 1; x = x + 1) {
       let neighbor = vec2<f32>(f32(x), f32(y));
       let cellId = i + neighbor;
       let point = neighbor + hash22(cellId) - f;
       let dist = length(point);
-      minDist = min(minDist, dist);
+      if (dist < minDist) {
+        minDist = dist;
+        minVec = point;
+      }
     }
   }
-  return minDist;
+  return vec3<f32>(minDist, minVec);
 }
 
 fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
@@ -70,16 +56,20 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Idea 4 — Plummer-softened charge: r / (d² + r0²)^1.5 equals the old 1/d² field away from the
+// core but stays finite at the charge, so the touch point no longer blows out to a singularity.
+const CHARGE_CORE: f32 = 0.04;
+
 fn electricField(pos: vec2<f32>, chargePos: vec2<f32>, charge: f32) -> vec2<f32> {
   let r = pos - chargePos;
-  let dist = max(length(r), 0.001);
-  return charge * normalize(r) / (dist * dist);
+  let d2 = dot(r, r) + CHARGE_CORE * CHARGE_CORE;
+  return charge * r / (d2 * sqrt(d2));
 }
 
 fn magneticField(pos: vec2<f32>, chargePos: vec2<f32>, velocity: vec2<f32>, charge: f32) -> f32 {
   let r = pos - chargePos;
-  let dist = max(length(r), 0.001);
-  return charge * (velocity.x * r.y - velocity.y * r.x) / (dist * dist * dist);
+  let d2 = dot(r, r) + CHARGE_CORE * CHARGE_CORE;
+  return charge * (velocity.x * r.y - velocity.y * r.x) / (d2 * sqrt(d2));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -145,7 +135,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fieldDistort = fieldDir * smoothstep(0.0, 2.0, fieldMag) * 0.03;
   let offset = vec2<f32>(sin(time * 0.5), cos(time * 0.4)) * 0.1 + fieldDistort;
   let voronoiUV = (uv + offset) * cellDensity;
-  let v = voronoi(voronoiUV);
+  let vor = voronoi(voronoiUV);
+  let v = vor.x;
   let glow = 1.0 - smoothstep(0.0, 0.5, v);
 
   // Idea 1 — mitosis twin pulse: bass triggers paired brighten on division axis
@@ -159,6 +150,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let membrane = smoothstep(0.42, 0.48, v) * (1.0 - smoothstep(0.48, 0.54, v));
   let depolWave = 0.5 + 0.5 * sin(dot(uv, fieldDir) * 40.0 - time * 4.0 + fieldMag * 3.0);
   let membraneWave = membrane * depolWave * smoothstep(0.0, 0.6, fieldMag);
+
+  // Idea 3 — cell dipole polarization: pixels on the downstream side of their cell (relative to the
+  // E-field) take positive charge, the upstream side negative; a cell becomes a lit/dark hemisphere pair
+  let sideOfCell = clamp(dot(-normalize(vor.yz + vec2<f32>(0.0001)), fieldDir), -1.0, 1.0);
+  let pol01 = 0.5 + 0.5 * sideOfCell;
+  let dipole = smoothstep(0.12, 0.45, v) * pol01 * pol01 * smoothstep(0.5, 6.0, fieldMag) * (1.0 - membrane)
+    * smoothstep(glowRadius + 0.25, glowRadius, dist); // bounded by Glow Radius, wider than the glow itself
 
   let pulse = 0.5 + 0.5 * sin(time * (2.0 + u.zoom_params.w * 5.0) - dist * 10.0 + totalB * 2.0);
   let finalGlow = glow * influence * pulse * (1.0 + mouseDown * 2.0) + mitosisGlow * 0.8 + membraneWave * 0.6;
@@ -174,6 +172,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var outColor = src.rgb + tint * finalGlow;
   outColor = outColor + vec3<f32>(0.9, 0.4, 1.0) * mitosisGlow * 0.35;
   outColor = outColor + vec3<f32>(0.3, 0.85, 1.0) * membraneWave * 0.25;
+  outColor = outColor + mix(vec3<f32>(0.1, 0.35, 1.0), vec3<f32>(1.0, 0.45, 0.2), pol01) * dipole * (0.3 + 0.15 * mids);
 
   let streamUV = uv + fieldDir * hash12(uv * 100.0 + time * 0.5) * 0.02;
   let streamNoise = hash12(streamUV * 200.0 + fieldMag * 10.0);
@@ -184,7 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coreGlow = exp(-dist * dist * 400.0) * fieldStrength;
   outColor = outColor + vec3<f32>(0.6, 0.9, 1.0) * coreGlow;
 
-  let alpha = clamp(influence + streamline * 0.2 + mitosisGlow * 0.3 + membraneWave * 0.2 + src.a * 0.25, 0.0, 1.0);
+  let alpha = clamp(influence + streamline * 0.2 + dipole * 0.1 + mitosisGlow * 0.3 + membraneWave * 0.2 + src.a * 0.25, 0.0, 1.0);
   let displayRgb = acesToneMap(outColor);
 
   textureStore(writeTexture, pixel, vec4<f32>(displayRgb, alpha));

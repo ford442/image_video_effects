@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Boids RGBA Ecosystem
 //  Category: advanced-hybrid
-//  Features: mouse-driven, temporal, rgba-state-machine, flocking
+//  Features: mouse-driven, temporal, rgba-state-machine, flocking, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: boids.wgsl (flocking velocity), alpha-multi-state-ecosystem.wgsl (RGBA ecosystem)
 //  Created: 2026-04-18
 //  By: Agent CB-11
+//  Upgraded: 2026-10-31
+//  Ideas: isotropic 9-point Laplacian diffusion; surface-tension flock boundary (curvature potential); predator pursuit / flocker evasion steering
+//  A packing: raw (s1, s2, resource, toxin); A(0,0).r = sentinel -0.6875
 // ═══════════════════════════════════════════════════════════════════
 //  Boids-inspired flow-field combined with continuous multi-species
 //  ecosystem. RGBA channels store species densities that advect,
@@ -14,28 +17,20 @@
 //  G = Species 2 (predators)
 //  B = Resource / food
 //  A = Toxin / waste
+//  zoom_params: x=Flock Cohesion, y=Predation Rate, z=Diffusion Rate, w=Toxin Strength
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+// A.r of the corner texel: marks C as this shader's own state (f16-exact, never a density).
+const STATE_SENTINEL: f32 = -0.6875;
+var<private> stateOwned: bool = false;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) /
+        max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+        vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ═══ CHUNK: hash12 (from alpha-multi-state-ecosystem.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -44,18 +39,35 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
-// Sample 3x3 neighborhood for flocking vectors
-fn sampleNeighbors(uv: vec2<f32>, ps: vec2<f32>) -> array<vec4<f32>, 9> {
-    var n: array<vec4<f32>, 9>;
-    var idx = 0;
-    for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
-        for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
-            let sampleUV = clamp(uv + vec2<f32>(f32(dx), f32(dy)) * ps, vec2<f32>(0.0), vec2<f32>(1.0));
-            n[idx] = textureSampleLevel(dataTextureC, u_sampler, sampleUV, 0.0);
-            idx = idx + 1;
-        }
-    }
-    return n;
+// Exact history load. Foreign history (previous shader's A) reads as an empty field.
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+    if (!stateOwned) { return vec4<f32>(0.0, 0.0, 0.5, 0.0); }
+    let q = clamp(p, vec2<i32>(0), dims - vec2<i32>(1));
+    var v = textureLoad(dataTextureC, q, 0);
+    if (q.x == 0 && q.y == 0) { v.r = 0.0; }
+    return v;
+}
+
+// 5x5 history patch around this texel (row-major, centre = index 12).
+var<private> patch5: array<vec4<f32>, 25>;
+
+// Level-set curvature of flocker density at patch texel (cx, cy) in 1..3, from its own 3x3 Hessian.
+// kappa = div(grad f / |grad f|); convex edges are negative. Masked to real interfaces only.
+fn flockCurvature(cx: i32, cy: i32) -> f32 {
+    let o = cy * 5 + cx;
+    let f0 = patch5[o].r;
+    let fe = patch5[o + 1].r;
+    let fw = patch5[o - 1].r;
+    let fn_ = patch5[o + 5].r;
+    let fs = patch5[o - 5].r;
+    let gx = (fe - fw) * 0.5;
+    let gy = (fn_ - fs) * 0.5;
+    let fxx = fe + fw - 2.0 * f0;
+    let fyy = fn_ + fs - 2.0 * f0;
+    let fxy = (patch5[o + 6].r - patch5[o + 4].r - patch5[o - 4].r + patch5[o - 6].r) * 0.25;
+    let gg = gx * gx + gy * gy;
+    let k = (fxx * gy * gy - 2.0 * gx * gy * fxy + fyy * gx * gx) / pow(gg + 1e-4, 1.5);
+    return clamp(k, -1.0, 1.0) * smoothstep(0.01, 0.06, sqrt(gg));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -64,19 +76,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
     let uv = vec2<f32>(gid.xy) / res;
-    let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+    let dims = vec2<i32>(res);
     let time = u.config.x;
 
+    stateOwned = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).r == STATE_SENTINEL;
+
     // Read previous state
-    let prevState = textureLoad(dataTextureC, coord, 0);
+    let prevState = stateAt(coord, dims);
     var s1 = prevState.r;
     var s2 = prevState.g;
     var resourceVal = prevState.b;
     var toxin = prevState.a;
 
-    // Seed on first frame
-    if (time < 0.1) {
+    // Seed on first frame, or whenever history is not ours (shader switched in later)
+    let seeding = time < 0.1 || !stateOwned;
+    if (seeding) {
         s1 = 0.0;
         s2 = 0.0;
         resourceVal = 0.5;
@@ -92,73 +107,65 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     resourceVal = clamp(resourceVal, 0.0, 2.0);
     toxin = clamp(toxin, 0.0, 2.0);
 
-    let n = sampleNeighbors(uv, ps);
-    let center = n[4];
-
-    // === FLOCKING VECTOR FIELD ===
-    // Compute average neighbor positions weighted by density
-    var s1Avg = vec2<f32>(0.0);
-    var s2Avg = vec2<f32>(0.0);
-    var s1Count = 0.0;
-    var s2Count = 0.0;
-    var s1Sep = vec2<f32>(0.0);
-    var s2Sep = vec2<f32>(0.0);
-
-    for (var i: i32 = 0; i < 9; i = i + 1) {
-        if (i == 4) { continue; }
-        let offset = vec2<f32>(f32(i % 3 - 1), f32(i / 3 - 1)) * ps;
-        if (n[i].r > 0.1) {
-            s1Avg = s1Avg + offset * n[i].r;
-            s1Count = s1Count + n[i].r;
-            // Separation: push away if too close
-            let dist = length(offset);
-            if (dist < ps.x * 2.0 && dist > 0.0) {
-                s1Sep = s1Sep - normalize(offset) / dist * ps.x;
-            }
-        }
-        if (n[i].g > 0.1) {
-            s2Avg = s2Avg + offset * n[i].g;
-            s2Count = s2Count + n[i].g;
-            let dist = length(offset);
-            if (dist < ps.x * 2.0 && dist > 0.0) {
-                s2Sep = s2Sep - normalize(offset) / dist * ps.x;
-            }
-        }
+    // 5x5 patch (centre uses this texel's own seeded values) and its 3x3 core n[]
+    for (var k: i32 = 0; k < 25; k = k + 1) {
+        patch5[k] = stateAt(coord + vec2<i32>(k % 5 - 2, k / 5 - 2), dims);
     }
-
-    // Normalize flocking vectors
-    var s1Flow = vec2<f32>(0.0);
-    var s2Flow = vec2<f32>(0.0);
-    if (s1Count > 0.0) {
-        s1Flow = s1Avg / s1Count * 0.3 + s1Sep * 2.0;
+    patch5[12] = vec4<f32>(s1, s2, resourceVal, toxin);
+    var n: array<vec4<f32>, 9>;
+    for (var k: i32 = 0; k < 9; k = k + 1) {
+        n[k] = patch5[(k / 3 + 1) * 5 + (k % 3 + 1)];
     }
-    if (s2Count > 0.0) {
-        s2Flow = s2Avg / s2Count * 0.3 + s2Sep * 2.0;
-    }
-
-    // Advection: move species along their flocking flow
-    let advectS1UV = clamp(uv + s1Flow, vec2<f32>(0.0), vec2<f32>(1.0));
-    let advectS2UV = clamp(uv + s2Flow, vec2<f32>(0.0), vec2<f32>(1.0));
-    let advectedS1 = textureSampleLevel(dataTextureC, u_sampler, advectS1UV, 0.0).r;
-    let advectedS2 = textureSampleLevel(dataTextureC, u_sampler, advectS2UV, 0.0).g;
-
-    // Blend current with advected (semi-Lagrangian)
-    let advectionStrength = 0.6;
-    s1 = mix(s1, advectedS1, advectionStrength);
-    s2 = mix(s2, advectedS2, advectionStrength);
-
-    // === DIFFUSION ===
-    let lapS1 = n[3].r + n[5].r + n[1].r + n[7].r - 4.0 * s1;
-    let lapS2 = n[3].g + n[5].g + n[1].g + n[7].g - 4.0 * s2;
-    let lapResource = n[3].b + n[5].b + n[1].b + n[7].b - 4.0 * resourceVal;
-    let lapToxin = n[3].a + n[5].a + n[1].a + n[7].a - 4.0 * toxin;
 
     // === PARAMETERS ===
     let flockCohesion = mix(0.01, 0.06, u.zoom_params.x);
     let predationRate = mix(0.01, 0.05, u.zoom_params.y);
+    let diffK = 0.4 + 2.0 * u.zoom_params.z;       // 1.0 at the saved default 0.3
+    let toxinK = mix(0.2, 1.8, u.zoom_params.w);   // 1.0 at the saved default 0.5
     let toxinDecay = 0.95;
     let resourceRegen = 0.001;
-    let dt = 0.5;
+
+    // === FLOCKING AS CONSERVATIVE TAXIS ===
+    // HEAD gathered along a velocity built from `normalize(off)/dist*ps.x` (~1 UV unit, so every cell
+    // sampled the texture corner) with the sign inverted, and a gather can never feed a sink pixel.
+    // Each species now moves up a steering potential phi: mass j->c = rho_j * max(0, phi_c - phi_j),
+    // c->j the mirror term, so every exchange is paired and total mass is conserved.
+    //   cohesion + separation: phi = coh * (rho - 0.35 rho^2)  (attracts, then crowds out above ~1.4)
+    let coh = mix(0.6, 2.0, u.zoom_params.x);
+    let pursue = 0.5 + predationRate * 10.0;
+    let sigma = mix(0.1, 0.4, u.zoom_params.x);
+    let phiC1 = coh * (s1 - 0.35 * s1 * s1) - s2 + sigma * flockCurvature(2, 2);
+    let phiC2 = coh * (s2 - 0.35 * s2 * s2) + pursue * s1;
+    var flux1 = 0.0;
+    var flux2 = 0.0;
+    for (var j: i32 = 0; j < 9; j = j + 1) {
+        if (j == 4) { continue; }
+        let ox = j % 3 - 1;
+        let oy = j / 3 - 1;
+        let wj = 1.0 / f32(ox * ox + oy * oy);
+        let nj = n[j];
+        // ── Idea 3: pursuit / evasion — predators climb the prey density, flockers descend the predator density
+        // ── Idea 2: surface tension — sigma * curvature in the flocker potential lowers convex tips so ragged edges round into schools
+        let phi1 = coh * (nj.r - 0.35 * nj.r * nj.r) - nj.g + sigma * flockCurvature(2 + ox, 2 + oy);
+        let phi2 = coh * (nj.g - 0.35 * nj.g * nj.g) + pursue * nj.r;
+        let d1 = clamp(phiC1 - phi1, -1.0, 1.0);
+        let d2 = clamp(phiC2 - phi2, -1.0, 1.0);
+        flux1 = flux1 + wj * (nj.r * max(d1, 0.0) - s1 * max(-d1, 0.0));
+        flux2 = flux2 + wj * (nj.g * max(d2, 0.0) - s2 * max(-d2, 0.0));
+    }
+    let steer = select(0.12, 0.0, seeding);
+    s1 = max(s1 + steer * flux1, 0.0);
+    s2 = max(s2 + steer * flux2, 0.0);
+
+    // ── Idea 1: isotropic 9-point Laplacian for every field (same scale as the old 5-point stencil)
+    let c4 = vec4<f32>(s1, s2, resourceVal, toxin);
+    let edges = n[1] + n[3] + n[5] + n[7];
+    let corners = n[0] + n[2] + n[6] + n[8];
+    let lap = (4.0 * edges + corners - 20.0 * c4) / 6.0;
+    let lapS1 = lap.x;
+    let lapS2 = lap.y;
+    let lapResource = lap.z;
+    let lapToxin = lap.w;
 
     // === ECOSYSTEM DYNAMICS ===
     // Species consume resourceVal to grow
@@ -169,23 +176,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let predation = s1 * s2 * predationRate;
 
     // Species produce toxin
-    let toxinProduction1 = s1 * 0.005;
-    let toxinProduction2 = s2 * 0.004;
+    let toxinProduction1 = s1 * 0.005 * toxinK;
+    let toxinProduction2 = s2 * 0.004 * toxinK;
 
-    // Toxin hurts both species
-    let toxinDamage = toxin * 0.02;
+    // Toxin hurts both species (HEAD fix: proportional to the density it poisons; the old absolute 0.02*toxin wiped out every cell below ~0.2)
+    let toxinDamage1 = s1 * toxin * 0.1 * toxinK;
+    let toxinDamage2 = s2 * toxin * 0.1 * toxinK;
 
     // Resource regeneration
     resourceVal += resourceRegen - food1 - food2;
-    resourceVal += lapResource * 0.1;
+    resourceVal += lapResource * 0.1 * diffK;
 
     // Species update
-    s1 += food1 - predation - toxinDamage + lapS1 * 0.05;
-    s2 += food2 + predation * 0.3 - toxinDamage + lapS2 * 0.05;
+    s1 += food1 - predation - toxinDamage1 + lapS1 * 0.05 * diffK;
+    s2 += food2 + predation * 0.3 - toxinDamage2 + lapS2 * 0.05 * diffK;
 
     // Toxin update
     toxin += toxinProduction1 + toxinProduction2 - toxin * 0.01;
-    toxin += lapToxin * 0.08;
+    toxin += lapToxin * 0.08 * diffK;
     toxin *= toxinDecay;
 
     // Natural death
@@ -226,8 +234,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     s1 = clamp(s1, 0.0, 2.0);
     s2 = clamp(s2, 0.0, 2.0);
 
-    // === STORE STATE ===
-    textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resourceVal, toxin));
+    // === STORE STATE === (corner texel carries the ownership sentinel)
+    let isCorner = gid.x == 0u && gid.y == 0u;
+    textureStore(dataTextureA, coord, vec4<f32>(select(s1, STATE_SENTINEL, isCorner), s2, resourceVal, toxin));
 
     // === VISUALIZATION ===
     // Species 1 = cyan/teal, Species 2 = magenta/pink, Resource = green, Toxin = dark purple
@@ -237,14 +246,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let colorToxin = vec3<f32>(0.3, 0.0, 0.4) * min(toxin, 1.0) * 0.5;
 
     var displayColor = colorS1 + colorS2 + colorResource + colorToxin;
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Highlight flow edges
-    let s1Grad = length(vec2<f32>(n[3].r - n[5].r, n[1].r - n[7].r));
-    let s2Grad = length(vec2<f32>(n[3].g - n[5].g, n[1].g - n[7].g));
+    let s1Grad = length(vec2<f32>(n[5].r - n[3].r, n[7].r - n[1].r)) * 0.5;
+    let s2Grad = length(vec2<f32>(n[5].g - n[3].g, n[7].g - n[1].g)) * 0.5;
     let edgeHighlight = (s1Grad + s2Grad) * 2.0;
     displayColor += vec3<f32>(1.0, 0.9, 0.5) * edgeHighlight * 0.3;
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor = aces(max(displayColor, vec3<f32>(0.0)) * 1.1);
 
     // Alpha = total biomass (meaningful, not hardcoded)
     let biomass = min(s1 + s2, 1.0);

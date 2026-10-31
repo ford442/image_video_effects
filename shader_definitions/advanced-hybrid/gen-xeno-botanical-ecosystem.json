@@ -10,13 +10,15 @@
     "simulation",
     "organic",
     "temporal",
-    "colorful"
+    "colorful",
+    "upgraded-rgba"
   ],
   "features": [
     "mouse-driven",
     "temporal",
     "audio-reactive",
-    "rgba-state-machine"
+    "rgba-state-machine",
+    "upgraded-rgba"
   ],
   "params": [
     {

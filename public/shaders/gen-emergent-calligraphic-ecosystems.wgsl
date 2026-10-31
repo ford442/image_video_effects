@@ -3,9 +3,11 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-10-31
 //  Ideas: brush pressure swell along the stroke; prey-predator ink chase along the flow; paper-fibre ink feathering; glyph death phase (dry, crack, rebirth);
-//         capillary backrun blooms; ligature bridge strokes between nearby glyph clusters
+//         capillary backrun blooms; ligature bridge strokes between nearby glyph clusters;
+//         wet-edge pooling that dries with cluster age (C wet-edge/drying); dry-brush paper granulation (C paper granulation);
+//         golden-angle stroke spacing inside each glyph cluster (E golden-angle layout)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -52,7 +54,7 @@ fn flowAngle(p: vec2<f32>, t: f32, mids: f32, bass: f32) -> f32 {
 
 // Stroke primitive: a curved brushstroke from a seed
 fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
-          inkWidth: f32, orientation: f32, wick: f32) -> f32 {
+          inkWidth: f32, orientation: f32, wick: f32, wet: f32) -> f32 {
     let d = uv - seed;
     let along = d.x * cos(orientation) + d.y * sin(orientation);
     let across = -d.x * sin(orientation) + d.y * cos(orientation);
@@ -61,7 +63,14 @@ fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
     let taper = sin(clamp(along / max(strokeLen, 0.001), 0.0, 1.0) * PI);
     // Idea 1 — brush pressure swell: real calligraphy width breathes along the stroke
     let pressure = 1.0 + 0.38 * sin(along * 16.0 + orientation + t * 0.7);
-    let inWidth = smoothstep(inkWidth * pressure, 0.0, abs(across)) * taper;
+    let w = inkWidth * pressure;
+    // Idea 7 — wet-edge pooling: fresh ink is thin in the middle and pools dark at the rim; it flattens as the glyph dries (wet -> 0)
+    let rim = smoothstep(0.35, 0.95, abs(across) / max(w, 0.0005));
+    let pooling = 1.0 - 0.22 * wet * (1.0 - rim);
+    // Idea 8 — dry-brush granulation: fixed paper tooth (screen-space, does not slide with the stroke) leaves pigment gaps in the core, more as the ink dries
+    let tooth = smoothNoise(uv * 150.0);
+    let granule = 1.0 - (0.06 + 0.26 * (1.0 - wet)) * smoothstep(0.35, 0.8, tooth) * (1.0 - rim);
+    let inWidth = smoothstep(w, 0.0, abs(across)) * taper * pooling * granule;
 
     // Idea 3 — ink feathering: wet ink wicks past the edge along anisotropic paper fibres
     let fibre = smoothNoise(uv * vec2<f32>(310.0, 46.0)) * 0.6 + smoothNoise(uv * vec2<f32>(52.0, 290.0)) * 0.4;
@@ -86,11 +95,14 @@ fn glyphCluster(uv: vec2<f32>, clusterSeed: vec2<f32>, t: f32,
     let cycle = fract(lived / lifeSpan);
     let age = clamp(cycle * lifeSpan, 0.0, 1.0);
     let death = smoothstep(0.72, 0.98, cycle);
+    let wet = 1.0 - smoothstep(0.0, 0.45, cycle);
 
     for (var k = 0; k < numStrokes; k++) {
         let kf = f32(k);
         let strokeHash = hash22(clusterSeed + vec2<f32>(kf * 0.37, kf * 0.73));
-        let localOffset = (strokeHash - 0.5) * 0.08 * (1.0 + mids * 0.5);
+        // Idea 9 — golden-angle spacing: strokes sit on a Vogel spiral around the seed instead of random clumps
+        let vogel = vec2<f32>(cos(kf * 2.39996), sin(kf * 2.39996)) * 0.024 * sqrt((kf + 0.5) / f32(numStrokes));
+        let localOffset = mix((strokeHash - 0.5) * 0.08, vogel, 0.5) * (1.0 + mids * 0.5);
         let baseAngle = flowAngle(clusterSeed, t * 0.5, mids, bass);
         // Idea 2 — prey-predator ink chase: flora seeds slide along the flow
         let chaseOff = vec2<f32>(cos(baseAngle), sin(baseAngle)) * chase;
@@ -103,7 +115,7 @@ fn glyphCluster(uv: vec2<f32>, clusterSeed: vec2<f32>, t: f32,
         let sWidth = inkWidth * (0.5 + strokeHash.x * 0.5) * (0.8 + mids * 0.4);
 
         let growLen = sLen * smoothstep(0.0, 0.3, age);
-        totalInk += stroke(uv, strokeSeed, t, growLen, sWidth, strokeAngle, wick);
+        totalInk += stroke(uv, strokeSeed, t, growLen, sWidth, strokeAngle, wick, wet);
     }
     // Dried ink cracks into flakes as death advances
     let crack = smoothNoise(uv * 140.0 + clusterSeed * 31.0) * 0.7 + hash12(floor(uv * 420.0)) * 0.3;

@@ -2,7 +2,7 @@
   "id": "digital-moss-rgba",
   "name": "Digital Moss Rgba",
   "url": "shaders/digital-moss-rgba.wgsl",
-  "description": "RD-driven digital moss with iridescent palette: held plants spores, click cleans, capped ripple bursts, exact C Laplacian, and audio growth rate.",
+  "description": "RD-driven digital moss with iridescent palette: held plants spores, click cleans, capped ripple bursts, exact C Laplacian, and audio growth rate. Colony rims bead with dew, bright photo areas desiccate to straw at low Moisture, and fine hairs radiate across the fringe.",
   "tags": [
     "mouse-driven",
     "temporal",

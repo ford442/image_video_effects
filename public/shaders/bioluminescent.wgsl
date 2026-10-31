@@ -2,31 +2,12 @@
 //  Bioluminescent Growth
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal-persistence, depth-aware
-//  Upgraded: 2026-09-12
-//  Ideas: spore tropism toward live click inoculum; quorum flash where growth exceeds neighbors
+//  Upgraded: 2026-09-12, 2026-10-31
+//  Ideas: spore tropism toward live click inoculum; quorum flash where growth exceeds neighbors; hyphal branching gate on spread (row: tactic 4 — Branch Density becomes spatial); inverse-square luciferin halo that lights the tissue and is subtracted from the core (row: F Soft inverse-square + F Energy-conserving bloom)
 //  A packing: raw (growth, 0, 0, 1)
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const BIO_TISSUE_DENSITY: f32 = 2.0;
 const VEIN_OPACITY: f32 = 0.85;
@@ -47,6 +28,14 @@ fn noise3d(p: vec3<f32>) -> f32 {
                    mix(hash(vec2<f32>(n + 57.0, 0.0)), hash(vec2<f32>(n + 58.0, 0.0)), u.x), u.y),
                mix(mix(hash(vec2<f32>(n + 113.0, 0.0)), hash(vec2<f32>(n + 114.0, 0.0)), u.x),
                    mix(hash(vec2<f32>(n + 170.0, 0.0)), hash(vec2<f32>(n + 171.0, 0.0)), u.x), u.y), u.z);
+}
+
+fn vnoise2(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash(i), hash(i + vec2<f32>(1.0, 0.0)), w.x),
+               mix(hash(i + vec2<f32>(0.0, 1.0)), hash(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -148,8 +137,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nD = loadGrowth(coord + vec2<i32>(0, -1), maxCoord);
     let nU = loadGrowth(coord + vec2<i32>(0, 1), maxCoord);
     let neighbor_avg = (nL + nR + nD + nU) * 0.25;
-    let depth_mask = smoothstep(0.1, 0.9, depth);
-    growth = min(1.0, growth * 0.998 + neighbor_avg * spread_mult * depth_mask * branch_density);
+    // HEAD fix: depthRead is all zeros when no depth model has run, which made
+    // smoothstep(0.1,0.9,depth)=0 and froze every colony — keep a floor so spread works.
+    let depth_mask = mix(0.45, 1.0, smoothstep(0.1, 0.9, depth));
+    // Idea 3 — hyphal branching gate: spread follows ridged-noise tendrils, not a uniform disc
+    let hyphaP = uv * vec2<f32>(aspect, 1.0) * 16.0 + vec2<f32>(time * 0.03, 0.0);
+    let ridge = 1.0 - abs(2.0 * (vnoise2(hyphaP) * 0.65 + vnoise2(hyphaP * 2.3 + 7.0) * 0.35) - 1.0);
+    let hypha = mix(1.0, smoothstep(0.62, 0.9, ridge) * 3.0 + 0.03, 0.92);
+    growth = min(1.0, growth * 0.998 + neighbor_avg * spread_mult * depth_mask * branch_density * hypha);
 
     // Idea 1 — spore tropism: extra growth from the neighbor that faces the inoculum
     let dirLen = max(length(sporeDir), 0.0001);
@@ -164,8 +159,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vein_noise = noise3d(vec3<f32>(uv * 20.0, time * 0.5 * (1.0 + treble * 0.2)));
     let veins = smoothstep(0.3, 0.7, growth + vein_noise * 0.2);
 
-    let glow_falloff = pow(growth, 2.0) * glow_intensity;
+    // Idea 4 — luciferin halo: soft inverse-square gather of growth at 3/8/15 px along 4 axes.
+    // Energy-conserving: the core gives up the share that the halo spreads, so total light stays put.
+    var halo = 0.0;
+    for (var k: i32 = 0; k < 3; k = k + 1) {
+        let r = f32(3 + k * 4 + k * k);
+        let ri = i32(r);
+        let w = 1.0 / (r * r * 0.05 + 1.0);
+        halo += w * (loadGrowth(coord + vec2<i32>(ri, 0), maxCoord) + loadGrowth(coord + vec2<i32>(-ri, 0), maxCoord)
+                   + loadGrowth(coord + vec2<i32>(0, ri), maxCoord) + loadGrowth(coord + vec2<i32>(0, -ri), maxCoord));
+    }
+    halo = halo * 0.12;
+    let haloShare = 0.35;
+    let glow_falloff = pow(growth, 2.0) * glow_intensity * (1.0 - haloShare);
     var bio_light = bio_color(time, color_mode, pulse) * glow_falloff;
+    bio_light += bio_color(time, color_mode, pulse) * halo * haloShare * glow_intensity * (1.0 - growth * 0.5);
 
     // Idea 2 — quorum flash where local growth exceeds the neighbor field
     let quorum = clamp(growth - neighbor_avg, 0.0, 1.0);
@@ -174,7 +182,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ss_scatter = smoothstep(0.0, 0.5, growth) * 0.3;
     let scatteredBase = growthSSS(growth, veins, base_color);
     let growth_alpha = calculateGrowthAlpha(growth, veins, glow_intensity);
-    var final_color = scatteredBase * (1.0 - veins * 0.3) + bio_light + ss_scatter;
+    let litBase = base_color * bio_color(time, color_mode, pulse) * halo * 0.5 * glow_intensity;
+    var final_color = scatteredBase * (1.0 - veins * 0.3) + bio_light + ss_scatter + litBase;
     final_color = acesToneMap(final_color);
 
     textureStore(writeTexture, coord, vec4<f32>(final_color, growth_alpha));

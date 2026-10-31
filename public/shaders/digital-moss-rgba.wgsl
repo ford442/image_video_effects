@@ -2,31 +2,14 @@
 //  digital-moss-rgba
 //  Category: advanced-hybrid
 //  Features: mouse-driven, temporal, rgba-state-machine, organic, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-12
-//  Ideas: dual-species territorial ridge where B≈D; capsule stalks from high-B
+//  Upgraded: 2026-09-12, 2026-10-31
+//  Ideas: dual-species territorial ridge where B≈D; capsule stalks from high-B;
+//         dew wet-edge pooling at the colony rim (C wet-edge, -lap B); sun-drying to straw where the photo is bright and Moisture is low (C drying);
+//         rhizoid hairs radiating along grad B at the colony fringe (direction, not magnitude)
 //  A packing: raw (A, B, C, D) chemistry
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -202,7 +185,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let mossColor = mossPalette(A, B, C, D, time * 0.04 + mids * 0.2);
   let scan = 0.82 + 0.18 * sin(uv.y * 480.0 + time * 2.0);
-  let scannedMossColor = mossColor * scan;
+  // Idea 4 — sun-drying: bright photo regions + low Moisture desiccate moss toward straw
+  let dryAmt = smoothstep(0.4, 0.85, luma) * (1.0 - u.zoom_params.w) * 0.8;
+  let strawColor = vec3<f32>(0.62, 0.5, 0.25) * (0.45 + luma * 0.5) * (0.6 + 0.4 * A);
+  let scannedMossColor = mix(mossColor, strawColor, dryAmt) * scan;
   var finalColor = mix(imgColor, scannedMossColor, grown * 0.88);
 
   // Idea 1 — dual-species territorial ridge where B meets D
@@ -217,8 +203,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let capsule = smoothstep(0.55, 0.88, B) * stalkState.g * grown;
   finalColor = mix(finalColor, scannedMossColor * vec3<f32>(0.85, 1.15, 0.55) + vec3<f32>(0.55, 0.35, 0.12) * capsule, capsule * 0.4);
 
+  // Idea 3 — dew wet-edge: pigment pools and darkens where B's Laplacian is concave (colony rim), with beaded glints
+  let wetness = mix(0.4, 1.0, u.zoom_params.w) * (1.0 - dryAmt);
+  let colony = max(grown, smoothstep(0.05, 0.3, max(B, D)));
+  let wetEdge = clamp(-lapB * 6.0, 0.0, 1.0) * colony * wetness;
+  finalColor *= 1.0 - 0.3 * wetEdge * grown;
+  let beadCell = floor(vec2<f32>(coord) / 3.0);
+  let bead = step(0.82, hash12(beadCell + 17.0)) * wetEdge;
+  finalColor += vec3<f32>(0.75, 0.95, 0.9) * (bead * (0.25 + treble * 0.25) + wetEdge * 0.12);
+
+  // Idea 5 — rhizoid hairs: the gradient of B points away from the colony core; quantised by angle, thin spokes radiate across the fringe
+  let gradB = vec2<f32>(right.g - left.g, up.g - down.g);
+  let gradLen = length(gradB);
+  let fringe = smoothstep(0.004, 0.03, gradLen) * (1.0 - smoothstep(0.08, 0.25, gradLen));
+  let spokePhase = select(0.0, atan2(gradB.y, gradB.x), dot(gradB, gradB) > 1e-10) * 5.7296;
+  let spokeId = floor(spokePhase);
+  let spokeLine = smoothstep(0.62, 0.5, abs(fract(spokePhase) - 0.5) * 2.0 * (0.5 + hash12(vec2<f32>(spokeId, 3.0))));
+  let hair = fringe * spokeLine * step(0.35, hash12(vec2<f32>(spokeId, 9.0))) * max(colony, 0.35);
+  finalColor = mix(finalColor, (mossColor + vec3<f32>(0.05, 0.25, 0.08)) * vec3<f32>(1.1, 1.25, 0.7), hair * 0.6);
+
   finalColor = acesToneMap(finalColor * (0.95 + bass * 0.08));
-  let alpha = clamp(mix(1.0, 0.82, grown) + B * 0.1 + ridge * 0.2 + capsule * 0.15, 0.0, 1.0);
+  let alpha = clamp(mix(1.0, 0.82, grown) + B * 0.1 + ridge * 0.2 + capsule * 0.15 + wetEdge * 0.1 + hair * 0.1, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
 

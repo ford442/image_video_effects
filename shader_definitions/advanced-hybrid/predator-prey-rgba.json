@@ -2,7 +2,7 @@
   "id": "predator-prey-rgba",
   "name": "Predator-Prey RGBA",
   "url": "shaders/predator-prey-rgba.wgsl",
-  "description": "Continuous-density predator-prey field. Carnivores pursue along the herbivore gradient, herbivores flee carnivores, and toxin strength is a live slider. Species persist in dataTextureA.",
+  "description": "Continuous-density predator-prey field. Carnivores pursue along the herbivore gradient, herbivores flee carnivores and round into herds under surface tension; carcasses and kill waste rot into toxin, plants bloom in luminance-shifted seasons, and kills flash. Species persist in dataTextureA.",
   "tags": [
     "predator-prey",
     "ecosystem",

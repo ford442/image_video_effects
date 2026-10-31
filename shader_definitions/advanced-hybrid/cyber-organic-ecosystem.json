@@ -7,13 +7,17 @@
     "mouse-driven",
     "temporal",
     "rgba-state-machine",
-    "organic"
+    "organic",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "features": [
     "mouse-driven",
     "temporal",
     "rgba-state-machine",
-    "organic"
+    "organic",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

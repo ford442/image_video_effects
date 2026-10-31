@@ -1007,7 +1007,9 @@
       "mouse-driven",
       "field-simulation",
       "organic",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1353,7 +1355,8 @@
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2843,13 +2846,17 @@
       "mouse-driven",
       "temporal",
       "rgba-state-machine",
-      "organic"
+      "organic",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "features": [
       "mouse-driven",
       "temporal",
       "rgba-state-machine",
-      "organic"
+      "organic",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3732,7 +3739,7 @@
     "id": "digital-moss-rgba",
     "name": "Digital Moss Rgba",
     "url": "shaders/digital-moss-rgba.wgsl",
-    "description": "RD-driven digital moss with iridescent palette: held plants spores, click cleans, capped ripple bursts, exact C Laplacian, and audio growth rate.",
+    "description": "RD-driven digital moss with iridescent palette: held plants spores, click cleans, capped ripple bursts, exact C Laplacian, and audio growth rate. Colony rims bead with dew, bright photo areas desiccate to straw at low Moisture, and fine hairs radiate across the fringe.",
     "tags": [
       "mouse-driven",
       "temporal",
@@ -5814,13 +5821,15 @@
       "simulation",
       "organic",
       "temporal",
-      "colorful"
+      "colorful",
+      "upgraded-rgba"
     ],
     "features": [
       "mouse-driven",
       "temporal",
       "audio-reactive",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8509,7 +8518,7 @@
     "id": "predator-prey-rgba",
     "name": "Predator-Prey RGBA",
     "url": "shaders/predator-prey-rgba.wgsl",
-    "description": "Continuous-density predator-prey field. Carnivores pursue along the herbivore gradient, herbivores flee carnivores, and toxin strength is a live slider. Species persist in dataTextureA.",
+    "description": "Continuous-density predator-prey field. Carnivores pursue along the herbivore gradient, herbivores flee carnivores and round into herds under surface tension; carcasses and kill waste rot into toxin, plants bloom in luminance-shifted seasons, and kills flash. Species persist in dataTextureA.",
     "tags": [
       "predator-prey",
       "ecosystem",

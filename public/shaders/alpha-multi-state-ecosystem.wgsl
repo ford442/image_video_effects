@@ -3,9 +3,9 @@
 //  Category: simulation
 //  Features: multi-species-ecosystem, seasonal-cycles, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: ecotone ridge where s1≈s2; toxin stain from stored A
-//  A packing: raw (s1, s2, resource, toxin)
+//  Upgraded: 2026-09-12, 2026-10-31
+//  Ideas: ecotone ridge where s1≈s2; toxin stain from stored A; isotropic 9-point Laplacian diffusion; nutrient recycling from the dead
+//  A packing: raw (s1, s2, resource, toxin); A(0,0).r = sentinel -0.6875
 // ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
 //    R = Species 1 density (prey-like)
@@ -17,26 +17,7 @@
 //  Updated: 2026-05-31 — Grok (real ecosystem with audio seasons + keystone dynamics)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -44,8 +25,17 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
         vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// A.r of the corner texel: marks C as this shader's own state (f16-exact, never a density).
+const STATE_SENTINEL: f32 = -0.6875;
+var<private> stateOwned: bool = false;
+
+// Exact history load. Foreign history (previous shader's A) reads as an empty field.
 fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
-    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+    if (!stateOwned) { return vec4<f32>(0.0, 0.0, 0.5, 0.0); }
+    let q = clamp(p, vec2<i32>(0), dims - vec2<i32>(1));
+    var v = textureLoad(dataTextureC, q, 0);
+    if (q.x == 0 && q.y == 0) { v.r = 0.0; }
+    return v;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -58,6 +48,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
     let dims = vec2<i32>(res);
     let time = u.config.x;
+
+    stateOwned = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).r == STATE_SENTINEL;
 
     // === AUDIO SEASONS (plasmaBuffer as climate) ===
     let bass = plasmaBuffer[0].x;
@@ -78,8 +70,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var resourceVal = prevState.b;
     var toxin = prevState.a;
 
-    // Seed on first frame
-    if (time < 0.1) {
+    // Seed on first frame, or whenever history is not ours (shader switched in later)
+    if (time < 0.1 || !stateOwned) {
         s1 = 0.0;
         s2 = 0.0;
         resourceVal = 0.5;
@@ -104,10 +96,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let down = stateAt(coord + vec2<i32>(0, -1), dims);
     let up = stateAt(coord + vec2<i32>(0, 1), dims);
 
-    let lapS1 = left.r + right.r + down.r + up.r - 4.0 * s1;
-    let lapS2 = left.g + right.g + down.g + up.g - 4.0 * s2;
-    let lapResource = left.b + right.b + down.b + up.b - 4.0 * resourceVal;
-    let lapToxin = left.a + right.a + down.a + up.a - 4.0 * toxin;
+    // Idea 3 — isotropic 9-point Laplacian (same scale as the 5-point stencil): round colony edges, no diamond bias
+    let downLeft = stateAt(coord + vec2<i32>(-1, -1), dims);
+    let downRight = stateAt(coord + vec2<i32>(1, -1), dims);
+    let upLeft = stateAt(coord + vec2<i32>(-1, 1), dims);
+    let upRight = stateAt(coord + vec2<i32>(1, 1), dims);
+    let lap9 = (4.0 * (left + right + down + up) + (downLeft + downRight + upLeft + upRight)
+        - 20.0 * vec4<f32>(s1, s2, resourceVal, toxin)) / 6.0;
+    let lapS1 = lap9.x;
+    let lapS2 = lap9.y;
+    let lapResource = lap9.z;
+    let lapToxin = lap9.w;
 
     // === SEASONAL ECOSYSTEM PARAMETERS ===
     let growthRate1 = mix(0.018, 0.075, u.zoom_params.x) * (1.0 + seasonBloom * 0.4);
@@ -156,6 +155,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     toxin += lapToxin * 0.07;
     toxin *= toxinDecay;
 
+    // Idea 4 — nutrient recycling: what dies (season death + competitive kill) rots back into the resource field
+    resourceVal += ((s1 + s2) * deathRate + 2.0 * competition) * 0.5;
+
     // Seasonal death wave (higher in harsh seasons)
     let seasonalDeath = 1.0 - deathRate;
     s1 *= seasonalDeath;
@@ -184,6 +186,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     toxin = max(toxin, 0.0);
 
     // Harsh season + mouse = stronger extinction pressure on both species
+    // Idea 4 (cont.) — the extinction zone also leaves detritus behind (only what actually existed)
+    resourceVal += (min(s1, keystoneExtinction * 0.9) + min(s2, keystoneExtinction * 0.85)) * 0.5;
     s1 -= keystoneExtinction * 0.9;
     s2 -= keystoneExtinction * 0.85;
 
@@ -210,7 +214,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     s2 = clamp(s2, 0.0, 2.5);
 
     // === STORE STATE ===
-    textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resourceVal, toxin));
+    let isCorner = gid.x == 0u && gid.y == 0u;
+    textureStore(dataTextureA, coord, vec4<f32>(select(s1, STATE_SENTINEL, isCorner), s2, resourceVal, toxin));
 
     // === LIVING ECOSYSTEM VISUALIZATION + SEASONAL COLOR ===
     // Species 1 = teal/cyan, Species 2 = magenta, with seasonal hue shifts
