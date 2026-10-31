@@ -8,7 +8,7 @@ This repository is the **Pixelocity / WebGPU Shader Effects** app (Vite 6 + Reac
 
 ### Services / commands
 - **Dev server:** `npm start` (Vite on port 3000). The `prestart` step regenerates `public/shader-lists/*.json` and the unified manifest with **relative** same-origin shader paths (no `--base-url`; set `SHADER_LIST_BASE_URL` only for deploy builds). `BROWSER=none` keeps it from opening a browser.
-- **Unit tests:** `npm run test:ci` (Vitest 3, single run; ~173 files / ~1460 tests, all pass). `npm test` is Vitest watch mode. `npm test -- --watchAll=false` is a Jest flag and errors under Vitest.
+- **Unit tests:** `npm run test:ci` (Vitest 3, single run; ~184 files / ~1560 tests, all pass). `npm test` is Vitest watch mode. `npm test -- --watchAll=false` is a Jest flag and errors under Vitest.
 - **Lint:** `npm run lint` (`eslint src --max-warnings 125`). Lint is **gating** in CI: errors fail, and the warning count is a ratchet (`--max-warnings`) that may only go down. Keep it at 0 errors.
 - **Typecheck:** `npm run typecheck` (`tsc --noEmit`) and `npm run typecheck:scripts`. `tsconfig.json` has `strict` + `noUncheckedIndexedAccess`, so indexed reads are `T | undefined` — guard them rather than using `!`.
 - **CI verify gates:** `npm run verify:toolchain-foundation` chains the bundle-size, dependency-boundary, generated-sync, catalog-count, WASM-bridge-sync, `_prelude` migration, naga-wasm and thumbs-deferral checks; run it (after a build) before pushing changes that touch those areas.
