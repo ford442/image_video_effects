@@ -36,6 +36,9 @@ let panelOpen = false;
 let panelTarget: ModTarget | null = null;
 /** Range lookup for targets (slot, param) → shader-definition min/max. */
 let rangeOf: (target: ModTarget) => ParamRange = () => DEFAULT_RANGE;
+/** Ranges reported by the param sliders (shader-definition min/max), by `${slot}:${param}`. */
+const knownRanges = new Map<string, ParamRange>();
+const rangeKey = (t: ModTarget) => `${t.slot}:${t.param}`;
 
 const snapshot = (): ModulationSnapshot => ({ routes, bpm });
 
@@ -48,7 +51,7 @@ function publish(): void {
 }
 
 function resolve(r: Route): ResolvedRoute {
-  const range = r.target.param === 'opacity' ? DEFAULT_RANGE : rangeOf(r.target);
+  const range = r.target.param === 'opacity' ? DEFAULT_RANGE : knownRanges.get(rangeKey(r.target)) ?? rangeOf(r.target);
   return { ...toRoute(r), min: range.min, max: range.max };
 }
 
@@ -83,6 +86,19 @@ export const modulationStore = {
     routes = routes.map(resolve);
     publish();
   },
+  /** Record a target's shader-definition range; re-resolves routes on that target when it changed. */
+  setRange(target: ModTarget, range: ParamRange): void {
+    if (!Number.isFinite(range.min) || !Number.isFinite(range.max)) return;
+    const prev = knownRanges.get(rangeKey(target));
+    if (prev && prev.min === range.min && prev.max === range.max) return;
+    knownRanges.set(rangeKey(target), { min: range.min, max: range.max });
+    if (routes.some((r) => r.target.slot === target.slot && r.target.param === target.param)) {
+      routes = routes.map(resolve);
+      publish();
+    }
+  },
+  getRange: (target: ModTarget): ParamRange =>
+    target.param === 'opacity' ? DEFAULT_RANGE : knownRanges.get(rangeKey(target)) ?? rangeOf(target),
   setBpm(next: number): void {
     if (!Number.isFinite(next) || next <= 0) return;
     bpm = next;
@@ -124,6 +140,7 @@ export const modulationStore = {
     panelOpen = false;
     panelTarget = null;
     rangeOf = () => DEFAULT_RANGE;
+    knownRanges.clear();
     listeners.clear();
     externalListeners.clear();
     panelListeners.clear();

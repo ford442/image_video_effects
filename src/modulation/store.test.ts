@@ -20,6 +20,14 @@ describe('modulationStore', () => {
     expect(modulationStore.getRoutes()[0]).toEqual(r());
   });
 
+  it('re-resolves a route when its slider reports the shader range', () => {
+    modulationStore.upsertRoute(r());
+    expect(modulationStore.getSnapshot().routes[0]).toMatchObject({ min: 0, max: 1 });
+    modulationStore.setRange({ slot: 0, param: 'p1' }, { min: 0, max: 10 });
+    expect(modulationStore.getSnapshot().routes[0]).toMatchObject({ min: 0, max: 10 });
+    expect(modulationStore.getRange({ slot: 0, param: 'opacity' })).toEqual({ min: 0, max: 1 });
+  });
+
   it('upserts and removes routes', () => {
     modulationStore.upsertRoute(r());
     modulationStore.upsertRoute(r({ depth: 0.3 }));
