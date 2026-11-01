@@ -3861,7 +3861,7 @@
     "id": "porcelain-fracture-glow",
     "name": "Porcelain Fracture Glow",
     "url": "shaders/porcelain-fracture-glow.wgsl",
-    "description": "The image is rendered on delicate porcelain that develops fine luminous cracks. The cracks follow image edges and can be drawn with the mouse. Bass makes the golden light pulse and sing through the fractures.",
+    "description": "The image is rendered on delicate porcelain that develops fine luminous cracks. The cracks follow image edges and can be drawn with the mouse. Bass makes the golden light pulse and sing through the fractures. Vein light bleeds through the translucent glaze as a subsurface halo, and the glaze highlight shatters along every hairline.",
     "tags": [
       "porcelain",
       "crack",
@@ -3869,7 +3869,9 @@
       "light",
       "artistic",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "subsurface",
+      "translucent"
     ],
     "features": [
       "audio-reactive",

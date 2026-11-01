@@ -179,8 +179,17 @@
       "history": []
     },
     "chromatic-reaction-diffusion": {
-      "hash": "457891fe3136bf23",
-      "history": []
+      "hash": "fa69a4e41f4c37ee",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "fa69a4e41f4c37ee",
+          "prev_hash": "457891fe3136bf23",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "chronos-brush-explosion": {
       "hash": "63cb0aeef7080073",
@@ -347,8 +356,17 @@
       "history": []
     },
     "encaustic-wax-blackbody": {
-      "hash": "55c7871452892015",
-      "history": []
+      "hash": "a50f16026e7ffc15",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "a50f16026e7ffc15",
+          "prev_hash": "55c7871452892015",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "energy-shield-blackbody": {
       "hash": "0e6cfb09fd56ec16",
@@ -429,8 +447,17 @@
       "history": []
     },
     "gen-abyssal-leviathan-iridescence": {
-      "hash": "e80bb3efe6676698",
-      "history": []
+      "hash": "991524b11780a7c9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "991524b11780a7c9",
+          "prev_hash": "e80bb3efe6676698",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "gen-art-deco-sky-prismatic": {
       "hash": "b12080ad3ee929a0",
@@ -642,8 +669,17 @@
       ]
     },
     "ink-dispersion-guided": {
-      "hash": "34880d1d8ab3cb86",
-      "history": []
+      "hash": "713a5838b782b1cf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "713a5838b782b1cf",
+          "prev_hash": "34880d1d8ab3cb86",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "interactive-magnetic-ripple-em": {
       "hash": "7ea1d816124029b8",
@@ -897,8 +933,17 @@
       "history": []
     },
     "alpha-watercolor-wetness": {
-      "hash": "a1d64adff7c41641",
-      "history": []
+      "hash": "8d4ca185f637fdfe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "8d4ca185f637fdfe",
+          "prev_hash": "a1d64adff7c41641",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "ambient-liquid": {
       "hash": "06400bc6ca8a2df0",
@@ -1181,8 +1226,17 @@
       ]
     },
     "ink_dispersion_alpha": {
-      "hash": "114fbe624d7dfa6c",
-      "history": []
+      "hash": "1445cbc363700e18",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "1445cbc363700e18",
+          "prev_hash": "114fbe624d7dfa6c",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "ion-stream": {
       "hash": "2cb942aba1a077e0",
@@ -1406,8 +1460,17 @@
       "history": []
     },
     "porcelain-fracture-glow": {
-      "hash": "5d03ac1f52f76d66",
-      "history": []
+      "hash": "61378dc0086129be",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "61378dc0086129be",
+          "prev_hash": "5d03ac1f52f76d66",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "quantum-foam": {
       "hash": "e30111e1d4d1732a",
@@ -7607,7 +7670,7 @@
       ]
     },
     "gen-worley-cellular-noise": {
-      "hash": "1c5d05e130372ceb",
+      "hash": "00fb5b24cc36a29d",
       "history": [
         {
           "event": "upgraded",
@@ -7616,6 +7679,14 @@
           "prev_hash": "7702c0404a52012a",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "00fb5b24cc36a29d",
+          "prev_hash": "1c5d05e130372ceb",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
         }
       ]
     },
@@ -8834,8 +8905,17 @@
       "history": []
     },
     "oil-slick-iridescence": {
-      "hash": "d91a5d9a4b5c620c",
-      "history": []
+      "hash": "190053cedfc4e580",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "190053cedfc4e580",
+          "prev_hash": "d91a5d9a4b5c620c",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "optical-illusion-spin": {
       "hash": "5eb7671f89f38054",
@@ -9424,8 +9504,17 @@
       "history": []
     },
     "digital-mold": {
-      "hash": "43dd70453fc5ffff",
-      "history": []
+      "hash": "3ef624d65e085726",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:21:45.123Z",
+          "hash": "3ef624d65e085726",
+          "prev_hash": "43dd70453fc5ffff",
+          "commit": "b12283b1",
+          "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        }
+      ]
     },
     "digital-reveal": {
       "hash": "a270dcbd5ce3616a",
