@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, hex-bokeh, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: compound eye — every hex cell is a tiny parallaxed lens; domed facets lit from the cursor side
+//  Upgraded: 2026-11-01
+//  Ideas: compound eye — every hex cell is a tiny parallaxed lens; domed facets lit from the cursor side; pseudopupil — cells whose axis points at the cursor go dark and the dark spot tracks it; tapetum eyeshine — a hashed gold/green retro-reflected ring on the cells fringing the pseudopupil
 //  A packing: raw fields (falloff, hex_size, alpha, bass); B diagnostics (historyBlend, zoom, dist/radius, fog)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -134,6 +134,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let domeShade = 0.72 + 0.28 * max(dot(domeN, L), 0.0);
     let domeGlint = pow(max(dot(domeN, H), 0.0), 40.0) * 0.45 * (1.0 + bass * 0.5);
     lensColor = lensColor * domeShade + vec3<f32>(domeGlint);
+    // Idea 3: pseudopupil. In a real compound eye the ommatidia whose axis points at the viewer absorb
+    // the light and look dark, and that dark spot follows the viewing direction. Cells near the cursor
+    // get a dark pupil disc, weighted by how closely the cell is aligned to the cursor.
+    let cellOff = center - mouseA;
+    let alignSigma = max(radius * 0.22, hex_size * 2.0);
+    let axisAlign = exp(-dot(cellOff, cellOff) / (alignSigma * alignSigma));
+    let localLen = length(local);
+    let pupilR = hex_size * 0.22;
+    let pupil = (1.0 - smoothstep(pupilR * 0.7, pupilR, localLen)) * axisAlign * falloff;
+    lensColor = lensColor * (1.0 - 0.65 * pupil);
+
+    // Idea 4: tapetum eyeshine. Cells just outside the aligned patch retro-reflect: a thin sheen ring at
+    // the dome's rim whose colour is fixed per cell (gold to green), brightest where alignment is half.
+    let cellKey = round(center / max(hex_size, 1.0e-4));
+    let shineTint = mix(vec3<f32>(0.95, 0.78, 0.25), vec3<f32>(0.3, 0.95, 0.55), hash21(cellKey));
+    let fringe = exp(-dot(cellOff, cellOff) / (alignSigma * alignSigma * 2.8)) * (1.0 - axisAlign * 0.7);
+    let shineRing = exp(-pow((localLen - hex_size * 0.36) / max(hex_size * 0.05, 1.0e-4), 2.0));
+    lensColor = lensColor + shineTint * shineRing * fringe * falloff * 0.5 * (1.0 + bass * 0.5);
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let color = mix(baseColor, lensColor, falloff);
 

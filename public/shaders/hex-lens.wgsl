@@ -6,7 +6,9 @@
 //  Complexity: Very High
 //  Chunks From: hex-lens
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-11-01
+//  Ideas: dome-lenslet Snell refraction with Cauchy n(lambda)=A+B/lambda^2 per channel (fringes grow toward each cell rim); lenslet irradiance (focal hot-spot + cos^4 rim falloff)
+//  A packing: raw fields (influence, hexMask, rim+bokeh, alpha) — HEAD; display RGB is ACES + premultiplied
 //  By: The Complexity Architect
 // ================================================================
 
@@ -72,7 +74,21 @@ fn hexBokeh(uv: vec2<f32>, center: vec2<f32>, radius: f32, time: f32, bass: f32)
   return 1.0 - smoothstep(radius * 0.7, radius * (1.0 + edgeNoise * 0.3), hexShape);
 }
 
-fn chromaticDispersion(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32) -> vec3<f32> {
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 1 helper: sample offset (in cell-local units) of a ray hitting a spherical-cap lenslet at
+// cell-local position q (|q| <= 1) for refractive index n. Snell via refract(); the cap normal tips
+// outward with |q|, so rim rays bend more than axial ones.
+fn domeRefract(q: vec2<f32>, n: f32) -> vec2<f32> {
+  let qq = min(dot(q, q), 0.95);
+  let normal = normalize(vec3<f32>(q * 0.9, sqrt(1.0 - qq * 0.8)));
+  let bent = refract(vec3<f32>(0.0, 0.0, -1.0), normal, 1.0 / n);
+  return bent.xy;
+}
+
+fn chromaticDispersion(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f32, dOffR: vec2<f32>, dOffG: vec2<f32>, dOffB: vec2<f32>) -> vec3<f32> {
   let diff = uv - center;
   let dist = length(diff);
   let angle = atan2(diff.y, diff.x);
@@ -85,9 +101,9 @@ fn chromaticDispersion(uv: vec2<f32>, center: vec2<f32>, strength: f32, time: f3
   // Add FBM warp to chromatic split
   let warp = fbm(uv * 6.0 + time * 0.1, 4) * strength * 0.005;
 
-  let rUV = clamp(center + rOffset + vec2<f32>(warp, -warp * 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-  let gUV = clamp(center + gOffset + vec2<f32>(-warp * 0.3, warp * 0.3), vec2<f32>(0.0), vec2<f32>(1.0));
-  let bUV = clamp(center + bOffset + vec2<f32>(warp * 0.5, -warp), vec2<f32>(0.0), vec2<f32>(1.0));
+  let rUV = clamp(center + rOffset + vec2<f32>(warp, -warp * 0.5) + dOffR, vec2<f32>(0.0), vec2<f32>(1.0));
+  let gUV = clamp(center + gOffset + vec2<f32>(-warp * 0.3, warp * 0.3) + dOffG, vec2<f32>(0.0), vec2<f32>(1.0));
+  let bUV = clamp(center + bOffset + vec2<f32>(warp * 0.5, -warp) + dOffB, vec2<f32>(0.0), vec2<f32>(1.0));
 
   return vec3<f32>(
     textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
@@ -190,7 +206,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Chromatic dispersion with wavelength-dependent refraction
   let chromaticStrength = (0.006 + 0.010 * treble) * influence;
-  var finalColor = chromaticDispersion(refractedUV, centerUV, chromaticStrength, time);
+  // ── Idea 1: dome-lenslet Snell refraction + Cauchy dispersion. n(l) = A + B/l^2 at 650/550/450 nm
+  // (B boosted so the split reads at screen scale); the offset is the refracted ray's xy through the
+  // cell's dome, scaled by the pointer influence so the field outside the lens is untouched.
+  let q = local / 0.5;
+  let cauchyB = 0.028 * (1.0 + treble * 0.6);
+  let nR = 1.50 + cauchyB / (0.65 * 0.65);
+  let nG = 1.50 + cauchyB / (0.55 * 0.55);
+  let nB = 1.50 + cauchyB / (0.45 * 0.45);
+  let rayG = domeRefract(q, nG);
+  let toUV = vec2<f32>(1.0 / aspect, 1.0) / scale;
+  let domeAmt = 0.35 * influence;
+  let dOffG = rayG * toUV * domeAmt;
+  let dOffR = (rayG + (domeRefract(q, nR) - rayG) * 3.0) * toUV * domeAmt;
+  let dOffB = (rayG + (domeRefract(q, nB) - rayG) * 3.0) * toUV * domeAmt;
+  var finalColor = chromaticDispersion(refractedUV, centerUV, chromaticStrength, time, dOffR, dOffG, dOffB);
+
+  // ── Idea 2: lenslet irradiance. A thin lens gathers light to its axis: bright focal hot-spot at the
+  // cell centre, cos^4-style falloff toward the cell rim (mechanical vignetting of each lenslet).
+  let rr = length(q);
+  let focalSpot = exp(-rr * rr * 12.0);
+  let rimFall = 1.0 - 0.35 * smoothstep(0.4, 1.0, rr);
+  finalColor = finalColor * mix(1.0, (1.0 + 0.5 * focalSpot) * rimFall, influence);
 
   // Hexagonal bokeh overlay
   let bokehRadius = 0.08 + influence * 0.05 + bass * 0.02;
@@ -224,6 +261,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor + vec3<f32>(sparkle);
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, refractedUV, 0.0).r;
+  // ACES on luminance only: HEAD wrote linear RGB, and per-channel ACES lifts the toe of every channel
+  // and greys the cells; scaling the colour by the curve's luminance ratio keeps their saturation.
+  let lumaOut = max(dot(finalColor, vec3<f32>(0.2126, 0.7152, 0.0722)), 1e-4);
+  finalColor = min(finalColor * (aces(vec3<f32>(lumaOut * 0.9)).x / lumaOut), vec3<f32>(1.0));
   let depthOut = clamp(mix(baseDepth, baseDepth * 0.4 + influence * 0.5, 0.30), 0.0, 1.0);
   let finalAlpha = clamp(0.70 + influence * 0.18 + rim * 0.10 + bokeh * 0.05 + diffraction * 0.1, 0.48, 0.98);
 

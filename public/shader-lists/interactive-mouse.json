@@ -3266,14 +3266,19 @@
     "url": "shaders/glass-wall.wgsl",
     "features": [
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "chromatic-dispersion",
+      "caustics"
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
     "name": "Glass Wall",
-    "description": "Physical glass refraction with single-sample spectral tint, depth-aware mortar edges, and alpha translucency from refraction strength and glass thickness.",
+    "description": "Wavy hammered glass over the image: height-field normals refract with per-channel dispersion, spectral tint, Beer-Lambert thickness and Fresnel; convex crests focus warm caustic filaments. A held pointer bulges the glass and click ripples now travel (they were dead). Alpha from thickness and pointer influence.",
     "params": [
       {
         "id": "refraction_strength",
@@ -9754,12 +9759,13 @@
     "id": "radial-hex-lens",
     "name": "Radial Hex Lens",
     "url": "shaders/radial-hex-lens.wgsl",
-    "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. FBM warp, hex bokeh, depth-aware fog and semantic alpha for slot-chain compositing.",
+    "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. Cells aligned with the cursor go dark (pseudopupil) and the fringing cells glint with a hashed gold/green tapetum eyeshine. FBM warp, hex bokeh, depth-aware fog and semantic alpha.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "hex-bokeh",
+      "pseudopupil",
       "upgraded-rgba"
     ],
     "workgroup_size": [

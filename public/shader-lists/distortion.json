@@ -309,7 +309,7 @@
     "name": "Cyber Lens",
     "category": "distortion",
     "url": "shaders/cyber-lens.wgsl",
-    "description": "Targeting HUD with rolling-shutter scan skew — each row is exposed at its own instant, so the readout shears with motion the way the CMOS sensor it imitates actually does — and per-band telemetry rings: eight concentric arcs around the reticle, one per FFT bin, each sweeping at its own rate with arc length reporting its level. Adds click target-lock pings, phosphor persistence and a corrected A/B packing (display in A, masks in B).",
+    "description": "Targeting HUD with rolling-shutter scan skew and per-band telemetry rings. The reticle reads the sprung cursor's velocity: a lead vector points where it is heading and the lock ring closes from open to tight as the cursor settles, with range ticks that spin while it seeks. Inside the lens disc a gradient contour trace outlines what the sensor sees. Click lock pings and phosphor persistence; display in A, masks in B.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -325,7 +325,9 @@
       "aces",
       "rolling-shutter",
       "telemetry-rings",
-      "phosphor-persistence"
+      "phosphor-persistence",
+      "lock-on-reticle",
+      "contour-trace"
     ],
     "tags": [
       "cyber",
@@ -998,14 +1000,16 @@
     "id": "glass-brick-distortion",
     "name": "Glass Brick Distortion",
     "url": "shaders/glass-brick-distortion.wgsl",
-    "description": "Architectural glass brick wall with plano-convex lens distortion, chromatic aberration, Fresnel reflection, and depth-based thickness variation.",
+    "description": "Architectural glass-block wall: plano-convex lens per brick, fluted ribs, mirrored grout bevel, per-batch tint, Fresnel and Beer-Lambert thickness. Cast-glass detail: hashed trapped seed bubbles act as inverted micro-lenses with rim glints, and each block's hollow core shows a fused seam and a second parallaxed lens shift.",
     "features": [
       "mouse-driven",
       "depth-aware",
       "audio-reactive",
       "temporal",
       "chromatic-aberration",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "seed-bubbles",
+      "hollow-core"
     ],
     "tags": [
       "distortion",
@@ -1346,14 +1350,15 @@
     "name": "Infinite Zoom Lens",
     "category": "distortion",
     "url": "shaders/infinite-zoom-lens.wgsl",
-    "description": "Droste zoom lens with axial packets, interference runners, analytic rainbow caustics, held aim, click rings. Diagnostic A packing preserved.",
+    "description": "Droste zoom lens: log-periodic nesting with endless fall and picture-frame seams, now an Escher conformal spiral (each generation rotates as well as shrinks, riding Twist) with a dimmer screen per generation. Axial packets, interference runners, rainbow caustics, held aim and click rings. Display RGBA in A.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
       "temporal",
       "held-drag",
-      "bounded-click-ripples"
+      "bounded-click-ripples",
+      "escher-spiral"
     ],
     "tags": [
       "zoom",
@@ -1962,9 +1967,11 @@
       "audio-reactive",
       "depth-aware",
       "upgraded-rgba",
-      "temporal"
+      "temporal",
+      "fresnel-reflection",
+      "double-glint"
     ],
-    "description": "The image seen through glass embossed by its own luminance: luma-gradient normals refract seven wavelength taps whose Cauchy dispersion (scaled by Refraction Depth) is weighted through a per-channel-normalised wavelength-to-RGB response, so bright edges split into spectral fringes while flat grey stays grey. A Laplacian caustic network focuses the pointer light into bright filaments along convex luma crests, with pointer specular, Fresnel rim, subsurface tint and click waves. Depth thickens the glass, with a minimum slab so it works without a depth map.",
+    "description": "The image seen through glass embossed by its own luminance: luma-gradient normals refract seven wavelength taps with Cauchy dispersion scaled by Refraction Depth, so bright edges split into spectral fringes while flat grey stays grey. A Laplacian caustic network focuses the pointer light into filaments along convex luma crests; Schlick reflection mirrors the picture at grazing ridges and the slab shows a second back-face glint. Depth thickens the glass; click waves.",
     "params": [
       {
         "id": "refract-str",
@@ -2694,7 +2701,7 @@
     "id": "refraction-tunnel",
     "name": "Refraction Tunnel",
     "url": "shaders/refraction-tunnel.wgsl",
-    "description": "Chromatic refraction tunnel with wall ribs, hoop rings, helical rails, analytic liquid-rainbow caustics, held aim, and bounded click shock rings. Display RGBA is packed in A.",
+    "description": "Chromatic refraction tunnel with wall ribs, hoop rings, helical rails and liquid-rainbow caustics. The hoops are glass ridges that refract the wall radially, and Beer-Lambert absorption down the tube tints the far end green-cyan; pipe-wall reflection, held aim and click shock rings. Display RGBA is packed in A.",
     "params": [
       {
         "id": "depth",
@@ -2734,7 +2741,9 @@
       "upgraded-rgba",
       "held-drag",
       "bounded-click-ripples",
-      "liquid-rainbow-caustics"
+      "liquid-rainbow-caustics",
+      "beer-lambert",
+      "refractive-hoops"
     ],
     "tags": [
       "distortion",
