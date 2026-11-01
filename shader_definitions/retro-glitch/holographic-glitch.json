@@ -3,7 +3,7 @@
   "name": "Holographic Glitch",
   "category": "retro-glitch",
   "url": "shaders/holographic-glitch.wgsl",
-  "description": "Continuous holographic scan and phase corruption with chromatic peel interaction, click desynchronization fronts, and channel-separated exact-history trails. Upgraded 2026-09-28: emitter flicker (random blackouts and slow luminance sag on the Flicker slider); grating-order ghosts (hue-split ±1-order copies along the shear axis, scaled by Holographic Intensity); peel shadow cast by the folded crest onto the image beneath.",
+  "description": "Peeled, sheared hologram with grating-order ghosts, a peel shadow, and emitter blackouts. The scan carrier drops out on its nulls, and the grating beats the scan into a moiré.",
   "workgroup_size": [
     16,
     16,

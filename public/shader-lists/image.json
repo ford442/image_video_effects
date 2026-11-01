@@ -2784,7 +2784,7 @@
     "id": "holographic-shatter",
     "name": "Holographic Shatter",
     "url": "shaders/holographic-shatter.wgsl",
-    "description": "Fractures the image into digital shards with temporal shard velocity persistence, chromatic edge refraction per shard, audio-driven impact intensity, holographic interference patterns, and plasma palette tinting.",
+    "description": "The photo cracked into flying shards, with a per-shard grating, a two-beam ghost, and a scan sweep. The rim facing the flight is lit and the trailing rim is dark. A flying shard opens a crack that shows the ghost.",
     "features": [
       "mouse-driven",
       "audio-reactive",

@@ -3,12 +3,9 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal,
 //            holographic-scan, laser-speckle, bragg-colour, refresh-persistence, ACES
-//  Ideas:    1. object-locked laser speckle — stable grains in image space that boil slowly
-//               and slide with depth parallax as the viewer (cursor) moves
-//            2. Bragg colour shift — the reconstructed wavelength drifts across the plate
-//               with viewing angle, rainbow-hologram style (replaces the cosine palette)
-//            3. rolling refresh band — freshly redrawn rows are crisp, older rows persist
-//               as display-space ghosts
+//  Upgraded: 2026-11-01
+//  Ideas: object-locked laser speckle; Bragg colour shift; rolling refresh band; zero-order leak; replay window
+//  A packing: ACES display RGBA (refresh blend is in display space)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -99,6 +96,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let srcB = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
   let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
   let holoBase = vec3<f32>(srcR, srcG, srcB);
+  let zeroOrder = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
   // Idea 1: object-locked laser speckle. Coherent light gives a grain that is
   // fixed to the object, not fresh noise each frame. Grains are ~2.5 px in
@@ -129,6 +127,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Focus stabilization & color enrichment
   color = mix(color, holoBase * 1.25 + tint * 0.2, focusRegion);
+
+  // ── Idea 4: zero-order leak ───────────────────────────────────────
+  // Diffraction is not complete. The undiffracted photo shows in the dark
+  // fringes. Glitch Amount is lost efficiency.
+  let leak = (0.06 + glitchAmt * 0.22) * (1.0 - interference);
+  color = mix(color, zeroOrder, clamp(leak, 0.0, 0.4));
+
+  // ── Idea 5: replay window ─────────────────────────────────────────
+  // The plate only reconstructs near the reference angle (the cursor).
+  // Focus Strength narrows that vertical window.
+  let replay = exp(-viewVec.y * viewVec.y * (1.2 + focusStrength * 5.0));
+  color = mix(zeroOrder * 0.85, color, clamp(0.42 + 0.58 * replay, 0.0, 1.0));
 
   // Bounded click ripple excitation
   var clickFlash = 0.0;

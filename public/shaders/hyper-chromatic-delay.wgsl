@@ -1,32 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  hyper-chromatic-delay - Spectral Multi-Tap Echo
-//  Category: image
-//  Features: upgraded-rgba, depth-aware, spectral-dispersion, multi-tap-temporal, lens-distortion, motion-trails, audio-reverb
-//  Complexity: Very High
-//  Upgraded by: Visualist Agent
-//  Date: 2026-05-03
+//  Hyper-Chromatic Delay
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: Cauchy tap spacing (§12.2F); chroma delay line (§12.2B)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,              // x=time, y=frame/mouseMode, z=resX, w=resY
-  zoom_config: vec4<f32>,         // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>,         // User params 1-4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -49,14 +31,24 @@ fn lensDistort(uv: vec2<f32>, strength: f32) -> vec2<f32> {
   return centered * factor + 0.5;
 }
 
+fn cauchyDelta(lambdaNm: f32) -> f32 {
+  let lamUm = max(lambdaNm * 0.001, 0.2);
+  let n = 1.0 + 0.01 / (lamUm * lamUm);
+  let nG = 1.0 + 0.01 / (0.55 * 0.55);
+  return n / max(nG, 1e-4) - 1.0;
+}
+
 fn sampleSpectral(uv: vec2<f32>, dispersion: f32, direction: vec2<f32>) -> vec3<f32> {
   var col = vec3<f32>(0.0);
   let baseLambda = 650.0;
   let stepSize = dispersion / 6.0;
   for (var i: i32 = 0; i < 7; i = i + 1) {
     let l = baseLambda - f32(i) * stepSize;
-    let shift = direction * (l - 550.0) * 0.00002;
-    let s = textureSampleLevel(readTexture, u_sampler, uv + shift, 0.0).rgb;
+    // ── Idea 1: Cauchy tap spacing (§12.2F) ───────────────────────
+    // n(λ) = 1 + B/λ², relative to green. Blue steps further than red.
+    let shift = direction * cauchyDelta(l) * dispersion * 0.125;
+    let sUV = clamp(uv + shift, vec2<f32>(0.0), vec2<f32>(1.0));
+    let s = textureSampleLevel(readTexture, u_sampler, sUV, 0.0).rgb;
     col = col + s * wavelengthToRGB(l);
   }
   return col / 7.0;
@@ -95,12 +87,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let is_leader = (global_id.x == 0u && global_id.y == 0u);
   if (is_leader) {
       let dt = 0.016;
-      let target = u.zoom_config.w; // mouseDown
+      let heldTarget = u.zoom_config.w; // mouseDown
       let k = 100.0;
       let d = 10.0;
       let current = extraBuffer[133];
       let vel = extraBuffer[134];
-      let force = k * (target - current) - d * vel;
+      let force = k * (heldTarget - current) - d * vel;
       let new_vel = vel + force * dt;
       var new_val = current + new_vel * dt;
       new_val = clamp(new_val, 0.0, 1.0);
@@ -114,7 +106,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var ripple_acc = 0.0;
   for(var i=0u; i<10u; i++) {
       let r = u.ripples[i];
-      if (r.w > 0.0) {
+      if (r.z > 0.0) {
           let aspect = resolution.x / resolution.y;
           let r_uv = vec2<f32>(r.x, r.y);
           let dist = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(r_uv.x * aspect, r_uv.y));
@@ -151,7 +143,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var totalWeight = 0.0;
   for(var t: i32 = 0; t < taps; t = t + 1) {
     let fi = f32(t);
-    let tapUV = uv + motionDir * fi * 0.003 * motionMag * mouse_influence + geometry_base * 0.1;
+    let tapUV = clamp(uv + motionDir * fi * 0.003 * motionMag * mouse_influence + geometry_base * 0.1, vec2<f32>(0.0), vec2<f32>(1.0));
     let tapWeight = exp(-fi * 0.7);
     temporalAccum = temporalAccum + textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb * tapWeight;
     totalWeight = totalWeight + tapWeight;
@@ -180,7 +172,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var echoWeight = 0.0;
   for(var e: i32 = 0; e < echoCount; e = e + 1) {
     let fi = f32(e) + 1.0;
-    let echoUV = uv + dir * fi * 0.012 * (1.0 + reverb * 2.0);
+    let echoUV = clamp(uv + dir * fi * 0.012 * (1.0 + reverb * 2.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let echoSample = textureSampleLevel(readTexture, u_sampler, echoUV, 0.0).rgb;
     let w = 1.0 / (fi * fi);
     echoColor = echoColor + echoSample * w;
@@ -190,7 +182,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = mix(spectralColor, temporalAccum, 0.25);
   color = mix(color, echoColor, 0.15 + reverb * 0.35);
-  color = mix(color, prevFrame, trail_decay * 0.45);
+  // ── Idea 2: chroma delay line (§12.2B) ──────────────────────────
+  // Trail Decay still sets the hold. Red keeps last frame longer than blue.
+  let hold = trail_decay * 0.45;
+  let lag = clamp(vec3<f32>(hold * 1.35, hold, hold * 0.62), vec3<f32>(0.0), vec3<f32>(0.92));
+  color = mix(color, prevFrame, lag);
 
   let luma = rgbToLuma(color);
   let contrast = 1.0 + u.zoom_params.x * 0.5;

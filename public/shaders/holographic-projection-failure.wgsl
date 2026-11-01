@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, click-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: emitter cone (cyan carrier cast from bottom-centre, brightness + fringe pitch fall off with distance, alpha = carrier transmission); stale-frame tear bands read the shifted C frame; re-sync lock line sweeping down inside the repair circle (held = faster)
+//  Upgraded: 2026-09-28, 2026-11-01
+//  Ideas: emitter cone; stale-frame tear bands; re-sync lock line; field interlace (§12.2B); dropout burst (§12.2B)
 //  A packing: pre-ACES linear display RGB + transmission alpha; C read back as that linear colour for beam persistence and the stale tear bands (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -103,6 +103,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var driftUV = uv + vec2<f32>(scanGlitch + rippleJitter.x, rollDisplace);
 
+  // ── Idea 4: field interlace (§12.2B) ──────────────────────────────
+  // Inside a torn band the two fields do not share a horizontal offset.
+  let field = f32((u32(coord.y) + u32(floor(time * 2.0))) & 1u);
+  driftUV = driftUV + vec2<f32>(field * tearBand * vHoldDrift * 0.012, 0.0);
+
   // Mouse stabilizes the projection in a local repair field.
   // IDEA 3 — re-sync sweep: a horizontal lock line sweeps down through the circle; rows it has
   // already passed are locked, rows below it are still waiting to re-sync. Holding widens the
@@ -167,6 +172,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let carrierTint = mix(vec3<f32>(1.0), vec3<f32>(0.72, 1.0, 1.06), (1.0 - carrier) * 0.9);
   outRGB = outRGB * carrier * carrierTint;
   outRGB += vec3<f32>(0.35, 0.95, 1.0) * lockLine * 0.55;
+
+  // ── Idea 5: dropout burst (§12.2B) ────────────────────────────────
+  // Static arrives as a white streak with an exponential tail along the line.
+  let dropLine = floor(uv.y * resolution.y);
+  let dropOn = step(1.0 - staticAmount * 0.07, rand(vec2<f32>(dropLine, floor(time * 8.0))));
+  let dropTail = exp(-uv.x * mix(9.0, 2.2, clamp(staticAmount, 0.0, 1.0)));
+  outRGB = outRGB + vec3<f32>(0.9, 0.96, 1.0) * dropOn * dropTail * (1.0 - repairMask) * 0.55;
 
   // Exact previous frame history load for holographic beam persistence (linear, pre-ACES).
   let history = historyAt(uv - rippleJitter * 0.5, resolution);

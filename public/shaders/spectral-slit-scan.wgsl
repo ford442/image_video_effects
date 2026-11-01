@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: audio-reactive, mouse-driven, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: wavelength-staggered slits; luma-hold
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: wavelength-staggered slits; luma-hold; Cauchy bend (§12.2F); second diffraction order
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: aces_approx (filmic tone mapping) ═══
 fn aces_approx(x: vec3<f32>) -> vec3<f32> {
@@ -41,6 +22,12 @@ fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
   p3 = p3 + dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
+}
+
+fn cauchyScale(bend: f32) -> vec3<f32> {
+  let lam = vec3<f32>(0.650, 0.550, 0.450);
+  let n = vec3<f32>(1.0) + vec3<f32>(bend) / (lam * lam);
+  return n / max(n.y, 1e-4);
 }
 
 fn loadHistory(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
@@ -112,14 +99,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let parallax = (depth - 0.5) * 0.03 * (fi + 1.0);
     let slitRunner = pow(max(0.0, sin(uv.y * 74.0 + slitPhase - time * (14.0 + fi))), 14.0);
 
-    let sampleUV = clamp(uv + curveOff + mousePull + parallax + vec2<f32>(slitRunner * 0.012 + clickFront * 0.018, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let baseUV = uv + mousePull + parallax + vec2<f32>(slitRunner * 0.012 + clickFront * 0.018, 0.0);
+    // ── Idea 3: Cauchy bend (§12.2F) ─────────────────────────────
+    // The curve itself disperses: blue bends more than green, red less.
+    // The linear R/G/B stagger below is unchanged.
+    let disp = cauchyScale(chromaShift * 40.0);
+    let sampleR = clamp(baseUV + curveOff * disp.x, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampleG = clamp(baseUV + curveOff * disp.y, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampleB = clamp(baseUV + curveOff * disp.z, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Idea 1 — wavelength-staggered slits (R/G/B ride neighboring slit offsets).
     let wr = chromaShift * (1.0 + fi * 0.18);
     let wb = chromaShift * max(0.35, 1.0 - fi * 0.12);
-    let histR = loadHistory(sampleUV + vec2<f32>(wr, 0.0), resolution);
-    let histG = loadHistory(sampleUV, resolution);
-    let histB = loadHistory(sampleUV - vec2<f32>(wb, 0.0), resolution);
+    let histR = loadHistory(sampleR + vec2<f32>(wr, 0.0), resolution);
+    let histG = loadHistory(sampleG, resolution);
+    let histB = loadHistory(sampleB - vec2<f32>(wb, 0.0), resolution);
 
     let age = clamp(1.0 - (histR.a + histG.a + histB.a) * 0.333, 0.0, 1.0);
     let decay = pow(trailDecay, fi + 1.0);
@@ -131,7 +125,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     accum.r = accum.r + mix(mix(histR.r, histG.r, 0.3), histG.r, hold * 0.45) * w;
     accum.g = accum.g + mix(mix(histG.g, histB.g, 0.3), histG.g, hold * 0.45) * w;
     accum.b = accum.b + mix(mix(histB.b, histR.b, 0.3), histG.b, hold * 0.45) * w;
-    totalWeight = totalWeight + w;
+    // ── Idea 4: second diffraction order ─────────────────────────
+    // A fainter copy one grating-step further out. Weight tracks Chromatic Shift.
+    let orderUV = clamp(sampleG + vec2<f32>(chromaShift * 2.5, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let order2 = loadHistory(orderUV, resolution).rgb;
+    let orderW = w * 0.35 * clamp(chromaShift / 0.04, 0.0, 1.0);
+    accum = accum + order2 * orderW;
+    totalWeight = totalWeight + w + orderW;
     maxAge = max(maxAge, age);
   }
 

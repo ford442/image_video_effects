@@ -4,6 +4,9 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, semantic-alpha,
 //            bragg-diffraction, thin-film-interference, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: pendellösung through scene depth; diffracted walk along the Bragg angle
+//  A packing: pre-ACES linear display RGBA; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -137,7 +140,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lineNoise = noise(vec2<f32>(uv.y * 70.0, time * 4.0));
   let jitter = (lineNoise - 0.5) * glitch * 0.035 * stabilize * (1.0 + treble * 0.5);
   let wobble = sin(uv.y * 45.0 + time * 2.5) * 0.004 * stabilize;
-  let sampleOffset = vec2<f32>(jitter + wobble, 0.0);
+  // ── Idea 2: diffracted walk ───────────────────────────────────────
+  // Where the Bragg sinc is efficient, the reconstruction steps along the
+  // diffracted ray. Low efficiency stays on the geometric sample.
+  let effMean = clamp((interference.r + interference.g + interference.b) / 3.0, 0.0, 1.0);
+  let walk = vec2<f32>(cos(angle), sin(angle) / aspect) * effMean * (0.004 + glitch * 0.012);
+  let sampleOffset = vec2<f32>(jitter + wobble, 0.0) + walk;
 
   // Chromatic aberration modulated by Bragg interference
   let aberr = (glitch * 0.018 + 0.003) * (1.0 + treble * 0.4);
@@ -158,6 +166,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = color * tint * 1.35;
   color += (scan + slowScan);
   color = mix(color, color + interference * 1.6, glitch * 0.5 + 0.15);
+
+  // ── Idea 1: pendellösung ──────────────────────────────────────────
+  // A thick grating's brightness oscillates through the depth of the plate.
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let pend = 0.62 + 0.38 * cos(depth * 16.0 + effMean * 5.0);
+  color = color * mix(1.0, pend, 0.7);
 
   // 60Hz laser diode flicker
   let f60 = sin(time * 377.0) * 0.05;
@@ -182,21 +196,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
   color += tint * (clickPulse * 0.6);
 
-  // Exact previous frame load from dataTextureC
+  // Exact previous frame load from dataTextureC (linear, same space as A).
   let prev = textureLoad(dataTextureC, pixel, 0);
-  color = mix(color, prev.rgb, 0.12 * (1.0 - stabilize * 0.5));
+  color = max(mix(color, prev.rgb, 0.12 * (1.0 - stabilize * 0.5)), vec3<f32>(0.0));
 
   // ACES Tonemap
   let finalRGB = aces(color * (1.0 + bass * 0.15));
 
   // Semantic alpha: Bragg diffraction efficiency + transmission + depth
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let diffractionEff = (interference.r + interference.g + interference.b) * 0.333;
+  let diffractionEff = effMean;
   let luma = dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(mix(srcA, 0.35 + diffractionEff * 0.4 + luma * 0.3, 0.7) + clickPulse * 0.1 + held * 0.1, 0.15, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, pixel, finalPixel);
-  textureStore(dataTextureA, pixel, finalPixel);
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -4,11 +4,12 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal-ghosting,
 //            fbm-warp, depth-field-modulation, chromatic-time-lag
 //  Complexity: High
-//  Upgraded: 2026-10-05
+//  Upgraded: 2026-10-05, 2026-11-01
 //  Ideas: 1) true stasis bubble (held field outputs the held C frame);
 //         2) real ghost taps (Ghost Count = 1..5 decaying history taps along the warp);
 //         3) past/present/future channels (R lags history, G live, B extrapolated);
-//         4) horizon lensing (refractive ring from the gradient of the field edge)
+//         4) horizon lensing (refractive ring from the gradient of the field edge);
+//         5) depth-scaled ghost step; 6) bubble absorption (§12.2F Beer–Lambert)
 //  A packing: ACES display RGBA (history reads decoded with acesInverse)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -145,7 +146,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (k > ghostN) { break; }
         let fk = f32(k);
         let tapW = pow(0.6, fk);
-        let tapUV = uv - wDir * fk * (0.012 + 0.02 * warpStrength);
+        // ── Idea 5: depth-scaled ghost step ──────────────────────
+        // Depth Weight already sizes the bubble. It also stretches how
+        // far each ghost tap sits back along the warp.
+        let stepLen = fk * (0.012 + 0.02 * warpStrength) * (1.0 + depth * depthWeight);
+        let tapUV = uv - wDir * stepLen;
         ghostSum += acesInverse(loadHistory(tapUV, resolution).rgb) * tapW;
         ghostW += tapW;
     }
@@ -177,6 +182,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // output IS the held C frame (display-space, so it holds exactly).
     let stasis = inField * freeze;
     display = mix(display, prev.rgb, stasis);
+    // ── Idea 6: bubble absorption (§12.2F Beer–Lambert) ──────────
+    // The frozen disk is a thickness. Held glass eats more light than
+    // a hover, and the center (inField) is the thickest.
+    let tau = inField * freezeAmount * (0.15 + 0.55 * freeze);
+    display = display * exp(-tau);
 
     // Semantic alpha: source coverage x field (bubble / horizon opaque).
     let alpha = clamp(gSample.a * mix(0.75, 1.0, max(stasis, edgeGrad * 0.5) * 0.5 + min(length(w), 0.3) * 0.8), 0.0, 1.0);

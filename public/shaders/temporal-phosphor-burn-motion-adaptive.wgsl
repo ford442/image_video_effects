@@ -3,9 +3,9 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04 (prev 2026-07-31 Batch 19)
-//  Ideas: persistence colour aging (white head → amber tail); trail hysteresis from exact C
-//  A packing: display RGBA (read back exactly as last frame's burn)
+//  Upgraded: 2026-10-04 (prev 2026-07-31 Batch 19), 2026-11-01
+//  Ideas: persistence colour aging (white head → amber tail); trail hysteresis from exact C; phosphor grain; neighbor bleed
+//  A packing: linear burn RGBA (ACES on writeTexture; C is last frame's burn)
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -48,6 +48,15 @@
 
 const MOUSE_LENS_RADIUS: f32 = 0.3;  // aspect-corrected lens radius (uv units)
 const STAMP_FADE: f32 = 2.0;         // click-stamp lifetime in seconds
+
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ── History ring read (#1307) ────────────────────────────────────
 // Every ring read goes through here. Ages clamp to the oldest layer the ring
@@ -161,6 +170,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
+  // ── Idea 3: phosphor grain ───────────────────────────────────────
+  // Grain lives in the decay, not in the fresh scan. The seed is spatial
+  // so the grain does not strobe every frame.
+  let excess = max(burned - current.rgb, vec3<f32>(0.0));
+  let grain = hash21(floor(uv * res * 0.5)) - 0.5;
+  burned += excess * grain * 0.55 * clamp(warmStrength, 0.0, 1.5);
+
+  // ── Idea 4: neighbor bleed ───────────────────────────────────────
+  // Last frame's burn spreads one cell, and only where this pixel was
+  // already a trail.
+  let maxC = vec2<i32>(res) - vec2<i32>(1);
+  let bleed = max((
+      textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), maxC), 0).rgb
+    + textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), maxC), 0).rgb
+    + textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0).rgb
+    + textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), maxC), 0).rgb
+  ) * 0.25 - current.rgb, vec3<f32>(0.0));
+  burned += bleed * 0.22 * max(wasTrail, motion);
+
   // Green/amber warm tint on the phosphor glow (applied proportional to motion)
   // Tint: boost green slightly, reduce blue → classic CRT amber-green
   let warmTint = vec3<f32>(1.0, 1.08, 0.65);
@@ -168,9 +196,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   burned = mix(burned, burned * warmTint, glowAmt);
 
   let alpha = clamp(motion * 0.5 + current.a * 0.4 + bass * 0.15 + charge * 0.1, 0.0, 1.0);
-  let finalOut = vec4<f32>(burned, alpha);
+  let mapped = aces(max(burned, vec3<f32>(0.0)));
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeTexture, coord, finalOut);
+  textureStore(writeTexture, coord, vec4<f32>(mapped, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, finalOut);
+  textureStore(dataTextureA, coord, vec4<f32>(burned, alpha));
 }

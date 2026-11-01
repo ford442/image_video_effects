@@ -3,8 +3,9 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: Low
-//  Upgraded: 2026-07-30 (Batch 18 — Optimizer), 2026-09-21
-//  Ideas: sub-frame layer interpolation; slit exposure integration
+//  Upgraded: 2026-07-30, 2026-09-21, 2026-11-01
+//  Ideas: sub-frame layer interpolation; slit exposure integration; highlight reciprocity; spatial slit width
+//  A packing: ACES display RGBA (history ring is binding 13; C is unread)
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -40,27 +41,14 @@
 //    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=axis, y=spread, z=reverse, w=origBlend
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
 
-struct Uniforms {
-  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>, // x=axis, y=spread, z=reverse, w=origBlend
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 const MAX_OFFSET: u32    = 7u;   // maximum history age to reach on a full ring
 
@@ -178,16 +166,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // moving things smear along time the way they do on film. The width
   // fades to zero at the live pivot so the live column stays crisp.
   // (Idea 1 removes seams ACROSS columns; this adds exposure WITHIN one.)
-  let shutter = (0.35 + spread * 0.9) * smoothstep(0.0, 1.0, ageF);
-  let scanColor = frameAtAge(uv, historyHead, histDepth, clamp(ageF - shutter, 0.0, maxAge), current) * 0.25
-                + frameAtAge(uv, historyHead, histDepth, ageF, current) * 0.5
+  // ── Idea 3: highlight reciprocity ───────────────────────────────
+  // A hot subject streaks longer through the same open slit. The live
+  // pivot still shuts the shutter (ageF ~ 0).
+  let centerAge = frameAtAge(uv, historyHead, histDepth, ageF, current);
+  let centerLuma = dot(centerAge.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let shutter = (0.35 + spread * 0.9) * smoothstep(0.0, 1.0, ageF) * (1.0 + clamp(centerLuma, 0.0, 1.5) * 0.85);
+  var scanColor = frameAtAge(uv, historyHead, histDepth, clamp(ageF - shutter, 0.0, maxAge), current) * 0.25
+                + centerAge * 0.5
                 + frameAtAge(uv, historyHead, histDepth, clamp(ageF + shutter, 0.0, maxAge), current) * 0.25;
+  // ── Idea 4: spatial slit width ───────────────────────────────────
+  // Temporal Spread is also a physical slit: the neighbor column shares
+  // a little of this age. Spread 0 leaves the columns independent.
+  let axisStep = select(vec2<f32>(1.0 / max(res.x, 1.0), 0.0), vec2<f32>(0.0, 1.0 / max(res.y, 1.0)), useVertical);
+  let neighborAge = frameAtAge(clamp(uv + axisStep, vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, ageF, current);
+  scanColor = mix(scanColor, neighborAge, spread * 0.12);
 
   let output = mix(scanColor, current, origBlend);
   let slitDiff = length(scanColor.rgb - current.rgb);
   // Tears flash slightly in alpha so a fresh click reads as a time-rift
   let alpha = clamp(slitDiff * 3.0 + (1.0 - origBlend) * 0.5 + bass * 0.2 + tear * 0.15, 0.0, 1.0);
-  let finalOut = vec4<f32>(output.rgb, alpha);
+  let finalOut = vec4<f32>(aces(max(output.rgb, vec3<f32>(0.0))), alpha);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, coord, finalOut);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

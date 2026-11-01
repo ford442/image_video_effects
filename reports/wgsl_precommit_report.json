@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-01T17:31:08.572344",
+  "timestamp": "2026-11-01T20:09:38.531100",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 12,
@@ -13,7 +13,7 @@
   "prelude_violations": 0,
   "results": [
     {
-      "file": "public/shaders/ember-drift-dissolve.wgsl",
+      "file": "public/shaders/holographic-contour.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -30,7 +30,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/fireworks-depth-parade.wgsl",
+      "file": "public/shaders/holographic-crystal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -47,7 +47,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/fireworks-edge-ignite.wgsl",
+      "file": "public/shaders/holographic-failure-iridescence.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -64,7 +64,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/fireworks-patriotic-july4.wgsl",
+      "file": "public/shaders/holographic-flicker.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -81,7 +81,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/fireworks-portrait-burst.wgsl",
+      "file": "public/shaders/holographic-glitch.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -98,7 +98,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-comet-trail.wgsl",
+      "file": "public/shaders/holographic-interferometry.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -115,7 +115,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-crossette.wgsl",
+      "file": "public/shaders/holographic-prism.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-horse-tail.wgsl",
+      "file": "public/shaders/holographic-projection-failure.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -149,7 +149,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-kamuro-gold.wgsl",
+      "file": "public/shaders/holographic-projection-gpt52.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -166,7 +166,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-roman-candle.wgsl",
+      "file": "public/shaders/holographic-projection.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -183,7 +183,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-fireworks-strobe-shell.wgsl",
+      "file": "public/shaders/holographic-shatter.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -200,7 +200,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-stardust-nebula.wgsl",
+      "file": "public/shaders/holographic_interference.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

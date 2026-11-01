@@ -13,7 +13,7 @@
     "temporal",
     "upgraded-rgba"
   ],
-  "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
+  "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Linear scroll RGBA in A; ACES on the display.",
   "params": [
     {
       "name": "Scan Speed",
