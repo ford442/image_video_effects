@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-11
-//  Ideas: corona discharge crown at ribbon crest; magnetic reconnection sparks from C/bass
+//  Upgraded: 2026-09-11, 2026-10-31
+//  Ideas: corona discharge crown at ribbon crest; magnetic reconnection sparks from C/bass; equatorward proton arc; star occultation
 //  A packing: ACES display RGBA (A channel stores smoothed bass envelope for reconnection)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -153,6 +134,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var auroraRGB = vec3<f32>(0.0);
   var auroraCoverage = 0.0;
   var reconnectionSparks = 0.0;
+  var firstRibbonY = 0.55;
 
   for (var i: i32 = 0; i < numRibbons; i = i + 1) {
     let fi = f32(i);
@@ -166,6 +148,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       ribbonPos += toMouse * mouseInfluence * select(0.2, 0.45, held);
     }
 
+    firstRibbonY = select(firstRibbonY, ribbonPos.y, i == 0);
     let dist = abs(uv.y + ripplePerturb.y - ribbonPos.y);
     let width = ribbonWidth * (1.0 + fi * 0.25);
     let ribbonShape = smoothstep(width, 0.0, dist);
@@ -197,8 +180,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let curtainRays = sin((uv.x + uv.y * 0.5) * 45.0 + time * 0.4) * 0.5 + 0.5;
   auroraRGB *= 0.85 + curtainRays * 0.25;
 
-  // Composite background with stars and aurora
-  let bg = mix(src.rgb, src.rgb * 0.65 + starField * 0.35, 0.4);
+  // ── Idea 1: equatorward proton arc ────────────────────────────────
+  // A thin red line south of the first ribbon. Width still comes from the slider.
+  let arcDist = abs(uv.y + ripplePerturb.y - (firstRibbonY + ribbonWidth * 3.4));
+  let proton = smoothstep(ribbonWidth * 0.65, 0.0, arcDist);
+  auroraRGB += vec3<f32>(0.78, 0.16, 0.12) * proton * glowIntensity * 0.42;
+
+  // ── Idea 2: star occultation ──────────────────────────────────────
+  let visibleStars = starField * (1.0 - auroraCoverage);
+  let bg = mix(src.rgb, src.rgb * 0.65 + visibleStars * 0.35, 0.4);
   let sparkColor = vec3<f32>(0.75, 0.92, 1.0) * reconnectionSparks * glowIntensity * 2.8;
   var hdr = bg + auroraRGB + vec3<f32>(rippleGlow) + sparkColor;
 
@@ -206,7 +196,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let history = historyAt(uv - ripplePerturb * 0.5, resolution);
   hdr += history.rgb * 0.06;
 
-  let displayAlpha = clamp(src.a * 0.7 + auroraCoverage * 0.6 + length(starField) * 0.2 + reconnectionSparks * 0.15, 0.0, 1.0);
+  let displayAlpha = clamp(src.a * 0.7 + auroraCoverage * 0.6 + length(visibleStars) * 0.2 + proton * 0.12 + reconnectionSparks * 0.15, 0.0, 1.0);
   let toneMapped = aces(max(hdr, vec3<f32>(0.0)));
 
   textureStore(writeTexture, coord, vec4<f32>(toneMapped, displayAlpha));

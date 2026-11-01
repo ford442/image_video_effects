@@ -3,7 +3,7 @@
   "name": "Film Burn",
   "category": "interactive-mouse",
   "url": "shaders/interactive-film-burn.wgsl",
-  "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. A remains [hole, fire, smoke, alpha].",
+  "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. The hole lingers in A.r and the fire cools in A.g. A remains [hole, fire, smoke, alpha].",
   "params": [
     {
       "id": "radius",

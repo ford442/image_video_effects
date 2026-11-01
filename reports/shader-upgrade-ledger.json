@@ -811,8 +811,17 @@
       "history": []
     },
     "spec-spherical-harmonics-light": {
-      "hash": "acdaef65b039a470",
-      "history": []
+      "hash": "be198b89a38f842e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "be198b89a38f842e",
+          "prev_hash": "acdaef65b039a470",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "spec-temporal-path-tracer": {
       "hash": "a21d1dce8ea5fc54",
@@ -9040,8 +9049,17 @@
       "history": []
     },
     "velvet-scatter-bloom": {
-      "hash": "d97c5b11a1bd5b4d",
-      "history": []
+      "hash": "877b9bf99c7eb005",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "877b9bf99c7eb005",
+          "prev_hash": "d97c5b11a1bd5b4d",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "vhs-chroma-bleed": {
       "hash": "dae104c9f7ae3cdf",
@@ -9686,8 +9704,17 @@
       ]
     },
     "interactive-film-burn": {
-      "hash": "1cae8a9e2312c896",
-      "history": []
+      "hash": "1f8f21263654a89c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "1f8f21263654a89c",
+          "prev_hash": "1cae8a9e2312c896",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "interactive-fisheye": {
       "hash": "44412883830c1090",
@@ -9839,8 +9866,17 @@
       "history": []
     },
     "kimi-spotlight": {
-      "hash": "a27fc9b438035e7a",
-      "history": []
+      "hash": "c6d429f10b6808bb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "c6d429f10b6808bb",
+          "prev_hash": "a27fc9b438035e7a",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "kinetic-dispersion": {
       "hash": "6918196745dd8265",
@@ -9881,8 +9917,17 @@
       ]
     },
     "light-leaks": {
-      "hash": "d3a61eb91e88c548",
-      "history": []
+      "hash": "d4ad6e7d245567e7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "d4ad6e7d245567e7",
+          "prev_hash": "d3a61eb91e88c548",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "lighthouse-reveal": {
       "hash": "2ad2c53aebcc0574",
@@ -11205,8 +11250,17 @@
       ]
     },
     "volumetric-god-rays": {
-      "hash": "37950296f86bb55a",
-      "history": []
+      "hash": "87a14044660fa648",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "87a14044660fa648",
+          "prev_hash": "37950296f86bb55a",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "volumetric-rainbow-clouds": {
       "hash": "6b674e43639a2776",
@@ -11259,8 +11313,17 @@
       ]
     },
     "alpha-aurora-bands": {
-      "hash": "ec6bea63ebbeaf25",
-      "history": []
+      "hash": "540f6bbd2c8a33a4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "540f6bbd2c8a33a4",
+          "prev_hash": "ec6bea63ebbeaf25",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "aurora-rift-2-pass1": {
       "hash": "c60d5a78284035d7",
@@ -11315,8 +11378,17 @@
       ]
     },
     "aurora_borealis": {
-      "hash": "0c08d43975541d8d",
-      "history": []
+      "hash": "2ba1f0bd0cb2a1e9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "2ba1f0bd0cb2a1e9",
+          "prev_hash": "0c08d43975541d8d",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "cinematic-flare": {
       "hash": "91a2869982b95b6a",
@@ -11327,8 +11399,17 @@
       "history": []
     },
     "divine-light": {
-      "hash": "1cd0e50d82716bf4",
-      "history": []
+      "hash": "38ebc977827ace83",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "38ebc977827ace83",
+          "prev_hash": "1cd0e50d82716bf4",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "dynamic-lens-flares": {
       "hash": "55c67bff17b57b4f",
@@ -11343,12 +11424,30 @@
       "history": []
     },
     "neon-light": {
-      "hash": "cfb5c4e8d241ffdf",
-      "history": []
+      "hash": "e0ae98dee79f979a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "e0ae98dee79f979a",
+          "prev_hash": "cfb5c4e8d241ffdf",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "neon-pulse-edge": {
-      "hash": "088de4b4ddc8de50",
-      "history": []
+      "hash": "e5dfcc5038f0d561",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "e5dfcc5038f0d561",
+          "prev_hash": "088de4b4ddc8de50",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "sim-volumetric-fake-em": {
       "hash": "1beb73a6d456ff60",
@@ -11752,8 +11851,17 @@
       ]
     },
     "pp-bloom": {
-      "hash": "3e4a43aed5cf71da",
-      "history": []
+      "hash": "306ad6d6c1a294a8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:27:14.701Z",
+          "hash": "306ad6d6c1a294a8",
+          "prev_hash": "3e4a43aed5cf71da",
+          "commit": "988623c9",
+          "note": "2026-10-31 light/optical twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve"
+        }
+      ]
     },
     "pp-chromatic": {
       "hash": "d169a6b39068dbc8",
