@@ -6,6 +6,9 @@
 //  Chunks From: gen-bismuth-crystal-citadel.wgsl, alpha-crystal-growth-phase.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-20 — Generative Nature Enhancer
+//  Upgraded: 2026-11-01
+//  Ideas: terrace-indexed thin-film oxide (§12.2F); SDF curvature edge wear (§12.2E); kaleidoscope wedge index as oxide zoning (§12.2E)
+//  A packing: ACES display RGBA (alpha = metal coverage / fresnel)
 // ═══════════════════════════════════════════════════════════════════
 //  Endless bismuth crystal canyon where terrace surfaces exhibit
 //  dendritic crystal growth patterns from phase-field simulation.
@@ -23,8 +26,17 @@ fn rot(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
-fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
-    return a + b * cos(6.28318 * (c * t + d));
+// ── Idea 1: thin-film oxide interference (§12.2F). Per-channel R(λ) ∝ cos²(δ/2),
+// δ = 4π·n·d·cosθ / λ. Replaces the cosine palette: bismuth's colour IS an oxide film.
+fn thinFilm(cosT: f32, thicknessNm: f32, n: f32) -> vec3<f32> {
+    let lam = vec3<f32>(650.0, 550.0, 450.0);
+    let delta = (4.0 * 3.14159265 * n * thicknessNm * max(cosT, 0.05)) / lam;
+    let c = cos(delta * 0.5);
+    return c * c;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
@@ -56,9 +68,14 @@ fn crystalPhaseField(p: vec2<f32>, time: f32, supercooling: f32, anisotropy: f32
     return vec4<f32>(clamp(phase, 0.0, 1.0), temp, orientation, impurity);
 }
 
-fn map(p_in: vec3<f32>) -> vec2<f32> {
+struct Fold {
+    p: vec3<f32>,
+    wedge: f32,
+}
+
+// Kaleidoscope fold shared by map() and the shading pass (so wedge index is available as a material).
+fn foldSpace(p_in: vec3<f32>) -> Fold {
     var p = p_in;
-    var time = u.config.x;
     let twist = p.y * 0.05;
     let p_xz = rot(twist) * p.xz;
     p.x = p_xz.x;
@@ -73,6 +90,12 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let a_mod = fract(a / segmentAngle) * segmentAngle - segmentAngle * 0.5;
     p.x = radius * cos(a_mod);
     p.z = radius * sin(a_mod);
+    return Fold(p, floor(a / segmentAngle));
+}
+
+fn map(p_in: vec3<f32>) -> vec2<f32> {
+    let fo = foldSpace(p_in);
+    let p = fo.p;
     let stepSize = u.zoom_params.x * 0.5 + 0.1;
     var pStep = p;
     pStep.x = floor(pStep.x / stepSize) * stepSize + stepSize * 0.5;
@@ -83,7 +106,10 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     let innerSize = vec3<f32>(0.8, 1.6, 0.8);
     let inner_hollow = sdBox(p - basePos, innerSize);
     let terraceSize = stepSize * 0.45;
-    let d2 = sdBox(p - pStep, vec3<f32>(terraceSize));
+    // Rescue: HEAD tiled the terrace cubes through ALL of space (90 % fill), so every
+    // ray hit the grid at t≈0 and the frame was a flat wash. Keep them as a stepped
+    // skirt hugging the tower wall instead.
+    let d2 = max(sdBox(p - pStep, vec3<f32>(terraceSize)), abs(d1) - stepSize * 1.5);
     var d = max(d1, -inner_hollow);
     d = smin(d, d2 - 0.05, 0.1);
     let crystalPos = vec3<f32>(1.5 + sin(u.config.x * 0.5 + p.y) * 0.2, 0.0, 0.0);
@@ -120,25 +146,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let anisotropy = mix(0.0, 0.5, u.zoom_params.y);
     var time = u.config.x * speed;
     var ro = vec3<f32>(0.0, time * 2.0, -5.0);
-    let mouseX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
-    let mouseY = (u.zoom_config.z / dims.y) * 2.0 - 1.0;
-    let rotY = rot(mouseX * 3.14 + time * 0.2);
-    let rotX = rot(mouseY * 1.0 + 0.2);
-    var rd = normalize(vec3<f32>(uv, 1.0));
-    let temp_rd_yz = rotX * rd.yz;
-    rd.y = temp_rd_yz.x;
-    rd.z = temp_rd_yz.y;
-    let temp_rd_xz = rotY * rd.xz;
-    rd.x = temp_rd_xz.x;
-    rd.z = temp_rd_xz.y;
+    // zoom_config.yz is already 0..1 (HEAD divided by dims, parking the light in a corner)
+    let mouse01 = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
     let ta = vec3<f32>(0.0, time * 2.0 + 2.0, 0.0);
     let ww = normalize(ta - ro);
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
-    rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
+    let rd = normalize(uv.x * uu + uv.y * vv + 1.5 * ww);
     var t = 0.0;
     var d = 0.0;
     var m = -1.0;
+    var steps = 0.0;
     let maxSteps = 100;
     let maxDist = 50.0;
     for (var i = 0; i < maxSteps; i++) {
@@ -146,6 +164,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let res = map(p);
         d = res.x;
         m = res.y;
+        steps += 1.0;
         if (d < 0.001 || t > maxDist) { break; }
         t += d * 0.8;
     }
@@ -157,9 +176,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let n = calcNormal(p);
         let v = normalize(ro - p);
         let mouseLightPos = vec3<f32>(
-            (u.zoom_config.y / dims.x - 0.5) * 10.0,
+            (mouse01.x - 0.5) * 10.0,
             ro.y + 2.0,
-            (u.zoom_config.z / dims.y - 0.5) * 10.0 + 3.0
+            (mouse01.y - 0.5) * 10.0 + 3.0
         );
         let lig = normalize(vec3<f32>(1.0, 2.0, -1.0));
         let l_mouse = normalize(mouseLightPos - p);
@@ -190,18 +209,42 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         else if (h6 < 5.0) { crystalColor = vec3(x, 0.3, c); }
         else { crystalColor = vec3(c, 0.3, x); }
 
+        // Fold data for the oxide zoning (re-derived at the hit point, same fold as map()).
+        let fo = foldSpace(p);
+        let stepCell = floor(fo.p / stepSize);
+        let terraceId = hash31(stepCell + vec3<f32>(fo.wedge * 7.0, 0.0, 0.0));
+
+        // ── Idea 3: wedge fold index as material (§12.2E). Each of the 6 kaleido wedges
+        // grew its own oxide, so the tower ring is not one tower repeated six times.
+        let wedgeZone = fract(fo.wedge * 0.381966) * 90.0;
+
+        // ── Idea 1: terrace-indexed thin-film oxide (§12.2F). Every terrace tread is a
+        // different film thickness; the iridescence slider scales the spread of the film.
         let interferenceOffset = p.y * 0.1 + p.x * 0.05 + u.config.x * 0.1;
-        let iriPhase = fresnel * iridescence + interferenceOffset;
-        let c_a = vec3<f32>(0.5, 0.5, 0.5);
-        let c_b = vec3<f32>(0.5, 0.5, 0.5);
-        let c_c = vec3<f32>(1.0, 1.0, 0.8);
-        let c_d = vec3<f32>(0.0, 0.33, 0.67);
-        let iridColor = palette(iriPhase, c_a, c_b, c_c, c_d);
+        let filmSpread = mix(0.35, 1.0, iridescence);
+        // film also thins toward each tread's lip (hopper growth gradient)
+        let treadLip = length(fract(fo.p / stepSize) - vec3<f32>(0.5));
+        let filmNm = 190.0 + terraceId * 330.0 * filmSpread + wedgeZone + 110.0 * treadLip + 28.0 * sin(interferenceOffset * 6.28318 + fresnel * iridescence * 3.0);
+        let iridColor = thinFilm(ndotv, filmNm, 2.0);
+
+        // ── Idea 2: SDF curvature edge wear (§12.2E). Laplacian of the existing map():
+        // convex lips (>0) are polished bare bismuth, crevices (<0) keep thick dark oxide.
+        let ce = 0.04;
+        let lap = (map(p + vec3<f32>(ce, 0.0, 0.0)).x + map(p - vec3<f32>(ce, 0.0, 0.0)).x
+                 + map(p + vec3<f32>(0.0, ce, 0.0)).x + map(p - vec3<f32>(0.0, ce, 0.0)).x
+                 + map(p + vec3<f32>(0.0, 0.0, ce)).x + map(p - vec3<f32>(0.0, 0.0, ce)).x
+                 - 6.0 * map(p).x) / (ce * ce);
+        let wear = smoothstep(4.0, 16.0, lap);
+        let crevice = smoothstep(-4.0, -16.0, lap);
+
         let baseColor = vec3<f32>(0.08, 0.08, 0.1);
         let F0_bismuth = vec3<f32>(0.75, 0.8, 0.85);
         let metalFresnel = fresnelMetal(ndotv, F0_bismuth * metallic);
         var litColor = baseColor * (dif * 0.7 + dif_mouse * 0.5 + 0.2);
-        litColor += iridColor * fresnel * 0.8 * oxidePurity;
+        let oxide = iridColor * (1.0 - 0.55 * crevice);
+        let silver = vec3<f32>(0.86, 0.88, 0.92) * (0.35 + 0.65 * dif);
+        litColor += oxide * (0.2 + 0.8 * fresnel) * oxidePurity * 1.4;
+        litColor = mix(litColor, silver, wear * (0.35 + 0.5 * metallic));
         litColor += vec3<f32>(1.0) * spec * metallic;
         // Blend crystal growth colors
         litColor = mix(litColor, crystalColor * (0.5 + 0.5 * dif), interfaceMask * 0.6);
@@ -209,17 +252,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let terracePattern = sin(p.x * 10.0) * sin(p.y * 10.0) * sin(p.z * 10.0);
         litColor += vec3<f32>(0.3, 0.5, 0.6) * max(0.0, terracePattern) * fresnel * 0.5;
         col = litColor;
-        let ao = 1.0 - f32(100) / f32(maxSteps);
+        // Rescue: HEAD's ao was the constant 1 - 100/100 = 0 (always ×0.5); use the real step count.
+        let ao = 1.0 - clamp(steps / f32(maxSteps), 0.0, 1.0);
         col *= mix(0.5, 1.0, ao);
         col = mix(col, vec3<f32>(0.02, 0.02, 0.03), 1.0 - exp(-0.015 * t));
-        let oxideTransmission = (1.0 - metallic * 0.8) * oxidePurity;
         alpha = mix(0.3, 1.0, metallic * 0.7 + fresnel * 0.3);
+        alpha = clamp(alpha + wear * 0.15, 0.0, 1.0);
     } else {
         alpha = 0.9;
     }
     col *= 1.0 - 0.3 * length(uv);
-    col = col / (col + vec3<f32>(1.0));
-    col = pow(col, vec3<f32>(0.4545));
+    col = acesToneMap(max(col, vec3<f32>(0.0)));
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(t / maxDist, 0.0, 0.0, 0.0));
 }

@@ -4,6 +4,9 @@
 //  Features: mouse-driven, audio-reactive, voronoi-shards, crystal-growth,
 //            physical-refraction, birefringence, semantic-alpha, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-11-01
+//  Ideas: facet scintillation (per-facet tilt normal flashes against the pointer light); conchoidal Wallner arcs along fracture lines
+//  A packing: ACES display RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -191,6 +194,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let specular = edgeFactor * fresnel * (1.2 + treble * 0.8);
   color = color * absorption + vec3<f32>(1.0, 0.98, 0.92) * specular;
 
+  // ── Idea 1: facet scintillation ────────────────────────────────────
+  // A cut stone flashes facet by facet as each facet's normal passes through the mirror
+  // direction of the light. Every cell already has a hash; it becomes a tilt normal, the
+  // (spring-smoothed) pointer is the light, and the half-vector lobe is Fresnel-weighted.
+  let tilt = (hash22(cell_id + vec2<f32>(5.3, 1.7)) - 0.5) * 0.9
+           + 0.12 * vec2<f32>(sin(time * 0.3 + cellHash.x * 6.2831853), cos(time * 0.27 + cellHash.y * 6.2831853));
+  let facetN = normalize(vec3<f32>(tilt, 1.0));
+  let toLight = vec3<f32>((mouse - uv) * vec2<f32>(aspect, 1.0), 0.45);
+  let halfV = normalize(normalize(toLight) + vec3<f32>(0.0, 0.0, 1.0));
+  let lobe = pow(max(dot(facetN, halfV), 0.0), 40.0);
+  let scintillation = lobe * (0.35 + fresnel) * (1.0 + treble) * (0.6 + 0.4 * held);
+  color = color + vec3<f32>(1.0, 0.98, 0.92) * scintillation * 2.0;
+
+  // ── Idea 2: conchoidal Wallner arcs ────────────────────────────────
+  // Shell-like ribs run parallel to each fracture line and fade into the facet. Rib
+  // strength follows the same fracture density that drives the line itself.
+  let rib = smoothstep(0.6, 0.95, 0.5 + 0.5 * sin(edgeDist * 70.0 + cellHash.x * 6.2831853));
+  let ribMask = rib * smoothstep(0.3, 0.03, edgeDist) * effectiveFracture;
+  color = color * (1.0 - 0.6 * ribMask) + vec3<f32>(0.9, 0.95, 1.0) * ribMask * 0.12 * (0.3 + fresnel);
+
   // Exact dataTextureC facet reflection trail
   let prev = textureLoad(dataTextureC, pixel, 0).rgb;
   color = mix(color, prev, 0.08 + held * 0.05);
@@ -201,7 +224,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Semantic alpha: transmission + diamond facet reflectivity + depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let transmission = (1.0 - fresnel) * purity;
-  let alpha = clamp(transmission * (1.0 - fractureLine * 0.5) + specular * 0.4 + mouseInfluence * 0.15, 0.35, 1.0);
+  let alpha = clamp(transmission * (1.0 - fractureLine * 0.5) + specular * 0.4 + scintillation * 0.3 + mouseInfluence * 0.15, 0.35, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, pixel, finalPixel);

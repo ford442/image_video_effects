@@ -4886,6 +4886,12 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
+    ],
+    "features": [
+      "raymarching",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {

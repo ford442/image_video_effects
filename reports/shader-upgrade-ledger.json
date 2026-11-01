@@ -470,8 +470,17 @@
       "history": []
     },
     "gemstone-fractures-crystal": {
-      "hash": "65e8917e1a97c4e6",
-      "history": []
+      "hash": "a27bf40c2c9d6143",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "a27bf40c2c9d6143",
+          "prev_hash": "65e8917e1a97c4e6",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "gen-abyssal-leviathan-iridescence": {
       "hash": "991524b11780a7c9",
@@ -512,8 +521,17 @@
       ]
     },
     "gen-bismuth-citadel-crystal": {
-      "hash": "b20ccf1ec929b325",
-      "history": []
+      "hash": "2bb6e256d365d43c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "2bb6e256d365d43c",
+          "prev_hash": "b20ccf1ec929b325",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "gen-neural-fractal-hdr": {
       "hash": "615f700776e00576",
@@ -770,8 +788,17 @@
       "history": []
     },
     "nano-assembler-crystal": {
-      "hash": "026decad8b0beca7",
-      "history": []
+      "hash": "2e6335da6baf17db",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "2e6335da6baf17db",
+          "prev_hash": "026decad8b0beca7",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "neural-raymarcher-gabor": {
       "hash": "298847ff712cc5a6",
@@ -2395,8 +2422,17 @@
       "history": []
     },
     "crystalline-fracture": {
-      "hash": "bea1182bc2e1bab8",
-      "history": []
+      "hash": "8bc246cbcf7673bf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "8bc246cbcf7673bf",
+          "prev_hash": "bea1182bc2e1bab8",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "crystalline-veins": {
       "hash": "2166b55faae96205",
@@ -3470,7 +3506,7 @@
       ]
     },
     "gen-chronos-crystal-labyrinth": {
-      "hash": "61219acdf8b3a8d2",
+      "hash": "be79a3750d5c8191",
       "history": [
         {
           "event": "upgraded",
@@ -3479,6 +3515,14 @@
           "prev_hash": "2ad79ccfb0b94eed",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "be79a3750d5c8191",
+          "prev_hash": "61219acdf8b3a8d2",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     },
@@ -3631,7 +3675,7 @@
       ]
     },
     "gen-crystal-caverns": {
-      "hash": "04dbb8fc0d49191c",
+      "hash": "60b067d245fe9d02",
       "history": [
         {
           "event": "upgraded",
@@ -3640,6 +3684,14 @@
           "prev_hash": "1ca8bdb74a2a2c63",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "60b067d245fe9d02",
+          "prev_hash": "04dbb8fc0d49191c",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     },
@@ -4900,7 +4952,7 @@
       ]
     },
     "gen-glacial-aether-quantum-cavern": {
-      "hash": "17cf492f608aecf5",
+      "hash": "b95552b83324ee1a",
       "history": [
         {
           "event": "upgraded",
@@ -4909,6 +4961,14 @@
           "prev_hash": "b9018d8f053db2ab",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "b95552b83324ee1a",
+          "prev_hash": "17cf492f608aecf5",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     },
@@ -7788,7 +7848,7 @@
       ]
     },
     "gen-voronoi-crystal": {
-      "hash": "70d1b0245a7a3e71",
+      "hash": "3aec9edac0a3683f",
       "history": [
         {
           "event": "upgraded",
@@ -7797,6 +7857,14 @@
           "prev_hash": "97220364e86388c0",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "3aec9edac0a3683f",
+          "prev_hash": "70d1b0245a7a3e71",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     },
@@ -9567,8 +9635,17 @@
       ]
     },
     "crystal-freeze": {
-      "hash": "bacfc868f411f1c9",
-      "history": []
+      "hash": "92f7f3ba1de885db",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "92f7f3ba1de885db",
+          "prev_hash": "bacfc868f411f1c9",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "crystal-illuminator": {
       "hash": "96651ceaab76aa8f",
@@ -13659,6 +13736,18 @@
           "hash": "899333d01258f734",
           "commit": "a232cbca",
           "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
+    },
+    "gen-bismuth-quantum-reef": {
+      "hash": "97a2f2921b5e225f",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "97a2f2921b5e225f",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     }

@@ -3,9 +3,9 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: hex facet lock of orientation; recalescence glow from latent heat
-//  A packing: raw (phase, temp, orientation, impurity)
+//  Upgraded: 2026-09-12, 2026-11-01
+//  Ideas: hex facet lock of orientation; recalescence glow from latent heat; six-fold interface anisotropy with gradient confidence (§12.2 tactic 1+3); tip-triggered sidebranch noise (Mullins-Sekerka); orientation-domain boundary seams with impurity segregation
+//  A packing: raw (phase, temp, orientation, impurity + 2.0 ownership offset)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -28,8 +28,23 @@ fn hash12(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+// A.a carries impurity + 2.0. C written by another shader (or empty) never has
+// a > 1.5, so such texels read as default liquid and the main body reseeds.
+const OWNED_OFFSET: f32 = 2.0;
+const HEX_STEP: f32 = 1.0471975512;
+
 fn stateAt(coord: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
-    return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+    let s = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+    let owned = s.a > 1.5;
+    return select(vec4<f32>(0.0, -0.2, 0.0, 0.05),
+                  vec4<f32>(s.r, s.g, s.b, s.a - OWNED_OFFSET), owned);
+}
+
+// Misorientation between two grains, 0..1. The hex lattice repeats every 60 deg,
+// so the difference is folded modulo one hex step (max 30 deg) and normalised.
+fn domainStep(a: f32, b: f32) -> f32 {
+    let d = a - b;
+    return abs(d - round(d / HEX_STEP) * HEX_STEP) / (0.5 * HEX_STEP);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -49,18 +64,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var orientation = prevState.b;
     var impurity = prevState.a;
 
-    if (time < 0.1) {
+    let owned = textureLoad(dataTextureC, coord, 0).a > 1.5;
+    if (time < 0.1 || !owned) {
         phase = 0.0;
         temp = -0.2;
         orientation = 0.0;
         impurity = hash12(uv * 100.0) * 0.1;
+        // Polycrystal seeding: jittered 20x20 seeds, each pixel inherits the random
+        // orientation of its nearest seed (HEAD: one radial atan2 field, so the
+        // whole sheet was two hue domains split on the atan2 branch cut).
         let seed_grid = 20.0;
-        let cell_uv_seed = fract(uv * seed_grid);
-        let cell_center = length(cell_uv_seed - vec2<f32>(0.5));
-        if (cell_center < 0.05) {
+        let sg = uv * seed_grid;
+        let gi = floor(sg);
+        let gf = fract(sg);
+        var seedD = 9.0;
+        var seedId = gi;
+        for (var j = -1; j <= 1; j = j + 1) {
+            for (var i = -1; i <= 1; i = i + 1) {
+                let id = gi + vec2<f32>(f32(i), f32(j));
+                let jit = hash2(id + vec2<f32>(11.0, 5.0)) * 0.6 + vec2<f32>(0.2);
+                let d = length(vec2<f32>(f32(i), f32(j)) + jit - gf);
+                let closer = d < seedD;
+                seedD = select(seedD, d, closer);
+                seedId = select(seedId, id, closer);
+            }
+        }
+        orientation = (hash12(seedId * 1.7 + vec2<f32>(3.1, 8.3)) - 0.5) * 6.28318530718;
+        if (seedD < 0.06) {
             phase = 1.0;
             temp = 0.0;
-            orientation = atan2(uv.y - 0.5, uv.x - 0.5);
         }
     }
 
@@ -99,17 +131,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let anisotropy = mix(0.0, 0.5, u.zoom_params.y);
     let angle = orientation;
-    let dir = vec2<f32>(cos(angle), sin(angle));
     let gradPhase = vec2<f32>(right.r - left.r, up.r - down.r) * 0.5;
-    let alignment = abs(dot(normalize(gradPhase + vec2<f32>(0.0001)), dir));
-    let anisoFactor = 1.0 + anisotropy * (alignment - 0.5) * 2.0;
+    // ── Idea 1: six-fold interface anisotropy with gradient confidence ──
+    // HEAD scaled growth by a 2-fold |n·dir| although the grain hex-locks to
+    // 60°. The standard snowflake phase-field law is 1 + eps*cos(6(θn - θ));
+    // |∇φ| (computed and discarded at HEAD) is the confidence, so impurity-hash
+    // noise in flat regions no longer scrambles orientation (confetti at HEAD).
+    let gMag = length(gradPhase);
+    let gConf = smoothstep(0.004, 0.03, gMag);
+    let nAngle = select(0.0, atan2(gradPhase.y, gradPhase.x), gMag > 1e-6);
+    let anisoFactor = 1.0 + anisotropy * cos(6.0 * (nAngle - angle)) * gConf;
 
     let supercooling = mix(0.1, 0.8, u.zoom_params.x);
     let growthRate = mix(0.001, 0.01, u.zoom_params.z) * (1.0 + audio.y * 0.25);
     let m = temp + supercooling * (1.0 - 2.0 * impurity);
     let phaseReaction = phase * (1.0 - phase) * (phase - 0.5 + m * 0.5);
 
-    phase += phaseReaction * growthRate * anisoFactor + lapPhase * 0.1 * growthRate;
+    // ── Idea 2: tip-triggered sidebranch noise (Mullins-Sekerka) ────────
+    // Thermal (Langevin) noise on the reaction, only on the interface band and
+    // only where the front is convex (-lap > 0): tips split, flat fronts don't.
+    let sbNoise = hash12(vec2<f32>(gid.xy) + floor(time * 30.0) * 17.31) - 0.5;
+    let interfaceBand = 4.0 * phase * (1.0 - phase);
+    let tipCurv = clamp(-lapPhase * 6.0, 0.0, 1.0);
+    let sidebranch = 1.0 + 1.6 * sbNoise * interfaceBand * tipCurv;
+
+    phase += phaseReaction * growthRate * anisoFactor * sidebranch + lapPhase * 0.1 * growthRate;
     phase = clamp(phase, 0.0, 1.0);
 
     let lapTemp = left.g + right.g + down.g + up.g - 4.0 * temp;
@@ -120,7 +166,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lapOrient = left.b + right.b + down.b + up.b - 4.0 * orientation;
     orientation += lapOrient * 0.01 * phase;
     if (phase > 0.1 && phase < 0.9) {
-        orientation = mix(orientation, atan2(gradPhase.y, gradPhase.x), 0.05);
+        // relax along the shortest hex-equivalent arc toward the interface normal
+        let toNormal = nAngle - orientation;
+        let hexDelta = toNormal - round(toNormal / HEX_STEP) * HEX_STEP;
+        orientation += hexDelta * 0.05 * gConf;
     }
 
     // Idea 1 — hex facet lock: snap orientation to 60° when phase is high
@@ -130,7 +179,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let lapImpurity = left.a + right.a + down.a + up.a - 4.0 * impurity;
     let phaseChange = phase - prevState.r;
-    impurity += lapImpurity * 0.02 - phaseChange * 0.1;
+    // ── Idea 3: orientation-domain boundary seams ───────────────────────
+    // Where two solid domains of different (hex-locked) orientation meet, solute
+    // piles up: the already-loaded neighbours give the boundary strength.
+    let solidL = smoothstep(0.5, 0.8, min(phase, left.r));
+    let solidR = smoothstep(0.5, 0.8, min(phase, right.r));
+    let solidD = smoothstep(0.5, 0.8, min(phase, down.r));
+    let solidU = smoothstep(0.5, 0.8, min(phase, up.r));
+    let seam = clamp(max(max(smoothstep(0.3, 0.9, domainStep(orientation, left.b)) * solidL,
+                             smoothstep(0.3, 0.9, domainStep(orientation, right.b)) * solidR),
+                         max(smoothstep(0.3, 0.9, domainStep(orientation, down.b)) * solidD,
+                             smoothstep(0.3, 0.9, domainStep(orientation, up.b)) * solidU)),
+                     0.0, 1.0);
+    impurity += lapImpurity * 0.02 - phaseChange * 0.1 + seam * 0.004;
     impurity = clamp(impurity, 0.0, 1.0);
 
     let mouseInfluence = smoothstep(0.04, 0.0, mouseDist) * mouseDown;
@@ -151,7 +212,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     phase = clamp(phase, 0.0, 1.0);
 
-    textureStore(dataTextureA, coord, vec4<f32>(phase, temp, orientation, impurity));
+    textureStore(dataTextureA, coord, vec4<f32>(phase, temp, orientation, impurity + OWNED_OFFSET));
 
     let border = 0.1;
     let cell_dist = max(abs(cell_uv.x - 0.5), abs(cell_uv.y - 0.5)) * 2.0;
@@ -185,6 +246,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     displayColor += vec3<f32>(1.0, 0.82, 0.45) * recalescence * 3.2;
 
     displayColor = mix(displayColor, vec3<f32>(0.8, 0.6, 0.4), impurity * 0.3);
+    // Idea 3 (display): dark seam along domain boundaries, solute-warm at the core
+    displayColor = mix(displayColor, vec3<f32>(0.22, 0.14, 0.08), seam * 0.55);
 
     let edge_dist = abs(cell_dist - core_radius);
     let edge_highlight = (1.0 - smoothstep(0.0, 0.05, edge_dist)) * (1.0 - anim_state);
