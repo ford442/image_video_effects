@@ -1,37 +1,25 @@
 // ═══════════════════════════════════════════════════════════════════
 //  astral-veins
 //  Category: atmospheric
-//  Features: upgraded-rgba, depth-aware
+//  Features: upgraded-rgba, depth-aware, mouse-driven, audio-reactive, temporal-persistence
+//  Complexity: High
 //  Upgraded: 2026-03-22
+//  Upgraded: 2026-10-31
+//  Ideas: forward-scatter lobe along the veins (Henyey-Greenstein on the flow-oriented vein tangent, light = cursor); flow-advected persistence (afterglow in C streams down the warp currents); Rayleigh lambda^-4 blue aureole + pulse trains riding the warped potential
+//  A packing: raw persistence state in A = (glow, veinMask, 0.737 sentinel, clamp(glow)); ACES applied to the vein glow layer on writeTexture only
+//  Sliders: x = Flow Speed, y = Noise Scale, z = Glow Intensity, w = Hue Shift
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
+#include "_prelude.wgsl"
 
-@group(0) @binding(3) var<uniform> u: Uniforms;               // time, resolution, etc.
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA:  texture_storage_2d<rgba32float, write>; // persistence
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>; // optional normal visualisation
-@group(0) @binding(9) var dataTextureC:   texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  // x = time, y = frameCount, z = resolution.x, w = resolution.y
-  config:      vec4<f32>,
-  // x = speed, y = scale, z = intensity, w = hueShift
-  zoom_params: vec4<f32>,
-  // x = veinThickness, y = depthInfluence, z = pulseSpeed, w = unused
-  zoom_config: vec4<f32>,
-  // ripples – used for interactive "spores" (click to seed a vein)
-  ripples:     array<vec4<f32>, 50>,
-};
+// Constants that HEAD wrongly read from the (mis-ordered) zoom_config slots.
+const VEIN_THRESH: f32 = 1.1;   // slope of the warped potential where a vein starts
+const VEIN_SOFT: f32   = 0.9;
+const DEPTH_INFLUENCE: f32 = 0.6;
+const PULSE_SPEED: f32 = 0.25;
+const FLOW_EPS: f32 = 0.03;
+const SENTINEL: f32 = 0.737;
+const HG_G: f32 = 0.45;
 
 // ---------------------------------------------------------------
 //  Utility – simple hash & value‑noise (fast, good enough for art)
@@ -45,32 +33,36 @@ fn hash(p: vec2<f32>) -> f32 {
 fn noise(p: vec2<f32>) -> f32 {
     var i = floor(p);
     var f = fract(p);
-    let u = f * f * (3.0 - 2.0 * f);
+    let w = f * f * (3.0 - 2.0 * f);
     return mix(
-        mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), u.x),
-        mix(hash(i + vec2<f32>(0.0,1.0)), hash(i + vec2<f32>(1.0,1.0)), u.x), u.y);
+        mix(hash(i + vec2<f32>(0.0,0.0)), hash(i + vec2<f32>(1.0,0.0)), w.x),
+        mix(hash(i + vec2<f32>(0.0,1.0)), hash(i + vec2<f32>(1.0,1.0)), w.x), w.y);
 }
 
-// ---------------------------------------------------------------
-//  FBM – 5 octaves, rotating each octave to avoid axial artefacts
-// ---------------------------------------------------------------
+// FBM – 5 octaves, rotating each octave to avoid axial artefacts
 fn fbm(p: vec2<f32>) -> f32 {
     var sum = 0.0;
     var amp = 0.5;
-    var freq = 1.0;
     var pt = p;
     let rot = mat2x2<f32>(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
     for (var i: u32 = 0u; i < 5u; i = i + 1u) {
-        sum += amp * noise(pt * freq);
+        sum += amp * noise(pt);
         pt = rot * pt * 2.0;
         amp *= 0.5;
     }
     return sum;
 }
 
-// ---------------------------------------------------------------
-//  HSV → RGB (used for colour cycling)
-// ---------------------------------------------------------------
+// Double domain‑warped potential: .x = f, .yz = second warp r (the flow field)
+fn veinPotential(p: vec2<f32>, t: f32) -> vec3<f32> {
+    let q = vec2<f32>(fbm(p + t), fbm(p + vec2<f32>(5.2, 1.3) + t));
+    let r = vec2<f32>(
+        fbm(p + 4.0 * q + vec2<f32>(1.7, 9.2) + t * 0.7),
+        fbm(p + 4.0 * q + vec2<f32>(8.3, 2.8) + t * 0.7));
+    let f = fbm(p + 4.0 * r + t * 0.3);
+    return vec3<f32>(f, r);
+}
+
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     let c = v * s;
     let h6 = h * 6.0;
@@ -85,135 +77,109 @@ fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     return rgb + vec3<f32>(v - c);
 }
 
-// ---------------------------------------------------------------
-//  Surface normal from depth – used for depth‑aware warping
-// ---------------------------------------------------------------
-fn normalFromDepth(uv: vec2<f32>, texel: vec2<f32>) -> vec3<f32> {
-    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(texel.x,0.0), 0.0).r;
-    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texel.x,0.0), 0.0).r;
-    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0,texel.y), 0.0).r;
-    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0,texel.y), 0.0).r;
-    let dx = (dR - dL) * 0.5;
-    let dy = (dD - dU) * 0.5;
-    return normalize(vec3<f32>(-dx, -dy, 1.0));
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let xc = max(x, vec3<f32>(0.0));
+    return clamp((xc * (2.51 * xc + 0.03)) / (xc * (2.43 * xc + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// ---------------------------------------------------------------
-//  Main compute entry – runs per pixel
-// ---------------------------------------------------------------
+fn depthAt(c: vec2<i32>, dims: vec2<i32>) -> f32 {
+    return textureLoad(readDepthTexture, clamp(c, vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
+}
+
+// Persisted glow from C; 0 unless the texel carries our sentinel (inherited state from the previous shader).
+fn glowAt(c: vec2<i32>, dims: vec2<i32>) -> f32 {
+    let t = textureLoad(dataTextureC, clamp(c, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+    let ok = select(0.0, 1.0, abs(t.b - SENTINEL) < 0.0005);
+    return clamp(t.r, 0.0, 4.0) * ok;
+}
+
+// Bilinear tap at a fractional pixel position (result is bounded by its four neighbours).
+fn glowBilinear(pf: vec2<f32>, dims: vec2<i32>) -> f32 {
+    let b = floor(pf);
+    let fr = pf - b;
+    let c0 = vec2<i32>(b);
+    let g00 = glowAt(c0, dims);
+    let g10 = glowAt(c0 + vec2<i32>(1, 0), dims);
+    let g01 = glowAt(c0 + vec2<i32>(0, 1), dims);
+    let g11 = glowAt(c0 + vec2<i32>(1, 1), dims);
+    return mix(mix(g00, g10, fr.x), mix(g01, g11, fr.x), fr.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    // -----------------------------------------------------------------
-    //  1️⃣  Gather basic data
-    // -----------------------------------------------------------------
     let resolution = u.config.zw;
-    let uv  = vec2<f32>(gid.xy) / resolution;          // [0,1] screen space
+    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
+    let dims = vec2<i32>(resolution);
+    let pix = vec2<i32>(gid.xy);
+    let uv  = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
 
-    // -----------------------------------------------------------------
-    //  2️⃣  Uniform parameters (exposed as sliders in the UI)
-    // -----------------------------------------------------------------
-    let speed          = u.zoom_params.x * 0.4;                     // flow speed
-    let scale          = mix(0.4, 3.0, u.zoom_params.y);            // noise scale
-    let intensity      = u.zoom_params.z;                           // glow strength
-    let hueShift       = u.zoom_params.w;                           // colour cycle offset
-    let veinThickness  = u.zoom_config.x;                           // how thin/thick veins are
-    let depthInfluence = u.zoom_config.y;                           // 0 = ignore depth, 1 = fully follow geometry
-    let pulseSpeed     = u.zoom_config.z;                           // pulsation rate
+    let bass = plasmaBuffer[0].x;
 
-    // -----------------------------------------------------------------
-    //  3️⃣  Depth & normal (used for warping the flow field)
-    // -----------------------------------------------------------------
-    let texel = 1.0 / resolution;
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let normal = normalFromDepth(uv, texel);
+    let speed     = u.zoom_params.x * 0.4;
+    let scale     = mix(0.4, 3.0, u.zoom_params.y);
+    let intensity = u.zoom_params.z;
+    let hueShift  = u.zoom_params.w;
+    let mouse     = u.zoom_config.yz;
 
-    // ---------------------------------------------------------------
-    //  4️⃣  Domain‑warped flow field
-    // ---------------------------------------------------------------
-    // Base coordinate, scaled by the user‑controlled "scale"
-    var p = uv * scale;
+    // Depth & normal (veins follow geometry)
+    let depth = depthAt(pix, dims);
+    let dL = depthAt(pix - vec2<i32>(1, 0), dims);
+    let dR = depthAt(pix + vec2<i32>(1, 0), dims);
+    let dU = depthAt(pix - vec2<i32>(0, 1), dims);
+    let dD = depthAt(pix + vec2<i32>(0, 1), dims);
+    let normal = normalize(vec3<f32>(-(dR - dL) * 0.5, -(dD - dU) * 0.5, 1.0));
 
-    // First warp – a slow moving noise that creates large‑scale currents
-    let q = vec2<f32>(
-        fbm(p + vec2<f32>(0.0,0.0) + time * speed),
-        fbm(p + vec2<f32>(5.2,1.3) + time * speed)
-    );
-
-    // Second warp – adds finer turbulence
-    let r = vec2<f32>(
-        fbm(p + 4.0 * q + vec2<f32>(1.7,9.2) + time * speed * 0.7),
-        fbm(p + 4.0 * q + vec2<f32>(8.3,2.8) + time * speed * 0.7)
-    );
-
-    // Final noise – the raw "vein density"
-    var f = fbm(p + 4.0 * r + time * speed * 0.3);
-
-    // ---------------------------------------------------------------
-    //  5️⃣  Convert the scalar field into thin veins
-    // ---------------------------------------------------------------
-    // Gradient magnitude gives us "edges" of the noise – those become veins
-    let grad = vec2<f32>(
-        fbm(p + vec2<f32>(0.01,0.0) + time * speed) - fbm(p - vec2<f32>(0.01,0.0) + time * speed),
-        fbm(p + vec2<f32>(0.0,0.01) + time * speed) - fbm(p - vec2<f32>(0.0,0.01) + time * speed)
-    );
+    // Domain‑warped flow field; the vein mask is the slope of the WARPED potential f
+    let p = uv * scale;
+    let tt = time * speed;
+    let s0 = veinPotential(p, tt);
+    let sx = veinPotential(p + vec2<f32>(FLOW_EPS, 0.0), tt);
+    let sy = veinPotential(p + vec2<f32>(0.0, FLOW_EPS), tt);
+    let grad = vec2<f32>(sx.x - s0.x, sy.x - s0.x) / FLOW_EPS;
     let gradMag = length(grad);
+    let veinMask = smoothstep(VEIN_THRESH, VEIN_THRESH + VEIN_SOFT, gradMag);
 
-    // Thin‑line mask: the higher the gradient, the brighter the vein
-    // "veinThickness" pushes the threshold – larger values make thicker veins
-    let veinMask = smoothstep(veinThickness, veinThickness + 0.02, gradMag);
+    let flow = s0.yz - vec2<f32>(0.5);
 
-    // ---------------------------------------------------------------
-    //  6️⃣  Depth‑aware warping (veins follow geometry)
-    // ---------------------------------------------------------------
-    // The normal is used to push the uv a little towards the surface.
-    // When depthInfluence = 0 → no warping; =1 → full warping.
-    let warpedUV = uv + normal.xy * depthInfluence * 0.02;
+    // ── Idea 1: forward-scatter lobe. Vein tangent oriented along the local flow; light = cursor ──
+    let tang0 = vec2<f32>(-grad.y, grad.x) / max(gradMag, 1e-4);
+    let tang = tang0 * select(-1.0, 1.0, dot(tang0, flow) >= 0.0);
+    let toLight = mouse - uv;
+    let lightDir = toLight / max(length(toLight), 1e-4);
+    let cosT = clamp(dot(tang, lightDir), -1.0, 1.0);
+    let hg = (1.0 - HG_G * HG_G) / pow(1.0 + HG_G * HG_G - 2.0 * HG_G * cosT, 1.5);
+    let hgMax = (1.0 + HG_G) / ((1.0 - HG_G) * (1.0 - HG_G));
+    let lobe = mix(0.35, 1.0, hg / hgMax);
 
-    // ---------------------------------------------------------------
-    //  7️⃣  Colour & pulsation
-    // ---------------------------------------------------------------
-    // Base hue cycles over time + user hueShift
+    // Depth‑aware warp of the video sample
+    let warpedUV = uv + normal.xy * DEPTH_INFLUENCE * 0.02;
+
+    // Colour & pulse; Idea 3b: pulse trains travel along the warped potential
     let hue = fract(hueShift + time * 0.1);
     let baseCol = hsv2rgb(hue, 0.8, 1.0);
-
-    // Add a subtle pulse that makes the veins "breathe"
-    let pulse = 0.5 + 0.5 * sin(time * pulseSpeed * 6.2831);
-    let glow = pow(veinMask, 1.5) * intensity * pulse;
-
-    // Final vein colour (glowing, additive)
+    let pulse = 0.5 + 0.5 * sin(6.2831853 * (PULSE_SPEED * time - s0.x * 3.0));
+    let glow = pow(veinMask, 1.5) * intensity * (0.35 + 0.65 * pulse) * lobe * (1.0 + bass * 0.4);
     let veinCol = baseCol * glow;
 
-    // ---------------------------------------------------------------
-    //  8️⃣  Temporal persistence (trailing glow)
-    // ---------------------------------------------------------------
-    // Read previous frame's growth buffer (stores a single‑channel "glow")
-    // MODIFIED: Use dataTextureC (read-only) instead of dataTextureA (write-only)
-    var prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).r;
-    // Fade out old glow and add the new one
+    // ── Idea 2: persistence streams down the warp currents ──
+    let back = vec2<f32>(gid.xy) - flow * 6.0;
+    var prev = glowBilinear(back, dims);
     prev = prev * 0.94 + glow * 0.06;
-    // Store for next frame
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(prev,0.0,0.0,1.0));
+    textureStore(dataTextureA, pix, vec4<f32>(prev, veinMask, SENTINEL, clamp(prev, 0.0, 1.0)));
 
-    // Use the persisted glow to give a soft halo around the veins
-    let halo = prev * 0.4;
+    // ── Idea 3: Rayleigh (lambda^-4: 650/550/450nm) blue‑biased aureole ──
+    let rayleigh = vec3<f32>(0.23, 0.45, 1.0);
+    let halo = prev * 0.4 * mix(vec3<f32>(1.0), rayleigh, 0.7);
 
-    // ---------------------------------------------------------------
-    //  9️⃣  Composite over the original video frame
-    // ---------------------------------------------------------------
-    let videoCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    // Additive blend for the bright veins + a subtle screen‑blend for the halo
-    var outCol = videoCol + veinCol;
-    outCol = 1.0 - (1.0 - outCol) * (1.0 - vec3<f32>(halo));
+    let videoCol = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    var outCol = videoCol + acesToneMap(veinCol);
+    outCol = 1.0 - (1.0 - clamp(outCol, vec3<f32>(0.0), vec3<f32>(1.0))) * (1.0 - clamp(halo, vec3<f32>(0.0), vec3<f32>(1.0)));
 
-    // Calculate luminance-based alpha
     let luma = dot(outCol, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = mix(0.7, 1.0, luma);
     let finalAlpha = mix(alpha * 0.8, alpha, depth);
 
-    // ---------------------------------------------------------------
-    //  🔟  Write final colour & depth
-    // ---------------------------------------------------------------
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(outCol, finalAlpha));
-    textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth,0.0,0.0,0.0));
+    textureStore(writeTexture, pix, vec4<f32>(outCol, finalAlpha));
+    textureStore(writeDepthTexture, pix, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

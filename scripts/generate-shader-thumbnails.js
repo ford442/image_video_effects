@@ -576,7 +576,7 @@ async function runAppEngine(args, shaders, manifest) {
 
   if (!fs.existsSync(path.join(BUILD_DIR, 'index.html'))) {
     throw new Error(
-      `Missing ${path.join(BUILD_DIR, 'index.html')}. Run "SKIP_WASM_BUILD=1 npm run build" first.`,
+      `Missing ${path.join(BUILD_DIR, 'index.html')}. Run "npm run build" first.`,
     );
   }
 

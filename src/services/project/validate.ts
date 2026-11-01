@@ -21,11 +21,15 @@ import {
   type ProjectValidationResult,
 } from './types';
 import { compactSlotLayerErrors } from '../../renderer/layerState';
+import { routeErrors, toRoute } from '../../modulation/validate';
+import type { Route } from '../../modulation/types';
 
 /** Accepted nits for render.hdr (a range any real panel and any sane paper white fit in). */
 export const HDR_NITS_RANGE = { min: 80, max: 10000 } as const;
 
-const TOP_LEVEL_KEYS = ['schemaVersion', 'app', 'createdAt', 'chain', 'activeSlot', 'source', 'render', 'audio', 'timeline'];
+const TOP_LEVEL_KEYS = ['schemaVersion', 'app', 'createdAt', 'chain', 'activeSlot', 'source', 'render', 'audio', 'timeline', 'modulation'];
+/** Upper bound on routes in one project. */
+export const MAX_MODULATION_ROUTES = 256;
 const SLOT_PARAM_KEYS: Array<keyof SlotParams> = [
   'zoomParam1',
   'zoomParam2',
@@ -290,6 +294,29 @@ function validateVjSetExport(raw: unknown, errors: string[]): VjSetExportPayload
 }
 
 /** Validate and normalize a current-version project file without throwing. */
+function validateModulation(raw: unknown, errors: string[]): Route[] {
+  const path = 'project.modulation';
+  if (!Array.isArray(raw)) {
+    errors.push(`${path} must be an array`);
+    return [];
+  }
+  if (raw.length > MAX_MODULATION_ROUTES) errors.push(`${path} must have at most ${MAX_MODULATION_ROUTES} routes`);
+  const routes: Route[] = [];
+  const ids = new Set<string>();
+  raw.forEach((entry, i) => {
+    const errs = routeErrors(entry, `${path}[${i}]`);
+    if (errs.length === 0) {
+      const route = toRoute(entry as Route);
+      if (route.target.slot >= MAX_SHARED_SLOTS) errs.push(`${path}[${i}].target.slot must be below ${MAX_SHARED_SLOTS}`);
+      if (ids.has(route.id)) errs.push(`${path}[${i}].id "${route.id}" is a duplicate`);
+      ids.add(route.id);
+      if (errs.length === 0) routes.push(route);
+    }
+    errors.push(...errs);
+  });
+  return routes;
+}
+
 export function validateProjectFile(raw: unknown): ProjectValidationResult {
   const errors: string[] = [];
   if (!isRecord(raw)) return { ok: false, errors: ['project must be an object'] };
@@ -375,6 +402,7 @@ export function validateProjectFile(raw: unknown): ProjectValidationResult {
     }
   }
   const timeline = validateVjSetExport(raw.timeline, errors);
+  const modulation = validateModulation(raw.modulation, errors);
 
   if (errors.length > 0 || !chain || !source) return { ok: false, errors };
   const project: ProjectFile = {
@@ -387,6 +415,7 @@ export function validateProjectFile(raw: unknown): ProjectValidationResult {
     render,
     ...(audio ? { audio } : {}),
     ...(timeline ? { timeline } : {}),
+    modulation,
   };
   return { ok: true, project };
 }

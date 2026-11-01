@@ -38,7 +38,7 @@ Rules:
 
 ```bash
 npm ci
-SKIP_WASM_BUILD=1 npm run build
+npm run build
 npx playwright install chromium
 ```
 
@@ -218,7 +218,7 @@ Prefer a discrete-GPU workstation. A GPU-less host (the Cloud VM) can capture wi
 `--adapter=swiftshader` (see Hardware requirements); never commit black PNGs as coverage.
 
 ```bash
-SKIP_WASM_BUILD=1 npm run build
+npm run build
 npm run thumbs:generate -- --priority=attract --missing
 npm run thumbs:status
 python3 scripts/audit_thumbnail_integrity.py
@@ -323,7 +323,7 @@ shaders without a healthy thumbnail (manifest + `public/thumbnails/unhealthy.jso
 Example W1:
 
 ```bash
-SKIP_WASM_BUILD=1 npm run build
+npm run build
 npm run thumbs:generate -- --missing --category=generative
 npm run thumbs:status
 git add public/thumbnails/

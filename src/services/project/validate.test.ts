@@ -10,28 +10,30 @@ function validationErrors(raw: unknown): string[] {
 }
 
 const minimalProject = (): ProjectFile => ({
-  schemaVersion: 2,
+  schemaVersion: 3,
   app: { name: 'pixelocity', version: '0.1.0' },
   createdAt: '2026-10-11T00:00:00.000Z',
   chain: { v: 1, slots: [] },
   activeSlot: 0,
   source: { kind: 'none' },
   render: {},
+  modulation: [],
 });
 
-describe('project file v2 validation', () => {
+describe('project file v3 validation', () => {
   it('keeps the JSON contract version aligned with code and SharedChain', () => {
     expect(projectFileSchema.properties.schemaVersion.const).toBe(PROJECT_FILE_SCHEMA_VERSION);
     expect(projectFileSchema.$defs.sharedChain.properties.v.const).toBe(SHARED_CHAIN_VERSION);
     expect(projectFileSchema.additionalProperties).toBe(false);
   });
 
-  it('accepts a minimal valid v2 project', () => {
+  it('accepts a minimal valid v3 project', () => {
     expect(validateProjectFile(minimalProject())).toEqual({ ok: true, project: minimalProject() });
   });
 
   it('rejects a v1 envelope (migrate first) and an unknown version', () => {
-    expect(validationErrors({ ...minimalProject(), schemaVersion: 1 })).toContain('project.schemaVersion must be 2');
+    expect(validationErrors({ ...minimalProject(), schemaVersion: 1 })).toContain('project.schemaVersion must be 3');
+    expect(validationErrors({ ...minimalProject(), schemaVersion: 2 })).toContain('project.schemaVersion must be 3');
   });
 
   it('accepts compositor fields and render.hdr (#1512)', () => {
@@ -68,6 +70,32 @@ describe('project file v2 validation', () => {
       expect.stringContaining('createdAt'),
       expect.stringContaining('chain'),
     ]));
+  });
+
+  it('accepts modulation routes and rejects malformed ones (#1513)', () => {
+    const project: ProjectFile = {
+      ...minimalProject(),
+      modulation: [
+        { id: 'a', source: { kind: 'lfo', shape: 'sine', unit: 'beats', rate: 4 }, target: { slot: 0, param: 'p1' }, depth: 0.5, offset: 0, curve: 'smooth' },
+        { id: 'b', source: { kind: 'sequencer', steps: Array(16).fill(0.5), stepBeats: 0.25 }, target: { slot: 2, param: 'opacity' }, depth: -1, offset: 0.2, curve: 'linear' },
+      ],
+    };
+    expect(validateProjectFile(project)).toEqual({ ok: true, project });
+    const errors = validationErrors({
+      ...minimalProject(),
+      modulation: [
+        { ...project.modulation[0], target: { slot: 9, param: 'p1' } },
+        { ...project.modulation[0], curve: 'cubic' },
+        project.modulation[1],
+        project.modulation[1],
+      ],
+    }).join(' ');
+    expect(errors).toContain('modulation[0].target.slot');
+    expect(errors).toContain('modulation[1].curve');
+    expect(errors).toContain('duplicate');
+    const raw = minimalProject() as unknown as Record<string, unknown>;
+    delete raw.modulation;
+    expect(validationErrors(raw)).toContain('project.modulation must be an array');
   });
 
   it('rejects an extra top-level key', () => {

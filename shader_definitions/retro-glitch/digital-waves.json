@@ -2,7 +2,7 @@
   "id": "digital-waves",
   "name": "Digital Waves",
   "url": "shaders/digital-waves.wgsl",
-  "description": "Cyber wave interference with hex quantization, spring cursor focus, held boost, capped ripples, regional FFT bins, and ACES tone map. Standing nodes darken where the sines cancel, and scanlines bunch on the crests.",
+  "description": "Cyber wave interference with standing nodes and crest scanlines. Posterize steps drop toward the nodes, and the pixel grid shears with the wave.",
   "workgroup_size": [
     16,
     16,

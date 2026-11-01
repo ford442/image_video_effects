@@ -6,6 +6,7 @@
  * - Reasonable file sizes
  * - WASM magic number (0x00, 0x61, 0x73, 0x6d = "\0asm")
  * - JavaScript glue exports
+ * - Source-hash freshness (public/wasm/source-hash.json vs the emcc build inputs)
  */
 
 const fs = require('fs');
@@ -450,11 +451,45 @@ async function readCompiledSlotCount(gluePath) {
   return Number(mod._getMaxShaderSlots());
 }
 
-checkRendererArtifact().then(finish, (e) => {
-  errors.push(`❌ renderer artifact check threw: ${e && e.message}`);
-  allValid = false;
-  finish();
-});
+/**
+ * Freshness gate: public/wasm/source-hash.json must match the files that define
+ * the emcc build (scripts/wasm-source-hash.mjs). Warn-only until the first hash
+ * is committed; blocking afterwards. ci.yml runs this via `npm run wasm:validate`.
+ */
+async function checkSourceHash() {
+  const { checkWasmSourceHash } = await import('./wasm-source-hash.mjs');
+  const { status, current, recorded } = checkWasmSourceHash();
+  console.log('Checking: public/wasm/source-hash.json');
+  if (status === 'ok') {
+    console.log(`  ✅ Source hash matches (${current.sourceHash.slice(0, 12)}, ${current.files.length} files)\n`);
+  } else if (status === 'missing') {
+    warnings.push(
+      `⚠️  public/wasm/source-hash.json not committed yet (warn mode); current WASM source hash ${current.sourceHash}. ` +
+        '`npm run wasm:build` writes it.',
+    );
+    console.log('  ⚠️  Not committed yet (warn mode)\n');
+  } else {
+    errors.push(
+      `❌ public/wasm/source-hash.json is stale: recorded ${recorded.sourceHash}, sources hash to ${current.sourceHash}. ` +
+        'A WASM input changed without a rebuild: run `npm run wasm:build` with the pinned emsdk (or take public/wasm/ ' +
+        "from wasm.yml's wasm-artifacts upload) and commit it. Details: node scripts/wasm-source-hash.mjs --check",
+    );
+    allValid = false;
+    console.log('  ❌ Stale\n');
+  }
+}
+
+checkRendererArtifact()
+  .catch((e) => {
+    errors.push(`❌ renderer artifact check threw: ${e && e.message}`);
+    allValid = false;
+  })
+  .then(checkSourceHash)
+  .catch((e) => {
+    errors.push(`❌ source-hash check threw: ${e && e.message}`);
+    allValid = false;
+  })
+  .then(finish);
 
 function finish() {
   // Summary

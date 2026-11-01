@@ -21,10 +21,10 @@ jobs:
   coverage-status:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm'
@@ -68,7 +68,7 @@ jobs:
             echo ""
             if [ -n "$FAIL_SUMMARY" ]; then echo "$FAIL_SUMMARY"; echo ""; fi
             if [ -n "$INTEGRITY" ]; then echo "$INTEGRITY"; echo ""; fi
-            echo "Run full batch on GPU: \`SKIP_WASM_BUILD=1 npm run build && bash scripts/run-thumbnail-waves.sh\`"
+            echo "Run full batch on GPU: \`npm run build && bash scripts/run-thumbnail-waves.sh\`"
             echo "Docs: [THUMBNAIL_PIPELINE.md](docs/THUMBNAIL_PIPELINE.md)"
           } > /tmp/thumb-comment.md
 

@@ -8,6 +8,7 @@ import {
   type ProjectSource,
 } from './types';
 import { isSafeProjectRef, validateProjectFile } from './validate';
+import { toRoute } from '../../modulation/validate';
 
 const DEFAULT_APP_VERSION = process.env.REACT_APP_VERSION || '0.1.0';
 
@@ -51,6 +52,7 @@ export function buildProjectFile(state: ProjectBuildState): ProjectFile {
     },
     ...(mappings.length > 0 ? { audio: { mappings } } : {}),
     ...(state.timeline ? { timeline: state.timeline } : {}),
+    modulation: (state.modulation ?? []).map(toRoute),
   };
 }
 

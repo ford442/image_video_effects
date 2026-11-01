@@ -39,9 +39,9 @@ jobs:
     runs-on: ${{ inputs.runner_label }}
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm'
@@ -51,8 +51,6 @@ jobs:
 
       - name: Build production app
         run: npm run build
-        env:
-          SKIP_WASM_BUILD: '1'
 
       - name: Install Playwright browsers
         run: npx playwright install chromium
@@ -90,7 +88,7 @@ jobs:
           npm run thumbs:check-regression -- --base-ref origin/main
 
       - name: Open PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: thumbs-farm/${{ inputs.category }}-${{ github.run_id }}
           title: 'thumbs: ${{ inputs.category }} capture wave (${{ inputs.limit }} max)'

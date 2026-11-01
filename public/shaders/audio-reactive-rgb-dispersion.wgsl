@@ -5,8 +5,8 @@
 //  Complexity: Medium
 //  Created: 2026-05-23
 //  By: copilot / P6 audio bridge
-//  Upgraded: 2026-10-05
-//  Ideas: bandwidth rainbow (spectral spread → 5-tap wavelength smear); lateral vs transverse CA by band balance
+//  Upgraded: 2026-10-05, 2026-11-01
+//  Ideas: bandwidth rainbow (spectral spread → 5-tap wavelength smear); lateral vs transverse CA by band balance; Cauchy tap spacing (§12.2F); edge-weighted falloff
 //  A packing: display RGBA (passthrough grade, no ACES)
 //
 //  Chromatic (RGB) dispersion whose offset magnitudes and direction are
@@ -97,6 +97,17 @@ fn channelResponse(lambda: f32, w: f32) -> vec3<f32> {
   return exp(-(d * d) / (2.0 * w * w));
 }
 
+// ── Idea: Cauchy tap spacing (§12.2F)
+// n(λ) = 1 + B/λ². Endpoints stay on the red and blue offsets the smear
+// already used; interior taps bunch toward the red, the way glass does.
+fn cauchyLambda(lambda: f32) -> f32 {
+  let lam = mix(0.650, 0.450, clamp(lambda, 0.0, 1.0));
+  let n = 1.0 + 0.012 / max(lam * lam, 1e-4);
+  let nR = 1.0 + 0.012 / (0.650 * 0.650);
+  let nB = 1.0 + 0.012 / (0.450 * 0.450);
+  return clamp((n - nR) / max(nB - nR, 1e-4), 0.0, 1.0);
+}
+
 // ── main ─────────────────────────────────────────────────────────────────────
 
 @compute @workgroup_size(16, 16, 1)
@@ -124,10 +135,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let dir = vec2<f32>(cos(angle), sin(angle));
 
-  // Radial falloff: effects stronger at edges, gentler at centre
+  // Radial falloff: effects stronger at edges, gentler at centre.
+  // ── Idea 2: edge-weighted falloff
+  // Local contrast along the dispersion direction joins the radius, so a
+  // prism split prefers edges. falloff = 0 stays uniform.
   let falloff     = u.zoom_params.z;
   let radialDist  = length(uv - centre) * 2.0;       // 0 at centre, 1 at edge midpoints, ~1.41 at corners
-  let radialScale = mix(1.0, radialDist, falloff);
+  let foot = 1.5 / max(min(res.x, res.y), 1.0);
+  let edgeA = textureSampleLevel(readTexture, u_sampler, clamp(uv + dir * foot, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+  let edgeB = textureSampleLevel(readTexture, u_sampler, clamp(uv - dir * foot, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+  let edge = clamp(abs(dot(edgeA - edgeB, vec3<f32>(0.2126, 0.7152, 0.0722))) * 4.0, 0.0, 1.0);
+  let radialScale = mix(1.0, mix(radialDist, max(radialDist, edge), 0.7), falloff);
 
   // Idea 2: Lateral vs transverse — treble keeps HEAD's linear shift along the
   // centroid direction (transverse); bass energy drives a radial, lens-like
@@ -154,12 +172,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let respW = mix(0.06, 0.32, bandwidth);
   var acc  = vec3<f32>(0.0);
   var wsum = vec3<f32>(0.0);
-  var anchor = vec4<f32>(0.0);
+  // Undisplaced sample stays the blend anchor. Cauchy moves the interior
+  // taps, so the green anchor is no longer "tap k == 2".
+  let anchor = textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
   for (var k = 0; k < 5; k++) {
     let lambda = f32(k) * 0.25;
-    let tapUV  = clamp(uv + axis * wavelengthOffset(lambda, redAmt, blueAmt), vec2<f32>(0.001), vec2<f32>(0.999));
+    let spaced = cauchyLambda(lambda);
+    let tapUV  = clamp(uv + axis * wavelengthOffset(spaced, redAmt, blueAmt), vec2<f32>(0.001), vec2<f32>(0.999));
     let tap    = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0);
-    if (k == 2) { anchor = tap; }                    // λ=0.5 has zero offset: the G anchor
     let resp   = channelResponse(lambda, respW);
     acc  += tap.rgb * resp;
     wsum += resp;

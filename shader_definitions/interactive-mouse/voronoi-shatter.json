@@ -2,7 +2,10 @@
   "id": "voronoi-shatter",
   "name": "Voronoi Shatter",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

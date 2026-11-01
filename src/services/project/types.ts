@@ -2,9 +2,13 @@ import type { RenderQualityMode } from '../../config/performancePolicy';
 import type { ControlBinding } from '../controlBindings';
 import type { SharedChain } from '../layerChainShare';
 import type { VjSetExportPayload } from '../vjSetExport';
+import type { Route } from '../../modulation/types';
 
-/** v2 (#1512): chain slots carry compositor fields b/o/m/k; render.hdr. v1 migrates in one step. */
-export const PROJECT_FILE_SCHEMA_VERSION = 2 as const;
+/**
+ * v3 (#1513): `modulation` routes. v2 (#1512): chain slots carry compositor fields
+ * b/o/m/k; render.hdr. Older files migrate one step at a time (migrate.ts).
+ */
+export const PROJECT_FILE_SCHEMA_VERSION = 3 as const;
 export const PROJECT_APP_NAME = 'pixelocity' as const;
 
 export type ProjectSourceKind = 'image' | 'video' | 'webcam' | 'generative' | 'stream' | 'none';
@@ -53,12 +57,18 @@ export interface ProjectFileV1 {
   timeline?: VjSetExportPayload;
 }
 
-/** Schema v2 (#1512): same envelope; chain slots may carry b/o/m/k and render may carry hdr. */
+/** Schema v2 (#1512): same envelope; chain slots may carry b/o/m/k and render may carry hdr. Migrated to v3. */
 export interface ProjectFileV2 extends Omit<ProjectFileV1, 'schemaVersion'> {
-  schemaVersion: typeof PROJECT_FILE_SCHEMA_VERSION;
+  schemaVersion: 2;
 }
 
-export type ProjectFile = ProjectFileV2;
+/** Schema v3 (#1513): adds the modulation bus routes (empty when nothing is modulated). */
+export interface ProjectFileV3 extends Omit<ProjectFileV2, 'schemaVersion'> {
+  schemaVersion: typeof PROJECT_FILE_SCHEMA_VERSION;
+  modulation: Route[];
+}
+
+export type ProjectFile = ProjectFileV3;
 
 export interface ProjectBuildState {
   chain: SharedChain;
@@ -68,6 +78,8 @@ export interface ProjectBuildState {
   hdr?: ProjectHdrSettings;
   audioMappings?: ControlBinding[];
   timeline?: VjSetExportPayload;
+  /** Modulation routes (v3); absent → none. */
+  modulation?: Route[];
   appVersion?: string;
   createdAt?: string;
 }
@@ -79,6 +91,8 @@ export interface ProjectApplyPlan {
   render: ProjectRenderSettings;
   audio?: ProjectAudioSettings;
   timeline?: VjSetExportPayload;
+  /** Routes whose target slot exists in the imported chain. */
+  modulation: Route[];
   warnings: string[];
 }
 
