@@ -3,12 +3,10 @@
 //  Category: artistic
 //  Features: mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-09
-//  Ideas: laplacian smooth of curvature; C.a fold memory
+//  Upgraded: 2026-10-09, 2026-11-01
+//  Ideas: laplacian smooth of curvature; C.a fold memory; curvature iso-lines; leaky curvature memory; memory-gated re-fold of history
 //  A packing: A.rgb pre-ACES display color; A.a raw curvature memory
 // ═══════════════════════════════════════════════════════════════════
-// Field order used to list zoom_params before zoom_config, so those
-// names read the other uniform. Reads below stay on the same bytes.
 #include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -98,14 +96,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
 
     // Parameters
-    let foldStrength = u.zoom_config.x * 2.0 + 0.5;
-    let pivotHue = u.zoom_config.y;
-    let satScale = u.zoom_config.z * 0.5 + 0.75;
-    let depthInfluence = u.zoom_config.w;
-    let noiseAmount = u.zoom_params.x * 0.003;
-    let feedbackPersist = u.zoom_params.y * 0.1 + 0.9;
-    let rippleAmp = u.zoom_params.z * 0.015;
-    let curvePower = u.zoom_params.w * 2.0 + 1.0;
+    // JSON order fold_strength / pivot_hue / sat_scale / depth_influence → zoom_params.xyzw.
+    // HEAD read these from zoom_config (time / mouse / down) and the four non-slider values
+    // from zoom_params; the latter now sit at their old midpoints.
+    let foldStrength = u.zoom_params.x * 2.0 + 0.5;
+    let pivotHue = u.zoom_params.y;
+    let satScale = u.zoom_params.z * 0.5 + 0.75;
+    let depthInfluence = u.zoom_params.w;
+    let noiseAmount = 0.0015;
+    let feedbackPersist = 0.95;
+    let rippleAmp = 0.0075;
+    let curvePower = 2.0;
 
     // Read source color & depth
     let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -131,11 +132,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthR = textureLoad(readDepthTexture, clamp(px + vec2<i32>(1, 0), vec2<i32>(0), resi - vec2<i32>(1)), 0).r;
     let depthU = textureLoad(readDepthTexture, clamp(px + vec2<i32>(0, -1), vec2<i32>(0), resi - vec2<i32>(1)), 0).r;
     let depthD = textureLoad(readDepthTexture, clamp(px + vec2<i32>(0, 1), vec2<i32>(0), resi - vec2<i32>(1)), 0).r;
-    let curvature = (curveHere
-        + pow(max(depthL, 0.0), curvePower) * depthInfluence
-        + pow(max(depthR, 0.0), curvePower) * depthInfluence
-        + pow(max(depthU, 0.0), curvePower) * depthInfluence
-        + pow(max(depthD, 0.0), curvePower) * depthInfluence) * 0.2;
+    let curveL = pow(max(depthL, 0.0), curvePower) * depthInfluence;
+    let curveR = pow(max(depthR, 0.0), curvePower) * depthInfluence;
+    let curveU = pow(max(depthU, 0.0), curvePower) * depthInfluence;
+    let curveD = pow(max(depthD, 0.0), curvePower) * depthInfluence;
+    let curvature = (curveHere + curveL + curveR + curveU + curveD) * 0.2;
 
     // C.a is yesterday's curvature. High memory folds this pixel harder.
     let histSize = vec2<i32>(textureDimensions(dataTextureC));
@@ -186,7 +187,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
     let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
-    let finalColor = mix(foldedColor, prev.rgb, feedbackPersist);
+    // Idea 3: memory-gated re-fold — where yesterday's curvature was high the history is
+    // folded about the same pivot again (gently), so creases nest where the manifold bends.
+    // At foldMemory = 0 the strength is 1.0, which foldHue leaves untouched.
+    var prevRgb = max(prev.rgb, vec3<f32>(0.0));
+    var prevHsv = rgb2hsv(prevRgb);
+    prevHsv.x = foldHue(prevHsv.x, pivotHue, mix(1.0, foldStrengthMem, 0.04 * foldMemory));
+    prevRgb = hsv2rgb(prevHsv.x, prevHsv.y, prevHsv.z);
+    let finalColor = mix(foldedColor, prevRgb, feedbackPersist);
 
     // ═══════════════════════════════════════════════════════════════════════════════
     //  WAVELENGTH-DEPENDENT ALPHA
@@ -208,8 +216,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         finalColor.b * alphaB
     );
 
+    // Idea 1: curvature iso-lines — topographic contours of the same smoothed curvature
+    // field the fold uses. AA width from the central difference of the curvature taps, so
+    // lines stay ~1.5 px wide; flat depth has zero gradient and draws nothing.
+    let curveGrad = length(vec2<f32>(curveR - curveL, curveD - curveU)) * 0.5;
+    let isoLevel = curvature * 12.0;
+    let isoFrac = fract(isoLevel);
+    let isoDist = min(isoFrac, 1.0 - isoFrac);
+    let isoWidth = max(curveGrad * 12.0, 1e-3);
+    let isoLine = (1.0 - smoothstep(0.6, 1.6, isoDist / isoWidth)) * smoothstep(0.0003, 0.002, curveGrad);
+    let displayColor = max(alphaModulatedColor, vec3<f32>(0.0)) * (1.0 - 0.4 * isoLine);
+
     // A.rgb is pre-ACES display color. A.a is raw curvature, not tone-mapped.
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(alphaModulatedColor), finalAlpha));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(displayColor), finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(alphaModulatedColor, clamp(curvature, 0.0, 1.0)));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(alphaModulatedColor, clamp(max(curvature, foldMemory * 0.94), 0.0, 1.0)));  // Idea 2: leaky memory
 }

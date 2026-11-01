@@ -2,7 +2,7 @@
   "id": "chromatic-folds-bilateral",
   "name": "Chromatic Folds Bilateral",
   "url": "shaders/chromatic-folds-bilateral.wgsl",
-  "description": "Chromatic Folds Bilateral",
+  "description": "Chromatic folds on a joint depth+colour bilateral: split-pivot hue folds, standing resonance waves on hue contours, a hue gradient that will not tear across depth edges, and a fold that skips near-grey pixels so flat regions do not speckle.",
   "tags": [
     "chromatic-folds",
     "bilateral-dream",

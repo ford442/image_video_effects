@@ -2,30 +2,12 @@
 //  chromatic-crawler-structure
 //  Category: advanced-hybrid
 //  Features: chromatic-crawler, structure-tensor-flow, temporal
-//  Ideas: Cauchy tendril bifurcation, photoelastic fringe birefringence, bioluminescent pulse waves
+//  Upgraded: 2026-11-01
+//  Ideas: Cauchy tendril bifurcation, photoelastic fringe birefringence, bioluminescent pulse waves; flow-stretched tendrils; per-wavelength Michel-Lévy fringes
 //  A packing: display RGBA (RGB=ACES display color, A=edge coherency confidence)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var p3 = vec3<f32>(
@@ -136,10 +118,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // IDEA 1: Cauchy chromatic tendril bifurcation
     // Red, green, and blue tendril branches propagate with differential dispersion offsets along flow and normal
-    let crawlOffsetBase = vec2<f32>(
+    let crawlWave = vec2<f32>(
         sin(flowAngle + t * 5.0 + uv.x * 20.0) * 0.06 * coherency,
         cos(flowAngle + t * 3.0 + uv.y * 15.0) * 0.06 * coherency
-    ) + normalize(select(vec2<f32>(0.0), -toMouse / vec2<f32>(aspect, 1.0), distMouse > 0.001)) * mouseAttract * 0.04;
+    );
+    // Idea 4: edge-stretched tendrils. The crawl wave used to ignore the tensor's axes. eigenvec is
+    // the dominant eigenvector of the structure tensor, i.e. the gradient (across the edge); the
+    // edge itself runs along eigenNormal. Coherency (λ1-λ2)/(λ1+λ2) lengthens the along-edge part
+    // and shortens the across-edge part, so tendrils run down the edge, not over it.
+    let acrossEdge = eigenvec * dot(crawlWave, eigenvec);
+    let alongEdge = eigenNormal * dot(crawlWave, eigenNormal);
+    let crawlOffsetBase = alongEdge * (1.0 + 0.7 * coherency) + acrossEdge * (1.0 - 0.5 * coherency)
+      + normalize(select(vec2<f32>(0.0), -toMouse / vec2<f32>(aspect, 1.0), distMouse > 0.001)) * mouseAttract * 0.04;
 
     let dispersionScale = 0.015 * (1.0 + treble * 0.8);
     let crawlOffsetR = crawlOffsetBase + eigenvec * dispersionScale;
@@ -179,7 +169,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // IDEA 2: Photoelastic fringe birefringence
     // Edge stress (principal stress difference lambda1 - lambda2) produces optical retardation fringe bands
     let stressRetardation = (lambda1 - lambda2) * 28.0;
-    let birefringenceFringes = 0.5 + 0.5 * cos(stressRetardation + vec3<f32>(0.0, 2.094, 4.188));
+    // Idea 5: per-wavelength Michel-Lévy fringes. The old fringe used fixed phase offsets for
+    // R/G/B. A real retardation Δ gives each wavelength its own phase 2πΔ/λ (650/550/450 nm), so
+    // the channels drift apart with order, and high-order fringes wash toward neutral grey.
+    let fringePhase = stressRetardation * vec3<f32>(1.0 / 0.65, 1.0 / 0.55, 1.0 / 0.45) * 0.75;
+    let fringeWash = exp(-stressRetardation * 0.08);
+    // zero order is gated out: a plain ramp has coherency ≈ 1 but no stress, and must not gain white haze
+    let birefringenceFringes = mix(vec3<f32>(0.5), 0.5 + 0.5 * cos(fringePhase), fringeWash) * smoothstep(0.0, 0.5, stressRetardation);
     swappedColor += birefringenceFringes * coherency * 0.35 * (0.8 + mids * 0.5);
 
     // IDEA 3: Bioluminescent streamline pulse waves

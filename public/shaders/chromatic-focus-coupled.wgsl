@@ -4,33 +4,27 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            fluid-simulation, chromatic-aberration, semantic-alpha, ACES
 //  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: vorticity confinement in the stirred fluid (§12.2D); density-gradient schlieren refraction; stirring injects density
+//  A packing: raw sim state (vel.xy, vorticity, density) — A is not tone-mapped; ACES only on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Strength, y=Blur, z=FocusRad, w=Viscosity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Strength, y=Blur, z=FocusRad, w=Viscosity
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
+}
+
+// Idea 1 helper — curl of the velocity stored in C.xy (central difference, clamped coords).
+fn curlAt(c: vec2<i32>, hi: vec2<i32>) -> f32 {
+  let r = textureLoad(dataTextureC, clamp(c + vec2<i32>( 1, 0), vec2<i32>(0), hi), 0).y;
+  let l = textureLoad(dataTextureC, clamp(c + vec2<i32>(-1, 0), vec2<i32>(0), hi), 0).y;
+  let d = textureLoad(dataTextureC, clamp(c + vec2<i32>( 0, 1), vec2<i32>(0), hi), 0).x;
+  let t = textureLoad(dataTextureC, clamp(c + vec2<i32>( 0,-1), vec2<i32>(0), hi), 0).x;
+  return 0.5 * ((r - l) - (d - t));
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -102,6 +96,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var vel = advected.xy * viscosity;
   var dens = advected.a * viscosity;
 
+  // Idea 1: vorticity confinement (§12.2D). The grid advection above damps small swirls;
+  // ω = curl(v), N = ∇|ω| / |∇|ω||, f = ε (N.y·ω, −N.x·ω) puts the lost rotation back, so the
+  // cursor's wake rolls up into eddies instead of smearing out. HEAD's "vorticity" was
+  // vel.x − vel.y (not a curl); the real curl now feeds both the twist below and A.z.
+  let hiC = vec2<i32>(resolution) - vec2<i32>(1);
+  let omega = curlAt(coord, hiC);
+  let omegaGrad = 0.5 * vec2<f32>(
+    abs(curlAt(coord + vec2<i32>(1, 0), hiC)) - abs(curlAt(coord - vec2<i32>(1, 0), hiC)),
+    abs(curlAt(coord + vec2<i32>(0, 1), hiC)) - abs(curlAt(coord - vec2<i32>(0, 1), hiC))
+  );
+  let confineN = omegaGrad / max(length(omegaGrad), 1e-5);
+  vel += vec2<f32>(confineN.y, -confineN.x) * omega * 0.1;  // ε from a CPU port of this solver: 0.1 ≈ +5% mean speed, 0.6 triples it
+
   let toMouse = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(toMouse);
   let mouseRadius = mix(0.04, 0.18, u.zoom_params.w);
@@ -112,6 +119,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let vortexDir = vec2<f32>(-mouseVel.y, mouseVel.x);
   vel += vortexDir * influence * 1.5;
+  // Idea 3: stirring injects density. HEAD only added density on clicks, so a stirred wake
+  // had no density and the fluid blur / tint / specular below never showed. The cursor now
+  // seeds density under it only while held or moving (an idle pointer parks at (0.5, 0.5)).
+  dens += influence * (0.06 * held + min(length(mouseVel), 1.0) * 0.05);
 
   // Click ripple bursts
   let rippleCount = min(u32(u.config.y), 50u);
@@ -133,7 +144,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   vel = clamp(vel, vec2<f32>(-0.5), vec2<f32>(0.5));
   dens = clamp(dens, 0.0, 2.0);
 
-  let vorticity = vel.x - vel.y;
+  let vorticity = omega;
   textureStore(dataTextureA, coord, vec4<f32>(vel, vorticity, dens));
 
   // Chromatic focus calculation
@@ -146,7 +157,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   amount = pow(amount, 1.0 / (1.0 + fluidBlur * 5.0)) + fluidBlur;
 
   var dir = normalize(distVec + vec2<f32>(1e-5));
-  let twist = vorticity * 0.5 + mids * 0.3;
+  // vorticity is now a true per-texel curl (~1e-2); ×40 restores the old ±1 range of the twist
+  let twist = clamp(vorticity * 40.0, -1.0, 1.0) * 0.5 + mids * 0.3;
   let cosT = cos(twist);
   let sinT = sin(twist);
   dir = vec2<f32>(dir.x * cosT - dir.y * sinT, dir.x * sinT + dir.y * cosT);
@@ -154,10 +166,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rOffset = dir * amount * strength * (1.0 + dens * 0.3);
   let bOffset = -dir * amount * strength * (1.0 + dens * 0.3);
   let blurVec = vel * dens * 0.01;
-
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset + blurVec, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + blurVec * 0.5, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset - blurVec, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
+  // Idea 2: schlieren refraction. Density already blurs; its gradient is what bends light in a
+  // real density field, so the image is shifted along ∇dens (per-channel scale, red bends
+  // least), which makes the stirred wake lens the picture behind it.
+  let densR = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), hiC), 0).a;
+  let densL = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), vec2<i32>(0), hiC), 0).a;
+  let densD = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), hiC), 0).a;
+  let densU = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), hiC), 0).a;
+  // gradient is per texel; scale to ≈9 px of shift at a steep wake, and keep a floor so it
+  // shows at the saved default (blur slider = 0).
+  let schlieren = vec2<f32>(densR - densL, densD - densU) * 0.5 * 300.0 * (0.25 + blurAmt) / resolution.y;
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset + blurVec + schlieren * 0.9, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + blurVec * 0.5 + schlieren, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset - blurVec + schlieren * 1.1, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
 
   var color = vec3<f32>(r, g, b);
   let vig = 1.0 - amount * 0.3;

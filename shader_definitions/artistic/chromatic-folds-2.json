@@ -2,9 +2,11 @@
   "id": "chromatic-folds-2",
   "name": "Chromatic Folds V2",
   "url": "shaders/chromatic-folds-2.wgsl",
-  "description": "Enhanced geometric color folding with improved warping.",
+  "description": "Enhanced geometric color folding: five animated Möbius, Klein and hyperbolic colour-space folds. Hyperbolic folds use true Poincaré-disk distance, fold edges fringe with a per-channel Cauchy split, and a held cursor drags one fold centre.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

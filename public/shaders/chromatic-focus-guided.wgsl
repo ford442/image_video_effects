@@ -4,28 +4,13 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            chromatic-focus, guided-filter-depth, semantic-alpha, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-11-01
+//  Ideas: depth-edge gated dispersion from the guided-filter variance; lateral chromatic aberration growing with field radius
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=AberrationIntensity, y=FocusRadius, z=SpectralSpread, w=AnimationSpeed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=AberrationIntensity, y=FocusRadius, z=SpectralSpread, w=AnimationSpeed
 
 const SPECTRAL_RED:     f32 = 0.65;
 const SPECTRAL_ORANGE:  f32 = 0.59;
@@ -123,6 +108,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dist = length(distVec);
   let focusFactor = smoothstep(focusRadius, focusRadius + 0.4, dist);
   let effectiveStrength = aberIntensity * focusFactor;
+  let fromCentre = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
 
   let angle = atan2(distVec.y, distVec.x) + sin(animationOffset) * 0.2;
   let radialDir = vec2<f32>(cos(angle), sin(angle));
@@ -161,15 +147,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b = meanInput - a * meanGuide;
   let guide = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let guidedResult = a * guide + b;
+  // Idea 1: depth-edge gate. varGuide is the 7×7 depth variance the guided filter already
+  // measured (≈0 on a flat surface, large across a depth edge). Dispersion is damped there so
+  // a fringe from the near object cannot smear over the far one — the cross-boundary bleeding
+  // this filter was added to stop. On flat depth the gate is 1 and nothing changes.
+  let edgeGate = 1.0 - 0.75 * smoothstep(0.0004, 0.006, varGuide);
+  // Idea 2: lateral chromatic aberration. A real lens also shifts colour planes radially from
+  // the optical axis in proportion to field radius, independent of where the focus is. This is
+  // added to the cursor-radial dispersion vector, so both share the Cauchy n(λ) scaling.
+  let dispVec = (dispersionDir * effectiveStrength + fromCentre * aberIntensity * 0.5) * edgeGate;
 
   // Sample 7 spectral bands
-  let redSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_RED, effectiveStrength, spectralSpread);
-  let orangeSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_ORANGE, effectiveStrength, spectralSpread);
-  let yellowSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_YELLOW, effectiveStrength, spectralSpread);
-  let greenSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_GREEN, effectiveStrength, spectralSpread);
-  let blueSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_BLUE, effectiveStrength, spectralSpread);
-  let indigoSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_INDIGO, effectiveStrength, spectralSpread);
-  let violetSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_VIOLET, effectiveStrength, spectralSpread);
+  let redSample = sampleSpectralBand(uv, dispVec, SPECTRAL_RED, 1.0, spectralSpread);
+  let orangeSample = sampleSpectralBand(uv, dispVec, SPECTRAL_ORANGE, 1.0, spectralSpread);
+  let yellowSample = sampleSpectralBand(uv, dispVec, SPECTRAL_YELLOW, 1.0, spectralSpread);
+  let greenSample = sampleSpectralBand(uv, dispVec, SPECTRAL_GREEN, 1.0, spectralSpread);
+  let blueSample = sampleSpectralBand(uv, dispVec, SPECTRAL_BLUE, 1.0, spectralSpread);
+  let indigoSample = sampleSpectralBand(uv, dispVec, SPECTRAL_INDIGO, 1.0, spectralSpread);
+  let violetSample = sampleSpectralBand(uv, dispVec, SPECTRAL_VIOLET, 1.0, spectralSpread);
 
   var spectralColor = vec3<f32>(0.0);
   spectralColor += RED_W * redSample;

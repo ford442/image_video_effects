@@ -793,7 +793,7 @@
     "id": "chromatic-crawler",
     "name": "Chromatic Crawler",
     "url": "shaders/chromatic-crawler.wgsl",
-    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending. Cell membranes glow in the neighbour's wavelength, trails stream behind the crawl, and the cursor joins it.",
+    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending. Cells press together as lit ridges, stained nuclei sit in each cell, membranes glow in the neighbour's wavelength, trails stream behind the crawl, and the cursor joins it.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -843,7 +843,7 @@
     "name": "Chromatic Focus",
     "category": "artistic",
     "url": "shaders/chromatic-focus.wgsl",
-    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into chromatic bokeh: highlights swell into rimmed discs that turn cat's-eye toward the frame edges, with magenta/green fringes keyed to the depth under the cursor. OkLab split-tone, thin-film halo, ACES.",
+    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into chromatic bokeh: highlights swell into rimmed discs that turn cat's-eye and swirl Petzval-style toward the frame edges, with magenta/green fringes keyed to the depth under the cursor. Focus is the depth plane under the cursor, not just a circle. OkLab split-tone, thin-film halo, ACES.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -900,9 +900,11 @@
     "id": "chromatic-folds-2",
     "name": "Chromatic Folds V2",
     "url": "shaders/chromatic-folds-2.wgsl",
-    "description": "Enhanced geometric color folding with improved warping.",
+    "description": "Enhanced geometric color folding: five animated Möbius, Klein and hyperbolic colour-space folds. Hyperbolic folds use true Poincaré-disk distance, fold edges fringe with a per-channel Cauchy split, and a held cursor drags one fold centre.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1093,9 +1095,10 @@
     "id": "chromatic-manifold-2",
     "name": "Chromatic Manifold V2",
     "url": "shaders/chromatic-manifold-2.wgsl",
-    "description": "Enhanced 4D topological color manifold.",
+    "description": "Enhanced 4D topological color manifold. Depth curvature is laplacian-smoothed and remembered with a slow decay, folds history again where it was high, and topographic iso-lines trace the curvature field.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: multi-spectral split hue folding; joint depth-bilateral edge preservation; contour standing resonance waves
+//  Upgraded: 2026-09-06, 2026-11-01
+//  Ideas: multi-spectral split hue folding; joint depth-bilateral edge preservation; contour standing resonance waves; depth-joint hue gradient; chroma-gated fold from the bilateral base
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -92,13 +73,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let satScale = u.zoom_params.z * 0.5 + 0.75;
     let depthInfluence = u.zoom_params.w;
 
-    let spatialSigmaBase = mix(0.1, 1.0, u.zoom_config.x);
-    let colorSigma = mix(0.05, 1.0, u.zoom_config.y);
-    let hueShiftAmt = u.zoom_config.z;
+    // HEAD read these from zoom_config (time / mouse x / mouse y), so sigma grew with uptime and
+    // the hue shift followed the cursor. The JSON has four sliders (zoom_params); these are
+    // fixed at their old midpoints and the unreachable hue-rotate post-pass is gone.
+    let spatialSigmaBase = 0.55;
+    let colorSigma = 0.525;
+    let mouseHeld = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     // Mouse distance modulation for bilateral
     let mouseDist = length(uv - mousePos);
-    let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * u.zoom_config.w;
+    let mouseFactor = exp(-mouseDist * mouseDist * 8.0) * mouseHeld;
     let spatialSigma = mix(spatialSigmaBase, spatialSigmaBase * 0.2, mouseFactor);
 
     // Ripple shockwaves
@@ -154,14 +138,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let depthVal = centerDepth;
 
-    // Hue gradient on bilateral-smoothed image
+    // Hue gradient
     let hR = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb).x;
     let hL = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).rgb).x;
     let hU = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).rgb).x;
     let hD = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).rgb).x;
 
-    let gradX = fract(hR - hL + 1.5) - 0.5;
-    let gradY = fract(hU - hD + 1.5) - 0.5;
+    // ─── Idea 4: depth-joint hue gradient ───
+    // The bilateral loop above already weighs neighbours by a depth range term; the four
+    // gradient taps now carry the same term, so the fold displacement does not tear
+    // across a depth discontinuity (a tap pair straddling an edge reads as no gradient).
+    let depthTap = 0.04 * (depthInfluence + 0.1) + 0.001;
+    let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).r - centerDepth;
+    let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(pixelSize.x, 0.0), 0.0).r - centerDepth;
+    let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, pixelSize.y), 0.0).r - centerDepth;
+    let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, pixelSize.y), 0.0).r - centerDepth;
+    let wGradX = exp(-max(dR * dR, dL * dL) / depthTap);
+    let wGradY = exp(-max(dU * dU, dD * dD) / depthTap);
+    let gradX = (fract(hR - hL + 1.5) - 0.5) * wGradX;
+    let gradY = (fract(hU - hD + 1.5) - 0.5) * wGradY;
     let hueGrad = vec2<f32>(gradX, gradY);
     let gradMagnitude = length(hueGrad);
 
@@ -205,19 +200,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let colR = hsv2rgb(foldR, foldedSat, hsv.z).r;
     let colG = hsv2rgb(foldG, foldedSat, hsv.z).g;
     let colB = hsv2rgb(foldB, foldedSat, hsv.z).b;
-    let foldedColor = vec3<f32>(colR, colG, colB);
+    // ─── Idea 5: chroma-gated fold from the bilateral base ───
+    // Hue is undefined for near-grey pixels and flickers with sensor noise, so the fold
+    // would speckle flat dark/grey regions. The gate reads the bilateral base (srcColor,
+    // computed above and previously discarded), whose chroma is smooth.
+    let baseHsv = rgb2hsv(srcColor);
+    let chromaGate = smoothstep(0.02, 0.16, baseHsv.y * baseHsv.z);
+    let foldedColor = mix(displacedColor, vec3<f32>(colR, colG, colB), chromaGate);
 
     // Exact dataTextureC feedback blend
     let prev = textureLoad(dataTextureC, pixel, 0).rgb;
     let feedbackStrength = 0.85;
-    var finalColor = mix(foldedColor, prev, feedbackStrength);
+    let finalColor = max(mix(foldedColor, prev, feedbackStrength), vec3<f32>(0.0));
 
-    // Psychedelic hue shift post-processing
-    if (hueShiftAmt > 0.0) {
-        let hsv2 = rgb2hsv(finalColor);
-        let newHue = fract(hsv2.x + hueShiftAmt + mouseDist * 0.3 + time * 0.05);
-        finalColor = hsv2rgb(newHue, hsv2.y, hsv2.z);
-    }
 
     let outDisplay = acesToneMap(finalColor);
     let alpha = clamp(center.a * 0.8 + gradMagnitude * 0.4 + resonance * 5.0, 0.2, 1.0);

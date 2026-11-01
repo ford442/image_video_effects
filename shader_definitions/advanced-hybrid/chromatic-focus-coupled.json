@@ -2,7 +2,7 @@
   "id": "chromatic-focus-coupled",
   "name": "Chromatic Focus Coupled",
   "url": "shaders/chromatic-focus-coupled.wgsl",
-  "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid that twists and blurs chromatic channels. Click ripples inject fluid bursts.",
+  "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid that rolls up into eddies (vorticity confinement), carries density, and refracts the picture along its density gradient. Click ripples inject fluid bursts.",
   "features": [
     "mouse-driven",
     "fluid-simulation",

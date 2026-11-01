@@ -3,12 +3,10 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-09
-//  Ideas: Klein orientation seam; Möbius fiber twist
+//  Upgraded: 2026-10-09, 2026-11-01
+//  Ideas: Klein orientation seam; Möbius fiber twist; Poincaré-disk fold distance; Cauchy-split fold aberration; held cursor drags a fold centre
 //  A packing: pre-ACES display RGB in A (C is color history)
 // ═══════════════════════════════════════════════════════════════════
-// Field order used to list zoom_params before zoom_config, so those
-// names read the other uniform. Reads below stay on the same bytes.
 #include "_prelude.wgsl"
 
 // ---------------------------------------------------------------
@@ -77,8 +75,11 @@ fn hyperbolicFold(pos: vec3<f32>, uv: vec2<f32>, center: vec2<f32>, strength: f3
    var localUV = uv - center;
    var radius = length(localUV);
    
-   // Hyperbolic distance creates infinite recursion effect
-   let hyperDist = log(radius * 10.0 + 1.0);
+   // Idea 1: Poincaré-disk distance. The fold used log(10r+1); the hyperbolic distance
+   // of a point at Euclidean radius r in the unit disk is 2·atanh(r) = ln((1+r)/(1-r)),
+   // so rings pile up toward the rim like an Escher tunnel. r is capped below 1.
+   let rDisk = min(radius * 1.8, 0.97);
+   let hyperDist = log((1.0 + rDisk) / (1.0 - rDisk)) * 2.2;
    let foldWave = sin(hyperDist * 8.0 - time * 2.0) * strength;
    
    // Recursive color space compression
@@ -122,6 +123,15 @@ fn chromaticAberration(uv: vec2<f32>, foldStrength: f32, chromaticScale: f32) ->
    );
 }
 
+// Idea 2: Cauchy-split — the aberration used to move R, G and B together, which is not
+// chromatic. n(λ) = 1 + B/λ² at 650/550/450 nm, relative to green, scales the SAME
+// displacement per channel (red < 1 < blue), so folds fringe like glass.
+fn cauchyScale() -> vec3<f32> {
+   let lam = vec3<f32>(0.650, 0.550, 0.450);
+   let n = vec3<f32>(1.0) + 0.10 / (lam * lam);
+   return n / n.y;
+}
+
 // ---------------------------------------------------------------
 // Main Compute Shader
 // ---------------------------------------------------------------
@@ -155,14 +165,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    // ──────────────────────────────────────────────────────────────────────────
    //  Parameters
    // ──────────────────────────────────────────────────────────────────────────
-   let globalIntensity = u.zoom_config.x;
-   let hyperFactor = u.zoom_config.y;
-   let twistRate = u.zoom_config.z;
-   let chromaticScale = u.zoom_config.w * 2.0;
-   let depthInfluence = u.zoom_params.x;
-   let foldSharpness = u.zoom_params.y;
-   let rotationSpeed = u.zoom_params.z * 2.0;
-   let dimensionalFold = u.zoom_params.w;
+   // JSON order global_intensity / hyper_factor / twist_rate / chromatic_scale → zoom_params.xyzw.
+   // HEAD read these from zoom_config (time / mouse / down), so intensity grew with uptime; the
+   // four former zoom_params reads have no slider and sit at their old midpoints.
+   let globalIntensity = u.zoom_params.x;
+   let hyperFactor = u.zoom_params.y;
+   let twistRate = u.zoom_params.z;
+   let chromaticScale = u.zoom_params.w * 2.0;
+   let depthInfluence = 0.5;
+   let foldSharpness = 0.5;
+   let rotationSpeed = 1.0;
+   let dimensionalFold = 0.5;
+   let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+   let mouseHeld = select(0.0, 1.0, u.zoom_config.w > 0.5);
    
    // Depth-modulated fold intensity (foreground folds more)
    let depthFoldBoost = 1.0 + (1.0 - depth) * depthInfluence * 2.0;
@@ -176,10 +191,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    // Create 5 animated fold centers
    for (var i: u32 = 0u; i < 5u; i = i + 1u) {
        let fi = f32(i);
-       let foldCenter = vec2<f32>(
+       var foldCenter = vec2<f32>(
            0.5 + sin(time * 0.3 + fi * 1.2) * 0.35,
            0.5 + cos(time * 0.4 + fi * 0.9) * 0.35
        );
+       // Idea 3: while the pointer is held, fold centre 0 is dragged onto it. Hold-only:
+       // an idle pointer parks at (0.5, 0.5) and would bake a fold into the default look.
+       foldCenter = mix(foldCenter, mouse, mouseHeld * select(0.0, 0.85, i == 0u));
        let foldType = i % 3u; // Cycle through Möbius, Klein, Hyperbolic
        let foldPhase = fi * 0.5;
        
@@ -227,10 +245,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    //  Chromatic aberration from fold edges
    // ──────────────────────────────────────────────────────────────────────────
    let aberrationUV = chromaticAberration(uv, totalFoldStrength, chromaticScale);
-   let clampedAbUV = clamp(aberrationUV, vec2<f32>(0.0), vec2<f32>(1.0));
+   let abShift = aberrationUV - uv;
+   let cs = cauchyScale();
+   let uvR = clamp(uv + abShift * cs.x, vec2<f32>(0.0), vec2<f32>(1.0));
+   let uvG = clamp(uv + abShift * cs.y, vec2<f32>(0.0), vec2<f32>(1.0));
+   let uvB = clamp(uv + abShift * cs.z, vec2<f32>(0.0), vec2<f32>(1.0));
    
-   // Sample with chromatic aberration for final output
-   var outColor = textureSampleLevel(readTexture, u_sampler, clampedAbUV, 0.0).rgb;
+   // Sample with chromatic aberration for final output (Idea 2: per-channel Cauchy scale)
+   var outColor = vec3<f32>(
+       textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+       textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
+       textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+   );
    
    // Mix with folded color space for psychedelic topology effect
    outColor = mix(outColor, finalColorPos, totalFoldStrength * 0.6);

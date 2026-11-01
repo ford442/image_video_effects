@@ -172,20 +172,56 @@
       "history": []
     },
     "chromatic-crawler-structure": {
-      "hash": "9f4767d1c228bb1b",
-      "history": []
+      "hash": "e27ab6a00ab01d2c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "e27ab6a00ab01d2c",
+          "prev_hash": "9f4767d1c228bb1b",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
+        }
+      ]
     },
     "chromatic-focus-coupled": {
-      "hash": "cd20c3f6ac773834",
-      "history": []
+      "hash": "7a3cd00dd4cb249b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "7a3cd00dd4cb249b",
+          "prev_hash": "cd20c3f6ac773834",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
+        }
+      ]
     },
     "chromatic-focus-guided": {
-      "hash": "d91995e4cb06f2ef",
-      "history": []
+      "hash": "12d3a7a3b32caa0f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "12d3a7a3b32caa0f",
+          "prev_hash": "d91995e4cb06f2ef",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
+        }
+      ]
     },
     "chromatic-folds-bilateral": {
-      "hash": "2e144f487caf2bf3",
-      "history": []
+      "hash": "8226e4c05fec437d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "8226e4c05fec437d",
+          "prev_hash": "2e144f487caf2bf3",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
+        }
+      ]
     },
     "chromatic-reaction-diffusion": {
       "hash": "fa69a4e41f4c37ee",
@@ -1030,7 +1066,7 @@
       "history": []
     },
     "chromatic-crawler": {
-      "hash": "a588e2b84b469310",
+      "hash": "09633f0522c98e66",
       "history": [
         {
           "event": "upgraded",
@@ -1039,11 +1075,19 @@
           "prev_hash": "011b8afb7bc196d4",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "09633f0522c98e66",
+          "prev_hash": "a588e2b84b469310",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
         }
       ]
     },
     "chromatic-focus": {
-      "hash": "a09ae5b0e5b77fcb",
+      "hash": "ce0153be66286314",
       "history": [
         {
           "event": "upgraded",
@@ -1052,11 +1096,19 @@
           "prev_hash": "15da01520b6816bf",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "ce0153be66286314",
+          "prev_hash": "a09ae5b0e5b77fcb",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
         }
       ]
     },
     "chromatic-folds-2": {
-      "hash": "361355635a1070ad",
+      "hash": "ee60ba68b404fcfd",
       "history": [
         {
           "event": "upgraded",
@@ -1065,6 +1117,14 @@
           "prev_hash": "ea924ddca5224467",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "ee60ba68b404fcfd",
+          "prev_hash": "361355635a1070ad",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
         }
       ]
     },
@@ -1082,7 +1142,7 @@
       ]
     },
     "chromatic-folds": {
-      "hash": "771910dd82fc5d24",
+      "hash": "a7d7664c968fe1fd",
       "history": [
         {
           "event": "upgraded",
@@ -1099,6 +1159,14 @@
           "prev_hash": "ea833c55627bc42d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "a7d7664c968fe1fd",
+          "prev_hash": "771910dd82fc5d24",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
         }
       ]
     },
@@ -1116,7 +1184,7 @@
       ]
     },
     "chromatic-manifold-2": {
-      "hash": "2e3932901681a303",
+      "hash": "85faab83a6521d7f",
       "history": [
         {
           "event": "upgraded",
@@ -1125,11 +1193,19 @@
           "prev_hash": "f816450979ed851c",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "85faab83a6521d7f",
+          "prev_hash": "2e3932901681a303",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
         }
       ]
     },
     "chromatic-manifold": {
-      "hash": "227e55b4e9f90edc",
+      "hash": "11324100db4bd3fc",
       "history": [
         {
           "event": "upgraded",
@@ -1146,6 +1222,14 @@
           "prev_hash": "800b8c1ac6decfba",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:36:02.686Z",
+          "hash": "11324100db4bd3fc",
+          "prev_hash": "227e55b4e9f90edc",
+          "commit": "9813eb2c",
+          "note": "2026-11-01 chromatic folds/manifold/crawler/focus ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-01-chromatic-folds-focus-ten"
         }
       ]
     },

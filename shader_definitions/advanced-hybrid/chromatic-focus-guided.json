@@ -2,7 +2,7 @@
   "id": "chromatic-focus-guided",
   "name": "Chromatic Focus Guided",
   "url": "shaders/chromatic-focus-guided.wgsl",
-  "description": "Seven-band Cauchy chromatic dispersion with depth-guided filtering to eliminate cross-boundary edge bleeding.",
+  "description": "Seven-band Cauchy chromatic dispersion with depth-guided filtering: dispersion is damped across depth edges so fringes cannot bleed over the far object, and a lateral chromatic aberration grows with distance from the frame centre.",
   "tags": [
     "chromatic-focus",
     "guided-filter-depth",

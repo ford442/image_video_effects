@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, temporal-feedback, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: cell membranes tinted by the neighbour's wavelength; trails stream behind the crawl; cursor joins the crawl
+//  Upgraded: 2026-10-05, 2026-11-01
+//  Ideas: cell membranes tinted by the neighbour's wavelength; trails stream behind the crawl; cursor joins the crawl; raised membrane relief; wavelength-stained nuclei
 //  A packing: linear pre-ACES display RGB (≥0) + coverage alpha; C read as colour
 // ═══════════════════════════════════════════════════════════════════
 
@@ -225,6 +225,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lumIn = dot(inputColor, vec3<f32>(0.299, 0.587, 0.114));
   color = mix(color, neighTint * (0.5 + 0.7 * lumIn), membraneAmt);
 
+  // Idea 4: raised membrane relief — the seam is a ridge, so its outward normal is the
+  // direction away from this cell's own seed (cells.cellUV, already computed). A fixed
+  // light from the upper left brightens the ridge flank that faces it and darkens the far
+  // flank, so cells read as pillows pressed together instead of flat tiles.
+  let fromSeed = (crawledUV - cells.cellUV) * cells.grid;
+  let ridgeN = fromSeed / max(length(fromSeed), 1e-3);
+  let ridgeLit = dot(ridgeN, normalize(vec2<f32>(-0.6, -0.8)));
+  color = color * (1.0 + 0.55 * ridgeLit * membrane);
+
+  // Idea 5: wavelength-stained nuclei — each cell owns a nucleus at its wandering seed,
+  // stained with that cell's own spectral tint (the same lambda that tints its hue roll).
+  // Fades with the membranes where the crawl squeezes cells below a few pixels.
+  let nucleusDist = length(fromSeed);
+  let nucleus = (1.0 - smoothstep(0.05, 0.16, nucleusDist)) * (1.0 - smoothstep(0.12, 0.3, edgePx)) * (0.35 + 0.65 * swapIntensity);
+  color = mix(color, spectralTint * (0.25 + 0.5 * lumIn), nucleus * 0.55);
+
   // Idea 2: Trails stream behind the crawl — C is read upstream along this pixel's
   // per-frame crawl motion (crawl at t vs t − 16 ms, so it scales with crawlSpeed),
   // so colour streams behind moving fronts. Exact load, no sampler on C.
@@ -270,7 +286,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Alpha = crawl intensity mapped through smooth tent curve
   // Membranes are opaque tissue: they raise coverage.
-  let alpha = max(tentAlpha(crawlMag * 4.0) * (0.6 + swapIntensity * 0.4), membraneAmt);
+  let alpha = max(max(tentAlpha(crawlMag * 4.0) * (0.6 + swapIntensity * 0.4), membraneAmt), nucleus * 0.6);
   let finalAlpha = clamp(alpha + glowAmount * 0.15, 0.15, 0.9);
 
   // hueRotate can go negative — clamp before storing history and before ACES.

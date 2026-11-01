@@ -7,8 +7,8 @@
 //  Complexity: High
 //  Chunks From: chromatic-focus
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-05
-//  Ideas: highlight bokeh discs with rim ring; cat's-eye vignetting; bokeh fringing (longitudinal CA)
+//  Upgraded: 2026-10-05, 2026-11-01
+//  Ideas: highlight bokeh discs with rim ring; cat's-eye vignetting; bokeh fringing (longitudinal CA); Petzval swirl bokeh; depth-keyed focus falloff
 //  A packing: mask (focusMask, blurMask, spectralSpread*40, alpha) — no reader
 // ═══════════════════════════════════════════════════════════════════
 
@@ -135,7 +135,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let centered = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(centered);
-  let focusMask = 1.0 - smoothstep(focusRadius, focusRadius + 0.12, dist);
+  // Idea 5: depth-keyed focus falloff — the in-focus disc is the plane under the cursor, not just
+  // a circle: a pixel whose depth differs from the depth under the cursor loses focus sooner.
+  // (Flat depth → defocusDepth = 0 → HEAD's circular mask exactly.)
+  let pixDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let defocus = pixDepth - focusDepth;
+  let focusMask = 1.0 - smoothstep(focusRadius * (1.0 - min(abs(defocus) * 1.5, 0.6)), focusRadius + 0.12, dist);
   let blurMask = 1.0 - focusMask;
   let t = time * animSpeed;
 
@@ -144,6 +150,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // distance from it; taps outside that circle are rejected, so bokeh near the
   // frame edges turns into cat's-eye lenses (on-axis every tap survives).
   let catShift = (vec2<f32>(0.5) - uv) * 0.8;
+  let fromCentre = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+  let radial = fromCentre / max(length(fromCentre), 1e-3);
+  let swirlK = smoothstep(0.1, 0.7, length(fromCentre)) * 0.9 * blurMask;
 
   // Rotating blur samples — HEAD's 6-tap ring (aperture coord 0.667, same
   // radius as HEAD) plus
@@ -161,7 +170,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ringCoord = select(0.667, 1.0, isRim);
     let angle = f32(i % 6) * angleStep + t * 0.7 + select(0.0, angleStep * 0.5, isRim);
     let dir = vec2<f32>(cos(angle), sin(angle));
-    let c = sampleColor(uv + dir * blurRadius * ringCoord * 1.5);
+    // Idea 4: Petzval swirl — the tap offset is sheared tangentially about the frame centre in
+    // proportion to the pixel's off-axis radius, the way a Petzval portrait lens drags
+    // out-of-focus highlights into a vortex. On-axis (swirlK = 0) the taps are untouched.
+    let swirlDir = dir + vec2<f32>(-radial.y, radial.x) * swirlK * dot(dir, radial);
+    let c = sampleColor(uv + swirlDir * blurRadius * ringCoord * 1.5);
     let tapLuma = dot(c, vec3<f32>(0.299, 0.587, 0.114));
     // Idea 1: highlight weighting (~1 for mid-tones, up to 7 for highlights)
     var w = 1.0 + 6.0 * pow(clamp(tapLuma, 0.0, 1.0), 4.0) * blurMask;
@@ -186,9 +199,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // (the disc's edge), out-of-focus pixels nearer than the focus plane
   // (depth 1 = near) get a magenta rim, farther ones a green rim. Flat depth
   // reads as "behind the focus plane" (background bokeh) at reduced strength.
-  let pixDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let defocus = pixDepth - focusDepth;
   let fringeAmt = clamp(0.35 + abs(defocus) * 3.0, 0.0, 1.0) * blurMask;
   let coreAvg = coreAccum / max(coreWeight, 1e-4);
   let rimAvg = rimAccum / max(rimWeight, 1e-4);
