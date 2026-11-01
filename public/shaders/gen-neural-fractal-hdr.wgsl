@@ -6,32 +6,16 @@
 //  Chunks From: gen-neural-fractal.wgsl, alpha-hdr-bloom-chain.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-23 — Generative Abstract Enhancer
+//  Upgraded: 2026-10-31
+//  Ideas: smooth iteration count on swish-layer escapes (§12.2 E); activation-layer fingerprint tints the closest-approach glow; Lyapunov sensitivity contours (tangent vector carried through the layers; iso-lines of the finite-time exponent as thin HDR lines)
+//  A packing: raw HDR (A.rgb = hdrFinal, A.a = exposure); writeTexture = ACES display
 // ═══════════════════════════════════════════════════════════════════
 //  Neural network weight visualization fractals with HDR bloom
 //  chain. Iteration traps produce bright values that bloom across
 //  neighbors, then ACES tone-mapped for cinematic display.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: sigmoid (from gen-neural-fractal.wgsl) ═══
 fn sigmoid(x: f32) -> f32 {
@@ -80,8 +64,17 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Evaluate fractal at given UV for bloom sampling
-fn evalFractal(uv: vec2<f32>, resolution: vec2<f32>, time: f32, zoom: f32, colorSpeed: f32, iterations: i32, mutation: f32) -> vec3<f32> {
+// Activation derivative from the layer OUTPUT (no extra exp): 0 sigmoid, 1 tanh, 2 swish
+fn actDeriv(out: f32, x: f32, kind: i32) -> f32 {
+  let sg = out * (1.0 - out);
+  let th = 1.0 - out * out;
+  let s = select(0.5, out / x, abs(x) > 1e-4);
+  let sw = s + out * (1.0 - s);
+  return select(select(sg, th, kind == 1), sw, kind == 2);
+}
+
+// Evaluate fractal at given UV for bloom sampling. `full` adds the Lyapunov veins (base eval only).
+fn evalFractal(uv: vec2<f32>, resolution: vec2<f32>, time: f32, zoom: f32, colorSpeed: f32, iterations: i32, mutation: f32, full: bool) -> vec3<f32> {
   let aspect = resolution.x / resolution.y;
   let zoomAnim = zoom * (1.0 + 0.2 * sin(time * 0.1));
   let scale = 2.5 / zoomAnim;
@@ -92,25 +85,59 @@ fn evalFractal(uv: vec2<f32>, resolution: vec2<f32>, time: f32, zoom: f32, color
   var z = p;
   var iter = 0;
   var trap = 1000.0;
+  var trapLayer = 0;
   var sumZ = vec2<f32>(0.0);
+  var tang = vec2<f32>(1.0, 0.0);
+  var lyap = 0.0;
   for (iter = 0; iter < iterations; iter++) {
     let activationType = (iter / 10) % 4;
+    let zPrev = z;
     z = neuralLayer(z, juliaC, activationType);
     let d = length(z - vec2<f32>(0.5, 0.0));
+    // ── Idea 2: remember which activation layer fired at the closest approach
+    trapLayer = select(trapLayer, activationType, d < trap);
     trap = min(trap, d);
     sumZ = sumZ + z;
+    // ── Idea 3: carry a tangent vector through the layers (J = diag(f', g') · 2·zPrev complex-multiply)
+    if (full) {
+      let kx = select(select(0, 1, activationType == 1), 2, activationType == 2);
+      let ky = select(select(0, 1, activationType == 1 || activationType == 3), 2, activationType == 2);
+      let ax = zPrev.x * zPrev.x - zPrev.y * zPrev.y + juliaC.x;
+      let ay = 2.0 * zPrev.x * zPrev.y + juliaC.y;
+      let da = 2.0 * vec2<f32>(zPrev.x * tang.x - zPrev.y * tang.y, zPrev.y * tang.x + zPrev.x * tang.y);
+      tang = vec2<f32>(actDeriv(z.x, ax, kx) * da.x, actDeriv(z.y, ay, ky) * da.y);
+      let tn2 = max(dot(tang, tang), 1e-30);
+      lyap += 0.5 * log(tn2);
+      tang = tang * inverseSqrt(tn2);
+    }
     if (length(z) > 10.0) { break; }
   }
-  let iterRatio = f32(iter) / f32(iterations);
+  // ── Idea 1: smooth iteration count on escape (swish layers are unbounded; sigmoid/tanh never escape)
+  let escaped = length(z) > 10.0;
+  let nu = f32(iter) + 1.0 - log2(max(log(max(length(z), 1.0001)) / 2.302585, 1.0));
+  let iterRatio = select(f32(iter), nu, escaped) / f32(iterations);
   let palA = vec3<f32>(0.5, 0.5, 0.5);
   let palB = vec3<f32>(0.5, 0.5, 0.5);
   let palC = vec3<f32>(1.0, 1.0, 1.0);
   let palD = vec3<f32>(0.0 + time * colorSpeed * 0.1, 0.33 + time * colorSpeed * 0.15, 0.67 + time * colorSpeed * 0.2);
   var col = palette(iterRatio + trap * 2.0, palA, palB, palC, palD);
   let glow = exp(-trap * 5.0) * 0.5;
-  col += vec3<f32>(0.4, 0.2, 0.6) * glow;
+  // layer fingerprint: sigmoid cool blue, tanh amber, swish green, sigmoid/tanh mix magenta
+  var layerTint = vec3<f32>(0.7, 0.2, 0.7);
+  layerTint = select(layerTint, vec3<f32>(0.15, 0.35, 0.9), trapLayer == 0);
+  layerTint = select(layerTint, vec3<f32>(0.9, 0.5, 0.15), trapLayer == 1);
+  layerTint = select(layerTint, vec3<f32>(0.2, 0.8, 0.4), trapLayer == 2);
+  col += mix(vec3<f32>(0.4, 0.2, 0.6), layerTint, 0.65) * glow;
   let structure = length(sumZ) * 0.01;
   col = mix(col, col * (1.0 + structure), 0.3);
+  if (full) {
+    // ── Idea 3: iso-contours of the finite-time Lyapunov exponent (how fast a weight perturbation
+    // decays through the layers) drawn as thin HDR gradient-flow lines; fade out where chaotic/escaping
+    let lam = lyap / f32(max(iter, 1));
+    let isoD = abs(fract(lam * 6.0 + 0.5) - 0.5);
+    let vein = (1.0 - smoothstep(0.0, 0.09, isoD)) * (1.0 - smoothstep(0.2, 1.0, lam));
+    col += vec3<f32>(0.35, 0.6, 0.95) * vein * 0.8;
+  }
   return col;
 }
 
@@ -128,7 +155,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mutation = mix(0.0, 0.5, u.zoom_params.w);
 
   // Base fractal
-  var col = evalFractal(uv, resolution, t, zoom, colorSpeed, iterations, mutation);
+  var col = evalFractal(uv, resolution, t, zoom, colorSpeed, iterations, mutation, true);
 
   // === HDR BLOOM KERNEL ===
   let bloomRadius = mix(0.005, 0.03, u.zoom_params.x);
@@ -142,7 +169,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radius = bloomRadius * (1.0 + f32(i % 3) * 0.5);
     let offset = vec2<f32>(cos(angle), sin(angle)) * radius;
     let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-    let neighbor = evalFractal(sampleUV, resolution, t, zoom, colorSpeed, iterations / 2, mutation);
+    let neighbor = evalFractal(sampleUV, resolution, t, zoom, colorSpeed, iterations / 2, mutation, false);
     let neighborMax = max(neighbor.r, max(neighbor.g, neighbor.b));
     let neighborExposure = max(0.0, neighborMax - 0.6);
     let weight = exp(-f32(i % 3) * 0.5);

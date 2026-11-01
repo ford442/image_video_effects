@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: hopper terraces (quantised stair-step bands in the thin-film index with dark step-edge lines, bismuth's signature); self-shadow (soft shadow march toward the key light so branches shade each other); kept: side-branch buds at each L-system iteration; recalescence flash on entropy-pulse crests
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-10, 2026-10-31
+//  Ideas: hopper terraces (quantised stair-step bands in the thin-film index with dark step-edge lines, bismuth's signature); self-shadow (soft shadow march toward the key light so branches shade each other); kept: side-branch buds at each L-system iteration; recalescence flash on entropy-pulse crests; fold-generation material (§12.2 E: oxide-film index + gloss by KIFS fold depth); SDF curvature edge wear (§12.2 E: convex ridges wear bright, cavities darken)
+//  A packing: ACES display RGBA (decoded with acesInverse when read back from C)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -33,7 +33,8 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 // ----------------------------------------------------------------
 // SCENE SDF
 // ----------------------------------------------------------------
-fn map(p_in: vec3<f32>, time: f32, mouse_pos: vec2<f32>, click: f32, complexity: f32, entropy: f32, gravity: f32, bass: f32) -> f32 {
+// Returns (distance, fold generation 0 = trunk .. 1 = finest tips of the cylinder/bud that won the min).
+fn mapM(p_in: vec3<f32>, time: f32, mouse_pos: vec2<f32>, click: f32, complexity: f32, entropy: f32, gravity: f32, bass: f32) -> vec2<f32> {
     var p = p_in;
 
     // Spacetime Distortion (Mouse gravity)
@@ -48,6 +49,7 @@ fn map(p_in: vec3<f32>, time: f32, mouse_pos: vec2<f32>, click: f32, complexity:
     p = vec3<f32>(p.x, rot(time * 0.15) * p.yz);
 
     var d = 1000.0;
+    var gen = 0.0;
 
     // Fractal Spanning Trees: L-system inspired 3D recursive paths
     var scale = 1.0;
@@ -62,11 +64,14 @@ fn map(p_in: vec3<f32>, time: f32, mouse_pos: vec2<f32>, click: f32, complexity:
         p_fract *= 1.5;
 
         let cylinder = length(p_fract.xy) - (0.1 + bass * 0.2) * (1.0 - f32(i) / f32(iterations));
+        // Idea 3 — fold count as material: remember which fold generation owns the nearest surface
+        gen = select(gen, f32(i) / f32(max(iterations - 1, 1)), cylinder / scale < d);
         d = min(d, cylinder / scale);
 
         // Idea 1 — side-branch buds: thinner perpendicular cylinder at each fold
         let budOff = p_fract - vec3<f32>(0.18 * sin(time * entropy + f32(i)), 0.0, 0.0);
         let bud = length(budOff.yz) - (0.045 + bass * 0.08) * (1.0 - f32(i) / f32(iterations));
+        gen = select(gen, f32(i) / f32(max(iterations - 1, 1)), bud / scale < d);
         d = min(d, bud / scale);
     }
 
@@ -74,7 +79,11 @@ fn map(p_in: vec3<f32>, time: f32, mouse_pos: vec2<f32>, click: f32, complexity:
     let node_dist = length(p_fract) - (0.3 + bass * 0.5);
     d = max(d, -node_dist / scale); // Subtraction for hollow intersections
 
-    return d;
+    return vec2<f32>(d, gen);
+}
+
+fn map(p_in: vec3<f32>, time: f32, mouse_pos: vec2<f32>, click: f32, complexity: f32, entropy: f32, gravity: f32, bass: f32) -> f32 {
+    return mapM(p_in, time, mouse_pos, click, complexity, entropy, gravity, bass).x;
 }
 
 // ----------------------------------------------------------------
@@ -87,6 +96,27 @@ fn getNormal(p: vec3<f32>, time: f32, mouse_pos: vec2<f32>, click: f32, complexi
         map(p + e.yxy, time, mouse_pos, click, complexity, entropy, gravity, bass) - map(p - e.yxy, time, mouse_pos, click, complexity, entropy, gravity, bass),
         map(p + e.yyx, time, mouse_pos, click, complexity, entropy, gravity, bass) - map(p - e.yyx, time, mouse_pos, click, complexity, entropy, gravity, bass)
     ));
+}
+
+// Idea 4 — SDF curvature: Laplacian of the distance field, κ ≈ (Σ d(p±e·axis) − 6d)/e². >0 convex ridge, <0 cavity.
+fn sdfCurvature(p: vec3<f32>, d0: f32, time: f32, mouse_pos: vec2<f32>, click: f32, complexity: f32, entropy: f32, gravity: f32, bass: f32) -> f32 {
+    let e = 0.012;
+    let sum = map(p + vec3<f32>(e, 0.0, 0.0), time, mouse_pos, click, complexity, entropy, gravity, bass)
+            + map(p - vec3<f32>(e, 0.0, 0.0), time, mouse_pos, click, complexity, entropy, gravity, bass)
+            + map(p + vec3<f32>(0.0, e, 0.0), time, mouse_pos, click, complexity, entropy, gravity, bass)
+            + map(p - vec3<f32>(0.0, e, 0.0), time, mouse_pos, click, complexity, entropy, gravity, bass)
+            + map(p + vec3<f32>(0.0, 0.0, e), time, mouse_pos, click, complexity, entropy, gravity, bass)
+            + map(p - vec3<f32>(0.0, 0.0, e), time, mouse_pos, click, complexity, entropy, gravity, bass);
+    return (sum - 6.0 * d0) / (e * e);
+}
+
+// Inverse of the ACES fit below (display -> linear) so the C trail can be max-held in the linear domain.
+fn acesInverse(y_in: vec3<f32>) -> vec3<f32> {
+    let y = clamp(y_in, vec3<f32>(0.0), vec3<f32>(0.98));
+    let qa = 2.51 - 2.43 * y;
+    let qb = 0.03 - 0.59 * y;
+    let qc = -0.14 * y;
+    return (-qb + sqrt(max(qb * qb - 4.0 * qa * qc, vec3<f32>(0.0)))) / (2.0 * qa);
 }
 
 // Spectral Interference colors for bismuth look
@@ -156,8 +186,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             // Multiple layers of fractional noise control the thickness of an
             // imaginary thin-film layer; FFT shimmer animates the oxide film.
+            // Idea 3 — fold count as material: older fold generations carry a thicker oxide film
+            let foldGen = mapM(p, time, mouse_pos, click, complexity, entropy, gravity, bass).y;
             let interference_t0 = ndotv + sin(length(p) * 5.0 + time * entropy) * 0.2
-                               + fftShimmer * 0.15;
+                               + fftShimmer * 0.15 + foldGen * 0.3;
             // Idea 1 - hopper terraces: stair-step the film index along the growth axis
             let terraceCoord = (length(p.xy) + p.z * 0.6) * 5.0;
             let terraceStep = floor(terraceCoord) / 5.0;
@@ -184,7 +216,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let fresnel = pow(1.0 - ndotv, 3.0);
 
             // HDR specular from the key light (bloom-ready, exceeds 1.0)
-            let spec = pow(max(dot(reflect(-key_l, n), view_dir), 0.0), 32.0) * 2.2;
+            // Idea 3: young tips glossy, trunk satin (lobe 14..64, mid-generation ≈ the old 32)
+            let spec = pow(max(dot(reflect(-key_l, n), view_dir), 0.0), mix(14.0, 64.0, foldGen)) * 2.2;
 
             // Audio-Reactive Synapses (glowing nodes) — HDR emissive pulse
             let synapse_glow = (0.5 + 0.5 * sin(p.z * 10.0 - time * 5.0)) * (bass * 2.0 + mids);
@@ -207,6 +240,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 + glow_color;
             col *= 1.0 - terraceEdge * 0.45;
 
+            // Idea 4 — curvature wear: convex ridges rub to bright metal, cavities gather shadow
+            let kappa = sdfCurvature(p, d, time, mouse_pos, click, complexity, entropy, gravity, bass);
+            let wear = 1.0 - exp(-max(kappa, 0.0) * 0.04);
+            let cavity = 1.0 - exp(-max(-kappa, 0.0) * 0.04);
+            col += vec3<f32>(1.1, 0.95, 0.8) * wear * (0.12 + key_dif * 0.3) * shadowK;
+            col *= 1.0 - cavity * 0.35;
+
             // Idea 2 — recalescence flash: entropy-pulse crest heats high-curvature metal
             let recalescence = pow(max(sin(time * entropy * 4.0 + length(p) * 3.0), 0.0), 8.0);
             col += vec3<f32>(1.25, 0.52, 0.18) * recalescence * (0.22 + bass * 0.4) * (0.4 + fresnel);
@@ -228,7 +268,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Atmospheric near-miss aura visible even off-surface (bounded HDR)
-    col += vec3<f32>(0.35, 0.75, 0.85) * glowAccum * 0.35;
+    col += vec3<f32>(0.35, 0.75, 0.85) * glowAccum * 0.18;
 
     // Discrete click ripples ring the forge without mutating its raymarch state.
     var rippleGlow = 0.0;
@@ -244,7 +284,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     col += vec3<f32>(0.28, 0.85, 1.35) * rippleGlow * (0.7 + treble * 0.4);
 
-    let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+    // HEAD fix: C holds the ACES display frame; max-holding it against the linear col re-tone-mapped the
+    // trail every frame and converged to a flat grey wash. Decode it (and the exposure) first.
+    let prevDisplay = textureLoad(dataTextureC, pixel, 0).rgb;
+    let prev = acesInverse(prevDisplay) / (1.15 + mids * 0.25);
     col = max(col, prev * (0.74 + complexity * 0.12));
 
     // ACES filmic rolloff; exposure breathes gently with the mids
