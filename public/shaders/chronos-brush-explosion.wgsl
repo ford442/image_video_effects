@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  chronos-brush-explosion
 //  Category: advanced-hybrid
-//  Features: time-freeze, chromatic-explosion, mouse-driven, temporal
+//  Features: time-freeze, chromatic-explosion, mouse-driven, temporal, upgraded-rgba
 //  Complexity: High
 //  Chunks From: chronos-brush.wgsl, mouse-chromatic-explosion.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-16 — Generative & Cosmic Enhancer
+//  Upgraded: 2026-11-01
+//  Ideas: rim prism on the thawing edge; rim thaw after Decay
+//  A packing: raw freeze RGBA (rgb frozen photo, a coverage). ACES on writeTexture only.
 // ═══════════════════════════════════════════════════════════════════
 //  A time-freeze painting brush where frozen regions explode with
 //  chromatic dispersion. The frozen canvas becomes a prism: RGB
@@ -14,26 +15,17 @@
 //  launch chromatic shockwaves through the time-frozen canvas.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn frozenAt(sampleUV: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+  let maxTexel = max(vec2<i32>(i32(res.x) - 1, i32(res.y) - 1), vec2<i32>(0));
+  let texel = clamp(vec2<i32>(i32(sampleUV.x * res.x), i32(sampleUV.y * res.y)), vec2<i32>(0), maxTexel);
+  return textureLoad(dataTextureC, texel, 0);
+}
 
 fn prismDisplace(uv: vec2<f32>, mousePos: vec2<f32>, wavelengthOffset: f32, strength: f32) -> vec2<f32> {
     let toMouse = uv - mousePos;
@@ -63,30 +55,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseDown = u.zoom_config.w > 0.5;
 
     let currentFrame = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    var canvasState = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+    var canvasState = textureLoad(dataTextureC, coord, 0);
 
     let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(distVec);
 
-    if (mouseDown && dist < brushSize) {
-        let brushSoftness = smoothstep(brushSize, brushSize * 0.5, dist);
-        canvasState = mix(canvasState, vec4<f32>(currentFrame.rgb, 1.0), brushSoftness);
-    }
+    let brushSoftness = smoothstep(brushSize, brushSize * 0.5, dist) * select(0.0, 1.0, mouseDown) * step(dist, brushSize);
+    canvasState = mix(canvasState, vec4<f32>(currentFrame.rgb, 1.0), brushSoftness);
 
-    canvasState.a = canvasState.a * mix(0.9, 1.0, decay);
+    let heldAlpha = canvasState.a * mix(0.9, 1.0, decay);
+    // ── Idea 2: the rim thaws first. Decay still holds the stroke.
+    let rim = 1.0 - abs(clamp(heldAlpha, 0.0, 1.0) * 2.0 - 1.0);
+    canvasState = vec4<f32>(canvasState.rgb, heldAlpha * mix(1.0, 0.90, rim));
 
-    // Store updated state
     textureStore(dataTextureA, coord, canvasState);
 
     let mixFactor = smoothstep(0.0, 1.0, canvasState.a);
+    let edgeMask = rim;
 
-    // ═══ Chromatic Explosion on Frozen Edges ═══
-    // The more "frozen" (high alpha), the more prism dispersion
-    let edgeMask = 1.0 - abs(mixFactor * 2.0 - 1.0); // peaks at alpha=0.5
-
-    let rUV = prismDisplace(uv, mouse, -1.0 * dispersion, prismStrength * mixFactor);
-    let gUV = prismDisplace(uv, mouse, 0.0, prismStrength * mixFactor);
-    let bUV = prismDisplace(uv, mouse, 1.0 * dispersion, prismStrength * mixFactor);
+    // ── Idea 1: prism follows the thawing rim. The frozen interior keeps a smaller share.
+    let prismAmt = prismStrength * mix(mixFactor * 0.22, 1.0, rim);
+    let rUV = prismDisplace(uv, mouse, -1.0 * dispersion, prismAmt);
+    let gUV = prismDisplace(uv, mouse, 0.0, prismAmt);
+    let bUV = prismDisplace(uv, mouse, 1.0 * dispersion, prismAmt);
 
     // Ripple chromatic shockwaves through frozen canvas
     let rippleCount = min(u32(u.config.y), 50u);
@@ -110,17 +101,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
-    let intensity = 1.0 + f32(mouseDown) * 1.5;
+    let intensity = select(1.0, 2.5, mouseDown);
 
-    // Sample frozen canvas with chromatic displacement
-    let frozenR = textureSampleLevel(dataTextureC, u_sampler, clamp(rUV + rOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let frozenG = textureSampleLevel(dataTextureC, u_sampler, clamp(gUV + gOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-    let frozenB = textureSampleLevel(dataTextureC, u_sampler, clamp(bUV + bOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let frozenR = frozenAt(clamp(rUV + rOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), res).r;
+    let frozenG = frozenAt(clamp(gUV + gOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), res).g;
+    let frozenB = frozenAt(clamp(bUV + bOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), res).b;
 
-    // Sample live video
-    let liveR = textureSampleLevel(readTexture, u_sampler, rUV + rOffset * intensity, 0.0).r;
-    let liveG = textureSampleLevel(readTexture, u_sampler, gUV + gOffset * intensity, 0.0).g;
-    let liveB = textureSampleLevel(readTexture, u_sampler, bUV + bOffset * intensity, 0.0).b;
+    let liveR = textureSampleLevel(readTexture, u_sampler, clamp(rUV + rOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let liveG = textureSampleLevel(readTexture, u_sampler, clamp(gUV + gOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    let liveB = textureSampleLevel(readTexture, u_sampler, clamp(bUV + bOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
     var color = mix(vec3<f32>(liveR, liveG, liveB), vec3<f32>(frozenR, frozenG, frozenB), mixFactor);
 
@@ -137,7 +126,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let totalDisp = length(rUV - gUV) + length(gUV - bUV);
     let alpha = clamp(totalDisp * 5.0 * mixFactor + mixFactor * 0.5, 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+    let display = acesToneMap(max(color, vec3<f32>(0.0)));
+    textureStore(writeTexture, coord, vec4<f32>(display, alpha));
 
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(d, 0.0, 0.0, 0.0));

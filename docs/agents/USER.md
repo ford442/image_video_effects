@@ -23,6 +23,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-26: sent a liquid ten (quantum-foam, vortex, liquid-optimized, hybrid-particle-fluid, ink-bleed, ambient-liquid, magnetic-interference, lava-lamp-blobs, tornado-vortex, gen-reaction-diffusion). `gen-reaction-diffusion` is `gen_reaction_diffusion.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/`.
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
+  - 2026-11-01: sent an explosion/warp twelve (cmyk-halftone-explosion through warp-drive). `warp-drive` is `warp_drive.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/`.
 
 ## 2026-10-26 — liquid ten (10 shaders)
 
@@ -201,6 +202,25 @@ _Learn about the person you're helping. Update this as you go._
 - Floor: prelude include on all twelve; 16×16; exact C where C is read; A packing as documented; saved params exact.
 - Gates: Naga 12/12, extraBuffer, dead sliders (glitch-cathedral's three baseline sliders now read), catalogs, ledger.
 - Real-GPU visual QA: external.
+
+## 2026-11-01 — explosion and warp twelve (12 shaders)
+
+- IDs: cmyk-halftone-explosion, elastic-chromatic-explosion, interactive-rgb-split-explosion, cursor-aura-explosion, chronos-brush-explosion, circuit-breaker-explosion, mouse-chromatic-explosion, chromatic-shockwave, zoom-burst, hyper-space-jump, hyper-space-jump-blackbody, warp-drive (`warp_drive.wgsl`).
+- Per shader, the ideas actually added:
+  - cmyk-halftone-explosion: black plate holds registration (shorter prism and a softer shock); screen dots stretch into ellipses along the summed shock. CMYK plates and the blast radius kept.
+  - elastic-chromatic-explosion: spring velocity smears red with the motion and blue against it; the caustic desaturates the lagged colour before the highlight. Existing spring and lag offsets kept.
+  - interactive-rgb-split-explosion: radial split along the pointer; a lip on the falloff window multiplies the split. Tangential prism and the audio ring kept.
+  - cursor-aura-explosion: prism peaks on the limb; the core spends the photo toward a darker luma before the violet glow. Cosine ring kept.
+  - chronos-brush-explosion: prism follows the freeze rim; after Decay, alpha thaws faster on that rim. Freeze deposit and exact C kept. A stores raw freeze.
+  - circuit-breaker-explosion: trace glow falls with pointer distance; node flash is a Schmitt latch in A.a with a buzz only while the contact is held. Trace lattice kept.
+  - mouse-chromatic-explosion: radial push is a fraction of the same deflection; wavelength follows the prism angle. Single sample and tangential field kept.
+  - chromatic-shockwave: the summed wave becomes an N-wave; continuous-wave aberration is gated by the crest. Click shells, Beer–Lambert alpha, and the existing spring kept.
+  - zoom-burst: gaps between the eight speed-line spokes darken; far taps mix toward luma. Comets, dwell ghost, and the spring kept.
+  - hyper-space-jump: rim blue-shift on the streak; a short afterimage from exact C. Streak integral kept. Decay, chroma, and vignette sliders now reach the picture; defaults stay near the old look. Depth stays 0.
+  - hyper-space-jump-blackbody: Cauchy scales on the existing chrom offset; exact C returns cooler and redder before the vignette. Planck ramp kept. A stores pre-ACES colour.
+  - warp-drive: a wall spike at mid-integral, scaled by Core Glow; Doppler follows the ray (bow blue, wake red). Stars, oil-slick packet, and the diagnostic A write kept.
+- Floor: prelude include on the ten pasted headers; 16×16; exact C where C is read; A packing as documented; saved params exact. No new springs.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated, ledger recorded for these twelve. Real-GPU visual QA: external.
 
 ## Context
 

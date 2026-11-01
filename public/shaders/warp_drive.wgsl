@@ -1,7 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Warp Drive — Batch 56
-//  Streak packets, Doppler aurora, held warp aim, analytic stars, click fronts
+//  Warp Drive
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: Alcubierre wall at the sign change; bow-blue wake-red Doppler along the streak
+//  A packing: diagnostic (dist, warpFactor, dopplerMag, alpha)
 // ═══════════════════════════════════════════════════════════════════
+//  Streak packets, analytic stars, and click fronts stay. The bubble wall
+//  is the existing Alcubierre sign change. Doppler follows the streak.
+
 
 #include "_prelude.wgsl"
 
@@ -74,10 +82,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let star = smoothstep(0.97, 0.995, starN.x) * starN.y * starPhase * (0.5 + bass * 0.5);
     let streak = star * pow(max(0.0, 1.0 - t), 2.0) * coreGlow;
 
-    let doppler = select(vec3<f32>(1.0 + warpFactor * 0.08, 1.0 - warpFactor * 0.02, 0.85 - warpFactor * 0.05),
-                         vec3<f32>(0.7 - warpFactor * 0.03, 0.9, 1.0 + warpFactor * 0.06), dirSafe.x > 0.0);
+    // ── Idea 1: bubble wall at the existing sign change (t = 0.5).
+    let wall = exp(-abs(t - 0.5) * 36.0) * coreGlow;
+    // ── Idea 2: bow (small t) blue, wake (large t) red. Same mix, radial axis.
+    let bow = 1.0 - t;
+    let wakeTint = vec3<f32>(1.0 + warpFactor * 0.06, 0.82, 0.48);
+    let bowTint = vec3<f32>(0.55, 0.88, 1.0 + warpFactor * 0.05);
+    let doppler = mix(wakeTint, bowTint, bow);
     let w = mix(1.0, 0.12, t);
-    accum = accum + (vec3<f32>(r, g, b) + vec3<f32>(streak)) * doppler * w;
+    let tap = vec3<f32>(r, g, b) + vec3<f32>(streak) + vec3<f32>(0.82, 0.90, 1.05) * wall;
+    accum = accum + tap * doppler * w;
     weightSum = weightSum + w;
     dopplerSum = dopplerSum + length(doppler - vec3<f32>(1.0)) * w;
   }

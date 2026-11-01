@@ -201,16 +201,43 @@
       ]
     },
     "chronos-brush-explosion": {
-      "hash": "63cb0aeef7080073",
-      "history": []
+      "hash": "d6852d4fbb9b90a8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "d6852d4fbb9b90a8",
+          "prev_hash": "63cb0aeef7080073",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "circuit-breaker-explosion": {
-      "hash": "f3f8cbf8e492bb3b",
-      "history": []
+      "hash": "e4984815603c471f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "e4984815603c471f",
+          "prev_hash": "f3f8cbf8e492bb3b",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "cmyk-halftone-explosion": {
-      "hash": "71684d74be20a11c",
-      "history": []
+      "hash": "2089677c84fbadc3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "2089677c84fbadc3",
+          "prev_hash": "71684d74be20a11c",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "cosmic-jellyfish-coupled": {
       "hash": "1ae29b93575957e8",
@@ -238,8 +265,17 @@
       ]
     },
     "cursor-aura-explosion": {
-      "hash": "9b8e7fc36448bf64",
-      "history": []
+      "hash": "657b9cbb99ee3406",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "657b9cbb99ee3406",
+          "prev_hash": "9b8e7fc36448bf64",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "cyber-lattice-bilateral": {
       "hash": "3bfe8469993074bd",
@@ -361,8 +397,17 @@
       "history": []
     },
     "elastic-chromatic-explosion": {
-      "hash": "7a3b76ee3af8e88f",
-      "history": []
+      "hash": "091a07f317ae49f2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "091a07f317ae49f2",
+          "prev_hash": "7a3b76ee3af8e88f",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "encaustic-wax-blackbody": {
       "hash": "a50f16026e7ffc15",
@@ -632,8 +677,17 @@
       "history": []
     },
     "hyper-space-jump-blackbody": {
-      "hash": "c0b1e84b62f281c7",
-      "history": []
+      "hash": "cba0a149ca423248",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "cba0a149ca423248",
+          "prev_hash": "c0b1e84b62f281c7",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "hyper-tensor-fluid-coupled": {
       "hash": "3275b604a365f6fd",
@@ -712,8 +766,17 @@
       "history": []
     },
     "interactive-rgb-split-explosion": {
-      "hash": "6099fc18020f4e62",
-      "history": []
+      "hash": "2b141e6a9ac1cbb4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "2b141e6a9ac1cbb4",
+          "prev_hash": "6099fc18020f4e62",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "kimi-flock-symphony-em": {
       "hash": "79f5e53898515a05",
@@ -2250,8 +2313,17 @@
       ]
     },
     "zoom-burst": {
-      "hash": "11b38bef7eb42040",
-      "history": []
+      "hash": "a52709c487c3bc44",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "a52709c487c3bc44",
+          "prev_hash": "11b38bef7eb42040",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "4d-projection-dream-weavers": {
       "hash": "5df9937fc9ed448b",
@@ -9415,8 +9487,17 @@
       ]
     },
     "chromatic-shockwave": {
-      "hash": "8ab26aed93ac0816",
-      "history": []
+      "hash": "dca6d2322b714d35",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "dca6d2322b714d35",
+          "prev_hash": "8ab26aed93ac0816",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "chronos-brush": {
       "hash": "e9049b1d263767b8",
@@ -10448,8 +10529,17 @@
       ]
     },
     "mouse-chromatic-explosion": {
-      "hash": "8d9af987e9821a81",
-      "history": []
+      "hash": "96c71118042c6599",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "96c71118042c6599",
+          "prev_hash": "8d9af987e9821a81",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "mouse-electromagnetic-aurora": {
       "hash": "c5f1e0eb850b05bc",
@@ -13218,8 +13308,17 @@
       "history": []
     },
     "hyper-space-jump": {
-      "hash": "a9f4375b41d7524a",
-      "history": []
+      "hash": "854e54b2be05fd98",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "854e54b2be05fd98",
+          "prev_hash": "a9f4375b41d7524a",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "interactive-fresnel": {
       "hash": "be306ee5ac426081",
@@ -13374,8 +13473,17 @@
       ]
     },
     "warp-drive": {
-      "hash": "e6bab6bf6eaea0db",
-      "history": []
+      "hash": "457f2e68b3c919fd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:21:17.338Z",
+          "hash": "457f2e68b3c919fd",
+          "prev_hash": "e6bab6bf6eaea0db",
+          "commit": "ba02e523",
+          "note": "2026-11-01 explosion/warp twelve — docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/"
+        }
+      ]
     },
     "zipper-reveal": {
       "hash": "d4a434baa241cb55",

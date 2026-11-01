@@ -2,7 +2,7 @@
   "id": "chronos-brush-explosion",
   "name": "Chronos Brush Explosion",
   "url": "shaders/chronos-brush-explosion.wgsl",
-  "description": "Chronos Brush Explosion",
+  "description": "A held brush freezes the photo. The thawing rim splits into a prism and melts before the middle of the stroke.",
   "tags": [
     "time-freeze",
     "chromatic-explosion",
@@ -13,7 +13,8 @@
     "time-freeze",
     "chromatic-explosion",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -54,6 +55,46 @@
     }
   ],
   "x-meta": {
-    "seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "upgrade": {
+      "params": [
+        {
+          "id": "brush_size",
+          "name": "Brush Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.x"
+        },
+        {
+          "id": "decay",
+          "name": "Decay",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.y"
+        },
+        {
+          "id": "prism_strength",
+          "name": "Prism Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.z"
+        },
+        {
+          "id": "dispersion",
+          "name": "Dispersion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01,
+          "mapping": "zoom_params.w"
+        }
+      ]
+    }
   }
 }
