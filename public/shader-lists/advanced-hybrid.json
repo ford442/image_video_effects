@@ -9139,7 +9139,9 @@
       "spherical-harmonics",
       "SH-lighting",
       "depth-aware",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

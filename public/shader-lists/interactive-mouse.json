@@ -4057,7 +4057,7 @@
     "name": "Film Burn",
     "category": "interactive-mouse",
     "url": "shaders/interactive-film-burn.wgsl",
-    "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. A remains [hole, fire, smoke, alpha].",
+    "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. The hole lingers in A.r and the fire cools in A.g. A remains [hole, fire, smoke, alpha].",
     "params": [
       {
         "id": "radius",
@@ -5145,7 +5145,7 @@
     "id": "light-leaks",
     "name": "Light Leaks",
     "url": "shaders/light-leaks.wgsl",
-    "description": "Simulates film light leaks. Move the mouse to change the light source angle.",
+    "description": "Simulates film light leaks. Move the mouse to choose which frame edge the rebate leak comes from.",
     "params": [
       {
         "id": "intensity",
@@ -5178,7 +5178,9 @@
     ],
     "features": [
       "mouse-driven",
-      "overlay"
+      "overlay",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

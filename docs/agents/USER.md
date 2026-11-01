@@ -22,6 +22,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-25: sent Grok high batch-02 (gen-cymatic-plasma-mandalas through gen-crystalline-mandala-bloom, 15 shaders, 151–197 lines). Notes in `docs/agents/swarm-outputs/grok-2026-10-25-batch-02/`.
   - 2026-10-26: sent a liquid ten (quantum-foam, vortex, liquid-optimized, hybrid-particle-fluid, ink-bleed, ambient-liquid, magnetic-interference, lava-lamp-blobs, tornado-vortex, gen-reaction-diffusion). `gen-reaction-diffusion` is `gen_reaction_diffusion.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/`.
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
+  - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
 
 ## 2026-10-26 — liquid ten (10 shaders)
@@ -200,6 +201,26 @@ _Learn about the person you're helping. Update this as you go._
   - glitch-cathedral: lead cames at the cell size; pointer channel split and row sort. DCT and rose kept. Cell Size 20 still full quant.
 - Floor: prelude include on all twelve; 16×16; exact C where C is read; A packing as documented; saved params exact.
 - Gates: Naga 12/12, extraBuffer, dead sliders (glitch-cathedral's three baseline sliders now read), catalogs, ledger.
+- Real-GPU visual QA: external.
+
+## 2026-10-31 — light / optical twelve (12 shaders)
+
+- IDs: divine-light, neon-light, volumetric-god-rays, light-leaks, kimi-spotlight (`kimi_spotlight.wgsl`), alpha-aurora-bands, aurora_borealis, pp-bloom, velvet-scatter-bloom, neon-pulse-edge, interactive-film-burn, spec-spherical-harmonics-light.
+- Per shader, the ideas actually added:
+  - divine-light: phase-warmed scatter; aerial veiling. HG march kept.
+  - neon-light: bore and sheath; cooling phosphor. Blackbody and raw phosphor packing kept.
+  - volumetric-god-rays: dust Beer–Lambert (§12.2F); Cauchy split along the march (§12.2F). Sun disk and luma occluder kept.
+  - light-leaks: rebate streak; dye-layer fringe; halation (§12.2A). Mouse blob, two drifters, and screen blend restored — the on-disk file was a halftone that ignored the named params.
+  - kimi-spotlight: soft inverse-square inside the gate (§12.2F); Airy rings on the hotspot (§12.2F). Spring and click rings kept.
+  - alpha-aurora-bands: lower-border brightening; Rayleigh limb (§12.2F). Altitude emission lines kept.
+  - aurora_borealis: equatorward proton arc; star occultation. Crest corona and bass envelope in A.a kept.
+  - pp-bloom: energy-conserving composite (§12.2F); Cauchy fringe on the streak (§12.2F). Hue-preserving extract kept.
+  - velvet-scatter-bloom: spectral subsurface (§12.2F Beer–Lambert); nap trough. Nap sheen and crush kept.
+  - neon-pulse-edge: edge afterglow in A.r; traveling pulse along the Sobel tangent. HSV rim kept.
+  - interactive-film-burn: emulsion blister; rising smoke; scar and cooling ember from C. Mask packing and spring kept.
+  - spec-spherical-harmonics-light: cosine-lobe irradiance; specular from L1; Fresnel–Schlick (§12.2F). Nine-band eval kept.
+- Floor: prelude include on the eleven pasted headers; 16×16; exact C; A packing as documented; saved params exact.
+- Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 - Real-GPU visual QA: external.
 
 ## Context
