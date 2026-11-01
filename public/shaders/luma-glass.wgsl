@@ -217,7 +217,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   let shimmer = vec3<f32>(0.2, 0.5 + treble * 0.1, 0.8) * specular * (0.5 + bass * 0.5);
   let shimmerBack = vec3<f32>(0.2, 0.5 + treble * 0.1, 0.8) * specBack * (0.28 + bass * 0.2);
-  var color = spectralColor * tint + shimmer + shimmerBack + fresnel * 0.06 + envRefl * 0.6 + caustic + sss;
+  var color = spectralColor * tint + shimmer + shimmerBack + fresnel * 0.06 + envRefl * 0.45 + caustic + sss;
 
   // Exact dataTextureC persistence
   let prevC = textureLoad(dataTextureC, pixel, 0).rgb;

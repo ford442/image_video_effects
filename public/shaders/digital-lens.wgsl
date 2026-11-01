@@ -204,13 +204,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // corners, smearing along the radius (sagittal) before across it. Taps widen with r^2 and with the
   // lens strength |k1|; on-axis the offsets vanish, so the centre keeps HEAD's sharpness.
   let tanUV = vec2<f32>(-radialUV.y, radialUV.x);
-  let astig = r * r * (0.006 + abs(k1) * 0.012);
+  let astig = r * r * (0.012 + abs(k1) * 0.02);
+  let gRGB = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).rgb;
   let sagP = textureSampleLevel(readTexture, u_sampler, clamp(gUV + radialUV * astig, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   let sagM = textureSampleLevel(readTexture, u_sampler, clamp(gUV - radialUV * astig, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   let tanP = textureSampleLevel(readTexture, u_sampler, clamp(gUV + tanUV * astig * 0.4, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   let tanM = textureSampleLevel(readTexture, u_sampler, clamp(gUV - tanUV * astig * 0.4, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-  let astigBlur = (sagP + sagM) * 0.35 + (tanP + tanM) * 0.075 + color * 0.15;
-  color = mix(color, astigBlur, clamp(r * r * 3.0, 0.0, 0.85));
+  // Second difference around the green tap, added to the per-channel colour so the R/B fringe survives.
+  let astigDelta = (sagP + sagM - 2.0 * gRGB) * 0.35 + (tanP + tanM - 2.0 * gRGB) * 0.075;
+  color += astigDelta * clamp(r * r * 3.0, 0.0, 0.85) * 1.6;
 
   // ── Idea 2: internal-reflection ghosts. Light bouncing between lens elements re-images bright
   // pixels on the far side of the optical axis (here the sprung focus point), shrunk and tinted per
@@ -227,7 +229,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hot = smoothstep(0.55, 0.95, luminance(gSample));
     ghosts += gSample * ghostTint[gi] * hot * inFrame;
   }
-  color += ghosts * axisFade * (0.12 + p2 * 0.5) * (1.0 + treble * 0.5 + bassEnv * 0.4);
+  color += ghosts * axisFade * (0.10 + p2 * 0.3) * (1.0 + treble * 0.5 + bassEnv * 0.4);
 
   // ── Film grain + treble sparkle ──────────────────────────────────
   let grainPhase = hash22(uv01 * 800.0).x * TAU;

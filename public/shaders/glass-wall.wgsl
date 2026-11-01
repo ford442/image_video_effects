@@ -196,7 +196,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lightDir = normalize(vec3<f32>(0.5, 0.5, 1.0));
   let viewDir = vec3<f32>(0.0, 0.0, 1.0);
   let halfDir = normalize(lightDir + viewDir);
-  let spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+  // Exponent 32 -> 160: with the rescued (flatter) normal the old lobe covered the whole frame as a veil.
+  let spec = pow(max(dot(normal, halfDir), 0.0), 160.0);
   
   // Fresnel
   let cosTheta = max(dot(viewDir, normal), 0.0);

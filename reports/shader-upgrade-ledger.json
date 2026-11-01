@@ -1789,7 +1789,7 @@
       ]
     },
     "cyber-lens": {
-      "hash": "17df5cabe3e5a0bb",
+      "hash": "96c32a90f237b58b",
       "history": [
         {
           "event": "upgraded",
@@ -1798,6 +1798,14 @@
           "prev_hash": "343798918f3cb489",
           "commit": "8f1ed184",
           "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "96c32a90f237b58b",
+          "prev_hash": "17df5cabe3e5a0bb",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
         }
       ]
     },
@@ -2054,7 +2062,7 @@
       ]
     },
     "luma-glass": {
-      "hash": "6968bad51db37c30",
+      "hash": "25d37222f8c932f6",
       "history": [
         {
           "event": "upgraded",
@@ -2063,6 +2071,14 @@
           "prev_hash": "b9e78c6d3950e12e",
           "commit": "8f1ed184",
           "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "25d37222f8c932f6",
+          "prev_hash": "6968bad51db37c30",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
         }
       ]
     },
@@ -8922,7 +8938,7 @@
       "history": []
     },
     "digital-lens": {
-      "hash": "f1403a8ea74f80aa",
+      "hash": "d13479db0633c29a",
       "history": [
         {
           "event": "upgraded",
@@ -8931,6 +8947,14 @@
           "prev_hash": "ff3d45207dc47f4d",
           "commit": "8f1ed184",
           "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "d13479db0633c29a",
+          "prev_hash": "f1403a8ea74f80aa",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
         }
       ]
     },
@@ -9063,7 +9087,7 @@
       "history": []
     },
     "hex-lens": {
-      "hash": "d2c53888eec4984e",
+      "hash": "4d5b806eb90e84e8",
       "history": [
         {
           "event": "upgraded",
@@ -9072,6 +9096,14 @@
           "prev_hash": "a064d901a911a19b",
           "commit": "8f1ed184",
           "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "4d5b806eb90e84e8",
+          "prev_hash": "d2c53888eec4984e",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
         }
       ]
     },
@@ -9971,7 +10003,7 @@
       "history": []
     },
     "glass-wall": {
-      "hash": "0c980fe5135fb7ca",
+      "hash": "d39c4fe506033045",
       "history": [
         {
           "event": "upgraded",
@@ -9980,6 +10012,14 @@
           "prev_hash": "3af6521499e61712",
           "commit": "8f1ed184",
           "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "d39c4fe506033045",
+          "prev_hash": "0c980fe5135fb7ca",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
         }
       ]
     },

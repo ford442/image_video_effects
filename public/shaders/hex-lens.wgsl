@@ -218,8 +218,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let toUV = vec2<f32>(1.0 / aspect, 1.0) / scale;
   let domeAmt = 0.35 * influence;
   let dOffG = rayG * toUV * domeAmt;
-  let dOffR = (rayG + (domeRefract(q, nR) - rayG) * 3.0) * toUV * domeAmt;
-  let dOffB = (rayG + (domeRefract(q, nB) - rayG) * 3.0) * toUV * domeAmt;
+  let dOffR = (rayG + (domeRefract(q, nR) - rayG) * 6.0) * toUV * domeAmt;
+  let dOffB = (rayG + (domeRefract(q, nB) - rayG) * 6.0) * toUV * domeAmt;
   var finalColor = chromaticDispersion(refractedUV, centerUV, chromaticStrength, time, dOffR, dOffG, dOffB);
 
   // ── Idea 2: lenslet irradiance. A thin lens gathers light to its axis: bright focal hot-spot at the

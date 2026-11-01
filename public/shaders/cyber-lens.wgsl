@@ -5,8 +5,8 @@
 //            hud-overlay, rolling-shutter, telemetry-rings, semantic-alpha, ACES
 //  Complexity: High
 //  Upgraded: 2026-11-01
-//  Ideas: spring-velocity lead vector with lock-on ring that closes as the cursor settles (range ticks spin while seeking); Sobel contour trace of the scene inside the lens disc
-//  A packing: display RGBA (ACES) + semantic alpha
+//  Ideas: cursor-velocity lead vector (track state in A corner texels) with lock-on ring that closes as the cursor settles (range ticks spin while seeking); Sobel contour trace of the scene inside the lens disc
+//  A packing: display RGBA (ACES) + semantic alpha; texels (0,0)/(1,0) hold cursor-track state [mouse,time]/[velocity] with sentinel w=0.7371
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -146,10 +146,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ── Idea 2: contour trace. Inside the lens disc the sensor outlines what it sees: central-difference
   // gradient of the shuttered image, thresholded into thin cyan contours that fade with the lens edge.
-  let ct = vec2<f32>(1.5) / dims;
+  let ct = vec2<f32>(2.0) / dims;
   let cGx = lumaAt(shutterUV + vec2<f32>(ct.x, 0.0)) - lumaAt(shutterUV - vec2<f32>(ct.x, 0.0));
   let cGy = lumaAt(shutterUV + vec2<f32>(0.0, ct.y)) - lumaAt(shutterUV - vec2<f32>(0.0, ct.y));
-  let contour = smoothstep(0.07, 0.28, length(vec2<f32>(cGx, cGy))) * lensMask;
+  let contour = smoothstep(0.035, 0.18, length(vec2<f32>(cGx, cGy))) * lensMask;
 
   // Primary HUD grid
   let gridUV = hudUV1 * 48.0;
@@ -160,10 +160,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Scan lines
   let scan = 0.85 + 0.15 * sin(uv.y * dims.y * 0.5 + timeWarp * 9.0);
 
-  // ── Idea 1: lead vector + lock-on. The reticle already rides the sprung cursor, so the spring
-  // velocity is the track estimate: a fast cursor opens the ring (no lock) and leaves a lead tick
-  // pointing where it is heading; a settled cursor closes the ring to targetSize (idle = HEAD).
-  let sVel = select(vec2<f32>(0.0), vec2<f32>(extraBuffer[135], extraBuffer[136]), hasState) * vec2<f32>(aspect, 1.0);
+  // ── Idea 1: lead vector + lock-on. Cursor track state cannot live in extraBuffer[133..138] (the host
+  // re-uploads those slots every frame), so the previous cursor sample rides texels (0,0) and (1,0) of A
+  // (read back as C): (0,0) = [mouse.xy, time, sentinel], (1,0) = [smoothed velocity.xy, 0, sentinel].
+  // A fast cursor opens the ring (no lock) and leaves a lead tick pointing where it is heading; a settled
+  // cursor closes the ring to targetSize (idle = HEAD). Those two display pixels are sacrificed.
+  let trackA = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let trackB = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+  let trackOk = abs(trackA.w - 0.7371) < 0.0001 && abs(trackB.w - 0.7371) < 0.0001;
+  let trackDt = time - trackA.z;
+  let trackLive = trackOk && trackDt > 0.0005 && trackDt < 0.25;
+  let instVel = (rawMouse - trackA.xy) / max(trackDt, 0.0005);
+  let sVelNew = select(vec2<f32>(0.0), mix(trackB.xy, instVel, 0.25), trackLive);
+  let sVel = sVelNew * vec2<f32>(aspect, 1.0);
   let sSpeed = length(sVel);
   let lock = exp(-sSpeed * 3.0);
   let lockSize = targetSize * (1.0 + (1.0 - lock) * 0.5);
@@ -244,7 +253,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor += vec3<f32>(1.0, 0.55, 0.25) * lockPing * (0.5 + audio.x * 0.8);
 
   // Phosphor persistence (exact dataTextureC load)
-  let prevFrame = textureLoad(dataTextureC, coord, 0);
+  let isTrackTexel = (coord.y == 0 && coord.x < 2);
+  let prevFrame = select(textureLoad(dataTextureC, coord, 0), vec4<f32>(0.0), isTrackTexel);
   finalColor = max(finalColor, prevFrame.rgb * (0.70 + glitchIntensity * 0.14));
 
   finalColor = acesToneMap(finalColor);
@@ -260,6 +270,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let outColor = vec4<f32>(finalColor, finalAlpha);
   textureStore(writeTexture, coord, outColor);
-  textureStore(dataTextureA, coord, outColor);
+  var aOut = outColor;
+  if (coord.y == 0 && coord.x == 0) { aOut = vec4<f32>(rawMouse, time, 0.7371); }
+  if (coord.y == 0 && coord.x == 1) { aOut = vec4<f32>(sVelNew, 0.0, 0.7371); }
+  textureStore(dataTextureA, coord, aOut);
   textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }

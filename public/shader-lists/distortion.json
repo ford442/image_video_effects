@@ -309,7 +309,7 @@
     "name": "Cyber Lens",
     "category": "distortion",
     "url": "shaders/cyber-lens.wgsl",
-    "description": "Targeting HUD with rolling-shutter scan skew and per-band telemetry rings. The reticle reads the sprung cursor's velocity: a lead vector points where it is heading and the lock ring closes from open to tight as the cursor settles, with range ticks that spin while it seeks. Inside the lens disc a gradient contour trace outlines what the sensor sees. Click lock pings and phosphor persistence; display in A, masks in B.",
+    "description": "Targeting HUD with rolling-shutter scan skew and per-band telemetry rings. The reticle tracks the cursor's velocity: a lead vector points where it is heading and the lock ring closes from open to tight as the cursor settles, with range ticks that spin while it seeks. Inside the lens disc a gradient contour trace outlines what the sensor sees. Click lock pings and phosphor persistence; cursor track state rides two corner texels of A.",
     "features": [
       "mouse-driven",
       "audio-reactive",
