@@ -24,6 +24,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
   - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
+  - 2026-11-01: sent a thermal / blackbody twelve (thermal-vision through gamma-ray-burst-blackbody). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/`.
 
 ## 2026-10-26 — liquid ten (10 shaders)
 
@@ -221,6 +222,26 @@ _Learn about the person you're helping. Update this as you go._
   - spec-spherical-harmonics-light: cosine-lobe irradiance; specular from L1; Fresnel–Schlick (§12.2F). Nine-band eval kept.
 - Floor: prelude include on the eleven pasted headers; 16×16; exact C; A packing as documented; saved params exact.
 - Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
+- Real-GPU visual QA: external.
+
+## 2026-11-01 — thermal / blackbody twelve (12 shaders)
+
+- IDs: thermal-vision, thermal-vision-blackbody, thermal-touch-blackbody, spec-blackbody-thermal, sim-heat-haze-blackbody, heat-haze-gpt52, honey-melt-blackbody, melting-oil-blackbody, warp-drive-blackbody, energy-shield-blackbody, gamma-ray-burst, gamma-ray-burst-blackbody.
+- Per shader, the ideas actually added:
+  - thermal-vision: FLIR isotherms; detail unsharp of the 5-tap blur (§12.2A). False-color ramp kept. No pointer.
+  - thermal-vision-blackbody: narcissus cold spot; well overflow on the glow. NUC bars and hot-object lag kept.
+  - thermal-touch-blackbody: dwell from same-pixel C.a; scorch under the iron. Halo and ember streak kept.
+  - spec-blackbody-thermal: edges cool faster; energy-conserving glow (§12.2F). Wien fringe and ember persistence kept.
+  - sim-heat-haze-blackbody: binomial heat kernel; temperature rises off the ground. Schlieren and plume shear kept.
+  - heat-haze-gpt52: ground-line glitter; Beer–Lambert veil (§12.2F). Inferior mirage and the held pool kept.
+  - honey-melt-blackbody: drip neck from stored speed; wax crust on cool thick honey. Hex solver kept.
+  - melting-oil-blackbody: Marangoni toward cooler oil; contact meniscus. Downhill flow kept.
+  - warp-drive-blackbody: quiescent pocket inside the wall; wake afterglow from C.a. Bow/wake Doppler kept.
+  - energy-shield-blackbody: neighbor-cell conduction; cooling blackbody tail. Whole-cell strikes kept.
+  - gamma-ray-burst: synchrotron cooling through the cycle; jet break past 6/jetSpread. The non-compiling IQ clock-ring was removed. Spring kept.
+  - gamma-ray-burst-blackbody: blast-wave shell; red cooling afterglow. Bipolar lobes kept.
+- Floor: prelude include on the eleven pasted headers; 16×16; exact C where C is read; A packing as documented; saved params exact. gamma-ray-burst left the naga known-failure list (ratchet 21).
+- Gates: Naga 12/12, precommit 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 - Real-GPU visual QA: external.
 
 ## Context

@@ -5292,7 +5292,6 @@
     "features": [
       "upgraded-rgba",
       "color-remap",
-      "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "aces-tone-map",
