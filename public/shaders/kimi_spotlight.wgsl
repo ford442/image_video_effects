@@ -4,32 +4,23 @@
 //  Features: mouse-driven, interactive, spotlight, reveal, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-06-28 (alpha) / 2026-07-30 (Interactivist pass:
-//            spring-damped beam glide, click light rings, honest depth
-//            bump, per-bin treble rim flicker)
-//  By: Agent 1a - Alpha Channel Specialist / Swarm B17 Interactivist
+//  Upgraded: 2026-06-28 (alpha) / 2026-07-30 (Interactivist pass) / 2026-10-31
+//  Ideas: spring-damped beam; click light rings; soft inverse-square inside the gate (§12.2F); Airy rings on the hotspot (§12.2F)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn airy(x: f32) -> f32 {
+  let xs = clamp(abs(x), 1e-4, 8.0);
+  let j1 = xs * (0.5 - xs * xs * (0.0625 - xs * xs * (0.0026042 - xs * xs * 0.0000543)));
+  let v = 2.0 * j1 / xs;
+  return select(0.0, v * v, abs(x) <= 8.0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -99,6 +90,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var spotlight = 1.0 - smoothstep(spotSize - spotSoftness, spotSize + spotSoftness, dist);
 
+    // ── Idea 1: soft inverse-square inside the gate (§12.2F) ────────
+    // The smoothstep radius is still spot size. The axis is brighter.
+    let coreR = max(spotSize * 0.55, 0.02);
+    let invSq = 1.0 / ((dist * dist) / (coreR * coreR) + 1.0);
+    let spotBody = spotlight * mix(0.62, 1.0, invSq);
+
     // Click pulse stays applied AFTER the spring (hand-tuned, verbatim).
     let clickPulse = mouseDown * sin(time * 10.0) * 0.1;
     spotlight = clamp(min(1.0, spotlight + clickPulse), 0.0, 1.0);
@@ -130,7 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Rings locally lift the desaturated darkness (flash-reveal), while the
     // desaturate-outside / saturate-inside mix structure stays intact.
-    let reveal = clamp(spotlight + ringGlow * 0.85, 0.0, 1.0);
+    let reveal = clamp(spotBody + clickPulse + ringGlow * 0.85, 0.0, 1.0);
     var color = mix(desaturated * edgeDarkness, saturated, reveal);
     color = color + vec3<f32>(0.9, 0.95, 1.0) * ringGlow * 0.15;
 
@@ -141,18 +138,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let beam = smoothstep(beamWidth, 0.0, beamDist) * 0.2 * spotlight * rimFlicker;
     color = color + vec3<f32>(0.9, 0.95, 1.0) * beam;
 
-    // Hotspot term (hand-tuned, verbatim).
+    // Hotspot term (hand-tuned, verbatim) plus Airy rings at the focus.
     let hotspot = smoothstep(spotSize * 0.3, 0.0, dist) * 0.3;
+    // ── Idea 2: Airy rings on the hotspot (§12.2F) ──────────────────
+    let airyX = dist / max(spotSize * 0.12, 0.004);
+    let airyRings = airy(airyX) * spotlight;
     color = color + vec3<f32>(hotspot);
+    color = color + vec3<f32>(0.90, 0.95, 1.0) * airyRings * 0.22;
 
     let noise = fract(sin(dot(uv * max(time, 0.001), vec2<f32>(12.9898, 78.233))) * 43758.5453);
     color = color + (noise - 0.5) * 0.02 * (1.0 - spotlight);
 
-    color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
+    let alpha = clamp(original.a * (spotlight * 0.7 + hotspot * 0.2 + beam * 0.1 + airyRings * 0.08 + 0.15 + treble * 0.05), 0.0, 1.0);
 
-    let alpha = clamp(original.a * (spotlight * 0.7 + hotspot * 0.2 + beam * 0.1 + 0.15 + treble * 0.05), 0.0, 1.0);
-
-    let finalRGBA = vec4<f32>(color, alpha);
+    let finalRGBA = vec4<f32>(aces(max(color, vec3<f32>(0.0))), alpha);
 
     // Honest depth: real bump inside the spot instead of pure passthrough.
     let depthIn = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

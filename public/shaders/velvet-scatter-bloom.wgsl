@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-08
-//  Ideas: anisotropic nap sheen; held-pointer nap crush
+//  Upgraded: 2026-09-08, 2026-10-31
+//  Ideas: anisotropic nap sheen; held-pointer nap crush; spectral subsurface (§12.2F Beer-Lambert); nap trough
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -44,16 +44,23 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
 fn velvetScatter(col: vec3<f32>, uv: vec2<f32>, radius: f32, depth: f32) -> vec3<f32> {
     let texel = 1.0 / u.config.zw;
     var scatter = vec3<f32>(0.0);
+    var wSum = vec3<f32>(0.0);
     let samples = 5;
     for (var i = -samples; i <= samples; i = i + 2) {
         for (var j = -samples; j <= samples; j = j + 2) {
             let off = vec2<f32>(f32(i), f32(j)) * texel * radius * (0.6 + depth * 0.8);
-            let s = textureSampleLevel(readTexture, u_sampler, uv + off, 0.0).rgb;
-            let w = exp(-length(vec2<f32>(f32(i), f32(j))) * 0.25);
-            scatter += s * w;
+            let s = textureSampleLevel(readTexture, u_sampler, clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+            // ── Idea 1: spectral subsurface (§12.2F Beer–Lambert) ────
+            // Red leaves the pile farther than blue. Same taps, different weights.
+            let rad = length(vec2<f32>(f32(i), f32(j)));
+            let wR = exp(-rad * 0.16);
+            let wG = exp(-rad * 0.25);
+            let wB = exp(-rad * 0.42);
+            scatter += vec3<f32>(s.r * wR, s.g * wG, s.b * wB);
+            wSum += vec3<f32>(wR, wG, wB);
         }
     }
-    return scatter / f32((samples * 2 / 2 + 1) * (samples * 2 / 2 + 1));
+    return scatter / max(wSum, vec3<f32>(1e-4));
 }
 
 fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
@@ -112,7 +119,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var velvet = mix(input.rgb, scattered, darkMask * subsurface * 0.85);
     velvet = mix(velvet, input.rgb, crush * 0.45);
     let napDir = vec2<f32>(-sin(lightAngle), cos(lightAngle));
-    let napSheen = pow(max(dot(mouseDir, napDir), 0.0), 6.0) * (1.0 - darkMask * 0.3) * (1.0 - crush);
+    let napDot = max(dot(mouseDir, napDir), 0.0);
+    let napSheen = pow(napDot, 6.0) * (1.0 - darkMask * 0.3) * (1.0 - crush);
+    // ── Idea 2: nap trough ──────────────────────────────────────────
+    // Velvet goes dark just off the sheen peak. Same nap direction.
+    let napTrough = smoothstep(0.2, 0.45, napDot) * (1.0 - smoothstep(0.55, 0.85, napDot));
+    velvet *= 1.0 - napTrough * 0.28 * (1.0 - crush);
     velvet += vec3<f32>(0.95, 0.90, 0.85) * napSheen * 0.22;
 
     // Add living subsurface glow
