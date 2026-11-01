@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-11
-//  Ideas: Henyey-Greenstein forward-scatter phase along march; depth-occluded shaft extinction
+//  Upgraded: 2026-09-11, 2026-10-31
+//  Ideas: Henyey-Greenstein forward-scatter phase along march; depth-occluded shaft extinction; phase-warmed scatter; aerial veiling
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -108,6 +89,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var currentUV = uv + rippleOffset;
   var rayAccum = vec3<f32>(0.0);
   var currentIllum = 1.0;
+  var phaseWeight = 0.0;
+  var phaseNorm = 0.0;
 
   // Jitter for dapple / noise in atmospheric dust
   let dapple = (hash12(uv * resolution.xy + time * 5.0) - 0.5) * 0.08;
@@ -133,12 +116,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let moteNoise = 0.75 + 0.25 * sin(motePos.x * 3.14 + sin(motePos.y * 2.5));
 
     rayAccum += sampleCol * gate * currentIllum * moteNoise * phase * (1.0 - occlusion);
+    // ── Idea 1: phase-warmed scatter ────────────────────────────────
+    // Forward HG lobes run amber; side-scatter stays the pale gold.
+    phaseWeight += phase * gate;
+    phaseNorm += gate;
     currentIllum *= rayDecay * (1.0 - occlusion * 0.35);
   }
 
   let goldenTint = vec3<f32>(1.0, 0.92, 0.74);
+  let forward = clamp(phaseWeight / max(phaseNorm, 0.001) / 8.0, 0.0, 1.0);
+  let shaftTint = mix(goldenTint, vec3<f32>(1.0, 0.72, 0.38), forward);
   let heldBoost = select(1.0, 1.45, held);
-  let godRays = (rayAccum / f32(numSamples)) * goldenTint * rayIntensity * heldBoost * 3.5;
+  let godRays = (rayAccum / f32(numSamples)) * shaftTint * rayIntensity * heldBoost * 3.5;
 
   // Sun halo glow at light source
   let halo = exp(-distToLight * distToLight * 25.0) * rayIntensity * (0.6 + bass * 0.4);
@@ -150,10 +139,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Exact previous frame history load for smooth volumetric accumulation
   let history = historyAt(uv - rippleOffset * 0.5, resolution);
 
-  var hdr = sourceColor.rgb + godRays + haloColor + vec3<f32>(sparkle + rippleBurst);
-  hdr += history.rgb * 0.065;
-
   let rayLuma = dot(godRays, vec3<f32>(0.2126, 0.7152, 0.0722));
+  // ── Idea 2: aerial veiling ────────────────────────────────────────
+  // Shaft light washes the photo under it: lifted, less saturated.
+  let veil = clamp(rayLuma * 0.45, 0.0, 0.5);
+  let srcL = dot(sourceColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let veiled = mix(sourceColor.rgb, vec3<f32>(srcL * 0.72) + shaftTint * 0.18, veil);
+  var hdr = veiled + godRays + haloColor + vec3<f32>(sparkle + rippleBurst);
+  hdr += history.rgb * 0.065;
   let finalAlpha = clamp(sourceColor.a * 0.5 + rayLuma * 0.5 + halo * 0.3 + rippleBurst * 0.1, 0.0, 1.0);
 
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), finalAlpha);

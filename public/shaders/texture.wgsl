@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Procedural Texture Analyzer v2 - RGBA, depth-aware, audio-reactive
+//  Procedural Texture Analyzer
 //  Category: image
-//  Features: upgraded-rgba, depth-aware, audio-reactive, temporal
-//  Upgraded: 2026-05-02 (Tier-1 integration pass)
-//  Creative additions: golden-ratio vignette, voronoi glitch on treble
+//  Features: audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-05-02, 2026-11-01
+//  Ideas: golden-ratio vignette; voronoi glitch; structure-tensor gain (§12.2A); anti-halo envelope (§12.2A)
+//  A packing: ACES display RGBA (C read with textureLoad as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -57,6 +59,7 @@ fn safeSampleRGBA(uv: vec2<f32>) -> vec4<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let coord = vec2<i32>(global_id.xy);
     let time = u.config.x;
@@ -93,15 +96,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Laplacian edge detection (sum of neighbors - 8*center)
     let laplacian = (n + s + e_ + w + nw + ne + sw + se) - 8.0 * center;
     let edgeBoost = edgeStrength * 1.5;
-    var color = center + laplacian * edgeBoost;
+
+    // ── Idea 1: structure-tensor gain (§12.2A) — sharpen real edges, quiet flats ──
+    let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+    let ex = (dot(ne, lumaW) + 2.0 * dot(e_, lumaW) + dot(se, lumaW))
+      - (dot(nw, lumaW) + 2.0 * dot(w, lumaW) + dot(sw, lumaW));
+    let ey = (dot(sw, lumaW) + 2.0 * dot(s, lumaW) + dot(se, lumaW))
+      - (dot(nw, lumaW) + 2.0 * dot(n, lumaW) + dot(ne, lumaW));
+    let jxx = ex * ex;
+    let jyy = ey * ey;
+    let jxy = ex * ey;
+    let tr = jxx + jyy;
+    let detj = jxx * jyy - jxy * jxy;
+    let disc = sqrt(max(tr * tr * 0.25 - detj, 0.0));
+    let lam1 = tr * 0.5 + disc;
+    let lam2 = max(tr * 0.5 - disc, 0.0);
+    let coh = (lam1 - lam2) / max(lam1 + lam2, 1e-4);
+    let edgeGain = mix(0.55, 1.35, coh);
+
+    var color = center + laplacian * edgeBoost * edgeGain;
 
     // Unsharp mask: blur via box average, then add high-pass
     let blur = (n + s + e_ + w + nw + ne + sw + se + center) / 9.0;
     let highPass = center - blur;
-    color = color + highPass * (unsharpAmount * 1.2);
+    color = color + highPass * (unsharpAmount * 1.2) * edgeGain;
+
+    // ── Idea 2: anti-halo envelope (§12.2A) — stay inside the 3×3 range ──
+    let nmin = min(center, min(n, min(s, min(e_, min(w, min(nw, min(ne, min(sw, se))))))));
+    let nmax = max(center, max(n, max(s, max(e_, max(w, max(nw, max(ne, max(sw, se))))))));
+    let haloR = 0.02 + unsharpAmount * 0.05;
+    color = clamp(color, max(nmin - vec3<f32>(haloR), vec3<f32>(0.0)), nmax + vec3<f32>(haloR));
 
     // Temporal filtering with previous frame from dataTextureC
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
     let blendT = clamp(temporalBlend * 0.85, 0.0, 0.85);
     color = mix(color, prev, blendT);
 
@@ -133,15 +160,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Creative addition: voronoi glitch on treble spikes ───
     let glitchAmt = smoothstep(0.65, 0.95, treble) * audioReactivity;
-    if (glitchAmt > 0.001) {
-        let vd = voronoiDist(uv + vec2<f32>(time * 0.05), 12.0 + bass * 8.0);
-        // Snap color to its voronoi cell average direction
-        let glitchColor = mix(color, vec3<f32>(1.0 - vd) * (color + 0.15), 0.6);
-        color = mix(color, glitchColor, glitchAmt * 0.5);
-    }
+    let vd = voronoiDist(uv + vec2<f32>(time * 0.05), 12.0 + bass * 8.0);
+    let glitchColor = mix(color, vec3<f32>(1.0 - vd) * (color + 0.15), 0.6);
+    color = mix(color, glitchColor, glitchAmt * 0.5);
 
     // Tone mapping
-    color = acesToneMapping(color);
+    color = acesToneMapping(max(color, vec3<f32>(0.0)));
 
     // Calculated alpha (never hardcoded)
     let outLuma = dot(color, vec3<f32>(0.299, 0.587, 0.114));

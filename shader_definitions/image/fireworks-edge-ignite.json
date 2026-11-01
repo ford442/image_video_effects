@@ -2,7 +2,7 @@
   "id": "fireworks-edge-ignite",
   "name": "4th of July \u2014 Edge Ignite",
   "url": "shaders/fireworks-edge-ignite.wgsl",
-  "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor.",
+  "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor. A hot bead travels each contour and leaves a charred lip behind it.",
   "tags": [
     "fireworks",
     "edge",

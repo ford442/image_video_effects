@@ -625,7 +625,7 @@
     "id": "audio-voronoi-displacement",
     "name": "Audio Voronoi Displacement",
     "url": "shaders/audio-voronoi-displacement.wgsl",
-    "description": "Audio-reactive Voronoi cells that displace the image. Image fractured into cells that pulse with music.",
+    "description": "Voronoi cells that slide with audio and shove the photo toward the nearest site. Cell walls stay visible in silence and brighten with mids. Bass and the displacement slider scale the bulge. Pointer gravity kept.",
     "features": [
       "mouse-driven",
       "advanced-hybrid",
@@ -634,7 +634,9 @@
       "displacement-mapping",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1002,12 +1004,14 @@
     "id": "bio-touch-em",
     "name": "Bio Touch EM",
     "url": "shaders/bio-touch-em.wgsl",
-    "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors. Click ripples spawn orbiting secondary charges.",
+    "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors, click ripples spawn orbiting secondary charges, and strong fields open polar electroporation pores with refractory memory.",
     "features": [
       "mouse-driven",
       "field-simulation",
       "organic",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1045,7 +1049,9 @@
       "electromagnetic",
       "glow",
       "interactive"
-    ]
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA (ion-channel refractory memory).",
+    "updated": true
   },
   {
     "id": "bioluminescent-blackbody",
@@ -1348,12 +1354,14 @@
       "emergent",
       "interactive",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2312,7 +2320,7 @@
     "id": "chronos-brush-explosion",
     "name": "Chronos Brush Explosion",
     "url": "shaders/chronos-brush-explosion.wgsl",
-    "description": "Chronos Brush Explosion",
+    "description": "A held brush freezes the photo. The thawing rim splits into a prism and melts before the middle of the stroke.",
     "tags": [
       "time-freeze",
       "chromatic-explosion",
@@ -2323,7 +2331,8 @@
       "time-freeze",
       "chromatic-explosion",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2368,12 +2377,13 @@
     "id": "circuit-breaker-explosion",
     "name": "Circuit Breaker Explosion",
     "url": "shaders/circuit-breaker-explosion.wgsl",
-    "description": "Circuit board edges chromatically separated near the mouse prism. Overload flashes become spectral rainbows. Click ripples launch chromatic shockwaves through the circuit pattern.",
+    "description": "Circuit traces and photo edges overload near the pointer. Traces dim with distance, and node contacts latch instead of flickering for the whole disk.",
     "features": [
       "mouse-driven",
       "chromatic",
       "circuit-simulation",
-      "glitch"
+      "glitch",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2417,12 +2427,13 @@
     "id": "cmyk-halftone-explosion",
     "name": "CMYK Halftone Explosion",
     "url": "shaders/cmyk-halftone-explosion.wgsl",
-    "description": "CMYK halftone dots spectrally separated near the mouse via prism displacement. Click ripples launch chromatic shockwaves through the halftone pattern.",
+    "description": "CMYK halftone of the photo. Colour plates fly on the prism and on click shocks; the black plate stays nearer registration, and dots stretch along the shock.",
     "features": [
       "mouse-driven",
       "chromatic",
       "prism",
-      "print-simulation"
+      "print-simulation",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2712,7 +2723,7 @@
     "id": "cursor-aura-explosion",
     "name": "Cursor Aura Explosion",
     "url": "shaders/cursor-aura-explosion.wgsl",
-    "description": "Cursor Aura Explosion",
+    "description": "A round cursor aura that splits RGB most strongly at the rim, and darkens the photo under the core before the glow is added.",
     "tags": [
       "mouse-driven",
       "chromatic-aberration",
@@ -2723,7 +2734,8 @@
       "mouse-driven",
       "chromatic-aberration",
       "prism",
-      "glow"
+      "glow",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2838,7 +2850,7 @@
     "id": "cyber-organic-ecosystem",
     "name": "Cyber Organic Ecosystem",
     "url": "shaders/cyber-organic-ecosystem.wgsl",
-    "description": "Cyber Organic Ecosystem",
+    "description": "Scans the image to reveal a living multi-species RGBA ecosystem beneath. The scanner beam inoculates fresh life and nutrients, organic FBM warp bends veins and refracts the reveal rim, and mouse nurtures the colony.",
     "tags": [
       "mouse-driven",
       "temporal",
@@ -2849,7 +2861,8 @@
       "mouse-driven",
       "temporal",
       "rgba-state-machine",
-      "organic"
+      "organic",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2888,7 +2901,9 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = s1, s2, resourceLevel, toxin. ACES display only.",
+    "updated": true
   },
   {
     "id": "cyber-rain-em",
@@ -5806,7 +5821,7 @@
     "id": "gen-xeno-botanical-ecosystem",
     "name": "Xeno Botanical Ecosystem",
     "url": "shaders/gen-xeno-botanical-ecosystem.wgsl",
-    "description": "Botanical flora patterns host a living RGBA ecosystem simulation. Species colonize branch structures, competing for photosynthetic resources while toxins accumulate in dense growth regions.",
+    "description": "Botanical flora patterns host a living RGBA ecosystem simulation. Species colonize branch structures with vascular sap transport, fruiting sporangia nodes, and toxin leaf chlorosis.",
     "tags": [
       "botanical",
       "ecosystem",
@@ -5820,7 +5835,8 @@
       "mouse-driven",
       "temporal",
       "audio-reactive",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5855,7 +5871,9 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = s1, s2, resourceVal, toxin. ACES display only.",
+    "updated": true
   },
   {
     "id": "glass-bead-curtain-iridescence",
@@ -6662,7 +6680,11 @@
       "hex-grid",
       "blackbody-radiation",
       "viscous-material",
-      "subsurface"
+      "subsurface",
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7433,7 +7455,7 @@
     "id": "interactive-rgb-split-explosion",
     "name": "Interactive Rgb Split Explosion",
     "url": "shaders/interactive-rgb-split-explosion.wgsl",
-    "description": "Interactive Rgb Split Explosion",
+    "description": "Falloff-gated RGB split around the pointer, with a radial split along the same vector and a brighter lip at the edge of the falloff.",
     "tags": [
       "mouse-driven",
       "chromatic",
@@ -7882,7 +7904,11 @@
       "melting-oil",
       "blackbody-radiation",
       "HDR",
-      "gradient-flow"
+      "gradient-flow",
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9133,7 +9159,9 @@
       "spherical-harmonics",
       "SH-lighting",
       "depth-aware",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

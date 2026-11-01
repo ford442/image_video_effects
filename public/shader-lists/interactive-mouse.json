@@ -49,7 +49,8 @@
     "name": "ASCII Decode",
     "url": "shaders/ascii-decode.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "description": "Renders the view as a digital ASCII matrix. Mouse movement acts as a decoding lens.",
     "params": [
@@ -4054,7 +4055,7 @@
     "name": "Film Burn",
     "category": "interactive-mouse",
     "url": "shaders/interactive-film-burn.wgsl",
-    "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. A remains [hole, fire, smoke, alpha].",
+    "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. The hole lingers in A.r and the fire cools in A.g. A remains [hole, fire, smoke, alpha].",
     "params": [
       {
         "id": "radius",
@@ -5142,7 +5143,7 @@
     "id": "light-leaks",
     "name": "Light Leaks",
     "url": "shaders/light-leaks.wgsl",
-    "description": "Simulates film light leaks. Move the mouse to change the light source angle.",
+    "description": "Simulates film light leaks. Move the mouse to choose which frame edge the rebate leak comes from.",
     "params": [
       {
         "id": "intensity",
@@ -5175,7 +5176,9 @@
     ],
     "features": [
       "mouse-driven",
-      "overlay"
+      "overlay",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -6271,11 +6274,12 @@
     "name": "Moiré Interference",
     "url": "shaders/moire-interference.wgsl",
     "icon": "wifi",
-    "description": "Generates dynamic interference patterns between the center and the mouse position.",
+    "description": "Interference between a centre emitter and a sprung pointer. The beat between the two carriers gates the displacement and darkens the fringe nulls.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
-      "audio-reactive"
+      "audio-reactive",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -6480,7 +6484,8 @@
     "features": [
       "mouse-driven",
       "chromatic-aberration",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "description": "The mouse drives a smooth displacement field with spectral tinting via mix and alpha translucency blending. Click ripples launch shockwaves. Audio-reactive bass pulses the entire field.",
     "params": [
@@ -8287,6 +8292,7 @@
       "stateful-simulation",
       "exact-history",
       "aces-tone-map",
+      "upgraded-rgba",
       "three-band-audio",
       "held-pointer",
       "click-reactive",
@@ -11280,7 +11286,7 @@
     "id": "sonic-distortion",
     "name": "Sonic Distortion",
     "url": "shaders/sonic-distortion.wgsl",
-    "description": "Superellipse-masked sonic distortion with Lissajous wave interference, FBM domain warping, rose curve modulation, and alpha-ghosted echo trails.",
+    "description": "Superellipse-masked sonic distortion with Lissajous sources, a rose amplitude, and echo trails. The harmonic beat of the primary partials brightens inside the mask, and the rose's angular gaps darken the photo. Bass swells the amplitude slider.",
     "params": [
       {
         "id": "freq",
@@ -11318,7 +11324,10 @@
       "lissajous",
       "fbm",
       "temporal",
-      "echo-trails"
+      "echo-trails",
+      "audio-reactive",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -11484,7 +11493,7 @@
     "id": "spectral-waves",
     "name": "Luma Ripple",
     "url": "shaders/spectral-waves.wgsl",
-    "description": "Premultiplied luminance waves from a guarded sprung origin, with bounded click trains, three-band and read-only FFT caustics, exact-C persistence, and authoritative A display history.",
+    "description": "Luminance-weighted radial ripples from a sprung pointer, with click trains and caustic persistence. Chromatic split follows the ripple slope, and a local luma contrast boosts the amplitude on edges.",
     "params": [
       {
         "id": "frequency",
@@ -12346,7 +12355,7 @@
     "id": "vertical-slice-wave",
     "name": "Vertical Slice Wave",
     "url": "shaders/vertical-slice-wave.wgsl",
-    "description": "Layered vertical strip waves with seam runners, held amplitude/twist, click fronts, rainbow interference, and state-only spring/audio feedback.",
+    "description": "Vertical strip waves with seam runners and click fronts. Strip edges lag toward the neighbour's phase, and the stored spring speed throws the slices. Feedback A stays raw state.",
     "params": [
       {
         "id": "strips",

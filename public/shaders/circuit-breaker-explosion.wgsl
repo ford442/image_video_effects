@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Circuit Breaker Explosion
 //  Category: advanced-hybrid
-//  Features: mouse-driven, chromatic, circuit-simulation, glitch
+//  Features: mouse-driven, chromatic, circuit-simulation, glitch, upgraded-rgba
 //  Complexity: High
-//  Chunks From: circuit-breaker.wgsl, mouse-chromatic-explosion.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-9
+//  Upgraded: 2026-11-01
+//  Ideas: voltage drop along the trace; contact latch from C.a
+//  A packing: A.rgb ACES display; A.a contact latch
 // ═══════════════════════════════════════════════════════════════════
 //  Circuit board edges and grid lines are chromatically separated
 //  near the mouse prism. Overload flashes become spectral rainbows.
@@ -13,26 +13,12 @@
 //  circuit pattern and scatter channels.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=GridScale, y=Intensity, z=Jitter, w=PrismStrength
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=GridScale, y=Intensity, z=Jitter, w=PrismStrength
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash21(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -117,26 +103,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Circuit nodes
   let node = step(0.9, hash21(gridID));
 
-  // Jitter based on influence
-  var sampleUV = uv;
-  if (influence > 0.1) {
-    let jitter = (vec2<f32>(hash21(uv + time), hash21(uv + time + 10.0)) - 0.5) * jitterStrength * influence * 0.1;
-    sampleUV = uv + jitter;
-  }
+  let jitter = (vec2<f32>(hash21(uv + time), hash21(uv + time + 10.0)) - 0.5) * jitterStrength * influence * 0.1 * step(0.1, influence);
+  let sampleUV = uv + jitter;
+  let coord = vec2<i32>(global_id.xy);
+  let prevLatch = textureLoad(dataTextureC, coord, 0).a;
 
-  // Sample each channel with prism displacement + jitter
-  let rSample = textureSampleLevel(readTexture, u_sampler, rUV + rOffset * prismIntensity + (sampleUV - uv), 0.0);
-  let gSample = textureSampleLevel(readTexture, u_sampler, gUV + gOffset * prismIntensity + (sampleUV - uv), 0.0);
-  let bSample = textureSampleLevel(readTexture, u_sampler, bUV + bOffset * prismIntensity + (sampleUV - uv), 0.0);
+  let rSample = textureSampleLevel(readTexture, u_sampler, clamp(rUV + rOffset * prismIntensity + (sampleUV - uv), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let gSample = textureSampleLevel(readTexture, u_sampler, clamp(gUV + gOffset * prismIntensity + (sampleUV - uv), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let bSample = textureSampleLevel(readTexture, u_sampler, clamp(bUV + bOffset * prismIntensity + (sampleUV - uv), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
   var color = vec3<f32>(rSample.r, gSample.g, bSample.b);
 
   // Edge detection on chromatically-separated samples
   let offset = 1.0 / resolution;
-  let left = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(offset.x, 0.0), 0.0);
-  let right = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(offset.x, 0.0), 0.0);
-  let up = textureSampleLevel(readTexture, u_sampler, sampleUV - vec2<f32>(0.0, offset.y), 0.0);
-  let down = textureSampleLevel(readTexture, u_sampler, sampleUV + vec2<f32>(0.0, offset.y), 0.0);
+  let left = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - vec2<f32>(offset.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let right = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(offset.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let up = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - vec2<f32>(0.0, offset.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let down = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + vec2<f32>(0.0, offset.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
   let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
   let lumaL = dot(left.rgb, vec3<f32>(0.299, 0.587, 0.114));
@@ -161,16 +144,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   let overloadColor = vec3<f32>(1.0, 0.9, 0.7);
 
-  if (isEdge > 0.5 || isGrid > 0.5) {
-    let glow = mix(spectralColor, overloadColor, influence);
-    finalColor = mix(finalColor, glow, 0.5 + influence * 0.5);
-  }
+  // ── Idea 1: voltage drop. Overload shallows the falloff along the trace.
+  let drop = exp(-mouseDist * mix(7.0, 1.6, clamp(intensity, 0.0, 1.0)));
+  let trace = max(isEdge, isGrid);
+  let traceGlow = mix(spectralColor, overloadColor, influence) * mix(0.25, 1.0, drop);
+  finalColor = mix(finalColor, traceGlow, trace * (0.5 + influence * 0.5));
 
-  // Spectral overload flash on nodes
-  if (influence > 0.5 && node > 0.5) {
-    let flash = sin(time * 20.0 + hash21(gridID) * 6.28) * 0.5 + 0.5;
-    finalColor = mix(finalColor, spectralColor, flash * influence);
-  }
+  // ── Idea 2: contact latch (§12.2B). Holds between the thresholds, releases outside.
+  let drive = influence * node;
+  var latch = step(0.5, prevLatch);
+  latch = select(latch, 1.0, drive > 0.72);
+  latch = select(latch, 0.0, drive < 0.28);
+  let chatter = latch * (0.72 + 0.28 * sin(time * 14.0 + hash21(gridID) * 6.28));
+  finalColor = mix(finalColor, spectralColor, chatter * step(0.5, node));
 
   // Scanline effect
   let scanline = sin(uv.y * resolution.y * 0.5) * 0.1;
@@ -182,11 +168,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Alpha = total chromatic displacement magnitude
   let totalDisp = length(rUV - gUV) + length(gUV - bUV) + length(rOffset) + length(gOffset) + length(bOffset);
-  let alpha = clamp(totalDisp * 5.0 + 0.9, 0.0, 1.0);
+  let alpha = clamp(totalDisp * 3.0 + trace * 0.45 + latch * 0.25, 0.0, 1.0);
+  let display = acesToneMap(max(finalColor, vec3<f32>(0.0)));
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+  textureStore(writeTexture, coord, vec4<f32>(display, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(display, latch));
 
-  // Pass through depth
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

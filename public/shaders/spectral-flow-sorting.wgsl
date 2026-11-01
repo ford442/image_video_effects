@@ -3,31 +3,12 @@
 //  Category: distortion
 //  Features: advanced-hybrid, pixel-sorting, optical-flow, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: exact-C Lucas-Kanade; Asendorf close along the flow
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: exact-C Lucas-Kanade; Asendorf close along the flow; aperture gate; flow barb
 //  A packing: raw previous RGB (LK history). ACES on writeTexture only.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn luma3(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
@@ -46,7 +27,8 @@ fn loadC(uv: vec2<f32>, dims: vec2<i32>) -> vec3<f32> {
 }
 
 // Idea 1 — exact-C Lucas-Kanade (no filtering sampler on history).
-fn calculateOpticalFlow(uv: vec2<f32>, pixel: vec2<f32>, dims: vec2<i32>, current: vec3<f32>) -> vec2<f32> {
+// Returns flow.xy and .z = gradient confidence (aperture gate).
+fn calculateOpticalFlow(uv: vec2<f32>, pixel: vec2<f32>, dims: vec2<i32>, current: vec3<f32>) -> vec3<f32> {
   let currLuma = luma3(current);
   let prevLuma = luma3(loadC(uv, dims));
   let right = luma3(loadC(uv + vec2<f32>(pixel.x, 0.0), dims));
@@ -56,7 +38,9 @@ fn calculateOpticalFlow(uv: vec2<f32>, pixel: vec2<f32>, dims: vec2<i32>, curren
   let dx = (right - left) * 0.5;
   let dy = (up - down) * 0.5;
   let dt = currLuma - prevLuma;
-  return vec2<f32>(dx, dy) * dt * 10.0;
+  let grad = length(vec2<f32>(dx, dy));
+  let conf = grad / (grad + 0.02);
+  return vec3<f32>(vec2<f32>(dx, dy) * dt * 10.0, conf);
 }
 
 fn analyzeFrequency(uv: vec2<f32>, pixel: vec2<f32>) -> f32 {
@@ -129,7 +113,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let mouseDir = normalize(uv - mousePos + vec2<f32>(0.001));
   let cursorFlow = mouseDir * mouseGravity * 3.0 * (1.0 + select(0.0, 3.0, isMouseDown));
-  let flow = calculateOpticalFlow(uv, pixel, dims, baseColor.rgb) * flowSensitivity * (1.0 + bass * 0.35) + cursorFlow + vec2<f32>(clickPulse);
+  // ── Idea 3: aperture gate ──────────────────────────────────────
+  // Flat regions have no reliable LK gradient. Confidence scales only
+  // the optical term. Cursor flow and the click pulse stay.
+  let lk = calculateOpticalFlow(uv, pixel, dims, baseColor.rgb);
+  let flow = lk.xy * flowSensitivity * (1.0 + bass * 0.35) * lk.z + cursorFlow + vec2<f32>(clickPulse);
   let flowMag = length(flow);
   let flowDir = select(vec2<f32>(0.0), flow / max(flowMag, 0.001), flowMag > 0.001);
 
@@ -148,6 +136,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
   color = mix(color, flowColor, clamp(flowMag * 0.3, 0.0, 1.0));
 
+  // ── Idea 4: flow barb ──────────────────────────────────────────
+  // A short tick across the flow where the vector is strong and the
+  // pixel is inside the sort threshold. Frequency Influence still
+  // owns the false-colour mix above.
+  let perpFlow = vec2<f32>(-flowDir.y, flowDir.x);
+  let barbPhase = fract(dot(uv * resolution, perpFlow) / 7.0);
+  let barb = smoothstep(0.86, 1.0, barbPhase) * smoothstep(0.15, 0.6, flowMag) * f32(luma3(sortedColor) > sortThreshold);
+  color = color * (1.0 - 0.18 * barb);
+
   var clickFront = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -160,7 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let alpha = clamp(mix(0.8, 1.0, flowMag * 0.5) + mouseGravity * 0.2 + f32(luma3(sortedColor) > sortThreshold) * 0.1, 0.0, 1.0);
+  let alpha = clamp(mix(0.8, 1.0, flowMag * 0.5) + mouseGravity * 0.2 + f32(luma3(sortedColor) > sortThreshold) * 0.1 + barb * 0.1 + lk.z * 0.05, 0.0, 1.0);
   let display = acesToneMap(color);
 
   // Raw previous RGB in A for next LK — do not ACES stored fields.

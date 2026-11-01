@@ -1,26 +1,15 @@
-// Spectral Waves — Batch 58D caustic-history upgrade
-// A owns premultiplied display RGBA history; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Spectral Waves
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-01
+//  Ideas: slope-weighted chromatic split; contrast-weighted amplitude
+//  A packing: premultiplied ACES display RGBA (C is that history)
+// ═══════════════════════════════════════════════════════════════════
+// Batch 58D caustic-history kept: spring origin, click trains, C persistence.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -84,25 +73,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dist = length(p - center);
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let sourceLuma = luma(source.rgb);
+  // ── Idea 2: contrast-weighted amplitude
+  // Amplitude already follows luma. A flat sky and an edge should not
+  // share that gain: a one-texel horizontal difference boosts the ripple.
+  let texel = vec2<f32>(1.5 / max(res.x, 1.0), 0.0);
+  let lumaR = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv + texel, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+  let lumaL = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv - texel, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+  let contrast = clamp(abs(lumaR - lumaL) * 5.0, 0.0, 1.0);
+  let contrastGain = mix(0.7, 1.4, contrast);
   let wave = sin(dist * frequency - time * speed);
   let echo = sin(dist * frequency * 0.47 + time * speed * 0.72 + bass * 3.0);
-  var displacement = (wave * 0.78 + echo * 0.22) * maxAmplitude * (0.35 + sourceLuma * 0.95);
+  var displacement = (wave * 0.78 + echo * 0.22) * maxAmplitude * (0.35 + sourceLuma * 0.95) * contrastGain;
   var clickEnergy = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
-  for (var i = 0u; i < rippleCount; i++) {
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
     if (age < 0.0 || age > 2.0) { continue; }
     let rd = length(p - ripple.xy * aspectVec);
     let fade = exp(-age * 1.5) * (1.0 - smoothstep(1.6, 2.0, age));
     let train = sin(rd * frequency * 0.8 - age * 8.0) * fade * exp(-rd * 3.0);
-    displacement += train * maxAmplitude * (0.35 + sourceLuma * 0.95);
+    displacement += train * maxAmplitude * (0.35 + sourceLuma * 0.95) * contrastGain;
     clickEnergy += abs(train);
   }
 
   let safeDir = ((p - center) / max(dist, 0.001)) / aspectVec;
-  let uvR = clamp(uv - safeDir * displacement * (1.0 + aberration), vec2<f32>(0.0), vec2<f32>(1.0));
+  // ── Idea 1: slope-weighted split
+  // aberration stays the amount. Fringes follow |cos(phase)|, the slope
+  // of the radial ripple, so crests stay registered and slopes split.
+  let slope = abs(cos(dist * frequency - time * speed));
+  let split = aberration * (0.3 + 0.7 * slope);
+  let uvR = clamp(uv - safeDir * displacement * (1.0 + split), vec2<f32>(0.0), vec2<f32>(1.0));
   let uvG = clamp(uv - safeDir * displacement, vec2<f32>(0.0), vec2<f32>(1.0));
-  let uvB = clamp(uv - safeDir * displacement * (1.0 - aberration), vec2<f32>(0.0), vec2<f32>(1.0));
+  let uvB = clamp(uv - safeDir * displacement * (1.0 - split), vec2<f32>(0.0), vec2<f32>(1.0));
   var hdr = vec3<f32>(textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
                       textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
                       textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b);

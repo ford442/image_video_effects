@@ -3,31 +3,12 @@
 //  Category: post-processing
 //  Features: audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: hue-preserving bright extract; horizontal anamorphic streak
+//  Upgraded: 2026-09-06, 2026-10-31
+//  Ideas: hue-preserving bright extract; horizontal anamorphic streak; energy-conserving composite (§12.2F); Cauchy fringe on the streak (§12.2F)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const QUALITY_LOW: i32 = 4;
 const QUALITY_MED: i32 = 8;
@@ -39,6 +20,12 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 
 fn luma(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+fn cauchyScale(bDisp: f32) -> vec3<f32> {
+  let lam2 = vec3<f32>(0.4225, 0.3025, 0.2025);
+  let n = 1.0 + bDisp / lam2;
+  return n / max(n.y, 1e-4);
 }
 
 fn extractBright(color: vec3<f32>, threshold: f32) -> vec3<f32> {
@@ -124,15 +111,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let t = f32(s) / f32(streakTaps);
     let w = exp(-t * t * 4.0);
     let sx = invRes.x * t * radius * (1.5 + anamorphic * 4.0);
-    streak += sampleBright(uv + vec2<f32>(sx, 0.0), threshold) * w;
-    streak += sampleBright(uv - vec2<f32>(sx, 0.0), threshold) * w;
+    // ── Idea 4: Cauchy fringe on the horizontal streak (§12.2F) ────
+    let scales = cauchyScale(0.04 + 0.22 * anamorphic);
+    let sxR = sx * scales.x;
+    let sxB = sx * scales.z;
+    let plusR = sampleBright(uv + vec2<f32>(sxR, 0.0), threshold);
+    let plusG = sampleBright(uv + vec2<f32>(sx, 0.0), threshold);
+    let plusB = sampleBright(uv + vec2<f32>(sxB, 0.0), threshold);
+    let minusR = sampleBright(uv - vec2<f32>(sxR, 0.0), threshold);
+    let minusG = sampleBright(uv - vec2<f32>(sx, 0.0), threshold);
+    let minusB = sampleBright(uv - vec2<f32>(sxB, 0.0), threshold);
+    streak += vec3<f32>(plusR.r + minusR.r, plusG.g + minusG.g, plusB.b + minusB.b) * w;
   }
   streak = streak / (0.35 + 2.0 * 6.0 * 0.4);
   let streakMix = anamorphic * intensity;
 
-  var hdr = original.rgb + blurred * intensity * 2.0 + streak * streakMix * 1.4;
   let lensDirt = 1.0 - length(uv - 0.5) * 0.5;
-  hdr += blurred * intensity * 0.3 * lensDirt;
+  let spread = blurred * intensity * 2.0 + streak * streakMix * 1.4 + blurred * intensity * 0.3 * lensDirt;
+  // ── Idea 3: energy-conserving composite (§12.2F) ────────────────
+  // Highlights that bloom give some of that light up instead of doubling.
+  let take = clamp(luma(spread) * 0.28, 0.0, 0.45);
+  var hdr = original.rgb * (1.0 - take) + spread;
 
   let display = acesToneMap(hdr);
   let bloomLuma = luma(blurred + streak * streakMix);

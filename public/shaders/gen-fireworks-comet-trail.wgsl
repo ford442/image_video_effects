@@ -4,8 +4,8 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-11
-//  Ideas: ion tail along -velocity vs dust gravity-sag trail; coma halo around the head; disconnection kink; nucleus jets
+//  Upgraded: 2026-11-01
+//  Ideas: ion tail along -velocity vs dust gravity-sag trail; coma halo around the head; disconnection kink; nucleus jets; bow shock; dust-tail sag
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -100,12 +100,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let jetAlong = dot(dHead, ionDir);
     let jet = exp(-abs(jetAlong - 0.035) * 55.0) * exp(-perpIon * 80.0) * step(0.0, jetAlong) * step(jetAlong, 0.07);
     col += vec3<f32>(1.0, 0.72, 0.32) * jet * fade * energy * 0.8;
+    // ── Idea 1: bow shock — a thin arc ahead of the head, wider than the jets
+    let ahead = dot(dHead, ionDir);
+    let bowR = length(dHead - ionDir * 0.055);
+    let bow = exp(-abs(bowR - 0.048) * 55.0) * smoothstep(0.12, 0.02, abs(ahead - 0.055)) * step(0.0, ahead);
+    col += vec3<f32>(0.72, 0.86, 1.0) * bow * fade * energy * 0.42;
 
     let trailSteps = i32(8.0 + trailLen*14.0);
     for (var t = 0; t < trailSteps; t = t + 1) {
       let tf = f32(t)/f32(trailSteps);
       let trailAge = max(0.0, age - tf*1.5);
-      let tPos = sparkPos(vec2<f32>(bx, -0.75), vel, trailAge, 0.12);
+      // ── Idea 2: dust-tail sag — older samples fall harder than the head
+      let tPos = sparkPos(vec2<f32>(bx, -0.75), vel, trailAge, 0.12 + tf * 0.7);
       let tFade = fade*(1.0-tf)*(0.6+hash1(si+f32(t))*0.4);
       col += cometColor(seed+tf*0.3, colorShift) * hexBokeh(uv, tPos, 0.005+tf*0.004, tFade*energy*1.4);
     }

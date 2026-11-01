@@ -1,31 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Film Burn — Batch 58E
-//  Sprung ember hole, cigarette-click brands, traveling ember conveyors
-//  along the burn rim, oil-slick heat color, held-drag flare.
-//  A remains [hole, fire, smoke, alpha] diagnostic packing.
-//  extraBuffer[133..138] is the existing burn-center spring (0,0 writer).
+//  Interactive Film Burn
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-10-31
+//  Ideas: sprung hole and click brands kept; emulsion blister; rising smoke; scar and cooling ember from C
+//  A packing: [hole, fire, smoke, alpha]; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -55,6 +38,10 @@ fn fbm(p: vec2<f32>) -> f32 {
     amplitude = amplitude * 0.5;
   }
   return value;
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
@@ -111,13 +98,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let noiseVal = fbm(uv * noiseScale + vec2<f32>(time * burnSpeed * 0.15, -time * burnSpeed * 0.11));
   let distortedDist = dist - noiseVal * (0.10 + audio.x * 0.30);
 
-  let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let d = distortedDist - burnRadius;
+  // ── Idea 1: emulsion blister ──────────────────────────────────────
+  // The film wrinkles in the glow-width ring before the hole opens.
+  let rim = smoothstep(glowWidth * 1.8, 0.0, abs(d));
+  let blisterDir = distVec / max(dist, 0.0001);
+  let blister = blisterDir * rim * glowWidth * 0.85;
+  let sampleUV = clamp(uv + vec2<f32>(blister.x / max(aspect, 0.001), blister.y), vec2<f32>(0.0), vec2<f32>(1.0));
+  let sourceColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
   let filmGrain = (hash12(uv * 120.0 + vec2<f32>(time * 7.3, time * 13.1)) - 0.5) * grainStrength * 0.35;
   let gray = dot(sourceColor, vec3<f32>(0.299, 0.587, 0.114));
   let sepia = vec3<f32>(gray * 1.18, gray * 1.0, gray * 0.78);
   let intactColor = mix(sourceColor, sepia, 0.55) + vec3<f32>(filmGrain);
 
-  let d = distortedDist - burnRadius;
   var holeMask = 1.0 - smoothstep(-0.015, 0.015, d);
   var fireMask = smoothstep(-glowWidth, 0.0, d) * (1.0 - smoothstep(0.0, glowWidth, d));
   var smokeMask = 1.0 - smoothstep(glowWidth * 0.5, glowWidth * 3.0, d);
@@ -142,6 +135,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     clickFireMask = max(clickFireMask, brandFire);
   }
 
+  // ── Idea 3: scar and cooling ember ────────────────────────────────
+  // C.r / C.g are the hole and the fire. Masks are not a photo.
+  let scar = prev.r * exp(-max(dt, 0.0) * 0.55);
+  let cooling = prev.g * exp(-max(dt, 0.0) * 2.4);
+  holeMask = max(holeMask, scar);
+  fireMask = max(fireMask, cooling * (1.0 - holeMask));
+
   let edgeAngle = atan2(distVec.y, distVec.x);
   let sector = u32(clamp(floor((edgeAngle + 3.14159265) * 1.27323954), 0.0, 7.0));
   let sectorAmp = plasmaBuffer[(sector % 8u) + 1u].x * 0.4;
@@ -160,10 +160,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   fireColor += slick * (conveyor * 0.45 + packets * 0.55) * fireMask;
   let charColor = vec3<f32>(0.0) + vec3<f32>(1.0, 0.18, 0.02) * emberGlow * 0.45;
 
-  var finalColor = intactColor * mix(0.55, 1.0, smokeMask);
+  // ── Idea 2: rising smoke ──────────────────────────────────────────
+  let rise = vec2<f32>(0.0, -(0.012 + glowWidth) * smokeMask);
+  let smokeUV = clamp(uv + rise, vec2<f32>(0.0), vec2<f32>(1.0));
+  let smokeSrc = textureSampleLevel(readTexture, u_sampler, smokeUV, 0.0).rgb;
+  let smoked = mix(intactColor, smokeSrc * vec3<f32>(0.62, 0.58, 0.55), smokeMask * 0.4 * (1.0 - fireMask));
+  var finalColor = smoked * mix(0.55, 1.0, smokeMask);
   finalColor = mix(finalColor, fireColor, fireMask);
   finalColor = mix(finalColor, charColor, holeMask);
-  finalColor = mix(finalColor, prev.rgb, 0.12 * (1.0 - holeMask));
 
   var finalAlpha = (1.0 - holeMask) * (0.82 + 0.12 * smokeMask);
   finalAlpha = max(finalAlpha, fireMask * (0.35 + 0.45 * u.zoom_params.w));
@@ -172,7 +176,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let baseDepth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthOut = clamp(mix(baseDepth, baseDepth * 0.25, holeMask) + fireMask * 0.08, 0.0, 1.0);
 
-  textureStore(writeTexture, pixel, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeTexture, pixel, vec4<f32>(aces(max(finalColor, vec3<f32>(0.0))), finalAlpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, pixel, vec4<f32>(holeMask, fireMask, smokeMask, finalAlpha));
 }

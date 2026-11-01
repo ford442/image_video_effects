@@ -9708,6 +9708,9 @@
     "id": "gen-emergent-calligraphic-ecosystems",
     "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
     "features": [
+      "mouse-driven",
+      "temporal",
+      "audio-reactive",
       "upgraded-rgba"
     ]
   },
@@ -11489,7 +11492,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Blazing comet shells with brilliant heads and long luminous tails that streak across the night sky. Each shell launches upward then leaves a glowing path as sparks peel off the main trajectory. Bass makes bigger comet heads, treble adds sparkle along the trail. Mouse fires a comet from the cursor. The ion tail disconnects in a kink, and short jets leave the sunward side of the head.",
+    "description": "Blazing comet shells with brilliant heads and long luminous tails that streak across the night sky. Each shell launches upward then leaves a glowing path as sparks peel off the main trajectory. Bass makes bigger comet heads, treble adds sparkle along the trail. Mouse fires a comet from the cursor. The ion tail disconnects in a kink, and short jets leave the sunward side of the head. A bow shock sits ahead of the coma, and the dust tail sags below the ion tail.",
     "workgroup_size": [
       16,
       16,
@@ -11642,7 +11645,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor. Each parent star wears a comet sheath, and the four arms fork a few milliseconds apart.",
+    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor. Each parent star wears a comet sheath, and the four arms fork a few milliseconds apart. The parent goes dark at the split, and a thin axis ghost remains.",
     "workgroup_size": [
       16,
       16,
@@ -11874,7 +11877,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade. A swish wave now travels down each streamer, and a slow-fading gold dock knot marks where the tail hangs from.",
+    "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade. A swish wave now travels down each streamer, and a slow-fading gold dock knot marks where the tail hangs from. A sheen runs down each tail, and a red coal continues past the gold tip.",
     "workgroup_size": [
       16,
       16,
@@ -11952,7 +11955,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor. Upgraded with HDR white-gold burst cores, audio-reactive color temperature (bass deepens amber, treble shifts silver), golden atmospheric haze with depth fog, split-tone grading (cool shadows, warm highlights), and real generated depth from glitter heat. Twinkle peaks spit tiny dross satellites, and after the hang the glitter cools to dull charcoal red.",
+    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor. Upgraded with HDR white-gold burst cores, audio-reactive color temperature (bass deepens amber, treble shifts silver), golden atmospheric haze with depth fog, split-tone grading (cool shadows, warm highlights), and real generated depth from glitter heat. Twinkle peaks spit tiny dross satellites, and after the hang the glitter cools to dull charcoal red. The golden haze sags with the fall, and a longer hang is a finer mesh.",
     "workgroup_size": [
       16,
       16,
@@ -12186,7 +12189,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth. Between star ejections each tube spits a short gold fountain, and late stars gutter and flicker before dying.",
+    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth. Between star ejections each tube spits a short gold fountain, and late stars gutter and flicker before dying. Each launcher is a dark tube with a bright lip, and the apex opens with a white report.",
     "workgroup_size": [
       16,
       16,
@@ -12340,7 +12343,7 @@
       "psychedelic",
       "4th-of-july"
     ],
-    "description": "Hypnotic strobe shells that flash multiple times before dissolving into falling sparks. Each burst pulses with rhythmic white-hot flashes synced to the beat, then blooms into color. Treble drives flash rate, bass amplifies each pulse. A psychedelic July 4th finale feel. Mouse triggers a strobe barrage at the cursor. Past flashes leave a faint dotted path, and each shell's pulse lights a wide veil of sky.",
+    "description": "Hypnotic strobe shells that flash multiple times before dissolving into falling sparks. Each burst pulses with rhythmic white-hot flashes synced to the beat, then blooms into color. Treble drives flash rate, bass amplifies each pulse. A psychedelic July 4th finale feel. Mouse triggers a strobe barrage at the cursor. Past flashes leave a faint dotted path, and each shell's pulse lights a wide veil of sky. The strobe has a finite blink budget, with a white core inside the colored fringe.",
     "workgroup_size": [
       16,
       16,
@@ -26688,7 +26691,7 @@
       "abstract",
       "atmospheric"
     ],
-    "description": "A stellar nursery in HII emission colours: curl-noise gas clouds, dark absorption pillars, and proto-star sparkle. Bass swells the pillars of creation, treble ignites new suns.",
+    "description": "A stellar nursery in HII emission colours: curl-noise gas clouds, dark absorption pillars, and proto-star sparkle. Bass swells the pillars of creation, treble ignites new suns. Thick pillars go dark by Beer-Lambert extinction, with a cyan rim where the gas meets the dust.",
     "workgroup_size": [
       16,
       16,
@@ -26699,7 +26702,49 @@
     "updated": true,
     "id": "gen-stardust-nebula",
     "url": "shaders/gen-stardust-nebula.wgsl",
-    "features": []
+    "params": [
+      {
+        "id": "cloud-density",
+        "name": "Cloud Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "emission",
+        "name": "Emission",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "star-field",
+        "name": "Star Field",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gas-drift",
+        "name": "Gas Drift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-stellar-acoustic-resonance-manifold",

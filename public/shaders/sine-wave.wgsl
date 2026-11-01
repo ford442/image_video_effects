@@ -3,31 +3,12 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: standing-wave nodes around the pointer; Stokes second-order drift
+//  Upgraded: 2026-09-08, 2026-11-01
+//  Ideas: standing-wave nodes around the pointer; Stokes second-order drift; deep-water dispersion (§12.2D); group shade
 //  A packing: telemetry (offset.xy, crest, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = vec3<f32>(2.51, 2.51, 2.51);
@@ -69,11 +50,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Multi-frequency interference with fast, closed-form packet envelopes.
   let phase = uv.y * scale * 6.28318 + time * speed * 2.5;
-  let phase2 = uv.x * (scale * 0.7) * 6.28318 - time * speed * 1.7;
+  // ── Idea 1: deep-water dispersion (§12.2D)
+  // The cross-wave's wavenumber is 0.7× the primary. Deep water: phase
+  // speed ∝ 1/sqrt(k), so the longer cross-wave outruns the primary.
+  // The speed slider still sets the primary rate (phase is unchanged).
+  let crossK = 0.7;
+  let cRatio = sqrt(1.0 / crossK);
+  let phase2 = uv.x * (scale * crossK) * 6.28318 - time * speed * 1.7 * cRatio;
   let packetPhaseX = fract(uv.y * (1.5 + scale * 0.12) - time * speed * 0.42);
   let packetPhaseY = fract(uv.x * (1.2 + scale * 0.09) + time * speed * 0.31);
-  let packetX = exp(-pow((packetPhaseX - 0.5) / 0.16, 2.0));
-  let packetY = exp(-pow((packetPhaseY - 0.5) / 0.18, 2.0));
+  let packX = (packetPhaseX - 0.5) / 0.16;
+  let packY = (packetPhaseY - 0.5) / 0.18;
+  let packetX = exp(-packX * packX);
+  let packetY = exp(-packY * packY);
   let groupVel = sin(phase * 0.5 + time * speed * 0.8) * 0.5 + 0.5;
 
   var clickWave = 0.0;
@@ -137,8 +126,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let specular = pow(crest, 8.0) * (0.3 + bass * 0.4) + crestStreak * (0.12 + detail * 0.22);
   finalColor = finalColor + vec3<f32>(1.0, 0.95, 0.85) * specular;
 
+  // ── Idea 2: group shade
+  // packetX/packetY are the traveling envelopes. Between packets the photo
+  // sits in the group trough — a darkening, not a new wave.
+  let groupShade = clamp(packetX * 0.65 + packetY * 0.35, 0.0, 1.0);
+  finalColor = finalColor * (0.84 + 0.16 * groupShade);
+
   // ACES tone mapping
-  finalColor = acesToneMap(finalColor * 1.15);
+  finalColor = acesToneMap(max(finalColor, vec3<f32>(0.0)) * 1.15);
 
   // Semantic alpha: wave_amplitude * interference_intensity * depth
   let interferenceIntensity = interference + crest * 0.5;

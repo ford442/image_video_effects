@@ -1,27 +1,15 @@
-// Melting Oil Blackbody — Codex (e) thermal-gradient oil transport.
-// A/C packing: velocity.xy, normalized temperature, molten coverage.
-// B and extraBuffer are intentionally unused; C loads are exact and bounded.
+// ═══════════════════════════════════════════════════════════════════
+//  Melting Oil Blackbody
+//  Category: advanced-hybrid
+//  Features: melting-oil, blackbody-radiation, HDR, gradient-flow, mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: Marangoni crawl toward cooler oil; contact meniscus on the molten edge
+//  A packing: raw velocity.xy, normalized temperature, molten coverage
+// ═══════════════════════════════════════════════════════════════════
+//  B is unused. C loads are exact and bounded. ACES on writeTexture only.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -87,6 +75,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let previous = stateAt(coord, dims);
   var velocity = previous.xy * viscosity;
+  // ── Idea 1: Marangoni. After viscosity, crawl from hot toward cold on the stored field.
+  let tL = stateAt(coord + vec2<i32>(-1, 0), dims).z;
+  let tR = stateAt(coord + vec2<i32>(1, 0), dims).z;
+  let tD = stateAt(coord + vec2<i32>(0, -1), dims).z;
+  let tU = stateAt(coord + vec2<i32>(0, 1), dims).z;
+  velocity -= vec2<f32>(tR - tL, tU - tD) * (0.01 + (1.0 - viscosity) * 0.02);
   velocity += vec2<f32>(-gradient.y, gradient.x) * (0.004 + audio.y * 0.005);
   velocity += downhill * (0.0015 + (1.0 - viscosity) * 0.014);
   velocity += vec2<f32>(sin(uv.y * 19.0 + time * 2.1),
@@ -131,6 +125,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   temperature = clamp(temperature, 0.03, 1.35);
   var molten = mix(advected.w, smoothstep(0.18, 0.72, temperature), 0.075);
   molten = clamp(molten + mouseHeat * 0.04 + clickHeat * 0.018, 0.0, 1.0);
+  // ── Idea 2: contact meniscus. Molten against a less-molten neighbor.
+  let contact = smoothstep(0.22, 0.58, molten) * (1.0 - smoothstep(0.12, 0.62, neighbors.w));
+  molten = clamp(molten + contact * 0.035, 0.0, 1.0);
 
   textureStore(dataTextureA, coord, vec4<f32>(velocity, temperature, molten));
 
@@ -142,6 +139,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var rgb = mix(source.rgb * vec3<f32>(0.23, 0.16, 0.12), thermal,
     clamp(0.28 + molten * 0.68, 0.0, 0.94));
   rgb += blackbody(kelvin * 1.18) * ember + vec3<f32>(1.0, 0.08, 0.01) * clickHeat * 0.15;
+  rgb += vec3<f32>(1.0, 0.62, 0.18) * contact * 0.42;
   let alpha = clamp(source.a * (0.58 + molten * 0.32) +
     temperature * 0.16 + mouseHeat * 0.08, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(aces(rgb), alpha));

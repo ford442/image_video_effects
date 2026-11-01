@@ -2,31 +2,16 @@
 //  digital-moss-rgba
 //  Category: advanced-hybrid
 //  Features: mouse-driven, temporal, rgba-state-machine, organic, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-12
-//  Ideas: dual-species territorial ridge where B≈D; capsule stalks from high-B
+//  Upgraded: 2026-09-12, 2026-10-31
+//  Ideas: dual-species territorial ridge where B≈D; capsule stalks from high-B; isotropic 9-point Laplacian (§12.2D); cushion micro-relief and moisture dew specular
 //  A packing: raw (A, B, C, D) chemistry
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -101,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let imgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   let luma = dot(imgColor, vec3<f32>(0.299, 0.587, 0.114));
 
-  let state = textureLoad(dataTextureC, coord, 0);
+  let state = stateAt(coord, dims);
   var A = state.r;
   var B = state.g;
   var C = state.b;
@@ -115,15 +100,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (seed2Dist < 0.03) { B = 0.4; }
   }
 
-  let left = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0);
-  let right = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0);
-  let down = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), dims - vec2<i32>(1)), 0);
-  let up = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  // ── Idea 3: isotropic 9-point Laplacian (§12.2D) for rounded bryophyte rosettes ──
+  let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+  let right = stateAt(coord + vec2<i32>(1, 0), dims);
+  let down = stateAt(coord + vec2<i32>(0, -1), dims);
+  let up = stateAt(coord + vec2<i32>(0, 1), dims);
+  let dl = stateAt(coord + vec2<i32>(-1, -1), dims);
+  let dr = stateAt(coord + vec2<i32>(1, -1), dims);
+  let ul = stateAt(coord + vec2<i32>(-1, 1), dims);
+  let ur = stateAt(coord + vec2<i32>(1, 1), dims);
 
-  let lapA = left.r + right.r + down.r + up.r - 4.0 * A;
-  let lapB = left.g + right.g + down.g + up.g - 4.0 * B;
-  let lapC = left.b + right.b + down.b + up.b - 4.0 * C;
-  let lapD = left.a + right.a + down.a + up.a - 4.0 * D;
+  let lap9 = ((left + right + down + up) * 0.20 + (dl + dr + ul + ur) * 0.05 - state) * 4.0;
+  let lapA = lap9.r;
+  let lapB = lap9.g;
+  let lapC = lap9.b;
+  let lapD = lap9.a;
 
   let feed = mix(0.02, 0.06, feedParam);
   let kill = mix(0.04, 0.07, killParam);
@@ -172,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   textureStore(dataTextureA, coord, vec4<f32>(A, B, C, D));
 
-  let prevMoss = textureLoad(dataTextureC, coord, 0).r;
+  let prevMoss = state.r;
   let seed = hash12(uv + vec2<f32>(time * 0.1, time * 0.05));
   var grown = prevMoss;
 
@@ -183,7 +174,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (grown < 0.9) {
     let angle = hash12(uv * 10.0 + time) * 6.28;
     let offset = vec2<i32>(i32(cos(angle) * 2.0), i32(sin(angle) * 2.0));
-    let neighborState = textureLoad(dataTextureC, clamp(coord + offset, vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
+    let neighborState = stateAt(coord + offset, dims).r;
     if (neighborState > 0.5 && luma < 0.42) {
       grown = min(1.0, grown + 0.06 * growSpeed);
     }
@@ -203,7 +194,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mossColor = mossPalette(A, B, C, D, time * 0.04 + mids * 0.2);
   let scan = 0.82 + 0.18 * sin(uv.y * 480.0 + time * 2.0);
   let scannedMossColor = mossColor * scan;
-  var finalColor = mix(imgColor, scannedMossColor, grown * 0.88);
+
+  // ── Idea 4: cushion micro-relief normal & moisture dewdrop specular ──
+  let bioL = left.g + left.a;
+  let bioR = right.g + right.a;
+  let bioD = down.g + down.a;
+  let bioU = up.g + up.a;
+  let cushionGrad = vec2<f32>(bioR - bioL, bioU - bioD);
+  let lightDir = normalize(vec2<f32>(-0.6, -0.8));
+  let reliefShade = clamp(1.0 + dot(cushionGrad, lightDir) * 1.35, 0.65, 1.35);
+  let rhizoidShadow = smoothstep(0.05, 0.35, length(cushionGrad)) * (1.0 - min(B + D, 1.0));
+  let shadowedImg = imgColor * (1.0 - rhizoidShadow * 0.32 * grown);
+
+  var finalColor = mix(shadowedImg, scannedMossColor * reliefShade, grown * 0.88);
+
+  let dewCell = hash12(floor(uv * 220.0));
+  let dewGlint = smoothstep(0.52, 0.85, D + B * 0.5) * step(0.86, dewCell) * clamp(growSpeed, 0.0, 1.5) * grown;
+  finalColor += vec3<f32>(0.75, 0.98, 0.85) * dewGlint * (0.45 + treble * 0.35);
 
   // Idea 1 — dual-species territorial ridge where B meets D
   let meet = 1.0 - abs(B - D);
@@ -217,8 +224,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let capsule = smoothstep(0.55, 0.88, B) * stalkState.g * grown;
   finalColor = mix(finalColor, scannedMossColor * vec3<f32>(0.85, 1.15, 0.55) + vec3<f32>(0.55, 0.35, 0.12) * capsule, capsule * 0.4);
 
-  finalColor = acesToneMap(finalColor * (0.95 + bass * 0.08));
-  let alpha = clamp(mix(1.0, 0.82, grown) + B * 0.1 + ridge * 0.2 + capsule * 0.15, 0.0, 1.0);
+  finalColor = acesToneMap(max(finalColor * (0.95 + bass * 0.08), vec3<f32>(0.0)));
+  let alpha = clamp(mix(1.0, 0.82, grown) + B * 0.1 + ridge * 0.2 + capsule * 0.15 + dewGlint * 0.1, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
 

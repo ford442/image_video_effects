@@ -2,7 +2,7 @@
   "id": "fireworks-portrait-burst",
   "name": "4th of July \u2014 Portrait Burst",
   "url": "shaders/fireworks-portrait-burst.wgsl",
-  "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself \u2014 portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor.",
+  "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself \u2014 portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor. The brightest catchlight stays in the portrait, and sparks leave along the highlight.",
   "tags": [
     "fireworks",
     "portrait",

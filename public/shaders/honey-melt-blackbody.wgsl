@@ -1,27 +1,15 @@
-// Honey Melt Blackbody — Codex (e) high-viscosity thermal honey.
-// A/C packing: velocity.xy, thickness, normalized temperature.
-// B and extraBuffer are intentionally unused; C loads are exact and bounded.
+// ═══════════════════════════════════════════════════════════════════
+//  Honey Melt Blackbody
+//  Category: advanced-hybrid
+//  Features: hex-grid, blackbody-radiation, viscous-material, subsurface, mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: drip neck from stored speed; wax crust on cool thick honey
+//  A packing: raw velocity.xy, thickness, normalized temperature
+// ═══════════════════════════════════════════════════════════════════
+//  B is unused. C loads are exact and bounded. ACES on writeTexture only.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -134,6 +122,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   thickness = mix(thickness, seedThickness, 0.018);
   thickness += audio.x * 0.004 - melt * 0.025 + clickHeat * 0.008;
   thickness = clamp(thickness, 0.05, 1.15);
+  // ── Idea 1: drip neck. Speed already in velocity; a still cell is unchanged.
+  let speed = length(velocity);
+  let neck = 1.0 / (1.0 + speed * 40.0);
+  thickness = clamp(thickness * mix(1.0, neck, 0.72), 0.05, 1.15);
   var temperature = mix(advected.w, average.w, 0.035);
   temperature += thickness * 0.006 + melt * 0.075 + clickHeat * 0.026 + audio.y * 0.008;
   temperature *= 0.992;
@@ -149,7 +141,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var rgb = source.rgb * beer + amber * (0.48 + thickness * 0.42);
   rgb = mix(rgb, thermal * (0.7 + audio.y * 0.25),
     clamp(temperature * 0.58 + melt * 0.26, 0.0, 0.88));
-  rgb += vec3<f32>(1.0, 0.78, 0.25) * rim * 0.16 + thermal * clickHeat * 0.12;
+  // ── Idea 2: wax crust. Cool thick honey hides the blackbody.
+  let crust = smoothstep(0.62, 0.22, temperature) * smoothstep(0.28, 0.75, thickness);
+  rgb = mix(rgb, vec3<f32>(0.95, 0.74, 0.32) * (0.42 + thickness * 0.22), crust * 0.78);
+  rgb += vec3<f32>(1.0, 0.78, 0.25) * rim * 0.16 * (1.0 - crust * 0.45) + thermal * clickHeat * 0.12;
   let alpha = clamp(source.a * 0.48 + thickness * 0.42 +
     rim * 0.08 + melt * 0.06, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(aces(rgb), alpha));

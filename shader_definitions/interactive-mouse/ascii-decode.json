@@ -3,7 +3,8 @@
   "name": "ASCII Decode",
   "url": "shaders/ascii-decode.wgsl",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "description": "Renders the view as a digital ASCII matrix. Mouse movement acts as a decoding lens.",
   "params": [
@@ -39,5 +40,39 @@
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Grid Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Decode Radius",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Matrix Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Effect Strength",
+          "default": 1,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

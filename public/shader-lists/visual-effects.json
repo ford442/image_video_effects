@@ -1150,7 +1150,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1436,7 +1438,7 @@
     "id": "hyper-space-jump",
     "name": "Hyper Space Jump",
     "url": "shaders/hyper-space-jump.wgsl",
-    "description": "Continuous relativistic streak integration combines a Doppler palette, helical flight, a movable vanishing point, held acceleration, and age-bounded jump shocks.",
+    "description": "Radial streak tunnel toward the pointer. Jump Strength, Streak Decay, Chromatic Spread, and Vignette Size drive the blur. The rim shifts blue, and the previous frame leaves a short afterimage.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1444,7 +1446,8 @@
       "doppler-color",
       "helical-motion",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "hyperspace",
@@ -2212,7 +2215,7 @@
     "id": "signal-modulation",
     "name": "Signal Modulation",
     "url": "shaders/signal-modulation.wgsl",
-    "description": "AM/FM carrier wave with sprung origin, held widen, capped click carrier bursts, honest regional FFT spectral bands, ACES composite.",
+    "description": "AM/FM carrier from a sprung origin. The trace excursion swells with the FFT band on that row, and zero-crossing ticks mark where the carrier crosses mid-line. Bands read extraBuffer FFT bins.",
     "workgroup_size": [
       16,
       16,

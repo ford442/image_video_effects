@@ -3,8 +3,8 @@
 //  Category: post-processing
 //  Features: audio-reactive, fft-bins, frequency-coupled, pyramid, depth-aware
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: depth-routed bands (near takes the fine boost, far takes gentle coarse softening); per-band chroma split (coarse halos warm, fine edges cool)
+//  Upgraded: 2026-09-28, 2026-11-01
+//  Ideas: depth-routed bands (near takes the fine boost, far takes gentle coarse softening); per-band chroma split (coarse halos warm, fine edges cool); anisotropic fine gate; anti-halo envelope (§12.2A)
 //  A packing: display RGBA (enhanced photo, source alpha); C is not read back
 // ═══════════════════════════════════════════════════════════════════
 //  Created: 2026-05-23  By: copilot / P6 audio bridge
@@ -38,26 +38,8 @@
 //    param4 (zoom_params.w) : Overall Blend (mix original vs. enhanced)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,  // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX,      z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BassGain, y=MidGain, z=TrebleGain, w=Blend
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BassGain, y=MidGain, z=TrebleGain, w=Blend
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -85,7 +67,12 @@ fn avgBins(lo: u32, hi: u32) -> f32 {
 /// gives a visually equivalent result for the small kernel sizes (σ ≤ 2 px)
 /// used here.  The slight approximation error is imperceptible at these
 /// scales and is outweighed by the performance benefit of a single dispatch.
-fn gaussBlur(samp: texture_2d<f32>, uv: vec2<f32>, step: f32) -> vec4<f32> {
+struct BlurTap {
+  color: vec4<f32>,
+  aniso: f32,
+};
+
+fn gaussBlur(samp: texture_2d<f32>, uv: vec2<f32>, step: f32) -> BlurTap {
   let res = vec2<f32>(textureDimensions(samp));
   let d = step / res;
 
@@ -105,7 +92,11 @@ fn gaussBlur(samp: texture_2d<f32>, uv: vec2<f32>, step: f32) -> vec4<f32> {
   row += textureSampleLevel(samp, u_sampler, uv + vec2<f32>(0.0,  1.0 * d.y), 0.0) * 0.25;
   row += textureSampleLevel(samp, u_sampler, uv + vec2<f32>(0.0,  2.0 * d.y), 0.0) * 0.0625;
 
-  return (col + row) * 0.5;
+  var tap: BlurTap;
+  tap.color = (col + row) * 0.5;
+  // Horizontal and vertical responses were averaged and the difference discarded.
+  tap.aniso = abs(dot(col.rgb - row.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)));
+  return tap;
 }
 
 // Idea 1 support — depth-map confidence. Samples a fixed 3×3 grid of the
@@ -160,9 +151,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let blur2    = gaussBlur(readTexture, uv, 4.0);
 
   // Laplacian levels (Difference of Gaussians)
-  let levelFine   = original - blur0;   // fine detail
-  let levelMid    = blur0    - blur1;   // mid detail
-  let levelCoarse = blur1    - blur2;   // coarse detail
+  let levelFine   = original - blur0.color;   // fine detail
+  let levelMid    = blur0.color - blur1.color;   // mid detail
+  let levelCoarse = blur1.color - blur2.color;   // coarse detail
 
   // ── Silence floor (HEAD fix) ────────────────────────────────────
   // Small per-band base gain from the same sliders so the default is
@@ -184,10 +175,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let gainCoarse = bassGain   + floorCoarse;
   let gainMid    = midGain    + floorMid;
-  let gainFine   = (trebleGain + floorFine) * fineRoute;
+  // ── Idea: anisotropic fine gate
+  // |H − V| of the fine blur is high on edges and low on noise. The fine
+  // gain quiets isotropic regions; the treble slider still sets the ceiling.
+  let edgeGate = smoothstep(0.008, 0.06, blur0.aniso);
+  let gainFine   = (trebleGain + floorFine) * fineRoute * mix(0.4, 1.0, edgeGate);
 
   // Reconstruct with audio-driven amplitudes
-  let enhanced = blur2
+  let enhanced = blur2.color
     + levelCoarse * (1.0 + gainCoarse - farSoften)
     + levelMid    * (1.0 + gainMid)
     + levelFine   * (1.0 + gainFine);
@@ -201,7 +196,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let warmDir   = vec3<f32>( 1.0, 0.35, -0.9);
   let coolDir   = vec3<f32>(-0.7, 0.05,  1.0);
   let chromaRGB = enhanced.rgb + (warmDir * addCoarse + coolDir * addFine) * 0.6;
-  let enhancedTinted = vec4<f32>(chromaRGB, enhanced.a);
+  // ── Idea: anti-halo envelope (§12.2A)
+  // The reconstruction stays inside the range of the original and the
+  // coarse blur, plus a small radius from the blend slider.
+  let haloR = 0.03 + blend * 0.03;
+  let lo = min(original.rgb, blur2.color.rgb) - vec3<f32>(haloR);
+  let hi = max(original.rgb, blur2.color.rgb) + vec3<f32>(haloR);
+  let bounded = clamp(chromaRGB, lo, hi);
+  let enhancedTinted = vec4<f32>(bounded, enhanced.a);
 
   let output = mix(original, enhancedTinted, blend);
   let display = vec4<f32>(clamp(output.rgb, vec3<f32>(0.0), vec3<f32>(1.0)), clamp(original.a, 0.0, 1.0));
