@@ -793,7 +793,7 @@
     "id": "chromatic-crawler",
     "name": "Chromatic Crawler",
     "url": "shaders/chromatic-crawler.wgsl",
-    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending. Cell membranes glow in the neighbour's wavelength, trails stream behind the crawl, and the cursor joins it.",
+    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi cells, temporal feedback trails and alpha translucency. Cells have nuclei tinted in their own wavelength, membranes glow in the neighbour's wavelength, hues dissolve between epochs instead of popping, and the cursor joins the crawl.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -843,7 +843,7 @@
     "name": "Chromatic Focus",
     "category": "artistic",
     "url": "shaders/chromatic-focus.wgsl",
-    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into chromatic bokeh: highlights swell into rimmed discs that turn cat's-eye toward the frame edges, with magenta/green fringes keyed to the depth under the cursor. OkLab split-tone, thin-film halo, ACES.",
+    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into chromatic bokeh. The circle of confusion grows with the depth gap to the cursor's focus plane, discs go bright-edged behind it and soft in front, highlights swell into rimmed cat's-eye discs, and fringes are keyed to depth. OkLab split-tone, thin-film halo, ACES.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -900,9 +900,11 @@
     "id": "chromatic-folds-2",
     "name": "Chromatic Folds V2",
     "url": "shaders/chromatic-folds-2.wgsl",
-    "description": "Enhanced geometric color folding with improved warping.",
+    "description": "Enhanced geometric colour folding: five roaming Möbius, Klein and hyperbolic fold centres. Where two fold basins meet a bright, aberrating seam forms, and the trail is twisted about the strongest Möbius centre as it crosses a fold.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -995,10 +997,9 @@
     "id": "chromatic-folds",
     "name": "Chromatic Folds",
     "url": "shaders/chromatic-folds.wgsl",
-    "description": "Geometric color folding and warping effects. Visible fold creases at the pivot hue, history re-folded each frame into nested bands, and the cursor pinches the pivot to the hue beneath it; bass breathes the fold.",
+    "description": "Geometric colour folding: hues fold around a pivot, displaced along the hue gradient. The two faces of the fold are lit and shaded, the pivot line stress-whitens like a paper crease, a reverse-sheet tap shows the back of the fold at hue edges, and history feeds back. Click ripples add pressure waves.",
     "features": [
       "mouse-driven",
-      "audio-reactive",
       "upgraded-rgba"
     ],
     "tags": [
@@ -1093,9 +1094,10 @@
     "id": "chromatic-manifold-2",
     "name": "Chromatic Manifold V2",
     "url": "shaders/chromatic-manifold-2.wgsl",
-    "description": "Enhanced 4D topological color manifold.",
+    "description": "Enhanced 4D topological colour manifold. Folds pivot differently on depth ridges and valleys, fold memory persists in C.a, and the colour history is carried along the fold flow.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

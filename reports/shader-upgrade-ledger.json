@@ -172,20 +172,56 @@
       "history": []
     },
     "chromatic-crawler-structure": {
-      "hash": "9f4767d1c228bb1b",
-      "history": []
+      "hash": "0f3e5066961ee74c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "0f3e5066961ee74c",
+          "prev_hash": "9f4767d1c228bb1b",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-focus-coupled": {
-      "hash": "cd20c3f6ac773834",
-      "history": []
+      "hash": "233d8bcf742014cb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "233d8bcf742014cb",
+          "prev_hash": "cd20c3f6ac773834",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-focus-guided": {
-      "hash": "d91995e4cb06f2ef",
-      "history": []
+      "hash": "c6a5c1132b3e4fe2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "c6a5c1132b3e4fe2",
+          "prev_hash": "d91995e4cb06f2ef",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-folds-bilateral": {
-      "hash": "2e144f487caf2bf3",
-      "history": []
+      "hash": "280ef095ca426439",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "280ef095ca426439",
+          "prev_hash": "2e144f487caf2bf3",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-reaction-diffusion": {
       "hash": "457891fe3136bf23",
@@ -985,7 +1021,7 @@
       "history": []
     },
     "chromatic-crawler": {
-      "hash": "a588e2b84b469310",
+      "hash": "9b6d810e019494b6",
       "history": [
         {
           "event": "upgraded",
@@ -994,11 +1030,19 @@
           "prev_hash": "011b8afb7bc196d4",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "9b6d810e019494b6",
+          "prev_hash": "a588e2b84b469310",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
     "chromatic-focus": {
-      "hash": "a09ae5b0e5b77fcb",
+      "hash": "74face0e23df4f59",
       "history": [
         {
           "event": "upgraded",
@@ -1007,11 +1051,19 @@
           "prev_hash": "15da01520b6816bf",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "74face0e23df4f59",
+          "prev_hash": "a09ae5b0e5b77fcb",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
     "chromatic-folds-2": {
-      "hash": "361355635a1070ad",
+      "hash": "47a2c65afc6fb85c",
       "history": [
         {
           "event": "upgraded",
@@ -1020,6 +1072,14 @@
           "prev_hash": "ea924ddca5224467",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "47a2c65afc6fb85c",
+          "prev_hash": "361355635a1070ad",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
@@ -1037,7 +1097,7 @@
       ]
     },
     "chromatic-folds": {
-      "hash": "771910dd82fc5d24",
+      "hash": "e9580737f147de86",
       "history": [
         {
           "event": "upgraded",
@@ -1054,6 +1114,14 @@
           "prev_hash": "ea833c55627bc42d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "e9580737f147de86",
+          "prev_hash": "771910dd82fc5d24",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
@@ -1071,7 +1139,7 @@
       ]
     },
     "chromatic-manifold-2": {
-      "hash": "2e3932901681a303",
+      "hash": "d97a9d92abd0d8cb",
       "history": [
         {
           "event": "upgraded",
@@ -1080,11 +1148,19 @@
           "prev_hash": "f816450979ed851c",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "d97a9d92abd0d8cb",
+          "prev_hash": "2e3932901681a303",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
     "chromatic-manifold": {
-      "hash": "227e55b4e9f90edc",
+      "hash": "a13027613196eca2",
       "history": [
         {
           "event": "upgraded",
@@ -1101,6 +1177,14 @@
           "prev_hash": "800b8c1ac6decfba",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "a13027613196eca2",
+          "prev_hash": "227e55b4e9f90edc",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },

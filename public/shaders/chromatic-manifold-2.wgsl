@@ -3,12 +3,14 @@
 //  Category: artistic
 //  Features: mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-09
-//  Ideas: laplacian smooth of curvature; C.a fold memory
+//  Upgraded: 2026-10-09, 2026-11-01
+//  Ideas: laplacian smooth of curvature; C.a fold memory; relief-signed pivot split; flow-advected history (semi-Lagrangian)
 //  A packing: A.rgb pre-ACES display color; A.a raw curvature memory
 // ═══════════════════════════════════════════════════════════════════
-// Field order used to list zoom_params before zoom_config, so those
-// names read the other uniform. Reads below stay on the same bytes.
+// Uniform order: this file's old pasted struct listed zoom_params before
+// zoom_config, so its u.zoom_config.* read the four UI sliders (zoom_params bytes)
+// and u.zoom_params.* read engine time / mouse. The canonical prelude struct has
+// the engine order, so every read below is spelled to hit the SAME BYTES as before.
 #include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -98,14 +100,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
 
     // Parameters
-    let foldStrength = u.zoom_config.x * 2.0 + 0.5;
-    let pivotHue = u.zoom_config.y;
-    let satScale = u.zoom_config.z * 0.5 + 0.75;
-    let depthInfluence = u.zoom_config.w;
-    let noiseAmount = u.zoom_params.x * 0.003;
-    let feedbackPersist = u.zoom_params.y * 0.1 + 0.9;
-    let rippleAmp = u.zoom_params.z * 0.015;
-    let curvePower = u.zoom_params.w * 2.0 + 1.0;
+    // Saved sliders live in zoom_params (fold strength, pivot hue, sat scale, depth influence).
+    let foldStrength = u.zoom_params.x * 2.0 + 0.5;
+    let pivotHue = u.zoom_params.y;
+    let satScale = u.zoom_params.z * 0.5 + 0.75;
+    let depthInfluence = u.zoom_params.w;
+    // Never sliders. noiseAmount was engine TIME (grew without bound): held at the old
+    // slider midpoint 0.5 * 0.003. The other three stay on their old bytes: mouse x / mouse y / mouse-down.
+    let noiseAmount = 0.0015;
+    let feedbackPersist = u.zoom_config.y * 0.1 + 0.9;
+    let rippleAmp = u.zoom_config.z * 0.015;
+    let curvePower = u.zoom_config.w * 2.0 + 1.0;
 
     // Read source color & depth
     let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
@@ -136,6 +141,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         + pow(max(depthR, 0.0), curvePower) * depthInfluence
         + pow(max(depthU, 0.0), curvePower) * depthInfluence
         + pow(max(depthD, 0.0), curvePower) * depthInfluence) * 0.2;
+
+    // ── Idea 1: relief-signed pivot split ───────────────────────────────────
+    // The same five depth taps give the true Laplacian: mean(neighbours) - centre.
+    // Positive = valley, negative = ridge. Valleys and ridges fold about pivots
+    // +-0.07 apart, so the fold follows the relief instead of one global pivot.
+    let reliefLap = (pow(max(depthL, 0.0), curvePower) + pow(max(depthR, 0.0), curvePower)
+        + pow(max(depthU, 0.0), curvePower) + pow(max(depthD, 0.0), curvePower)) * 0.25
+        - pow(max(depthVal, 0.0), curvePower);
+    let reliefSign = clamp(reliefLap * 40.0, -1.0, 1.0);
+    let pivotHere = fract(pivotHue + 0.07 * reliefSign + 1.0);
 
     // C.a is yesterday's curvature. High memory folds this pixel harder.
     let histSize = vec2<i32>(textureDimensions(dataTextureC));
@@ -182,11 +197,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Fold the hue (Möbius-like effect), harder where curvature was high last frame.
     var hsv = rgb2hsv(displacedColor);
-    hsv.x = foldHue(hsv.x, pivotHue, foldStrengthMem);
+    hsv.x = foldHue(hsv.x, pivotHere, foldStrengthMem);
     hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
     let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
 
-    let finalColor = mix(foldedColor, prev.rgb, feedbackPersist);
+    // ── Idea 2: flow-advected history ───────────────────────────────────────
+    // History is carried by the same flow that displaces the picture: C is read at
+    // px + totalDisp (capped at 2 px, 30 % of the displacement), exact integer load.
+    // Fold memory (prev.a) stays in place - it feeds dispBase before the flow exists.
+    let advPx = clamp(totalDisp * dims * 0.3, vec2<f32>(-2.0), vec2<f32>(2.0));
+    let advCoord = clamp(px + vec2<i32>(round(advPx)), vec2<i32>(0), histSize - vec2<i32>(1));
+    let prevAdv = textureLoad(dataTextureC, advCoord, 0).rgb;
+    let finalColor = mix(foldedColor, prevAdv, feedbackPersist);
 
     // ═══════════════════════════════════════════════════════════════════════════════
     //  WAVELENGTH-DEPENDENT ALPHA
