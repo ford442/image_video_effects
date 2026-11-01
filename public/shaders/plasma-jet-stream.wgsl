@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Plasma Jet Stream
 //  Category: generative
-//  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic, depth-aware, upgraded-rgba
+//  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic, upgraded-rgba
 //  Complexity: High
 //  Upgraded: 2026-11-01
 //  Ideas: internal-shock knots moving down each jet; Doppler beaming (approaching side bright/blue, counter-jet dim/red); cone opening from a collimated nozzle

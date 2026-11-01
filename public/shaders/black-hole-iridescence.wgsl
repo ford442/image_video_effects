@@ -130,14 +130,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sampleUV = clamp(uv - vec2<f32>(lensOffset.x / aspect, lensOffset.y), vec2<f32>(0.0), vec2<f32>(1.0));
     // ── Idea 3: tangential arc shear ────────────────────────────────
     // Lensing stretches background images along the tangent around the
-    // shadow (Einstein arcs); two extra taps ±tangent, offset ∝ deflection.
+    // shadow (Einstein arcs); five weighted taps across ±tangent, extent ∝
+    // deflection and capped small so the arc reads as a smear, not copies.
     let tangent = vec2<f32>(-dir.y, dir.x);
-    let shear = min(deflection * 0.3, 0.08);
+    let shear = min(deflection * 0.3, 0.025);
     let shearUV = vec2<f32>(tangent.x / aspect, tangent.y) * shear;
-    let bgC = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-    let bgA = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + shearUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-    let bgB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - shearUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-    let bg = bgC * 0.5 + (bgA + bgB) * 0.25;
+    var bg = vec3<f32>(0.0);
+    for (var k = 0; k < 5; k = k + 1) {
+      let ko = f32(k) - 2.0;
+      let kw = 0.4 - abs(ko) * 0.15;
+      bg += (kw / 1.1) * textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + shearUV * (ko * 0.5), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    }
 
     // Relativistic accretion disk
     let diskAngle = atan2(delta.y, delta.x);
