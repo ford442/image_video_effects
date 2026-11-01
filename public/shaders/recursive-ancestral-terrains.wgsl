@@ -7,31 +7,14 @@
 //  Complexity: High
 //  Chunks From: layered FBM + parameter blending techniques
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-06, 2026-07-22, 2026-11-01
 //  Algorithmist pass: 2026-07-22 — IQ cosine palette ancestry strata, ridged-fbm octave,
 //                      spatial bass mutation waves, rewired slider semantics
+//  Ideas: ridged crest octave; cosine lineage strata; bass mutation waves; smooth macro-relief per lineage; ancestral contour lines
+//  A packing: A.rgb = blended pre-ACES colour history, A.a = alpha (read back as colour); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -67,6 +50,31 @@ fn ridgedFbm(p: vec2<f32>, octaves: i32, seed: f32) -> f32 {
         amp *= 0.5;
     }
     return sum;
+}
+
+// 2026-11-01 Idea 1: lattice-interpolated (quintic value-noise) octave. The fbm
+// above is per-pixel hash grain, so it has no landforms; two smooth octaves give
+// each lineage coherent mountains underneath the unchanged grain.
+fn latticeNoise(p: vec2<f32>, seed: f32) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    let a = hash12(i + seed);
+    let b = hash12(i + vec2<f32>(1.0, 0.0) + seed);
+    let c = hash12(i + vec2<f32>(0.0, 1.0) + seed);
+    let d = hash12(i + vec2<f32>(1.0, 1.0) + seed);
+    return mix(mix(a, b, w.x), mix(c, d, w.x), w.y);
+}
+
+fn macroRelief(p: vec2<f32>, seed: f32) -> f32 {
+    return 0.65 * latticeNoise(p, seed) + 0.35 * latticeNoise(p * 2.07 + vec2<f32>(17.3, 5.9), seed + 31.7);
+}
+
+// 2026-11-01 Idea 2: topographic isoline of a lineage's own macro field.
+// Distance to the nearest integer level of m * K, so lines crowd on steep ground.
+fn contourLine(m: f32, levels: f32) -> f32 {
+    let d = abs(fract(m * levels + 0.5) - 0.5);
+    return 1.0 - smoothstep(0.012, 0.04, d);
 }
 
 // IQ cosine palette — keyed on lineage depth so ancestry reads as color strata.
@@ -130,12 +138,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Ridged crest octave, param-scaled by Terrain Roughness (dialed out at p3 = 0)
     let ridgeAmp = p3 * 0.55;
 
+    // ── Idea 1: smooth macro-relief per lineage (zero-mean, added under the grain) ──
+    let m1 = macroRelief(uv * 2.2 + time * 0.10, 7.7);
+    let m2 = macroRelief(uv * 2.8 - time * 0.08, 21.3);
+    let m3 = macroRelief(uv * 3.4 + time * 0.12, 55.9);
+
     let t1 = fbm(uv * 3.0 + time * 0.2, 5, 0.0) * (0.8 + mutation * 0.4)
-           + ridgedFbm(uv * 6.0 + time * 0.20, 1, 3.1) * ridgeAmp;
+           + ridgedFbm(uv * 6.0 + time * 0.20, 1, 3.1) * ridgeAmp + (m1 - 0.5) * 0.7;
     let t2 = fbm(uv * 4.2 - time * 0.15, 4, 12.7) * (0.9 + mutation * 0.3)
-           + ridgedFbm(uv * 7.4 - time * 0.15, 1, 19.3) * ridgeAmp;
+           + ridgedFbm(uv * 7.4 - time * 0.15, 1, 19.3) * ridgeAmp + (m2 - 0.5) * 0.7;
     let t3 = fbm(uv * 5.5 + time * 0.25, 6, 47.2) * (0.7 + mutation * 0.6)
-           + ridgedFbm(uv * 9.1 + time * 0.25, 1, 41.7) * ridgeAmp;
+           + ridgedFbm(uv * 9.1 + time * 0.25, 1, 41.7) * ridgeAmp + (m3 - 0.5) * 0.7;
 
     let terrain = t1 * gen1 + t2 * gen2 + t3 * gen3;
 
@@ -165,18 +178,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let strataCol = mix(chromaCol, ancestryHue * (0.35 + height * 0.85), 0.3);
 
     let lineageColor = vec3<f32>(gen1, gen2 * 0.8, gen3);
-    let finalCol = mix(strataCol, strataCol * lineageColor * 1.3, 0.25 + p1 * 0.3);
+    var finalCol = mix(strataCol, strataCol * lineageColor * 1.3, 0.25 + p1 * 0.3);
+
+    // ── Idea 2: ancestral contour lines ──
+    // Each lineage draws isolines of its own macro field in its own lineage
+    // colour, weighted by how strongly it is expressed. Added before the
+    // temporal blend, so Historical Depth leaves them as fading shorelines of
+    // earlier generations.
+    let contours = contourLine(m1, 7.0) * gen1 * vec3<f32>(1.0, 0.35, 0.30)
+                 + contourLine(m2, 7.0) * gen2 * vec3<f32>(0.35, 0.95, 0.40)
+                 + contourLine(m3, 7.0) * gen3 * vec3<f32>(0.35, 0.55, 1.0);
+    finalCol = finalCol + contours * 0.3;
 
     // Temporal blending with previous frame; Historical Depth scales how visible
     // the 'memory' of previous generations is.
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).rgb;
     let temporalBlend = clamp(0.05 + p4 * 0.45 + bass * 0.05, 0.0, 0.9);
     let blendedCol = mix(finalCol, prev, temporalBlend);
 
     let alpha = clamp(height * 0.85 + abs(finalTerrain - 0.5) * 0.6 + bass * 0.05, 0.2, 1.0);
     let a = clamp(alpha, 0.0, 1.0);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(acesToneMap(blendedCol * a * 1.1), a));
+    textureStore(writeTexture, gid.xy, vec4<f32>(acesToneMap(max(blendedCol * a * 1.1, vec3<f32>(0.0))), a));
     textureStore(dataTextureA, gid.xy, vec4<f32>(blendedCol, a));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(height * 0.8, 0.0, 0.0, 0.0));
 }
