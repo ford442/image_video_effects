@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-11-01T03:20:11.349173",
+  "timestamp": "2026-11-01T04:08:07.814297",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 10,
-  "passed": 10,
+  "total": 1,
+  "passed": 1,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -13,6 +13,7 @@
   "prelude_violations": 0,
   "results": [
     {
+      "file": "public/shaders/nebulous-dream.wgsl",
       "file": "public/shaders/alpha-watercolor-wetness.wgsl",
       "skipped": false,
       "skip_reason": null,

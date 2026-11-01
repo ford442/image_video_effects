@@ -79,8 +79,17 @@
       "history": []
     },
     "aurora-borealis-iridescence": {
-      "hash": "6fb8b83d911bf346",
-      "history": []
+      "hash": "b13bd82eb6d57ec6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "b13bd82eb6d57ec6",
+          "prev_hash": "6fb8b83d911bf346",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "aurora-rift-2-iridescence": {
       "hash": "087e060fb9d49119",
@@ -99,8 +108,17 @@
       "history": []
     },
     "bioluminescent-blackbody": {
-      "hash": "1be19ad5bb7a5eff",
-      "history": []
+      "hash": "bb0d72e711a3f90c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "bb0d72e711a3f90c",
+          "prev_hash": "1be19ad5bb7a5eff",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "bismuth-crystal-growth": {
       "hash": "ca37e01d88d1d54f",
@@ -1400,8 +1418,17 @@
       ]
     },
     "nebulous-dream": {
-      "hash": "c6cc3ff6996efcb6",
-      "history": []
+      "hash": "9b8ea06da4792ff7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "9b8ea06da4792ff7",
+          "prev_hash": "c6cc3ff6996efcb6",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "neon-contour-interactive": {
       "hash": "68de0eb20631368c",
@@ -2716,8 +2743,17 @@
       ]
     },
     "gen-aurora-borealis-synthesis": {
-      "hash": "b18db4f5ce10be56",
-      "history": []
+      "hash": "166cb74ac1002646",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "166cb74ac1002646",
+          "prev_hash": "b18db4f5ce10be56",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "gen-aurora-silk": {
       "hash": "81227dc368946ba2",
@@ -4294,7 +4330,7 @@
       ]
     },
     "gen-ethereal-silk-veil": {
-      "hash": "ee8045d626caaf45",
+      "hash": "a323cb3d18f99ac1",
       "history": [
         {
           "event": "upgraded",
@@ -4303,6 +4339,14 @@
           "prev_hash": "f863854d74cc4b05",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "a323cb3d18f99ac1",
+          "prev_hash": "ee8045d626caaf45",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
         }
       ]
     },
@@ -7079,8 +7123,17 @@
       ]
     },
     "gen-rainbow-firefly-dance": {
-      "hash": "c364078978ff0157",
-      "history": []
+      "hash": "d12b352680847004",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "d12b352680847004",
+          "prev_hash": "c364078978ff0157",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "gen-rainbow-icosahedron-cascade": {
       "hash": "45841913ab5bb29d",
@@ -7291,8 +7344,17 @@
       "history": []
     },
     "gen-silica-tsunami": {
-      "hash": "4ee1abee235fae4a",
-      "history": []
+      "hash": "dca36aa875f3010f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "dca36aa875f3010f",
+          "prev_hash": "4ee1abee235fae4a",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "gen-singularity-forge": {
       "hash": "42ef0488916b7d61",
@@ -9171,8 +9233,17 @@
       "history": []
     },
     "silk-flow-advection": {
-      "hash": "95660dd8aba545c6",
-      "history": []
+      "hash": "41b3431143591376",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "41b3431143591376",
+          "prev_hash": "95660dd8aba545c6",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "slime-drip": {
       "hash": "0fe96107e55f5b11",
@@ -11591,8 +11662,17 @@
       ]
     },
     "volumetric-rainbow-clouds": {
-      "hash": "6b674e43639a2776",
-      "history": []
+      "hash": "899a8affe54eb074",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "899a8affe54eb074",
+          "prev_hash": "6b674e43639a2776",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "voronoi-glass": {
       "hash": "c6db74393a288918",
@@ -11822,8 +11902,17 @@
       ]
     },
     "underwater_caustics": {
-      "hash": "0142dc5fdf3f0dac",
-      "history": []
+      "hash": "a0749b7469c438c0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:08:08.988Z",
+          "hash": "a0749b7469c438c0",
+          "prev_hash": "0142dc5fdf3f0dac",
+          "commit": "988623c9",
+          "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        }
+      ]
     },
     "glass-wipes": {
       "hash": "cfa31684e4d92a53",

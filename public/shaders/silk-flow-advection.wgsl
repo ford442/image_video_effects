@@ -3,8 +3,10 @@
 //  Category: image
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag, temporal
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: watered-silk moiré (moiré antique); held-pointer gathering with radial pleats
+//  Upgraded: 2026-09-28, 2026-11-01
+//  Ideas: watered-silk moiré (moiré antique); held-pointer gathering with radial pleats;
+//         3rd pass (2026-11-01): Kajiya-Kay anisotropic thread sheen (curl slope as fold normal);
+//         MacCormack back-correction of the carried colour; dupioni slubs (uneven thread weight)
 //  A packing: xy velocity, z flowEnergy, w alpha (raw sim state; C read back as velocity)
 // ═══════════════════════════════════════════════════════════════════
 // Image colours are advected along a living curl-noise flow (Grok,
@@ -164,7 +166,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pleatPull = -toPointerUV * pleatDepth * 0.045 * (0.75 + 0.25 * pleatHeight)
         + pleatTangentUV * pleatSlope * pleatDepth * 0.006;
     let advUV = clamp(uv - vel * 1.8 + pleatPull, vec2<f32>(0.0), vec2<f32>(1.0));
-    let carried = textureSampleLevel(readTexture, u_sampler, advUV, 0.0);
+    let carriedFwd = textureSampleLevel(readTexture, u_sampler, advUV, 0.0);
+    // Idea 3rd-pass B: MacCormack correction (section 12.2D). Step back along the same
+    // velocity, compare with the un-advected sample, and add half the error; clamp to the
+    // range of the two samples so it can never overshoot. Keeps thread/photo detail that a
+    // single semi-Lagrangian fetch smears.
+    let backUV = clamp(advUV + vel * 1.8, vec2<f32>(0.0), vec2<f32>(1.0));
+    let carriedBack = textureSampleLevel(readTexture, u_sampler, backUV, 0.0);
+    let mcRaw = carriedFwd + 0.5 * (input - carriedBack);
+    let mcLo = min(carriedFwd, input);
+    let mcHi = max(carriedFwd, input);
+    let carried = clamp(mcRaw, mcLo, mcHi);
 
     // Silk filtering (soft, luxurious)
     let silkBlend = mix(input.rgb, carried.rgb, 0.55 + silk * 0.35);
@@ -180,7 +192,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let moire = wateredSilk(ribQ, psi, time, fineness);
     let threadGlint = 1.0 + treble * 0.35;
     let silkStrength = (0.02 + 0.045 * fineness) * threadGlint;
-    var col = silkBlend * (1.0 + silkStrength * (0.55 * moire.x + 0.8 * moire.y));
+    // Idea 3rd-pass C: dupioni slubs. Thick/thin thread irregularities elongated along the
+    // rib axis (slow along the thread, quick across it) scale the weave amplitude unevenly.
+    let slubAxis = vec2<f32>(0.1736, 0.9848);
+    let slubAlong = dot(ribQ, slubAxis);
+    let slubAcross = dot(ribQ, vec2<f32>(-slubAxis.y, slubAxis.x));
+    let slub = valueNoise(vec2<f32>(slubAlong * 0.012 + psi * 3.0, slubAcross * 0.35));
+    let slubGain = mix(0.55, 1.6, smoothstep(0.25, 0.8, slub));
+    var col = silkBlend * (1.0 + silkStrength * slubGain * (0.55 * moire.x + 0.8 * moire.y));
+
+    // Idea 3rd-pass A: Kajiya-Kay anisotropic sheen. Thread tangent is the rib axis; the
+    // fold slope (curl = grad psi, already computed) tilts the half-vector, so the highlight
+    // band slides along the threads as the flow moves. sinTH^k is the KK specular.
+    let tangent = vec3<f32>(slubAxis.x, slubAxis.y, 0.0);
+    let halfV = normalize(vec3<f32>(-0.35, -0.45, 0.82) + vec3<f32>(curl * 5.0, 0.0));
+    let tdh = dot(tangent, halfV);
+    let sinTH = sqrt(max(1.0 - tdh * tdh, 0.0));
+    let kk = pow(sinTH, 24.0);
+    let kkLuma = clamp(dot(silkBlend, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+    col += silkBlend * kk * (0.10 + 0.12 * fineness) * (0.5 + 0.5 * kkLuma) * (1.0 + treble * 0.8);
 
     // Idea 2 shading — pleats: lit ridges / dark troughs, plus a side light
     // (from the upper-left) across each fold's slope.

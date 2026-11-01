@@ -3,9 +3,11 @@
 //  Category: advanced-hybrid
 //  Features: organic-growth, blackbody-thermal, bioluminescence, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: leading-edge heat on advancing growth; cooling lag stored in A.g
-//  A packing: raw (growth, heat, 0, 1)
+//  Upgraded: 2026-09-12, 2026-11-01
+//  Ideas: leading-edge heat on advancing growth; cooling lag stored in A.g;
+//         3rd pass (2026-11-01): photophore seeding (hashed flash nodes + luma substrate when no depth);
+//         Draper-point emission cutoff; cold-light luciferin afterglow in A.b
+//  A packing: raw (growth, heat, afterglow, 1)
 // ═══════════════════════════════════════════════════════════════════
 //  Living organic growth patterns with physically-correct thermal
 //  coloring. Growth energy maps to blackbody temperature — cooler
@@ -13,26 +15,7 @@
 //  intense bioluminescent hotspots reach white-hot temperatures.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: blackbodyColor (from spec-blackbody-thermal.wgsl) ═══
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
@@ -128,7 +111,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let n3 = loadState(coord + vec2<i32>(0, 1), maxCoord).r;
     let n4 = loadState(coord + vec2<i32>(0, -1), maxCoord).r;
     let neighbor_avg = (n1 + n2 + n3 + n4) * 0.25;
-    let depth_mask = smoothstep(0.1, 0.9, depth);
+    // HEAD bug: without a depth model readDepthTexture is all zeros -> depth_mask 0 -> growth
+    // could never spread. Fall back to image luma as the tissue substrate.
+    let baseLuma = clamp(dot(base_color, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+    let hasDepth = depth > 0.002;
+    let substrate = smoothstep(0.3, 0.7, 0.55 * baseLuma + 0.6 * noise3d(vec3<f32>(uv * 9.0, 1.7)));
+    let depth_mask = select(substrate, smoothstep(0.1, 0.9, depth), hasDepth);
+
+    // Idea 1 — photophore seeding: sparse hashed nodes flash on their own duty cycle, so the
+    // colony wakes without a click. Spore Count raises how many cells carry a node.
+    let cellScale = 14.0;
+    let pq = vec2<f32>(uv.x * aspect, uv.y) * cellScale;
+    let pcell = floor(pq);
+    let nodeHash = hash(pcell + vec2<f32>(3.7, 9.1));
+    let nodeJit = vec2<f32>(hash(pcell + vec2<f32>(1.3, 5.9)), hash(pcell + vec2<f32>(7.1, 2.3)));
+    let nodePos = pcell + 0.2 + 0.6 * nodeJit;
+    let nodeActive = step(nodeHash, 0.12 + u.zoom_params.w * 0.35);
+    let duty = fract(time * (0.08 + 0.1 * hash(pcell + vec2<f32>(11.0, 4.0))) + nodeHash * 7.0);
+    let flash = smoothstep(0.06, 0.0, duty) * (1.0 + treble);
+    let seed = nodeActive * flash * smoothstep(0.22, 0.0, length(pq - nodePos)) * depth_mask;
+    growth = max(growth, seed);
 
     growth = min(1.0, growth * 0.998 + neighbor_avg * spread_mult * depth_mask * branch_density);
 
@@ -141,7 +143,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     heat = mix(heat, targetHeat, 0.18 + bass * 0.08 + mids * 0.06);
     heat = heat * (0.985 - treble * 0.01);
 
-    textureStore(dataTextureA, coord, vec4<f32>(growth, heat, 0.0, 1.0));
+    // Idea 3 — cold-light afterglow: luciferin keeps glowing blue-green after the tissue cools.
+    // Fed by the heat that just drained away, decays slower than heat.
+    let drained = max(prev.g - heat, 0.0);
+    let afterglow = clamp(prev.b * 0.992 + drained * 1.5, 0.0, 1.0);
+
+    textureStore(dataTextureA, coord, vec4<f32>(growth, heat, afterglow, 1.0));
 
     // Vein structure
     let vein_noise = noise3d(vec3<f32>(uv * 20.0, time * 0.5));
@@ -157,6 +164,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let growthEnergy = heat * glow_intensity;
     let temperature = mix(tempLow, tempHigh, growthEnergy);
     var bio_light = blackbodyColor(temperature);
+    // Idea 2 — Draper point: below ~800 K nothing glows. Emission fades to zero at the cool
+    // end instead of leaving a faint red wash over cold tissue.
+    bio_light = bio_light * smoothstep(0.02, 0.16, growthEnergy);
 
     let pulse_beat = sin(time * 10.0 + bass * 5.0) * 0.3 + 0.7;
     bio_light = bio_light * pulse_beat * (1.0 + frontHeat * 0.65);
@@ -179,6 +189,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Composition
     let growth_alpha = mix(0.25, 0.92, growth * glow_intensity);
     var final_color = scatteredBase * (1.0 - veins * 0.3) + bio_light + ss_scatter;
+    final_color += vec3<f32>(0.04, 0.5, 0.42) * afterglow * glow_intensity * (0.6 + 0.8 * veins) * (1.0 + treble * 0.5);
+    final_color = max(final_color, vec3<f32>(0.0));
 
     // Tone map
     final_color = toneMapACES(final_color);

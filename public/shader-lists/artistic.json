@@ -3171,7 +3171,8 @@
     "url": "shaders/nebulous-dream.wgsl",
     "description": "Swirling vortex of rainbow candy clouds with fractal noise and flow fields.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
