@@ -150,8 +150,13 @@ if [ "$PROFILE" != "release" ]; then
     exit 0
 fi
 
+# Record the hash of the build inputs so ci.yml's wasm:validate can tell a stale
+# committed artifact from a fresh one (scripts/wasm-source-hash.mjs).
+node "$REPO_ROOT/scripts/wasm-source-hash.mjs" --write
+
 echo "✅ WASM build complete!"
 echo "   Emscripten output: public/wasm/pixelocity_wasm.{js,wasm} (ASYNCIFY fallback)"
 echo "                      public/wasm/pixelocity_wasm_jspi.{js,wasm} (JSPI primary)"
+echo "   Source hash:       public/wasm/source-hash.json (commit it with the binaries)"
 echo "   Bridge copies:     public/wasm/wasm_bridge.js, src/wasm/wasm_bridge.js"
 echo "   Edit JS bridge:    src/wasm/bridge/*.ts (sync via concat_bridge.sh)"
