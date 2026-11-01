@@ -495,8 +495,17 @@
       "history": []
     },
     "gen-audio-spirograph-julia": {
-      "hash": "47467c8041803c40",
-      "history": []
+      "hash": "6fbd1b3b69f9c9e5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "6fbd1b3b69f9c9e5",
+          "prev_hash": "47467c8041803c40",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        }
+      ]
     },
     "gen-biomechanical-hive-julia": {
       "hash": "38efed292c3a9279",
@@ -680,8 +689,17 @@
       ]
     },
     "hyperbolic-dreamweaver-julia": {
-      "hash": "7de5eaac65b4932d",
-      "history": []
+      "hash": "beac411761c25c99",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "beac411761c25c99",
+          "prev_hash": "7de5eaac65b4932d",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        }
+      ]
     },
     "impasto-swirl-bilateral": {
       "hash": "97adcfba1c724211",
@@ -766,8 +784,17 @@
       "history": []
     },
     "multi-fractal-compositor": {
-      "hash": "3025e5f491d7ad4c",
-      "history": []
+      "hash": "e4ce2a6ca79fb57f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "e4ce2a6ca79fb57f",
+          "prev_hash": "3025e5f491d7ad4c",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        }
+      ]
     },
     "nano-assembler-crystal": {
       "hash": "026decad8b0beca7",
@@ -2441,8 +2468,17 @@
       "history": []
     },
     "gen-3d-sierpinski-chaos": {
-      "hash": "a4c4bcf6241a8fff",
-      "history": []
+      "hash": "99cd34ce0a51d00f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "99cd34ce0a51d00f",
+          "prev_hash": "a4c4bcf6241a8fff",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        }
+      ]
     },
     "gen-4d-projection-dream-weavers": {
       "hash": "f1968abbdfedf869",
@@ -6037,7 +6073,7 @@
       ]
     },
     "gen-mandelbox-explorer": {
-      "hash": "ad93a9d8b888c398",
+      "hash": "065c5c2f54206ad5",
       "history": [
         {
           "event": "upgraded",
@@ -6046,6 +6082,14 @@
           "prev_hash": "9ac2c042a6450b3f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "065c5c2f54206ad5",
+          "prev_hash": "ad93a9d8b888c398",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
         }
       ]
     },
@@ -7937,7 +7981,7 @@
       ]
     },
     "gen-grok41-mandelbrot": {
-      "hash": "f708347e267f72d9",
+      "hash": "2246523736c205a0",
       "history": [
         {
           "event": "upgraded",
@@ -7946,6 +7990,14 @@
           "prev_hash": "f44ea4fd11d33074",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "2246523736c205a0",
+          "prev_hash": "f708347e267f72d9",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
         }
       ]
     },
@@ -8028,8 +8080,17 @@
       ]
     },
     "gen-julia-set": {
-      "hash": "7a030bb5c0f7981c",
-      "history": []
+      "hash": "13701cfb3b7aae07",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "13701cfb3b7aae07",
+          "prev_hash": "7a030bb5c0f7981c",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        }
+      ]
     },
     "gen-kimi-crystal": {
       "hash": "0b43c21e2e88271b",
@@ -8049,8 +8110,17 @@
       "history": []
     },
     "gen_mandelbulb_3d": {
-      "hash": "78b30a58fda0fc73",
-      "history": []
+      "hash": "6282d33eb572f103",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "6282d33eb572f103",
+          "prev_hash": "78b30a58fda0fc73",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        }
+      ]
     },
     "gen-orb": {
       "hash": "09e8c257abd49c4d",
@@ -8189,8 +8259,17 @@
       ]
     },
     "kimi-fractal-dreams": {
-      "hash": "03a5fa81a6d27712",
-      "history": []
+      "hash": "08ff7084e1e06a27",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "08ff7084e1e06a27",
+          "prev_hash": "03a5fa81a6d27712",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        }
+      ]
     },
     "kimi-nebula-depth": {
       "hash": "7a5810cf0d29d588",
@@ -8443,8 +8522,17 @@
       "history": []
     },
     "spec-quaternion-julia": {
-      "hash": "ff8db6958f2bb08e",
-      "history": []
+      "hash": "a6d030ea5ab30796",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:45:39.212Z",
+          "hash": "a6d030ea5ab30796",
+          "prev_hash": "ff8db6958f2bb08e",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        }
+      ]
     },
     "spore-galaxy": {
       "hash": "ce5374f9486cfee6",
