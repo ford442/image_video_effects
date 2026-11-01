@@ -2,30 +2,12 @@
 //  Chromatic Reaction-Diffusion
 //  Category: advanced-hybrid
 //  Features: advanced-hybrid, gray-scott-rd, multi-channel, chromatic-separation
-//  Ideas: Turing morphogen wave dispersion, interfacial Marangoni shear, chemiluminescent boundary fluorescence
+//  Upgraded: 2026-11-01 (sonnet/batch-06, second pass)
+//  Ideas: Turing morphogen wave dispersion, interfacial Marangoni shear, chemiluminescent boundary fluorescence; photo-seeded nucleation droplets, dispersive per-channel diffusivity, gel relief sheen
 //  A packing: raw chemical states [newR, newG, newB, activity] in dataTextureA; writeTexture receives ACES display composite
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Clamped exact Laplacian kernel
 fn laplacian9(coord: vec2<i32>, dims: vec2<i32>, channel: i32) -> f32 {
@@ -43,9 +25,15 @@ fn laplacian9(coord: vec2<i32>, dims: vec2<i32>, channel: i32) -> f32 {
     return sum;
 }
 
-fn reactDiffuse(current: f32, lap: f32, feed: f32, kill: f32, crossCoupling: f32) -> f32 {
+fn hash21(p: vec2<f32>) -> f32 {
+    var q = fract(p * vec2<f32>(0.1031, 0.1030));
+    q += dot(q, q.yx + 33.33);
+    return fract((q.x + q.y) * q.x);
+}
+
+fn reactDiffuse(current: f32, lap: f32, feed: f32, kill: f32, crossCoupling: f32, diffK: f32) -> f32 {
     let reaction = current * current * current;
-    let diffusion = lap * 0.2 + crossCoupling * 0.05;
+    let diffusion = lap * diffK + crossCoupling * 0.05;
     let feedTerm = feed * (1.0 - current);
     let killTerm = (kill + feed) * current;
     
@@ -105,9 +93,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let crossCouplingB = (lapR - lapG) * 0.3;
 
     // Reaction-diffusion update
-    var newR = reactDiffuse(curR, lapR, feedR, killR, crossCouplingR);
-    var newG = reactDiffuse(curG, lapG, feedG, killG, crossCouplingG);
-    var newB = reactDiffuse(curB, lapB, feedB, killB, crossCouplingB);
+    // IDEA 5: dispersive diffusivity — the three morphogens spread at different
+    // speeds (R fast, B slow), so their fronts split into chromatic fringes
+    // whose width scales with the chromatic slider.
+    let disp = chromaticSep * 8.0;
+    var newR = reactDiffuse(curR, lapR, feedR, killR, crossCouplingR, 0.2 * (1.0 + disp));
+    var newG = reactDiffuse(curG, lapG, feedG, killG, crossCouplingG, 0.2);
+    var newB = reactDiffuse(curB, lapB, feedB, killB, crossCouplingB, 0.2 * (1.0 - disp * 0.6));
+
+    // IDEA 4: photo-seeded nucleation — drifting droplet sites precipitate
+    // morphogen where the source image is bright, so patterns crystallise out
+    // of the photo (and the dish never sits at the dead zero fixed point).
+    let seedGrid = uv * vec2<f32>(aspect, 1.0) * 14.0;
+    let seedCell = floor(seedGrid);
+    let seedH = hash21(seedCell);
+    let seedPhase = fract(time * 0.12 + seedH);
+    let seedLum = dot(textureSampleLevel(readTexture, u_sampler, (seedCell + 0.5) / (vec2<f32>(aspect, 1.0) * 14.0), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let seedOn = step(seedPhase, 0.04) * step(0.35, seedH * 0.5 + seedLum * 0.7);
+    let seedDist = length(fract(seedGrid) - vec2<f32>(0.5));
+    let droplet = seedOn * smoothstep(0.32, 0.0, seedDist);
+    newR += droplet * (0.45 + 0.4 * hash21(seedCell + 7.0));
+    newG += droplet * (0.45 + 0.4 * hash21(seedCell + 13.0));
+    newB += droplet * (0.45 + 0.4 * hash21(seedCell + 29.0));
     
     // Mouse injection with drag radius
     let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -185,6 +192,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edge = length(gradR) + length(gradG) + length(gradB);
     let chemiluminescence = vec3<f32>(edge * 0.7, edge * 0.4 + activity * 0.3, edge * 0.9 + treble * 0.3) * chromaticSep * 12.0;
     color += chemiluminescence;
+
+    // IDEA 6: gel relief sheen — concentration height lit from the cursor,
+    // so ridges between morphogen domains catch a specular glint.
+    let hGrad = (gradR + gradG + gradB) * (1.0 / 3.0);
+    let relN = normalize(vec3<f32>(-hGrad * 6.0, 1.0));
+    let lightV = normalize(vec3<f32>((mouse - uv) * vec2<f32>(aspect, 1.0), 0.6));
+    let halfV = normalize(lightV + vec3<f32>(0.0, 0.0, 1.0));
+    let sheen = pow(max(dot(relN, halfV), 0.0), 40.0);
+    color += vec3<f32>(0.9, 0.95, 1.0) * sheen * patternIntensity * 0.35;
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let alpha = mix(0.65, 0.98, patternIntensity);

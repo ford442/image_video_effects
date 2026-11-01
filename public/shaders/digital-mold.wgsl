@@ -3,7 +3,8 @@
 //  Category: interactive-mouse
 //  Features: animated, reaction-diffusion, spore-noise, depth-humidity, upgraded-rgba, temporal
 //  Complexity: High
-//  Upgraded: 2026-08-23 (Batch 64)
+//  Upgraded: 2026-11-01 (sonnet/batch-06, second pass)
+//  Ideas: ambient spore germination on nutrient-rich damp patches; colony zonation rings; sporangia fruiting dots on concentration peaks
 //
 //  This shader was already at the pool standard (real Gray-Scott, exact
 //  dataTextureC loads, guarded ripple loop, ACES, chemical state in A). This
@@ -29,26 +30,8 @@
 // ═══════════════════════════════════════════════════════════════════════════════ (Batch 52: Gray-Scott reaction-diffusion, hyphal growth, exact C load)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=FeedRate, y=KillRate, z=DiffusionA, w=DiffusionB
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FeedRate, y=KillRate, z=DiffusionA, w=DiffusionB
 
 fn aces_film(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -150,6 +133,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     u_chem = min(u_chem, 1.0 - spore_brush * 0.5);
   }
 
+  // ── Structure 3: ambient spore germination ────────────────────────────────
+  // Airborne spores land on a coarse drifting grid and germinate only where
+  // the plate is nutrient-rich (bright image) and damp (depth humidity), so
+  // colonies found themselves instead of waiting for the pointer.
+  let germGrid = uv * vec2<f32>(aspect, 1.0) * 16.0;
+  let germCell = floor(germGrid);
+  let germH = hash22(germCell + 3.0).x;
+  let germPhase = fract(t * 0.05 + germH);
+  let germOn = step(germPhase, 0.025) * step(0.3, nutC * humidity) * step(0.3, germH);
+  let germCore = germOn * smoothstep(0.22, 0.0, length(fract(germGrid) - vec2<f32>(0.5)));
+  if (germCore > 0.1) {
+    v_chem = max(v_chem, germCore * 0.7);
+    u_chem = min(u_chem, 1.0 - germCore * 0.5);
+  }
+
   // Click spore bursts (capped at 50)
   let ripple_count = min(u32(u.config.y), 50u);
   for (var i = 0u; i < ripple_count; i = i + 1u) {
@@ -178,11 +176,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let moss_color = mix(vec3<f32>(0.05, 0.18, 0.08), vec3<f32>(0.2, 0.65, 0.35), hyphae * 0.5 + 0.5);
   let mold_final_glow = mix(moss_color, biolum_tint * 1.5, clamp(v_chem * (1.0 + treble), 0.0, 1.0));
 
-  var final_color = mix(image_sample.rgb, mold_final_glow, mold_density * 0.85);
+  // ── Structure 4: colony zonation rings ──────────────────────────────────
+  // Real colonies grow in concentric day/night bands; here the band index
+  // follows the autocatalyst level, dimming alternate rings.
+  let zone_ring = 0.78 + 0.22 * sin(v_chem * 38.0 - t * 0.2);
+  // ── Structure 5: sporangia fruiting dots on concentration peaks ─────────
+  let v_mean = (c_r.g + c_l.g + c_u.g + c_d.g) * 0.25;
+  let fruiting = smoothstep(0.012, 0.04, v_chem - v_mean) * smoothstep(0.3, 0.5, v_chem);
+  let fruit_col = vec3<f32>(0.95, 0.92, 0.7) * (1.0 + treble);
+
+  var final_color = mix(image_sample.rgb, mold_final_glow * zone_ring, mold_density * 0.85);
+  final_color = mix(final_color, fruit_col, fruiting * 0.8);
   final_color = aces_film(final_color);
 
   // Semantic alpha: the colony is the content, the plate behind it is not.
-  let colony = clamp(mold_density * 0.85 + v_chem * 0.4, 0.0, 1.0);
+  let colony = clamp(mold_density * 0.85 + v_chem * 0.4 + fruiting * 0.2, 0.0, 1.0);
   let out_alpha = clamp(mix(src_alpha * 0.6 + 0.15, 1.0, colony), 0.0, 1.0);
   let out_rgba = vec4<f32>(final_color, out_alpha);
   let out_state = vec4<f32>(u_chem, v_chem, hyphae, mold_density);

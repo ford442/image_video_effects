@@ -2243,7 +2243,7 @@
     "id": "chromatic-reaction-diffusion",
     "name": "Chromatic Reaction-Diffusion",
     "url": "shaders/chromatic-reaction-diffusion.wgsl",
-    "description": "Multi-channel Gray-Scott reaction-diffusion with chromatic separation, Turing cross-gradient dispersion, interfacial Marangoni shear, and chemiluminescent boundary fluorescence.",
+    "description": "Multi-channel Gray-Scott reaction-diffusion with chromatic separation, Turing cross-gradient dispersion, interfacial Marangoni shear, and chemiluminescent boundary fluorescence; photo-seeded nucleation droplets, dispersive per-channel diffusivity that splits the fronts into chromatic fringes, and a cursor-lit gel relief sheen.",
     "workgroup_size": [
       16,
       16,
@@ -2258,7 +2258,10 @@
       "chemiluminescence",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "nucleation",
+      "dispersive-diffusion",
+      "relief-sheen"
     ],
     "params": [
       {

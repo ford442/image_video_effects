@@ -2250,7 +2250,7 @@
     "id": "digital-mold",
     "name": "Digital Mold",
     "url": "shaders/digital-mold.wgsl",
-    "description": "Gray-Scott mycelium with nutrient-gradient chemotaxis — hyphae extend up the image-luminance gradient the way real mycelium forages, rather than diffusing isotropically — and per-band sporulation regimes, where each FFT bin pushes its own zone into a different region of the Gray-Scott parameter plane so the colony grows visibly different structures per frequency. Also replaces a per-frame spore hash that strobed with a coherent drifting field, and derives alpha from colony density instead of passing the source alpha through.",
+    "description": "Gray-Scott mycelium with nutrient-gradient chemotaxis — hyphae extend up the image-luminance gradient the way real mycelium forages, rather than diffusing isotropically — and per-band sporulation regimes, where each FFT bin pushes its own zone into a different region of the Gray-Scott parameter plane so the colony grows visibly different structures per frequency. Also replaces a per-frame spore hash that strobed with a coherent drifting field, and derives alpha from colony density instead of passing the source alpha through; also ambient spore germination on bright damp patches, colony zonation rings, and sporangia fruiting dots on concentration peaks.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2266,7 +2266,10 @@
       "semantic-alpha",
       "aces",
       "gray-scott",
-      "chemotaxis"
+      "chemotaxis",
+      "spore-germination",
+      "zonation-rings",
+      "fruiting-bodies"
     ],
     "updated": true,
     "params": [
