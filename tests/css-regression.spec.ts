@@ -8,7 +8,7 @@
  *
  * Baselines are environment-specific (font hinting / AA). Capture and compare
  * on the same image:
- *   SKIP_WASM_BUILD=1 npm run build
+ *   npm run build
  *   npx playwright test tests/css-regression.spec.ts --project=chromium --update-snapshots
  *
  * Threshold: the global maxDiffPixelRatio (0.25) is far too loose for cascade

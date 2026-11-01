@@ -311,7 +311,7 @@ These metrics can be used to detect performance regressions.
 ## Known Limitations (July 2026)
 
 - WASM is **Tier B experimental** — not production default ([`WASM_BACKEND_POLICY.md`](./WASM_BACKEND_POLICY.md)).
-- `build.sh` fails when `emcc` is missing unless `SKIP_WASM_BUILD=1` — see [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md).
+- `build.sh` fails when `emcc` is missing; `npm run build` only calls it with `BUILD_WASM=1` — see [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md).
 - Playwright GPU tests skip on headless CI without a WebGPU adapter; use `WASM_GPU_TESTS=1` on a GPU machine.
 - Promotion requires attached benchmark JSON — see [`WASM_PROMOTION_TRACKING.md`](./WASM_PROMOTION_TRACKING.md).
 - WASM `getGPUTimings()` reports wall-clock ms only (no GPU timestamp queries).

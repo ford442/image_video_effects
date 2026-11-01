@@ -2,7 +2,8 @@
  * #1314 D — C++ measurement exports on a real (software) WebGPU device.
  *
  * Runs in the `swiftshader` Playwright project. Needs a production build
- * (`SKIP_WASM_BUILD=1 npm run build`, or plain `npm run build` with emsdk).
+ * (`npm run build` ships the committed public/wasm/*; `BUILD_WASM=1 npm run build`
+ * recompiles them with emsdk).
  *
  * Why the second test drives its own Module: the app bridge calls the
  * suspending `loadShader` export with a sync `ccall`. Under ASYNCIFY the

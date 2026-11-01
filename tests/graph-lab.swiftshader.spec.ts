@@ -11,7 +11,7 @@
  * same-frame dataA → dataC handoff plus cross-frame feedback). Its entry ids are
  * read from the shipped definition, not hard-coded.
  *
- * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2`.
+ * Needs a production build: `npm run build && npm run test:engine2`.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'fs';

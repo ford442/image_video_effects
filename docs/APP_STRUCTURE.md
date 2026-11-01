@@ -169,7 +169,7 @@ Main went red on three different ratchet gates in six days because shader-batch 
 ```bash
 npm run test:ci
 npm run verify:device-policy
-SKIP_WASM_BUILD=1 npm run build
+npm run build
 ```
 
 Thumbnails (requires GPU): see [`docs/THUMBNAIL_PIPELINE.md`](THUMBNAIL_PIPELINE.md) · `npm run thumbs:generate -- --missing` · status: `npm run thumbs:status`

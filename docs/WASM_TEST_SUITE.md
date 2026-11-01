@@ -12,7 +12,7 @@ Full automated testing for the C++ WASM renderer path — parity with the TypeSc
    npm run wasm:build
    npm run build
    # or on machines without emsdk:
-   SKIP_WASM_BUILD=1 npm run build
+   npm run build
    npm run wasm:validate
    ```
 
@@ -105,7 +105,7 @@ See [`WASM_SMOKE_TEST.md`](./WASM_SMOKE_TEST.md) for browser DevTools checks whe
 The `test-wasm-e2e` job in [`.github/workflows/wasm.yml`](../.github/workflows/wasm.yml) runs only on PRs touching `wasm_renderer/**`, `public/wasm/**` or `tests/wasm-*`, weekly on `main`, or on demand (WASM is frozen R&D, #1080):
 
 1. Downloads WASM artifacts from the `wasm` job
-2. Builds production app (`SKIP_WASM_BUILD=1`)
+2. Builds production app (`npm run build` on the downloaded artifacts)
 3. Runs `tests/wasm-renderer.smoke.spec.ts` + `tests/layerChain.smoke.spec.ts` (soft, `WASM_GPU_TESTS=0`)
 4. Uploads Playwright HTML report
 

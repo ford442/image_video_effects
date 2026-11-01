@@ -31,6 +31,7 @@ import type { SlotLayer } from '../layerState';
 import type { HdrToneMapSettings } from '../../services/hdrOutput';
 import type { DirectPresentStatus, ShaderPrecisionInfo } from '../WebGPURenderer';
 import type { CanvasColorState, DisplayP3Result, WebGpuProbeSerializable } from '../webgpuBootProbe';
+import type { ResolvedRoute } from '../../modulation/types';
 
 /** What the worker scope supports (sent once, before init). */
 export interface RenderWorkerCaps {
@@ -106,7 +107,11 @@ export type RenderCommand =
   /** Test hook: raise an uncaught error in the worker, like a crash (#1395). */
   | { type: 'simulateWorkerCrash' }
   /** Graph Lab draft: register (or, with null, drop) a runtime Tier C graph under `id`, with its sim-ring request. */
-  | { type: 'setRuntimeGraph'; id: string; graph: MultipassGraphDef | null; simRing?: RuntimeSimRingRequest | null };
+  | { type: 'setRuntimeGraph'; id: string; graph: MultipassGraphDef | null; simRing?: RuntimeSimRingRequest | null }
+  /** Modulation bus (#1513): every route (ranges resolved) and the tempo; replaces the previous set. */
+  | { type: 'setModulation'; routes: ResolvedRoute[]; bpm: number }
+  /** Modulation bus: latest external controller values (0..1) by `${source}:${id}`. */
+  | { type: 'setModulationExternal'; values: Record<string, number> };
 
 export interface RenderInitInfo {
   ok: boolean;
@@ -253,6 +258,8 @@ export const RENDER_COMMAND_TYPES = [
   'simulateDeviceLoss',
   'simulateWorkerCrash',
   'setRuntimeGraph',
+  'setModulation',
+  'setModulationExternal',
 ] as const;
 
 export const RENDER_RPC_TYPES = [

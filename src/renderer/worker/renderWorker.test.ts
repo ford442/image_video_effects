@@ -22,6 +22,8 @@ import {
 } from './protocol';
 import { createRenderWorkerHost, HostedRenderer, RenderWorkerHostDeps, STALE_GENERATION_ERROR } from './renderWorkerHost';
 import { createInputRingBuffer, InputRingWriter } from './inputRing';
+import { getModulationRuntime, resetModulationRuntime } from '../../modulation/runtime';
+import { modulationStore } from '../../modulation/store';
 import { connectRenderWorker } from './renderWorkerClient';
 import {
   claimDeviceGeneration,
@@ -243,6 +245,31 @@ describe('render worker host ↔ client', () => {
     expect(getRuntimeGraph('graphlab-draft')).toBeNull();
     expect(hasGraph('graphlab-draft')).toBe(false);
     expect(getRuntimeSimRingRequest('graphlab-draft')).toBeUndefined();
+  });
+
+  it('applies setModulation / setModulationExternal to the worker-realm bus', async () => {
+    resetModulationRuntime();
+    const { mainPort } = setup();
+    const client = await connectRenderWorker(mainPort);
+    client.send({
+      type: 'setModulation',
+      bpm: 140,
+      routes: [{
+        id: 'm', source: { kind: 'external', key: 'midi-cc:7' }, target: { slot: 0, param: 'p2' },
+        depth: 0.5, offset: 0, curve: 'linear', min: 0, max: 1,
+      }],
+    });
+    client.send({ type: 'setModulationExternal', values: { 'midi-cc:7': 1 } });
+    await flushPorts();
+    const bus = getModulationRuntime();
+    expect(bus.routeCount).toBe(1);
+    expect(bus.getBpm()).toBe(140);
+    const slots = [{ params: [0.1, 0.2, 0.3, 0.4] }];
+    const restore = bus.applyOverlay(slots, 0, { bass: 0, mid: 0, treble: 0 });
+    expect(slots[0]!.params[1]).toBeCloseTo(0.7);
+    restore();
+    expect(slots[0]!.params[1]).toBe(0.2);
+    resetModulationRuntime();
   });
 
   it('re-negotiates the canvas color space through the setDisplayP3 RPC', async () => {
@@ -618,6 +645,27 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     await flushPorts();
     expect(getRuntimeGraph('graphlab-draft')).toBeNull();
     await backend.destroy();
+  });
+
+  it('sends the modulation routes after init and on every change, and stops on dispose', async () => {
+    modulationStore.reset();
+    const { backend, mainPort } = await backendWithWorker();
+    const sent = (mainPort as FakePort).sent as Array<{ type: string; routes?: unknown[]; values?: unknown }>;
+    expect(sent.filter((m) => m.type === 'setModulation')).toHaveLength(1);
+    modulationStore.upsertRoute({
+      id: 'x', source: { kind: 'audio', band: 'bass' }, target: { slot: 1, param: 'opacity' }, depth: 1, offset: 0, curve: 'smooth',
+    });
+    modulationStore.setExternal({ 'key:a': 1 });
+    const mods = sent.filter((m) => m.type === 'setModulation');
+    expect(mods).toHaveLength(2);
+    expect(mods[1]!.routes).toEqual([expect.objectContaining({ id: 'x', min: 0, max: 1 })]);
+    expect(sent.find((m) => m.type === 'setModulationExternal')).toMatchObject({ values: { 'key:a': 1 } });
+    await backend.destroy();
+    const before = sent.length;
+    modulationStore.clear();
+    expect(sent.length).toBe(before);
+    modulationStore.reset();
+    resetModulationRuntime();
   });
 
   it('routes worker errors into the page error handler', async () => {
