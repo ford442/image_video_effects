@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: hopper terrace stairs; terrace-lip emissive; nebula residue from C.a
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: hopper terrace stairs; terrace-lip emissive; nebula residue from C.a; fold-count terrace oxide film (§12.2E/F); step-count crevice AO (§12.2E)
 //  A packing: A.rgb ACES display; A.a raw nebula (not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -12,7 +12,6 @@
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
-const MAX_DIST: f32 = 12.0;
 const BASE_STEPS: i32 = 64;
 const STEP_RANGE: f32 = 32.0;   // adaptive steps: 64..96 with Nebula Density
 const SMIN_K: f32 = 0.25;       // smooth-union blend radius
@@ -35,6 +34,10 @@ fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
+// Scene-plane offset from the pointer; y flipped so the lattice follows the cursor on screen.
+fn mouseOffset() -> vec3<f32> {
+    return vec3<f32>((u.zoom_config.y - 0.5) * 2.0, (0.5 - u.zoom_config.z) * 2.0, 0.0);
+}
 // 2D symmetry-fold (kaleidoscope) for the quantum-storm star field
 fn kaleido(uv: vec2<f32>, segments: f32) -> vec2<f32> {
     let seg = TAU / segments;
@@ -52,8 +55,7 @@ fn starField(p: vec2<f32>) -> f32 {
 // IFS bismuth lattice + smooth-union hopper-crystal octahedra
 fn map(pos: vec3<f32>, folds: i32, foldScale: f32, wobble: f32) -> f32 {
     var p = pos;
-    let mouse = (u.zoom_config.yz - 0.5) * 2.0; // centered scene plane, y=0 top kept
-    p = p - vec3<f32>(mouse, 0.0);
+    p = p - mouseOffset();
     for (var i = 0; i < folds; i++) {
         p = abs(p) - vec3<f32>(0.5, 0.8, 0.5) * foldScale;
         p = p * rotX(u.config.x * 0.1 + wobble) * rotY(u.config.x * 0.15);
@@ -71,20 +73,43 @@ fn map(pos: vec3<f32>, folds: i32, foldScale: f32, wobble: f32) -> f32 {
     return smin(boxD, octD, SMIN_K);
 }
 
-// Terrace lip: bright only on the outer edge of each hopper stair.
-fn hopperLip(pos: vec3<f32>, folds: i32, foldScale: f32, wobble: f32, terrace: f32) -> f32 {
-    var p = pos;
-    let mouse = (u.zoom_config.yz - 0.5) * 2.0;
-    p = p - vec3<f32>(mouse, 0.0);
+// Terrace lip + material: x = bright only on the outer edge of each hopper stair,
+// y = fraction of fold reflections this point went through, z = terrace shell index.
+fn foldInfo(pos: vec3<f32>, folds: i32, foldScale: f32, wobble: f32, terrace: f32) -> vec3<f32> {
+    var p = pos - mouseOffset();
+    var flips = 0.0;
     for (var i = 0; i < folds; i++) {
+        flips += f32(p.x < 0.0) + f32(p.y < 0.0) + f32(p.z < 0.0);
         p = abs(p) - vec3<f32>(0.5, 0.8, 0.5) * foldScale;
         p = p * rotX(u.config.x * 0.1 + wobble) * rotY(u.config.x * 0.15);
     }
     let q = abs(p * 0.7);
     let sum = q.x + q.y + q.z;
     let steps = 5.0 + terrace * 7.0;
-    let band = fract(sum * steps);
-    return smoothstep(0.78, 0.97, band);
+    let scaled = sum * steps;
+    let lip = smoothstep(0.78, 0.97, fract(scaled));
+    return vec3<f32>(lip, flips / (3.0 * f32(max(folds, 1))), floor(scaled));
+}
+
+// ── Idea 1: oxide film interference (§12.2F thin-film phase), per terrace ──
+// Bismuth's rainbow is a thin oxide layer whose thickness steps with each hopper terrace.
+fn thinFilm(cosT: f32, thicknessNm: f32, n: f32) -> vec3<f32> {
+    let lam = vec3<f32>(650.0, 550.0, 450.0);
+    let delta = (4.0 * PI * n * thicknessNm * max(cosT, 0.05)) / lam;
+    let c = cos(delta * 0.5);
+    return c * c;
+}
+
+// ── Idea 2: step-count AO (§12.2E) on the already-marched surface ──────────
+fn aoFive(p: vec3<f32>, n: vec3<f32>, folds: i32, foldScale: f32, wobble: f32) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 5; i = i + 1) {
+        let h = 0.02 + 0.16 * f32(i) / 5.0;
+        occ += (h - map(p + n * h, folds, foldScale, wobble)) * sca;
+        sca *= 0.55;
+    }
+    return clamp(1.0 - 2.4 * occ, 0.0, 1.0);
 }
 
 fn calcNormal(p: vec3<f32>, folds: i32, foldScale: f32, wobble: f32) -> vec3<f32> {
@@ -104,7 +129,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    let uv = (vec2<f32>(pixel) - res * 0.5) / res.y;
+    let uv = vec2<f32>(f32(pixel.x) - res.x * 0.5, res.y * 0.5 - f32(pixel.y)) / res.y; // +y up
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -124,7 +149,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Orbiting camera rebuilt from mouse + time
     let camA = (u.zoom_config.y - 0.5) * 1.2 + time * 0.07;
     let dolly = 1.0 - u.zoom_config.w * 0.25; // mouse-down pushes into the storm
-    let ro = rotY(camA) * vec3<f32>(0.0, 0.0, -4.5 * dolly);
+    // Camera stands off the lattice in proportion to its fold radius (was inside the shell at Fold Scale 1).
+    let camDist = (6.5 + 4.5 * foldScale) * dolly;
+    let maxDist = (6.5 + 4.5 * foldScale) * 1.8;
+    let ro = rotY(camA) * vec3<f32>(0.0, 0.0, -camDist);
     let rd = rotY(camA) * normalize(vec3<f32>(uv, 1.0));
 
     // Raymarch: growing epsilon (LOD) + early exits, volumetric nebula accumulation
@@ -137,7 +165,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let eps = 0.0008 * (1.0 + t * 0.5);
         if (d < eps) { hit = true; break; }
         nebula += exp(-max(d, 0.0) * 2.5) * 0.01 * nebDensity * (1.0 + bass * audioReact);
-        if (nebula > 1.6 || t > MAX_DIST) { break; }
+        if (nebula > 1.6 || t > maxDist) { break; }
         t += d * 0.85;
     }
 
@@ -148,6 +176,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let lig = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let dif = max(dot(n, lig), 0.0);
         let fre = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
+        let ao = aoFive(p, n, folds, foldScale, wobble);
+        let fi = foldInfo(p, folds, foldScale, wobble, iridShift);
 
         // Cheap soft shadow toward the key light (hit pixels only, 8 taps)
         var shadow = 1.0;
@@ -163,10 +193,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let phase = iridShift * TAU + time * 0.3 + fre * 2.5;
         var irid = 0.5 + 0.5 * cos(phase + p.xyx * 2.0 + vec3<f32>(0.0, 2.0, 4.0));
         irid = mix(irid, irid.bgr, fre * 0.6); // thin-film hue flip at grazing angles
-        col = irid * (0.2 + dif * shadow * 0.9);
+        // Idea 1: each terrace shell / fold generation grows its own oxide thickness (nm).
+        let thick = 140.0 + 300.0 * iridShift + 160.0 * fi.y + 38.0 * fract(fi.z * 0.37) * 4.0;
+        let film = thinFilm(max(dot(n, -rd), 0.0), thick, 1.9);
+        irid = mix(irid, irid * (0.35 + 1.3 * film), 0.6);
+        col = irid * (0.2 * (0.35 + 0.65 * ao) + dif * shadow * (0.45 + 0.55 * ao) * 0.9); // Idea 2: crevice AO
         col += vec3<f32>(1.0, 0.2, 0.8) * bass * audioReact * 0.6 * (0.3 + fre); // auroral emissive
         // Terrace-lip emissive: bass lights stair edges only.
-        let lip = hopperLip(p, folds, foldScale, wobble, iridShift);
+        let lip = fi.x;
         col += vec3<f32>(0.95, 0.55, 1.0) * lip * bass * audioReact * 0.85;
     }
 
@@ -184,7 +218,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col = acesToneMap(col * 1.25);
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(0.12 + luma * 0.9, 0.0, 1.0); // semantic alpha
-    let depth = select(0.0, clamp(1.0 - t / MAX_DIST, 0.0, 1.0), hit);
+    let depth = select(0.0, clamp(1.0 - t / maxDist, 0.0, 1.0), hit);
 
     textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

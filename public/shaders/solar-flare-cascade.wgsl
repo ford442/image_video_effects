@@ -5,7 +5,9 @@
 //            chromatic-dispersion, depth-aware, stellar-simulation
 //  Complexity: High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-06, 2026-11-01
+//  Ideas: limb-darkened granulated photosphere (Eddington, limb reddens); anchored loop arcs with coronal rain; radial corona streamers
+//  A packing: display RGB (ACES) + presence
 // ═══════════════════════════════════════════════════════════════════
 //  Solar prominence and flare cascades erupting from a stellar limb.
 //  Bass drives flare intensity, mids create magnetic loop structures,
@@ -108,12 +110,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       cos(loopAngle) * surfaceRadius,
       sin(loopAngle) * surfaceRadius
     );
+    let loopOut = vec2<f32>(cos(loopAngle), sin(loopAngle));
     let loopHeight = 0.2 + mids * 0.4 + sin(time * 0.3 + fi) * 0.1;
     let loopArc = p - loopBase;
     let loopDist = abs(length(loopArc) - loopHeight * 0.5);
     let loopWidth = 0.015 + mids * 0.01;
-    let loopStr = smoothstepf32(loopWidth, 0.0, loopDist);
-    loopField = max(loopField, loopStr * (0.6 + mids * 0.4));
+    // ── Idea 2: anchored loop arcs + coronal rain ───────────────────
+    // A coronal loop is an arc rooted in the surface: keep only the outward half of the
+    // ring (feet sit on the limb), then slide plasma beads down the arc toward the feet.
+    let outward = dot(loopArc, loopOut);
+    let archMask = smoothstepf32(-0.004, 0.02, outward);
+    let arcT = atan2(outward, dot(loopArc, vec2<f32>(-loopOut.y, loopOut.x))) / 3.14159265;
+    let railPhase = fract(abs(arcT - 0.5) * 2.0 * 1.5 - time * 0.22 + fi * 0.37);
+    let railD = (railPhase - 0.5) * 5.0;
+    let rain = exp(-railD * railD);
+    let loopStr = smoothstepf32(loopWidth, 0.0, loopDist) * archMask;
+    loopField = max(loopField, loopStr * (0.6 + mids * 0.4) * (1.0 + 0.9 * rain));
   }
 
   // ═══ Flare Cascades (driven by bass) ═══
@@ -152,7 +164,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   // ═══ Corona Glow ═══
-  let coronaNoise = fbm3(vec3<f32>(p * 3.0, time * 0.15), 3);
+  // ── Idea 3: radial corona streamers ─────────────────────────────
+  // Coronal plasma follows open radial field lines: noise on the unit circle (angle only,
+  // slowly drifting outward with height) multiplies the isotropic cloud into helmet rays.
+  let radialDir = (p - limbCenter) / max(distFromLimb, 1e-4);
+  let streamerN = fbm3(vec3<f32>(radialDir * 2.2, time * 0.05 + aboveSurface * 0.9), 3);
+  let streamer = 0.45 + streamerN * 1.1;
+  let coronaNoise = fbm3(vec3<f32>(p * 3.0, time * 0.15), 3) * streamer;
   let coronaBase = smoothstepf32(coronaSpread * 0.3, -0.1, aboveSurface);
   let corona = coronaBase * (0.3 + coronaNoise * 0.4) * (1.0 + bass * 0.3);
 
@@ -185,10 +203,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Solar core glow
   let coreGlow = smoothstepf32(surfaceRadius + 0.05, surfaceRadius - 0.1, distFromLimb);
-  color += vec3<f32>(1.0, 0.9, 0.7) * coreGlow * (0.8 + bass * 0.4);
+  // ── Idea 1: limb-darkened granulated photosphere (Eddington) ─────
+  // I(mu) = 1 - u (1 - mu), stronger in blue so the limb reddens; granule lanes are
+  // convection-cell boundaries (ridged fbm). Replaces the flat white disc plate.
+  let rNorm = clamp(distFromLimb / (surfaceRadius + 0.04), 0.0, 1.0);
+  let mu = sqrt(max(1.0 - rNorm * rNorm, 0.0));
+  let limbDark = vec3<f32>(1.0) - vec3<f32>(0.55, 0.74, 0.92) * (1.0 - mu);
+  let granule = fbm3(vec3<f32>((p - limbCenter) * 14.0, time * 0.12), 3);
+  let lane = 1.0 - 0.45 * smoothstepf32(0.2, 0.0, abs(granule - 0.5));
+  let photosphere = vec3<f32>(1.0, 0.86, 0.62) * limbDark * lane * (0.8 + 0.35 * (granule - 0.5));
+  color += photosphere * coreGlow * (0.8 + bass * 0.4);
 
   // ═══ Temporal Feedback ═══
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   let feedbackAmount = 0.04 + bass * 0.015;
   color = mix(color, prev.rgb * 0.92, feedbackAmount);
 

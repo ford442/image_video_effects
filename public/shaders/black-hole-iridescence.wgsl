@@ -1,5 +1,13 @@
-// Black Hole Iridescence — Schwarzschild gravitational lensing, relativistic Doppler accretion disk, and thin-film interference.
-// A/C stores ACES display RGBA for relativistic photon persistence; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Black Hole Iridescence
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: photon ring + n=2 sub-ring (Doppler-weighted); Schwarzschild gravitational redshift sqrt(1-Rh/r); tangential arc shear of lensed background
+//  A packing: ACES display RGBA (A/C = relativistic photon persistence; B unused; depth passes source depth)
+// ═══════════════════════════════════════════════════════════════════
+// Schwarzschild gravitational lensing, relativistic Doppler accretion disk, and thin-film interference.
 
 #include "_prelude.wgsl"
 
@@ -120,7 +128,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let heldLensing = select(1.0, 1.5, held);
     let lensOffset = dir * deflection * heldLensing;
     let sampleUV = clamp(uv - vec2<f32>(lensOffset.x / aspect, lensOffset.y), vec2<f32>(0.0), vec2<f32>(1.0));
-    let bg = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    // ── Idea 3: tangential arc shear ────────────────────────────────
+    // Lensing stretches background images along the tangent around the
+    // shadow (Einstein arcs); two extra taps ±tangent, offset ∝ deflection.
+    let tangent = vec2<f32>(-dir.y, dir.x);
+    let shear = min(deflection * 0.3, 0.08);
+    let shearUV = vec2<f32>(tangent.x / aspect, tangent.y) * shear;
+    let bgC = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    let bgA = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + shearUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let bgB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - shearUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let bg = bgC * 0.5 + (bgA + bgB) * 0.25;
 
     // Relativistic accretion disk
     let diskAngle = atan2(delta.y, delta.x);
@@ -140,12 +157,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let iridescent = thinFilmColor(thickness, cosTheta, filmIOR) * iridescence;
 
     let fresnel = pow(1.0 - cosTheta, 2.5);
-    let diskEmission = mix(dopplerTint, iridescent, fresnel * 0.6 + 0.3) * diskGlow * (diskFalloff * 2.8 + diskBand * 1.2) * dopplerFactor;
+    // ── Idea 2: gravitational redshift (energy accounting) ──────────
+    // Photons climbing out of the well lose energy: g = sqrt(1 - Rh/r).
+    // Inner disk is dimmed and reddened instead of glowing brighter.
+    let gRed = sqrt(clamp(1.0 - eventHorizon / max(dist, 0.0001), 0.0, 1.0));
+    let redshiftTint = mix(vec3<f32>(1.0, 0.42, 0.22), vec3<f32>(1.0), gRed);
+    let redshift = mix(1.0, gRed, 0.7);
+    let diskEmission = mix(dopplerTint, iridescent, fresnel * 0.6 + 0.3) * diskGlow * (diskFalloff * 2.8 + diskBand * 1.2) * dopplerFactor * redshift * redshiftTint;
+
+    // ── Idea 1: photon ring + n=2 sub-ring ──────────────────────────
+    // Light that orbits the unstable photon sphere piles into a thin bright
+    // ring hugging the shadow, with a fainter higher-order image outside it.
+    // Brighter on the approaching (Doppler-boosted) side, thin-film tinted.
+    let pr1 = (diskRadius - 1.05) / 0.045;
+    let pr2 = (diskRadius - 1.15) / 0.03;
+    let photonRing = exp(-pr1 * pr1) + 0.35 * exp(-pr2 * pr2);
+    let ringTint = mix(vec3<f32>(1.0, 0.86, 0.62), iridescent, 0.5);
+    let ringEmission = ringTint * photonRing * diskGlow * 1.4 * clamp(dopplerFactor, 0.4, 1.6) * mix(0.6, 1.0, gRed);
 
     // Synchrotron flares from treble
     let synchrotron = pow(max(0.0, sin(diskAngle * 12.0 - time * 8.0 + treble * 5.0)), 12.0) * diskFalloff * (treble * 0.4);
 
-    finalRGB = bg + diskEmission + vec3<f32>(synchrotron);
+    finalRGB = bg + diskEmission + ringEmission + vec3<f32>(synchrotron);
     alpha = 1.0;
   }
 
