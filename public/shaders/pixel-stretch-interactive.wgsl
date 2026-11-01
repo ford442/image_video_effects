@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, anisotropic-stretch, depth-aware, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-06
-//  Ideas: coherence tear length; luma-sorted streak
+//  Upgraded: 2026-10-06, 2026-11-01
+//  Ideas: coherence tear length; luma-sorted streak; Cauchy channel scale (§12.2F); coherence gutter
 //  A packing: ACES display RGBA (C is not read)
 //  History: created 2026-05-17 (pixel-stretch + structure-tensor + aces chunks); upgraded 2026-05-31
 // ═══════════════════════════════════════════════════════════════════
@@ -23,6 +23,20 @@ fn hash12(p: vec2<f32>) -> f32 {
 
 fn luma(c: vec3<f32>) -> f32 {
   return dot(c, vec3(0.299, 0.587, 0.114));
+}
+
+// ── Idea 3: Cauchy channel scale (§12.2F) ────────────────────────
+// n(λ) = 1 + 1/λ², relative to green. Chromatic Scale still sets the
+// old ±0.5 reach; the curve decides how red and blue share it.
+fn cauchyScale(dispersion: f32) -> vec3<f32> {
+  let lam = vec3<f32>(0.650, 0.550, 0.450);
+  let n = 1.0 + 1.0 / (lam * lam);
+  let rel = n / max(n.y, 0.001);
+  let reach = clamp(dispersion, 0.0, 1.0) * 0.5;
+  let redDeficit = max(1.0 - rel.x, 0.0);
+  let blueExtra = max(rel.z - 1.0, 0.0);
+  let norm = max(max(blueExtra, redDeficit), 1e-4);
+  return vec3<f32>(1.0 - reach * redDeficit / norm, 1.0, 1.0 + reach * blueExtra / norm);
 }
 
 // Structure-tensor terms (E, F, G) at p from 2-texel central differences.
@@ -112,9 +126,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i = 0; i < steps; i = i + 1) {
     let t = (f32(i) / f32(steps - 1)) - 0.5;
     let offset = stretchDir * stretchAmt * t;
-    let rUV = clamp(uv + offset * (1.0 + chromaScale * 0.5), vec2(0.0), vec2(1.0));
-    let gUV = clamp(uv + offset, vec2(0.0), vec2(1.0));
-    let bUV = clamp(uv + offset * (1.0 - chromaScale * 0.5), vec2(0.0), vec2(1.0));
+    let cScale = cauchyScale(clamp(chromaScale, 0.0, 1.0));
+    let rUV = clamp(uv + offset * cScale.x, vec2(0.0), vec2(1.0));
+    let gUV = clamp(uv + offset * cScale.y, vec2(0.0), vec2(1.0));
+    let bUV = clamp(uv + offset * cScale.z, vec2(0.0), vec2(1.0));
     let gTap = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).rgb;
     let lum = luma(gTap);
     // Idea 2: luma-sorted streak — taps brighter than the centre count more ahead of it and
@@ -138,6 +153,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Blend with parallax layers
   color = mix(color, parallaxMix, 0.25 * depthFactor);
 
+  // ── Idea 4: coherence gutter ───────────────────────────────────
+  // A dark lip where the centre luma differs from one texel off the
+  // stretch axis. Coherence still also sets tear length above.
+  let perpStretch = vec2<f32>(-stretchDir.y, stretchDir.x);
+  let sideUV = clamp(uv + perpStretch * texel * 1.5, vec2<f32>(0.0), vec2<f32>(1.0));
+  let sideL = luma(textureSampleLevel(readTexture, u_sampler, sideUV, 0.0).rgb);
+  let gutter = smoothstep(0.02, 0.12, abs(lumC - sideL)) * coherence * edgeAlign;
+  color = color * (1.0 - 0.28 * gutter);
+
   // ACES tone mapping
   color = aces(max(color, vec3(0.0)) * 1.15);
 
@@ -146,7 +170,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = clamp(color + grain, vec3(0.0), vec3(1.0));
 
   // Semantic alpha: full coverage, nudged up where a streak is actively tearing.
-  let alpha = clamp(0.85 + 0.15 * clamp(stretchAmt * 6.0, 0.0, 1.0), 0.0, 1.0);
+  let alpha = clamp(0.85 + 0.15 * clamp(stretchAmt * 6.0, 0.0, 1.0) + gutter * 0.1, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4(color, alpha));
   textureStore(writeDepthTexture, coord, vec4(depth, 0.0, 0.0, 0.0));

@@ -2,8 +2,8 @@
 //  Hybrid Spectral Sorting
 //  Category: distortion
 //  Features: hybrid, pixel-sorting, spectral-analysis, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-09
-//  Ideas: band-length interval; honest three-band plasma audio
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: band-length interval; honest three-band plasma audio; band gutter; band head
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -115,6 +115,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let displaced = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
   var color = select(displaced, mix(current, best, 0.7), inBand > 0.5 && bestL > currentLuma);
+  // ── Idea 4: band head ──────────────────────────────────────────
+  // The top of the strip keeps more of the brightest sample. The
+  // bottom stays on the displaced photo. Sort Sensitivity still
+  // closes the walk.
+  let bandPos = fract(uv.y * spectralBands);
+  let headW = (1.0 - bandPos) * inBand;
+  color = mix(color, best, headW * 0.45);
+  // ── Idea 3: band gutter ────────────────────────────────────────
+  // A dark hairline on the boundary the walk already refuses to cross.
+  let gutter = 1.0 - smoothstep(0.0, 0.06, bandPos);
+  color = color * (1.0 - 0.35 * gutter);
   let spectralColor = palette(bandPhase + time * 0.1,
     vec3<f32>(0.5),
     vec3<f32>(0.5),
@@ -131,7 +142,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = mix(color, glitchColor, 0.3 * beat);
 
   let luma = rgb2luma(color);
-  let alpha = clamp(mix(0.7, 1.0, luma + bandEnergy * 0.3) + inBand * 0.1, 0.0, 1.0);
+  let alpha = clamp(mix(0.7, 1.0, luma + bandEnergy * 0.3) + inBand * 0.1 + gutter * 0.08 + headW * 0.06, 0.0, 1.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let outCol = vec4<f32>(acesToneMap(color), alpha);
   textureStore(writeTexture, id, outCol);

@@ -904,8 +904,17 @@
       "history": []
     },
     "spectral-flow-sorting": {
-      "hash": "85d3beeda69aabed",
-      "history": []
+      "hash": "593caa129bd8b373",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "593caa129bd8b373",
+          "prev_hash": "85d3beeda69aabed",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "spectral-flow-structure": {
       "hash": "6d1bc8d201812708",
@@ -1571,8 +1580,17 @@
       ]
     },
     "quantum-smear": {
-      "hash": "658b58985a64f9d9",
-      "history": []
+      "hash": "6fc65a4d1f8064b9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "6fc65a4d1f8064b9",
+          "prev_hash": "658b58985a64f9d9",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "quantum-wormhole": {
       "hash": "8456327c3b55b6a3",
@@ -8692,8 +8710,17 @@
       "history": []
     },
     "hybrid-spectral-sorting": {
-      "hash": "3d68c8c300d9521c",
-      "history": []
+      "hash": "21d3e1ccf0d4ca39",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "21d3e1ccf0d4ca39",
+          "prev_hash": "3d68c8c300d9521c",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "hybrid-voronoi-glass": {
       "hash": "31fc9afbf31866a4",
@@ -9127,7 +9154,7 @@
       ]
     },
     "pixel-stretch-interactive": {
-      "hash": "a5db630615d3955d",
+      "hash": "8ce64cfe0cc251b8",
       "history": [
         {
           "event": "upgraded",
@@ -9136,6 +9163,14 @@
           "prev_hash": "e99401cccdd38f9a",
           "commit": "9cace4aa",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "8ce64cfe0cc251b8",
+          "prev_hash": "a5db630615d3955d",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
         }
       ]
     },
@@ -10984,8 +11019,17 @@
       ]
     },
     "pixel-drag-smear": {
-      "hash": "8ae2f3c6c2668146",
-      "history": []
+      "hash": "dc8fb3cdc6463ed9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "dc8fb3cdc6463ed9",
+          "prev_hash": "8ae2f3c6c2668146",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "pixel-explode": {
       "hash": "70f1b8d044ff80dc",
@@ -11055,12 +11099,30 @@
       ]
     },
     "pixel-sort-explorer": {
-      "hash": "6e067109348ad3e7",
-      "history": []
+      "hash": "79617d8d64235430",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "79617d8d64235430",
+          "prev_hash": "6e067109348ad3e7",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "pixel-sort-radial": {
-      "hash": "b7ba2c50d9b74c2e",
-      "history": []
+      "hash": "a383c0ca797ceded",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "a383c0ca797ceded",
+          "prev_hash": "b7ba2c50d9b74c2e",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "pixel-stretch-cross": {
       "hash": "ad24ac848b367bcb",
@@ -11435,8 +11497,17 @@
       "history": []
     },
     "spectral-smear": {
-      "hash": "4e1896e095c770f8",
-      "history": []
+      "hash": "036053ba8a3bb773",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "036053ba8a3bb773",
+          "prev_hash": "4e1896e095c770f8",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "spectral-waves": {
       "hash": "8079e98b91880592",
@@ -12669,7 +12740,7 @@
       "history": []
     },
     "spectral-glitch-sort": {
-      "hash": "e890aad641e0b3d4",
+      "hash": "4bb6b371502416fd",
       "history": [
         {
           "event": "upgraded",
@@ -12678,6 +12749,14 @@
           "prev_hash": "abe2160a79aff765",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "4bb6b371502416fd",
+          "prev_hash": "e890aad641e0b3d4",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
         }
       ]
     },
@@ -13373,8 +13452,17 @@
       "history": []
     },
     "glitch-pixel-sort": {
-      "hash": "5afc9d97efe4337d",
-      "history": []
+      "hash": "8db895d4f77e4e72",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "8db895d4f77e4e72",
+          "prev_hash": "5afc9d97efe4337d",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "hex-circuit": {
       "hash": "3ee6044e327d2a31",
@@ -13427,7 +13515,7 @@
       "history": []
     },
     "luma-smear-interactive": {
-      "hash": "654f00414f3668f2",
+      "hash": "99b0fd29595fc06b",
       "history": [
         {
           "event": "upgraded",
@@ -13436,6 +13524,14 @@
           "prev_hash": "994aea931fbf212b",
           "commit": "9cace4aa",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "99b0fd29595fc06b",
+          "prev_hash": "654f00414f3668f2",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
         }
       ]
     },
@@ -13495,8 +13591,17 @@
       ]
     },
     "pixel-sorter": {
-      "hash": "472245b9c82decd7",
-      "history": []
+      "hash": "4713a441bb87ac6d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "4713a441bb87ac6d",
+          "prev_hash": "472245b9c82decd7",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "quantum-field-visualizer": {
       "hash": "cdba5dd0283d1366",

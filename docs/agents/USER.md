@@ -24,6 +24,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
   - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
+  - 2026-11-01: sent a pixel-sort / smear twelve (glitch-pixel-sort through quantum-smear). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve/`.
 
 ## 2026-10-26 — liquid ten (10 shaders)
 
@@ -221,6 +222,27 @@ _Learn about the person you're helping. Update this as you go._
   - spec-spherical-harmonics-light: cosine-lobe irradiance; specular from L1; Fresnel–Schlick (§12.2F). Nine-band eval kept.
 - Floor: prelude include on the eleven pasted headers; 16×16; exact C; A packing as documented; saved params exact.
 - Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
+- Real-GPU visual QA: external.
+
+
+## 2026-11-01 — pixel-sort / smear twelve (12 shaders)
+
+- IDs: glitch-pixel-sort, pixel-sorter, pixel-sort-radial, pixel-sort-explorer, spectral-glitch-sort, spectral-flow-sorting, hybrid-spectral-sorting, pixel-drag-smear, pixel-stretch-interactive, luma-smear-interactive, spectral-smear, quantum-smear.
+- Per shader, the ideas actually added:
+  - glitch-pixel-sort: chroma delay line (§12.2B); dropout tail (§12.2B). fp128 displacement, melt, and the packet kept. No spring.
+  - pixel-sorter: head-to-tail ramp; sort-axis comb. Asendorf close and the span seam kept.
+  - pixel-sort-radial: spoke gutter; inward stack. Radial Asendorf and the ring seam kept. No spring.
+  - pixel-sort-explorer: interval ticks; tail dust. Luma-hold and streak persist kept. No spring.
+  - spectral-glitch-sort: block-shared step (§12.2B); directional tear. Walk, chroma sort, and the existing spring kept.
+  - spectral-flow-sorting: aperture gate; flow barb. Lucas-Kanade and the raw previous-RGB store kept.
+  - hybrid-spectral-sorting: band gutter; band head. Band walk, palette, and hue shift kept. No spring.
+  - pixel-drag-smear: bristle splay; drying (§12.2C). Three-tap drag and treble bleed kept. No spring.
+  - pixel-stretch-interactive: Cauchy channel scale (§12.2F); coherence gutter. Tensor and luma-sorted taps kept. Chromatic Scale still sets the reach.
+  - luma-smear-interactive: uphill stick; fringe spends the trail. Downhill slide, ridge, and the (0,0) state texel kept.
+  - spectral-smear: speed-thinned brush (§12.2C); stroke-sheared hue. Palette and the existing spring kept.
+  - quantum-smear: still-lock; void rim. Stochastic advection kept. A stays pre-ACES so motion stays a colour difference.
+- Floor: prelude include on the six pasted headers; 16×16; exact C where C is read; A packing as documented; saved params exact.
+- Gates: Naga 12/12, precommit 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 - Real-GPU visual QA: external.
 
 ## Context
