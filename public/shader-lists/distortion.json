@@ -2810,7 +2810,7 @@
     "name": "Sine Wave",
     "category": "distortion",
     "url": "shaders/sine-wave.wgsl",
-    "description": "Multi-frequency sine wave interference with fast traveling packets, crest-aligned history streaks, click wave fronts, water-like caustics, chromatic dispersion, and bounded specular highlights. Bass drives wave amplitude and depth controls attenuation.",
+    "description": "Multi-frequency sine interference with traveling packets, standing nodes, Stokes drift, and click fronts. The longer cross-wave outruns the primary, and the photo darkens between packets.",
     "features": [
       "mouse-driven",
       "audio-reactive",

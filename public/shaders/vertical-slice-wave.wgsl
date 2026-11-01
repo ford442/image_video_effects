@@ -4,29 +4,16 @@
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-23, 2026-11-01
+//  Ideas: inter-strip lag; velocity throw
+//  A packing: raw state (env, spring.xy, vel); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3  = fract(vec3<f32>(p.xyx) * .1031);
@@ -87,6 +74,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let wave_phase = strip_uv_x * freq_mod + time * wave_speed;
   let audio_amp = amp_mod * (1.0 + env * 0.5) * click_burst;
   let layered = sin(wave_phase) + 0.45 * sin(wave_phase * 1.73 - time * wave_speed * 1.4 + spring_new.x * 5.0);
+  // ── Idea 1: inter-strip lag
+  // The edge of a strip blends toward the next strip's layered wave,
+  // so the slices tear instead of cutting.
+  let nextPhase = (strip_uv_x + 1.0 / max(num_strips, 1.0)) * freq_mod + time * wave_speed;
+  let nextLayered = sin(nextPhase) + 0.45 * sin(nextPhase * 1.73 - time * wave_speed * 1.4 + spring_new.x * 5.0);
+  let stripFract = fract(uv.x * num_strips);
+  let edgeLip = smoothstep(0.22, 0.0, stripFract) + smoothstep(0.78, 1.0, stripFract);
+  let layeredBlend = mix(layered, nextLayered, clamp(edgeLip, 0.0, 1.0) * 0.55);
   let seamRunner = exp(-abs(fract(strip_uv_x * 3.0 - time * (0.12 + speed_param * 0.5)) - 0.5) * 18.0);
   var clickFront = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -96,7 +91,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     clickFront += exp(-age * 1.8) * exp(-abs(length(uv - event.xy) - age * 0.38) * 60.0);
   }
   let heldTwist = select(0.0, (uv.x - mouse_target.x) * (uv.y - mouse_target.y) * 0.7, u.zoom_config.w > 0.5);
-  var offset = layered * audio_amp + seamRunner * 0.025 + clickFront * 0.035 + heldTwist;
+  var offset = layeredBlend * audio_amp + seamRunner * 0.025 + clickFront * 0.035 + heldTwist;
+  // ── Idea 2: velocity throw
+  // Spring speed already stored in the state. A fast pointer throws the slices.
+  offset = offset + clamp(vel_new, -6.0, 6.0) * 0.008;
 
   // Jitter
   let noise_val = hash12(vec2<f32>(strip_id, floor(time * 10.0)));
@@ -126,12 +124,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let outColor = vec4<f32>(col, clamp(base_alpha, 0.0, 1.0));
+  let outAlpha = clamp(base_alpha, 0.0, 1.0);
 
-  // Persist per-pixel state for next frame (env, spring, velocity)
+  // Persist per-pixel state for next frame (env, spring, velocity). Not display.
   let stateColor = vec4<f32>(env, spring_new, vel_new);
 
-  textureStore(writeTexture, coords, outColor);
+  textureStore(writeTexture, coords, vec4<f32>(acesToneMap(max(col, vec3<f32>(0.0))), outAlpha));
   textureStore(dataTextureA, coords, stateColor);
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

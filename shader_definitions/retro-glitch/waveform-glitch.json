@@ -2,7 +2,7 @@
   "id": "waveform-glitch",
   "name": "Waveform Glitch",
   "url": "shaders/waveform-glitch.wgsl",
-  "description": "Oscilloscope Lissajous waveform glitch with signal aliasing and exact C phosphor trails. Upgraded 2026-09-28: a waveform-monitor trace plots the luma of the source row under the cursor; beam-dwell brightness makes slow Lissajous lobes burn brighter than fast crossings; treble block glitch slides whole quantisation cells sideways. Aspect-corrected scope, three-band audio, held burst, capped click ripples.",
+  "description": "Oscilloscope Lissajous waveform glitch with signal aliasing and exact C phosphor trails. Upgraded 2026-09-28: a waveform-monitor trace plots the luma of the source row under the cursor; beam-dwell brightness makes slow Lissajous lobes burn brighter than fast crossings; treble block glitch slides whole quantisation cells sideways. Aspect-corrected scope, three-band audio, held burst, capped click ripples. VHS chroma lags luma in one direction, and the Lissajous ghosts longer than the field.",
   "workgroup_size": [
     16,
     16,

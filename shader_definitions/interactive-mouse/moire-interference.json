@@ -1,14 +1,15 @@
 {
   "id": "moire-interference",
-  "label": "Moiré Interference",
-  "name": "Moiré Interference",
+  "label": "Moir\u00e9 Interference",
+  "name": "Moir\u00e9 Interference",
   "url": "shaders/moire-interference.wgsl",
   "icon": "wifi",
-  "description": "Generates dynamic interference patterns between the center and the mouse position.",
+  "description": "Interference between a centre emitter and a sprung pointer. The beat between the two carriers gates the displacement and darkens the fringe nulls.",
   "features": [
     "mouse-driven",
     "upgraded-rgba",
-    "audio-reactive"
+    "audio-reactive",
+    "aces-tone-map"
   ],
   "params": [
     {

@@ -6271,11 +6271,12 @@
     "name": "Moiré Interference",
     "url": "shaders/moire-interference.wgsl",
     "icon": "wifi",
-    "description": "Generates dynamic interference patterns between the center and the mouse position.",
+    "description": "Interference between a centre emitter and a sprung pointer. The beat between the two carriers gates the displacement and darkens the fringe nulls.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
-      "audio-reactive"
+      "audio-reactive",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -11279,7 +11280,7 @@
     "id": "sonic-distortion",
     "name": "Sonic Distortion",
     "url": "shaders/sonic-distortion.wgsl",
-    "description": "Superellipse-masked sonic distortion with Lissajous wave interference, FBM domain warping, rose curve modulation, and alpha-ghosted echo trails.",
+    "description": "Superellipse-masked sonic distortion with Lissajous sources, a rose amplitude, and echo trails. The harmonic beat of the primary partials brightens inside the mask, and the rose's angular gaps darken the photo. Bass swells the amplitude slider.",
     "params": [
       {
         "id": "freq",
@@ -11317,7 +11318,10 @@
       "lissajous",
       "fbm",
       "temporal",
-      "echo-trails"
+      "echo-trails",
+      "audio-reactive",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -11483,7 +11487,7 @@
     "id": "spectral-waves",
     "name": "Luma Ripple",
     "url": "shaders/spectral-waves.wgsl",
-    "description": "Premultiplied luminance waves from a guarded sprung origin, with bounded click trains, three-band and read-only FFT caustics, exact-C persistence, and authoritative A display history.",
+    "description": "Luminance-weighted radial ripples from a sprung pointer, with click trains and caustic persistence. Chromatic split follows the ripple slope, and a local luma contrast boosts the amplitude on edges.",
     "params": [
       {
         "id": "frequency",
@@ -12345,7 +12349,7 @@
     "id": "vertical-slice-wave",
     "name": "Vertical Slice Wave",
     "url": "shaders/vertical-slice-wave.wgsl",
-    "description": "Layered vertical strip waves with seam runners, held amplitude/twist, click fronts, rainbow interference, and state-only spring/audio feedback.",
+    "description": "Vertical strip waves with seam runners and click fronts. Strip edges lag toward the neighbour's phase, and the stored spring speed throws the slices. Feedback A stays raw state.",
     "params": [
       {
         "id": "strips",
