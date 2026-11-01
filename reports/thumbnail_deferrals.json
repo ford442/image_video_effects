@@ -183,7 +183,7 @@
       "added_by": "defer-thumbnail",
       "deferred_at": "2026-11-01",
       "expires": "2026-12-01",
-      "reason": "gpu-capture-pending"
+      "reason": "other"
     },
     {
       "id": "gen-stellar-mycelium-overdrive",

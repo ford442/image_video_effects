@@ -5,7 +5,7 @@
 - Eligible: **1399**
 - Healthy: **1293** (92.4%)
 - Unexpired deferrals: **13** (do not count as coverage)
-- gpu-capture-pending: **24** — ratchet max **24**, target **200**
+- gpu-capture-pending: **23** — ratchet max **23**, target **200**
 - Deferral violations: **0**
 - Missing (no healthy PNG, no deferral): **94**
 - Newly eligible: **1**
