@@ -1714,6 +1714,75 @@
     ]
   },
   {
+    "id": "gen-abyssal-geode-matrix",
+    "name": "Abyssal Geode Matrix",
+    "url": "shaders/gen-abyssal-geode-matrix.wgsl",
+    "type": "generative",
+    "category": "generative",
+    "description": "A cavernous, dark-matter crystalline structure pulsing with deep sea bioluminescence and reactive geometric fracturing.",
+    "features": [
+      "audio-reactive",
+      "raymarching",
+      "crystal",
+      "fractal",
+      "mouse-driven",
+      "abyss"
+    ],
+    "tags": [
+      "crystal",
+      "fractal",
+      "bioluminescence",
+      "abyss",
+      "audio-reactive"
+    ],
+    "workgroup_size": [
+      16,
+      16
+    ],
+    "params": [
+      {
+        "id": "gravityPull",
+        "name": "Gravity Pull",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Gravity Pull"
+      },
+      {
+        "id": "fractalSpeed",
+        "name": "Fractal Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y",
+        "description": "Fractal Speed"
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.z",
+        "description": "Glow Intensity"
+      },
+      {
+        "id": "fractalDetail",
+        "name": "Fractal Detail",
+        "default": 1,
+        "min": 0,
+        "max": 1,
+        "step": 0.1,
+        "mapping": "zoom_params.w",
+        "description": "Fractal Detail"
+      }
+    ]
+  },
+  {
     "name": "Abyssal Leviathan-Scales",
     "category": "generative",
     "tags": [
@@ -20819,7 +20888,7 @@
       "feedback",
       "trails"
     ],
-    "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers. This upgrade adds conduction-delay ladders per synaptic cell and astrocytic uptake halos around transmitter-rich nodes.",
+    "description": "Render a glowing neural mesh and drive action-potential pulses with audio, creating a living synapse network that lights up in layers. This upgrade adds conduction-delay ladders per synaptic cell and astrocytic uptake halos around transmitter-rich nodes, plus an intercellular cleft mesh and glutamate-cloud absorption.",
     "workgroup_size": [
       16,
       16,
@@ -30290,7 +30359,8 @@
       "generative",
       "geometric-recursion",
       "upgraded-rgba",
-      "pulsing-nodes"
+      "pulsing-nodes",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -30343,7 +30413,7 @@
     "name": "Neural Synapse Web",
     "url": "shaders/neural-synapse-web.wgsl",
     "category": "generative",
-    "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth.",
+    "description": "Pulsing neural nodes and synaptic signals with guarded six-float spring state, uniform bounded click waves, live plasma audio, exact display history, ACES, semantic alpha, and source depth. Pulses ring down at the target node and ride a thin myelinated core.",
     "tags": [
       "generative",
       "neural",
@@ -31623,7 +31693,9 @@
       "mouse-seeding",
       "upgraded-rgba",
       "chromatic-dispersion",
-      "temporal-accumulation"
+      "temporal-accumulation",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "tags": [
       "symbiotic",

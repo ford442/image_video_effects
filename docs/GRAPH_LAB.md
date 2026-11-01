@@ -67,7 +67,53 @@ The Lab no longer guesses which entries use the sim ring. `tools/naga_wasm` has 
 
 ### Not in this slice
 
-Inline WGSL / params editing (CodeMirror 6 + naga diagnostics), one draft per slot, drafts in project files (#1438) and device-loss restore (#1430), "Save as shader" registration, were listed on #1451 (now closed) and are not part of this slice. Part B of that list (HDR `rgba16float`, `shader-f16`, `bgra8unorm-storage`, `featureLevel: 'compatibility'`, `float32-blendable`) shipped with rendering tier 2 (#1512, [DEVICE_FEATURES.md](DEVICE_FEATURES.md)).
+Drafts in project files (#1438) and device-loss restore (#1430) were listed on #1451 (now closed) and are not part of this slice. Inline WGSL / params editing, one draft per slot and "Save as shader" shipped with #1513 Part B: see [WGSL editor](#wgsl-editor-1513-part-b). Part B of that list (HDR `rgba16float`, `shader-f16`, `bgra8unorm-storage`, `featureLevel: 'compatibility'`, `float32-blendable`) shipped with rendering tier 2 (#1512, [DEVICE_FEATURES.md](DEVICE_FEATURES.md)).
+
+## WGSL editor (#1513 Part B)
+
+*WGSL editor* (below *Node settings*) edits one compute shader per slot, validates it with naga as you type and hot-swaps it into the slot. CodeMirror 6 is its own lazy chunk, `graph-lab-editor`, inside the lazy Lab (`verify:bundle-size` lists it); it and the naga artifact load the first time the section is opened.
+
+### Writing a draft
+
+A draft is plain catalog WGSL: `#include "_prelude.wgsl"` for the 13 bindings (never paste them; Save refuses a pasted header) and `@compute @workgroup_size(…) fn main(…)`. *Template* puts back the starter shader. Other `_`-libraries (`_hash.wgsl`, …) can be included too; they are fetched same-origin, the prelude comes from the bundle.
+
+The sliders are a comment block, one pragma per slider, in order p1–p4 (`u.zoom_params.x…w`):
+
+```wgsl
+// @param speed 0 4 1 Speed
+// @param warp  0 1 0.3
+```
+
+`name min max default [label]`. The label defaults to the humanized name (`warpAmount` → *Warp Amount*). A malformed pragma, `min ≥ max`, a default out of range, a duplicate or a fifth one is an error on its line. Comment pragmas, not a WGSL `const` block, so the sliders keep working while the code does not validate and nothing changes at runtime.
+
+### Diagnostics
+
+150 ms after the last keystroke the text is include-expanded with the build's own expander (`src/wasm/bridge/wgslInclude.ts`, the same code `fetchShaderWgsl` and `verify:naga-wasm` run) and validated by the committed naga-wasm (`src/utils/nagaWasm.ts`). `wgslSourceMap.ts` maps naga's line in the expanded module back to the user's line, so an error never lands on a prelude line: an error inside an included library is shown on its `#include` line as `in _lib.wgsl:N (included here): …`. A clean module must also reflect a `@compute fn main`. Errors show in the gutter (`@codemirror/lint`), underlined at naga's span, and the first one in the banner. A result that finishes after a newer keystroke is dropped. Measured on SwiftShader: ~160 ms from the last keystroke to the marker.
+
+Autocomplete (`wgslCompletions.ts`) is generated from the prelude source: the 13 bindings with their `@group/@binding`, `u.config`, `u.zoom_config`, `u.zoom_params`, `u.ripples` and each `.x/.y/.z/.w` lane with the prelude's contract note, the `fn`s of every included library, the draft's own `@param`s as `u.zoom_params.*`, and WGSL keywords, types and builtins. A regenerated prelude changes the completions with it.
+
+### Running
+
+*Run WGSL in slot N* compiles the include-expanded module (no include is left for the GPU to resolve) through `RendererManager.loadShader` from a `blob:` URL, in either render thread, and binds the slot; the sliders drive `setSlotParams`. From then on every clean validate is hot-swapped (`WgslDraftRunner`, `runDraft.ts`):
+
+- Each slot has two runtime ids, `graphlab-wgsl-<slot>-a|b`. The next text compiles under the one that is not bound, and the slot is switched only after that compile succeeds. An invalid edit (naga) never reaches the GPU; one naga accepts but the GPU rejects keeps the old pipeline too, with *the last good one keeps running*. Nothing is bound before the first good compile, so starting never shows a black frame.
+- Texts typed while one compiles are queued latest-wins: the intermediate ones are never compiled.
+- *Stop* or closing the Lab puts the previous shader back, unless the slot was taken by another shader meanwhile. Running a WGSL draft stops the graph draft in that slot and vice versa.
+
+`fetchShaderWgsl` now treats a `text/html` answer as "not here": the Vite dev server answers a missing `./shaders/<id>.wgsl` with `index.html`, which would otherwise shadow the draft's `blob:` URL (and any shader only the caller URL serves).
+
+### Drafts
+
+One draft per slot (id, name, category, description, source), autosaved to `localStorage` (`graphlab.wgsl.v1`); the editor shows the active slot's. Text undo / redo is the editor's own (Ctrl/Cmd+Z inside it). Keys typed in the editor do not reach the app's window shortcuts (Space, `a`, `g`, `r`, digits). Drafts are not in project files: that waits for Part A's project-file schema v3.
+
+### Save as shader
+
+*Save as shader…* writes
+
+- `public/shaders/<id>.wgsl`: the draft as typed, prelude-included, `@param` block and all;
+- `shader_definitions/<category>/<id>.json`: `id`, `name`, `url`, `category`, `description`, `features`/`tags: ["graph-lab"]`, and `params` from the pragmas (`mapping: zoom_params.x…`).
+
+It is enabled only when the current text has a clean naga result, the id is a valid catalog id that is not taken (nor a `graphlab-*` runtime id), and the prelude is included and not pasted. With the File System Access API (Chromium) you pick the repository folder (it must hold `public/shaders` and `shader_definitions`; existing files are never overwritten); elsewhere you get two downloads to move there. `npm start` / `npm run build` then list it like any other shader. The output passes `verify:shader-definitions`, `verify:naga-wasm`, `verify:wgsl-include` and `verify:prelude-migration` (`wgslSave.gates.test.ts` runs those checks on a saved sample). Saving is local only: a storage submit waits for the storage_manager upload-token receiver.
 
 ## Installing an export
 
@@ -101,8 +147,9 @@ The Lab adds no binding and no allocation path. A sim draft's `{ stateCount }` t
 ## Limits
 
 - **Sim ring:** an entry's `@group(1)` declaration is read from its WGSL (v2), but the ring is still a per-draft toggle; a draft whose entries never declare it runs without the ring (its `simState` dispatches are skipped). `?renderer=wasm` refuses sim-ring shaders (the C++ backend has one bind group).
-- One running draft at a time, in the active slot.
-- No editing of `params` or WGSL.
+- One running graph draft at a time, in the active slot; one running WGSL draft at a time.
+- The WGSL editor edits a single-pass shader; it is not (yet) an entry of the graph draft.
+- WGSL highlighting is a stream parser (no Lezer grammar, so no folding).
 - Entries come from the shader catalog, the entries of registered graphs and Tier B chain passes. An entry that exists as a file but in none of those can be typed only while the catalog is still loading.
 
 ## Tests
@@ -111,6 +158,8 @@ The Lab adds no binding and no allocation path. A sim draft's `{ stateCount }` t
 npx vitest run src/graphLab src/components/graphLab src/renderer/multipassGraph src/renderer/runtimeGraphs src/renderer/worker
 npm run build && npm run test:engine2 -- tests/graph-lab.swiftshader.spec.ts
 ```
+
+WGSL editor: the debounce contract runs with fake timers and a stub validator (`wgslDiagnostics.test.ts`: the last keystroke's error is on the right user line at 300 ms), the line remap and messages with the real naga artifact (`wgslDiagnostics.naga.test.ts`), the hot-swap rules against a fake renderer (`runWgslDraft.test.ts`), the editor itself with real naga in jsdom (`WgslDraftSection.test.tsx`), and the saved files through the CI gate scripts (`wgslSave.gates.test.ts`). The e2e's *inline WGSL draft* test validates the template with naga in the browser, runs it in both render threads, types an error (marker on the right line, timed in the page), checks the same pipeline is still bound and the read-back frame is not blank, then fixes it and sees it hot-swapped.
 
 Unit coverage for the issue's contract: an illegal read never reaches `loadShader` (`runDraft.test.ts`, `GraphLabPanel.test.tsx`); a Lab-edited `repeat` expands to the same frame-plan dispatches as the same `repeat` in JSON, and a sim-ring toggle on group-0 entries never sets `bindSimRing` (`runtimeGraphs.test.ts`).
 

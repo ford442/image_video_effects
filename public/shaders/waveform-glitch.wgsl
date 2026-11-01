@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: waveform-monitor trace of the source row under the cursor; beam-dwell phosphor brightness on the Lissajous; treble block glitch that slides whole quantisation cells
+//  Upgraded: 2026-09-28, 2026-11-01
+//  Ideas: waveform-monitor trace of the source row under the cursor; beam-dwell phosphor brightness on the Lissajous; treble block glitch that slides whole quantisation cells; chroma delay line (§12.2B); beam afterglow
 //  A packing: pre-ACES linear display RGB + semantic alpha; C read back as that linear colour for the phosphor trail mix (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -111,6 +111,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, displacedUV - vec2<f32>(0.01 * vhsIntensity, 0.0), 0.0).b;
   var col = vec3<f32>(r, g, b);
 
+  // ── Idea: chroma delay line (§12.2B)
+  // VHS chroma lags luma in +x. Green stays the full-res sample; R/B mix
+  // toward a sample further along x. The symmetric split above stays.
+  // vhsIntensity 0 leaves col unchanged.
+  let delayUV = clamp(displacedUV + vec2<f32>(0.01 * vhsIntensity, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let delayed = textureSampleLevel(readTexture, u_sampler, delayUV, 0.0);
+  let lag = clamp(vhsIntensity, 0.0, 1.0);
+  col = vec3<f32>(
+    mix(col.r, delayed.r, lag * 0.65),
+    col.g,
+    mix(col.b, delayed.b, lag * 0.65)
+  );
+
   // Scope space: aspect-corrected, figure scaled to fit the shorter axis (floor fix).
   let scopeP = (uv * 2.0 - 1.0) * vec2<f32>(aspect, 1.0) / min(aspect, 1.0);
 
@@ -155,7 +168,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Phosphor trail: C holds last frame's pre-ACES linear colour (same packing as A).
   let prev = clamp(textureLoad(dataTextureC, pixel, 0), vec4<f32>(0.0), vec4<f32>(4.0));
-  let persistence = mix(0.15, 0.55, u.zoom_params.z);
+  // ── Idea: beam afterglow
+  // The scope line ghosts longer than the field. The block-glitch slider
+  // still sets the base persistence.
+  let persistence = clamp(mix(0.15, 0.55, u.zoom_params.z) * (1.0 + lissPattern * 0.85), 0.0, 0.92);
   let trail = mix(col, prev.rgb, persistence * (0.85 + bass * 0.1));
   col = mix(col, trail, 0.55 + bass * 0.15);
 

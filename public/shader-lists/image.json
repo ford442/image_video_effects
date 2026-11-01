@@ -4844,7 +4844,8 @@
       "held-pointer",
       "click-reactive",
       "psychedelic-color",
-      "display-history"
+      "display-history",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -5148,7 +5149,7 @@
   {
     "id": "wave-halftone",
     "url": "shaders/wave-halftone.wgsl",
-    "description": "Halftone dot pattern with a waving grid and mouse magnification lens.",
+    "description": "Hex halftone whose dots stretch along the wave and pick up a 15-degree rosette. Midtones gain dot size, and the screen packs tighter where the wave is strong. Wave speed is normalized to the saved default.",
     "features": [
       "mouse-driven",
       "audio-reactive",
