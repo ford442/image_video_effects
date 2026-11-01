@@ -1,32 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Hex Pulse v2
+//  Hex Pulse
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Strategy: Honeycomb SDF + damped wave equation + bioluminescent glow
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-05-30, 2026-10-31
+//  Ideas: ring-down memory; wave-slope shade
+//  A packing: raw (excitation, edge, wave, alpha); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: aces_tone_map ═══
 fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
@@ -100,7 +81,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Interference from neighboring cells (approximate with second harmonic)
   let interference = sin(wavePhase * 2.0 + 1.0472) * damping * 0.35 * pulseStrength;
-  let excitation = wave + interference;
+
+  // ── Idea 1: ring-down memory ─────────────────────────────────────
+  // A.r is this shader's excitation. waveDecay already means how fast
+  // the pulse dies; it now also forgets last frame's excitation.
+  let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  let prevOk = prev.r == prev.r && abs(prev.r) < 6.0;
+  let prevEx = select(0.0, prev.r, prevOk);
+  let memory = prevEx * exp(-0.85 - waveDecay * 2.8);
+  let excitation = (wave + interference) + memory;
 
   // Hex edge SDF for cell glow
   let edgeDist = hex_sdf(local, 0.45);
@@ -115,6 +104,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colB = textureSampleLevel(readTexture, u_sampler, clamp(bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
   var baseColor = vec3<f32>(colR.r, colG.g, colB.b);
 
+  // ── Idea 2: wave-slope shade ─────────────────────────────────────
+  // cos(phase) is the slope of the sin wave already driving the cell.
+  let slope = cos(wavePhase) * damping;
+  let shade = clamp(0.78 + slope * 0.35 * pulseStrength, 0.45, 1.4);
+  baseColor = baseColor * shade;
+
   // Bioluminescent cell glow
   let bioColor = vec3<f32>(0.1 + treble * 0.2, 0.55 + mids * 0.25, 0.9 + bass * 0.15);
   let cellGlow = bioColor * edge * (0.25 + abs(excitation) * 0.35);
@@ -123,7 +118,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let nodeBloom = vec3<f32>(0.9, 0.85, 0.7) * max(excitation, 0.0) * max(excitation, 0.0) * 0.3 * pulseStrength;
 
   let combined = baseColor + cellGlow + nodeBloom;
-  let finalRGB = aces_tonemap(combined * (1.0 + bass * 0.15));
+  let finalRGB = aces_tonemap(max(combined, vec3<f32>(0.0)) * (1.0 + bass * 0.15));
 
   // Alpha = cell excitation × interference_amplitude × depth
   let alpha = clamp(abs(excitation) * pulseStrength * depth + edge * 0.15, 0.0, 1.0);

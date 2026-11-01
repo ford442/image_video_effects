@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, paint, wetness, audio-bleed, depth-paper, pigment-settle, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: cockling warp; salt bloom on leaving water
+//  Upgraded: 2026-11-01
+//  Ideas: cockling warp; salt bloom on leaving water; paper tooth pins pigment in grain valleys; photo-luma glaze transmission through dried washes
 //  A packing: raw pigment.rgb + water.a
 // ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
@@ -17,31 +17,23 @@
 //  prevent smooth wet-to-dry transitions.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+// Paper tooth: two-octave value noise, 0 = valley, 1 = ridge
+fn paperTooth(uv: vec2<f32>, res: vec2<f32>) -> f32 {
+    let p = uv * res * 0.35;
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    let a = mix(hash12(i), hash12(i + vec2<f32>(1.0, 0.0)), w.x);
+    let b = mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), w.x);
+    return mix(a, b, w.y);
 }
 
 fn loadC(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
@@ -104,7 +96,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     pigment = mix(pigment, advectedPigment, min(water * 0.3, 0.5));
 
     // Pigment diffusion (faster when wet)
-    let pigmentDiffusion = 0.02 + water * 0.05;
+    // Idea 3 — paper tooth: ridges shed pigment, valleys hold it (diffusion scaled by grain)
+    let tooth = paperTooth(uv, res);
+    let pigmentDiffusion = (0.02 + water * 0.05) * mix(1.35, 0.55, tooth);
     let lapPigment = left.rgb + right.rgb + down.rgb + up.rgb - 4.0 * pigment;
     pigment += lapPigment * pigmentDiffusion;
 
@@ -165,7 +159,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Paper texture (shows through where dry)
     let paperColor = vec3<f32>(0.96, 0.94, 0.90);
     let wetnessVis = smoothstep(0.0, 0.2, water);
-    var displayColor = mix(paperColor * photo.rgb, pigment, wetnessVis * 0.8 + 0.2);
+    // Idea 4 — glaze transmission: the photo's luma shows through the pigment layer
+    let photoLuma = dot(photo.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let glazed = pigment * mix(0.55, 1.1, photoLuma) * mix(vec3<f32>(1.0), photo.rgb * 1.2 + vec3<f32>(0.1), 0.25);
+    var displayColor = mix(paperColor * photo.rgb, glazed, wetnessVis * 0.8 + 0.2);
+    // cold-press tooth reads through the dry paper (side-lit relief), vanishes under water
+    let toothLit = paperTooth(uv + vec2<f32>(0.0015, 0.0015), res);
+    displayColor *= 1.0 + (tooth - toothLit) * 2.2 * (1.0 - wetnessVis * 0.8);
+    // pigment settles into grain valleys as the wash dries
+    let dryness = 1.0 - smoothstep(0.0, 0.5, water);
+    displayColor *= 1.0 - (1.0 - tooth) * dryness * clamp(dot(pigment, vec3<f32>(0.33)) * 1.5, 0.0, 1.0) * 0.22;
 
     // Dark edge effect (pigment concentrates at wet boundary)
     let waterEdge = abs(waterGradX) + abs(waterGradY);

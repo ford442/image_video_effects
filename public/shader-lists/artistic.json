@@ -492,7 +492,7 @@
     "id": "astral-veins",
     "name": "Astral Veins",
     "url": "shaders/astral-veins.wgsl",
-    "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
+    "description": "Glowing, flowing veins that wrap around geometry, pulse along their currents, and colour-cycle. The cursor aims the light the veins forward-scatter toward.",
     "params": [
       {
         "id": "speed",
@@ -527,7 +527,9 @@
       "depth-aware",
       "temporal-persistence",
       "interactive",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3330,9 +3332,11 @@
     "id": "neural-dreamscape",
     "name": "Neural Dreamscape",
     "url": "shaders/neural-dreamscape.wgsl",
-    "description": "Neural network-inspired dreamlike visuals.",
+    "description": "Neural network-inspired dreamlike visuals: three neurons with hot somas, golden-angle dendritic spines and pulsing synapses swirl the photo into a feedback dream.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3862,7 +3866,7 @@
     "id": "porcelain-fracture-glow",
     "name": "Porcelain Fracture Glow",
     "url": "shaders/porcelain-fracture-glow.wgsl",
-    "description": "The image is rendered on delicate porcelain that develops fine luminous cracks. The cracks follow image edges and can be drawn with the mouse. Bass makes the golden light pulse and sing through the fractures.",
+    "description": "The image is rendered on delicate porcelain that develops fine luminous cracks. The cracks follow image edges and can be drawn with the mouse. Bass makes the golden light pulse and sing through the fractures. Vein light bleeds through the translucent glaze as a subsurface halo, and the glaze highlight shatters along every hairline.",
     "tags": [
       "porcelain",
       "crack",
@@ -3870,7 +3874,9 @@
       "light",
       "artistic",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "subsurface",
+      "translucent"
     ],
     "features": [
       "audio-reactive",

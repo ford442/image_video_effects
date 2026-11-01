@@ -3,8 +3,8 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: grout on triangle edges; per-facet tilt from centroid
+//  Upgraded: 2026-09-08, 2026-10-31
+//  Ideas: grout on triangle edges; per-facet tilt from centroid; vertex lead-came; tilt-axis thickness
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -78,12 +78,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let i_uv = floor(skewed_uv);
     let f_uv = fract(skewed_uv);
 
-    var tri_offset = vec2<f32>(0.0);
-    if (f_uv.x > f_uv.y) {
-        tri_offset = vec2<f32>(0.66, 0.33);
-    } else {
-        tri_offset = vec2<f32>(0.33, 0.66);
-    }
+    let lower = f_uv.x > f_uv.y;
+    let tri_offset = select(vec2<f32>(0.33, 0.66), vec2<f32>(0.66, 0.33), lower);
 
     let tri_center_skewed = i_uv + tri_offset;
     var tri_center = tri_center_skewed * unskew_mat;
@@ -120,6 +116,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, color * vec3<f32>(0.16, 0.14, 0.12), grout * 0.72);
     color *= 0.88 + 0.12 * (0.5 + tilt);
 
+    // ── Idea 1: vertex lead-came ────────────────────────────────────
+    // The three vertices of this half of the quad. Beads sit on the
+    // corners the grout already runs between.
+    let v1 = select(vec2<f32>(0.0, 1.0), vec2<f32>(1.0, 0.0), lower);
+    let cornerD = min(length(f_uv), min(length(f_uv - v1), length(f_uv - vec2<f32>(1.0))));
+    let bead = smoothstep(0.16, 0.02, cornerD);
+    color = color + vec3<f32>(0.78, 0.70, 0.46) * bead * (0.22 + grout * 0.4);
+
+    // ── Idea 2: tilt-axis thickness ─────────────────────────────────
+    // A second image along the facet tilt already used to offset the
+    // sample. Mixed inside the pane; the grout stays the seam.
+    let thickUV = clamp(sample_uv + vec2<f32>(tilt, -tilt) * 0.08, vec2<f32>(0.0), vec2<f32>(1.0));
+    let thick = textureSampleLevel(readTexture, u_sampler, thickUV, 0.0).rgb;
+    color = mix(color, thick, (1.0 - grout) * 0.28);
+
     // Edge darkening toward triangle boundaries
     let edgeDarken = 1.0 - boundaryDist * 0.6;
     color = color * edgeDarken;
@@ -130,7 +141,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, prev, decay * (1.0 - boundaryDist));
 
     // ACES tone mapping
-    color = acesToneMap(color);
+    color = acesToneMap(max(color, vec3<f32>(0.0)));
 
     // Semantic alpha: depth-based opacity with boundary transparency
     let alpha = mix(0.45, 1.0, depth) * mix(0.75, 1.0, 1.0 - boundaryDist * 3.0);

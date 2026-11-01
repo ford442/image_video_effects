@@ -3,8 +3,8 @@
 //  Category: advanced-hybrid
 //  Features: encaustic-wax, blackbody-radiation, HDR, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: cooling skin on waxDetail; iron/brush ridges along height tangent
+//  Upgraded: 2026-11-01
+//  Ideas: cooling skin on waxDetail; iron/brush ridges along height tangent; fused layer terraces with lit step risers; melt-front meniscus rim that glows by blackbody
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Combines physical encaustic wax simulation with blackbody thermal
@@ -14,26 +14,7 @@
 //  localized hotspots that radiate physically-correct color.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -147,6 +128,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ridge = pow(abs(sin(dot(uv * resolution, tdir) * 0.22 + totalWaxHeight * 6.0)), 8.0);
     finalColor += vec3<f32>(1.04, 0.96, 0.82) * ridge * currentTexture * (0.18 + treble * 0.08);
 
+    // Idea 3 — fused layer terraces: wax laid in four passes; each riser catches the light
+    let layerF = totalWaxHeight * 4.0;
+    let layerFrac = fract(layerF);
+    let riser = smoothstep(0.86, 1.0, layerFrac) + (1.0 - smoothstep(0.0, 0.08, layerFrac));
+    let riserLit = clamp(riser, 0.0, 1.0) * max(dot(normalize(vec2<f32>(lightDir.x, lightDir.y) + vec2<f32>(1.0e-4, 0.0)), -g2 * 40.0), 0.0);
+    finalColor += vec3<f32>(1.05, 0.95, 0.78) * riserLit * currentTexture * 0.35;
+    finalColor *= 1.0 - clamp(riser, 0.0, 1.0) * currentTexture * 0.06;
+    // Idea 4 — melt-front meniscus: a bead of liquid wax rims the heated pool
+    let meniscus = clamp(meltFactor * (1.0 - meltFactor) * 4.0, 0.0, 1.0);
+
     let base_thickness = 0.3 + totalWaxHeight * 0.7;
     let melt_thickness = base_thickness + meltFactor * 0.4;
     var wax_alpha = mix(0.35, 0.92, melt_thickness * (0.5 + textureStrength * 0.5));
@@ -175,16 +166,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     temperature = clamp(temperature, 800.0, 12000.0);
 
+    temperature += meniscus * 1400.0 * (0.6 + 0.4 * waxDetail);
+    temperature = clamp(temperature, 800.0, 12000.0);
+
     let thermalColor = blackbodyColor(temperature) * thermalIntensity;
     let thermalBlend = smoothstep(0.4, 0.8, melt_thickness) * 0.6;
     finalColor = mix(finalColor, toneMapACES(thermalColor), thermalBlend);
+
+    finalColor += vec3<f32>(1.0, 0.82, 0.55) * meniscus * pow(max(dot(normal, lightDir), 0.0), 6.0) * 0.3;
 
     let wax_tint = vec3<f32>(1.02, 0.98, 0.92);
     finalColor *= mix(vec3<f32>(1.0), wax_tint, melt_thickness * 0.5);
     let depth_darken = mix(1.0, 0.85, melt_thickness * textureStrength);
     finalColor *= depth_darken;
 
-    wax_alpha = clamp(wax_alpha + ridge * 0.08 + mids * 0.03, 0.0, 1.0);
+    wax_alpha = clamp(wax_alpha + ridge * 0.08 + riser * 0.04 + meniscus * 0.1 + mids * 0.03, 0.0, 1.0);
 
     textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, wax_alpha));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, wax_alpha));

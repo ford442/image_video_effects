@@ -19,6 +19,9 @@ async function tryFetchWgsl(url: string): Promise<string | null> {
     if (!response.ok) return null;
 
     const contentType = response.headers.get('content-type') || '';
+    // An SPA fallback (the Vite dev server, some static hosts) answers a missing
+    // .wgsl with index.html; that is "not here", not shader source.
+    if (contentType.includes('text/html')) return null;
     if (contentType.includes('application/json')) {
       const data = await response.json() as { code?: string };
       return typeof data.code === 'string' ? data.code : null;

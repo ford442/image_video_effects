@@ -625,7 +625,7 @@
     "id": "audio-voronoi-displacement",
     "name": "Audio Voronoi Displacement",
     "url": "shaders/audio-voronoi-displacement.wgsl",
-    "description": "Audio-reactive Voronoi cells that displace the image. Image fractured into cells that pulse with music.",
+    "description": "Voronoi cells that slide with audio and shove the photo toward the nearest site. Cell walls stay visible in silence and brighten with mids. Bass and the displacement slider scale the bulge. Pointer gravity kept.",
     "features": [
       "mouse-driven",
       "advanced-hybrid",
@@ -634,7 +634,9 @@
       "displacement-mapping",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2242,7 +2244,7 @@
     "id": "chromatic-reaction-diffusion",
     "name": "Chromatic Reaction-Diffusion",
     "url": "shaders/chromatic-reaction-diffusion.wgsl",
-    "description": "Multi-channel Gray-Scott reaction-diffusion with chromatic separation, Turing cross-gradient dispersion, interfacial Marangoni shear, and chemiluminescent boundary fluorescence.",
+    "description": "Multi-channel Gray-Scott reaction-diffusion with chromatic separation, Turing cross-gradient dispersion, interfacial Marangoni shear, and chemiluminescent boundary fluorescence; photo-seeded nucleation droplets, dispersive per-channel diffusivity that splits the fronts into chromatic fringes, and a cursor-lit gel relief sheen.",
     "workgroup_size": [
       16,
       16,
@@ -2257,7 +2259,10 @@
       "chemiluminescence",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "nucleation",
+      "dispersive-diffusion",
+      "relief-sheen"
     ],
     "params": [
       {

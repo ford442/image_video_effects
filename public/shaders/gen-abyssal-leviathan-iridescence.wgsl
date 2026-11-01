@@ -6,32 +6,16 @@
 //  Chunks From: gen-abyssal-leviathan-scales.wgsl, spec-iridescence-engine.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-20 — Generative Nature Enhancer
+//  Upgraded: 2026-11-01
+//  Ideas: meniscus film pooling (concentric thickness rings per scale); breathing-coupled film thickness; plasma transmission bleed through lifted scales
+//  A packing: none (raymarched display RGBA, alpha 1)
 // ═══════════════════════════════════════════════════════════════════
 //  Leviathan scales rendered with physically-correct thin-film
 //  interference. Each scale acts as an oil-slick surface where
 //  viewing angle and film thickness determine spectral color.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453); }
 fn rot2D(a: f32) -> mat2x2<f32> { let c = cos(a); let s = sin(a); return mat2x2<f32>(c, -s, s, c); }
@@ -81,24 +65,37 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
     return color / max(sampleCount, 1.0);
 }
 
+fn scaleSpacing() -> f32 {
+    // HEAD took max(1, slider) so the 0..1 slider was dead; 0.5 still reproduces HEAD's density.
+    return 10.0 / mix(0.5, 1.5, u.zoom_params.x);
+}
+
+struct HexCell { pos: vec2<f32>, id: vec2<f32>, };
+fn hexCell(pxz: vec2<f32>, spacing: f32) -> HexCell {
+    let grid = vec2<f32>(1.0, 1.7320508) * spacing;
+    let h1 = pxz % grid - grid * 0.5;
+    let h2 = (pxz + grid * 0.5) % grid - grid * 0.5;
+    var c: HexCell;
+    c.pos = h1;
+    c.id = floor(pxz / grid);
+    if (length(h1) > length(h2)) {
+        c.pos = h2;
+        c.id = floor((pxz + grid * 0.5) / grid) + 0.5;
+    }
+    return c;
+}
+
 var<private> g_time: f32;
 var<private> g_audio: f32;
 var<private> g_mouse: vec2<f32>;
 
 fn map(pos: vec3<f32>) -> vec2<f32> {
     var p = pos;
-    let scaleDensity = max(1.0, u.zoom_params.x);
     let breathingSpeed = u.zoom_params.z;
-    let spacing = 10.0 / scaleDensity;
-    let grid = vec2<f32>(1.0, 1.7320508) * spacing;
-    let h1 = p.xz % grid - grid * 0.5;
-    let h2 = (p.xz + grid * 0.5) % grid - grid * 0.5;
-    var cellPos = h1;
-    var cellId = floor(p.xz / grid);
-    if (length(h1) > length(h2)) {
-        cellPos = h2;
-        cellId = floor((p.xz + grid * 0.5) / grid) + 0.5;
-    }
+    let spacing = scaleSpacing();
+    let hc = hexCell(p.xz, spacing);
+    let cellPos = hc.pos;
+    let cellId = hc.id;
     var q = p;
     q.x = cellPos.x;
     q.z = cellPos.y;
@@ -142,8 +139,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (fragCoord.x >= dims.x || fragCoord.y >= dims.y) { return; }
     var uv = (fragCoord * 2.0 - dims) / dims.y;
     g_time = u.config.x;
-    g_audio = u.config.y * 0.1;
-    let mX = (u.zoom_config.y / dims.x) * 2.0 - 1.0;
+    g_audio = plasmaBuffer[0].x * 0.5;
+    let mX = u.zoom_config.y * 2.0 - 1.0;  // zoom_config.y is already 0..1 (HEAD divided by dims.x)
     let mY = u.zoom_config.z * 2.0 - 1.0;
     g_mouse = vec2<f32>(mX, mY);
 
@@ -197,15 +194,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let cosTheta = sqrt(max(1.0 - (1.0 - max(dot(n, v), 0.0)) * 0.5, 0.01));
             let noiseVal = hash21(p.xz * 12.0 + g_time * 0.1) * 0.5
                          + hash21(p.xz * 25.0 - g_time * 0.15) * 0.25;
-            var thickness = filmThicknessBase * (0.7 + noiseVal);
-            let iridescent = thinFilmColor(thickness, cosTheta, filmIOR) * iridIntensity;
+            // Idea 1 — meniscus pooling: the film drains toward each scale's rim, so
+            // thickness climbs with radius from the cell centre -> concentric interference rings.
+            let hc = hexCell(p.xz, scaleSpacing());
+            let rN = clamp(length(hc.pos) / (scaleSpacing() * 0.45), 0.0, 1.0);
+            // Idea 2 — breathing coupling: a lifted scale stretches its film (same per-cell phase as map()).
+            let phase = g_time * u.zoom_params.z + fbm(vec3<f32>(hc.id.x, hc.id.y, g_time * u.zoom_params.z * 0.5)) * 6.28;
+            let lifted = sin(phase) * 0.5 + 0.5;
+            var thickness = filmThicknessBase * (0.7 + noiseVal) * mix(0.6, 1.25, rN * rN) * 0.55 + lifted * 160.0;
+            // The 17-sample average is nearly grey at HEAD thicknesses; re-saturate around its luma.
+            let filmRaw = thinFilmColor(thickness, cosTheta, filmIOR);
+            let filmL = dot(filmRaw, vec3<f32>(0.299, 0.587, 0.114));
+            let iridescent = max(mix(vec3<f32>(filmL), filmRaw, 2.6), vec3<f32>(0.0)) * iridIntensity;
 
             let diff = vec3<f32>(0.05, 0.05, 0.06) * ndotl;
             let spec = iridescent * pow(ndoth, 32.0) * 0.5;
-            col = diff + spec + iridescent * fresnel * 0.2;
+            // HEAD showed the film only in a pow-32 spec lobe (scales read as flat brown); a body sheen keeps it visible.
+            col = diff + spec + iridescent * fresnel * 0.2 + iridescent * (0.08 + 0.3 * ndotl) * 0.5;
 
             let plasmaProximity = exp(-p.y * 2.0);
             col += vec3<f32>(0.8, 0.2, 0.1) * plasmaProximity * 0.2 * plasmaIntensity * audioPulse;
+            // Idea 3 — plasma transmission: a lifted scale lets the heat below shine through its
+            // thin rim, tinted by the same film (back-lit, strongest on faces turned from the key light).
+            let bleed = lifted * rN * (1.0 - ndotl) * plasmaProximity;
+            col += iridescent * vec3<f32>(1.0, 0.45, 0.2) * bleed * 0.9 * plasmaIntensity * audioPulse;
 
         } else if (m == 2.0) {
             let heat = fbm(p * 2.0 - vec3<f32>(0.0, 0.0, g_time * 4.0)) * coreHeat;

@@ -1,12 +1,22 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Signal Modulation — Batch 62
-//  Carrier wave + spectral bands: spring origin [133..138], held boost,
-//  capped click carrier bursts, regional FFT bins, ACES + semantic alpha.
+//  Signal Modulation
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-01
+//  Ideas: AM excursion; zero-crossing ticks
+//  A packing: ACES display RGBA (C is not read)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
+fn fftBin(idx: u32) -> f32 {
+  let slot = idx + 5u;
+  if (slot >= arrayLength(&extraBuffer)) { return 0.0; }
+  return clamp(extraBuffer[slot], 0.0, 1.0);
 }
 
 fn huePreserveClamp(col: vec3<f32>, maxRGB: f32) -> vec3<f32> {
@@ -77,7 +87,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Carrier wave construction: the proximity warp now measures distance to
     // the spring-glided origin, so the waveform eases after the cursor.
     let proximity = distance(uv, springPos);
-    let wave = 0.5 + amp * sin((uv.x + proximity * 2.0) * freq + time * speed);
+    let phase = (uv.x + proximity * 2.0) * freq + time * speed;
+    // ── Idea 1: AM excursion
+    // The carrier amplitude swells with the FFT band under this row.
+    // The distortion slider stays the depth.
+    let band = floor(uv.y * 8.0);
+    let bandFFT = fftBin(u32(clamp(band, 0.0, 7.0)));
+    let am = 1.0 + bandFFT * 0.45;
+    let wave = 0.5 + amp * am * sin(phase);
     let distanceToWave = abs(uv.y - wave);
 
     // ── Click carrier bursts ──
@@ -92,7 +109,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (age <= 0.0 || age > 1.2) { continue; }
         let ringDist = distance(uv, rp.xy);
         let ringRadius = age * 0.35;
-        let ringBand = exp(-pow((ringDist - ringRadius) * 10.0, 2.0));
+        let ringDelta = (ringDist - ringRadius) * 10.0;
+        let ringBand = exp(-ringDelta * ringDelta);
         let fade = 1.0 - age / 1.2;
         let pulse = ringBand * fade * fade;
         clickBoost = clickBoost + pulse;
@@ -101,16 +119,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var signal = 1.0 - smoothstep(lineWidth, lineWidth + 0.005, distanceToWave);
     signal = clamp(signal + clickBoost * 0.85, 0.0, 1.0);
+    // ── Idea 2: zero-crossing ticks
+    // Short vertical marks where the carrier crosses the mid-line.
+    let tick = exp(-abs(sin(phase)) * 36.0) * smoothstep(0.04, 0.0, abs(uv.y - 0.5)) * smoothstep(0.02, 0.12, amp);
+    signal = clamp(max(signal, tick * 0.9), 0.0, 1.0);
     let displacement = signal * amp * 0.1;
 
     // Spectral band visualization: divide screen into 8 frequency bands.
-    // HONEST FFT: bands 0-7 read the engine FFT bins 1-8 from plasmaBuffer —
-    // the old fract(sin()) hash noise survives only as a ±10% jitter so the
-    // bars do not look digitized. The (1.0 + bass * 0.5) boost stays on top.
-    let band = floor(uv.y * 8.0);
-    let bandIdx = u32(band) + 1u;
-    let bandFFT = clamp(plasmaBuffer[bandIdx].x, 0.0, 1.0);
-    let bandJitter = fract(sin(band * 12.9898 + time) * 43758.5453);
+    // Bands 0-7 read engine FFT bins extraBuffer[5..12].
+    // The hash survives only as a slow ±10% jitter. The bass boost stays on top.
+    let bandJitter = fract(sin(band * 12.9898 + floor(time * 4.0)) * 43758.5453);
     let bandAmp = mix(0.1, 1.0, bandFFT) * (1.0 + bass * 0.5) * (0.9 + 0.2 * bandJitter);
     let bandMask = smoothstep(0.0, 0.02, abs(fract(uv.y * 8.0) - 0.5)) * signal * bandAmp;
 
@@ -135,7 +153,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = huePreserveClamp(finalColor, 1.8) * depthAtten;
     finalColor = acesToneMap(finalColor * (0.96 + bass * 0.05));
     let alpha = clamp(baseColor.a * 0.45 + signal * 0.35 + bass * 0.05 + bandMask * 0.2, 0.08, 1.0);
-    let depth = textureLoad(readDepthTexture, vec2<i32>(global_id.xy), 0).r;
     let depthOut = clamp(depth + signal * 0.04, 0.0, 1.0);
     let finalPixel = vec4<f32>(finalColor, alpha);
 
