@@ -1,0 +1,66 @@
+{
+  "id": "gen-abyssal-geode-matrix",
+  "name": "Abyssal Geode Matrix",
+  "url": "shaders/gen-abyssal-geode-matrix.wgsl",
+  "type": "generative",
+  "category": "generative",
+  "description": "A cavernous, dark-matter crystalline structure pulsing with deep sea bioluminescence and reactive geometric fracturing.",
+  "features": [
+    "audio-reactive",
+    "raymarching",
+    "crystal",
+    "fractal",
+    "mouse-driven",
+    "abyss"
+  ],
+  "tags": [
+    "crystal",
+    "fractal",
+    "bioluminescence",
+    "abyss",
+    "audio-reactive"
+  ],
+  "workgroup_size": [16, 16],
+  "params": [
+    {
+      "id": "gravityPull",
+      "name": "Gravity Pull",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Gravity Pull"
+    },
+    {
+      "id": "fractalSpeed",
+      "name": "Fractal Speed",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.y",
+      "description": "Fractal Speed"
+    },
+    {
+      "id": "glowIntensity",
+      "name": "Glow Intensity",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z",
+      "description": "Glow Intensity"
+    },
+    {
+      "id": "fractalDetail",
+      "name": "Fractal Detail",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w",
+      "description": "Fractal Detail"
+    }
+  ]
+}
