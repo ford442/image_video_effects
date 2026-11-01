@@ -3,31 +3,12 @@
 //  Category: simulation
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: reciprocal hunt (prey lose energy to adjacent predators); carcass compost
+//  Upgraded: 2026-09-12, 2026-10-31
+//  Ideas: reciprocal hunt (prey lose energy to adjacent predators); carcass compost; adaptive trait inheritance; trophic migration and depth habitat
 //  A packing: raw (species, energy, age, variant)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const EMPTY: f32 = 0.0;
 const PLANT: f32 = 0.2;
@@ -97,11 +78,11 @@ fn findBestNeighbor(coord: vec2<i32>, dims: vec2<i32>, mySpecies: i32, forEating
           }
         }
       } else {
-        if (neighborSpecies == 0) {
-          let score = hash21(vec2<f32>(coord + vec2<i32>(dx, dy)));
+        if (neighborSpecies == mySpecies) {
+          let score = neighbor.g;
           if (score > bestScore) {
             bestScore = score;
-            bestNeighbor = vec4<f32>(f32(dx), f32(dy), 0.0, 0.0);
+            bestNeighbor = neighbor;
           }
         }
       }
@@ -140,6 +121,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sourceLum = dot(sourceColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
+  // ── Idea 4 (part a): depth habitat preference (sunlit shallows vs deep ambush cover) ──
+  let sunlitBonus = 0.65 + 0.65 * depth;
+  let ambushBonus = 1.25 - 0.4 * depth;
+
   if (myType == 0 && rand < 0.01 + sourceLum * 0.05) {
     if (rand2 < 0.7) {
       species = PLANT;
@@ -162,6 +147,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     species = CARNIVORE;
     energy = 1.0;
     age = 0.0;
+    variant = 0.75;
     myType = 3;
   }
 
@@ -175,6 +161,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         species = PLANT;
         energy = 1.0;
         age = 0.0;
+        variant = fract(f32(i) * 0.17);
         myType = 1;
       }
     }
@@ -185,8 +172,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (myType > 0) {
     age = age + 0.001;
 
+    // ── Idea 3 (part a): adaptive trait genome modulates foraging & metabolic cost ──
+    let traitForage = 0.82 + variant * 0.42;
+    let traitMetabolic = 0.0014 * variant;
+
     if (myType == 1) {
-      energy = energy + sourceLum * 0.01;
+      energy = energy + sourceLum * 0.01 * sunlitBonus * traitForage;
       energy = min(energy, 1.0);
       // Idea 1 — reciprocal hunt: plants lose energy to adjacent herbivores
       energy = energy - f32(neighbors[2]) * eatProbability * 0.018;
@@ -195,11 +186,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (myType >= 2) {
       let preyNeighbor = findBestNeighbor(coord, dims, myType, true);
       let preyType = getSpeciesType(preyNeighbor.r);
-      if (canEat(myType, preyType) && rand < eatProbability) {
+      let huntChance = eatProbability * traitForage * select(1.0, ambushBonus, myType == 3);
+      if (canEat(myType, preyType) && rand < huntChance) {
         energy = energy + preyNeighbor.g * 0.5;
         energy = min(energy, 1.0);
       }
-      energy = energy - 0.005;
+      energy = energy - 0.005 - traitMetabolic;
       if (myType == 3) {
         energy = energy - 0.003;
       }
@@ -236,22 +228,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   if (myType == 0) {
-    if (neighbors[1] >= 2 && rand < 0.02) {
+    // ── Idea 3 (part b) & Idea 4 (part b): inherit kin variant & step into prey-rich empty cells ──
+    let mutDrift = select(0.0, (rand2 - 0.5) * 0.18, rand < mutationRate);
+    if (neighbors[1] >= 2 && rand < 0.02 * sunlitBonus) {
+      let kin = findBestNeighbor(coord, dims, 1, false);
       species = PLANT;
       energy = 0.3;
       age = 0.0;
+      variant = fract(kin.a + mutDrift);
       myType = 1;
-    }
-    if (neighbors[2] >= 2 && rand < 0.01) {
+    } else if ((neighbors[2] >= 2 && rand < 0.01) || (neighbors[2] == 1 && neighbors[1] >= 2 && rand < eatProbability * 0.06)) {
+      let kin = findBestNeighbor(coord, dims, 2, false);
       species = HERBIVORE;
       energy = 0.4;
       age = 0.0;
+      variant = fract(kin.a + mutDrift);
       myType = 2;
-    }
-    if (neighbors[3] >= 2 && rand < 0.005) {
+    } else if ((neighbors[3] >= 2 && rand < 0.005) || (neighbors[3] == 1 && neighbors[2] >= 2 && rand < eatProbability * 0.045 * ambushBonus)) {
+      let kin = findBestNeighbor(coord, dims, 3, false);
       species = CARNIVORE;
       energy = 0.5;
       age = 0.0;
+      variant = fract(kin.a + mutDrift);
       myType = 3;
     }
   }
@@ -275,8 +273,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalColor = finalColor + vec3<f32>(energy * 0.3);
   }
   if (speciesType > 0 && variant > 0.0) {
-    let hueShift = variant * 0.2;
-    finalColor = finalColor * vec3<f32>(1.0 + hueShift, 1.0, 1.0 - hueShift);
+    let hueShift = variant * 0.24;
+    finalColor = finalColor * vec3<f32>(1.0 + hueShift, 1.0 + (variant - 0.5) * 0.12, 1.0 - hueShift);
   }
 
   let mapped = aces(max(finalColor, vec3<f32>(0.0)));

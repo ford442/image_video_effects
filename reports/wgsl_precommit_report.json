@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-11-01T04:08:07.814297",
+  "timestamp": "2026-11-01T14:04:01.339306",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
-  "total": 1,
-  "passed": 1,
+  "total": 10,
+  "passed": 10,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -13,8 +13,7 @@
   "prelude_violations": 0,
   "results": [
     {
-      "file": "public/shaders/nebulous-dream.wgsl",
-      "file": "public/shaders/alpha-watercolor-wetness.wgsl",
+      "file": "public/shaders/alpha-multi-state-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -31,7 +30,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/chromatic-reaction-diffusion.wgsl",
+      "file": "public/shaders/bio-touch-em.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -48,7 +47,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/digital-mold.wgsl",
+      "file": "public/shaders/bioluminescent.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -65,7 +64,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/encaustic-wax-blackbody.wgsl",
+      "file": "public/shaders/boids-rgba-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -82,7 +81,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-abyssal-leviathan-iridescence.wgsl",
+      "file": "public/shaders/cyber-organic-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -99,7 +98,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gen-worley-cellular-noise.wgsl",
+      "file": "public/shaders/digital-moss-rgba.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -116,7 +115,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/ink-dispersion-guided.wgsl",
+      "file": "public/shaders/gen-emergent-calligraphic-ecosystems.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -133,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/ink_dispersion_alpha.wgsl",
+      "file": "public/shaders/gen-xeno-botanical-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -150,7 +149,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/oil-slick-iridescence.wgsl",
+      "file": "public/shaders/predator-prey-rgba.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -167,7 +166,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/porcelain-fracture-glow.wgsl",
+      "file": "public/shaders/predator-prey.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
