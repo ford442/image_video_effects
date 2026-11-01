@@ -2,7 +2,7 @@
   "id": "audio-voronoi-displacement",
   "name": "Audio Voronoi Displacement",
   "url": "shaders/audio-voronoi-displacement.wgsl",
-  "description": "Audio-reactive Voronoi cells that displace the image. Image fractured into cells that pulse with music.",
+  "description": "Voronoi cells that slide with audio and shove the photo toward the nearest site. Cell walls stay visible in silence and brighten with mids. Bass and the displacement slider scale the bulge. Pointer gravity kept.",
   "features": [
     "mouse-driven",
     "advanced-hybrid",
@@ -11,7 +11,9 @@
     "displacement-mapping",
     "randomization-safe",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -71,6 +73,42 @@
     ],
     "performance_target": "60 FPS (GTX 1060)",
     "created_by": "Agent 3B - Advanced Hybrid Creator",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Cell Count",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Audio Reactivity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Displacement Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }

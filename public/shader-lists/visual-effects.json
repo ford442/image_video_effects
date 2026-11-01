@@ -2212,7 +2212,7 @@
     "id": "signal-modulation",
     "name": "Signal Modulation",
     "url": "shaders/signal-modulation.wgsl",
-    "description": "AM/FM carrier wave with sprung origin, held widen, capped click carrier bursts, honest regional FFT spectral bands, ACES composite.",
+    "description": "AM/FM carrier from a sprung origin. The trace excursion swells with the FFT band on that row, and zero-crossing ticks mark where the carrier crosses mid-line. Bands read extraBuffer FFT bins.",
     "workgroup_size": [
       16,
       16,

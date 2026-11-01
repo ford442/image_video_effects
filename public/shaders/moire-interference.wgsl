@@ -3,7 +3,9 @@
 //  Category: interactive-mouse
 //  Features: [mouse-driven, audio-reactive, upgraded-rgba]
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-07-31, 2026-11-01
+//  Ideas: beat-gated displacement; beat contrast
+//  A packing: ACES display RGBA (C is not read)
 //  Upgraded: 2026-07-31 (Batch 21 - swarm)
 //    - Removed dead `dir` variable; depth write alpha normalized to 0.0.
 //    - Mouse emitter is eased through a critically-damped spring
@@ -16,26 +18,8 @@
 //    - Per-emitter FFT gain: center emitter -> bin 1, mouse emitter
 //      -> bin 5 (extraBuffer[5..132] = engine FFT bins; [0..4] reserved).
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Frequency, y=Distortion, z=Aberration, w=Complexity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Frequency, y=Distortion, z=Aberration, w=Complexity
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -49,6 +33,10 @@ fn fftBin(idx: u32) -> f32 {
 
 // Critically-damped spring step toward the raw cursor position.
 // State lives in extraBuffer[133..136] (pos.xy, vel.xy), init flag [137].
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn springStep(pos: vec2<f32>, vel: vec2<f32>, aim: vec2<f32>, omega: f32, dt: f32) -> vec4<f32> {
   let accel = omega * omega * (aim - pos) - 2.0 * omega * vel;
   let newVel = vel + accel * dt;
@@ -145,19 +133,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Normalize roughly
   interference = interference * 0.5;
 
-  // Distortion Vector
-  let displacement = vec2<f32>(cos(interference * 3.14), sin(interference * 3.14)) * strength;
+  // ── Idea 1: beat-gated displacement
+  // The moiré is the slow envelope between the two carriers. It scales the
+  // existing warp so the bands, not the carrier, move the photo.
+  let beat = abs(cos((d1 - d2) * freq * 0.5));
+  let moireGate = mix(0.35, 1.0, beat);
+  let displacement = vec2<f32>(cos(interference * 3.14), sin(interference * 3.14)) * strength * moireGate;
 
   // Sample with Aberration
-  let r_uv = uv + displacement * (1.0 + abb * 10.0);
-  let g_uv = uv + displacement;
-  let b_uv = uv + displacement * (1.0 - abb * 10.0);
+  let r_uv = clamp(uv + displacement * (1.0 + abb * 10.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let g_uv = clamp(uv + displacement, vec2<f32>(0.0), vec2<f32>(1.0));
+  let b_uv = clamp(uv + displacement * (1.0 - abb * 10.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let r = textureSampleLevel(readTexture, u_sampler, r_uv, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
 
   var color = vec3<f32>(r, g, b);
+  // ── Idea 2: beat contrast
+  // The same envelope darkens the nulls, so the fringes read when distortion is small.
+  color = color * (0.76 + 0.24 * beat);
+  color = acesToneMap(max(color, vec3<f32>(0.0)));
 
   // Depth pass-through
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

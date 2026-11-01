@@ -1,34 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Superellipse Sonic Chaos
+//  Sonic Distortion
 //  Category: interactive-mouse
-//  Features: mouse-driven, distortion, superellipse, lissajous, fbm, temporal, echo-trails
+//  Features: mouse-driven, audio-reactive, superellipse, lissajous, fbm, echo-trails, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded by: Algorithmist Agent
-//  Date: 2026-05-03
+//  Upgraded: 2026-11-01
+//  Ideas: harmonic beat; rose-petal nulls
+//  A packing: pre-ACES linear display RGBA (C is the echo colour)
 // ═══════════════════════════════════════════════════════════════════
 
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -69,15 +49,25 @@ fn roseModulation(angle: f32, n: f32, a: f32) -> f32 {
   return a * abs(cos(n * angle * 0.5));
 }
 
-fn chaosWave(dist: f32, freq: f32, speed: f32, time: f32, harmonics: i32) -> f32 {
+fn chaosWave(dist: f32, freq: f32, speed: f32, time: f32, harmonics: i32) -> vec2<f32> {
   var wave = 0.0;
-  var amp = 1.0;
+  var ampH = 1.0;
+  var first = 0.0;
+  var second = 0.0;
   for(var h: i32 = 0; h < harmonics; h = h + 1) {
     let fh = f32(h) + 1.0;
-    wave = wave + amp * sin(dist * freq * fh - time * speed * fh * 0.7);
-    amp = amp * 0.5;
+    let partial = sin(dist * freq * fh - time * speed * fh * 0.7);
+    first = select(first, partial, h == 0);
+    second = select(second, partial, h == 1);
+    wave = wave + ampH * partial;
+    ampH = ampH * 0.5;
   }
-  return wave;
+  // .x is the sum the offset already used; .y is the beat of the first two partials.
+  return vec2<f32>(wave, abs(first * second));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -90,9 +80,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aspect = resolution.x / resolution.y;
   let mouse = u.zoom_config.yz;
   let time = u.config.x;
+  let bass = plasmaBuffer[0].x;
   let freq = u.zoom_params.x * 100.0;
   let speed = u.zoom_params.y * 10.0;
-  let amp = u.zoom_params.z * 0.05;
+  let amp = u.zoom_params.z * 0.05 * (1.0 + bass * 0.35);
   let radius = max(u.zoom_params.w, 0.001);
 
   let uvAspect = vec2<f32>(uv.x * aspect, uv.y);
@@ -124,13 +115,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let srcVec = uvAspect - srcPos;
     let srcDist = length(srcVec);
     let srcDir = select(vec2<f32>(0.0, 0.0), srcVec / srcDist, srcDist > 0.001);
-    let srcWave = chaosWave(srcDist, freq, speed, time + fSrc * 1.7, 3);
+    let srcWave = chaosWave(srcDist, freq, speed, time + fSrc * 1.7, 3).x;
     let srcMask = 1.0 - smoothstep(radius * 0.4, radius, srcDist);
     let warp = fbm(uv * 4.0 + time * 0.2 + fSrc * 10.0, 3) * 2.0 - 1.0;
     totalOffset = totalOffset + srcDir * srcWave * roseAmp * srcMask * (1.0 + warp * 0.5);
   }
 
-  let primaryWave = chaosWave(pixelDist, freq, speed, time, 3);
+  let primaryField = chaosWave(pixelDist, freq, speed, time, 3);
+  let primaryWave = primaryField.x;
+  let beat = primaryField.y;
   let primaryDir = select(vec2<f32>(0.0, 0.0), toPixel / pixelDist, pixelDist > 0.001);
   totalOffset = totalOffset + primaryDir * primaryWave * roseAmp * mask;
 
@@ -138,14 +131,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     fbm(uv * 3.0 + vec2<f32>(time * 0.1, 0.0), 3),
     fbm(uv * 3.0 + vec2<f32>(0.0, time * 0.12), 3)
   );
-  let warpedUV = uv + totalOffset + domainWarp * amp * 0.3;
+  let warpedUV = clamp(uv + totalOffset + domainWarp * amp * 0.3, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let c0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let c1 = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
-  let c2 = textureSampleLevel(readTexture, u_sampler, warpedUV + totalOffset * 0.12, 0.0);
-  let c3 = textureSampleLevel(readTexture, u_sampler, warpedUV + totalOffset * 0.24, 0.0);
+  let c2 = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + totalOffset * 0.12, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let c3 = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + totalOffset * 0.24, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
 
-  let prevColor = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prevColor = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
   let echoFade = 0.82;
   let echoColor = prevColor * echoFade;
 
@@ -157,11 +150,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color.a = mix(c0.a, c1.a, mask * 0.5);
 
   let trailMix = 0.25 * mask + 0.1;
-  let finalRGB = mix(color.rgb, echoColor.rgb, trailMix);
-  let finalAlpha = max(color.a, echoColor.a * mask * 0.6);
+  let echoed = mix(color.rgb, echoColor.rgb, trailMix);
+  // ── Idea 2: rose-petal nulls
+  // roseAmp = amp * |cos(3.5·angle)|. The gaps of that rose darken the photo.
+  let petal = abs(cos(3.5 * pixelAngle));
+  // ── Idea 1: harmonic beat
+  // |first × second| partial of the primary chaosWave, inside the mask only.
+  let beatGlow = vec3<f32>(0.12, 0.32, 0.50) * beat * mask * (0.35 + u.zoom_params.z * 0.8);
+  let linearRGB = max(echoed * mix(0.68, 1.0, petal) + beatGlow, vec3<f32>(0.0));
+  let finalAlpha = clamp(max(color.a, echoColor.a * mask * 0.6) * (0.75 + beat * mask * 0.25), 0.0, 1.0);
+  let linearOut = vec4<f32>(linearRGB, finalAlpha);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, finalAlpha));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, finalAlpha));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(linearRGB), finalAlpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), linearOut);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

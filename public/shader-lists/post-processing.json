@@ -4,7 +4,7 @@
     "name": "Audio Reactive Pyramid",
     "url": "shaders/audio-reactive-pyramid.wgsl",
     "category": "post-processing",
-    "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). A small silence floor from the gain sliders keeps it a gentle detail enhancer without audio. Depth-routed bands: with a depth map, near subjects take the fine-detail boost while distant areas get gentle coarse softening (aerial perspective); a flat or missing depth map falls back to the plain pyramid. Per-band chroma split: added coarse-band halos lean warm and added fine-band edges lean cool, leaving flat neutral areas neutral. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+    "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). A small silence floor from the gain sliders keeps it a gentle detail enhancer without audio. Depth-routed bands: with a depth map, near subjects take the fine-detail boost while distant areas get gentle coarse softening (aerial perspective); a flat or missing depth map falls back to the plain pyramid. Per-band chroma split: added coarse-band halos lean warm and added fine-band edges lean cool, leaving flat neutral areas neutral. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]). Fine-band gain is quieter where the blur is isotropic, and the reconstruction is clamped to the local range of the original and the coarse blur so the pyramid does not ring.",
     "tags": [
       "audio-reactive",
       "sharpening",
@@ -59,7 +59,7 @@
     "name": "Audio Reactive RGB Dispersion",
     "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
     "category": "post-processing",
-    "description": "RGB dispersion driven by the live 128-bin FFT: the spectral centroid steers direction and width, spectral spread turns two crisp fringes into a rainbow smear on broadband sound, and bass pushes a radial lens-like split while treble slides it sideways.",
+    "description": "RGB dispersion driven by the live 128-bin FFT: the spectral centroid steers direction and width, spectral spread turns two crisp fringes into a rainbow smear on broadband sound, and bass pushes a radial lens-like split while treble slides it sideways. Interior wavelength taps follow a Cauchy curve, and the falloff prefers local contrast along the dispersion axis. Passthrough grade, no filmic curve.",
     "tags": [
       "audio-reactive",
       "chromatic-aberration",

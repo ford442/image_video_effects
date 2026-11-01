@@ -62,8 +62,17 @@
       "history": []
     },
     "audio-voronoi-displacement": {
-      "hash": "961d8d76a7f3d858",
-      "history": []
+      "hash": "f589c7b9a1b1dd4c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "f589c7b9a1b1dd4c",
+          "prev_hash": "961d8d76a7f3d858",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "audio-voronoi-gabor": {
       "hash": "820cf2ef93daaf24",
@@ -2041,8 +2050,17 @@
       "history": []
     },
     "sine-wave": {
-      "hash": "f6ae46ee6ca81b28",
-      "history": []
+      "hash": "7ebc14794bfb90d0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "7ebc14794bfb90d0",
+          "prev_hash": "f6ae46ee6ca81b28",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "sonic-boom": {
       "hash": "ddb44babe60964f3",
@@ -9182,8 +9200,17 @@
       "history": []
     },
     "wave-halftone": {
-      "hash": "aa13e37d50e6e161",
-      "history": []
+      "hash": "d062bb4bb9aeef8d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "d062bb4bb9aeef8d",
+          "prev_hash": "aa13e37d50e6e161",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "anamorphic-flare": {
       "hash": "93a2712f22dd73b8",
@@ -10289,8 +10316,17 @@
       "history": []
     },
     "moire-interference": {
-      "hash": "3ff31ccb934715f2",
-      "history": []
+      "hash": "c227bf9d711e2660",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "c227bf9d711e2660",
+          "prev_hash": "3ff31ccb934715f2",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "molten-glass": {
       "hash": "65a9817901024a1f",
@@ -11173,8 +11209,17 @@
       ]
     },
     "sonic-distortion": {
-      "hash": "ae569b6c9c5672a7",
-      "history": []
+      "hash": "687c0c2242acac7c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "687c0c2242acac7c",
+          "prev_hash": "ae569b6c9c5672a7",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "spectral-brush": {
       "hash": "e251e3b35893fef6",
@@ -11189,8 +11234,17 @@
       "history": []
     },
     "spectral-waves": {
-      "hash": "230d13daee297062",
-      "history": []
+      "hash": "8079e98b91880592",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "8079e98b91880592",
+          "prev_hash": "230d13daee297062",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "sphere-projection": {
       "hash": "d2c65dea369296b3",
@@ -11325,8 +11379,17 @@
       "history": []
     },
     "vertical-slice-wave": {
-      "hash": "8fbf3da0b9d430a0",
-      "history": []
+      "hash": "6aa3432dfa6fe0f0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "6aa3432dfa6fe0f0",
+          "prev_hash": "8fbf3da0b9d430a0",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "vhs-jog": {
       "hash": "256ce1e3b4d65654",
@@ -11887,11 +11950,20 @@
       "history": []
     },
     "audio-reactive-pyramid": {
-      "hash": "d0d97f47766796f7",
-      "history": []
+      "hash": "99d5823456a78285",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "99d5823456a78285",
+          "prev_hash": "d0d97f47766796f7",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "audio-reactive-rgb-dispersion": {
-      "hash": "8ce5140e03df7071",
+      "hash": "14e09f5d10a3412f",
       "history": [
         {
           "event": "upgraded",
@@ -11900,6 +11972,14 @@
           "prev_hash": "e79b1db05095be5a",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "14e09f5d10a3412f",
+          "prev_hash": "8ce5140e03df7071",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
         }
       ]
     },
@@ -12194,7 +12274,7 @@
       ]
     },
     "digital-waves": {
-      "hash": "a39352294985085f",
+      "hash": "0b46e893d760dab5",
       "history": [
         {
           "event": "upgraded",
@@ -12203,6 +12283,14 @@
           "prev_hash": "d552abd25c054ae0",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "0b46e893d760dab5",
+          "prev_hash": "a39352294985085f",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
         }
       ]
     },
@@ -12329,8 +12417,17 @@
       ]
     },
     "waveform-glitch": {
-      "hash": "c90893b11c4c7f1d",
-      "history": []
+      "hash": "f48df03b7e1a1b00",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "f48df03b7e1a1b00",
+          "prev_hash": "c90893b11c4c7f1d",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "xerox-degrade": {
       "hash": "7c0e23efdcd9e510",
@@ -13150,8 +13247,17 @@
       "history": []
     },
     "signal-modulation": {
-      "hash": "5a5a878a0724954a",
-      "history": []
+      "hash": "c947984310848346",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T03:57:18.913Z",
+          "hash": "c947984310848346",
+          "prev_hash": "5a5a878a0724954a",
+          "commit": "988623c9",
+          "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        }
+      ]
     },
     "spectral-rain": {
       "hash": "67a314a4d6200568",
