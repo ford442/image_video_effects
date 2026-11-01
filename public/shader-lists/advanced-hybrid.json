@@ -4762,7 +4762,7 @@
     "id": "fractal-boids-field-coupled",
     "name": "Fractal Boids Field + Fluid Coupling",
     "url": "shaders/fractal-boids-field-coupled.wgsl",
-    "description": "Flocking behavior on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples spawn shockwaves through the flock.",
+    "description": "Flocking on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples scatter the flock (boids flee the front); bunched-up boids glow with a density halo.",
     "features": [
       "advanced-hybrid",
       "boids",
@@ -4772,7 +4772,8 @@
       "interactive",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4832,7 +4833,7 @@
     "id": "fractal-boids-field",
     "name": "Fractal Boids Field",
     "url": "shaders/fractal-boids-field.wgsl",
-    "description": "Flocking behavior on a fractal vector field. Swarms of particles flowing through organic fractal currents.",
+    "description": "Flocking on a fractal vector field. Boid trails curve with the current and linger: the Trail Persistence slider sets how fast a trail evaporates from the history layer. Audio rides the flow strength.",
     "features": [
       "advanced-hybrid",
       "boids",
@@ -4840,7 +4841,9 @@
       "gpu-particles",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -6326,7 +6329,7 @@
     "id": "gravity-well-em",
     "name": "Gravity Well Em",
     "url": "shaders/gravity-well-em.wgsl",
-    "description": "Catalog entry for Gravity Well Em.",
+    "description": "A gravitational well under the cursor: lensing with chromatic dispersion, a photon ring, frame-drag hue shear, a dimmer counter-image inside the Einstein ring, and gravitational redshift toward the core, with electromagnetic fields from the mouse.",
     "tags": [
       "gravitational-lensing",
       "electromagnetic-fields",
@@ -7497,14 +7500,15 @@
     "id": "kimi-flock-symphony-em",
     "name": "Kimi Flock Symphony Em",
     "url": "shaders/kimi-flock-symphony-em.wgsl",
-    "description": "Kimi Flock Symphony Em",
+    "description": "A swarm of 2048 glowing particles bent by electric and magnetic fields from the mouse. Particles carry a charge sign, so the swarm splits into two fluids around the cursor, and each streaks along its own drift direction.",
     "tags": [
       "flocking-particles",
       "electromagnetic-fields"
     ],
     "features": [
       "flocking-particles",
-      "electromagnetic-fields"
+      "electromagnetic-fields",
+      "mouse-driven"
     ],
     "params": [
       {

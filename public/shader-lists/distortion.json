@@ -2061,7 +2061,7 @@
     "id": "magnetic-field",
     "name": "Magnetic Field",
     "url": "shaders/magnetic-field.wgsl",
-    "description": "Multipole magnetic field where each pole draws its moment from one of the eight FFT bins, so the field geometry itself reshapes with the music. Luminous tracer bands advect along the field lines at a cyclotron rate set by local |B|, streaming fast in strong regions and stalling in weak ones. Fixes a mask-as-colour feedback bug: dataTextureA stored the raw B-field vector while the temporal blend read it back as RGB, injecting signed field components into the displayed colour.",
+    "description": "Multipole magnetic field where each pole draws its moment from an FFT band and glows as a polarity-coloured beacon. Tracer bands advect along the field lines at a cyclotron rate, and the mode slider cross-fades between monopole, dipole, quadrupole and solenoid.",
     "features": [
       "animated",
       "physics",

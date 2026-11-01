@@ -8483,7 +8483,7 @@
     "id": "particle-swarm",
     "name": "Particle Swarm",
     "url": "shaders/particle-swarm.wgsl",
-    "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion and separation, so the field forms travelling flocks instead of N independent springs. Per-particle FFT bands drive turbulence and the attractor is spring-damped through extraBuffer[133..136]. Fixes a missing bounds guard and a degenerate Henyey-Greenstein term whose cosine was dotted against vec2(0,0), making the phase function a constant.",
+    "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion, separation and alignment, so the field forms travelling flocks that move together. Per-particle FFT bands drive turbulence, the attractor is spring-damped through extraBuffer[133..136], and fast particles smear the plate along their travel.",
     "params": [
       {
         "id": "stiffness",
