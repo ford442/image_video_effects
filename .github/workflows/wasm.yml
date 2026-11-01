@@ -24,6 +24,8 @@ on:
       - 'scripts/emcc-version-gate.sh'
       - 'scripts/gen-*-header.js'
       - 'scripts/emit-wasm-bridge.mjs'
+      - 'scripts/format-wasm-exports.js'
+      - 'scripts/wasm-source-hash.mjs'
   schedule:
     # Weekly, Monday 06:17 UTC. Scheduled runs always use the default branch (main).
     - cron: '17 6 * * 1'
@@ -53,7 +55,7 @@ jobs:
       run: npm ci
     
     - name: Setup Emscripten SDK
-      uses: mymindstorm/setup-emsdk@v16
+      uses: emscripten-core/setup-emsdk@v16
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
@@ -79,6 +81,7 @@ jobs:
           public/wasm/pixelocity_wasm.wasm
           public/wasm/pixelocity_wasm_jspi.js
           public/wasm/pixelocity_wasm_jspi.wasm
+          public/wasm/source-hash.json
           public/wasm/wasm_bridge.js
           public/wasm/wasm_bridge.d.ts
           public/wasm/bridge
@@ -100,6 +103,16 @@ jobs:
             exit 1
           fi
         done
+
+    # build.sh rewrote public/wasm/source-hash.json. With the binary compare green,
+    # a diff here only means the committed hash is missing or out of date: take it
+    # from the wasm-artifacts upload so ci.yml's wasm:validate gate stays accurate.
+    - name: Compare recorded WASM source hash
+      run: |
+        if ! git diff --quiet HEAD -- public/wasm/source-hash.json 2>/dev/null || ! git ls-files --error-unmatch public/wasm/source-hash.json >/dev/null 2>&1; then
+          echo "::warning file=public/wasm/source-hash.json::Committed source-hash.json is missing or stale; commit the one from this job's wasm-artifacts upload."
+          cat public/wasm/source-hash.json
+        fi
 
     - name: Verify WASM bridge copies match TypeScript SoT
       run: npm run verify:wasm-bridge-sync

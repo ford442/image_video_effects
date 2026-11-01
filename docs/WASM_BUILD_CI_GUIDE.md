@@ -98,7 +98,31 @@ downloaded `public/wasm/` is copied into `build/` by Vite.
 
 **CI — `test` job (`ci.yml`, every PR):** builds against the
 **committed** `public/wasm/` artifacts and runs `npm run wasm:validate` on them. It does not
-compile WASM.
+compile WASM: it validates the committed artifacts and their **source hash** (below).
+
+### Source-hash freshness gate
+
+`public/wasm/source-hash.json` records a SHA-256 over the files that define the emcc build
+(`wasm_renderer/*.cpp|*.h`, `wasm_renderer/build.sh`, `emsdk_env_locate.sh`,
+`src/contracts/wasm_compile_flags.json`, `wasm_exports.json`, the header contracts
+`bind_group0.json` / `canvas_configure.json` / `webgpu_limits.json`,
+`scripts/format-wasm-compile-flags.js`, `format-wasm-exports.js`, `emcc-version-gate.sh`,
+`gen-*-header.js`). It hashes sources, not the binary, so emsdk nondeterminism cannot
+cause a false failure. The JS bridge is not hashed (it does not feed the binary;
+`verify:wasm-bridge-sync` covers it).
+
+```bash
+node scripts/wasm-source-hash.mjs           # print the current hash
+node scripts/wasm-source-hash.mjs --check   # what wasm:validate runs
+node scripts/wasm-source-hash.mjs --write   # build.sh runs this after a release compile
+```
+
+`npm run wasm:validate` (and so `ci.yml`'s `test` job) fails when the recorded hash differs from
+the tree, so a PR that edits a WASM input without rebuilding no longer merges green. While the
+file has not been committed yet the check only warns; committing the first hash from a
+pinned-emsdk build (or from `wasm.yml`'s `wasm-artifacts` upload, which includes it) makes it
+blocking. `wasm.yml` still compares the fresh binary to the committed one and warns when the
+committed hash is missing or stale.
 
 **Local:** `npm run build` needs no emcc. `npm run wasm:build` / `BUILD_WASM=1 npm run build`
 (`wasm_renderer/build.sh`) **fail (exit 1) when `emcc` is missing**. Install emsdk to rebuild.
@@ -160,7 +184,7 @@ See [`wasm_renderer/ARTIFACTS.md`](../wasm_renderer/ARTIFACTS.md) for the full a
   - Not a stub or placeholder (no `Promise.resolve({})`)
   - Expected exported functions are present
 
-- **Freshness**: Timestamps ensure artifacts are not older than source files
+- **Freshness**: `public/wasm/source-hash.json` matches the build inputs (see *Source-hash freshness gate*)
 
 ## What Happens During CI
 
@@ -173,7 +197,7 @@ WASM is frozen R&D (#1080), so the `wasm` job lives in [`.github/workflows/wasm.
 Neither WASM job is a required check. Steps:
 
 1. **Setup**: Node.js 24 + npm dependencies
-2. **Emscripten**: emsdk (pinned to `emsdkVersion` in `wasm_compile_flags.json`) via `mymindstorm/setup-emsdk@v16`
+2. **Emscripten**: emsdk (pinned to `emsdkVersion` in `wasm_compile_flags.json`) via `emscripten-core/setup-emsdk@v16`
 3. **Build**: `npm run wasm:build` compiles from source (fails if emcc missing)
 4. **Validation**: `npm run wasm:validate` — integrity, bridge sync, freshness
 5. **Smoke**: Vitest tests matching `WASM` (bridge API surface)
