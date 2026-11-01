@@ -1737,7 +1737,8 @@
     ],
     "workgroup_size": [
       16,
-      16
+      16,
+      1
     ],
     "params": [
       {
@@ -26827,6 +26828,70 @@
       }
     ],
     "description": "A repeated stellar resonance manifold with coherent p/g-mode shells, compression-heated blackbody highlights, nodal dislocation seams, and coronal loop arc curtains driven by audio bands."
+  },
+  {
+    "id": "gen-stellar-cyber-lotus-forge",
+    "name": "Stellar Cyber-Lotus Forge",
+    "url": "shaders/gen-stellar-cyber-lotus-forge.wgsl",
+    "category": "generative",
+    "description": "A colossal biomechanical lotus blooming in deep space, its petals woven from pulsing neon plasma and celestial dust.",
+    "features": [
+      "organic",
+      "cyberpunk",
+      "cosmic",
+      "audio-reactive",
+      "interactive"
+    ],
+    "tags": [
+      "organic",
+      "cyberpunk",
+      "cosmic",
+      "audio-reactive",
+      "interactive"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "bloom",
+        "name": "Bloom Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "rotation",
+        "name": "Rotation Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "complexity",
+        "name": "Petal Complexity",
+        "default": 3,
+        "min": 1,
+        "max": 6,
+        "step": 1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "vein",
+        "name": "Vein Glow",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "name": "Stellar Mycelium Overdrive",
