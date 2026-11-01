@@ -1,4 +1,4 @@
-import { lazy, ReactElement, RefObject, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, ReactElement, RefObject, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   addNode,
@@ -30,6 +30,8 @@ import { NodeInspector } from './NodeInspector';
 import { NodeList } from './NodeList';
 import { SimRingSection } from './SimRingSection';
 import { useGraphLab } from './useGraphLab';
+import type { UseWgslDraftArgs } from './useWgslDraft';
+import { WgslDraftSection } from './WgslDraftSection';
 import './graphLab.css';
 
 // React Flow is its own chunk inside the lazy Lab: the list view and analysis work without it.
@@ -62,6 +64,10 @@ export interface GraphLabPanelProps {
   setStatus?: (status: string) => void;
   /** Test seam (useGraphLab). */
   portInference?: PortInference;
+  /** Test seam (useWgslDraft): naga + include resolution. */
+  wgslDiagnoseDeps?: UseWgslDraftArgs['diagnoseDeps'];
+  /** Open the WGSL editor section on mount. */
+  wgslOpen?: boolean;
 }
 
 /**
@@ -69,7 +75,16 @@ export interface GraphLabPanelProps {
  * comes from the renderer's own validator / planner / frame executor; it adds
  * no graph schema and no bindings. Lazy chunk "graph-lab".
  */
-export default function GraphLabPanel({ rendererRef, availableModes, activeSlot, onClose, setStatus, portInference }: GraphLabPanelProps) {
+export default function GraphLabPanel({
+  rendererRef,
+  availableModes,
+  activeSlot,
+  onClose,
+  setStatus,
+  portInference,
+  wgslDiagnoseDeps,
+  wgslOpen = false,
+}: GraphLabPanelProps) {
   const lab = useGraphLab({ rendererRef, availableModes, activeSlot, setStatus, portInference });
   const { draft, setDraft, selected, analysis, simRing, running, live, entries, ports, warnings, undo, redo } = lab;
   const node = draft.graph.nodes[selected];
@@ -77,6 +92,24 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
   const [canvasOpen, setCanvasOpen] = useState(CANVAS_SUPPORTED);
   const [canvasWide, setCanvasWide] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  // Mounted on first open and kept (closing the <details> must not stop a running draft).
+  const [wgslMounted, setWgslMounted] = useState(wgslOpen);
+  const stopWgslRef = useRef<(() => void) | null>(null);
+  const registerWgslStop = useCallback((stop: (() => void) | null) => {
+    stopWgslRef.current = stop;
+  }, []);
+  const { running: graphRunning, stop: stopGraph } = lab;
+  // One Lab draft per slot at a time: a WGSL run stops the graph draft there, and vice versa.
+  const stopGraphInSlot = useCallback(
+    (slot: number) => {
+      if (graphRunning?.slot === slot) stopGraph();
+    },
+    [graphRunning, stopGraph],
+  );
+  const startGraph = () => {
+    stopWgslRef.current?.();
+    void lab.start();
+  };
   const readRoles = editableRoles(draft, 'reads');
   const writeRoles = editableRoles(draft, 'writes');
   const nodePorts = node ? ports.get(node.entry) : undefined;
@@ -139,7 +172,7 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
             className="is-run"
             disabled={runBlock !== null}
             title={runBlock ?? `Run in slot ${activeSlot + 1}`}
-            onClick={() => void lab.start()}
+            onClick={startGraph}
             data-testid="graph-lab-run"
           >
             ▶ Run in slot {activeSlot + 1}
@@ -311,6 +344,29 @@ export default function GraphLabPanel({ rendererRef, availableModes, activeSlot,
           onDispatch={(domain) => setDraft((d) => setNodeDispatch(d, selected, domain))}
         />
       </section>
+
+      <details
+        className="graph-lab__wgsl-section"
+        open={wgslOpen || undefined}
+        onToggle={(e) => {
+          if ((e.currentTarget as HTMLDetailsElement).open) setWgslMounted(true);
+        }}
+      >
+        <summary className="graph-lab__section" data-testid="graph-lab-wgsl-toggle">
+          WGSL editor
+        </summary>
+        {wgslMounted && (
+          <WgslDraftSection
+            rendererRef={rendererRef}
+            activeSlot={activeSlot}
+            existingIds={entries?.catalogIds ?? null}
+            setStatus={setStatus}
+            onBeforeRun={stopGraphInSlot}
+            registerStop={registerWgslStop}
+            diagnoseDeps={wgslDiagnoseDeps}
+          />
+        )}
+      </details>
 
       <section aria-labelledby="graph-lab-simring-h">
         <h3 id="graph-lab-simring-h" className="graph-lab__section">
