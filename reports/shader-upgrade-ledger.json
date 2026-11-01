@@ -50,12 +50,30 @@
       ]
     },
     "astral-kaleidoscope-julia": {
-      "hash": "ddb137bd3b9a4e42",
-      "history": []
+      "hash": "afd92bac75183401",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "afd92bac75183401",
+          "prev_hash": "ddb137bd3b9a4e42",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
+        }
+      ]
     },
     "astral-kaleidoscope-morph": {
-      "hash": "db1e1bb553d0b4d9",
-      "history": []
+      "hash": "fa91bdb39fe92e31",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "fa91bdb39fe92e31",
+          "prev_hash": "db1e1bb553d0b4d9",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
+        }
+      ]
     },
     "atmos-fog-volumetric": {
       "hash": "e239a2c09ea7412d",
@@ -879,8 +897,17 @@
       "history": []
     },
     "spec-prismatic-dispersion": {
-      "hash": "7e28804fedfb4036",
-      "history": []
+      "hash": "9a89ef0afec32734",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "9a89ef0afec32734",
+          "prev_hash": "7e28804fedfb4036",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
+        }
+      ]
     },
     "spec-spherical-harmonics-light": {
       "hash": "be198b89a38f842e",
@@ -1012,16 +1039,43 @@
       "history": []
     },
     "astral-kaleidoscope-gemini": {
-      "hash": "e0fe07ff6830c9b6",
-      "history": []
+      "hash": "b6b0650a00ded6c7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "b6b0650a00ded6c7",
+          "prev_hash": "e0fe07ff6830c9b6",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
+        }
+      ]
     },
     "astral-kaleidoscope-grokcf1": {
-      "hash": "5a9a958e7092bcbf",
-      "history": []
+      "hash": "d0586b5afb800cc9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "d0586b5afb800cc9",
+          "prev_hash": "5a9a958e7092bcbf",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
+        }
+      ]
     },
     "astral-kaleidoscope": {
-      "hash": "eeea1e08c01711a9",
-      "history": []
+      "hash": "3037dc431394f283",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "3037dc431394f283",
+          "prev_hash": "eeea1e08c01711a9",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
+        }
+      ]
     },
     "astral-veins": {
       "hash": "dfaa21b5cb6ce798",
@@ -1980,12 +2034,30 @@
       ]
     },
     "kaleidoscope": {
-      "hash": "27015d68dbcb1145",
-      "history": []
+      "hash": "7392e03fea7a591b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "7392e03fea7a591b",
+          "prev_hash": "27015d68dbcb1145",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
+        }
+      ]
     },
     "liquid-prism": {
-      "hash": "e3ce6b7b8ed49d3f",
-      "history": []
+      "hash": "419ae12bda982e4a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "419ae12bda982e4a",
+          "prev_hash": "e3ce6b7b8ed49d3f",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
+        }
+      ]
     },
     "liquid-swirl": {
       "hash": "752b4988b6bdfc16",
@@ -2111,7 +2183,7 @@
       "history": []
     },
     "prism-displacement": {
-      "hash": "f273931e18e95e06",
+      "hash": "a42a8d435f931aa9",
       "history": [
         {
           "event": "upgraded",
@@ -2120,11 +2192,19 @@
           "prev_hash": "92555232dcc9b605",
           "commit": "136ae335",
           "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "a42a8d435f931aa9",
+          "prev_hash": "f273931e18e95e06",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
         }
       ]
     },
     "prismatic-mosaic": {
-      "hash": "05ef7e5776d6081b",
+      "hash": "b4779bb5021eba7c",
       "history": [
         {
           "event": "upgraded",
@@ -2133,6 +2213,14 @@
           "prev_hash": "b674f79232ceea44",
           "commit": "136ae335",
           "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:46:47.260Z",
+          "hash": "b4779bb5021eba7c",
+          "prev_hash": "05ef7e5776d6081b",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 17 kaleidoscope/prism ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-17/BRIEFS.md"
         }
       ]
     },

@@ -454,7 +454,7 @@
     "id": "astral-kaleidoscope-julia",
     "name": "Astral Kaleidoscope Julia",
     "url": "shaders/astral-kaleidoscope-julia.wgsl",
-    "description": "Astral Kaleidoscope Julia",
+    "description": "A 4D quaternion Julia set ray-marched through a kaleidoscope fold. The fractal reflects the photo with Schlick Fresnel, and the mirror seams show a dark gap with a thin bevel.",
     "tags": [
       "kaleidoscope",
       "quaternion-julia",
@@ -465,7 +465,9 @@
       "kaleidoscope",
       "quaternion-julia",
       "raymarching",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -510,7 +512,7 @@
     "id": "astral-kaleidoscope-morph",
     "name": "Astral Kaleidoscope + Morphological",
     "url": "shaders/astral-kaleidoscope-morph.wgsl",
-    "description": "Psychedelic kaleidoscope with chromatic separation enhanced by morphological erosion/dilation operations. Morphological gradient creates glowing halos around segments, top-hat transform isolates bright sparkles.",
+    "description": "Kaleidoscope followed by morphological erosion and dilation. A radial line structuring element streaks bright edges along the mirrors, the morphological gradient halos the segments, and lateral chroma fringing appears only where the gradient is strong.",
     "tags": [
       "kaleidoscope",
       "morphological",
@@ -524,7 +526,6 @@
       "advanced-convolution",
       "upgraded-rgba",
       "depth-aware",
-      "mouse-driven",
       "temporal",
       "randomization-safe"
     ],
@@ -9066,7 +9067,7 @@
     "id": "spec-prismatic-dispersion",
     "name": "Prismatic Dispersion",
     "url": "shaders/spec-prismatic-dispersion.wgsl",
-    "description": "4-band spectral dispersion through glass using Cauchy's equation. Treats RGBA as physical wavelengths with refractive index variation, reconstructing color via CIE color matching.",
+    "description": "4-band spectral dispersion through glass using Cauchy's equation. The spectral reconstruction is white-balanced so white stays white, and an anti-reflective coating tints the internal-reflection ghosts of bright highlights.",
     "tags": [
       "spectral",
       "prismatic",

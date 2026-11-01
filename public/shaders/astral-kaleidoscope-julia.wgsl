@@ -4,6 +4,9 @@
 //  Features: kaleidoscope, quaternion-julia, raymarching, depth-aware
 //  Complexity: Very High
 //  Chunks From: astral-kaleidoscope.wgsl, spec-quaternion-julia.wgsl
+//  Upgraded: 2026-11-01
+//  Ideas: photo-mapped Schlick reflection on the Julia surface; mirror-gap seam (dark line + bevel at the fold seams)
+//  A packing: raw colour + alpha in A (no reader), ACES on writeTexture
 //  Created: 2026-04-18
 //  By: Agent CB-16 — Generative & Cosmic Enhancer
 // ═══════════════════════════════════════════════════════════════════
@@ -12,26 +15,7 @@
 //  folded into kaleidoscope segments with chromatic separation.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -82,7 +66,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
 
     // Kaleidoscope parameters
-    let segments = max(3.0, u.zoom_params.x * 12.0 + 3.0);
+    // A mirror fan only closes for an integer count (a fractional count left a seam at the atan2 cut).
+    let segments = max(3.0, round(u.zoom_params.x * 12.0 + 3.0));
     let rotSpeed = u.zoom_params.y * 0.5;
     let spiralStr = u.zoom_params.z * 2.0;
     let aberration = u.zoom_params.w * 0.02;
@@ -103,12 +88,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     a = a - segmentAngle * floor(a / segmentAngle);
     if (a < 0.0) { a = a + segmentAngle; }
     if (a > segmentAngle * 0.5) { a = segmentAngle - a; }
+    // 2026-11 Idea 2: distance to the nearest mirror seam, in angle.
+    let seamDist = min(a, segmentAngle * 0.5 - a);
 
     let r_pulse = r - log(r + 0.1) * (0.75 * sin(time));
     let kUV = center + vec2<f32>(cos(a), sin(a)) * r_pulse;
 
     // ═══ Quaternion Julia Raymarch ═══
-    let zoom = mix(1.5, 4.0, u.zoom_config.x);
+    // HEAD read u.zoom_config.x here, which is engine TIME, so the zoom extrapolated without bound and
+    // shrank the Julia set to a dot within seconds. Held at the old slider midpoint, mix(1.5, 4.0, 0.5).
+    let zoom = 2.75;
     let morphSpeed = mix(0.1, 1.0, u.zoom_config.y);
     let colorCycles = mix(0.5, 3.0, u.zoom_config.z);
     let detail = mix(6.0, 12.0, u.zoom_config.w);
@@ -175,6 +164,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
         );
         col = baseColor * (diff * 0.7 + 0.3) * ao + vec3<f32>(spec * 0.5);
+        // 2026-11 Idea 1: photo-mapped Schlick reflection. The glossy fractal reflects the photo: the
+        // reflected view ray indexes the photo at 0.5 + refl.xy * 0.5, weighted by Schlick Fresnel (F0 0.04).
+        let reflRay = reflect(rd, n);
+        let envPhoto = textureSampleLevel(readTexture, u_sampler, clamp(vec2<f32>(0.5) + reflRay.xy * 0.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        let schlick = 0.04 + 0.96 * pow(1.0 - max(dot(n, -rd), 0.0), 5.0);
+        col = col + envPhoto * schlick * 0.8;
         alpha = 1.0;
     } else {
         let bgUV = uv + vec2<f32>(sin(time * 0.1 + uv.y * 3.0), cos(time * 0.1 + uv.x * 3.0)) * 0.02;
@@ -193,6 +188,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (!hit) {
         col = vec3<f32>(bgR, col.g, bgB);
     }
+
+    // 2026-11 Idea 2: mirror-gap seam. Where the fold meets a mirror there is a dark gap with a thin
+    // bevel beside it (the glass edge catching light), on both the fractal and the background.
+    let gapW = segmentAngle * 0.03;
+    let seamGap = 1.0 - smoothstep(0.0, gapW, seamDist);
+    let seamBevel = smoothstep(gapW, gapW * 2.0, seamDist) * (1.0 - smoothstep(gapW * 2.0, gapW * 3.5, seamDist));
+    col = col * (1.0 - 0.6 * seamGap) + vec3<f32>(0.08) * seamBevel;
 
     let display = toneMapACES(col);
     let luma = dot(display, vec3<f32>(0.299, 0.587, 0.114));
