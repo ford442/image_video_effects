@@ -6,6 +6,9 @@
 //  Chunks From: ink_dispersion_alpha (halftone dots, edge ink), conv-guided-filter-depth (guided filter, mouse aperture)
 //  Created: 2026-04-18
 //  By: Agent CB-6 — Alpha & Post-Process Enhancer
+//  Upgraded: 2026-11-01
+//  Ideas: edge-tangent halftone screen (45° grid turns to follow contours where the guided image has structure); guide-variance dot feathering (crisp dots at depth/image edges, wet blotted dots in smooth regions)
+//  A packing: display RGBA (ink colour, ink coverage)
 // ═══════════════════════════════════════════════════════════════════
 //  Depth-Guided Ink Halftone
 //  Applies a depth-guided edge-preserving filter to the input, then
@@ -15,26 +18,7 @@
 //  depth regions.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn getLuma(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
@@ -139,17 +123,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             gy = gy + vec3<f32>(luma * wy);
         }
     }
-    let edge = length(gx + gy);
+    // Sobel magnitude (luma is replicated across channels; the old length(gx+gy) only saw diagonals)
+    let gradL = vec2<f32>(gx.x, gy.x);
+    let edge = length(gradL);
     let isEdge = select(0.0, 1.0, edge > edgeThresh);
 
     let luma = getLuma(color);
-    let gridPos = vec2<f32>(global_id.xy) / vec2<f32>(dotSize);
+    // IDEA 1: edge-tangent screen. Classic 45 deg screen angle, folded toward the
+    // contour tangent (mod 90 deg, the grid's symmetry) where the image has structure,
+    // so dots line up along edges like an engraved halftone.
+    let baseAngle = 0.7853982;
+    let tangent = atan2(gradL.y, gradL.x) + 1.5707963;
+    var dAng = tangent - baseAngle;
+    dAng = dAng - 1.5707963 * round(dAng / 1.5707963);
+    let structure = smoothstep(edgeThresh * 0.5, edgeThresh * 2.0, edge) * depthInfluence;
+    let ang = baseAngle + dAng * structure;
+    let cs = cos(ang);
+    let sn = sin(ang);
+    let pix = vec2<f32>(global_id.xy);
+    let gridPos = vec2<f32>(cs * pix.x + sn * pix.y, -sn * pix.x + cs * pix.y) / vec2<f32>(dotSize);
     let gridCenter = floor(gridPos) + vec2<f32>(0.5);
     let dist = length(gridPos - gridCenter);
-    let radius = sqrt(luma) * 0.5;
     let quantColor = floor(color * levels) / vec3<f32>(levels);
     let dotRadius = (1.0 - luma) * 0.7;
-    let isDot = select(0.0, 1.0, dist < dotRadius);
+    // IDEA 2: feather by guide variance + gradient. Crisp where the guide/image has an
+    // edge, soft wet blots in smooth regions (more ink spreads more).
+    let sharp = clamp(edge / (edgeThresh * 2.0) + sqrt(max(varGuide, 0.0)) * 8.0, 0.0, 1.0);
+    let feather = mix(0.22, 0.03, sharp) * (0.6 + 0.8 * inkDensity);
+    let isDot = 1.0 - smoothstep(dotRadius - feather, dotRadius + feather, dist);
 
     var finalColor = quantColor;
     var ink_alpha = 0.0;
@@ -159,9 +160,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         ink_alpha = line_density;
         finalColor = mix(finalColor, vec3<f32>(0.02, 0.02, 0.04), isEdge * inkDensity);
     }
-    if (isDot > 0.5) {
+    if (isDot > 0.02) {
         let dot_coverage = smoothstep(0.0, 0.7, 1.0 - luma);
-        let dot_alpha = dot_coverage * inkDensity * 0.85;
+        let dot_alpha = dot_coverage * inkDensity * 0.85 * isDot;
         finalColor = mix(finalColor, finalColor * 0.7, isDot * 0.8);
         ink_alpha = max(ink_alpha, dot_alpha);
     }

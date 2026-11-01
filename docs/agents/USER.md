@@ -23,6 +23,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-26: sent a liquid ten (quantum-foam, vortex, liquid-optimized, hybrid-particle-fluid, ink-bleed, ambient-liquid, magnetic-interference, lava-lamp-blobs, tornado-vortex, gen-reaction-diffusion). `gen-reaction-diffusion` is `gen_reaction_diffusion.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/`.
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
   - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
+  - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
 
 ## 2026-10-26 — liquid ten (10 shaders)
 

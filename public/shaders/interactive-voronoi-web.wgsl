@@ -2,33 +2,16 @@
 //  interactive-voronoi-web
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-21
-//  Ideas: living neural web (pulses racing strands, firing synapse nodes);
-//         bass-synchronized firing bursts
-//  A packing: display RGBA passthrough (no history)
+//  Upgraded: 2026-09-21, 2026-10-31
+//  Ideas: living neural web (pulses racing strands, firing synapse nodes); bass-synchronized firing bursts; myelin swell; refractory dim
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Voronoi Web
 // Param1: Web Thickness
@@ -115,26 +98,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // This creates "mountains" at the edges.
     let edgeVal = m_dist2 - m_dist;
 
-    // Create the web pattern
-    let web = smoothstep(thickness, 0.0, edgeVal);
+    let cellPhase = hash2(m_point).x * 6.2831;
+    let pulseWave = sin(m_dist * 14.0 - time * (2.0 + pulseSpeed * 6.0) + cellPhase);
+    let pulse = pow(max(pulseWave, 0.0), 4.0);
+
+    // ── Idea: myelin swell ──────────────────────────────────────────
+    // Thickness stays the slider. The charge already on the strand
+    // swells that width as it passes.
+    let myelin = thickness * (1.0 + pulse * 1.6);
+    let web = smoothstep(myelin, 0.0, edgeVal);
+
+    // ── Idea: refractory dim ────────────────────────────────────────
+    // The negative half of the same pulse darkens the photo under the strand.
+    let refractory = smoothstep(0.2, -0.65, pulseWave) * smoothstep(myelin * 1.8, 0.0, edgeVal);
 
     // Mouse influence: Glow intensity based on distance to mouse
     let distToMouse = length(st - mouseSt);
     let mouseInfluence = smoothstep(0.5, 0.0, distToMouse);
 
-    // Sample original image
+    // Sample original image. Refractory half-cycle darkens it before the glow.
     var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let srcA = color.a;
+    color = vec4<f32>(color.rgb * (1.0 - refractory * 0.55), srcA);
 
     let bass = plasmaBuffer[0].x;
 
-    // ═══ Idea 1: living neural web — pulses race the strands ═══
-    // Treat each Voronoi edge as an axon. A charge pulse travels outward along the
-    // strand (parameterised by distance from the owning cell point), with a random
-    // phase per cell so strands fire independently — a flickering neural network.
-    let cellPhase = hash2(m_point).x * 6.2831;
-    let pulseWave = sin(m_dist * 14.0 - time * (2.0 + pulseSpeed * 6.0) + cellPhase);
-    let pulse = pow(max(pulseWave, 0.0), 4.0);          // sharp racing blips
-    let webPulse = web * (0.4 + pulse * 2.2);            // bright where charge is
+    // Living neural web — pulses race the strands (pulse computed above).
+    let webPulse = web * (0.4 + pulse * 2.2);
 
     // Synapse nodes — the animated cell points themselves glow as firing hubs.
     let animPt = 0.5 + 0.5 * sin(time * pulseSpeed + 6.2831 * m_point);
@@ -157,9 +147,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + vec4<f32>(webColor * finalGlow, 0.0);
     color = color + vec4<f32>(nodeColor * node * (glow + 0.5 + mouseInfluence * 2.0) * (1.0 + burst * 1.2), 0.0);
 
-    color = clamp(color, vec4<f32>(0.0), vec4<f32>(1.0));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), color);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
+    let outRgb = aces(max(color.rgb, vec3<f32>(0.0)));
+    let alpha = clamp(0.42 + web * 0.4 + node * 0.22 + color.a * 0.12, 0.0, 1.0);
+    let outCol = vec4<f32>(outRgb, alpha);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), outCol);
 
     // Pass depth
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-06, 2026-10-31
+//  Ideas: inverse-square lantern core (§12.2F); facet facing the lantern
+//  A packing: linear pre-ACES RGB + semantic alpha
 //  Motion: spring-damper cursor lantern + photon ripple wavefronts
 // ═══════════════════════════════════════════════════════════════════
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=CellDensity, y=LightRadius, z=Mode, w=PulseSpeed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -101,7 +82,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Proximity to spring cursor lantern
   let toSpring = (uv - spring) * aspectVec;
   let distSpring = length(toSpring);
-  let lanternLight = smoothstep(lightRadius, lightRadius * 0.1, distSpring);
+  // ── Idea 1: inverse-square lantern core (§12.2F) ────────────────
+  // lightRadius still gates the pool. Inside it the core is I/(d²+r0²).
+  let r0 = max(lightRadius * 0.28, 0.02);
+  let invSq = (r0 * r0) / (distSpring * distSpring + r0 * r0);
+  let lanternGate = smoothstep(lightRadius, lightRadius * 0.08, distSpring);
+  let lanternLight = lanternGate * (0.25 + 0.75 * invSq);
   let lanternPulse = 0.85 + 0.15 * sin(time * pulseSpeed * 2.5) + bass * 0.35;
 
   // Capped click ripple photon waves
@@ -178,6 +164,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color += vec3<f32>(1.0, 0.9, 0.75) * glint * (lanternLight + ripplePhoton);
   }
 
+  // ── Idea 2: facet facing the lantern ────────────────────────────
+  // cellDelta is the in-cell offset already used for glass refraction.
+  // The side of the cell toward the lamp is brighter in both modes.
+  let lightDir = select(vec2<f32>(0.0, 1.0), -toSpring / max(distSpring, 1e-4), distSpring > 1e-3);
+  let facetDir = cellDelta / max(length(cellDelta), 1e-4);
+  let facing = clamp(0.72 + 0.4 * dot(facetDir, lightDir), 0.45, 1.35);
+  color = color * facing;
+
   // Bass-ignited borders across entire frame
   let emberHue = vec3<f32>(1.0, 0.45, 0.12) * (1.0 - border) * bass * 0.75;
   color += emberHue;
@@ -187,7 +181,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let feedbackWeight = mix(0.06, 0.28, clamp(lanternLight * 0.5 + ripplePhoton * 0.4, 0.0, 1.0));
   var hdr = mix(color, hist.rgb, feedbackWeight);
 
-  let finalRGB = acesToneMap(hdr);
+  let finalRGB = acesToneMap(max(hdr, vec3<f32>(0.0)));
   let semanticAlpha = clamp((lanternLight * lanternPulse + borderGlow * 0.5) * depthScale + 0.35, 0.0, 1.0);
   let outCol = vec4<f32>(finalRGB, semanticAlpha);
 

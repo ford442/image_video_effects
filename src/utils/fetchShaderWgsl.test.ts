@@ -46,6 +46,20 @@ describe('fetchShaderWgsl', () => {
     expect(code).toContain('local');
   });
 
+  it('treats an SPA index.html fallback as missing and moves on to the caller URL', async () => {
+    global.fetch = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('./shaders/graphlab-wgsl-0-a.wgsl')) {
+        return new Response('<!doctype html><html></html>', { status: 200, headers: { 'content-type': 'text/html' } });
+      }
+      if (url.startsWith('blob:')) return new Response('@compute @workgroup_size(1) fn main() {}', { status: 200 });
+      return new Response('not found', { status: 404 });
+    }) as typeof fetch;
+
+    const code = await fetchShaderWgsl('graphlab-wgsl-0-a', 'blob:http://app/1234', { primaryOnly: true });
+    expect(code).toBe('@compute @workgroup_size(1) fn main() {}');
+  });
+
   it('primaryOnly skips storage API fallback for optional probes', async () => {
     const urls: string[] = [];
     global.fetch = vi.fn(async (input: RequestInfo | URL) => {

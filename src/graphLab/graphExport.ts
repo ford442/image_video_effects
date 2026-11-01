@@ -34,7 +34,7 @@ export const EXPORT_CATEGORIES = [
   'visual-effects',
 ] as const;
 
-const ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+export const ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
 export interface ExportNote {
   code: 'replaces-existing' | 'hides-catalog-entry' | 'drift-baseline' | 'sim-ring' | 'no-params';

@@ -7,6 +7,11 @@
 //  Complexity: High
 //  Created: 2026-05-30
 //  Upgraded: 2026-08-23 (Batch 56 — Turbulent Vortex)
+//  Upgraded: 2026-11-01 (sonnet/batch-06)
+//  Ideas: Cauchy dispersion (n(lambda) per channel shifts each channel's in-film angle and path);
+//         gravity drainage (film thins toward the top and falls into common-black film below ~60 nm);
+//         finite channel bandwidth (two wavelengths per channel, high orders wash to pastel)
+//  A packing: ACES display RGBA; B = raw per-channel interference + thickness/1000
 // ═══════════════════════════════════════════════════════════════════
 //  Thin-film interference done at the correct scale. Two structures:
 //
@@ -25,6 +30,9 @@
 //       slick creeps and folds rather than scrolling rigidly. The previous
 //       frame's colour (dataTextureC) is advected along the same field, which
 //       smears the rainbow into flow lines.
+//
+//    3. (2026-11-01 second pass) Cauchy dispersion, gravity drainage with a
+//       black-film limit, and finite-bandwidth channels — see Ideas below.
 //
 //  Interaction: the pointer is a capillary source (held = stronger standing
 //  wave), and clicks drop bounded expanding ring waves onto the film surface.
@@ -85,6 +93,27 @@ fn fresnelSchlick(cosTheta: f32) -> f32 {
 // Two-beam interference for one wavelength (nm). `thicknessNm` is the film
 // thickness, `cosT` the cosine of the refracted angle inside the film. The
 // extra PI is the hard phase reversal on reflection at the denser medium.
+// Idea 1 — Cauchy dispersion: the film's index rises toward blue.
+fn nOilAt(lambdaNm: f32) -> f32 {
+    return 1.43 + 12000.0 / (lambdaNm * lambdaNm);
+}
+
+fn thinFilmDisp(thicknessNm: f32, sinI: f32, lambdaNm: f32, reflectance: f32) -> f32 {
+    let n = nOilAt(lambdaNm);
+    let sinT = clamp(sinI * N_AIR / n, 0.0, 0.999);
+    let cosT = sqrt(1.0 - sinT * sinT);
+    let opd = 2.0 * n * thicknessNm * cosT;
+    let phase = TAU * opd / lambdaNm + PI;
+    let amp = sqrt(clamp(reflectance, 0.0, 1.0));
+    return clamp(2.0 * amp * (0.5 + 0.5 * cos(phase)), 0.0, 1.6);
+}
+
+// Idea 3 — a camera channel is a band, not a line: average two wavelengths.
+fn thinFilmBand(thicknessNm: f32, sinI: f32, lambdaNm: f32, reflectance: f32) -> f32 {
+    return 0.5 * (thinFilmDisp(thicknessNm, sinI, lambdaNm * 0.96, reflectance)
+                + thinFilmDisp(thicknessNm, sinI, lambdaNm * 1.04, reflectance));
+}
+
 fn thinFilm(thicknessNm: f32, cosT: f32, lambdaNm: f32, reflectance: f32) -> f32 {
     let opd = 2.0 * N_OIL * thicknessNm * cosT;
     let phase = TAU * opd / lambdaNm + PI;
@@ -183,12 +212,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Thickness in nm — the slope thins the film where it is steep, as a real
     // spreading slick does.
-    let thicknessNm = max(20.0, thicknessNmBase * (0.35 + h * 0.9));
+    // Idea 2 — gravity drainage: the slick is thinner at the top of the frame
+    // and thicker where it has pooled at the bottom.
+    let drain = mix(0.7, 1.2, smoothstep(0.0, 1.0, uv.y));
+    let thicknessNm = max(20.0, thicknessNmBase * (0.35 + h * 0.9) * drain);
+    // Common-black film: below ~60 nm the two beams cancel and the film vanishes.
+    let blackFilm = smoothstep(20.0, 70.0, thicknessNm);
 
-    let iR = thinFilm(thicknessNm, cosT, 680.0, reflectance);
-    let iG = thinFilm(thicknessNm, cosT, 550.0, reflectance);
-    let iB = thinFilm(thicknessNm, cosT, 450.0, reflectance);
-    let iridCol = vec3<f32>(iR, iG, iB) * iriStr * (1.0 + mid * 0.5);
+    let iR = thinFilmBand(thicknessNm, sinI, 680.0, reflectance);
+    let iG = thinFilmBand(thicknessNm, sinI, 550.0, reflectance);
+    let iB = thinFilmBand(thicknessNm, sinI, 450.0, reflectance);
+    let iridCol = vec3<f32>(iR, iG, iB) * blackFilm * iriStr * (1.0 + mid * 0.5);
 
     // ── Source, advected by the same flow ────────────────────────────────────
     let src = textureSampleLevel(readTexture, u_sampler, uv + flow * 0.4, 0.0);

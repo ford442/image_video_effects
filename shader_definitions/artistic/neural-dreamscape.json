@@ -2,9 +2,11 @@
   "id": "neural-dreamscape",
   "name": "Neural Dreamscape",
   "url": "shaders/neural-dreamscape.wgsl",
-  "description": "Neural network-inspired dreamlike visuals.",
+  "description": "Neural network-inspired dreamlike visuals: three neurons with hot somas, golden-angle dendritic spines and pulsing synapses swirl the photo into a feedback dream.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

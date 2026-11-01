@@ -2,7 +2,7 @@
   "id": "spectral-waves",
   "name": "Luma Ripple",
   "url": "shaders/spectral-waves.wgsl",
-  "description": "Premultiplied luminance waves from a guarded sprung origin, with bounded click trains, three-band and read-only FFT caustics, exact-C persistence, and authoritative A display history.",
+  "description": "Luminance-weighted radial ripples from a sprung pointer, with click trains and caustic persistence. Chromatic split follows the ripple slope, and a local luma contrast boosts the amplitude on edges.",
   "params": [
     {
       "id": "frequency",

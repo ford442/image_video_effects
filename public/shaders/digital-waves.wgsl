@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: standing nodes; crest scanlines
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas: standing nodes; crest scanlines; crest-following posterize; wave-sheared pixel grid
 //  A packing: raw diagnostic (wave, depth, ripple, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -125,7 +125,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   displacedUV = glitchBlocks(displacedUV, time, intensity);
 
   let pixelSize = mix(0.001, 0.006, 1.0 - scale);
-  let pixelatedUV = floor(displacedUV / pixelSize) * pixelSize + pixelSize * 0.5;
+  // ── Idea 2: wave-sheared pixel grid
+  // The snap lattice slides with wavePattern instead of staying axis-locked.
+  let shear = wavePattern * pixelSize * (0.5 + detail);
+  let sheared = displacedUV + vec2<f32>(shear, 0.0);
+  let pixelatedUV = floor(sheared / max(pixelSize, 1e-4)) * pixelSize + pixelSize * 0.5 - vec2<f32>(shear, 0.0);
   displacedUV = mix(displacedUV, pixelatedUV, intensity * 0.35 * detail);
 
   let splitAmount = abs(sin(time * 0.5)) * 0.006 * intensity * (1.0 + depth);
@@ -140,14 +144,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color *= scanlines(uv, time, 0.12 + intensity * 0.08, wavePattern);
   color = color * (1.0 - standingNodes * 0.55 * intensity);
   color += hash21(uv * resolution + time * 10.0) * 0.04 * intensity;
-  color = floor(color * mix(8.0, 24.0, detail)) / mix(8.0, 24.0, detail);
+  // ── Idea 1: crest-following posterize
+  // detail still sets the ceiling. Standing nodes crush to fewer steps.
+  let steps = mix(8.0, 24.0, detail) * mix(0.55, 1.0, abs(wavePattern));
+  color = floor(color * steps) / max(steps, 1.0);
   color += cyberPalette(wavePattern * 0.5 + time * 0.05) * abs(sin(time * 2.0)) * intensity * 0.08;
   color += vec3<f32>(0.0, 1.0, 1.0) * rippleBoost * 0.35;
 
   let band = min(u32(uv.x * 8.0), 7u);
-  color += cyberPalette(fract(time * 0.08 + f32(band) * 0.1)) * plasmaBuffer[band + 1u].x * 0.06;
+  let fftSlot = band + 5u;
+  var fftMag = 0.0;
+  if (fftSlot < arrayLength(&extraBuffer)) { fftMag = extraBuffer[fftSlot]; }
+  color += cyberPalette(fract(time * 0.08 + f32(band) * 0.1)) * fftMag * 0.06;
 
-  color = acesToneMap(color * (0.95 + bass * 0.1));
+  color = acesToneMap(max(color, vec3<f32>(0.0)) * (0.95 + bass * 0.1));
   let alpha = clamp(0.55 + intensity * 0.25 + interact * 0.15, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));

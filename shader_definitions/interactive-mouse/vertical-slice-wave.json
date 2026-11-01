@@ -2,7 +2,7 @@
   "id": "vertical-slice-wave",
   "name": "Vertical Slice Wave",
   "url": "shaders/vertical-slice-wave.wgsl",
-  "description": "Layered vertical strip waves with seam runners, held amplitude/twist, click fronts, rainbow interference, and state-only spring/audio feedback.",
+  "description": "Vertical strip waves with seam runners and click fronts. Strip edges lag toward the neighbour's phase, and the stored spring speed throws the slices. Feedback A stays raw state.",
   "params": [
     {
       "id": "strips",

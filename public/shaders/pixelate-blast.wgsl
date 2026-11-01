@@ -3,8 +3,8 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-06
-//  Ideas: bevelled fragments tilting away from the blast; block/fragment size cascade (finer core)
+//  Upgraded: 2026-10-06, 2026-10-31
+//  Ideas: bevelled fragments tilting away from the blast; block/fragment size cascade (finer core); separation gap; flight smear
 //  A packing: linear pre-ACES RGB + semantic alpha
 //  Motion: Voronoi cellular explosion + domain-warped blast shockwaves
 //  History: hygiene/motion pass 2026-09-06
@@ -156,10 +156,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rCol = textureSampleLevel(readTexture, u_sampler, clamp(cellUV + ca, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let gCol = textureSampleLevel(readTexture, u_sampler, cellUV, 0.0).g;
   let bCol = textureSampleLevel(readTexture, u_sampler, clamp(cellUV - ca, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  let baseColor = vec3<f32>(rCol, gCol, bCol);
+  var baseColor = vec3<f32>(rCol, gCol, bCol);
+
+  // ── Idea 2: flight smear ─────────────────────────────────────────
+  // Fragments already have a blast direction. One extra tap along it
+  // streaks the photo; chromatic amount stays on the R/G/B split above.
+  let smearUV = clamp(cellUV + blastDir * blastEnergy * 0.04, vec2<f32>(0.0), vec2<f32>(1.0));
+  let smearCol = textureSampleLevel(readTexture, u_sampler, smearUV, 0.0).rgb;
+  baseColor = mix(baseColor, smearCol, clamp(blastEnergy * 0.4, 0.0, 0.55));
 
   // Voronoi cell facet edges & glow
   let edgeDist = v.f2 - v.f1;
+
+  // ── Idea 1: separation gap ───────────────────────────────────────
+  // The Voronoi seam opens into a dark gap as blast energy rises.
+  // Edge glow is added afterwards, so the rim light stays on the crack.
+  let gap = smoothstep(0.05, 0.0, edgeDist) * smoothstep(0.2, 0.9, blastEnergy);
+  baseColor = mix(baseColor, baseColor * vec3<f32>(0.07, 0.06, 0.05), gap);
   let edgeMask = smoothstep(0.08, 0.01, edgeDist);
   let edgePalette = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + (v.cell.x + v.cell.y) * 1.5 + time * 1.5);
   let glowCol = edgePalette * edgeMask * edgeGlowAmt * (1.0 + blastEnergy * 0.8 + treble * 0.5);

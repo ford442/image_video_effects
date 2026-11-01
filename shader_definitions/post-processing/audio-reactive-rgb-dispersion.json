@@ -3,7 +3,7 @@
   "name": "Audio Reactive RGB Dispersion",
   "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
   "category": "post-processing",
-  "description": "RGB dispersion driven by the live 128-bin FFT: the spectral centroid steers direction and width, spectral spread turns two crisp fringes into a rainbow smear on broadband sound, and bass pushes a radial lens-like split while treble slides it sideways.",
+  "description": "RGB dispersion driven by the live 128-bin FFT: the spectral centroid steers direction and width, spectral spread turns two crisp fringes into a rainbow smear on broadband sound, and bass pushes a radial lens-like split while treble slides it sideways. Interior wavelength taps follow a Cauchy curve, and the falloff prefers local contrast along the dispersion axis. Passthrough grade, no filmic curve.",
   "tags": [
     "audio-reactive",
     "chromatic-aberration",
@@ -50,5 +50,43 @@
       "max": 1.0,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Angle Offset",
+          "default": 0.0,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Falloff",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Orig Blend",
+          "default": 0.1,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }
