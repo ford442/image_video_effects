@@ -4,17 +4,12 @@
 //  Features: volumetric-raymarch, audio-reactive, mouse-ripples, upgraded-rgba,
 //            chromatic-wavelength-split, temporal-aurora, audio-storm, depth-output
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: altitude emission layers (557nm green / 630nm red / blue-magenta edge); sheared curtain pleats with altitude parallax; click substorm arcs (age-based)
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: altitude emission layers (557nm green / 630nm red / blue-magenta edge); sheared curtain pleats with altitude parallax; click substorm arcs (age-based); bright thin lower-border rim; pulsating-aurora column on/off modulation
 //  A packing: aurora-glow layer (linear, base image excluded) + coverage alpha; writeTexture is ACES display
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>
-};
+#include "_prelude.wgsl"
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
   let speedPulse = 0.92 + 0.16 * (0.5 + 0.5 * sin(u.config.x * mix(0.25, 5.0, clamp(u.zoom_params.y, 0.0, 1.0))));
@@ -25,20 +20,6 @@ fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   return vec4<f32>(acesToneMap(controlled * 1.1), color.a);
 }
 
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 fn hash3(p: vec3<f32>) -> f32 {
     let p2 = fract(p * 0.3183099 + vec3<f32>(0.1, 0.1, 0.1));
@@ -141,7 +122,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // different noise slice (parallax) instead of the same 2D pattern.
         let fold = 1.5 * sin(0.4 * p.y + 0.2 * p.x);
         let q = vec3<f32>(p.x + fold, p.y * 0.3 + alt * lift, p.z);
-        let rays = 0.65 + 0.7 * noise3(vec3<f32>(q.x * 5.0, 7.3, p.z * 2.0)); // constant in y -> vertical rays
+        // IDEA 5: pulsating aurora. Each ray column switches on/off slowly (~8-12 s period)
+        // with its own phase, as in the pulsating patches of the diffuse aurora.
+        let column = floor(q.x * 5.0);
+        let pulse = smoothstep(0.2, 0.8, 0.5 + 0.5 * sin(time * (0.5 + 0.2 * hash3(vec3<f32>(column, 1.7, 0.0))) + 6.2832 * hash3(vec3<f32>(column, 4.1, 2.3))));
+        let rays = (0.65 + 0.7 * noise3(vec3<f32>(q.x * 5.0, 7.3, p.z * 2.0))) * mix(0.6, 1.25, pulse); // constant in y -> vertical rays
 
         // Chromatic wavelength splitting: R and B sample at different heights
         let nR = fbm(q + vec3<f32>(0.0, treble * 0.8, 0.0));
@@ -160,6 +145,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let mapped_color = emissionAltitude(alt); // IDEA 1
             accumulated_color += vec3<f32>(mapped_color.r * intensityR, mapped_color.g * intensityG, mapped_color.b * intensityB) * brightness_scale * step_size * 10.0;
             accumulated_alpha += intensityG * 0.1;
+            // IDEA 4: lower-border rim. Curtains are brightest on a thin lower edge where the
+            // density first crosses threshold (just above 0.4); strongest at low altitude.
+            let rim = exp(-((nG - 0.43) / 0.045) * ((nG - 0.43) / 0.045)) * (1.0 - alt) * fade;
+            accumulated_color += vec3<f32>(0.35, 1.0, 0.55) * rim * 0.5 * brightness_scale * step_size * 10.0;
         }
 
         if (accumulated_alpha >= 1.0) { break; }

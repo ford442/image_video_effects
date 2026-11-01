@@ -1,7 +1,7 @@
 {
-  "timestamp": "2026-10-26T15:18:34.745961",
-  "naga_bin": "/home/jules/.cargo/bin/naga",
-  "naga_available": false,
+  "timestamp": "2026-11-01T04:08:07.814297",
+  "naga_bin": "/root/.cargo/bin/naga",
+  "naga_available": true,
   "total": 1,
   "passed": 1,
   "failed": 0,
@@ -13,12 +13,12 @@
   "prelude_violations": 0,
   "results": [
     {
-      "file": "public/shaders/gen-stellar-mycelium-overdrive.wgsl",
+      "file": "public/shaders/nebulous-dream.wgsl",
       "skipped": false,
       "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
+      "naga_ok": true,
+      "naga_skipped": false,
+      "naga_error": "",
       "bindgroup_status": "compatible",
       "bindgroup_errors": [],
       "workgroup_errors": [],

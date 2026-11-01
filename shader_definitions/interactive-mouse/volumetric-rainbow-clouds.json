@@ -37,7 +37,8 @@
     "multi-pass",
     "volumetric",
     "depth",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
