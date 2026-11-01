@@ -8587,8 +8587,17 @@
       "history": []
     },
     "interactive-origami": {
-      "hash": "26c1fbef9d17d5b9",
-      "history": []
+      "hash": "1e0e757c786422d1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "1e0e757c786422d1",
+          "prev_hash": "26c1fbef9d17d5b9",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "kaleido-scope-grokcf1": {
       "hash": "f6b9ce6e65cf5855",
@@ -8599,8 +8608,17 @@
       "history": []
     },
     "kinetic-tiles": {
-      "hash": "43236f3107723b18",
-      "history": []
+      "hash": "091fc90e6deb0bc7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "091fc90e6deb0bc7",
+          "prev_hash": "43236f3107723b18",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "neon-poly-grid": {
       "hash": "eb368fd162292555",
@@ -8856,8 +8874,17 @@
       "history": []
     },
     "crumpled-paper": {
-      "hash": "57d6b66704c71ba2",
-      "history": []
+      "hash": "3740d062b8e135fe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "3740d062b8e135fe",
+          "prev_hash": "57d6b66704c71ba2",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "crystalline-shatter": {
       "hash": "f62e04844a68cc83",
@@ -9030,8 +9057,17 @@
       ]
     },
     "kintsugi-repair": {
-      "hash": "63f3c6849ab5101e",
-      "history": []
+      "hash": "b26beeb68a082f7e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "b26beeb68a082f7e",
+          "prev_hash": "63f3c6849ab5101e",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "lenticular-holographic-shift": {
       "hash": "963b0efd72f9893b",
@@ -9110,8 +9146,17 @@
       "history": []
     },
     "pin-art-3d": {
-      "hash": "a682825f1785cd96",
-      "history": []
+      "hash": "4a75f36c9e280d4b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "4a75f36c9e280d4b",
+          "prev_hash": "a682825f1785cd96",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "pixel-scattering": {
       "hash": "50886f0b5d1c04b9",
@@ -9153,8 +9198,17 @@
       ]
     },
     "plastic-bricks": {
-      "hash": "36f7647b7c2224de",
-      "history": []
+      "hash": "f307628925978c7b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "f307628925978c7b",
+          "prev_hash": "36f7647b7c2224de",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "polka-wave": {
       "hash": "7030fb16431845fa",
@@ -9310,8 +9364,17 @@
       "history": []
     },
     "texture": {
-      "hash": "ca643efaedaecfa6",
-      "history": []
+      "hash": "bb99cbec227f87b9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "bb99cbec227f87b9",
+          "prev_hash": "ca643efaedaecfa6",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "tilt-shift": {
       "hash": "a2ce85c7aed727f2",
@@ -9431,8 +9494,17 @@
       "history": []
     },
     "bubble-wrap": {
-      "hash": "223975ee87032ef5",
-      "history": []
+      "hash": "e1eb125acdd958d5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "e1eb125acdd958d5",
+          "prev_hash": "223975ee87032ef5",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "charcoal-rub": {
       "hash": "0a0e14854be31893",
@@ -10036,7 +10108,7 @@
       ]
     },
     "interactive-emboss": {
-      "hash": "52e9bf6d8c81163f",
+      "hash": "ba27f48ebb7bccf5",
       "history": [
         {
           "event": "upgraded",
@@ -10045,6 +10117,14 @@
           "prev_hash": "de9856e5388a2dba",
           "commit": "9f26f634",
           "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "ba27f48ebb7bccf5",
+          "prev_hash": "52e9bf6d8c81163f",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
         }
       ]
     },
@@ -10925,8 +11005,17 @@
       ]
     },
     "paper-burn": {
-      "hash": "01c31f32342f014d",
-      "history": []
+      "hash": "5c7c0999173b2ca9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "5c7c0999173b2ca9",
+          "prev_hash": "01c31f32342f014d",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "paper-cutout": {
       "hash": "5379ba277830b3c0",
@@ -11580,8 +11669,17 @@
       ]
     },
     "venetian-blinds": {
-      "hash": "be132400cbf86220",
-      "history": []
+      "hash": "731d6044ca8bb1ff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "731d6044ca8bb1ff",
+          "prev_hash": "be132400cbf86220",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "vertical-slice-wave": {
       "hash": "6aa3432dfa6fe0f0",
@@ -13575,8 +13673,17 @@
       "history": []
     },
     "zipper-reveal": {
-      "hash": "d4a434baa241cb55",
-      "history": []
+      "hash": "46f6cb71407bda87",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:11:23.502Z",
+          "hash": "46f6cb71407bda87",
+          "prev_hash": "d4a434baa241cb55",
+          "commit": "00db5f72",
+          "note": "2026-11-01 batch-30 physical materials (grok) — docs/agents/swarm-outputs/grok-2026-11-01-batch-30"
+        }
+      ]
     },
     "gen-chromodynamic-glass-labyrinth": {
       "hash": "8d56e14ec497948a",

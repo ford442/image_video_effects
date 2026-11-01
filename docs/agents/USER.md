@@ -24,6 +24,27 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
   - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
+  - 2026-11-01: sent cursor/batch-30 (Cursor(2)), twelve physical-material shaders (crumpled-paper through zipper-reveal). `kinetic-tiles` is `kinetic_tiles.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-01-batch-30/`.
+
+## 2026-11-01 — cursor/batch-30 physical materials (12 shaders)
+
+- IDs: crumpled-paper, paper-burn, plastic-bricks, pin-art-3d, bubble-wrap, interactive-origami, kintsugi-repair, venetian-blinds, kinetic-tiles, interactive-emboss, texture, zipper-reveal.
+- Per shader, the ideas actually added:
+  - crumpled-paper: facet cockle; calender sheen. Crease fibre and ironing memory kept.
+  - paper-burn: scorch browning; char curl. Fibrous diffusion and ember fronts kept. A.r stays the burn.
+  - plastic-bricks: stud pip; parting line. Tubes and knit line kept.
+  - pin-art-3d: friction steps; cap rim. Neighbour occlusion and the shaft kept.
+  - bubble-wrap: seal web; membrane flash. Hex packing and sympathetic pop kept. A.rg stays the pop.
+  - interactive-origami: score line; reverse face. Fold parity and wet-fold shadow kept.
+  - kintsugi-repair: urushi bed; glaze lip. F2 T-junction and gold meniscus kept.
+  - venetian-blinds: tilt view; ladder tape; slat bounce. Slat mask, bass snap, and downward shadow kept. No spring.
+  - kinetic-tiles: leading lip; mortar joint. Domino delay, grout compression, and the existing spring kept.
+  - interactive-emboss: ink squeeze; tooled groove. Self-shadow and Blinn glint kept.
+  - texture: structure-tensor gain (§12.2A); anti-halo envelope (§12.2A). Laplacian, unsharp, vignette, and voronoi glitch kept. C is textureLoad.
+  - zipper-reveal: binding stitch; lip shadow. Puller and staggered teeth kept.
+- Floor: prelude include on the four pasted headers; 16×16; exact C; A packing as documented; saved params exact. `x-meta.upgrade.params` added for venetian-blinds and texture.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
+- Real-GPU visual QA: external.
 
 ## 2026-10-26 — liquid ten (10 shaders)
 

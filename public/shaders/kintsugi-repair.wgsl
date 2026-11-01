@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: F2 second-edge T-junction cracks; raised gold meniscus
+//  Upgraded: 2026-09-08, 2026-11-01
+//  Ideas: F2 second-edge T-junction cracks; raised gold meniscus; urushi bed; glaze lip
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -128,7 +128,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let ceramicShade = mix(vec3<f32>(1.0), vec3<f32>(0.85, 0.80, 0.76), halo * 0.35);
 
   var finalColor = sourceColor * ceramicShade;
+  // ── Idea 1: urushi bed — black lacquer wider than the gold ──
+  let urushi = smoothstep(crackWidth * 0.7, crackWidth * 1.15, edgeDist)
+    * (1.0 - smoothstep(crackWidth * 1.15, crackWidth * 2.4, edgeDist));
+  finalColor = mix(finalColor, finalColor * vec3<f32>(0.12, 0.07, 0.04), urushi * 0.82);
   finalColor = mix(finalColor, lacquer, crack);
+  // ── Idea 2: glaze lip — a chip of light, then a short shadow ──
+  let lipHi = smoothstep(crackWidth * 1.7, crackWidth * 2.15, edgeDist)
+    * (1.0 - smoothstep(crackWidth * 2.15, crackWidth * 2.9, edgeDist));
+  let lipShade = smoothstep(crackWidth * 2.9, crackWidth * 3.4, edgeDist)
+    * (1.0 - smoothstep(crackWidth * 3.4, crackWidth * 4.6, edgeDist));
+  finalColor = finalColor + vec3<f32>(0.92, 0.9, 0.84) * lipHi * 0.28;
+  finalColor = finalColor * (1.0 - lipShade * 0.32);
   finalColor = finalColor + halo * (0.10 + 0.22 * audio.x + 0.12 * audio.z + 0.12 * interaction) * goldBase;
   finalColor += goldBase * (repairRunner * (0.06 + audio.y * 0.18) + goldRunner * crack * (0.04 + sparkleAmount * 0.15) + clickFront * 0.12);
 

@@ -1,140 +1,90 @@
-// --- VENETIAN BLINDS ---
-// Simulates venetian blinds covering the image.
-// Mouse Y controls the openness of the blinds; bass rattles them open on beats.
-// Features: slats, occlusion, shadow, mouse-driven, audio-reactive, upgraded-rgba
+// ═══════════════════════════════════════════════════════════════════
+//  Venetian Blinds
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-01
+//  Ideas: tilt view; ladder tape; slat bounce
+//  A packing: ACES display RGBA (C is not read)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    let resolution = u.config.zw;
-    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
-        return;
-    }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+  let resolution = u.config.zw;
+  if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
+    return;
+  }
+  let uv = vec2<f32>(global_id.xy) / resolution;
+  let coord = vec2<i32>(global_id.xy);
 
-    // Parameters
-    let slatCount = mix(10.0, 100.0, u.zoom_params.x); // Slider 1: Slat Density
-    let baseOpenness = u.zoom_params.y;               // Slider 2: Base Openness
-    let slatColorMix = u.zoom_params.z;               // Slider 3: Slat Color (Dark <-> Light)
-    let phaseShift = u.zoom_params.w;                 // Slider 4: Phase
+  let slatCount = mix(10.0, 100.0, u.zoom_params.x);
+  let baseOpenness = u.zoom_params.y;
+  let slatColorMix = u.zoom_params.z;
+  let phaseShift = u.zoom_params.w;
 
-    // Mouse Interaction
-    var mouse = u.zoom_config.yz;
-    // Mouse Y influences openness. Center = neutral.
-    // Maps mouse Y (0-1) to influence (-0.5 to 0.5)
-    let mouseInfluence = (mouse.y - 0.5);
+  let mouse = u.zoom_config.yz;
+  let mouseInfluence = mouse.y - 0.5;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let openness = clamp(baseOpenness + mouseInfluence + bass * 0.35, 0.0, 1.0);
 
-    // Effective Openness: 1.0 = Fully Open (See image), 0.0 = Fully Closed (See blinds)
-    let bass = plasmaBuffer[0].x;
-    let mids = plasmaBuffer[0].y;
+  let y = uv.y * slatCount + phaseShift;
+  let slatUV = fract(y);
+  let minThickness = 0.05;
+  let visibleSlatSize = mix(1.0, minThickness, openness);
+  let halfSlat = max(visibleSlatSize * 0.5, 0.001);
+  let centeredSlatUV = abs(slatUV - 0.5);
+  let slatHit = 1.0 - smoothstep(halfSlat - 0.008, halfSlat + 0.008, centeredSlatUV);
 
-    // Bass snaps the blinds open on each beat
-    var openness = clamp(baseOpenness + mouseInfluence + bass * 0.35, 0.0, 1.0);
+  let normY = clamp((slatUV - 0.5) / halfSlat, -1.0, 1.0);
+  let light = 0.5 + 0.5 * sqrt(max(0.0, 1.0 - normY * normY));
+  let baseSlat = mix(vec3<f32>(0.1, 0.1, 0.1), vec3<f32>(0.9, 0.9, 0.9), slatColorMix);
+  let glint = pow(max(0.0, 1.0 - abs(normY)), 8.0)
+    * (0.5 + 0.5 * sin(uv.x * 12.0 - u.config.x * 2.0)) * mids;
+  let slatRGB = baseSlat * light + vec3<f32>(0.7, 0.85, 1.0) * glint * 0.5;
 
-    // Calculation
-    let y = uv.y * slatCount + phaseShift;
-    let slatUV = fract(y); // 0.0 to 1.0 within the slat
+  // ── Idea 1: tilt view — an open slat shows a shifted slice of the photo ──
+  let tilt = (openness - 0.5) * 2.0;
+  let pitch = 1.0 / max(slatCount, 1.0);
+  let seeUV = clamp(uv + vec2<f32>(0.0, tilt * pitch * 1.6), vec2<f32>(0.0), vec2<f32>(1.0));
+  let baseImage = textureSampleLevel(readTexture, u_sampler, seeUV, 0.0);
 
-    // Thickness of the slat when fully horizontal (seen edge-on)
-    // We want a small sliver to remain even when fully open
-    let minThickness = 0.05;
+  let below = smoothstep(0.5, 0.502, slatUV);
+  let distFromSlatEdge = slatUV - (0.5 + halfSlat);
+  let shadowT = smoothstep(0.0, 0.2, distFromSlatEdge);
+  let shadow = mix(1.0, mix(0.5, 1.0, shadowT), below * (1.0 - slatHit));
 
-    // The visual height of the slat mask.
-    // When Openness = 1.0, height = minThickness.
-    // When Openness = 0.0, height = 1.0 (Full overlap).
-    let visibleSlatSize = mix(1.0, minThickness, openness);
+  // ── Idea 3: slat bounce — the gap just under a slat takes its colour ──
+  let bounce = exp(-max(distFromSlatEdge, 0.0) * 18.0) * below * (1.0 - slatHit) * (0.35 + slatColorMix * 0.4);
+  let gapRGB = baseImage.rgb * shadow + baseSlat * bounce * 0.22;
 
-    let centeredSlatUV = abs(slatUV - 0.5); // 0 to 0.5
+  var rgb = mix(gapRGB, slatRGB, slatHit);
 
-    var finalColor: vec4<f32>;
+  // ── Idea 2: ladder tape — two vertical cords, stitched at each slat ──
+  let tapeL = 1.0 - smoothstep(0.006, 0.014, abs(uv.x - 0.14));
+  let tapeR = 1.0 - smoothstep(0.006, 0.014, abs(uv.x - 0.86));
+  let tape = max(tapeL, tapeR);
+  let tapeCol = mix(baseSlat, vec3<f32>(0.55, 0.48, 0.38), 0.55);
+  let tapeLight = mix(0.72, light, slatHit);
+  rgb = mix(rgb, tapeCol * tapeLight, tape * 0.72);
+  let stitch = tape * slatHit * (1.0 - smoothstep(0.0, 0.08, centeredSlatUV));
+  rgb = rgb * (1.0 - stitch * 0.35);
 
-    // Check if we hit the slat
-    if (centeredSlatUV < (visibleSlatSize * 0.5)) {
-        // We hit the slat.
-        // Calculate shading to make it look cylindrical or curved.
-        // Normalize Y within the slat (-1 to 1)
-        let normY = (slatUV - 0.5) / (visibleSlatSize * 0.5);
+  let display = aces(max(rgb, vec3<f32>(0.0)));
+  var alpha = mix(baseImage.a * shadow, 0.88 + light * 0.1, slatHit);
+  alpha = mix(alpha, min(alpha + 0.06, 1.0), tape * 0.5);
+  let outCol = vec4<f32>(display, clamp(alpha, 0.0, 1.0));
 
-        // Simple lighting based on normal
-        // Assume light comes from top-left or viewer
-        let light = 0.5 + 0.5 * sqrt(max(0.0, 1.0 - normY*normY));
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthOut = clamp(mix(depth, 0.22 + (1.0 - openness) * 0.15, slatHit * 0.65 + tape * 0.2), 0.0, 1.0);
 
-        // Base Slat Color (Off-White or Dark Grey based on param)
-        let baseSlat = mix(vec3<f32>(0.1, 0.1, 0.1), vec3<f32>(0.9, 0.9, 0.9), slatColorMix);
-
-        // Mids put a travelling specular glint along the slat surface
-        let glint = pow(max(0.0, 1.0 - abs(normY)), 8.0)
-                    * (0.5 + 0.5 * sin(uv.x * 12.0 - u.config.x * 2.0)) * mids;
-        let slatRGB = baseSlat * light + vec3<f32>(0.7, 0.85, 1.0) * glint * 0.5;
-
-        // Alpha: slats are solid occluders
-        finalColor = vec4<f32>(slatRGB, 1.0);
-    } else {
-        // We hit the gap. Show the image.
-        let baseImage = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-
-        // Add a drop shadow from the slat above
-        // We are in the gap. 'centeredSlatUV' is > visibleSlatSize/2
-        // Distance from the bottom edge of the slat above?
-        // Actually, distance from top of gap.
-        // Top of gap is at slatUV = 0.5 - visibleSlatSize/2 ?? No.
-
-        // Let's simplify shadow. Distance from center.
-        let dist = centeredSlatUV - (visibleSlatSize * 0.5);
-
-        // Shadows appear at the top of the gap (bottom of the upper slat)
-        // If slatUV < 0.5, we are in top half? No slatUV goes 0..1.
-        // 0 is top, 1 is bottom.
-        // Slat is centered at 0.5.
-        // So gap is at 0..start and end..1.
-        // Wait, centered logic above implies slat is in the MIDDLE of the cell.
-        // So gap is at top (0.0) and bottom (1.0).
-
-        // Let's re-verify centered logic.
-        // if abs(slatUV - 0.5) < size/2 -> Slat is in middle.
-        // So gap is at edges.
-
-        // Shadow should be cast by the slat on the image.
-        // Usually shadow falls downwards. So the slat casts shadow on the gap BELOW it.
-        // The gap below the slat is the region (0.5 + size/2) to 1.0.
-
-        var shadow = 1.0;
-        if (slatUV > 0.5) {
-             // We are below the slat center.
-             let distFromSlatEdge = slatUV - (0.5 + visibleSlatSize * 0.5);
-             shadow = smoothstep(0.0, 0.2, distFromSlatEdge);
-             // mix shadow intensity
-             shadow = mix(0.5, 1.0, shadow);
-        }
-
-        // Alpha: gaps carry the source alpha, dimmed by cast shadow
-        finalColor = vec4<f32>(baseImage.rgb * shadow, baseImage.a * shadow);
-    }
-
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalColor);
-
-    // Passthrough Depth
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  textureStore(writeTexture, coord, outCol);
+  textureStore(dataTextureA, coord, outCol);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }
