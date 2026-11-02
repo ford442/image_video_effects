@@ -2003,7 +2003,7 @@
     "id": "chromatic-crawler-structure",
     "name": "Chromatic Crawler Structure",
     "url": "shaders/chromatic-crawler-structure.wgsl",
-    "description": "Color-swapping crawling infection guided by image structure tensor eigenvectors, featuring Cauchy tendril bifurcation, photoelastic stress birefringence, and bioluminescent photon pulses.",
+    "description": "Colour-swapping crawl guided by image structure-tensor eigenvectors: tendrils integrate along the flow, Harris corners nucleate bioluminescent spores, regions hold their channel swap for about half a second, and edge stress shows as photoelastic fringes.",
     "workgroup_size": [
       16,
       16,
@@ -2023,7 +2023,8 @@
       "photoelastic-birefringence",
       "audio-reactive",
       "mouse-driven",
-      "aces-tone-mapping"
+      "aces-tone-mapping",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2068,7 +2069,7 @@
     "id": "chromatic-focus-coupled",
     "name": "Chromatic Focus Coupled",
     "url": "shaders/chromatic-focus-coupled.wgsl",
-    "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid that twists and blurs chromatic channels. Click ripples inject fluid bursts.",
+    "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid whose small swirls are kept alive by vorticity confinement, and the dye edge acts as a meniscus lens that refracts and glints. Click ripples inject fluid bursts.",
     "features": [
       "mouse-driven",
       "fluid-simulation",
@@ -2121,7 +2122,7 @@
     "id": "chromatic-focus-guided",
     "name": "Chromatic Focus Guided",
     "url": "shaders/chromatic-focus-guided.wgsl",
-    "description": "Seven-band Cauchy chromatic dispersion with depth-guided filtering to eliminate cross-boundary edge bleeding.",
+    "description": "Seven-band Cauchy chromatic dispersion with depth-guided filtering. Dispersion is gated at depth edges so fringes stop at silhouettes, and the guided filter's detail is put back inside the focus disc.",
     "tags": [
       "chromatic-focus",
       "guided-filter-depth",
@@ -2183,7 +2184,7 @@
     "id": "chromatic-folds-bilateral",
     "name": "Chromatic Folds Bilateral",
     "url": "shaders/chromatic-folds-bilateral.wgsl",
-    "description": "Chromatic Folds Bilateral",
+    "description": "Chromatic folds on a joint colour and depth bilateral neighbourhood. Flat regions fold the edge-preserved base, resonance waves ring at preserved boundaries, and split-spectrum pivots open outward from the cursor.",
     "tags": [
       "chromatic-folds",
       "bilateral-dream",
