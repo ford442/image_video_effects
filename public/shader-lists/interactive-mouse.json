@@ -5196,7 +5196,7 @@
     "id": "lighthouse-reveal",
     "name": "Lighthouse Reveal",
     "url": "shaders/lighthouse-reveal.wgsl",
-    "description": "A rotating lighthouse beam sweeps out from the mouse position and reveals the image in a dark, foggy scene. The lamp is a 3-panel Fresnel bull's-eye lens: panel bands run along the shaft and a group of flashes fires as each panel faces the viewer (bass strengthens the flashes and the reveal). Near depth along the beam blocks it, casting radial shadow streaks down the shaft.",
+    "description": "A rotating lighthouse beam sweeps out from the mouse position and reveals the image in a dark, foggy scene. The lamp is a 3-panel Fresnel bull's-eye lens: panel bands run along the shaft and a group of flashes fires as each panel faces the viewer (bass strengthens the flashes and the reveal). Near depth along the beam blocks it, casting radial shadow streaks down the shaft. The shaft brightens as it swings toward the viewer (forward scatter) and fades through dense mist.",
     "features": [
       "mouse-driven",
       "audio-reactive",

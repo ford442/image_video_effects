@@ -101,12 +101,30 @@
       ]
     },
     "aurora-rift-2-iridescence": {
-      "hash": "087e060fb9d49119",
-      "history": []
+      "hash": "d221180b5ee7b08a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "d221180b5ee7b08a",
+          "prev_hash": "087e060fb9d49119",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "aurora-rift-iridescence": {
-      "hash": "cfb0c334435814a0",
-      "history": []
+      "hash": "bdc4726f373432f9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "bdc4726f373432f9",
+          "prev_hash": "cfb0c334435814a0",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "bio-lenia-rgba": {
       "hash": "8c20dcc6a4674f6b",
@@ -1194,12 +1212,30 @@
       "history": []
     },
     "aurora-rift-gemini": {
-      "hash": "556f77d61ab0f841",
-      "history": []
+      "hash": "0ee3a5b57d264c70",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "0ee3a5b57d264c70",
+          "prev_hash": "556f77d61ab0f841",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "aurora-rift": {
-      "hash": "fc3380e3835e7294",
-      "history": []
+      "hash": "02ade13f843f7ce0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "02ade13f843f7ce0",
+          "prev_hash": "fc3380e3835e7294",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "bioluminescent": {
       "hash": "088220166fee0fbf",
@@ -10736,8 +10772,17 @@
       ]
     },
     "lighthouse-reveal": {
-      "hash": "2ad2c53aebcc0574",
-      "history": []
+      "hash": "3588f424d50567d6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "3588f424d50567d6",
+          "prev_hash": "2ad2c53aebcc0574",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "liquid-lens": {
       "hash": "fe371d7c1fb0b872",
@@ -12340,12 +12385,30 @@
       ]
     },
     "cinematic-flare": {
-      "hash": "91a2869982b95b6a",
-      "history": []
+      "hash": "3f9fec0cffea6b99",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "3f9fec0cffea6b99",
+          "prev_hash": "91a2869982b95b6a",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "divine-light-gpt52": {
-      "hash": "bd6d35384357a05f",
-      "history": []
+      "hash": "b0cef9ff3882f130",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "b0cef9ff3882f130",
+          "prev_hash": "bd6d35384357a05f",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "divine-light": {
       "hash": "38ebc977827ace83",
@@ -12361,12 +12424,30 @@
       ]
     },
     "dynamic-lens-flares": {
-      "hash": "55c67bff17b57b4f",
-      "history": []
+      "hash": "c3eaf23e7494808c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "c3eaf23e7494808c",
+          "prev_hash": "55c67bff17b57b4f",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "lens-flare-brush": {
-      "hash": "664abff88d6bbb2d",
-      "history": []
+      "hash": "a17cd9d6deb68e91",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "a17cd9d6deb68e91",
+          "prev_hash": "664abff88d6bbb2d",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "matrix_digital_rain": {
       "hash": "df82af9209ad48e7",
@@ -13826,8 +13907,17 @@
       ]
     },
     "anamorphic-caustic-flare": {
-      "hash": "4774ff5151e999a5",
-      "history": []
+      "hash": "379144ecb32e2ca2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "379144ecb32e2ca2",
+          "prev_hash": "4774ff5151e999a5",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "ascii-shockwave": {
       "hash": "957ee42374db6ccd",
