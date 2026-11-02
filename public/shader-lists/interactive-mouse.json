@@ -1171,7 +1171,7 @@
     "id": "crystal-freeze",
     "name": "Crystal Freeze",
     "url": "shaders/crystal-freeze.wgsl",
-    "description": "Mouse freezes the image into growing ice crystals with physical light transmission. Features Voronoi-based crystal cells with Fresnel reflection, path absorption, and purity-based scattering.",
+    "description": "Mouse freezes the image into growing ice crystals with physical light transmission. Features Voronoi-based crystal cells with Fresnel reflection, path absorption, purity-based scattering, hexagonal-axis frost creep, age-annealed rime and grain-boundary hoar.",
     "params": [
       {
         "id": "decay",
