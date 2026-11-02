@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: contour-aligned hatch; exact-C wet memory
+//  Upgraded: 2026-09-09, 2026-11-02
+//  Ideas: contour-aligned hatch; exact-C wet memory; downhill stipple; coffee ring
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: blue_noise21 (from stipple-render) ═══
 fn blue_noise21(p: vec2<f32>) -> f32 {
@@ -86,14 +67,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cellId = floor(cellUV);
   let cellFract = fract(cellUV);
 
+  // Sobel shared by the downhill stipple and the contour hatch.
+  let texel = 1.0 / resolution;
+  let nL = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let nR = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let nU = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let nD = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let gx = dot(nR - nL, vec3<f32>(0.299, 0.587, 0.114));
+  let gy = dot(nD - nU, vec3<f32>(0.299, 0.587, 0.114));
+  let gLen = max(length(vec2<f32>(gx, gy)), 0.0001);
+  let tangent = vec2<f32>(-gy, gx) / gLen;
+
   // Approximate Lloyd's relaxation: offset cell center by local luminance
   let cellCenter = vec2<f32>(0.5) + (blue_noise21(cellId) - 0.5) * 0.6;
   let lumaOffset = (1.0 - adjustedLuma) * 0.35;
   let offsetCenter = cellCenter + vec2<f32>(lumaOffset * 0.3, lumaOffset * 0.2);
+  // ── Idea 1: downhill stipple — the dot shifts toward the darker side of the cell
+  let downhill = -vec2<f32>(gx, gy) / gLen;
+  let settled = offsetCenter + downhill * 0.16 * smoothstep(0.015, 0.18, gLen);
 
   // Dot size matches local luminance (darker = bigger dot)
   let dotSize = mix(0.15, 0.55, 1.0 - adjustedLuma);
-  let distToCenter = length(cellFract - offsetCenter);
+  let distToCenter = length(cellFract - settled);
   let dotMask = 1.0 - smoothstep(dotSize * 0.6, dotSize, distToCenter);
 
   // Idea 2: exact-C wet memory — previous ink keeps the bleed open.
@@ -107,16 +102,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bleed = mix(1.0, 2.5, clamp(wetFactor + wetMemory, 0.0, 1.0));
   let wetDot = 1.0 - smoothstep(dotSize * 0.4 * bleed, dotSize * bleed, distToCenter);
 
-  // Idea 1: contour-aligned hatch — strokes follow the Sobel tangent.
-  let texel = 1.0 / resolution;
-  let nL = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-  let nR = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-  let nU = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-  let nD = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-  let gx = dot(nR - nL, vec3<f32>(0.299, 0.587, 0.114));
-  let gy = dot(nD - nU, vec3<f32>(0.299, 0.587, 0.114));
-  let gLen = max(length(vec2<f32>(gx, gy)), 0.0001);
-  let tangent = vec2<f32>(-gy, gx) / gLen;
+  // Contour hatch (kept) — strokes follow the Sobel tangent computed above.
   let hatchPhase = dot(uv * resolution, tangent) * 0.35;
   let hatch = sin(hatchPhase) * sin(hatchPhase * 0.7 + 1.0 + mids);
   let hatchMask = smoothstep(0.3, 0.0, adjustedLuma) * smoothstep(0.0, 0.3, hatch);
@@ -130,6 +116,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   stippleColor = mix(stippleColor, hatchColor, hatchMask * 0.45);
   stippleColor = mix(stippleColor, inkColor, dotMask * 0.9);
   stippleColor = mix(stippleColor, inkColor, wetDot * 0.7);
+  // ── Idea 2: coffee ring — drying ink leaves a dark rim and a pale core
+  let rimIn = smoothstep(dotSize * 0.22, dotSize * 0.48, distToCenter);
+  let rimOut = 1.0 - smoothstep(dotSize * 0.48, dotSize * 0.92, distToCenter);
+  let coffeeRim = rimIn * rimOut * wetMemory;
+  let coffeeCore = (1.0 - smoothstep(0.0, dotSize * 0.32, distToCenter)) * wetMemory;
+  stippleColor = mix(stippleColor, inkColor * 0.55, coffeeRim * 0.85);
+  stippleColor = mix(stippleColor, paperBase, coffeeCore * 0.4);
 
   // Mix with original for color reveal
   let inkSaturation = clamp(dotMask + wetDot * 0.5 + hatchMask * 0.3, 0.0, 1.0);

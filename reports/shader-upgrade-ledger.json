@@ -420,8 +420,17 @@
       ]
     },
     "edge-glow-mouse-em": {
-      "hash": "b428a6f379c7017a",
-      "history": []
+      "hash": "b093b6655e2fb971",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "b093b6655e2fb971",
+          "prev_hash": "b428a6f379c7017a",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "elastic-chromatic-explosion": {
       "hash": "091a07f317ae49f2",
@@ -454,8 +463,17 @@
       ]
     },
     "engraving-stipple-blue-noise": {
-      "hash": "5557bab0198caac9",
-      "history": []
+      "hash": "797e8065c6bd9d81",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "797e8065c6bd9d81",
+          "prev_hash": "5557bab0198caac9",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "ethereal-swirl-coupled": {
       "hash": "a256037b0eeee639",
@@ -1398,16 +1416,34 @@
       "history": []
     },
     "engraving-stipple": {
-      "hash": "5360e093e4e02bec",
-      "history": []
+      "hash": "56219f9e9dd2145b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "56219f9e9dd2145b",
+          "prev_hash": "5360e093e4e02bec",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "fabric-step": {
       "hash": "d4bbb7a4205ccab6",
       "history": []
     },
     "film-cross-process": {
-      "hash": "e8123768be204c1b",
-      "history": []
+      "hash": "e6703d9428e08eaa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "e6703d9428e08eaa",
+          "prev_hash": "e8123768be204c1b",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "frosty-window": {
       "hash": "d52e34d095553e92",
@@ -1439,7 +1475,7 @@
       "history": []
     },
     "halftone-reveal": {
-      "hash": "57939e50e791be98",
+      "hash": "3eecbd96aa6b4b40",
       "history": [
         {
           "event": "upgraded",
@@ -1448,6 +1484,14 @@
           "prev_hash": "7516f46d7561331b",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "3eecbd96aa6b4b40",
+          "prev_hash": "57939e50e791be98",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
         }
       ]
     },
@@ -1656,7 +1700,7 @@
       "history": []
     },
     "neon-contour-interactive": {
-      "hash": "68de0eb20631368c",
+      "hash": "308ca392010d1c59",
       "history": [
         {
           "event": "upgraded",
@@ -1665,11 +1709,19 @@
           "prev_hash": "cc02c1d6952e05f8",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "308ca392010d1c59",
+          "prev_hash": "68de0eb20631368c",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
     "neon-edge-diffusion": {
-      "hash": "0051a11a5bf8ed55",
+      "hash": "7ce5d14963465eca",
       "history": [
         {
           "event": "upgraded",
@@ -1678,6 +1730,14 @@
           "prev_hash": "dd5e5106f7fa5315",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "7ce5d14963465eca",
+          "prev_hash": "0051a11a5bf8ed55",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
@@ -1753,8 +1813,17 @@
       ]
     },
     "polka-dot-reveal": {
-      "hash": "725240508ca98242",
-      "history": []
+      "hash": "6276981f98c679c4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "6276981f98c679c4",
+          "prev_hash": "725240508ca98242",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "porcelain-fracture-glow": {
       "hash": "5d03ac1f52f76d66",
@@ -1832,16 +1901,34 @@
       "history": []
     },
     "rotoscope-ink": {
-      "hash": "e63749e6eb1b5fbb",
-      "history": []
+      "hash": "9dbcdc9bc21539df",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "9dbcdc9bc21539df",
+          "prev_hash": "e63749e6eb1b5fbb",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "snow": {
       "hash": "dfb74328766f2629",
       "history": []
     },
     "spec-blue-noise-stipple": {
-      "hash": "88255d89afd313a4",
-      "history": []
+      "hash": "31da08b61d290b5a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "31da08b61d290b5a",
+          "prev_hash": "88255d89afd313a4",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "spectral-bleed-confinement": {
       "hash": "090f455cf8939fd3",
@@ -1950,8 +2037,17 @@
       "history": []
     },
     "stipple-render": {
-      "hash": "8e308f29638857db",
-      "history": []
+      "hash": "79c640fe2b2658b1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "79c640fe2b2658b1",
+          "prev_hash": "8e308f29638857db",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "temporal-echo": {
       "hash": "c8d5c49f2783d0b2",
@@ -9203,7 +9299,7 @@
       ]
     },
     "neon-poly-grid": {
-      "hash": "d89f3b3314fcbe5c",
+      "hash": "2c8b508dc841f182",
       "history": [
         {
           "event": "upgraded",
@@ -9212,11 +9308,19 @@
           "prev_hash": "eb368fd162292555",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "2c8b508dc841f182",
+          "prev_hash": "d89f3b3314fcbe5c",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
     "neon-quantum-lattice": {
-      "hash": "9e813e07eaafcd70",
+      "hash": "92772d24dda6c6af",
       "history": [
         {
           "event": "upgraded",
@@ -9225,6 +9329,14 @@
           "prev_hash": "16d5a1848fc2c892",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "92772d24dda6c6af",
+          "prev_hash": "9e813e07eaafcd70",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
@@ -9929,7 +10041,7 @@
       ]
     },
     "cyber-halftone-scanner": {
-      "hash": "43c990819443c5ff",
+      "hash": "8676371bfd16fb45",
       "history": [
         {
           "event": "upgraded",
@@ -9938,6 +10050,14 @@
           "prev_hash": "0fa112f2ff329f82",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "8676371bfd16fb45",
+          "prev_hash": "43c990819443c5ff",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
         }
       ]
     },
@@ -10167,7 +10287,7 @@
       ]
     },
     "graphic-novel": {
-      "hash": "ba46e93ba83da433",
+      "hash": "51f2518e4d27c8d7",
       "history": [
         {
           "event": "upgraded",
@@ -10176,6 +10296,14 @@
           "prev_hash": "a446396a1448bef1",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "51f2518e4d27c8d7",
+          "prev_hash": "ba46e93ba83da433",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
         }
       ]
     },
@@ -10480,7 +10608,7 @@
       ]
     },
     "polka-wave": {
-      "hash": "6011d9d8b6edf31b",
+      "hash": "668a8a8d1d458d84",
       "history": [
         {
           "event": "upgraded",
@@ -10489,11 +10617,19 @@
           "prev_hash": "7030fb16431845fa",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "668a8a8d1d458d84",
+          "prev_hash": "6011d9d8b6edf31b",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
         }
       ]
     },
     "posterize-neon-edges": {
-      "hash": "3a36ee57c677031f",
+      "hash": "3f35985068bf66a4",
       "history": [
         {
           "event": "upgraded",
@@ -10502,6 +10638,14 @@
           "prev_hash": "3c0cf6a1aafcce4d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "3f35985068bf66a4",
+          "prev_hash": "3a36ee57c677031f",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
@@ -11362,8 +11506,17 @@
       ]
     },
     "edge-glow-mouse": {
-      "hash": "737f38ab42e62672",
-      "history": []
+      "hash": "6331fc1c85d4ff01",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "6331fc1c85d4ff01",
+          "prev_hash": "737f38ab42e62672",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "energy-shield": {
       "hash": "0f5c806f22d06c38",
@@ -12339,8 +12492,17 @@
       "history": []
     },
     "neon-contour-drag": {
-      "hash": "fa1ece142a62dbcd",
-      "history": []
+      "hash": "d372aa7f395a15dd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "d372aa7f395a15dd",
+          "prev_hash": "fa1ece142a62dbcd",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "neon-cursor-trace": {
       "hash": "37e688f36ab5e6f0",
@@ -14545,7 +14707,7 @@
       ]
     },
     "halftone": {
-      "hash": "5663ac00d2b248f1",
+      "hash": "deaddf9e8986b8c6",
       "history": [
         {
           "event": "upgraded",
@@ -14554,6 +14716,14 @@
           "prev_hash": "d6923d45fc05f9c7",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:12:14.613Z",
+          "hash": "deaddf9e8986b8c6",
+          "prev_hash": "5663ac00d2b248f1",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
         }
       ]
     },
@@ -14600,7 +14770,7 @@
       ]
     },
     "neon-edges": {
-      "hash": "f37e6375c55120f5",
+      "hash": "56c080f0c063dfd4",
       "history": [
         {
           "event": "upgraded",
@@ -14609,6 +14779,14 @@
           "prev_hash": "54c42a8124eb5b62",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "56c080f0c063dfd4",
+          "prev_hash": "f37e6375c55120f5",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
@@ -15700,7 +15878,7 @@
       ]
     },
     "electric-contours": {
-      "hash": "76b8820cdda1c979",
+      "hash": "454ebe89234cdd26",
       "history": [
         {
           "event": "upgraded",
@@ -15709,6 +15887,14 @@
           "prev_hash": "3fac35fa96caf69c",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "454ebe89234cdd26",
+          "prev_hash": "76b8820cdda1c979",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
@@ -15925,7 +16111,7 @@
       ]
     },
     "neon-edge-reveal": {
-      "hash": "7ee879b4a5f4b7bd",
+      "hash": "ff4f7507368580fd",
       "history": [
         {
           "event": "upgraded",
@@ -15942,11 +16128,19 @@
           "prev_hash": "8d9e2fb8f25d2995",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "ff4f7507368580fd",
+          "prev_hash": "7ee879b4a5f4b7bd",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
     "neon-topology": {
-      "hash": "dee3bf6b419e5390",
+      "hash": "d3040ca7b83c7c92",
       "history": [
         {
           "event": "upgraded",
@@ -15955,6 +16149,14 @@
           "prev_hash": "311446d4c2a2c9a9",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:18:27.208Z",
+          "hash": "d3040ca7b83c7c92",
+          "prev_hash": "dee3bf6b419e5390",
+          "commit": "3e69070a",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },

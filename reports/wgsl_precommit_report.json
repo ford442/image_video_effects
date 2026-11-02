@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-11-01T20:09:38.531100",
+  "timestamp": "2026-11-02T15:13:01.766576",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": true,
   "total": 12,
@@ -13,7 +13,7 @@
   "prelude_violations": 0,
   "results": [
     {
-      "file": "public/shaders/holographic-contour.wgsl",
+      "file": "public/shaders/edge-glow-mouse-em.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -30,7 +30,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-crystal.wgsl",
+      "file": "public/shaders/edge-glow-mouse.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -47,7 +47,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-failure-iridescence.wgsl",
+      "file": "public/shaders/electric-contours.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -64,7 +64,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-flicker.wgsl",
+      "file": "public/shaders/neon-contour-drag.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -81,7 +81,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-glitch.wgsl",
+      "file": "public/shaders/neon-contour-interactive.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -98,7 +98,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-interferometry.wgsl",
+      "file": "public/shaders/neon-edge-diffusion.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -115,7 +115,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-prism.wgsl",
+      "file": "public/shaders/neon-edge-reveal.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -132,7 +132,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-projection-failure.wgsl",
+      "file": "public/shaders/neon-edges.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -149,7 +149,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-projection-gpt52.wgsl",
+      "file": "public/shaders/neon-poly-grid.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -166,7 +166,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-projection.wgsl",
+      "file": "public/shaders/neon-quantum-lattice.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -183,7 +183,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic-shatter.wgsl",
+      "file": "public/shaders/neon-topology.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,
@@ -200,7 +200,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/holographic_interference.wgsl",
+      "file": "public/shaders/posterize-neon-edges.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": true,

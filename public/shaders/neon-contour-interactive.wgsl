@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, semantic-alpha,
 //            edge-detection, depth-aware
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: radial pulse front rolling outward from the cursor; starter-flicker cells gated by electricPulse; discrete tube palette (hue softly quantized to six tubes)
+//  Upgraded: 2026-10-05, 2026-11-02
+//  Ideas: radial pulse front; starter-flicker cells; six-tube palette; electrode caps; mercury bead
 //  A packing: diagnostic (isEdge, glowStrength pre-ACES, cursor proximity, alpha)
 // ═══════════════════════════════════════════════════════════════════
 //  Sobel neon tubes on black. Hue cycles with edge strength and cursor
@@ -104,6 +104,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edge = sqrt(edgeX * edgeX + edgeY * edgeY);
     let isEdge = smoothstep(localThreshold, localThreshold + 0.05, edge);
 
+    // ── Idea 1: electrode caps ──
+    // A tube ends where this gradient holds and the step along the tangent drops.
+    let edgeLen = max(edge, 1e-5);
+    let nrm = vec2<f32>(edgeX, edgeY) / edgeLen;
+    let tng = vec2<f32>(-nrm.y, nrm.x);
+    let aheadUV = clamp(uv + tng * texelSize * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
+    let aheadG = abs(
+        getLuminance(textureSampleLevel(readTexture, u_sampler, clamp(aheadUV + nrm * texelSize, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb)
+      - getLuminance(textureSampleLevel(readTexture, u_sampler, clamp(aheadUV - nrm * texelSize, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb)
+    );
+    let endCap = isEdge * smoothstep(0.04, 0.16, edge - aheadG);
+
     // Neon Color Calculation
     let baseHue = fract(time * cycleSpeed * audioReactivity * 0.1 + audioHigh * 0.15);
     var hue = fract(baseHue + edge * 2.0 + dist * 0.5);
@@ -137,6 +149,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (dist < 0.2) {
         emission += neonColor * (0.2 - dist) * 2.0 * glowIntensity * isEdge * starter;
     }
+    // ── Idea 2: mercury bead ──
+    // The radial pulse is a wash. Its crest is a bright bead on the same tubes.
+    let bead = pow(max(pulse, 0.0), 6.0) * isEdge;
+    emission += neonColor * bead * glowIntensity * 0.5 * starter;
+    emission += vec3<f32>(1.0, 0.96, 0.9) * endCap * glowIntensity * 0.55 * starter;
     emission = max(emission, vec3<f32>(0.0));
 
     // Calculate alpha based on (HDR, pre-ACES) emission intensity

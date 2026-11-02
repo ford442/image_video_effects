@@ -4203,7 +4203,8 @@
       "edge-detection",
       "electromagnetic-field",
       "mouse-driven",
-      "chromatic"
+      "chromatic",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4429,7 +4430,9 @@
       "mouse-driven",
       "blue-noise",
       "pointillism",
-      "stipple"
+      "stipple",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
