@@ -3,9 +3,9 @@
 //  Category: lighting-effects
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, click-reactive
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: wet smear persistence along drag vector from exact C; caustic sparkle at orbital ghost centers
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-11-02
+//  Ideas: wet smear persistence along drag vector from exact C; caustic sparkle at orbital ghost centers; highlight-sourced streaks under the brush; dwell pressure
+//  A packing: ACES display RGBA; texel (0,0) = (mouse.xy, dwell pressure, time)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -56,8 +56,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hasMouse = rawMouse.x >= 0.0 && rawMouse.x <= 1.0 && rawMouse.y >= 0.0 && rawMouse.y <= 1.0;
   let mouse = select(vec2<f32>(0.5, 0.5), rawMouse, hasMouse);
   let held = u.zoom_config.w > 0.5;
-  let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
+  let stateTexel = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let prevMouse = stateTexel.xy;
   let dragVec = mouse - prevMouse;
+
+  // Idea 2: dwell pressure. A held, still pointer loads the brush (p += held·dt·(1 − p)·rate),
+  // releasing lets it bleed off exponentially. dt comes from the time stored beside the mouse;
+  // clamps keep a stale or foreign C (another shader's history) from producing a jump.
+  let dwellDt = clamp(time - stateTexel.w, 0.0, 0.1);
+  let prevPressure = clamp(stateTexel.z, 0.0, 1.0);
+  let stillness = exp(-length(dragVec * aspectVec) * 60.0);
+  let pressure = select(prevPressure * exp(-dwellDt * 2.5),
+                        prevPressure + dwellDt * 1.1 * stillness * (1.0 - prevPressure),
+                        held);
 
   // Click ripple interaction
   var rippleOffset = vec2<f32>(0.0);
@@ -78,7 +89,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Brush localized influence around cursor
   let mouseDist = length((uv - mouse) * aspectVec);
-  let brushRadius = (0.12 + u.zoom_params.z * 0.08) * select(1.0, 1.5, held);
+  let brushRadius = (0.12 + u.zoom_params.z * 0.08) * select(1.0, 1.5, held) * (1.0 + pressure * 0.6); // Idea 2
   let brushFalloff = exp(-mouseDist * mouseDist / (brushRadius * brushRadius));
 
   // Sample underlying source color at mouse cursor
@@ -87,7 +98,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lumaGate = smoothstep(threshold, threshold + 0.2, mouseLuma);
 
   // Core flare at mouse cursor
-  let coreGlow = exp(-mouseDist * mouseDist * 60.0) * intensity * (0.4 + lumaGate * 0.8);
+  let coreGlow = exp(-mouseDist * mouseDist * 60.0 / (1.0 + pressure * 1.5)) * intensity * (0.4 + lumaGate * 0.8) * (1.0 + pressure * 1.5); // Idea 2
   let coreColor = vec3<f32>(1.0, 0.94, 0.82) * coreGlow;
 
   // Anamorphic horizontal streak with chromatic shift
@@ -104,6 +115,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     0.5 + 0.5 * cos(streakPhase + 4.188)
   );
   let streakColor = (vec3<f32>(0.7, 0.85, 1.0) * 0.6 + streakRainbow * 0.4) * streakBase;
+
+  // Idea 1: highlight-sourced streaks. Every bright pixel under the brush throws its own
+  // horizontal streak: gather thresholded source along x (8 jittered taps, length from Stretch),
+  // weighted by an exponential tail, tinted with the same rainbow/cyan streak colour.
+  let hlLen = stretch * (0.2 + bass * 0.1);
+  let hlJit = hash12(vec2<f32>(gid.xy) + 7.3);
+  var hlAccum = vec3<f32>(0.0);
+  for (var k = 0; k < 8; k = k + 1) {
+    let off = ((f32(k) + hlJit) / 8.0 * 2.0 - 1.0) * hlLen * 1.5;
+    let tapUV = clamp(uv + vec2<f32>(off / aspect, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let tap = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
+    let tapHot = smoothstep(threshold, threshold + 0.15, dot(tap, vec3<f32>(0.2126, 0.7152, 0.0722)));
+    hlAccum += tap * tapHot * exp(-abs(off) / max(hlLen * 0.6, 0.005));
+  }
+  let hlTint = vec3<f32>(0.7, 0.85, 1.0) * 0.6 + streakRainbow * 0.4;
+  let highlightStreaks = hlAccum * (1.0 / 8.0) * hlTint * intensity * 2.6;
 
   // Orbital ghost flares around brush
   var ghostAccum = vec3<f32>(0.0);
@@ -142,7 +169,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spike = pow(max(0.0, sin(brushAngle * 6.0 + time)), 12.0) * exp(-mouseDist * 14.0) * (0.4 + treble * 0.3);
   let spikeColor = vec3<f32>(1.0, 0.9, 0.75) * spike * intensity;
 
-  var flareTotal = (coreColor + streakColor + ghostAccum + spikeColor + vec3<f32>(ripplePulse)) * brushFalloff;
+  var flareTotal = (coreColor + streakColor + highlightStreaks + ghostAccum + spikeColor + vec3<f32>(ripplePulse)) * brushFalloff;
 
   // Wet smear persistence: blend flare with exact C along mouse-drag offset
   let smearUV = clamp(uv - dragVec * (0.35 + stretch * 0.12), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -162,6 +189,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), finalAlpha);
 
   textureStore(writeTexture, coord, result);
-  textureStore(dataTextureA, coord, select(result, vec4<f32>(mouse, 0.0, 0.0), gid.x == 0u && gid.y == 0u));
+  textureStore(dataTextureA, coord, select(result, vec4<f32>(mouse, pressure, time), gid.x == 0u && gid.y == 0u));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

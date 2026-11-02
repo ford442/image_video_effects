@@ -2,7 +2,7 @@
   "id": "divine-light-gpt52",
   "name": "Divine Light Cathedral gpt52",
   "url": "shaders/divine-light-gpt52.wgsl",
-  "description": "Expanded volumetric rays with dust motes, Cauchy ray dispersion, rose-window stained-glass projections, and Airy disk diffraction halos.",
+  "description": "Expanded volumetric rays with dust motes, Cauchy ray dispersion, rose-window stained-glass projections, and Airy disk diffraction halos. Long shafts redden with Rayleigh path loss and dust motes glitter only where the rays are lit.",
   "workgroup_size": [
     16,
     16,
@@ -40,12 +40,12 @@
   ],
   "features": [
     "mouse-driven",
-    "spring-dynamics",
     "volumetric",
     "atmospheric",
     "audio-reactive",
     "cauchy-dispersion",
-    "aces-tone-mapping"
+    "aces-tone-mapping",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

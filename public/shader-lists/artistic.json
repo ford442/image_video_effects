@@ -596,10 +596,12 @@
     "id": "aurora-rift-gemini",
     "name": "Aurora Rift Gemini",
     "url": "shaders/aurora-rift-gemini.wgsl",
-    "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering, mouse-driven particle effects.",
+    "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering particle effects. The rift light runs along magnetic field-line arcs between two poles (the mouse drags one) and foam cells blink like pulsating aurora.",
     "features": [
       "mouse-driven",
-      "time-driven"
+      "time-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -644,9 +646,11 @@
     "id": "aurora-rift",
     "name": "Aurora Rift",
     "url": "shaders/aurora-rift.wgsl",
-    "description": "Aurora borealis-inspired lighting effects with atmospheric rifts.",
+    "description": "Aurora borealis-inspired lighting effects with atmospheric rifts. The rift borders glow in real auroral emission lines (green 557.7 nm, red 630 nm crown, violet base) and fading rifts leave a slow red afterglow.",
     "features": [
-      "mouse-driven"
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

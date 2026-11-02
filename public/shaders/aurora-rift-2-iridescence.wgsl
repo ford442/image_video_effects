@@ -1,5 +1,12 @@
-// Aurora Rift 2 Iridescence — 5-layer volumetric aurora curtains with thin-film interference, Beer's Law, and geomagnetic turbulence.
-// A/C stores ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through layered depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Aurora Rift 2 Iridescence — 5-layer volumetric aurora curtains with thin-film interference, Beer's Law, and geomagnetic turbulence.
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, click-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-02
+//  Ideas: drapery profile (sharp lower border, upward tail crossed by field-aligned rays); fold brightening (edge-on sheet path ∝ sqrt(1 + slope²))
+//  A packing: ACES display RGBA (C read as colour, 6% persistence); B unused; depth passes through
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -51,14 +58,17 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
   let cosTheta_t = sqrt(max(1.0 - sinTheta_t * sinTheta_t, 0.0));
   let opd = 2.0 * filmIOR * thicknessNm * cosTheta_t;
   var color = vec3<f32>(0.0);
-  var sampleCount = 0.0;
+  var norm = vec3<f32>(0.0);
   for (var lambda = 380.0; lambda <= 700.0; lambda = lambda + 30.0) {
     let phase = opd / lambda;
     let interference = cos(phase * 6.28318530718) * 0.5 + 0.5;
-    color += wavelengthToRGB(lambda) * interference;
-    sampleCount = sampleCount + 1.0;
+    let w = wavelengthToRGB(lambda);
+    color += w * interference;
+    norm += w;
   }
-  return color / max(sampleCount, 1.0);
+  // HEAD divided by the sample count; Σ wavelengthToRGB differs per channel, which tinted every
+  // curtain beige. Normalising per channel white-balances the film (a flat spectrum stays grey).
+  return color / max(norm, vec3<f32>(1e-3));
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -124,7 +134,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let filmThicknessBase = mix(200.0, 800.0, 0.3 + u.zoom_params.x * 0.4);
+  // HEAD fix: 200–800 nm plus per-pixel hash grain put the film in orders 2–12, which average to
+  // grey (beige before the white balance); 120–480 nm with smooth noise keeps orders 1–4.
+  let filmThicknessBase = mix(120.0, 480.0, 0.3 + u.zoom_params.x * 0.4);
   let filmIOR = mix(1.2, 2.4, 0.3 + turbulence * 0.15);
   let iridIntensity = mix(0.5, 2.2, intensity);
 
@@ -142,13 +154,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let curtainY = 0.35 + n1 * 0.35 + n2 * 0.15;
     let curtainWidth = 0.12 + n2 * 0.08;
-    let distFromCurtain = abs(uv.y - curtainY);
-    let curtainIntensity = smoothstep(curtainWidth, 0.0, distFromCurtain);
 
-    let layerOpticalDepth = curtainIntensity * (0.25 + n1 * 0.35);
+    // Idea 1: drapery profile. Precipitating electrons stop at a fairly fixed altitude, so a
+    // curtain has a sharp lower border and a long glow upward (uv.y grows downward). The tail is
+    // broken into field-aligned rays: noise stretched vertically, drifting along the curtain.
+    let dy = uv.y - curtainY;
+    let lowerEdge = exp(-max(dy, 0.0) / (curtainWidth * 0.18));
+    let upperTail = exp(-max(-dy, 0.0) / (curtainWidth * 0.9));
+    let rayCoord = vec2<f32>(uv.x * 70.0 + layer * 17.0 + n1 * 6.0 + time * speed * 0.35, uv.y * 1.2);
+    let rays = mix(0.35, 1.25, smoothstep(0.3, 0.8, noise(rayCoord)));
+    let curtainIntensity = lowerEdge * upperTail * mix(1.0, rays, smoothstep(0.0, curtainWidth * 0.5, -dy));
 
-    let noiseVal = hash12(uv * 12.0 + layer * 7.0 + time * 0.1) * 0.5
-                 + hash12(uv * 25.0 - layer * 3.0 - time * 0.15) * 0.25;
+    // Idea 2: fold brightening. Where the curtain line folds we look along the sheet, so the
+    // path through it — and its optical depth — grows like sqrt(1 + (dY/dx)²). One extra tap of
+    // the dominant octave gives the slope (curtainUV.x = 3·uv.x).
+    let slopeStep = 0.004;
+    let n1x = fbm(curtainUV + vec2<f32>(slopeStep * 3.0, 0.0) + layerOffset + vec2<f32>(layer * 10.0), 3);
+    let slope = (n1x - n1) * 0.35 / slopeStep;
+    let foldGain = min(sqrt(1.0 + slope * slope), 3.0) * (1.0 + bass * 0.15);
+
+    let layerOpticalDepth = curtainIntensity * (0.25 + n1 * 0.35) * foldGain * 0.8;
+
+    let noiseVal = noise(uv * vec2<f32>(12.0, 4.0) + vec2<f32>(layer * 7.0, time * 0.1)) * 0.5
+                 + noise(uv * vec2<f32>(25.0, 8.0) - vec2<f32>(layer * 3.0, time * 0.15)) * 0.25;
 
     var thickness = filmThicknessBase * (0.7 + depth * 0.6 * depthWeight + noiseVal * turbulence + layer * 0.15);
 

@@ -3,8 +3,8 @@
 //  Category: lighting-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: Cauchy dispersion; rose-window stained glass; Airy diffraction halo
+//  Upgraded: 2026-11-02
+//  Ideas: Cauchy dispersion; rose-window stained glass; Airy diffraction halo; Rayleigh path reddening along the shaft; sunlit motes lit only inside the shaft
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -143,6 +143,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let roseGothicRings = sin(dirLen * 25.0 - time * 0.5);
     let stainedGlassMask = 0.5 + 0.5 * (roseRosePetals * roseGothicRings);
     let stainedGlassTint = 0.5 + 0.5 * cos(rayAngle * 4.0 + vec3<f32>(0.0, 2.094, 4.188));
+
+    // IDEA 4 (2026-11-02): Rayleigh extinction weights (550/λ)⁴ for λ = 650/550/450 nm, taken
+    // relative to red so the light only loses green/blue with path length (never gains red).
+    let rayleighW = vec3<f32>(0.5129, 1.0, 2.2324) - vec3<f32>(0.5129);
+    let rayleighK = 1.5;
     
     for (var i = 0; i < steps; i = i + 1) {
         let fi = f32(i);
@@ -161,7 +166,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let cosTheta = dot(dir, stepDir) / max(dirLen * length(stepDir), 1e-6);
         let phase = hgPhase(cosTheta, 0.3);
 
-        let rayContribution = sample * weight * intensity * audioBoost * contrib * phase;
+        // IDEA 4: the light scattered at `current` still has to cross |current − uv| of air to
+        // reach this pixel; blue is scattered out of that path first, so long shafts warm at
+        // their tips while pixels close to the source stay white. One exp per step, no noise.
+        let pathLen = length(stepDir * vec2<f32>(aspect, 1.0));
+        let rayleighT = exp(-rayleighK * rayleighW * pathLen);
+        let rayContribution = sample * weight * intensity * audioBoost * contrib * phase * rayleighT;
         accum += rayContribution * mix(vec3<f32>(1.0), stainedGlassTint, stainedGlassMask * 0.4);
 
         // Atmospheric dust motes
@@ -179,6 +189,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dist = length((uv - center) * vec2<f32>(aspect, 1.0));
 
+    // IDEA 5 (2026-11-02): sunlit motes. One hashed speck per 14 px cell drifts slowly; it is
+    // only visible where the shaft is lit (accumulated shaft luma) and scatters forward, so motes
+    // seen near the light (small angle to the source) glint brightest. Specks in shadow vanish.
+    let moteP = vec2<f32>(global_id.xy) / 14.0 + vec2<f32>(time * 0.18, -time * 0.07);
+    let moteCell = floor(moteP);
+    let moteH = hash21(moteCell + vec2<f32>(31.7, 11.3));
+    let moteH2 = hash21(moteCell + vec2<f32>(5.1, 77.9));
+    let motePos = vec2<f32>(0.5) + moteH * 0.6 + 0.08 * vec2<f32>(sin(time * 1.3 + moteH2.x * 6.28), cos(time * 1.1 + moteH2.y * 6.28));
+    let moteR = 0.10 + (moteH2.x + 0.5) * 0.10;
+    let moteMask = smoothstep(moteR, moteR * 0.25, length(fract(moteP) - motePos)) * step(0.0, moteH2.y);
+    let shaftLuma = dot(accum, vec3<f32>(0.299, 0.587, 0.114));
+    let moteCos = inverseSqrt(1.0 + (dist / 0.35) * (dist / 0.35));
+    let motePhase = hgPhase(moteCos, 0.55) / hgPhase(1.0, 0.55);
+    let motes = vec3<f32>(1.0, 0.95, 0.85) * moteMask * clamp(shaftLuma * 4.0, 0.0, 1.5)
+              * (0.35 + 2.4 * motePhase) * (1.0 + treble * 0.6);
+
     // IDEA 3: Airy disk multi-ring diffraction halo around the light source
     let airyCoord = dist * 80.0;
     let airyRings = select(1.0, pow(sin(airyCoord) / max(airyCoord, 0.001), 2.0), airyCoord > 0.1);
@@ -186,7 +212,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let airyHalo = airyRings * exp(-dist * 8.0) * airySpectrum * (0.8 + mids * 0.6);
 
     let halo = smoothstep(0.5, 0.0, dist) * intensity * 0.35 * audioBoost;
-    var finalRGB = original.rgb + accum + vec3<f32>(halo * 1.1, halo, halo * 0.8) + airyHalo * 0.5;
+    var finalRGB = original.rgb + accum + vec3<f32>(halo * 1.1, halo, halo * 0.8) + airyHalo * 0.5 + motes;
 
     // Temporal beam persistence via exact textureLoad from dataTextureC
     let prev = textureLoad(dataTextureC, coord, 0).rgb;

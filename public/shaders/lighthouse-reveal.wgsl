@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: Fresnel lens panel bands + group flash when a panel faces the viewer; depth-occluded shaft (shadow streaks)
+//  Upgraded: 2026-11-02
+//  Ideas: Fresnel lens panel bands + group flash when a panel faces the viewer; depth-occluded shaft (shadow streaks); HG forward-scatter swing (beam brightest facing the viewer); Beer-Lambert mist extinction along the shaft
 //  A packing: ACES display RGB (straight) + beam/halo/flash coverage alpha; C is not read
 // ═══════════════════════════════════════════════════════════════════
 
@@ -155,22 +155,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // March from the lamp toward this pixel; a sample nearer than the pixel (near-is-one depth)
     // blocks the beam, so objects in the shaft throw radial shadow streaks behind them.
     // Relative test: a flat / missing depth map occludes nothing.
+    // Idea 4 (2026-11-02): the same march integrates the mist density (the `dust` fbm field)
+    // along lamp → pixel; Beer–Lambert T = exp(−σ·∫ρ ds) dims the shaft through dense mist
+    // patches instead of only at the radius cutoff.
+    let mistDrift = vec2<f32>(time * 0.08, -time * 0.03);
     var shaftTrans = 1.0;
+    var mistT = 1.0;
     if (angle_mask * radial_mask > 0.002) {
         let jit = ign(vec2<f32>(global_id.xy) + vec2<f32>(17.0, 5.0));
         var occl = 0.0;
+        var rhoSum = 0.0;
         for (var i = 0; i < 6; i = i + 1) {
             let t = 0.08 + (f32(i) + jit) / 6.0 * 0.82;   // skip the lamp and the receiver itself
             let sp = mix(mouse, uv, t);
             let sd = textureSampleLevel(readDepthTexture, non_filtering_sampler, sp, 0.0).r;
             occl = max(occl, smoothstep(0.04, 0.14, sd - depth) * (1.0 - t * 0.25));
+            rhoSum = rhoSum + smoothstep(0.25, 0.85, fbm(vec2<f32>(sp.x * aspect, sp.y) * 4.5 + mistDrift));
         }
         shaftTrans = 1.0 - occl * 0.8;
+        let sigma = 3.6 * (1.0 + mids * 0.4);
+        mistT = exp(-sigma * (rhoSum / 6.0) * dist);
     }
 
-    let dust = fbm(uv_aspect * 4.5 + vec2<f32>(time * 0.08, -time * 0.03));
+    let dust = fbm(uv_aspect * 4.5 + mistDrift);
+
+    // Idea 3 (2026-11-02): fog scatters forward (Henyey–Greenstein, g = 0.45), so the shaft
+    // brightens as the beam swings toward the viewer (bottom edge, +y) and dims as it points
+    // away (capped ×3 facing, ×0.39 away). Normalised to 1 when the beam is side-on (90°).
+    let swingG = 0.45;
+    let swingCos = cos(rotation - pi * 0.5);
+    let swingHG = (1.0 - swingG * swingG) / pow(1.0 + swingG * swingG - 2.0 * swingG * swingCos, 1.5);
+    let swingHG90 = (1.0 - swingG * swingG) / pow(1.0 + swingG * swingG, 1.5);
+    let swing = min(swingHG / swingHG90, 3.0);
     let shaft = pow(angle_mask, 2.2) * radial_mask * (0.55 + dust * 0.75)
-        * panelBand * shaftTrans;                                   // Idea 1 bands, Idea 2 shadows
+        * panelBand * shaftTrans                                    // Idea 1 bands, Idea 2 shadows
+        * swing * mistT;                                            // Idea 3 swing, Idea 4 extinction
     let halo = exp(-dist * 5.5) * (0.45 + bass * 0.45);
     let mist = smoothstep(0.12, 0.92, dust) * pow(radial_mask, 1.6);
 
