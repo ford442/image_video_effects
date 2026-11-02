@@ -2,13 +2,51 @@
   "id": "gen-stellar-cyber-lotus-forge",
   "name": "Stellar Cyber-Lotus Forge",
   "category": "generative",
-  "tags": ["organic", "cyberpunk", "cosmic", "audio-reactive", "interactive"],
+  "tags": [
+    "organic",
+    "cyberpunk",
+    "cosmic",
+    "audio-reactive",
+    "interactive"
+  ],
   "url": "shaders/gen-stellar-cyber-lotus-forge.wgsl",
-  "workgroup_size": [16, 16, 1],
-  "parameters": [
-    {"name": "Bloom Intensity", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01},
-    {"name": "Rotation Speed", "default": 1.0, "min": 0.0, "max": 5.0, "step": 0.1},
-    {"name": "Petal Complexity", "default": 3.0, "min": 1.0, "max": 6.0, "step": 1.0},
-    {"name": "Vein Glow", "default": 0.8, "min": 0.0, "max": 2.0, "step": 0.1}
+  "workgroup_size": [
+    16,
+    16,
+    1
+  ],
+  "params": [
+    {
+      "name": "Bloom Intensity",
+      "default": 0.5,
+      "min": 0.0,
+      "max": 1.0,
+      "step": 0.01,
+      "id": "p1"
+    },
+    {
+      "name": "Rotation Speed",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 5.0,
+      "step": 0.1,
+      "id": "p2"
+    },
+    {
+      "name": "Petal Complexity",
+      "default": 3.0,
+      "min": 1.0,
+      "max": 6.0,
+      "step": 1.0,
+      "id": "p3"
+    },
+    {
+      "name": "Vein Glow",
+      "default": 0.8,
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1,
+      "id": "p4"
+    }
   ]
 }
