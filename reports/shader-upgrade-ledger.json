@@ -33,8 +33,17 @@
       ]
     },
     "anisotropic-kuwahara-nlm": {
-      "hash": "980aadb7e331dbe7",
-      "history": []
+      "hash": "dd52a86ca163c5ae",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "dd52a86ca163c5ae",
+          "prev_hash": "980aadb7e331dbe7",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "ascii-flow-structure": {
       "hash": "563cf36c2e581a8e",
@@ -166,8 +175,17 @@
       "history": []
     },
     "charcoal-rub-diffusion": {
-      "hash": "f7d489618c8881df",
-      "history": []
+      "hash": "f900a12e0dfdd098",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "f900a12e0dfdd098",
+          "prev_hash": "f7d489618c8881df",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "chroma-depth-tunnel-prismatic": {
       "hash": "da1e8aab58bc1d36",
@@ -684,8 +702,17 @@
       "history": []
     },
     "impasto-swirl-bilateral": {
-      "hash": "97adcfba1c724211",
-      "history": []
+      "hash": "19f3d499042af6f2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "19f3d499042af6f2",
+          "prev_hash": "97adcfba1c724211",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "infinite-fractal-feedback-hdr": {
       "hash": "08344f0484e566cd",
@@ -800,8 +827,17 @@
       ]
     },
     "painterly-oil-bilateral": {
-      "hash": "eff4fd236ffa9cfe",
-      "history": []
+      "hash": "86f9280ebfc07860",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "86f9280ebfc07860",
+          "prev_hash": "eff4fd236ffa9cfe",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "particle-dreams-hdr": {
       "hash": "b8e3594c5539d2fd",
@@ -1008,8 +1044,17 @@
       "history": []
     },
     "artistic_painterly_oil": {
-      "hash": "c315e9e26dd51818",
-      "history": []
+      "hash": "9be940e399a0b436",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "9be940e399a0b436",
+          "prev_hash": "c315e9e26dd51818",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "astral-kaleidoscope-gemini": {
       "hash": "e0fe07ff6830c9b6",
@@ -1603,8 +1648,17 @@
       "history": []
     },
     "rorschach-inkblot": {
-      "hash": "bb0dee4f9d0af03a",
-      "history": []
+      "hash": "2513ba4155781b6f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "2513ba4155781b6f",
+          "prev_hash": "bb0dee4f9d0af03a",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "rotoscope-ink": {
       "hash": "e63749e6eb1b5fbb",
@@ -9427,8 +9481,17 @@
       ]
     },
     "brush-strokes": {
-      "hash": "e1218cfbd0d29552",
-      "history": []
+      "hash": "85b0f75606c9481b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "85b0f75606c9481b",
+          "prev_hash": "e1218cfbd0d29552",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "bubble-wrap": {
       "hash": "223975ee87032ef5",
@@ -10696,8 +10759,17 @@
       "history": []
     },
     "mouse-synesthetic-sound-paint": {
-      "hash": "23a37da390c5f8b4",
-      "history": []
+      "hash": "1805d09395f9654a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "1805d09395f9654a",
+          "prev_hash": "23a37da390c5f8b4",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "mouse-time-crystal": {
       "hash": "ccc2b78e25604c7a",
@@ -11427,8 +11499,17 @@
       ]
     },
     "spectral-brush": {
-      "hash": "e251e3b35893fef6",
-      "history": []
+      "hash": "b31f05c4a30c63ce",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "b31f05c4a30c63ce",
+          "prev_hash": "e251e3b35893fef6",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "spectral-distortion": {
       "hash": "6368c1e9876a08c7",
