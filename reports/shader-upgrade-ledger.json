@@ -487,12 +487,30 @@
       "history": []
     },
     "fractal-boids-field-coupled": {
-      "hash": "508fed1490843e1b",
-      "history": []
+      "hash": "f89a371df03fae8d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "f89a371df03fae8d",
+          "prev_hash": "508fed1490843e1b",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "fractal-boids-field": {
-      "hash": "598e1d58aac04b03",
-      "history": []
+      "hash": "b0c91dd8345ee2bd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "b0c91dd8345ee2bd",
+          "prev_hash": "598e1d58aac04b03",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "fractal-glass-distort-bilateral": {
       "hash": "d64473326ed3d1f2",
@@ -667,8 +685,17 @@
       ]
     },
     "gravity-well-em": {
-      "hash": "f73bf54a330e5237",
-      "history": []
+      "hash": "69939adf0e5bef9f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "69939adf0e5bef9f",
+          "prev_hash": "f73bf54a330e5237",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "heat-haze-volumetric": {
       "hash": "2e8296659a0406f8",
@@ -797,8 +824,17 @@
       "history": []
     },
     "kimi-flock-symphony-em": {
-      "hash": "79f5e53898515a05",
-      "history": []
+      "hash": "10ce1d10ae143a22",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "10ce1d10ae143a22",
+          "prev_hash": "79f5e53898515a05",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "liquid-jelly-fluid": {
       "hash": "d6bbb19bd690e25b",
@@ -1616,8 +1652,17 @@
       "history": []
     },
     "particle_dreams_alpha": {
-      "hash": "e804ba97ad1150b2",
-      "history": []
+      "hash": "e3a8ee120112dd24",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "e3a8ee120112dd24",
+          "prev_hash": "e804ba97ad1150b2",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "physarum-gemini": {
       "hash": "5727c20a9823f7c3",
@@ -2200,8 +2245,17 @@
       ]
     },
     "magnetic-field": {
-      "hash": "9ecf033f16293bd9",
-      "history": []
+      "hash": "2521d567d96edea1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "2521d567d96edea1",
+          "prev_hash": "9ecf033f16293bd9",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "parallax-shift": {
       "hash": "8fee8dcb8786d987",
@@ -6163,8 +6217,17 @@
       ]
     },
     "gen-magnetic-field-warp": {
-      "hash": "892e9fc1d33cff47",
-      "history": []
+      "hash": "061161e22bfc1287",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "061161e22bfc1287",
+          "prev_hash": "892e9fc1d33cff47",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "gen-magnetic-kelp": {
       "hash": "0d2eefe0f7fd367a",
@@ -8256,8 +8319,17 @@
       ]
     },
     "gen-trails": {
-      "hash": "ab691d6bebaf92ec",
-      "history": []
+      "hash": "aaad5c36fec5a0d4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "aaad5c36fec5a0d4",
+          "prev_hash": "ab691d6bebaf92ec",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "gen-wave-equation": {
       "hash": "e1bf4abeaed0dc3a",
@@ -11158,8 +11230,17 @@
       ]
     },
     "particle-swarm": {
-      "hash": "ac70dd179d9d3d6c",
-      "history": []
+      "hash": "cf14c0e5ab43e7bf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "cf14c0e5ab43e7bf",
+          "prev_hash": "ac70dd179d9d3d6c",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "phosphor-magnifier": {
       "hash": "2d43bbd11a7c6dd2",
@@ -12972,8 +13053,17 @@
       "history": []
     },
     "alpha-em-field-simulation": {
-      "hash": "0b51f4eff1ebb426",
-      "history": []
+      "hash": "e60b3a8cc21745f7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "e60b3a8cc21745f7",
+          "prev_hash": "0b51f4eff1ebb426",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "alpha-erosion-terrain": {
       "hash": "5388b85c531974b5",

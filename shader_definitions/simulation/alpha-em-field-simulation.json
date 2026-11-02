@@ -2,7 +2,7 @@
   "id": "alpha-em-field-simulation",
   "name": "Alpha EM Field Simulation",
   "url": "shaders/alpha-em-field-simulation.wgsl",
-  "description": "Electromagnetic field simulation using RGBA32FLOAT as four data channels: R=E-field X, G=E-field Y, B=magnetic potential, A=charge density. Mouse and ripples inject alternating positive/negative charges. Wave equation propagation with damping.",
+  "description": "Electromagnetic field simulation using RGBA32FLOAT as four data channels: R=E-field X, G=E-field Y, B=magnetic field, A=charge density. Charges source the E field, charge leaks off where the field passes a breakdown strength (a corona flash), and mouse and ripples inject alternating charges.",
   "tags": [
     "electromagnetic",
     "simulation",

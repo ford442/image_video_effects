@@ -18903,7 +18903,7 @@
       "strange-attractor",
       "domain-warp"
     ],
-    "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices, and Clifford strange-attractor modulation.",
+    "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices and Clifford attractor modulation. Synchrotron emission is Doppler-beamed by gyration phase, and the image is combed along the field lines.",
     "workgroup_size": [
       16,
       16,
@@ -27895,7 +27895,7 @@
     "id": "gen-trails",
     "name": "Boids Flocking",
     "url": "shaders/gen_trails.wgsl",
-    "description": "Audio-reactive Reynolds boids flocking with bass-driven panic, mids cohesion, treble flash bursts, mouse attraction, motion-blur streaks, and pheromone trails.",
+    "description": "Audio-reactive Reynolds boids that fly continuous paths in six flocks, with bass-driven panic, mids cohesion, treble flashes, mouse attraction, beating wings, motion-blur streaks and pheromone trails that evaporate over time.",
     "features": [
       "mouse-driven",
       "depth-aware",

@@ -3504,7 +3504,7 @@
       1
     ],
     "supportsDepth": true,
-    "description": "80+ particles with alpha-based lifetime, trail accumulation, birth/death fades. Alpha channel stores particle density for blending.",
+    "description": "Layered zoom tunnel over the image: five depth-weighted zoom layers with click-driven vortex spin, flow-noise wobble and depth-parallax zoom. Hue-shifted layer ghosts fade in and out over their zoom cycle, with a depth-based chroma split, edge glow and fog.",
     "tags": [
       "particles",
       "alpha",
@@ -3514,10 +3514,9 @@
     ],
     "features": [
       "rgba",
-      "alpha-trails",
-      "temporal-feedback",
       "mouse-attraction",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
