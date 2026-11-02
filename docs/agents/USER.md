@@ -24,6 +24,27 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
   - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
+  - 2026-11-02: sent cursor/batch-35 (Cursor(1)), twelve neon edge and contour shaders (neon-contour-drag through posterize-neon-edges). Notes in `docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/`.
+
+## 2026-11-02 — cursor/batch-35 neon edge and contour (12 shaders)
+
+- IDs: neon-contour-drag, neon-contour-interactive, neon-edge-diffusion, neon-edge-reveal, neon-edges, neon-topology, neon-poly-grid, neon-quantum-lattice, electric-contours, edge-glow-mouse, edge-glow-mouse-em, posterize-neon-edges.
+- Per shader, the ideas actually added:
+  - neon-contour-drag: drag shear; glass wall. Dual-scale Sobel, tangent streaks, and the bass core kept.
+  - neon-contour-interactive: electrode caps; mercury bead. Six-tube palette, radial pulse, and starter flicker kept.
+  - neon-edge-diffusion: filament core; energy-conserving bloom (§12.2F). Tile dilation and luma² hex taps kept.
+  - neon-edge-reveal: flashlight hotspot; gas afterimage. Photo reveal, hot core, and the C burn kept. No spring.
+  - neon-edges: scale agreement; Mach trough. Five scales, isotherms, and the inverse-square spotlight kept.
+  - neon-topology: index gap; slope shade. Hachures, majors, lens, and quakes kept.
+  - neon-poly-grid: shared wall; dying-tail flicker. Hex grid, trail in A.r, and the existing spring kept.
+  - neon-quantum-lattice: phason kink; Ammann beat. Three layers, defect highlight, and electron hop kept.
+  - electric-contours: electrode discs; dielectric polarization. Equipotentials, field lines, and diagnostic A kept.
+  - edge-glow-mouse: mask trail; normal-side halo. Oil-slick, packets, and diagnostic A kept.
+  - edge-glow-mouse-em: soft inverse-square core (§12.2F); leading-edge glow. Corona and the field-line streak kept.
+  - posterize-neon-edges: cel filament; tangent ink waver. Band-hold flats and the Sobel ridge kept.
+- Floor: prelude include on the three pasted headers; 16×16; exact C; A packing as documented; saved params exact.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1531 passed (1 skipped); one unrelated RendererManager device-loss test failed once and passed 45/45 on re-run. `SKIP_WASM_BUILD=1 npm run build` succeeded.
+- Real-GPU visual QA: external.
 
 ## 2026-10-26 — liquid ten (10 shaders)
 
