@@ -734,11 +734,6 @@
       "filename": "2026-10-31_stellar-cyber-lotus-forge.md",
       "title": "Stellar Cyber-Lotus Forge",
       "added": "2026-10-31T15:23:25.599338"
-    },
-    {
-      "filename": "2026-11-02_bioluminescent-mycelial-nexus.md",
-      "title": "Bioluminescent Mycelial Nexus",
-      "added": "2026-11-02T16:19:29.817205"
     }
   ],
   "current": null,
@@ -1445,6 +1440,13 @@
       "added": "2026-10-30T15:26:45.512300",
       "status": "completed",
       "completed_at": "2026-11-01T02:34:25.056148"
+    },
+    {
+      "filename": "2026-11-02_bioluminescent-mycelial-nexus.md",
+      "title": "Bioluminescent Mycelial Nexus",
+      "added": "2026-11-02T16:19:29.817205",
+      "status": "completed",
+      "completed_at": "2026-11-03T09:08:09.148738+00:00"
     }
   ],
   "rejected": [],
