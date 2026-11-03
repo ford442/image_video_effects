@@ -6691,7 +6691,11 @@
       "hex-grid",
       "blackbody-radiation",
       "viscous-material",
-      "subsurface"
+      "subsurface",
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7912,7 +7916,11 @@
       "melting-oil",
       "blackbody-radiation",
       "HDR",
-      "gradient-flow"
+      "gradient-flow",
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

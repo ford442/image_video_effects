@@ -540,8 +540,17 @@
       ]
     },
     "energy-shield-blackbody": {
-      "hash": "0e6cfb09fd56ec16",
-      "history": []
+      "hash": "0d166c46aa050aba",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "0d166c46aa050aba",
+          "prev_hash": "0e6cfb09fd56ec16",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "engraving-stipple-blue-noise": {
       "hash": "797e8065c6bd9d81",
@@ -637,8 +646,17 @@
       ]
     },
     "gamma-ray-burst-blackbody": {
-      "hash": "da1aaeff519d14a0",
-      "history": []
+      "hash": "76297eb21a1dad1b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "76297eb21a1dad1b",
+          "prev_hash": "da1aaeff519d14a0",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "gemstone-fractures-crystal": {
       "hash": "a27bf40c2c9d6143",
@@ -858,8 +876,17 @@
       "history": []
     },
     "honey-melt-blackbody": {
-      "hash": "c4c91b1a2258d622",
-      "history": []
+      "hash": "b099a57a822ce369",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "b099a57a822ce369",
+          "prev_hash": "c4c91b1a2258d622",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "hybrid-spectral-decomposed": {
       "hash": "7acf16dcbcc219da",
@@ -1001,8 +1028,17 @@
       "history": []
     },
     "melting-oil-blackbody": {
-      "hash": "8f9c593ea125f5bd",
-      "history": []
+      "hash": "c35c9830b69b15ce",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "c35c9830b69b15ce",
+          "prev_hash": "8f9c593ea125f5bd",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "multi-fractal-compositor-lens": {
       "hash": "69cbb79e86de1501",
@@ -1138,16 +1174,34 @@
       "history": []
     },
     "sim-heat-haze-blackbody": {
-      "hash": "1e899899927b0a28",
-      "history": []
+      "hash": "eea7991e4641e2b0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "eea7991e4641e2b0",
+          "prev_hash": "1e899899927b0a28",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "sim-smoke-trails-thermal": {
       "hash": "30a516672383493b",
       "history": []
     },
     "spec-blackbody-thermal": {
-      "hash": "c91d20fbad286992",
-      "history": []
+      "hash": "ec616b626060297d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "ec616b626060297d",
+          "prev_hash": "c91d20fbad286992",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "spec-importance-sampled-bokeh": {
       "hash": "76836bc42fa36557",
@@ -1230,12 +1284,30 @@
       "history": []
     },
     "thermal-touch-blackbody": {
-      "hash": "2b80874b236dd30c",
-      "history": []
+      "hash": "916c252b303ce596",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "916c252b303ce596",
+          "prev_hash": "2b80874b236dd30c",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "thermal-vision-blackbody": {
-      "hash": "093c7afc38e77afa",
-      "history": []
+      "hash": "1cfc9456a4db1bf9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "1cfc9456a4db1bf9",
+          "prev_hash": "093c7afc38e77afa",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "vaporwave-horizon-prismatic": {
       "hash": "ee16d467054a5796",
@@ -1263,8 +1335,17 @@
       "history": []
     },
     "warp-drive-blackbody": {
-      "hash": "8b9cc2d5ccb746b4",
-      "history": []
+      "hash": "ad29c5e75e16b92d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "ad29c5e75e16b92d",
+          "prev_hash": "8b9cc2d5ccb746b4",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "wave-equation-rgba-fluid": {
       "hash": "196d02cafc5e825d",
@@ -2231,8 +2312,17 @@
       ]
     },
     "thermal-vision": {
-      "hash": "69c03fa3d8b71475",
-      "history": []
+      "hash": "7fa0cc7af13cab56",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "7fa0cc7af13cab56",
+          "prev_hash": "69c03fa3d8b71475",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "voronoi-dynamics": {
       "hash": "2c374900b4b086bc",
@@ -2483,8 +2573,17 @@
       ]
     },
     "heat-haze-gpt52": {
-      "hash": "554b2ced5e05a2c1",
-      "history": []
+      "hash": "6af48a14c3073dc5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "6af48a14c3073dc5",
+          "prev_hash": "554b2ced5e05a2c1",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "heat-haze": {
       "hash": "e53621af6927d5ed",
@@ -9877,8 +9976,17 @@
       ]
     },
     "gamma-ray-burst": {
-      "hash": "165cc31771bb8184",
-      "history": []
+      "hash": "6edd0722b1978ac6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:35:22.348Z",
+          "hash": "6edd0722b1978ac6",
+          "prev_hash": "165cc31771bb8184",
+          "commit": "00db5f72",
+          "note": "2026-11-01 thermal / blackbody twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/"
+        }
+      ]
     },
     "glitch-reveal": {
       "hash": "d4e0aa99fe06bb2e",

@@ -4,32 +4,13 @@
 //  Features: atmospheric, mirage-refraction, thermal-source, audio-reactive,
 //            upgraded-rgba, thermal-filaments, held-drag, bounded-click-ripples
 //  Complexity: High
-//  Upgraded: 2026-08-23, 2026-09-21
+//  Upgraded: 2026-08-23, 2026-09-21, 2026-11-01
 //  Ideas: inferior mirage below a hot ground line; boundary-layer haze boost at the ground;
-//         held pointer lays a local mirage pool
+//         held pointer lays a local mirage pool; ground-line glitter; boundary veil (§12.2F Beer–Lambert)
 //  A packing: display RGBA (C blended back at 22%)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -139,6 +120,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = mix(color, mirageSample(uv, patchLine, warp) * 1.1, clamp(hotPatch * 0.9, 0.0, 0.9));
     }
 
+    // ── Idea 4: glitter on the ground line, masked by the existing mirage pools.
+    let glitter = exp(-abs(uv.y - groundY) / 0.0035) * pools * intensity;
+    color += vec3<f32>(1.0, 0.93, 0.72) * glitter * 0.42;
+
+    // ── Idea 5: Beer–Lambert veil (§12.2F) through the thick part of the boundary layer.
+    let tau = clamp((boundary - 1.0) * intensity * 0.85, 0.0, 1.4);
+    let hazeL = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    color = mix(color, vec3<f32>(0.62, 0.48, 0.32) * hazeL, 1.0 - exp(-tau));
+
     let filaments = smoothstep(0.08, 0.0, abs(fract(uv.x * 18.0 + n1 * 2.0 - time * (1.4 + rise * 2.0)) - 0.5));
     let packets = smoothstep(0.08, 0.0, abs(fract((1.0 - uv.y) * 10.0 - time * (2.1 + bass * 1.8) + n2) - 0.5));
     var click = 0.0;
@@ -159,7 +149,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let warp_mag = clamp(length(warp) * 20.0, 0.0, 1.0);
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.4 + warp_mag * 0.35 + shimmer * 0.5 + thermalCol * 0.2 + luma * 0.1 + mids * 0.1 + (mirage + hotPatch) * 0.2, 0.0, 1.0);
+    let alpha = clamp(0.4 + warp_mag * 0.35 + shimmer * 0.5 + thermalCol * 0.2 + luma * 0.1 + mids * 0.1 + (mirage + hotPatch) * 0.2 + glitter * 0.15, 0.0, 1.0);
     let outCol = vec4<f32>(mix(color, prev.rgb * 0.88, 0.22), mix(alpha, prev.a * 0.88, 0.22));
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     textureStore(writeTexture, pixel, outCol);

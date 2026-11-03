@@ -13,7 +13,11 @@
     "melting-oil",
     "blackbody-radiation",
     "HDR",
-    "gradient-flow"
+    "gradient-flow",
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
