@@ -8134,8 +8134,17 @@
       ]
     },
     "gen-sentient-bismuth-hypercrystal": {
-      "hash": "fd5689eeb58adada",
-      "history": []
+      "hash": "c12d3cd23c605195",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T02:54:56.620Z",
+          "hash": "c12d3cd23c605195",
+          "prev_hash": "fd5689eeb58adada",
+          "commit": "b12283b",
+          "note": "2026-11-01 sentient bismuth: face-local hopper ledges and twin-plane interference glints"
+        }
+      ]
     },
     "gen-sentient-cyber-aurora-void-owl": {
       "hash": "d4ad7892cb2870d2",
