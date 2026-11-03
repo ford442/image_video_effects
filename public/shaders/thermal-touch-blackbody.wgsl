@@ -7,8 +7,8 @@
 //  Chunks From: thermal-touch.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-8 — Thermal & Atmospheric Enhancer
-//  Upgraded: 2026-09-15
-//  Ideas: conduction halo around cursor; cooling-ember streak tint
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: conduction halo around cursor; cooling-ember streak tint; dwell under the iron; scorch before Original Blend
 //  A packing: ACES display RGBA + tempNorm alpha
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse-driven thermal camera with a stylized blackbody-inspired
@@ -16,26 +16,7 @@
 //  brightness maps to an artistic temperature range.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: toneMapACES (from spec-blackbody-thermal.wgsl) ═══
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
@@ -118,6 +99,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Add mouse heat
     temperature += (mouseHeatTotal + clickHeatFront * (0.35 + heatIntensity * 0.25)) * tempRangeHigh * 0.4;
 
+    // ── Idea 3: dwell. Same-pixel C.a, only where the iron already heats.
+    let coord = vec2<i32>(gid.xy);
+    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let here = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0);
+    let rememberedK = here.a * 15000.0 * 0.965;
+    let underIron = smoothstep(0.05, 0.35, mouseHeat);
+    temperature = mix(temperature, max(temperature, rememberedK), underIron);
+
     // Ambient temperature blending
     if (ambientTemp > 0.0) {
         let ambientTempK = mix(tempRangeLow, tempRangeHigh * 0.5, ambientTemp);
@@ -127,8 +116,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Stylized blackbody-inspired color plus bounded buoyant history streaks.
     var finalColor = blackbodyColor(temperature);
 
-    let coord = vec2<i32>(gid.xy);
-    let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
     let buoyancy = 2 + i32(round(heatIntensity * 7.0 + audio.x * 3.0));
     let sway = i32(round(sin(time * 3.1 + uv.y * 21.0) * (1.0 + audio.z * 2.0)));
     let historyCoord = clamp(coord + vec2<i32>(sway, buoyancy), vec2<i32>(0), maxCoord);
@@ -143,6 +130,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Tone map
     finalColor = toneMapACES(finalColor);
+
+    // ── Idea 4: scorch. Original Blend below still restores the photo.
+    let scorch = clamp(mouseHeat * 0.55, 0.0, 0.72);
+    let scorchL = dot(finalColor, vec3<f32>(0.2126, 0.7152, 0.0722));
+    finalColor = mix(finalColor, vec3<f32>(scorchL * 0.28, scorchL * 0.08, scorchL * 0.03), scorch);
 
     // Original Blend is continuous over the full slider range.
     finalColor = mix(finalColor, texColor, clamp(colorMode, 0.0, 1.0));

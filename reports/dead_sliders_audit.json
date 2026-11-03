@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-01T04:22:57.853070+00:00",
+  "generated": "2026-11-03T03:39:56.579265+00:00",
   "defs_scanned": 1338,
   "defs_with_params": 1338,
   "new_dead_sliders": [
@@ -18,27 +18,6 @@
       "param_id": "glyphProminence",
       "name": "Glyph Prominence",
       "field": "w"
-    },
-    {
-      "id": "boids-rgba-ecosystem",
-      "category": "advanced-hybrid",
-      "param_id": "diffusion",
-      "name": "Diffusion Rate",
-      "field": "z"
-    },
-    {
-      "id": "boids-rgba-ecosystem",
-      "category": "advanced-hybrid",
-      "param_id": "toxinStrength",
-      "name": "Toxin Strength",
-      "field": "w"
-    },
-    {
-      "id": "multi-fractal-compositor",
-      "category": "advanced-hybrid",
-      "param_id": "domain_warp",
-      "name": "Domain Warp",
-      "field": "z"
     },
     {
       "id": "parallax-glow-compositor",

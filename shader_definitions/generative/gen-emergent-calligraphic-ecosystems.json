@@ -63,6 +63,9 @@
   "id": "gen-emergent-calligraphic-ecosystems",
   "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
   "features": [
+    "mouse-driven",
+    "temporal",
+    "audio-reactive",
     "upgraded-rgba"
   ],
   "x-meta": {

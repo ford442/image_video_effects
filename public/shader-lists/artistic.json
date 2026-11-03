@@ -349,10 +349,13 @@
     "id": "astral-kaleidoscope-gemini",
     "name": "Astral Kaleidoscope Gemini",
     "url": "shaders/astral-kaleidoscope-gemini.wgsl",
-    "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+    "description": "Kaleidoscope with a noise warp that the bass swells and a held pointer that becomes a second warp centre. It is seen through a round eyepiece with cos^4 fall-off, and the rim of the field is softly out of focus.",
     "features": [
       "mouse-driven",
-      "time-driven"
+      "time-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -397,10 +400,13 @@
     "id": "astral-kaleidoscope-grokcf1",
     "name": "Astral Kaleidoscope grokcf1",
     "url": "shaders/astral-kaleidoscope-grokcf1.wgsl",
-    "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+    "description": "Kaleidoscope where bass and mids torque the spin and a held pointer grabs the spiral toward the cursor. A second object chamber turns the other way and is blended in, and a logarithmic spiral term makes the arms self-similar.",
     "features": [
       "mouse-driven",
-      "time-driven"
+      "time-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -445,9 +451,12 @@
     "id": "astral-kaleidoscope",
     "name": "Astral Kaleidoscope",
     "url": "shaders/astral-kaleidoscope.wgsl",
-    "description": "Cosmic kaleidoscope with astral color schemes.",
+    "description": "Depth-parallax kaleidoscope with spiral twist and light trails. Each mirror reflection loses a little energy and picks up the silvering's tint, and an end-cap mirror reflects the field's outer ring back as a tunnel ghost.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -596,10 +605,12 @@
     "id": "aurora-rift-gemini",
     "name": "Aurora Rift Gemini",
     "url": "shaders/aurora-rift-gemini.wgsl",
-    "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering, mouse-driven particle effects.",
+    "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering particle effects. The rift light runs along magnetic field-line arcs between two poles (the mouse drags one) and foam cells blink like pulsating aurora.",
     "features": [
       "mouse-driven",
-      "time-driven"
+      "time-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -644,9 +655,11 @@
     "id": "aurora-rift",
     "name": "Aurora Rift",
     "url": "shaders/aurora-rift.wgsl",
-    "description": "Aurora borealis-inspired lighting effects with atmospheric rifts.",
+    "description": "Aurora borealis-inspired lighting effects with atmospheric rifts. The rift borders glow in real auroral emission lines (green 557.7 nm, red 630 nm crown, violet base) and fading rifts leave a slow red afterglow.",
     "features": [
-      "mouse-driven"
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -691,7 +704,7 @@
     "id": "bioluminescent",
     "name": "Bioluminescent Growth",
     "url": "shaders/bioluminescent.wgsl",
-    "description": "Living, organic growth patterns that spread across surfaces like glowing fungus. Click to plant spores, watch them grow over time with depth-aware branching.",
+    "description": "Living, organic growth patterns that spread across surfaces like glowing fungus. Click to plant spores, watch them grow over time with depth-aware branching, luciferin recharge waves, and hyphal tip luminescence.",
     "params": [
       {
         "id": "spread",
@@ -739,7 +752,7 @@
       "music",
       "reactive"
     ],
-    "feedbackPacking": "A/C = growth, 0, 0, 1. ACES display only.",
+    "feedbackPacking": "A/C = growth, luciferinCharge, 0, 1. ACES display only.",
     "updated": true
   },
   {
@@ -793,7 +806,7 @@
     "id": "chromatic-crawler",
     "name": "Chromatic Crawler",
     "url": "shaders/chromatic-crawler.wgsl",
-    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending. Cell membranes glow in the neighbour's wavelength, trails stream behind the crawl, and the cursor joins it.",
+    "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi cells, temporal feedback trails and alpha translucency. Cells have nuclei tinted in their own wavelength, membranes glow in the neighbour's wavelength, hues dissolve between epochs instead of popping, and the cursor joins the crawl.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -843,7 +856,7 @@
     "name": "Chromatic Focus",
     "category": "artistic",
     "url": "shaders/chromatic-focus.wgsl",
-    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into chromatic bokeh: highlights swell into rimmed discs that turn cat's-eye toward the frame edges, with magenta/green fringes keyed to the depth under the cursor. OkLab split-tone, thin-film halo, ACES.",
+    "description": "Breathing spectral focus keeps the cursor region crisp while the outer image blooms into chromatic bokeh. The circle of confusion grows with the depth gap to the cursor's focus plane, discs go bright-edged behind it and soft in front, highlights swell into rimmed cat's-eye discs, and fringes are keyed to depth. OkLab split-tone, thin-film halo, ACES.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -900,9 +913,11 @@
     "id": "chromatic-folds-2",
     "name": "Chromatic Folds V2",
     "url": "shaders/chromatic-folds-2.wgsl",
-    "description": "Enhanced geometric color folding with improved warping.",
+    "description": "Enhanced geometric colour folding: five roaming Möbius, Klein and hyperbolic fold centres. Where two fold basins meet a bright, aberrating seam forms, and the trail is twisted about the strongest Möbius centre as it crosses a fold.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -995,10 +1010,9 @@
     "id": "chromatic-folds",
     "name": "Chromatic Folds",
     "url": "shaders/chromatic-folds.wgsl",
-    "description": "Geometric color folding and warping effects. Visible fold creases at the pivot hue, history re-folded each frame into nested bands, and the cursor pinches the pivot to the hue beneath it; bass breathes the fold.",
+    "description": "Geometric colour folding: hues fold around a pivot, displaced along the hue gradient. The two faces of the fold are lit and shaded, the pivot line stress-whitens like a paper crease, a reverse-sheet tap shows the back of the fold at hue edges, and history feeds back. Click ripples add pressure waves.",
     "features": [
       "mouse-driven",
-      "audio-reactive",
       "upgraded-rgba"
     ],
     "tags": [
@@ -1093,9 +1107,10 @@
     "id": "chromatic-manifold-2",
     "name": "Chromatic Manifold V2",
     "url": "shaders/chromatic-manifold-2.wgsl",
-    "description": "Enhanced 4D topological color manifold.",
+    "description": "Enhanced 4D topological colour manifold. Folds pivot differently on depth ridges and valleys, fold memory persists in C.a, and the colour history is carried along the fold flow.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3171,7 +3186,8 @@
     "url": "shaders/nebulous-dream.wgsl",
     "description": "Swirling vortex of rainbow candy clouds with fractal noise and flow fields.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -3501,7 +3517,7 @@
       1
     ],
     "supportsDepth": true,
-    "description": "80+ particles with alpha-based lifetime, trail accumulation, birth/death fades. Alpha channel stores particle density for blending.",
+    "description": "Layered zoom tunnel over the image: five depth-weighted zoom layers with click-driven vortex spin, flow-noise wobble and depth-parallax zoom. Hue-shifted layer ghosts fade in and out over their zoom cycle, with a depth-based chroma split, edge glow and fog.",
     "tags": [
       "particles",
       "alpha",
@@ -3511,10 +3527,9 @@
     ],
     "features": [
       "rgba",
-      "alpha-trails",
-      "temporal-feedback",
       "mouse-attraction",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5291,7 +5306,6 @@
     "features": [
       "upgraded-rgba",
       "color-remap",
-      "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "aces-tone-map",

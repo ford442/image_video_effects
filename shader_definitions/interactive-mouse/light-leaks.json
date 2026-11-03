@@ -2,7 +2,7 @@
   "id": "light-leaks",
   "name": "Light Leaks",
   "url": "shaders/light-leaks.wgsl",
-  "description": "Simulates film light leaks. Move the mouse to change the light source angle.",
+  "description": "Simulates film light leaks. Move the mouse to choose which frame edge the rebate leak comes from.",
   "params": [
     {
       "id": "intensity",
@@ -35,7 +35,9 @@
   ],
   "features": [
     "mouse-driven",
-    "overlay"
+    "overlay",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

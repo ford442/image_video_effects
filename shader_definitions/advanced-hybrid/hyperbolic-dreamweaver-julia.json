@@ -2,7 +2,7 @@
   "id": "hyperbolic-dreamweaver-julia",
   "name": "Hyperbolic Dreamweaver Julia",
   "url": "shaders/hyperbolic-dreamweaver-julia.wgsl",
-  "description": "Hyperbolic Dreamweaver Julia",
+  "description": "A 4D quaternion Julia set raymarched through a Poincare-disk view. Rays follow hyperbolic perspective so the scene compresses toward the rim, the input photo shows through the surface refracted by Snell's law with a chromatic split, and horocycle fog thickens toward the edge.",
   "tags": [
     "hyperbolic-geometry",
     "quaternion-julia",

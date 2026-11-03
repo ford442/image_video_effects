@@ -1,4 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
+//  Plasma Jet Stream
+//  Category: generative
+//  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: internal-shock knots moving down each jet; Doppler beaming (approaching side bright/blue, counter-jet dim/red); cone opening from a collimated nozzle
+//  A packing: pre-ACES HDR colour + alpha (read back as colour)
+// ═══════════════════════════════════════════════════════════════════
 //  Plasma Jet Stream — Algorithmist Upgrade (v2)
 //  Warped FBM turbulence + Clifford drift + Gold-noise sparks
 //  Divergence-free curl-noise perturbation of jet boundaries
@@ -6,26 +14,7 @@
 //  Bass surge wave: radial pressure pulse that pumps jet spread
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI     = 3.14159265358979323846;
 const TAU    = 6.28318530717958647692;
@@ -139,6 +128,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var jetHeat = 0.0;
   var shearMag = 0.0;
   var shearHue = 0.0;
+  var dopplerAcc = 0.0;
 
   for (var j = 0u; j < u32(jetCount); j = j + 1u) {
     let fj = f32(j);
@@ -154,7 +144,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let across = dot(p - origin, perp);
 
     let pulse = 0.5 + 0.5 * sin(time * velocity * (1.0 + seed * 2.0) + fj * 3.7 + bass * 4.0);
-    let width = spread * (0.6 + pulse * 0.6) * (1.0 + mids * 0.3) * surgeBoost;
+    // ── Idea 3: cone opening from a collimated nozzle ───────────────
+    // Real jets are narrow at the nozzle and open downstream; flux is roughly
+    // conserved so the amplitude falls with the widened cross-section.
+    let alongAbs = abs(along);
+    let openFactor = 0.55 + 0.9 * alongAbs;
+    let fluxNorm = 1.0 / (0.5 + 0.5 * openFactor);
+    let width = spread * (0.6 + pulse * 0.6) * (1.0 + mids * 0.3) * surgeBoost * openFactor;
 
     // Divergence-free curl-noise bend + domain-warped FBM boundary
     let flowP = vec2<f32>(across, along) * 2.0 + seed * 10.0 + vec2<f32>(0.0, time * 0.15);
@@ -164,8 +160,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let coreVar = width * width * 0.2 + 0.001;
     let haloVar = width * width * 0.8 + 0.001;
-    let jcore = exp(-0.5 * dist * dist / coreVar) * pulse;
-    let jhalo = exp(-0.5 * dist * dist / haloVar) * 0.4;
+    // ── Idea 1: internal-shock knots ────────────────────────────────
+    // Bright beads travel outward at the bulk speed; they fade with distance.
+    let knotPhase = alongAbs * TAU * 2.2 - time * velocity * 0.6 - seed * TAU;
+    let knotC = 0.5 + 0.5 * cos(knotPhase);
+    let knot = knotC * knotC * knotC * knotC * knotC * knotC * exp(-alongAbs * 0.9);
+    // ── Idea 2: Doppler beaming ─────────────────────────────────────
+    // Each jet has a viewing tilt (from its seed). The approaching half is
+    // boosted by delta^2 and blue-shifted; the counter-jet dims and reddens.
+    let beta = (seed - 0.5) * 1.6;
+    let side = along / (alongAbs + 0.08);
+    let delta = 1.0 / (1.0 - 0.5 * beta * side);
+    let beam = delta * delta;
+    let jcore = exp(-0.5 * dist * dist / coreVar) * pulse * fluxNorm * beam * (1.0 + 1.2 * knot);
+    let jhalo = exp(-0.5 * dist * dist / haloVar) * 0.4 * fluxNorm * beam;
+    dopplerAcc = dopplerAcc + jcore * (delta - 1.0);
     jetIntensity = jetIntensity + jcore + jhalo;
     jetHeat = jetHeat + jcore * (1.0 + bass);
 
@@ -195,20 +204,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = color + vec3<f32>(0.85, 0.9, 0.3) * shock * 0.5 * (1.0 + mids * 0.15);
   color = color + vec3<f32>(0.4, 0.7, 1.0) * spark * (0.5 + treble);
   color = color + fringeCol * dispersion;
+  // Doppler tint: blue-shifted approaching plasma, red-shifted receding plasma
+  color = color + vec3<f32>(0.05, 0.22, 0.6) * max(dopplerAcc, 0.0) * 0.35
+                + vec3<f32>(0.5, 0.06, 0.0) * max(-dopplerAcc, 0.0) * 0.35;
 
   // Surge-wave shimmer: faint cyan pressure ring riding the wavefront
   let ringGlow = surgeFront * surgeFalloff * surgeAmp * 0.18;
   color = color + vec3<f32>(0.2, 0.55, 0.7) * ringGlow;
 
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   color = mix(color, prev.rgb * 0.92, 0.03 + bass * 0.015);
 
   let presence = sat(jetIntensity * 0.85 + spark * 0.8 + fringe * 0.5);
   let alpha = sat(0.15 + presence * 0.85);
   let depth = sat(0.95 - jetHeat * 0.6 - spark * 0.2 - fringe * 0.1);
 
-  color = acesToneMap(color * 1.1);
+  let hdr = max(color, vec3<f32>(0.0));
+  color = acesToneMap(hdr * 1.1);
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-  textureStore(dataTextureA, coord, vec4<f32>(jetIntensity, shock, spark, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(hdr, alpha));
 }

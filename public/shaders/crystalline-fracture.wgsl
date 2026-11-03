@@ -4,28 +4,12 @@
 //  Features: audio-reactive, fracture-mechanics, stress-intensity,
 //            crack-propagation, iridescence, subsurface-scatter, upgraded-rgba, aces-tone-map
 //  Complexity: Very High
+//  Upgraded: 2026-11-01
+//  Ideas: Wallner-line fracture arcs (rib spacing from K); photoelastic isochromatic fringes (Irwin K/sqrt(2*pi*r) tip field); cleavage-plane alignment lowers toughness
+//  A packing: ACES display RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -79,9 +63,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x == 0u && global_id.y == 0u) {
         var pos = extraBuffer[133];
         var vel = extraBuffer[134];
-        let target = u.zoom_config.w; // held-pointer response
+        let goal = u.zoom_config.w; // held-pointer response
         let dt = 0.016;
-        let force = (target - pos) * 200.0 - vel * 15.0; // Bounded spring
+        let force = (goal - pos) * 200.0 - vel * 15.0; // Bounded spring
         vel = vel + force * dt;
         pos = clamp(pos + vel * dt, 0.0, 1.0);
         extraBuffer[133] = pos;
@@ -140,7 +124,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     stress = stress + ringStress * (1.0 + fractureAmt * 2.0);
 
-    let toughness = (0.4 + mids * 0.6) * (0.55 + grain * 0.9);
     let catastrophic = step(0.8, treble) * 2.0;
     stress = stress + catastrophic;
     
@@ -150,6 +133,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var minDist = 1e9;
     var secondMinDist = 1e9;
     var nearestId = vec2<f32>(0.0);
+    var nearestSeed = vec2<f32>(0.0);
     for (var y = -1; y <= 1; y = y + 1) {
         for (var x = -1; x <= 1; x = x + 1) {
             let nid = cellId + vec2<f32>(f32(x), f32(y));
@@ -159,12 +143,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 secondMinDist = minDist;
                 minDist = d;
                 nearestId = nid;
+                nearestSeed = center;
             } else if (d < secondMinDist) {
                 secondMinDist = d;
             }
         }
     }
 
+    // Residual (thermal) stress: a crystal under load is never stress-free. HEAD's stress was
+    // 0 without audio/pointer, so K never reached toughness and nothing ever cracked at rest.
+    let cellRand = hash21(nearestId + vec2<f32>(7.3, 2.9));
+    stress = stress + (0.12 + 0.4 * fractureAmt) * (0.6 + 0.8 * cellRand);
+
+    // ── Idea 3: cleavage-plane alignment ───────────────────────────────
+    // Each grain has a cleavage plane; it parts easiest when the load (pointer point-load) pulls
+    // across it. alignment = cos(2*(plane - load)), toughness drops up to 35 % when aligned.
+    let loadDir = (uv - mouse) * vec2<f32>(aspect, 1.0);
+    let cleavageAng = hash21(nearestId + vec2<f32>(3.1, 9.7)) * 3.14159265;
+    let alignment = cos(2.0 * (cleavageAng - atan2(loadDir.y, loadDir.x)));
+    let cleavage = 1.0 - 0.35 * (0.5 + 0.5 * alignment);
+
+    let toughness = (0.4 + mids * 0.6) * (0.55 + grain * 0.9) * cleavage;
     let edgeDist = secondMinDist - minDist;
     let edge = smoothstep(0.05, 0.0, edgeDist);
 
@@ -189,6 +188,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let refraction = sin(minDist * 20.0 + time * 0.5) * smoothstep(0.3, 0.0, edgeDist) * 0.12 * fractureAmt;
 
+    // ── Idea 1: Wallner lines ──────────────────────────────────────────
+    // Stress waves reflected off the free surface ripple a running crack front, leaving
+    // arcs on the fracture face centred on the crack origin (a point outside the grain, on
+    // the side it came from). Rib spacing tightens with K (faster front, higher frequency).
+    let originDir = vec2<f32>(cos(cellRand * 6.2831853), sin(cellRand * 6.2831853));
+    let wallnerR = length(cellUV - (nearestSeed + originDir * 0.9));
+    let wallnerPhase = wallnerR * (14.0 + min(K, 4.0) * 6.0) - time * 0.4;
+    let wallner = smoothstep(0.55, 0.9, 0.5 + 0.5 * sin(wallnerPhase)) * smoothstep(0.0, 0.2, edgeDist) * crack;
+
+    // ── Idea 2: photoelastic isochromatic fringes ──────────────────────
+    // Birefringent crystal under load shows fringes where the Irwin tip field
+    // sigma = K / sqrt(2*pi*r) crosses integer orders. Reuse the file's red/cyan film tints.
+    let sigmaTip = K / sqrt(6.2831853 * max(minDist, 0.03));
+    let fringe = 0.5 + 0.5 * cos(sigmaTip * 4.0);
+    let fringeMask = crack * smoothstep(0.6, 0.1, minDist) * (1.0 - smoothstep(0.1, 0.25, edgeDist) * 0.5);
+    let photoelastic = mix(vec3<f32>(0.9, 0.2, 0.2), vec3<f32>(0.2, 0.8, 0.9), fringe) * fringe * fringeMask * 0.35;
+
     let sss = smoothstep(0.25, 0.0, edgeDist) * 0.25 * (1.0 + mids);
 
     let ca = chromatic * (1.0 + treble) * edgeDist;
@@ -197,7 +213,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chromaEdge = vec3<f32>(rEdge, edge, bEdge) * edgeGlow * (1.0 + treble);
 
     // Continuous geometry using audio bins
-    let cellHue = hash21(cellId + vec2<f32>(time * 0.005, 0.0));
+    let cellHue = hash21(nearestId + vec2<f32>(time * 0.005, 0.0));
     let k = vec3<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0);
     let h = abs(fract(vec3<f32>(cellHue) + k) * 6.0 - vec3<f32>(3.0));
     let cellColor = clamp(h - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)) * (0.3 + mids * 0.2 + binAvg * 0.1) * (1.0 - depth * 0.3);
@@ -206,6 +222,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = cellColor + chromaEdge + irid + vec3<f32>(sss) + vec3<f32>(refraction) + vec3<f32>(bloom);
     color = color + vec3<f32>(0.35, 0.3, 0.25) * hackleMask;
     color = color + vec3<f32>(0.3, 0.25, 0.2) * hackleMask2;
+    color = color + vec3<f32>(0.32, 0.3, 0.26) * wallner * 0.3 + photoelastic;
 
     let caStr = 0.001 + chromatic * (0.5 + bass) + depth * 0.001;
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
@@ -213,7 +230,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = acesToneMap(color * 1.1);
 
     // Semantic alpha
-    let alpha = clamp(crackDensity * K * 0.5 + edge * 0.5 + bloom * 0.2 + sss, 0.0, 1.0);
+    let alpha = clamp(crackDensity * K * 0.5 + edge * 0.5 + bloom * 0.2 + sss + wallner * 0.1, 0.0, 1.0);
 
     let finalColor = vec4<f32>(color, alpha);
 

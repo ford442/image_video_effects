@@ -2,12 +2,14 @@
   "id": "bio-touch-em",
   "name": "Bio Touch EM",
   "url": "shaders/bio-touch-em.wgsl",
-  "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors. Click ripples spawn orbiting secondary charges.",
+  "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors, click ripples spawn orbiting secondary charges, and strong fields open polar electroporation pores with refractory memory.",
   "features": [
     "mouse-driven",
     "field-simulation",
     "organic",
-    "temporal"
+    "temporal",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -45,5 +47,45 @@
     "electromagnetic",
     "glow",
     "interactive"
-  ]
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA (ion-channel refractory memory).",
+  "updated": true,
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Glow Radius",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Cell Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Color Shift",
+          "default": 0,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Field Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

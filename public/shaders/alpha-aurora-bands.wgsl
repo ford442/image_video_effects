@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-11
-//  Ideas: field-aligned curtain folds; green-line treble shimmer
+//  Upgraded: 2026-09-11, 2026-10-31
+//  Ideas: field-aligned curtain folds; green-line treble shimmer; lower-border brightening; Rayleigh limb (§12.2F)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -154,6 +135,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let particleEnergy = curtainMask * intensity * (1.0 + rippleEnergy + select(0.0, 0.6, held));
     var emission = auroraEmission(altitude, particleEnergy);
 
+    // ── Idea 1: lower-border brightening ────────────────────────────
+    // The nitrogen foot of each curtain is the bright edge of a real band.
+    let lowerBorder = smoothstep(0.40, 0.16, altitude) * curtainMask;
+    emission *= 1.0 + lowerBorder * 0.55;
+
     // Green-line treble shimmer — modulate only the 557.7 nm band
     let greenShimmer = 1.0 + treble * 0.45 * sin(uv.x * 48.0 + layerF * 2.3 + time * 5.5) * curtainMask;
     emission.g *= greenShimmer;
@@ -169,6 +155,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let history = historyAt(uv - ripplePerturb * 0.5, resolution);
 
   var hdr = src.rgb * 0.8 + totalEmission;
+  // ── Idea 2: Rayleigh limb (§12.2F) ────────────────────────────────
+  // Light under the curtain scatters blue. No emission, no limb.
+  let limb = exp(-avgAltitude * 2.6) * clamp(length(totalEmission), 0.0, 2.0);
+  hdr += vec3<f32>(0.28, 0.48, 0.95) * limb * 0.14;
   hdr += history.rgb * 0.055;
 
   let alpha = clamp(src.a * 0.7 + clamp(avgAltitude * 0.4 + length(totalEmission) * 0.25, 0.0, 0.9), 0.0, 1.0);

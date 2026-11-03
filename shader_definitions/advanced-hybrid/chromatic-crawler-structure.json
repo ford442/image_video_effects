@@ -2,7 +2,7 @@
   "id": "chromatic-crawler-structure",
   "name": "Chromatic Crawler Structure",
   "url": "shaders/chromatic-crawler-structure.wgsl",
-  "description": "Color-swapping crawling infection guided by image structure tensor eigenvectors, featuring Cauchy tendril bifurcation, photoelastic stress birefringence, and bioluminescent photon pulses.",
+  "description": "Colour-swapping crawl guided by image structure-tensor eigenvectors: tendrils integrate along the flow, Harris corners nucleate bioluminescent spores, regions hold their channel swap for about half a second, and edge stress shows as photoelastic fringes.",
   "workgroup_size": [
     16,
     16,
@@ -22,7 +22,8 @@
     "photoelastic-birefringence",
     "audio-reactive",
     "mouse-driven",
-    "aces-tone-mapping"
+    "aces-tone-mapping",
+    "upgraded-rgba"
   ],
   "params": [
     {

@@ -3,12 +3,14 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-09
-//  Ideas: Klein orientation seam; Möbius fiber twist
+//  Upgraded: 2026-10-09, 2026-11-01
+//  Ideas: Klein orientation seam; Möbius fiber twist; fold-basin seams (fold count, 12.2E); Möbius-dragged history
 //  A packing: pre-ACES display RGB in A (C is color history)
 // ═══════════════════════════════════════════════════════════════════
-// Field order used to list zoom_params before zoom_config, so those
-// names read the other uniform. Reads below stay on the same bytes.
+// Uniform order: this file's old pasted struct listed zoom_params before
+// zoom_config, so its u.zoom_config.* read the four UI sliders (zoom_params bytes)
+// and u.zoom_params.* read engine time / mouse. The canonical prelude struct has
+// the engine order, so every read below is spelled to hit the SAME BYTES as before.
 #include "_prelude.wgsl"
 
 // ---------------------------------------------------------------
@@ -155,14 +157,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    // ──────────────────────────────────────────────────────────────────────────
    //  Parameters
    // ──────────────────────────────────────────────────────────────────────────
-   let globalIntensity = u.zoom_config.x;
-   let hyperFactor = u.zoom_config.y;
-   let twistRate = u.zoom_config.z;
-   let chromaticScale = u.zoom_config.w * 2.0;
-   let depthInfluence = u.zoom_params.x;
-   let foldSharpness = u.zoom_params.y;
-   let rotationSpeed = u.zoom_params.z * 2.0;
-   let dimensionalFold = u.zoom_params.w;
+   // Saved sliders live in zoom_params (global_intensity, hyper_factor, twist_rate, chromatic_scale).
+   let globalIntensity = u.zoom_params.x;
+   let hyperFactor = u.zoom_params.y;
+   let twistRate = u.zoom_params.z;
+   let chromaticScale = u.zoom_params.w * 2.0;
+   // Never sliders: engine time / mouse x / mouse y / mouse-down, kept on their old bytes
+   // except depthInfluence, which was engine TIME (grew without bound) and is now the old
+   // slider midpoint.
+   let depthInfluence = 0.5;
+   let foldSharpness = u.zoom_config.y;
+   let rotationSpeed = u.zoom_config.z * 2.0;
+   let dimensionalFold = u.zoom_config.w;
    
    // Depth-modulated fold intensity (foreground folds more)
    let depthFoldBoost = 1.0 + (1.0 - depth) * depthInfluence * 2.0;
@@ -172,6 +178,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    // ──────────────────────────────────────────────────────────────────────────
    var totalFoldStrength = 0.0;
    var accumulatedPos = colorPos;
+   // Idea 1 / Idea 2 trackers: strongest + runner-up fold, strongest Möbius centre.
+   var strongFold = 0.0;
+   var secondFold = 0.0;
+   var mobiusBest = 0.0;
+   var mobiusCenter = vec2<f32>(0.5);
    
    // Create 5 animated fold centers
    for (var i: u32 = 0u; i < 5u; i = i + 1u) {
@@ -194,6 +205,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
        // Depth-aware fold strength
        let localFoldStrength = foldInfluence * depthFoldBoost * globalIntensity * (1.0 + bass * 0.2);
        totalFoldStrength = totalFoldStrength + localFoldStrength;
+       // ── Idea 1: fold-basin seams (fold count as material, 12.2E) ──
+       // Keep the strongest and second-strongest fold claiming this pixel.
+       secondFold = max(secondFold, min(strongFold, localFoldStrength));
+       strongFold = max(strongFold, localFoldStrength);
+       // ── Idea 2: remember the strongest Möbius fold (types 0 and 3) ──
+       let isMobius = f32(foldType == 0u) * step(mobiusBest, localFoldStrength);
+       mobiusBest = mix(mobiusBest, localFoldStrength, isMobius);
+       mobiusCenter = mix(mobiusCenter, foldCenter, isMobius);
        
        // Apply fold based on type
        if (foldType == 0u) { // Möbius fold
@@ -226,7 +245,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    // ──────────────────────────────────────────────────────────────────────────
    //  Chromatic aberration from fold edges
    // ──────────────────────────────────────────────────────────────────────────
-   let aberrationUV = chromaticAberration(uv, totalFoldStrength, chromaticScale);
+   // Idea 1: the join between two fold basins aberrates harder.
+   let seamGap = (strongFold - secondFold) / 0.05;
+   let basinSeam = exp(-seamGap * seamGap) * smoothstep(0.02, 0.2, secondFold);
+   let aberrationUV = chromaticAberration(uv, totalFoldStrength + basinSeam * 0.4, chromaticScale);
    let clampedAbUV = clamp(aberrationUV, vec2<f32>(0.0), vec2<f32>(1.0));
    
    // Sample with chromatic aberration for final output
@@ -241,6 +263,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    let foldBoost = 1.0 + totalFoldStrength * 0.5;
    outColor = pow(max(outColor, vec3<f32>(0.001)), vec3<f32>(1.0 / foldBoost));
    
+   // Idea 1: seam ridge — brightness bump where two fold basins meet.
+   outColor = outColor * (1.0 + basinSeam * 0.6);
+
    var clickFront = 0.0;
    let rippleCount = min(u32(u.config.y), 50u);
    let aspect = dims.x / dims.y;
@@ -257,14 +282,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
    // ──────────────────────────────────────────────────────────────────────────
    //  Feedback blend for persistence
    // ──────────────────────────────────────────────────────────────────────────
-   let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).rgb;
+   // Idea 2: Möbius-dragged history. A Möbius fold is non-orientable, so a trail that
+   // crosses it comes back twisted: the exact C tap is rotated about the strongest
+   // Möbius centre by up to ~0.06 rad times that fold's strength (aspect-correct).
+   let histAspect = dims.x / max(dims.y, 1.0);
+   let dragAngle = clamp(mobiusBest, 0.0, 1.0) * 0.06;
+   let dragCs = cos(dragAngle);
+   let dragSn = sin(dragAngle);
+   let relHist = (uv - mobiusCenter) * vec2<f32>(histAspect, 1.0);
+   let rotHist = vec2<f32>(relHist.x * dragCs - relHist.y * dragSn, relHist.x * dragSn + relHist.y * dragCs);
+   let histUV = clamp(mobiusCenter + rotHist / vec2<f32>(histAspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
+   let histSize = vec2<i32>(textureDimensions(dataTextureC));
+   let histCoord = clamp(vec2<i32>(histUV * vec2<f32>(histSize)), vec2<i32>(0), histSize - vec2<i32>(1));
+   let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
    let feedbackMix = 0.85;
    let finalColor = mix(outColor, prev, feedbackMix);
    
    // ──────────────────────────────────────────────────────────────────────────
    //  Output
    // ──────────────────────────────────────────────────────────────────────────
-   let foldAlpha = clamp(0.28 + totalFoldStrength * 0.45, 0.0, 1.0);
+   let foldAlpha = clamp(0.28 + totalFoldStrength * 0.45 + basinSeam * 0.15, 0.0, 1.0);
    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(finalColor), foldAlpha));
    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, foldAlpha));
    

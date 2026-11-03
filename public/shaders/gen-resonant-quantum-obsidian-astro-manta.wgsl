@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: trailing membrane; buckle fractures
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: trailing membrane; buckle fractures; SDF-curvature ridge wear + hollow vein pooling (§12.2E); closest-approach aura
 //  A packing: ACES display RGB; A.a wing coverage (not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, yz=MouseUV (0-1, y=0 top), w=MouseDown
-  zoom_params: vec4<f32>,  // x=Time Scale, y=Audio Reactivity, z=Brightness, w=Evolution Speed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Time Scale, y=Audio Reactivity, z=Brightness, w=Evolution Speed
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -133,6 +115,14 @@ fn calcNormal(p: vec3<f32>, t: f32, snd: vec4<f32>, rip: f32) -> vec3<f32> {
         map(p + e.yyx, t, snd, rip) - map(p - e.yyx, t, snd, rip)
     ));
 }
+// ── Idea 1: SDF curvature (§12.2E) — Laplacian of the distance field, + convex / − concave ──
+fn curvature(p: vec3<f32>, t: f32, snd: vec4<f32>, rip: f32, d0: f32) -> f32 {
+    let e = 0.015;
+    let s = map(p + vec3<f32>(e, 0.0, 0.0), t, snd, rip) + map(p - vec3<f32>(e, 0.0, 0.0), t, snd, rip)
+          + map(p + vec3<f32>(0.0, e, 0.0), t, snd, rip) + map(p - vec3<f32>(0.0, e, 0.0), t, snd, rip)
+          + map(p + vec3<f32>(0.0, 0.0, e), t, snd, rip) + map(p - vec3<f32>(0.0, 0.0, e), t, snd, rip);
+    return (s - 6.0 * d0) / (e * e);
+}
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let res = u.config.zw;
@@ -142,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let coord = vec2<i32>(global_id.xy);
     let uv01 = vec2<f32>(global_id.xy) / res;
-    let uv = (uv01 - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+    let uv = vec2<f32>(uv01.x - 0.5, 0.5 - uv01.y) * vec2<f32>(res.x / res.y, 1.0); // +y up
 
     // Time Scale slider drives the creature clock
     let time_scale = u.zoom_params.x;
@@ -159,9 +149,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Click ripples deform the geometry
     let rip = rippleField(uv01, u.config.x);
 
-    // Mouse-orbit camera (mouse uv is 0-1, y=0 top — used directly, no flip)
+    // Mouse-orbit camera (mouse y=0 is top → camera rises). Rests ~0.5 rad above the wing plane
+    // so the manta's planform reads; pitch 0 was edge-on.
     let yaw = (u.zoom_config.y - 0.5) * PI * 1.5 + u.config.x * 0.05;
-    let pitch = (u.zoom_config.z - 0.5) * PI * 0.7;
+    let pitch = -0.5 + (u.zoom_config.z - 0.5) * PI * 0.7;
     let cam = rotY(yaw) * rotX(pitch);
 
     let ro = cam * vec3<f32>(0.0, 0.0, -5.0);
@@ -171,16 +162,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var dist = 0.0;
     var p = ro;
     var hit = false;
+    var minD = 1e3; // Idea 2: closest approach of the ray to the creature
 
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 180; i++) {
         p = ro + rd * dist;
         let d = map(p, t, snd, rip);
+        minD = min(minD, d);
         if (d < 0.001) {
             hit = true;
             break;
         }
         if (dist > MAX_DIST) { break; }
-        dist += d;
+        // The wing field is ~10x steeper than true distance in y (scale 10 on a 0.05 sheet), so a
+        // unit step tunnels through it. Step by 0.2·d instead (rescue: wings/membrane were missed).
+        dist += d * 0.2;
     }
 
     // Shading
@@ -210,13 +205,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let glow_drive = (bass + fft_vein + treble * 0.4) * audio_gain;
 
         // Obsidian base + glowing veins
-        let baseColor = vec3<f32>(0.1);
+        // Idea 1: ridges (convex) catch a cold conchoidal rim, hollows (concave) pool the vein glow.
+        let curv = curvature(p, t, snd, rip, map(p, t, snd, rip));
+        let ridge = clamp(curv / 12.0, 0.0, 1.0);
+        let hollow = clamp(-curv / 6.0, 0.0, 1.0);
+        let baseColor = vec3<f32>(0.1) * (1.0 - 0.6 * hollow);
         let glowColor = vec3<f32>(0.2, 0.8, 1.0) * glow_drive * 2.0;
 
         // Vein lattice etched across the hull; FFT band shifts the etch phase
         let veins = smoothstep(0.8, 1.0, sin(p.x * 10.0 + snd.w * 4.0) * sin(p.z * 10.0 - t));
 
-        col = baseColor * diff + glowColor * veins + vec3<f32>(0.1, 0.4, 0.6) * fresnel * (0.5 + mids);
+        col = baseColor * diff + glowColor * veins * (1.0 + 1.5 * hollow) + vec3<f32>(0.1, 0.4, 0.6) * fresnel * (0.5 + mids);
+        col += vec3<f32>(0.5, 0.8, 1.0) * ridge * (0.15 + 0.45 * diff);
         // Buckle fractures: the existing ripple displacement etches cracks. No new ripple system.
         let crack = 1.0 - smoothstep(0.0, 0.045, abs(fract(p.x * 7.0 + p.z * 5.0 + rip * 6.0) - 0.5) - 0.46);
         col += vec3<f32>(0.65, 0.9, 1.0) * crack * rip * (0.45 + audio_gain * 0.25);
@@ -225,8 +225,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         depth = clamp(1.0 - dist / MAX_DIST, 0.0, 1.0);
     }
 
-    // Volumetric fog/bloom overlay (Brightness slider = emission strength)
-    col += vec3<f32>(0.1, 0.3, 0.5) * (1.0 - exp(-0.05 * dist)) * u.zoom_params.z * max(0.5, evolution);
+    // Idea 2: closest-approach aura. The bloom hugs the manta instead of fogging every missed ray
+    // by its length (the old 1-exp(-0.05·dist) term saturated across the whole frame).
+    // Brightness slider = emission strength; Evolution Speed breathes the halo.
+    let breathe = 0.85 + 0.15 * sin(u.config.x * evolution * 0.8);
+    let aura = exp(-max(minD, 0.0) * 2.4) * breathe;
+    col += vec3<f32>(0.1, 0.3, 0.5) * aura * u.zoom_params.z * max(0.5, evolution) * select(0.9, 0.25, hit);
 
     col = acesToneMap(col);
 

@@ -10,7 +10,7 @@
     "upgraded-rgba",
     "temporal"
   ],
-  "description": "Prismatic mosaic tunnel: five zooming layers cut into prism tiles that split colour, with depth-edge glints, a cursor vortex and volumetric fog.",
+  "description": "Prismatic mosaic tunnel: five zooming layers cut into prism facets that split colour by Cauchy's law and catch sweeping specular glints, with depth-edge glints, a cursor vortex and volumetric fog.",
   "params": [
     {
       "id": "min_speed",

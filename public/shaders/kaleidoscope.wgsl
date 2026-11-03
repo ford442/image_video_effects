@@ -7,7 +7,9 @@
 //            semantic-alpha, aces
 //  Complexity: High
 //  Date: 2026-05-03
-//  Upgraded: 2026-08-23 (Batch 60)
+//  Upgraded: 2026-08-23 (Batch 60), 2026-11-01
+//  Ideas (2026-11): aperture diffraction fringes (three wavelengths, phase-offset cosines inside the squircle edge); Cauchy-weighted channel split (R +0.57 / B -1.0 of the segment shift)
+//  A packing: display RGBA (unchanged); ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 //  FIXED IN THIS PASS — the shader never read the mouse. `zoom_config` appeared
 //  only in the Uniforms struct declaration; a kaleidoscope with a fixed centre
@@ -30,26 +32,8 @@
 //       texture gain. Segments therefore breathe independently with the music
 //       rather than the whole fan scaling by one global `audioReact`.
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Segments, y=Speed, z=Zoom, w=EdgeSoftness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Segments, y=Speed, z=Zoom, w=EdgeSoftness
 
 fn acesFilm(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -81,6 +65,18 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
   }
   return v;
 }
+// Superellipse value: 0 at the centre, 1 on the aperture edge (superellipseMask is 1 - smoothstep of this).
+fn superellipseValue(d: vec2<f32>, a: f32, b: f32, n: f32) -> f32 {
+  return pow(abs(d.x) / max(a, 0.001), n) + pow(abs(d.y) / max(b, 0.001), n);
+}
+
+// FFT band k (0..7): engine FFT bins live in extraBuffer[5 .. 132]. HEAD read plasmaBuffer[k + 1].x,
+// but only plasmaBuffer[0] is ever written, so the per-segment band was a constant zero.
+fn fftBand(k: u32) -> f32 {
+  let idx = 5u + (k % 8u) * 4u;
+  return select(0.0, extraBuffer[min(idx, arrayLength(&extraBuffer) - 1u)], arrayLength(&extraBuffer) > idx);
+}
+
 fn superellipseMask(d: vec2<f32>, a: f32, b: f32, n: f32) -> f32 {
   let xn = pow(abs(d.x) / max(a, 0.001), n);
   let yn = pow(abs(d.y) / max(b, 0.001), n);
@@ -159,7 +155,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   clickWave = min(clickWave, 1.5);
   waveGlow = min(waveGlow, 1.2);
 
-  let segments = max(u.zoom_params.x * 16.0, 4.0);
+  // Alternating-parity mirror cells only close for an EVEN integer count; HEAD's default (4.8) left a
+  // seam along the atan2 cut and a discontinuous rose. Rounded to an even count (default 4.8 -> 4).
+  let segments = max(2.0 * round(u.zoom_params.x * 8.0), 4.0);
   let speed = u.zoom_params.y * 0.5;
   let zoom = max(u.zoom_params.z, 0.1);
   let edgeSoft = max(u.zoom_params.w * 0.05, 0.0001);
@@ -189,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let preSegAngle = 6.2831853 / segments;
   let preIndex = floor(select(dispAngle, dispAngle + 6.2831853, dispAngle < 0.0) / preSegAngle);
   let segBandIdx = u32(abs(preIndex)) % 8u;
-  let segBand = plasmaBuffer[segBandIdx + 1u].x;
+  let segBand = fftBand(segBandIdx);
 
   let roseK = segments;
   let roseA = 0.25 * audioReact * (0.6 + segBand * 1.6 + clickWave * 0.5);
@@ -229,7 +227,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // 7. RGB channel separation per segment index
   let segMod = f32(segIndex % 3.0);
   let shift = edgeSoft * 0.4 * segMod;
-  let rUV = finalUV + vec2<f32>(shift, 0.0);
+  // 2026-11 Idea 2: Cauchy-weighted split. n(lambda) - n(550) ~ 550^2/lambda^2 - 1 is -0.28 for 650 nm red
+  // and +0.49 for 450 nm blue, so R moves 0.57 of what B moves (HEAD: equal and opposite).
+  let rUV = finalUV + vec2<f32>(shift * 0.57, 0.0);
   let gUV = finalUV;
   let bUV = finalUV - vec2<f32>(shift, 0.0);
   let rSamp = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
@@ -243,6 +243,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Compose color with superellipse and frame masking
   rgb = rgb * edgeFade * sqMask * frameMask;
+
+  // 2026-11 Idea 1: aperture diffraction. Light bending at an aperture edge leaves fringes just inside
+  // it, and their spacing depends on wavelength: three cosines with a per-channel phase offset ride the
+  // superellipse value e (0 centre, 1 edge) over 0.7 < e < 1.05.
+  let apertureE = superellipseValue(zoomed, 0.55, 0.55, sqN);
+  let fringeBand = smoothstep(0.7, 0.95, apertureE) * (1.0 - smoothstep(0.95, 1.05, apertureE));
+  let fringeCol = 0.5 + 0.5 * cos((apertureE - 0.7) * 40.0 + vec3<f32>(0.0, 0.4, 0.8));
+  rgb += fringeCol * fringeBand * 0.12 * (0.6 + audioTreble) * edgeFade * frameMask;
 
   // Edge glow intensity stored in alpha
   let segmentEdge = abs(sin(mirrorFrac * 3.14159265));

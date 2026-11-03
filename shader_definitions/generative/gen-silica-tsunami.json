@@ -28,7 +28,8 @@
     "sprung-mouse-crest",
     "click-shard-rings",
     "multi-band-glass-lighting",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba"
   ],
   "x-meta": {
     "upgrade": {

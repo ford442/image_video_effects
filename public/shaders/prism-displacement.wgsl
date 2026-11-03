@@ -10,29 +10,16 @@
 //            2. Cauchy fan — the tap offset follows n(λ) ∝ 1/λ², so blue bends hardest and
 //               the fan's anamorphic axis turns with Rotation Speed
 //            3. Fresnel lens rim — grazing reflection at the lens edge (replaces cosine palette)
+//            4. Beer-Lambert dome absorption — the glass is thicker at the centre (2 R cos(theta)), so it
+//               tints the centre aqua and passes the rim (2026-11)
+//            5. radial lateral CA — the dispersion scale grows with distance from the lens axis (2026-11)
+//  A packing: ACES display RGBA (unchanged)
+//  Upgraded: 2026-10-04, 2026-11-01
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=ZoomAmount, y=ChromaticAmount, z=RotationSpeed, w=DepthWeight
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=ZoomAmount, y=ChromaticAmount, z=RotationSpeed, w=DepthWeight
 
 fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32) -> vec2<f32> {
   let d = uv - center;
@@ -132,6 +119,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   p += rippleWarp;
 
   let len = length(p);
+  // Lens radius (moved up from the rim block: the radial lateral CA below needs it too).
+  let lensR = 0.25 + zoomAmount * 0.25;
 
   // HEAD rotated each pixel by −(angle + t), which maps every pixel at a given
   // radius to the same point and collapses the image into concentric rings.
@@ -159,7 +148,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   dispDir = dispDir + anaAxis * dot(dispDir, anaAxis) * chromaticAmount * 3.0;
   dispDir.x /= aspect;
 
-  let dispersion = chromaticAmount * 0.00008 * (1.0 + treble * 0.4);
+  // Idea 5 (2026-11): radial lateral CA. Lateral chromatic aberration grows with distance from the optical
+  // axis: weak on-axis, strong toward the rim (0.3 at the axis, 1.7 at the lens edge).
+  let radialCA = 0.3 + 1.4 * clamp(len / max(lensR, 0.05), 0.0, 1.5);
+  let dispersion = chromaticAmount * 0.00008 * (1.0 + treble * 0.4) * radialCA;
   var color = sampleSpectral(lensedUV, dispDir, dispersion);
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, clamp(lensedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
@@ -167,7 +159,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 3: Fresnel lens rim. The lens is a glass dome whose radius follows
   // Zoom Amount. Toward its edge the view becomes grazing, so Schlick
   // reflectance climbs and the rim mirrors the scene outside the lens.
-  let lensR = 0.25 + zoomAmount * 0.25;
   let rr = len / lensR;
   let inLens = 1.0 - smoothstep(0.96, 1.04, rr);
   let cosV = sqrt(max(1.0 - rr * rr, 0.0));
@@ -178,6 +169,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rimRefl = textureSampleLevel(readTexture, u_sampler, outsideUV, 0.0).rgb;
   let edgeGlow = rimF * smoothstep(0.2, 0.5, zoomAmount);
   color = mix(color, rimRefl * (1.1 + bass * 0.3) + vec3<f32>(0.04, 0.05, 0.07), edgeGlow * (0.4 + chromaticAmount * 0.5));
+
+  // Idea 4 (2026-11): Beer-Lambert absorption through the dome. Thickness along the view ray is
+  // 2 R cos(theta) (cosV is already computed for the rim); transmittance exp(-sigma t) with a weak
+  // red-heavy sigma tints the thick centre aqua and leaves the thin rim clear. Inside the lens only.
+  let glassThickness = 2.0 * lensR * cosV;
+  let glassTransmit = exp(-vec3<f32>(0.40, 0.14, 0.10) * glassThickness);
+  color = color * mix(vec3<f32>(1.0), glassTransmit, inLens);
 
   // Exact dataTextureC persistence, blended in display space (C holds ACES output).
   let prevC = textureLoad(dataTextureC, pixel, 0).rgb;

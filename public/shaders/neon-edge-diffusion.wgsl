@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, semantic-alpha, depth-aware
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: edge-energy dilation across the tile neighbours; luma²-weighted hex taps (bokeh discs behind the neon); tangent-stretched hex (1.6× along / 0.6× across the edge)
+//  Upgraded: 2026-10-05, 2026-11-02
+//  Ideas: edge-energy dilation; luma² hex taps; tangent-stretched hex; filament core; energy-conserving bloom (§12.2F)
 //  A packing: ACES display RGBA (no history is read back; B unused)
 // ═══════════════════════════════════════════════════════════════════
 //  Shared-tile RGB edge magnitude turned into a fixed R/G/B neon ramp and
@@ -95,7 +95,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(local_invocation
     let lx = i32(lid.x) + 1; let ly = i32(lid.y) + 1;
     let edgeC = edgeAt(lx, ly);
 
-    // ── Idea 1: edge-energy dilation — the edge is also measured at the four
+    // Edge-energy dilation — the edge is also measured at the four
     // tile neighbours and the weighted max bleeds it one texel outward.
     let edgeN = max(max(edgeAt(lx - 1, ly), edgeAt(lx + 1, ly)), max(edgeAt(lx, ly - 1), edgeAt(lx, ly + 1)));
     var edge = max(edgeC, edgeN * 0.65);
@@ -125,8 +125,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(local_invocation
     let glow = hexGlow(uv, radius, lod, tangent, stretch);
 
     // Neon emission color derived from edge magnitude and color-shift param.
+    // ── Idea 2: energy-conserving bloom (§12.2F) ──
+    // The hex spread is light that left the contour. The core gives a fraction back.
+    let spread = glow * edge * 5.0 * (1.0 + treble);
     var emission = vec3<f32>(edge * 4.0, edge * (1.1 - p4) * 3.0, edge * (0.3 + p4) * 5.0) * (1.0 + p1);
-    emission = mix(emission, glow * edge * 5.0 * (1.0 + treble), 0.5);
+    emission = max(emission - spread * 0.18, vec3<f32>(0.0));
+    emission = mix(emission, spread, 0.5);
 
     // Click ripple field. The branchless `hasEdge | nearMouse` gate keeps the
     // loop from adding energy in flat regions. FIX: amplitude 1 at the default
@@ -142,6 +146,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(local_invocation
         ripple += vec3<f32>(gated * (1.0 + p3), gated * 0.7, gated * 1.3);
     }
     emission += ripple * (p3 * 2.0);
+
+    // ── Idea 1: filament core ──
+    // Dilation and the hex bloom spread the edge. The undilated center is the filament.
+    let filament = smoothstep(0.012, 0.07, edgeC) * (1.0 - smoothstep(0.07, 0.18, edgeC));
+    let filamentRgb = vec3<f32>(edgeC * 4.0, edgeC * (1.1 - p4) * 3.0, edgeC * (0.3 + p4) * 5.0);
+    emission += filamentRgb * filament * (0.4 + p1 * 0.35);
 
     emission = aces(max(emission, vec3<f32>(0.0)) * (1.0 + bass * 0.2));
     let intensity = luma(emission);

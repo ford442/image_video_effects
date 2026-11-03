@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: LIC streaks along E; recombination flash where +/− charge meet
+//  Upgraded: 2026-09-12, 2026-11-01
+//  Ideas: LIC streaks along E; recombination flash where +/− charge meet; Gauss source (charge gradient sources E); corona discharge (charge leaks where |E| passes the breakdown field, with a flash)
 //  A packing: raw (Ex, Ey, B, charge)
 // ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
@@ -17,26 +17,7 @@
 //  Chunks From: valueNoise, fbm2 (chunk-library.md)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -136,6 +117,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Magnetic field update
     bField += lapB * c * c * dt * 0.5;
 
+    // 2026-11 Idea 1: Gauss source (12.2D, one extra term in the existing solver). Nothing sourced
+    // E in HEAD (charge and B were injected, E only diffused from its own zero state), so the
+    // E-hue display and the LIC streaks never lit. Charge now sources E: E += -k grad(rho), the
+    // cheap diffusive stand-in for Coulomb since charge already relaxes by diffusion. A positive
+    // blob (rho peaks at its centre) gets an outward E.
+    let gradRho = vec2<f32>(right.a - left.a, up.a - down.a) * 0.5;
+    eField += -gradRho * 0.35;
+
     // Charge relaxation (diffusion)
     let lapCharge = left.a + right.a + down.a + up.a - 4.0 * charge;
     charge += lapCharge * 0.1 * dt;
@@ -162,6 +151,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             bField += strength * sign * (0.02 + audio.y * 0.08);
         }
     }
+
+    // 2026-11 Idea 2: corona discharge. A real field cannot hold unlimited strength: past the
+    // breakdown field the air ionises and charge leaks off the sharpest, most strongly
+    // fielded edges of a charge blob. Charge is bled by up to 4 % per frame where |E| passes
+    // ~0.45 (full by 0.8), so blobs round off, and the discharge shows as a violet-white flash.
+    let breakdown = smoothstep(0.45, 0.8, length(eField));
+    charge *= 1.0 - 0.04 * breakdown;
 
     // === DAMPING ===
     let damping = mix(0.90, 0.995, u.zoom_params.x);
@@ -232,6 +228,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let opp = max(max(max(-charge * nCh.x, -charge * nCh.y), -charge * nCh.z), -charge * nCh.w);
     let recombine = smoothstep(0.0, 0.08, max(opp, 0.0)) * (abs(charge) + abs(nCh.x) + abs(nCh.y)) * 0.35;
     displayColor += vec3<f32>(1.0, 0.92, 0.55) * recombine;
+
+    displayColor += vec3<f32>(0.75, 0.65, 1.0) * breakdown * min(abs(chargeVis) + 0.15, 1.0) * 0.35;
 
     // B-field adds brightness variation
     displayColor *= 1.0 + bField * bVisibility * 0.3;

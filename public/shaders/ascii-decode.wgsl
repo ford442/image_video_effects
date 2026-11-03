@@ -1,33 +1,20 @@
 // ═══════════════════════════════════════════════════════════════════
 //  ascii-decode
 //  Category: stylize
-//  Features: upgraded-rgba, depth-aware
-//  Upgraded: 2026-03-22
+//  Features: mouse-driven, upgraded-rgba, depth-aware
+//  Upgraded: 2026-11-01 (was 2026-03-22)
+//  Ideas: falling column head; cell gutter; decode rim
+//  A packing: ACES display RGBA (C holds a little matrix green)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/Generic1, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4 (Use these for ANY float sliders)
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn get_luminance(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn character(uv: vec2<f32>, char_index: i32) -> f32 {
@@ -96,18 +83,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Quantize luminance to char index (0-6)
     var charIdx = i32(lum * 6.99);
 
-    // Add "Matrix" rain effect - shift char based on time and column
+    // ── Idea 1: falling column head ──────────────────────────────────
+    // The column hash still chooses which columns rain. The highlight is a
+    // short run of cells falling down that column. Matrix Speed still sets
+    // the rate. A little of last frame's green holds behind the head.
     let time = u.config.x * (1.0 + matrixSpeed * 5.0);
-    let rain = fract(sin(cellID.x * 12.9898) * 43758.5453 + time * 0.5);
-    if (rain > 0.9) {
+    let colHash = fract(sin(cellID.x * 12.9898) * 43758.5453);
+    let columnOn = step(0.9, colHash);
+    let rows = max(resolution.y / gridSizeParam, 1.0);
+    let headRow = fract(colHash + time * 0.15) * rows;
+    let rowDelta = abs(cellID.y - headRow);
+    let rowDist = min(rowDelta, abs(rows - rowDelta));
+    let head = smoothstep(2.4, 0.0, rowDist);
+    if (columnOn > 0.5 && head > 0.35) {
         charIdx = (charIdx + 1) % 7;
-        texColor = texColor * 1.5; // Highlight
+        texColor = texColor * (1.0 + head * 0.5);
     }
 
     let shape = character(cellUV, charIdx);
 
-    // Matrix Color (Green/Black) or Tinted Original
-    let matrixColor = vec3<f32>(0.0, 1.0, 0.2) * shape * lum;
+    // ── Idea 2: cell gutter ──────────────────────────────────────────
+    // A margin at the cell edge, so the seven shapes sit in a terminal cell.
+    let cellEdge = min(min(cellUV.x, 1.0 - cellUV.x), min(cellUV.y, 1.0 - cellUV.y));
+    let gutter = smoothstep(0.0, 0.07, cellEdge);
+
+    var matrixColor = vec3<f32>(0.0, 1.0, 0.2) * shape * lum * gutter;
+    matrixColor += vec3<f32>(0.55, 1.0, 0.72) * shape * gutter * head * columnOn;
 
     // Mouse Interaction
     var mousePos = u.zoom_config.yz;
@@ -115,43 +116,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var dist = length(distVec);
 
     // Decode Mask (smoothstep for soft edge)
+    // Inside the radius decodeMask -> 0 (photo). Outside -> 1 (matrix).
     let decodeMask = smoothstep(decodeRadius, decodeRadius + 0.1, dist);
-
-    // Final Mix:
-    // If inside radius (dist < radius), decodeMask -> 0.0 (show original)
-    // If outside, decodeMask -> 1.0 (show matrix)
 
     let originalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-    // Mix based on globalMix param too. If globalMix is 0, show full matrix (masked by mouse).
-    // If globalMix is 1, show full original.
-    // Wait, let's make globalMix control the "Opacity of Matrix overlay".
-    // Actually, let's make it "Decode Strength".
-
-    // Let's stick to the prompt: Mouse responsive.
-    // Base state: Matrix.
-    // Mouse state: Clear.
-
+    // ── Idea 3: decode rim ───────────────────────────────────────────
+    // Where the mask is mid-range, glyph ink sits on the photo instead of
+    // a linear dissolve. Decode Radius still places that edge.
+    let rim = smoothstep(0.02, 0.22, decodeMask) * smoothstep(0.72, 0.28, decodeMask);
+    let punched = mix(originalColor, matrixColor, shape * gutter);
     var finalColor = mix(originalColor, matrixColor, decodeMask);
+    finalColor = mix(finalColor, punched, rim);
+    finalColor = mix(originalColor, finalColor, globalMix);
 
-    // Apply global opacity of effect
-    // If globalMix is 0, effect is invisible (just original). If 1, effect is strong.
-    // Let's map zoom_params.w to "Effect Strength"
-    // finalColor = mix(originalColor, finalColor, globalMix);
-    // Actually, usually W is "Mix" in my other shaders where 0 is original, 1 is effect.
-    // So:
-    finalColor = mix(originalColor, finalColor, u.zoom_params.w);
+    let coord = vec2<i32>(global_id.xy);
+    let prev = textureLoad(dataTextureC, coord, 0).rgb;
+    let matrixGreen = prev.g * (1.0 - prev.r) * decodeMask * globalMix;
+    finalColor += vec3<f32>(0.0, 0.22, 0.05) * matrixGreen * (0.25 + head * 0.75);
+    finalColor = acesToneMap(max(finalColor, vec3<f32>(0.0)));
 
-    // Sample depth for alpha calculation
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    
-    // Calculate luminance-based alpha
+    let depth = textureLoad(readDepthTexture, coord, 0).r;
     let luma = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.7, 1.0, luma);
-    let finalAlpha = mix(alpha * 0.8, alpha, depth);
-    
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-    
-    // Pass depth
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    let alpha = clamp(mix(0.55, 1.0, luma) * mix(0.75, 1.0, depth) + shape * decodeMask * globalMix * 0.2, 0.0, 1.0);
+
+    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
