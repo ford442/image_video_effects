@@ -481,8 +481,17 @@
       "history": []
     },
     "engraving-stipple-blue-noise": {
-      "hash": "5557bab0198caac9",
-      "history": []
+      "hash": "797e8065c6bd9d81",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "797e8065c6bd9d81",
+          "prev_hash": "5557bab0198caac9",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "ethereal-swirl-coupled": {
       "hash": "a256037b0eeee639",
@@ -1464,16 +1473,34 @@
       "history": []
     },
     "engraving-stipple": {
-      "hash": "5360e093e4e02bec",
-      "history": []
+      "hash": "56219f9e9dd2145b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "56219f9e9dd2145b",
+          "prev_hash": "5360e093e4e02bec",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "fabric-step": {
       "hash": "d4bbb7a4205ccab6",
       "history": []
     },
     "film-cross-process": {
-      "hash": "e8123768be204c1b",
-      "history": []
+      "hash": "e6703d9428e08eaa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "e6703d9428e08eaa",
+          "prev_hash": "e8123768be204c1b",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "frosty-window": {
       "hash": "d52e34d095553e92",
@@ -1505,8 +1532,17 @@
       "history": []
     },
     "halftone-reveal": {
-      "hash": "7516f46d7561331b",
-      "history": []
+      "hash": "3eecbd96aa6b4b40",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "3eecbd96aa6b4b40",
+          "prev_hash": "7516f46d7561331b",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "holographic-contour": {
       "hash": "535e956759569617",
@@ -1799,8 +1835,17 @@
       ]
     },
     "polka-dot-reveal": {
-      "hash": "725240508ca98242",
-      "history": []
+      "hash": "6276981f98c679c4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "6276981f98c679c4",
+          "prev_hash": "725240508ca98242",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "porcelain-fracture-glow": {
       "hash": "61378dc0086129be",
@@ -1896,16 +1941,34 @@
       ]
     },
     "rotoscope-ink": {
-      "hash": "e63749e6eb1b5fbb",
-      "history": []
+      "hash": "9dbcdc9bc21539df",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "9dbcdc9bc21539df",
+          "prev_hash": "e63749e6eb1b5fbb",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "snow": {
       "hash": "dfb74328766f2629",
       "history": []
     },
     "spec-blue-noise-stipple": {
-      "hash": "88255d89afd313a4",
-      "history": []
+      "hash": "31da08b61d290b5a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "31da08b61d290b5a",
+          "prev_hash": "88255d89afd313a4",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "spectral-bleed-confinement": {
       "hash": "090f455cf8939fd3",
@@ -1980,8 +2043,17 @@
       "history": []
     },
     "stipple-render": {
-      "hash": "8e308f29638857db",
-      "history": []
+      "hash": "79c640fe2b2658b1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "79c640fe2b2658b1",
+          "prev_hash": "8e308f29638857db",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "temporal-echo": {
       "hash": "c8d5c49f2783d0b2",
@@ -9318,8 +9390,17 @@
       ]
     },
     "cyber-halftone-scanner": {
-      "hash": "0fa112f2ff329f82",
-      "history": []
+      "hash": "8676371bfd16fb45",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "8676371bfd16fb45",
+          "prev_hash": "0fa112f2ff329f82",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "digital-lens": {
       "hash": "d13479db0633c29a",
@@ -9463,8 +9544,17 @@
       "history": []
     },
     "graphic-novel": {
-      "hash": "a446396a1448bef1",
-      "history": []
+      "hash": "51f2518e4d27c8d7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "51f2518e4d27c8d7",
+          "prev_hash": "a446396a1448bef1",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "heat-haze-mirage": {
       "hash": "a9846d7d8a318713",
@@ -9653,8 +9743,17 @@
       "history": []
     },
     "polka-wave": {
-      "hash": "7030fb16431845fa",
-      "history": []
+      "hash": "668a8a8d1d458d84",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "668a8a8d1d458d84",
+          "prev_hash": "7030fb16431845fa",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "posterize-neon-edges": {
       "hash": "3f35985068bf66a4",
@@ -13259,8 +13358,17 @@
       "history": []
     },
     "halftone": {
-      "hash": "d6923d45fc05f9c7",
-      "history": []
+      "hash": "deaddf9e8986b8c6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "deaddf9e8986b8c6",
+          "prev_hash": "d6923d45fc05f9c7",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "holographic-glitch": {
       "hash": "7ad572fc598bb5c6",

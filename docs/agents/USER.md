@@ -45,6 +45,26 @@ _Learn about the person you're helping. Update this as you go._
   - posterize-neon-edges: cel filament; tangent ink waver. Band-hold flats and the Sobel ridge kept.
 - Floor: prelude include on the three pasted headers; 16×16; exact C; A packing as documented; saved params exact.
 - Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1531 passed (1 skipped); one unrelated RendererManager device-loss test failed once and passed 45/45 on re-run. `SKIP_WASM_BUILD=1 npm run build` succeeded.
+  - 2026-11-02: sent cursor/batch-36 (Cursor(2)), twelve halftone, stipple, and ink shaders (halftone through graphic-novel). `graphic-novel` is `graphic_novel.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-02-batch-36/`.
+
+## 2026-11-02 — cursor/batch-36 halftone, stipple, and ink (12 shaders)
+
+- IDs: halftone, halftone-reveal, engraving-stipple, engraving-stipple-blue-noise, spec-blue-noise-stipple, stipple-render, cyber-halftone-scanner, polka-dot-reveal, polka-wave, rotoscope-ink, film-cross-process, graphic-novel.
+- Per shader, the ideas actually added:
+  - halftone: Murray-Davies midtone gain; black trap under K. Highlight skip, overprint, and plate misregistration kept.
+  - halftone-reveal: loupe twist; bitten dot edge. Per-plate gain and highlight knockout kept.
+  - engraving-stipple: foul bite; wipe sheen. Roulette, burin taper, and click rings kept. A stays telemetry.
+  - engraving-stipple-blue-noise: drypoint shoulder; raking shadow. Blue-noise jitter and the threshold stay. First ACES display write; C unread.
+  - spec-blue-noise-stipple: void push; stacked pigment. Dark-cell packing and neighbor skip kept.
+  - stipple-render: downhill stipple; coffee ring. Contour hatch and exact-C wet memory kept.
+  - cyber-halftone-scanner: interlaced field shear (§12.2B); lamp dropout (§12.2B). AM cells, scan bursts, and hard-dot kept.
+  - polka-dot-reveal: chain holes; dot pip. Chain merge and drag stretch kept. A stays bass, mouse, trail. ACES on the display write only.
+  - polka-wave: crest squash; rosette eye. Four-plate wave and dot gain kept.
+  - rotoscope-ink: double weight; cel boil. Edge weight and hold-flats kept. A stays telemetry.
+  - film-cross-process: density-weighted grain (§12.2A); shadow teal. Highlight crossover and the enlarger spring kept.
+  - graphic-novel: feather into the spot; panel rule. Spot blacks, pen hatch, and shadow-side weight kept.
+- Floor: prelude include on the eight pasted headers; 16×16; exact C; A packing as documented; saved params exact. `x-meta.upgrade.params` added for engraving-stipple-blue-noise and polka-dot-reveal.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped) after the device-loss file was re-run clear of the parallel build. `SKIP_WASM_BUILD=1 npm run build` succeeded.
 - Real-GPU visual QA: external.
 
 ## 2026-10-26 — liquid ten (10 shaders)
