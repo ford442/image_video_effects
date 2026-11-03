@@ -4,33 +4,15 @@
 //  Features: procedural, animated, audio-reactive, temporal, chromatic,
 //            depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: smooth trap-mode interpolation; velocity |Δz| trap
+//  Upgraded: 2026-09-13, 2026-11-01
+//  Ideas: smooth trap-mode interpolation; velocity |Δz| trap; distance-estimate boundary filaments (log|dz| derivative); interior multiplier banding (Fatou attractor bands)
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 //  Scientific: z^n+c n=2..6, smooth μ, circle/line/cross traps,
 //              c orbiting a cardioid, mouse-drag c override
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0)  var u_sampler: sampler;
-@group(0) @binding(1)  var readTexture: texture_2d<f32>;
-@group(0) @binding(2)  var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3)  var<uniform> u: Uniforms;
-@group(0) @binding(4)  var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5)  var non_filtering_sampler: sampler;
-@group(0) @binding(6)  var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7)  var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8)  var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9)  var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>,  // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Zoom, y=Power, z=TrapMode, w=TrapScale
-    ripples:     array<vec4<f32>, 50>,
-}
+#include "_prelude.wgsl"
+// zoom_params: x=Zoom, y=Power, z=TrapMode, w=TrapScale
 
 const PI: f32  = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -102,21 +84,25 @@ struct JuliaSample {
     iterNorm: f32,
     interior: f32,
     velTrap:  f32,
+    deNorm:   f32,
 }
 
 fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
-               trapScale: f32, time: f32, treble: f32) -> JuliaSample {
+               trapScale: f32, time: f32, treble: f32, pxSize: f32) -> JuliaSample {
     let maxIter = 128;
     var z        = z0;
     var zPrev    = z0;
     var trapDist = 1e9;
     var velTrap  = 1e9;
     var filAcc   = 0.0;
+    var logDz    = 0.0;   // log|dz/dz0| accumulated in the log domain (never overflows)
     var smoothed = 0.0;
     var i        = 0;
 
     for (i = 0; i < maxIter; i++) {
         zPrev = z;
+        // 2026-11 ideas 1+2: derivative of z^n + c is n z^(n-1); only its magnitude is needed.
+        logDz += log(power) + (power - 1.0) * log(max(length(z), 1e-6));
         z = cpow(z, power) + c;
 
         // Idea 1 — lerp circle↔line↔cross along Trap Mode instead of three bins
@@ -142,6 +128,7 @@ fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
     out.trapDist = trapDist;
     out.velTrap  = velTrap;
     out.iterNorm = f32(i) / f32(maxIter);
+    out.deNorm   = 1e3;
 
     if (i >= maxIter) {
         // Interior — fine filament detail instead of flat color
@@ -151,7 +138,13 @@ fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
         let hue      = fract(trapNorm * 1.5 + fil * 0.7 + time * 0.05);
         let val      = 0.10 + bands * (0.22 + trapNorm * 0.45);
         let velGlow  = exp(-velTrap * 18.0);
-        out.col      = hsv2rgb(hue, 0.85, val) + vec3<f32>(0.85, 0.55, 1.05) * velGlow * 0.22;
+        // 2026-11 Idea 2: interior multiplier banding. logDz / maxIter is the mean log multiplier of
+        // the attracting cycle: 0 at the set's boundary, strongly negative near an attractor, so it
+        // varies smoothly across each Fatou component and bands it around its attractor.
+        let multiplier = clamp(-logDz / f32(maxIter), 0.0, 4.0);
+        let fatouBands = 0.5 + 0.5 * sin(multiplier * 7.0 + time * 0.2);
+        let fatouHue   = fract(hue + multiplier * 0.08);
+        out.col      = hsv2rgb(fatouHue, 0.85, val * (0.7 + 0.6 * fatouBands)) + vec3<f32>(0.85, 0.55, 1.05) * velGlow * 0.22;
         out.smoothed = f32(maxIter);
         out.interior = 1.0;
     } else {
@@ -167,6 +160,12 @@ fn juliaRender(z0: vec2<f32>, c: vec2<f32>, power: f32, trapMode: f32,
         col = mix(col, hsv2rgb(trapHue, 1.0, 1.0), trapGlow * 0.6);
         let velGlow = exp(-velTrap * 18.0);
         col = mix(col, hsv2rgb(fract(trapHue + 0.18), 0.9, 1.0), velGlow * 0.4);
+        // 2026-11 Idea 1: distance-estimate filaments. DE = 0.5 |z| ln|z| / |dz|, measured in pixels;
+        // a thin warm lace hugs the true boundary of the set, including the filaments the
+        // escape-time bands miss.
+        let rEsc = max(length(z), 2.0);
+        let logDe = log(0.5 * rEsc * log(rEsc)) - logDz;
+        out.deNorm = exp(clamp(logDe, -12.0, 12.0)) / max(pxSize, 1e-6);
         out.col      = col;
         out.smoothed = smoothed;
         out.interior = 0.0;
@@ -215,10 +214,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let jRad = 0.35 * (scale / resolution.y);           // sub-pixel in complex units
     let jOff = vec2<f32>(cos(jAng), sin(jAng)) * jRad;
 
-    let sA = juliaRender(baseP + jOff, c, power, trapMode, trapScale, time, treble);
-    let sB = juliaRender(baseP - jOff, c, power, trapMode, trapScale, time, treble);
+    let pxSize = scale / resolution.y;                   // complex units per pixel
+    let sA = juliaRender(baseP + jOff, c, power, trapMode, trapScale, time, treble, pxSize);
+    let sB = juliaRender(baseP - jOff, c, power, trapMode, trapScale, time, treble, pxSize);
 
     var color     = (sA.col + sB.col) * 0.5;
+    let deMin     = min(sA.deNorm, sB.deNorm);
+    // Width calibrated on SwiftShader (128 px, default c): at exp(-de*0.35) over 10 % of pixels were > 0.8,
+    // a flood, not a filament; exp(-de*1.2) keeps the lace to a sub-pixel-to-one-pixel line.
+    let lace      = exp(-deMin * 1.2);
+    color += vec3<f32>(1.0, 0.82, 0.55) * lace * (0.35 + treble * 0.3);
     let trapDist  = min(sA.trapDist, sB.trapDist);
     let interior  = max(sA.interior, sB.interior);
     let velTrap   = min(sA.velTrap, sB.velTrap);
@@ -246,7 +251,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let trapGlow = exp(-trapDist * 3.0);
     let velGlow = exp(-velTrap * 18.0);
-    let alpha = clamp(0.08 + (1.0 - interior) * 0.5 + interior * 0.22 + trapGlow * 0.28 + velGlow * 0.18, 0.05, 0.98);
+    let alpha = clamp(0.08 + (1.0 - interior) * 0.5 + interior * 0.22 + trapGlow * 0.28 + velGlow * 0.18 + lace * 0.2, 0.05, 0.98);
 
     textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
     textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(finalColor), alpha));

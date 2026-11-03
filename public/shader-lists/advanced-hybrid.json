@@ -454,7 +454,7 @@
     "id": "astral-kaleidoscope-julia",
     "name": "Astral Kaleidoscope Julia",
     "url": "shaders/astral-kaleidoscope-julia.wgsl",
-    "description": "Astral Kaleidoscope Julia",
+    "description": "A 4D quaternion Julia set ray-marched through a kaleidoscope fold. The fractal reflects the photo with Schlick Fresnel, and the mirror seams show a dark gap with a thin bevel.",
     "tags": [
       "kaleidoscope",
       "quaternion-julia",
@@ -465,7 +465,9 @@
       "kaleidoscope",
       "quaternion-julia",
       "raymarching",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -510,7 +512,7 @@
     "id": "astral-kaleidoscope-morph",
     "name": "Astral Kaleidoscope + Morphological",
     "url": "shaders/astral-kaleidoscope-morph.wgsl",
-    "description": "Psychedelic kaleidoscope with chromatic separation enhanced by morphological erosion/dilation operations. Morphological gradient creates glowing halos around segments, top-hat transform isolates bright sparkles.",
+    "description": "Kaleidoscope followed by morphological erosion and dilation. A radial line structuring element streaks bright edges along the mirrors, the morphological gradient halos the segments, and lateral chroma fringing appears only where the gradient is strong.",
     "tags": [
       "kaleidoscope",
       "morphological",
@@ -524,7 +526,6 @@
       "advanced-convolution",
       "upgraded-rgba",
       "depth-aware",
-      "mouse-driven",
       "temporal",
       "randomization-safe"
     ],
@@ -819,7 +820,7 @@
     "id": "aurora-rift-2-iridescence",
     "name": "Aurora Rift 2 Iridescence",
     "url": "shaders/aurora-rift-2-iridescence.wgsl",
-    "description": "5-layer volumetric aurora curtains with multi-order thin-film interference, Beer's Law physical transmittance, geomagnetic turbulence, ACES tone mapping, and atmospheric luminescence persistence.",
+    "description": "5-layer volumetric aurora curtains with a sharp lower border and ray-striated upward glow, brighter where the curtains fold, multi-order thin-film interference, Beer's Law physical transmittance, geomagnetic turbulence, ACES tone mapping, and atmospheric luminescence persistence.",
     "tags": [
       "aurora-rift-2",
       "thin-film-interference",
@@ -837,7 +838,8 @@
       "mouse-driven",
       "audio-reactive",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -887,7 +889,7 @@
     "id": "aurora-rift-iridescence",
     "name": "Aurora Rift Iridescence",
     "url": "shaders/aurora-rift-iridescence.wgsl",
-    "description": "Atmospheric curl-flow aurora blended with thin-film interference. Pattern density drives soap-bubble and oil-slick film thickness, producing flowing iridescence with ACES tone mapping and continuous plasma persistence.",
+    "description": "Atmospheric curl-flow aurora blended with thin-film interference. The film drains under gravity into horizontal interference bands (thin black film at the top) and its thickness streams along the flow, with ACES tone mapping and continuous plasma persistence.",
     "tags": [
       "iridescence",
       "thin-film",
@@ -906,7 +908,8 @@
       "HDR",
       "audio-reactive",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1005,12 +1008,14 @@
     "id": "bio-touch-em",
     "name": "Bio Touch EM",
     "url": "shaders/bio-touch-em.wgsl",
-    "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors. Click ripples spawn orbiting secondary charges.",
+    "description": "Bio-luminescent cellular structures distorted by electromagnetic field lines. Magnetic field rotates cell glow colors, click ripples spawn orbiting secondary charges, and strong fields open polar electroporation pores with refractory memory.",
     "features": [
       "mouse-driven",
       "field-simulation",
       "organic",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1048,7 +1053,9 @@
       "electromagnetic",
       "glow",
       "interactive"
-    ]
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA (ion-channel refractory memory).",
+    "updated": true
   },
   {
     "id": "bioluminescent-blackbody",
@@ -1351,12 +1358,14 @@
       "emergent",
       "interactive",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "features": [
       "mouse-driven",
       "temporal",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2003,7 +2012,7 @@
     "id": "chromatic-crawler-structure",
     "name": "Chromatic Crawler Structure",
     "url": "shaders/chromatic-crawler-structure.wgsl",
-    "description": "Color-swapping crawling infection guided by image structure tensor eigenvectors, featuring Cauchy tendril bifurcation, photoelastic stress birefringence, and bioluminescent photon pulses.",
+    "description": "Colour-swapping crawl guided by image structure-tensor eigenvectors: tendrils integrate along the flow, Harris corners nucleate bioluminescent spores, regions hold their channel swap for about half a second, and edge stress shows as photoelastic fringes.",
     "workgroup_size": [
       16,
       16,
@@ -2023,7 +2032,8 @@
       "photoelastic-birefringence",
       "audio-reactive",
       "mouse-driven",
-      "aces-tone-mapping"
+      "aces-tone-mapping",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2068,7 +2078,7 @@
     "id": "chromatic-focus-coupled",
     "name": "Chromatic Focus Coupled",
     "url": "shaders/chromatic-focus-coupled.wgsl",
-    "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid that twists and blurs chromatic channels. Click ripples inject fluid bursts.",
+    "description": "Chromatic aberration DOF with fluid-coupled distortion. Mouse movement stirs a viscous fluid whose small swirls are kept alive by vorticity confinement, and the dye edge acts as a meniscus lens that refracts and glints. Click ripples inject fluid bursts.",
     "features": [
       "mouse-driven",
       "fluid-simulation",
@@ -2121,7 +2131,7 @@
     "id": "chromatic-focus-guided",
     "name": "Chromatic Focus Guided",
     "url": "shaders/chromatic-focus-guided.wgsl",
-    "description": "Seven-band Cauchy chromatic dispersion with depth-guided filtering to eliminate cross-boundary edge bleeding.",
+    "description": "Seven-band Cauchy chromatic dispersion with depth-guided filtering. Dispersion is gated at depth edges so fringes stop at silhouettes, and the guided filter's detail is put back inside the focus disc.",
     "tags": [
       "chromatic-focus",
       "guided-filter-depth",
@@ -2183,7 +2193,7 @@
     "id": "chromatic-folds-bilateral",
     "name": "Chromatic Folds Bilateral",
     "url": "shaders/chromatic-folds-bilateral.wgsl",
-    "description": "Chromatic Folds Bilateral",
+    "description": "Chromatic folds on a joint colour and depth bilateral neighbourhood. Flat regions fold the edge-preserved base, resonance waves ring at preserved boundaries, and split-spectrum pivots open outward from the cursor.",
     "tags": [
       "chromatic-folds",
       "bilateral-dream",
@@ -2844,7 +2854,7 @@
     "id": "cyber-organic-ecosystem",
     "name": "Cyber Organic Ecosystem",
     "url": "shaders/cyber-organic-ecosystem.wgsl",
-    "description": "Cyber Organic Ecosystem",
+    "description": "Scans the image to reveal a living multi-species RGBA ecosystem beneath. The scanner beam inoculates fresh life and nutrients, organic FBM warp bends veins and refracts the reveal rim, and mouse nurtures the colony.",
     "tags": [
       "mouse-driven",
       "temporal",
@@ -2855,7 +2865,8 @@
       "mouse-driven",
       "temporal",
       "rgba-state-machine",
-      "organic"
+      "organic",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2894,7 +2905,9 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = s1, s2, resourceLevel, toxin. ACES display only.",
+    "updated": true
   },
   {
     "id": "cyber-rain-em",
@@ -4194,7 +4207,8 @@
       "edge-detection",
       "electromagnetic-field",
       "mouse-driven",
-      "chromatic"
+      "chromatic",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4420,7 +4434,9 @@
       "mouse-driven",
       "blue-noise",
       "pointillism",
-      "stipple"
+      "stipple",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4762,7 +4778,7 @@
     "id": "fractal-boids-field-coupled",
     "name": "Fractal Boids Field + Fluid Coupling",
     "url": "shaders/fractal-boids-field-coupled.wgsl",
-    "description": "Flocking behavior on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples spawn shockwaves through the flock.",
+    "description": "Flocking on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples scatter the flock (boids flee the front); bunched-up boids glow with a density halo.",
     "features": [
       "advanced-hybrid",
       "boids",
@@ -4772,7 +4788,8 @@
       "interactive",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4832,7 +4849,7 @@
     "id": "fractal-boids-field",
     "name": "Fractal Boids Field",
     "url": "shaders/fractal-boids-field.wgsl",
-    "description": "Flocking behavior on a fractal vector field. Swarms of particles flowing through organic fractal currents.",
+    "description": "Flocking on a fractal vector field. Boid trails curve with the current and linger: the Trail Persistence slider sets how fast a trail evaporates from the history layer. Audio rides the flow strength.",
     "features": [
       "advanced-hybrid",
       "boids",
@@ -4840,7 +4857,9 @@
       "gpu-particles",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba",
+      "temporal"
     ],
     "params": [
       {
@@ -5398,7 +5417,7 @@
     "id": "gen-audio-spirograph-julia",
     "name": "Audio Spirograph Julia",
     "url": "shaders/gen-audio-spirograph-julia.wgsl",
-    "description": "Audio-reactive spirograph curves that unfold into mouse-driven Julia set fractals. Each harmonic ring breathes with audio while the Julia constant morphs via mouse position.",
+    "description": "Audio-reactive spirograph rings unfold into mouse-driven Julia fractals. Each ring's pen drives its own Julia constant and leaves a fading ink tail; hypotrochoid and epitrochoid families alternate by harmonic.",
     "tags": [
       "audio-reactive",
       "fractal",
@@ -5521,7 +5540,8 @@
       "crystal-growth",
       "phase-field",
       "iridescence",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5812,7 +5832,7 @@
     "id": "gen-xeno-botanical-ecosystem",
     "name": "Xeno Botanical Ecosystem",
     "url": "shaders/gen-xeno-botanical-ecosystem.wgsl",
-    "description": "Botanical flora patterns host a living RGBA ecosystem simulation. Species colonize branch structures, competing for photosynthetic resources while toxins accumulate in dense growth regions.",
+    "description": "Botanical flora patterns host a living RGBA ecosystem simulation. Species colonize branch structures with vascular sap transport, fruiting sporangia nodes, and toxin leaf chlorosis.",
     "tags": [
       "botanical",
       "ecosystem",
@@ -5826,7 +5846,8 @@
       "mouse-driven",
       "temporal",
       "audio-reactive",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5861,7 +5882,9 @@
         "max": 1,
         "step": 0.01
       }
-    ]
+    ],
+    "feedbackPacking": "A/C = s1, s2, resourceVal, toxin. ACES display only.",
+    "updated": true
   },
   {
     "id": "glass-bead-curtain-iridescence",
@@ -6326,7 +6349,7 @@
     "id": "gravity-well-em",
     "name": "Gravity Well Em",
     "url": "shaders/gravity-well-em.wgsl",
-    "description": "Catalog entry for Gravity Well Em.",
+    "description": "A gravitational well under the cursor: lensing with chromatic dispersion, a photon ring, frame-drag hue shear, a dimmer counter-image inside the Einstein ring, and gravitational redshift toward the core, with electromagnetic fields from the mouse.",
     "tags": [
       "gravitational-lensing",
       "electromagnetic-fields",
@@ -6978,7 +7001,7 @@
     "id": "hyperbolic-dreamweaver-julia",
     "name": "Hyperbolic Dreamweaver Julia",
     "url": "shaders/hyperbolic-dreamweaver-julia.wgsl",
-    "description": "Hyperbolic Dreamweaver Julia",
+    "description": "A 4D quaternion Julia set raymarched through a Poincare-disk view. Rays follow hyperbolic perspective so the scene compresses toward the rim, the input photo shows through the surface refracted by Snell's law with a chromatic split, and horocycle fog thickens toward the edge.",
     "tags": [
       "hyperbolic-geometry",
       "quaternion-julia",
@@ -7501,14 +7524,15 @@
     "id": "kimi-flock-symphony-em",
     "name": "Kimi Flock Symphony Em",
     "url": "shaders/kimi-flock-symphony-em.wgsl",
-    "description": "Kimi Flock Symphony Em",
+    "description": "A swarm of 2048 glowing particles bent by electric and magnetic fields from the mouse. Particles carry a charge sign, so the swarm splits into two fluids around the cursor, and each streaks along its own drift direction.",
     "tags": [
       "flocking-particles",
       "electromagnetic-fields"
     ],
     "features": [
       "flocking-particles",
-      "electromagnetic-fields"
+      "electromagnetic-fields",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -8017,16 +8041,14 @@
     "id": "multi-fractal-compositor",
     "name": "Multi-Fractal Compositor",
     "url": "shaders/multi-fractal-compositor.wgsl",
-    "description": "Smoothly blend between multiple fractal types. Mandelbrot, Julia, Burning Ship, and Newton fractals.",
+    "description": "Layered zoom tunnel of the input image: five staggered octave layers form a self-similar Droste-style zoom that composites into the picture, with zoom-lens chroma fringing, flow-noise domain warp, depth edge glow and fog. (It is not a Mandelbrot, Julia or Newton blend, despite the name.)",
     "features": [
       "advanced-hybrid",
-      "mandelbrot",
-      "julia",
-      "burning-ship",
-      "smooth-blend",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "layered-zoom",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8080,7 +8102,7 @@
     "id": "nano-assembler-crystal",
     "name": "Nano Assembler Crystal",
     "url": "shaders/nano-assembler-crystal.wgsl",
-    "description": "Nanobot grid that phase-field freezes into an oriented crystal. Orientation hex-locks when solid; latent heat lights a recalescence glow on the freeze front.",
+    "description": "Nanobot grid that phase-field freezes into an oriented crystal. Orientation hex-locks when solid; six-fold interface anisotropy, tip sidebranch noise and domain-boundary seams shape a polycrystal; latent heat lights a recalescence glow on the freeze front.",
     "tags": [
       "nano-assembler",
       "crystal",
@@ -8134,7 +8156,7 @@
         "step": 0.01
       }
     ],
-    "feedbackPacking": "A/C = phase, temperature, orientation, impurity. ACES display only.",
+    "feedbackPacking": "A/C = phase, temperature, orientation, impurity + 2.0 (ownership offset). ACES display only.",
     "updated": true
   },
   {
@@ -9074,7 +9096,7 @@
     "id": "spec-prismatic-dispersion",
     "name": "Prismatic Dispersion",
     "url": "shaders/spec-prismatic-dispersion.wgsl",
-    "description": "4-band spectral dispersion through glass using Cauchy's equation. Treats RGBA as physical wavelengths with refractive index variation, reconstructing color via CIE color matching.",
+    "description": "4-band spectral dispersion through glass using Cauchy's equation. The spectral reconstruction is white-balanced so white stays white, and an anti-reflective coating tints the internal-reflection ghosts of bright highlights.",
     "tags": [
       "spectral",
       "prismatic",

@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, mach-band, blackbody-spectrum
 //  Complexity: High
 //  Scientific: Multi-scale Sobel and directional second-derivative enhancement approximate Mach bands for perceptual edge glow.
-//  Upgraded: 2026-09-11
-//  Ideas: inverse-square spotlight; Kelvin isotherm bands
+//  Upgraded: 2026-09-11, 2026-11-02
+//  Ideas: inverse-square spotlight; Kelvin isotherm bands; scale agreement; Mach trough
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -199,9 +199,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let currentPulse = pow(max(currentWave, 0.0), 3.0);
   // Only modulate where there is an actual edge; keep a bright baseline so the tube
   // never goes fully dark between pulses (neon gas keeps a residual glow).
-  let currentMod = mix(1.0, 0.45 + currentPulse * 1.7, edgeStrength);
-  let glow = spectral * edgeSignal * neonGain * (0.28 + 0.72 * depthReveal + 0.55 * bass) * currentMod;
-  let fineDetail = spectral * scale1.magnitude * treble * 0.45;
+  // ── Idea 2: Mach trough ──
+  // Lateral inhibition notches the racing current instead of letting it paint the dark band.
+  let trough = smoothstep(0.02, 0.4, darkBand);
+  let currentMod = mix(1.0, 0.45 + currentPulse * 1.7, edgeStrength) * (1.0 - trough * 0.55);
+  // ── Idea 1: scale agreement ──
+  // Speckle is strong only at the finest Sobel. A contour is strong at scale 1 and scale 3.
+  let agree = smoothstep(0.015, 0.22, min(scale1.magnitude, scale3.magnitude));
+  let speckle = smoothstep(0.02, 0.18, scale1.magnitude) * (1.0 - smoothstep(0.008, 0.06, scale3.magnitude));
+  let glow = spectral * edgeSignal * neonGain * (0.28 + 0.72 * depthReveal + 0.55 * bass) * currentMod * mix(0.5, 1.0, agree);
+  let fineDetail = spectral * scale1.magnitude * treble * 0.45 * (1.0 - speckle * 0.7);
   let halo = smoothstep(0.02, 0.45, combinedEdge) * smoothstep(0.0, 0.35, darkBand) * 0.75;
   let fogLift = spectral * depthReveal * 0.06 * (1.0 - depth);
 

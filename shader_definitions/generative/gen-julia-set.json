@@ -2,7 +2,7 @@
   "id": "gen-julia-set",
   "name": "Julia Set \u2014 Orbit Trap",
   "url": "shaders/gen_julia_set.wgsl",
-  "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth (continuous) iteration count \u03bc=i\u2212log\u2082(log\u2082|z|), multi-trap orbit colouring (circle, line, cross traps), and animated Julia parameter c orbiting a Mandelbrot cardioid boundary. Audio-driven trap scale.",
+  "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth iteration count, circle/line/cross orbit traps and a velocity trap, c orbiting a cardioid. A distance estimate lights a thin lace along the set's true boundary, and the interior bands around each attracting cycle. Audio-driven trap scale.",
   "features": [
     "audio-reactive",
     "procedural",

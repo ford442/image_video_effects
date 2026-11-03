@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, edge-stylization
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: edge-magnitude ink weight; cel hold-flats
+//  Upgraded: 2026-09-08, 2026-11-02
+//  Ideas: edge-magnitude ink weight; cel hold-flats; double weight; cel boil
 //  A packing: telemetry RGBA (outline, motion, mouse, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn luminance(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
@@ -91,7 +72,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let brushStroke = smoothstep(0.0, 0.5, sin(brushUV.x * 120.0)) * smoothstep(0.0, 0.15, abs(sin(brushUV.y * 60.0)));
   let taperedLine = brushStroke * motionStrength * inkWeight * (0.6 + 0.4 * sin(brushUV.x * 30.0 + time * 3.0));
 
-  let posterized = floor(src.rgb * levels) / max(levels - 1.0, 1.0);
+  // ── Idea 2: cel boil — flats hop one pixel on a 12-per-second hold; the line stays put
+  let holdFlat = 1.0 - smoothstep(0.0, edgeThreshold * 2.2, edge);
+  let celFrame = floor(time * 12.0);
+  let boilOff = vec2<f32>(
+    hash12(vec2<f32>(celFrame, 2.3)) - 0.5,
+    hash12(vec2<f32>(celFrame, 5.1)) - 0.5
+  ) * px * 2.0;
+  let boiled = textureSampleLevel(readTexture, u_sampler, clamp(uv + boilOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let celSrc = mix(src.rgb, boiled, holdFlat);
+  let posterized = floor(celSrc * levels) / max(levels - 1.0, 1.0);
   let mouseMask = 1.0 - smoothstep(0.0, 0.5, length((uv - mouse) * vec2<f32>(aspect, 1.0)));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -108,7 +98,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let chromaticSrc = vec3<f32>(chromaSepR, src.g, chromaSepB);
 
   var toon = mix(chromaticSrc, posterized, shadeMix);
-  let holdFlat = 1.0 - smoothstep(0.0, edgeThreshold * 2.2, edge);
   toon = mix(toon, posterized, holdFlat * shadeMix * 0.55);
   let bleedEdge = smoothstep(0.02, 0.08, edge) * (1.0 - smoothstep(0.08, 0.18, edge));
   toon = mix(toon, toon * (1.0 - inkDensity * 0.22) + inkTint * 0.12, bleedEdge * 0.4);
@@ -118,10 +107,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseInk = mouseMask * smoothstep(0.4, 0.6, hash12(floor(uv * 70.0) + vec2<f32>(time * 4.0, 0.0))) * 0.2;
 
   let filmGrain = (hash12(uv * 600.0 + fract(time) * 100.0) - 0.5) * 0.035;
-  var finalColor = mix(handDrawn, inkTint, taperedLine * inkDensity * 0.8) + edgeGlow * taperedLine * mouseMask * (0.06 + audio.x * 0.2) + mouseInk * inkTint;
+  // ── Idea 1: double weight — a dry-brush halo under the existing tapered core
+  let wideStroke = smoothstep(-0.4, 0.2, sin(brushUV.x * 120.0)) * smoothstep(0.0, 0.22, abs(sin(brushUV.y * 40.0)));
+  let dryBrush = wideStroke * motionStrength * inkWeight * 0.42;
+  let underDrawn = mix(handDrawn, inkTint * 0.72, clamp(dryBrush * inkDensity, 0.0, 1.0));
+  var finalColor = mix(underDrawn, inkTint, taperedLine * inkDensity * 0.8) + edgeGlow * taperedLine * mouseMask * (0.06 + audio.x * 0.2) + mouseInk * inkTint;
   finalColor = mix(finalColor, parallaxSrc * 0.5 + finalColor * 0.5, depth * 0.3);
   finalColor = finalColor + filmGrain;
-  finalColor = acesToneMap(finalColor * 1.05);
+  finalColor = acesToneMap(clamp(finalColor * 1.05, vec3<f32>(0.0), vec3<f32>(4.0)));
 
   let outlineConfidence = clamp(taperedLine + motionStrength * 0.5 + bleedEdge * 0.3, 0.0, 1.0);
   let finalAlpha = clamp(outlineConfidence * motionStrength * depth + src.a * 0.12 + bleedEdge * 0.15, 0.07, 0.95);

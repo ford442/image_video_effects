@@ -990,13 +990,13 @@
     "id": "hybrid-sdf-plasma",
     "name": "Hybrid SDF Plasma Field",
     "url": "shaders/hybrid-sdf-plasma.wgsl",
-    "description": "Raymarched SDF scene with plasma noise displacement and dynamic palette-based coloring",
+    "description": "Sobel ink outlines and a 45-degree halftone screen over a posterized photo, with paper-tooth ink and a pointer spotlight",
     "features": [
       "hybrid",
-      "raymarching",
-      "sdf",
-      "plasma-noise",
-      "palette-cycling",
+      "ink-edge",
+      "halftone",
+      "posterize",
+      "mouse-driven",
       "randomization-safe"
     ],
     "params": [

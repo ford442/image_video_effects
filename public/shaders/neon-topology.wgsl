@@ -9,8 +9,8 @@
 //    - Wired the mouse: lens bumps the depth field under the cursor.
 //    - Honest sliders: y = Height Scale (contour field), w = Glow Strength.
 //    - Click contour quakes: ripples[] drop decaying rings into the topology.
-//  Upgraded: 2026-09-11
-//  Ideas: slope hachures; hypsometric band fill
+//  Upgraded: 2026-09-11, 2026-11-02
+//  Ideas: slope hachures; hypsometric band fill; index gap; slope shade
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -133,8 +133,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bgSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let bg = bgSample.rgb;
     let bgGray = vec3<f32>(dot(bg, vec3<f32>(0.299, 0.587, 0.114))) * 0.4;
-    let emission = neonColor * (lineWithMajor + phantomLine + quakeGlow * 0.6 + rim + hach) * intensity;
-    let hypoFill = hypo * between * 0.18 * intensity;
+    // ── Idea 1: index gap ──
+    // Every major contour breaks along its tangent, the way an index line leaves a label slot.
+    let slopeTangent = vec2<f32>(-slopeDir.y, slopeDir.x);
+    let slot = smoothstep(0.14, 0.0, abs(fract(dot(uv * resolution, slopeTangent) * 0.032) - 0.5));
+    let indexedLine = lineWithMajor * (1.0 - major * slot * 0.88);
+    // ── Idea 2: slope shade ──
+    // The hypsometric fill darkens where the depth gradient is steep.
+    let slopeShade = 1.0 - clamp(gLen * 5.5, 0.0, 0.7);
+    let emission = neonColor * (indexedLine + phantomLine + quakeGlow * 0.6 + rim + hach) * intensity;
+    let hypoFill = hypo * between * 0.18 * intensity * slopeShade;
     let final_color_raw = mix(bgGray + emission + hypoFill, vec3<f32>(0.1, 0.15, 0.25), haze);
     let aa = 2.51; let bb = 0.03; let cc = 2.43; let dd = 0.59; let ee = 0.14;
     let final_color = clamp((final_color_raw * (aa * final_color_raw + bb)) / (final_color_raw * (cc * final_color_raw + dd) + ee), vec3<f32>(0.0), vec3<f32>(1.0));

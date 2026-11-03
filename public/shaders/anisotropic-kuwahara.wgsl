@@ -2,31 +2,29 @@
 //  anisotropic-kuwahara
 //  Category: artistic
 //  Features: upgraded-rgba, depth-aware
-//  Upgraded: 2026-03-22
+//  Upgraded: 2026-11-01 (prev 2026-03-22)
+//  Ideas: variance-weighted soft sector blend; coherence-gated bristle drag marks in the flow frame
+//  A packing: raw flow field (flow.xy, |flow|) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // structure tensor
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>; // temp
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=WindowSize, y=Anisotropy, z=Sharpness, w=FlowStrength
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=WindowSize, y=Anisotropy, z=Sharpness, w=FlowStrength
 
 const PI: f32 = 3.14159265359;
+
+fn hash21(p: vec2<f32>) -> f32 {
+  var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+
+fn vnoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
+}
 
 // Compute luminance
 fn luminance(c: vec3<f32>) -> f32 {
@@ -105,6 +103,8 @@ fn anisotropicKuwahara(uv: vec2<f32>, texelSize: vec2<f32>, flow: vec2<f32>, win
   
   var bestColor = vec3<f32>(0.0);
   var minVariance = 1e10;
+  var softSum = vec3<f32>(0.0);
+  var softW = 0.0;
   
   // Sample in each sector
   for (var sector = 0; sector < numSectors; sector = sector + 1) {
@@ -148,10 +148,14 @@ fn anisotropicKuwahara(uv: vec2<f32>, texelSize: vec2<f32>, flow: vec2<f32>, win
         minVariance = variance;
         bestColor = mean;
       }
+      // Idea 1 — soft sector blend: low-variance sectors dominate, near-ties share the pixel
+      let sectorW = 1.0 / (1.0 + pow(sqrt(max(variance, 0.0)) * 14.0, 6.0));
+      softSum = softSum + mean * sectorW;
+      softW = softW + sectorW;
     }
   }
   
-  return bestColor;
+  return mix(bestColor, softSum / max(softW, 1e-5), 0.7);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -227,6 +231,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let strokeTexture = strokeNoise * 0.02;
   finalColor = finalColor + vec3<f32>(strokeTexture);
   
+  // Idea 2 — bristle drag marks: hair streaks run along the flow where the tensor is coherent
+  let flowLen = max(length(flow), 1e-4);
+  let fdir = flow / flowLen;
+  let coherence = clamp((flowLen - 0.5) * 2.0, 0.0, 1.0);
+  let pxp = vec2<f32>(coord) * vec2<f32>(1.0, 1.0);
+  let along = dot(pxp, fdir);
+  let across = dot(pxp, vec2<f32>(-fdir.y, fdir.x));
+  let treble = plasmaBuffer[0].z;
+  let bristle = vnoise(vec2<f32>(along * 0.06, across * 0.9)) - 0.5;
+  finalColor = finalColor + vec3<f32>(bristle * 0.07 * coherence * (0.4 + anisotropy * 0.3) * (1.0 + treble * 0.6));
+
   // Saturation boost for painterly look
   let gray = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
   finalColor = mix(vec3<f32>(gray), finalColor, 1.2);

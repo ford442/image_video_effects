@@ -45,6 +45,29 @@ RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))
 RATE_LIMIT_PATHS = [path.strip() for path in os.environ.get("RATE_LIMIT_PATHS", "/api").split(",") if path.strip()]
 RATE_LIMIT_IP_HEADER = os.environ.get("RATE_LIMIT_IP_HEADER", "X-Forwarded-For")
 
+# --- WEBHOOK WRITES (upload tokens) ---
+# Server-only HMAC key for POST /upload-token + POST /image-effects. Never
+# shipped to the browser, never logged or returned. Unset/short => the webhook
+# endpoints answer 503. Generate with: openssl rand -hex 32
+WEBHOOK_SIGNING_SECRET = os.environ.get("WEBHOOK_SIGNING_SECRET", "")
+WEBHOOK_SECRET_MIN_LENGTH = 32
+WEBHOOK_TOKEN_TTL_SECONDS = 60
+# Requests per RATE_LIMIT_WINDOW per client IP across both webhook routes
+# (separate, stricter bucket than the /api one).
+WEBHOOK_RATE_LIMIT_REQUESTS = int(os.environ.get("WEBHOOK_RATE_LIMIT_REQUESTS", "30"))
+WEBHOOK_MAX_BODY_BYTES = int(os.environ.get("WEBHOOK_MAX_BODY_BYTES", str(25 * 1024 * 1024)))
+# Browser origins allowed to mint/use tokens, in addition to the explicit
+# (non-"*") entries of ALLOWED_ORIGINS. Comma-separated.
+WEBHOOK_EXTRA_ORIGINS = [o.strip() for o in os.environ.get("WEBHOOK_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+# Single-use nonces live in their own Redis logical DB. The response cache shares
+# REDIS_URL/REDIS_DB and `state.clear_cache_for_type` ends in aiocache's
+# `clear()`, which is FLUSHDB: nonces kept there would be wiped by any shader
+# save, silently re-opening the replay window.
+WEBHOOK_REDIS_DB = int(os.environ.get("WEBHOOK_REDIS_DB", str(REDIS_DB + 1)))
+# The client's STORAGE_VPS_URL defaults to https://<host>/webhook, so the routes
+# are served both bare and under this prefix.
+WEBHOOK_PATH_PREFIXES = ("/upload-token", "/image-effects", "/webhook")
+
 # --- MEDIA STREAMING CONFIGURATION ---
 GCS_SIGNED_URL_MAX_SECONDS = 604800
 GCS_SIGNED_URL_EXPIRATION_SECONDS: int = min(

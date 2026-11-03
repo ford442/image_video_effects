@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, line-art
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: roulette-wheel stipple; burin taper from |grad|
+//  Upgraded: 2026-09-08, 2026-11-02
+//  Ideas: roulette-wheel stipple; burin taper from |grad|; foul bite; wipe sheen
 //  A packing: telemetry RGBA (ink, hatch, burin, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn luminance(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
@@ -101,7 +82,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let roulette = (1.0 - smoothstep(0.18, 0.42, length(rouletteCell))) * smoothstep(0.15, 0.7, 1.0 - luma);
 
   let pressure = 1.0 + audio.x * 0.5;
-  let ink = clamp((1.0 - luma) * pressure * 1.15 + combinedHatch * 0.28 - stipple * 0.5 + burr * 0.08 + roulette * 0.22, 0.0, 1.0);
+  // ── Idea 1: foul bite — acid pits in the open copper, away from the burin lines
+  let openPlate = 1.0 - smoothstep(0.02, 0.2, gradMag);
+  let pit = step(0.93, hash12(floor(uv * 220.0))) * openPlate * (0.4 + (1.0 - luma) * 0.45);
+  let ink = clamp((1.0 - luma) * pressure * 1.15 + combinedHatch * 0.28 - stipple * 0.5 + burr * 0.08 + roulette * 0.22 + pit * 0.7, 0.0, 1.0);
 
   let mouseDelta = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let burin = 1.0 - smoothstep(0.0, 0.5, length(mouseDelta));
@@ -129,7 +113,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let poolInk = smoothstep(0.75, 1.0, ink) * 0.12;
   var finalColor = mix(warmPaper, inkColor, clamp(ink + burinCut, 0.0, 1.0));
   finalColor = mix(finalColor, deepBlack, poolInk);
-  finalColor = acesToneMap(finalColor * 1.1);
+  // ── Idea 2: wipe sheen — the rag leaves a grazing highlight on the wiped ground
+  let wipe = pow(clamp(0.5 + 0.5 * sin(dot(uv * vec2<f32>(aspect, 1.0), crossDir) * 96.0), 0.0, 1.0), 12.0);
+  let wipeSheen = wipe * (1.0 - clamp(ink + burinCut, 0.0, 1.0)) * 0.22;
+  finalColor = finalColor + vec3<f32>(0.95, 0.9, 0.78) * wipeSheen;
+  finalColor = acesToneMap(clamp(finalColor * 1.1, vec3<f32>(0.0), vec3<f32>(4.0)));
 
   let lineDensityAlpha = clamp(ink * 0.85 + combinedHatch * 0.35 + burinCut * 0.5, 0.0, 1.0);
   let inkSat = length(inkColor);

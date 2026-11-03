@@ -2,9 +2,10 @@
   "id": "chromatic-manifold-2",
   "name": "Chromatic Manifold V2",
   "url": "shaders/chromatic-manifold-2.wgsl",
-  "description": "Enhanced 4D topological color manifold.",
+  "description": "Enhanced 4D topological colour manifold. Folds pivot differently on depth ridges and valleys, fold memory persists in C.a, and the colour history is carried along the fold flow.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

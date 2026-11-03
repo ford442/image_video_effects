@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: upgraded-rgba, edge-detect, neon, audio-reactive, mouse-driven
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: band-hold flats; Sobel-ridge neon
+//  Upgraded: 2026-09-09, 2026-11-02
+//  Ideas: band-hold flats; Sobel-ridge neon; cel filament; tangent ink waver
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -83,10 +83,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gx = (tl + 2.0 * ml + bl) - (tr + 2.0 * mr + br);
   let gy = (tl + 2.0 * tm + tr) - (bl + 2.0 * bm + br);
   let edgeMag = length(gx) + length(gy);
+  let edgeMaskEarly = smoothstep(edgeThreshold * 0.4, edgeThreshold, edgeMag);
+  let lgx = dot(gx, vec3<f32>(0.299, 0.587, 0.114));
+  let lgy = dot(gy, vec3<f32>(0.299, 0.587, 0.114));
+  let tangentLen = max(length(vec2<f32>(lgx, lgy)), 1e-4);
+  let inkTangent = vec2<f32>(-lgy, lgx) / tangentLen;
 
   let lum = dot(mc.rgb, vec3<f32>(0.299, 0.587, 0.114));
   // Idea 1: band-hold flats — FBM dies in the band interior so cel cells stay flat.
-  let noiseBoundRaw = fbm(uv * 8.0 + time * 0.2) * 0.08;
+  // ── Idea 2: tangent ink waver ──
+  // That same FBM slides along the contour, so the poster edge wobbles along the line.
+  let waverUV = uv + inkTangent * (0.012 * edgeMaskEarly);
+  let noiseBoundRaw = fbm(waverUV * 8.0 + time * 0.2) * 0.08;
   let bandProbe = fract(lum * levels);
   let holdFlat = smoothstep(0.18, 0.0, abs(bandProbe - 0.5));
   let noiseBound = noiseBoundRaw * (1.0 - holdFlat);
@@ -98,7 +106,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let snap = floor(mc.rgb * levels + vec3<f32>(0.0001)) / levels;
   col = mix(col, snap, holdFlat * 0.45);
 
-  let edgeMask = smoothstep(edgeThreshold * 0.4, edgeThreshold, edgeMag);
+  let edgeMask = edgeMaskEarly;
   // Idea 2: ridge neon — glow is a thin Sobel-magnitude ridge, not isotropic bloom.
   let ridge = smoothstep(edgeThreshold, edgeThreshold * 1.7, edgeMag)
             * (1.0 - smoothstep(edgeThreshold * 1.7, edgeThreshold * 3.2, edgeMag));
@@ -107,6 +115,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let hdrEdge = neonColor * glowIntensity * (1.0 + treble * 0.6);
   col = mix(col, hdrEdge, ridge * glowIntensity);
+
+  // ── Idea 1: cel filament ──
+  // The posterize step is a luma level set. Light that boundary beside the Sobel ridge.
+  let celDist = min(bandProbe, 1.0 - bandProbe);
+  let celEdge = smoothstep(0.055, 0.0, celDist);
+  col = col + neonColor * celEdge * glowIntensity * (0.35 + focusFactor * 0.2);
 
   let bright = smoothstep(0.4, 0.9, lum);
   col = col + neonColor * bright * ridge * glowIntensity * 0.4;
@@ -122,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = acesToneMap(col * 1.2);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let alpha = ridge * (0.6 + 0.4 * depth) + mc.a * 0.3 + edgeMask * 0.15;
+  let alpha = ridge * (0.6 + 0.4 * depth) + mc.a * 0.3 + edgeMask * 0.15 + celEdge * 0.2;
 
   textureStore(writeTexture, coords, vec4<f32>(col, clamp(alpha, 0.0, 1.0)));
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));

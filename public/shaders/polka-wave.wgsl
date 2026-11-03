@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, cmyk-halftone, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: offset-print dot gain; screen grid rides the wave
+//  Upgraded: 2026-09-08, 2026-11-02
+//  Ideas: offset-print dot gain; screen grid rides the wave; crest squash; rosette eye
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -77,6 +77,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var dotAccum = vec3<f32>(0.0);
   var maskAccum = 0.0;
+  var eye = 1.0;
 
   for (var i: i32 = 0; i < 4; i = i + 1) {
     let angle = angles[i];
@@ -90,7 +91,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sampleCol = textureSampleLevel(readTexture, u_sampler, sampleUv, 0.0);
     let sampleBright = dot(sampleCol.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-    let distCell = length(cellUv);
+    // ── Idea 1: crest squash — dots oval along the wave the grid is already riding
+    let crest = clamp(ripple * 0.5 + 0.5, 0.0, 1.0);
+    let squash = 1.0 + crest * 0.55 * amp;
+    let distCell = length(vec2<f32>(cellUv.x, cellUv.y / max(squash, 1.0)));
     let gain = 1.0 + (1.0 - sampleBright) * 0.38;
     let dotRadius = sampleBright * 0.45 * bass_env(bass, mids) * gain;
     let noiseAmt = (treble * 0.05) * sin(time * 10.0 + cellId.x * 3.0 + cellId.y * 7.0);
@@ -103,12 +107,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inkCol = select(vec3<f32>(0.0, 1.0, 1.0), select(vec3<f32>(1.0, 0.0, 1.0), select(vec3<f32>(1.0, 1.0, 0.0), vec3<f32>(0.0, 0.0, 0.0), i == 2), i == 1), i == 0);
     dotAccum = dotAccum + inkCol * invertMask * chVal;
     maskAccum = maskAccum + invertMask * chVal;
+    eye = eye * invertMask;
   }
 
   let paperWhite = vec3<f32>(0.96, 0.96, 0.94);
   let rosette = sin((uv.x + uv.y) * density * 0.4 - time * speed) * sin((uv.x - uv.y) * density * 0.35 + time * speed * 0.7);
   let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + rosette * 3.0 + time);
-  let halftoneRGB = paperWhite - dotAccum + spectral * (abs(rosette) * 0.07 + clickFront * 0.18);
+  var halftoneRGB = paperWhite - dotAccum + spectral * (abs(rosette) * 0.07 + clickFront * 0.18);
+  // ── Idea 2: rosette eye — where all four plates land, the center is paper
+  let eyeHole = smoothstep(0.2, 0.62, eye);
+  halftoneRGB = mix(halftoneRGB, paperWhite, eyeHole * 0.75);
   let mapped = acesTonemap(clamp(halftoneRGB, vec3<f32>(0.0), vec3<f32>(4.0)));
   let halftoneAlpha = clamp(maskAccum + brightness * 0.3 + mids * 0.1, 0.0, 1.0);
   let finalColor = vec4<f32>(mapped, halftoneAlpha);

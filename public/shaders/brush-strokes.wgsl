@@ -3,32 +3,14 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-10-04
-//  Ideas: bristle combing along the stroke tangent; dry-brush skips at speed; raking light on impasto grooves
+//  Upgraded: 2026-11-01 (prev 2026-10-04)
+//  Ideas: bristle combing along the stroke tangent; dry-brush skips at speed; raking light on impasto grooves; wet pickup smear along the tangent; side ridges at the brush edges
 //  A packing: ACES display RGBA (history decoded with acesInverse); texel (0,0) = cursor state (prevMouse.xy, vel.xy)
 //  Motion: tangent-combed bristle stroke + wet paint ripple spatters
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BrushSize, y=TextureAmount, z=ColorIntensity, w=Speed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BrushSize, y=TextureAmount, z=ColorIntensity, w=Speed
 
 fn hash21(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -186,7 +168,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let groove = grooveHeight(uv, spring, aspectVec, tangent, speedN, time, strokeSpeed);
   let strokeFlow = mix(restFlow, smoothstep(0.2, 0.8, groove), speedN);
 
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  // Idea 4 — wet pickup: inside a moving brush the photo is dragged back along the stroke tangent
+  let pickupMask = strokeActive * speedN;
+  let smearUV = clamp(uv - tangent * (brushRadius * 0.12 * speedN) / aspectVec, vec2<f32>(0.0), vec2<f32>(1.0));
+  let sharpBase = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let smearBase = (textureSampleLevel(readTexture, u_sampler, smearUV, 0.0).rgb
+    + textureSampleLevel(readTexture, u_sampler, mix(uv, smearUV, 0.5), 0.0).rgb) * 0.5;
+  let baseColor = mix(sharpBase, smearBase, clamp(pickupMask, 0.0, 1.0) * 0.8);
 
   // Glaze palette cycling
   let hue = fract(time * 0.06 + colorIntensity * 0.35 + mids * 0.25);
@@ -198,7 +186,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dryThreshold = speedN * (0.55 - colorIntensity * 0.2);
   let paintLoad = mix(1.0, smoothstep(dryThreshold - 0.08, dryThreshold + 0.08, groove), speedN);
   let brushMask = clamp(strokeActive * (0.35 + strokeFlow * 0.65) * (0.8 + bass * 0.4) * paintLoad + spatterEnergy * 0.6, 0.0, 1.0);
-  let impastoRelief = pow(brushMask, 2.0) * (0.3 + bristleNoise * 0.7 * textureAmount);
+  // Idea 5 — side ridges: a moving brush shoves paint into two raised lips along its edges
+  let acrossAxis = dot(toSpring, vec2<f32>(-tangent.y, tangent.x));
+  let ridgeBand = exp(-pow((abs(acrossAxis) - brushRadius * 0.55) / max(brushRadius * 0.09, 1e-4), 2.0));
+  let sideRidge = ridgeBand * speedN * smoothstep(brushRadius * 1.1, brushRadius * 0.4, dist);
+  let impastoRelief = pow(brushMask, 2.0) * (0.3 + bristleNoise * 0.7 * textureAmount) + sideRidge * 0.35 * textureAmount;
   let wetBorder = smoothstep(brushRadius * 0.9, brushRadius * 0.5, dist) * smoothstep(brushRadius * 0.1, brushRadius * 0.5, dist);
 
   let glazedColor = mix(baseColor, baseColor * warmGlaze * 1.45, colorIntensity * 0.55);
@@ -213,6 +205,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hU = grooveHeight(uv - vec2<f32>(0.0, px.y), spring, aspectVec, tangent, speedN, time, strokeSpeed);
   let rake = clamp(((hR - hL) + (hD - hU)) * 0.7, -1.0, 1.0);
   hdr *= 1.0 + rake * brushMask * textureAmount * (0.7 + mids * 0.3);
+  hdr += glazePalette * sideRidge * 0.18 * (1.0 + mids * 0.4);
 
   // Canvas grain relief
   let canvasGrain = (noise2(uv * 400.0) - 0.5) * 0.06 * textureAmount * (1.0 + treble * 0.4);

@@ -8,31 +8,12 @@
 //  By: Agent CB-26
 // ═══════════════════════════════════════════════════════════════════
 //  Raymarches a 4D quaternion Julia set through hyperbolic Poincaré
-//  Upgraded: 2026-09-11
-//  Ideas: photo albedo on Julia hit; horocycle fog
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: photo albedo on Julia hit; horocycle fog; hyperboloid-perspective rays (Poincare disk compresses toward the rim); Snell refraction of the photo with Cauchy-split RGB
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash22 (from spec-quaternion-julia) ═══
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -129,7 +110,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Camera setup in hyperbolic-warped space
     var ro = vec3<f32>(translated * 1.5, -2.5);
-    var rd = normalize(vec3<f32>((uv - 0.5) * 2.0, 1.0));
+    // 2026-11 Idea 1: hyperboloid-perspective rays. HEAD moved only the ray ORIGIN through the disk;
+    // directions were a plain pinhole. The hyperboloid-model spatial coordinate of a Poincare point p
+    // is p / (1 - |p|^2) (up to a constant); here p / (1 - 0.8|p|^2), equal to HEAD near the centre,
+    // so the scene compresses toward the rim the way a Poincare disk does.
+    let diskP = translated;
+    let hypScale = 1.0 / max(1.0 - 0.8 * dot(diskP, diskP), 0.15);
+    var rd = normalize(vec3<f32>(diskP * hypScale, 1.0));
 
     // Mouse orbit
     if (isMouseDown) {
@@ -197,7 +184,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             0.5 + 0.5 * cos(6.28318 * (hue + 0.33)),
             0.5 + 0.5 * cos(6.28318 * (hue + 0.67))
         );
-        let photo = textureSampleLevel(readTexture, u_sampler, clamp(uv + n.xy * 0.08, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        // 2026-11 Idea 2: Snell refraction of the photo (HEAD: a pseudo-offset uv + n.xy * 0.08).
+        // refract() bends the view ray through the surface; Cauchy-split IORs (1.43 / 1.45 / 1.48) send
+        // R, G, B through slightly different directions. Total internal reflection returns the zero
+        // vector, which falls back to an undisplaced tap.
+        let rfR = refract(rd, n, 1.0 / 1.43);
+        let rfG = refract(rd, n, 1.0 / 1.45);
+        let rfB = refract(rd, n, 1.0 / 1.48);
+        let photoR = textureSampleLevel(readTexture, u_sampler, clamp(uv + rfR.xy * 0.12, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+        let photoG = textureSampleLevel(readTexture, u_sampler, clamp(uv + rfG.xy * 0.12, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+        let photoB = textureSampleLevel(readTexture, u_sampler, clamp(uv + rfB.xy * 0.12, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+        let photo = vec3<f32>(photoR, photoG, photoB);
         col = mix(photo * (diff * 0.7 + 0.3) * ao, baseColor * (diff * 0.7 + 0.3) * ao, 0.35) + vec3<f32>(spec * 0.5);
         alpha = 1.0;
     } else {

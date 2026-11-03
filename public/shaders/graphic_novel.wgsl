@@ -1,9 +1,9 @@
 // Graphic Novel — adaptive ink contours, rotated print screens, and paper grain.
 // Public id "graphic-novel" intentionally aliases this underscore filename.
 // A/C stores ACES display RGBA. B is unused.
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-09-21, 2026-11-02
 //  Ideas: spot blacks in the deepest tones; 45° pen hatching with a crossing set in darker
-//         tones; shadow-side contour line weight
+//         tones; shadow-side contour line weight; feather into the spot; panel rule
 //  A packing: ACES display RGBA
 
 #include "_prelude.wgsl"
@@ -127,7 +127,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hatchSpacing = dotScale * 0.9 + 2.5;
   let hatchA = hatchLines(pixel, 0.7854, hatchSpacing, smoothstep(0.42, 0.8, tone));
   let hatchB = hatchLines(pixel, 2.2689, hatchSpacing * 1.1, smoothstep(0.62, 0.92, tone));
-  let hatch = max(hatchA, hatchB) * (1.0 - spotBlack);
+  // ── Idea 1: feather into the spot — the pen thickens on the shoulder of the solid, then the black takes over
+  let featherBand = smoothstep(0.08, 0.4, spotBlack) * (1.0 - spotBlack);
+  let hatchEdge = hatchLines(pixel, 0.7854, hatchSpacing * 0.8, clamp(featherBand * 1.4, 0.0, 1.0));
+  let hatch = max(max(hatchA, hatchB) * (1.0 - spotBlack), hatchEdge);
 
   let fiberA = hash21(floor(pixel * vec2<f32>(0.5, 0.12)));
   let fiberB = hash21(floor(pixel.yx * vec2<f32>(0.23, 0.72)) + 17.0);
@@ -139,12 +142,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr = mix(hdr, inkColor, clamp(printMask * (0.42 + paperAmount * 0.28) + emphasis, 0.0, 1.0));
   hdr = mix(hdr, inkColor, clamp(hatch * 0.6 + spotBlack * 0.94, 0.0, 1.0));
   hdr += vec3<f32>(0.12, 0.035, 0.015) * (dotM - dotC) * (0.15 + audio.z * 0.12);
+  // ── Idea 2: panel rule — a thin ink box inset from the page, skipped where the spot black already fills
+  let frame = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+  let rule = (1.0 - smoothstep(0.0, 0.0022, abs(frame - 0.02))) * (1.0 - spotBlack);
+  hdr = mix(hdr, inkColor, rule);
 
   let history = historyAt(uv - gradient * (0.2 + heldInk) * texel, resolution);
   let historyMix = clamp(0.025 + paperAmount * 0.035 + ringInk * 0.025, 0.0, 0.1);
   let display = mix(aces(max(hdr, vec3<f32>(0.0))), history.rgb, historyMix);
   let alpha = clamp(0.12 + printMask * 0.48 + contour * 0.38 + heldInk * 0.22 + ringInk * 0.18 +
-                    hatch * 0.25 + spotBlack * 0.5, 0.0, 1.0);
+                    hatch * 0.25 + spotBlack * 0.5 + rule * 0.35, 0.0, 1.0);
   let result = vec4<f32>(display, alpha);
   textureStore(writeTexture, coord, result);
   textureStore(dataTextureA, coord, result);

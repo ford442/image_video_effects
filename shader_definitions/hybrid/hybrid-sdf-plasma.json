@@ -2,13 +2,13 @@
   "id": "hybrid-sdf-plasma",
   "name": "Hybrid SDF Plasma Field",
   "url": "shaders/hybrid-sdf-plasma.wgsl",
-  "description": "Raymarched SDF scene with plasma noise displacement and dynamic palette-based coloring",
+  "description": "Sobel ink outlines and a 45-degree halftone screen over a posterized photo, with paper-tooth ink and a pointer spotlight",
   "features": [
     "hybrid",
-    "raymarching",
-    "sdf",
-    "plasma-noise",
-    "palette-cycling",
+    "ink-edge",
+    "halftone",
+    "posterize",
+    "mouse-driven",
     "randomization-safe"
   ],
   "params": [
@@ -61,6 +61,42 @@
       "palette (gen-xeno-botanical-synth-flora.wgsl)"
     ],
     "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Plasma Detail",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Color Cycle Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Glow Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Raymarch Quality",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }
