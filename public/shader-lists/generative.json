@@ -4228,6 +4228,51 @@
     "category": "generative"
   },
   {
+    "id": "gen-bioluminescent-mycelial-nexus",
+    "name": "Bioluminescent Mycelial Nexus",
+    "type": "compute",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "url": "shaders/gen-bioluminescent-mycelial-nexus.wgsl",
+    "parameters": [
+      {
+        "name": "Branching Density",
+        "type": "float",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "name": "Glow Intensity",
+        "type": "float",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Network Mutation Speed",
+        "type": "float",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "name": "Subsurface Scattering",
+        "type": "float",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
+    ]
+  },
+  {
     "id": "gen-bioluminescent-neural-coral-matrix",
     "name": "Bioluminescent Neural-Coral Matrix",
     "category": "generative",
