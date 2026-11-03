@@ -266,6 +266,22 @@ _Learn about the person you're helping. Update this as you go._
 - Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 - Real-GPU visual QA: external.
 
+## 2026-10-31 — ecosystem / biological ten (10 shaders)
+
+- IDs: cyber-organic-ecosystem, gen-xeno-botanical-ecosystem, alpha-multi-state-ecosystem, gen-emergent-calligraphic-ecosystems, predator-prey, predator-prey-rgba, boids-rgba-ecosystem, digital-moss-rgba, bioluminescent, bio-touch-em.
+- Per shader, the ideas actually added:
+  - cyber-organic-ecosystem: scanner-beam inoculation; warped tissue and rim refraction from the previously unused `warp` vector; isotropic 9-point Laplacian (§12.2D). Sweep and 4-species ecosystem kept.
+  - gen-xeno-botanical-ecosystem: vascular sap transport along the radial branch vector; sporangia fruiting nodes and toxin chlorosis. Radial FBM leaf mask and 4-species reaction-diffusion kept.
+  - alpha-multi-state-ecosystem: chemotactic foraging drift along `∇resource - 0.5·∇toxin`; drought refugia and bloom germination in fertile low-toxin pockets. Ecotone ridge and toxin stain kept.
+  - gen-emergent-calligraphic-ecosystems: flying-white (`feibai`) dry-brush tail and entry nib reservoir; palimpsest ghost under-script from `dataTextureC`. Existing Ideas 1–6 and flora/fauna strokes kept.
+  - predator-prey: adaptive trait inheritance in `.b`; trophic migration and depth habitat stratification. Reciprocal hunt, carcass compost, and 4-state CA kept.
+  - predator-prey-rgba: Holling Type II satiation and herd vigilance; nitrogen mineralization from decaying toxin and chase-front canopy disturbance. Gradient pursuit/flee and Lotka-Volterra PDE kept.
+  - boids-rgba-ecosystem: predator-evasion and prey-interception steering; flock-heading wing-flash and wake. Wired the two baseline dead sliders (`diffusion`, `toxinStrength`) and replaced filtered `dataTextureC` reads with exact `textureLoad`.
+  - digital-moss-rgba: isotropic 9-point Laplacian (§12.2D); cushion micro-relief normal and moisture dewdrop specular. Territorial ridge, capsule stalks, and coupled Gray-Scott kept.
+  - bioluminescent: luciferin metabolic recharge wave in `dataTextureA.g`; hyphal tip frontier and mature fruiting gill striations. Spore tropism and quorum flash kept.
+  - bio-touch-em: polar electroporation micro-pores where cell walls align with `fieldDir`; ion-channel refractory memory read from `dataTextureC` (previously written to `A` and unread). Mitosis twin pulse and depolarization wave kept.
+- Floor: prelude include on the nine pasted headers; 16×16; exact C on all ten; A packing as documented; saved params exact.
+- Gates: Naga 10/10, precommit 10/10, extraBuffer 0 new, dead sliders 0 new (and 2 baseline fixed on `boids-rgba-ecosystem`), catalogs regenerated.
 ## 2026-11-01 — cursor/batch-29 ASCII / glyph / digital-rain twelve (12 shaders)
 
 - IDs: ascii-decode, ascii-flow, ascii-glyph, gen-cyber-terminal, matrix-curtain, pixel-rain, spectral-rain, cyber-rain, cyber-rain-interactive, retro-gameboy, flip-matrix, bayer-dither-interactive.

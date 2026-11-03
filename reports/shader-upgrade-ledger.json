@@ -149,8 +149,17 @@
       "history": []
     },
     "bio-touch-em": {
-      "hash": "0976859f00d729de",
-      "history": []
+      "hash": "40d06fd5d2687d2b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "40d06fd5d2687d2b",
+          "prev_hash": "0976859f00d729de",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "bioluminescent-blackbody": {
       "hash": "bb0d72e711a3f90c",
@@ -191,8 +200,17 @@
       "history": []
     },
     "boids-rgba-ecosystem": {
-      "hash": "61d47c05041e297a",
-      "history": []
+      "hash": "87f9f96d81e86133",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "87f9f96d81e86133",
+          "prev_hash": "61d47c05041e297a",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "breathing-kaleidoscope-morph": {
       "hash": "c971f6fbc6b83d8e",
@@ -363,8 +381,17 @@
       "history": []
     },
     "cyber-organic-ecosystem": {
-      "hash": "d5d6c5404c155eba",
-      "history": []
+      "hash": "9803c40573cc4ab6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "9803c40573cc4ab6",
+          "prev_hash": "d5d6c5404c155eba",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "cyber-rain-em": {
       "hash": "c9b64031708fd22d",
@@ -437,8 +464,17 @@
       "history": []
     },
     "digital-moss-rgba": {
-      "hash": "defdaaf435f92c1a",
-      "history": []
+      "hash": "b29d71f833c3cc7e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "b29d71f833c3cc7e",
+          "prev_hash": "defdaaf435f92c1a",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "digital-reveal-guided": {
       "hash": "0f951bb6c990aeb0",
@@ -716,8 +752,17 @@
       "history": []
     },
     "gen-xeno-botanical-ecosystem": {
-      "hash": "0fa509b1998e0757",
-      "history": []
+      "hash": "65e448e20d09fd67",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "65e448e20d09fd67",
+          "prev_hash": "0fa509b1998e0757",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "glass-bead-curtain-iridescence": {
       "hash": "f7be30a926908330",
@@ -1059,8 +1104,17 @@
       ]
     },
     "predator-prey-rgba": {
-      "hash": "5eef2cddf7925537",
-      "history": []
+      "hash": "5b245bdc1ba060d1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "5b245bdc1ba060d1",
+          "prev_hash": "5eef2cddf7925537",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "quantum-foam-bilateral": {
       "hash": "6043aff430144ccd",
@@ -1355,8 +1409,17 @@
       ]
     },
     "bioluminescent": {
-      "hash": "088220166fee0fbf",
-      "history": []
+      "hash": "810313cb03b70f38",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "810313cb03b70f38",
+          "prev_hash": "088220166fee0fbf",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "boids": {
       "hash": "0b9faab4cf1cbdad",
@@ -4652,7 +4715,7 @@
       ]
     },
     "gen-emergent-calligraphic-ecosystems": {
-      "hash": "1e37889504ded387",
+      "hash": "3d875bc024e18918",
       "history": [
         {
           "event": "upgraded",
@@ -4661,6 +4724,14 @@
           "prev_hash": "57750b9a8a30dbf6",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "3d875bc024e18918",
+          "prev_hash": "1e37889504ded387",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
         }
       ]
     },
@@ -13924,8 +13995,17 @@
       ]
     },
     "alpha-multi-state-ecosystem": {
-      "hash": "74c0d976a68a2010",
-      "history": []
+      "hash": "9fdab3a340b06094",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "9fdab3a340b06094",
+          "prev_hash": "74c0d976a68a2010",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "alpha-reaction-diffusion-rgba": {
       "hash": "7d61d75fb3bb4769",
@@ -14119,8 +14199,17 @@
       "history": []
     },
     "predator-prey": {
-      "hash": "410916d9a69e7c9a",
-      "history": []
+      "hash": "5d9791e786372a81",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "5d9791e786372a81",
+          "prev_hash": "410916d9a69e7c9a",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
     },
     "quantum-foam-pass1": {
       "hash": "88067e6b4f51bd0c",
@@ -14915,6 +15004,150 @@
           "hash": "618c3c7335be89fa",
           "commit": "123b8f0c",
           "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
+    },
+    "gen-abyssal-geode-matrix": {
+      "hash": "ac887b9f3aed3791",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "ac887b9f3aed3791",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-acoustic-obsidian-resonator": {
+      "hash": "9d8c7e12f816281c",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "9d8c7e12f816281c",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-aetherial-chromatic-tesseract": {
+      "hash": "1e73ad609d58eef5",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "1e73ad609d58eef5",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-aetheric-tachyon-lattice": {
+      "hash": "ba6022b936c47b00",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "ba6022b936c47b00",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-bioluminescent-neural-coral-matrix": {
+      "hash": "d672411a67563ebd",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "d672411a67563ebd",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-biomechanical-neural-mycelium": {
+      "hash": "bedb68b0055840aa",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "bedb68b0055840aa",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-liquid-metal-chrono-flora": {
+      "hash": "11403c3e55322c58",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "11403c3e55322c58",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-neon-geode-crystallization": {
+      "hash": "3af9a4ddc48b190f",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "3af9a4ddc48b190f",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-quantum-coral-reef": {
+      "hash": "e17c387fc90f6e43",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "e17c387fc90f6e43",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-stellar-mycelium-overdrive": {
+      "hash": "063f7be829255a65",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "063f7be829255a65",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-symbiotic-neuro-lattice": {
+      "hash": "fc91ad3149ad1890",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "fc91ad3149ad1890",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-synaptic-void-weaver": {
+      "hash": "6007fd0af7bd310f",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T13:04:01.035Z",
+          "hash": "6007fd0af7bd310f",
+          "commit": "00db5f72",
+          "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
         }
       ]
     }

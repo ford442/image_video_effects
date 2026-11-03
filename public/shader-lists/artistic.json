@@ -704,7 +704,7 @@
     "id": "bioluminescent",
     "name": "Bioluminescent Growth",
     "url": "shaders/bioluminescent.wgsl",
-    "description": "Living, organic growth patterns that spread across surfaces like glowing fungus. Click to plant spores, watch them grow over time with depth-aware branching.",
+    "description": "Living, organic growth patterns that spread across surfaces like glowing fungus. Click to plant spores, watch them grow over time with depth-aware branching, luciferin recharge waves, and hyphal tip luminescence.",
     "params": [
       {
         "id": "spread",
@@ -752,7 +752,7 @@
       "music",
       "reactive"
     ],
-    "feedbackPacking": "A/C = growth, 0, 0, 1. ACES display only.",
+    "feedbackPacking": "A/C = growth, luciferinCharge, 0, 1. ACES display only.",
     "updated": true
   },
   {

@@ -1,0 +1,27 @@
+# Batch Notes — 2026-10-31 Ecosystem Ten (10 Shaders)
+
+- **IDs**: `cyber-organic-ecosystem`, `gen-xeno-botanical-ecosystem`, `alpha-multi-state-ecosystem`, `gen-emergent-calligraphic-ecosystems`, `predator-prey`, `predator-prey-rgba`, `boids-rgba-ecosystem`, `digital-moss-rgba`, `bioluminescent`, `bio-touch-em`.
+- **Per shader, the ideas actually added**:
+  - `cyber-organic-ecosystem`: scanner-beam inoculation (`beamCore` from `scanDist` and `scanNoise` deposits `resourceLevel` and alternates seeding `s1`/`s2` bands); warped tissue and rim refraction (previously unused `warp` vector from `fbm(uv * organicScale + ...)` warps vein density and refracts `readTexture` across the organic boundary); isotropic 9-point Laplacian (§12.2D) on exact `dataTextureC`. Sweep, ecosystem state, and cyber/organic composite kept.
+  - `gen-xeno-botanical-ecosystem`: vascular sap transport (upwind directional advection along the radial branch vector `centered = uv - 0.5`); sporangia fruiting nodes on branch crests and toxin chlorosis in over-colonized leaf cells. Radial FBM leaf mask, 4-species reaction-diffusion, and bioluminescent bloom kept.
+  - `alpha-multi-state-ecosystem`: chemotactic foraging drift (`s1` and `s2` drift along `∇resourceVal - 0.5·∇toxin`); drought refugia and bloom germination in fertile low-toxin pockets (`resourceVal > 0.65 && toxin < 0.2`). Existing Ideas 1–2 (ecotone ridge where `s1 ≈ s2`, toxin stain from stored `A`) and 4-component reaction-diffusion kept.
+  - `gen-emergent-calligraphic-ecosystems`: flying-white (`feibai`) dry-brush tail splitting and entry nib ink reservoir inside `stroke()`; palimpsest ghost under-script from exact `dataTextureC` history where `prev.a` exceeds current `totalInk`. Existing Ideas 1–6 (pressure swell, prey-predator ink chase, fibre feathering, glyph death phase, capillary backrun, ligature bridges) and flora/fauna glyph strokes kept.
+  - `predator-prey`: adaptive trait inheritance (`variant` stored in `.b` modulates foraging efficiency vs metabolic cost and is inherited from kin when colonizing empty cells); trophic migration and depth habitat (depth stratifies sunlit plant growth vs deep-cover carnivore ambush; hungry animals step into prey-adjacent empty cells). Existing Ideas 1–2 (reciprocal hunt, carcass compost) and discrete 4-state CA kept.
+  - `predator-prey-rgba`: Holling Type II satiation and herd vigilance defense (saturating grazing/hunting curve and group vigilance in dense herbivore herds); nitrogen mineralization from decaying toxin and chase-front canopy disturbance refracting `readTexture`. Existing Ideas 1–2 (carnivore pursuit along herbivore gradient, herbivore flee from carnivores) and continuous Lotka-Volterra PDE kept.
+  - `boids-rgba-ecosystem`: predator-evasion and prey-interception steering (`s1Flow` flees `s2Avg` and climbs `∇resourceVal`, `s2Flow` intercepts `s1Avg`); flock-heading wing-flash and wake along `s1Flow`/`s2Flow`. Wired the two baseline dead sliders (`u.zoom_params.z` `diffusion` and `u.zoom_params.w` `toxinStrength`) into Laplacian diffusion and toxin production/damage. Replaced filtered `textureSampleLevel(dataTextureC, ...)` with exact `textureLoad`-based neighborhood and bilinear advection helpers.
+  - `digital-moss-rgba`: isotropic 9-point Laplacian (§12.2D) on `dataTextureC` for rounded bryophyte rosettes; cushion micro-relief normal from `∇(B + D)` and moisture dewdrop specular weighted by `growSpeed` (`u.zoom_params.w`). Existing Ideas 1–2 (dual-species territorial ridge where `B ≈ D`, capsule stalks from high `B`) and coupled 2-species Gray-Scott kept.
+  - `bioluminescent`: luciferin metabolic recharge wave stored in the previously unused `dataTextureA.g` channel (builds under active growth, spends during quorum flash); hyphal tip frontier cyan-white rim and mature fruiting gill striations from `nL, nR, nD, nU` gradient. Existing Ideas 1–2 (spore tropism, quorum flash) and mycelium growth kept.
+  - `bio-touch-em`: polar electroporation micro-pores where the Voronoi cell wall aligns with `fieldDir` under high `fieldMag`; ion-channel refractory memory read from exact `dataTextureC` (which was previously written to `dataTextureA` as `vec4(color, n2)` and never read). Existing Ideas 1–2 (mitosis twin pulse, membrane depolarization wave) and Voronoi + dipole E-field kept.
+- **Plumbing floor**:
+  - Migrated the 9 pasted binding headers to `#include "_prelude.wgsl"` (`gen-emergent-calligraphic-ecosystems.wgsl` already included `_prelude.wgsl`).
+  - `@workgroup_size(16, 16, 1)` on all 10 shaders.
+  - Replaced filtered `textureSampleLevel(dataTextureC, ...)` in `cyber-organic-ecosystem`, `gen-xeno-botanical-ecosystem`, and `boids-rgba-ecosystem` with exact `textureLoad(dataTextureC, ...)` helpers.
+  - Raw simulation state preserved in `dataTextureA`; ACES applied to display `writeTexture` only.
+  - Saved `params` arrays in all 10 JSON definitions are byte-exact; `upgraded-rgba` and `x-meta.upgrade.params` added/updated where needed.
+- **Gates**:
+  - `python3 scripts/wgsl_precommit_gate.py --files ...`: 10/10 passed, 0 workgroup errors/warnings, 0 pasted headers, 0 extraBuffer violations.
+  - `npm run audit:dead-sliders -- --files ...`: 0 new dead sliders, 0 known baseline dead sliders (fixed the 2 baseline dead sliders in `boids-rgba-ecosystem`).
+  - `npm run verify:shader-definitions`: 1411 definitions valid.
+  - `npm run verify:wgsl-include`: passed.
+  - `npm run audit:extrabuffer`: 0 new violations.
+- **Real-GPU visual QA**: external (Cloud VM has no hardware Vulkan ICD).
