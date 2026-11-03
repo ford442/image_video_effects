@@ -4329,8 +4329,17 @@
       ]
     },
     "gen-cyber-terminal": {
-      "hash": "f58abb7383eef873",
-      "history": []
+      "hash": "b1830a9a7890daed",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "b1830a9a7890daed",
+          "prev_hash": "f58abb7383eef873",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "gen-cybernetic-aether-moth-chrysalis": {
       "hash": "9187249b67e0e635",
@@ -9300,8 +9309,17 @@
       "history": []
     },
     "ascii-glyph": {
-      "hash": "10463db21794c2d6",
-      "history": []
+      "hash": "6eabbc5123aaaf70",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "6eabbc5123aaaf70",
+          "prev_hash": "10463db21794c2d6",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "crystal-mosaic": {
       "hash": "1b79b861a1240628",
@@ -9316,8 +9334,17 @@
       "history": []
     },
     "flip-matrix": {
-      "hash": "53739e38153b2151",
-      "history": []
+      "hash": "2ad08e3a203c5a04",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "2ad08e3a203c5a04",
+          "prev_hash": "53739e38153b2151",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "hyperbolic-dreamweaver": {
       "hash": "3d789c4f18bafc22",
@@ -10064,8 +10091,17 @@
       ]
     },
     "retro-gameboy": {
-      "hash": "5be639a173e206f6",
-      "history": []
+      "hash": "a9d09af2b9550f21",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "a9d09af2b9550f21",
+          "prev_hash": "5be639a173e206f6",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "rgb-ripple-distortion": {
       "hash": "11937941e2a4d50f",
@@ -10246,8 +10282,17 @@
       "history": []
     },
     "ascii-decode": {
-      "hash": "d1432b1bd1ed6e0f",
-      "history": []
+      "hash": "8a03aa47fd8c0e7b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "8a03aa47fd8c0e7b",
+          "prev_hash": "d1432b1bd1ed6e0f",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "ascii-lens": {
       "hash": "53f9881b6c85a3af",
@@ -10539,8 +10584,17 @@
       ]
     },
     "cyber-rain": {
-      "hash": "fc952c70728b353a",
-      "history": []
+      "hash": "6c81231dedce9ce5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "6c81231dedce9ce5",
+          "prev_hash": "fc952c70728b353a",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "cyber-ripples": {
       "hash": "23e53372f0d99b5e",
@@ -11426,8 +11480,17 @@
       ]
     },
     "matrix-curtain": {
-      "hash": "112606262527633f",
-      "history": []
+      "hash": "93177906e0f57696",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "93177906e0f57696",
+          "prev_hash": "112606262527633f",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "mirror-drag": {
       "hash": "3e5d7759875bfc01",
@@ -13457,12 +13520,30 @@
       "history": []
     },
     "ascii-flow": {
-      "hash": "1af89a81fef337cc",
-      "history": []
+      "hash": "6bda7034d0e056b2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "6bda7034d0e056b2",
+          "prev_hash": "1af89a81fef337cc",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "bayer-dither-interactive": {
-      "hash": "a313c74d25b8c769",
-      "history": []
+      "hash": "4864e3f08c7b615a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "4864e3f08c7b615a",
+          "prev_hash": "a313c74d25b8c769",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "byte-mosh": {
       "hash": "73bf86dcf73e3255",
@@ -13490,8 +13571,17 @@
       ]
     },
     "cyber-rain-interactive": {
-      "hash": "1b6664dbddc54629",
-      "history": []
+      "hash": "958bdb444c337397",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "958bdb444c337397",
+          "prev_hash": "1b6664dbddc54629",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "cyber-terminal-ascii": {
       "hash": "3562f8448d749373",
@@ -13661,7 +13751,7 @@
       ]
     },
     "pixel-rain": {
-      "hash": "5752fae4783e7f07",
+      "hash": "cbb834f081fdd3f8",
       "history": [
         {
           "event": "upgraded",
@@ -13670,6 +13760,14 @@
           "prev_hash": "ebc7faf7e26b6ec1",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "cbb834f081fdd3f8",
+          "prev_hash": "5752fae4783e7f07",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
         }
       ]
     },
@@ -14671,8 +14769,17 @@
       ]
     },
     "spectral-rain": {
-      "hash": "67a314a4d6200568",
-      "history": []
+      "hash": "7b87defd91def851",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:53:06.216Z",
+          "hash": "7b87defd91def851",
+          "prev_hash": "67a314a4d6200568",
+          "commit": "00db5f72",
+          "note": "2026-11-01 cursor/batch-29 (Cursor(1)) — docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/BRIEFS.md"
+        }
+      ]
     },
     "temporal-rgb-smear": {
       "hash": "d72c2c67df3c0f96",

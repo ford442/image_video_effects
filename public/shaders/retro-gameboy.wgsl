@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: round LCD dots in each block; honest A/C palette ghosting
+//  Upgraded: 2026-09-06, 2026-11-01
+//  Ideas: round LCD dots in each block; honest A/C palette ghosting; slow rise; unlit well
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -111,12 +111,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Scanline modulation from audio mids
     let scanLine = sin(f32(global_id.y) * 3.14159 / blockSize) * 0.5 + 0.5;
-    var finalColor = paletteColor * grid * mix(1.0, scanLine, mids * 0.4) * scanPulse;
+    let ink = paletteColor * mix(1.0, scanLine, mids * 0.4) * scanPulse;
+    // ── Idea 2: unlit well ───────────────────────────────────────────
+    // The gap between LCD dots is the darkest DMG green, not a black multiply.
+    let well = get_palette(0.0, 0.0);
+    var finalColor = mix(well, ink, grid);
 
-    // Temporal feedback: scanline persistence
+    // ── Idea 1: slow rise ────────────────────────────────────────────
+    // STN glass brightens slower than it darkens. The old persistence
+    // amount is kept; rising frames hold more of it.
     let prev = textureLoad(dataTextureC, pixel, 0).rgb;
-    let persistence = 0.75;
-    finalColor = mix(finalColor, prev, persistence * (1.0 - grid * 0.3));
+    let prevLum = dot(prev, vec3<f32>(0.299, 0.587, 0.114));
+    let persistence = 0.75 * (1.0 - grid * 0.3);
+    let rising = smoothstep(0.0, 0.06, finalLum - prevLum);
+    let lag = mix(persistence * 0.28, persistence, rising);
+    finalColor = mix(finalColor, prev, lag);
 
     // ACES tone mapping
     finalColor = acesToneMap(finalColor);

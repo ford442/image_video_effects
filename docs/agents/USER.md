@@ -24,6 +24,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
   - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
+  - 2026-11-01: sent cursor/batch-29, twelve ASCII, glyph, and digital-rain shaders (ascii-decode through bayer-dither-interactive). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/`.
   - 2026-11-01: sent a pixel-sort / smear twelve (glitch-pixel-sort through quantum-smear). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve/`.
   - 2026-11-02: sent cursor/batch-35 (Cursor(1)), twelve neon edge and contour shaders (neon-contour-drag through posterize-neon-edges). Notes in `docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/`.
 
@@ -265,6 +266,24 @@ _Learn about the person you're helping. Update this as you go._
 - Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 - Real-GPU visual QA: external.
 
+## 2026-11-01 — cursor/batch-29 ASCII / glyph / digital-rain twelve (12 shaders)
+
+- IDs: ascii-decode, ascii-flow, ascii-glyph, gen-cyber-terminal, matrix-curtain, pixel-rain, spectral-rain, cyber-rain, cyber-rain-interactive, retro-gameboy, flip-matrix, bayer-dither-interactive.
+- Per shader, the ideas actually added:
+  - ascii-decode: falling column head; cell gutter; decode rim. Seven glyphs and the decode lens kept. No spring.
+  - ascii-flow: flow lean; upstream streak. Ink ramp, coverage blend, and typed wake kept.
+  - ascii-glyph: stroke weight from luma; lens bezel. Cross-or-dot, phosphor smear, and the sprung lens kept.
+  - gen-cyber-terminal: barrel scanlines; corner misconvergence. Segment font, leader, and raw HDR history kept.
+  - matrix-curtain: tail stem; curtain hem. Hashed birth, scan head, and phosphor from the pixel above kept. A stays raw fields.
+  - pixel-rain: head core; sheet stagger. Three sheets, glyph tail, and column blank kept.
+  - spectral-rain: streak core; column slant. Per-column spectrum trail and the chromatic split kept.
+  - cyber-rain: beaded drop; wiper lip. Wet blur, EMP rings, and the bass envelope in A.a kept.
+  - cyber-rain-interactive: head glyph flicker; far-sheet grey. ROM sheets, fp128 flow, and the spring-free pointer kept.
+  - retro-gameboy: slow rise; unlit well. Four greens, round LCD dots, and the palette ghost kept.
+  - flip-matrix: hinge pin; gutter shadow. Back-face mirror and the cam notch kept.
+  - bayer-dither-interactive: error coring; tile seam. 8×8 Bayer, IGN assist, and channel rotation kept.
+- Floor: prelude include on all twelve (four pasted headers migrated); 16×16; exact C where C is read; A packing as documented; saved params exact.
+- Gates: Naga 12/12, precommit 12/12, extraBuffer 0 new, dead sliders 0 new on a full catalog re-scan, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 
 ## 2026-11-01 — pixel-sort / smear twelve (12 shaders)
 
