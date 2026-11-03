@@ -2328,7 +2328,7 @@
     "id": "chronos-brush-explosion",
     "name": "Chronos Brush Explosion",
     "url": "shaders/chronos-brush-explosion.wgsl",
-    "description": "Chronos Brush Explosion",
+    "description": "A held brush freezes the photo. The thawing rim splits into a prism and melts before the middle of the stroke.",
     "tags": [
       "time-freeze",
       "chromatic-explosion",
@@ -2339,7 +2339,8 @@
       "time-freeze",
       "chromatic-explosion",
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2384,12 +2385,13 @@
     "id": "circuit-breaker-explosion",
     "name": "Circuit Breaker Explosion",
     "url": "shaders/circuit-breaker-explosion.wgsl",
-    "description": "Circuit board edges chromatically separated near the mouse prism. Overload flashes become spectral rainbows. Click ripples launch chromatic shockwaves through the circuit pattern.",
+    "description": "Circuit traces and photo edges overload near the pointer. Traces dim with distance, and node contacts latch instead of flickering for the whole disk.",
     "features": [
       "mouse-driven",
       "chromatic",
       "circuit-simulation",
-      "glitch"
+      "glitch",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2433,12 +2435,13 @@
     "id": "cmyk-halftone-explosion",
     "name": "CMYK Halftone Explosion",
     "url": "shaders/cmyk-halftone-explosion.wgsl",
-    "description": "CMYK halftone dots spectrally separated near the mouse via prism displacement. Click ripples launch chromatic shockwaves through the halftone pattern.",
+    "description": "CMYK halftone of the photo. Colour plates fly on the prism and on click shocks; the black plate stays nearer registration, and dots stretch along the shock.",
     "features": [
       "mouse-driven",
       "chromatic",
       "prism",
-      "print-simulation"
+      "print-simulation",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2728,7 +2731,7 @@
     "id": "cursor-aura-explosion",
     "name": "Cursor Aura Explosion",
     "url": "shaders/cursor-aura-explosion.wgsl",
-    "description": "Cursor Aura Explosion",
+    "description": "A round cursor aura that splits RGB most strongly at the rim, and darkens the photo under the core before the glow is added.",
     "tags": [
       "mouse-driven",
       "chromatic-aberration",
@@ -2739,7 +2742,8 @@
       "mouse-driven",
       "chromatic-aberration",
       "prism",
-      "glow"
+      "glow",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7466,7 +7470,7 @@
     "id": "interactive-rgb-split-explosion",
     "name": "Interactive Rgb Split Explosion",
     "url": "shaders/interactive-rgb-split-explosion.wgsl",
-    "description": "Interactive Rgb Split Explosion",
+    "description": "Falloff-gated RGB split around the pointer, with a radial split along the same vector and a brighter lip at the edge of the falloff.",
     "tags": [
       "mouse-driven",
       "chromatic",

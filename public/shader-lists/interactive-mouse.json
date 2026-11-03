@@ -6492,7 +6492,8 @@
     "features": [
       "mouse-driven",
       "chromatic-aberration",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "description": "The mouse drives a smooth displacement field with spectral tinting via mix and alpha translucency blending. Click ripples launch shockwaves. Audio-reactive bass pulses the entire field.",
     "params": [
