@@ -6,28 +6,12 @@
 //  Upgraded: 2026-05-02 (Tier-1 integration pass)
 //  FIX: mouse-down detection now uses zoom_config.w (was always-true length)
 //  Creative additions: pheromone trails in dataTextureA, motion-blur streaks
+//  Upgraded: 2026-11-01
+//  Ideas: real pheromone trails (A = pheromone, read as exact C, screen-composited under the live boids); continuous flight paths (fixed per-boid hash, wrapped straight drift - HEAD re-rolled every boid every frame); wing beat
+//  A packing: CHANGED - A = (pheromone RGB, pheromone luma), read as C .rgb. HEAD's A velocity/density tuple was read back as colour (packing lie) and had no other reader. B unchanged (pheromone + alpha).
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     return vec3<f32>(
@@ -37,19 +21,34 @@ fn hash3(p: vec3<f32>) -> vec3<f32> {
     );
 }
 
-fn getBoidPosition(id: u32, time: f32) -> vec2<f32> {
+// Per-boid constants. HEAD hashed continuous time (time * 0.01 / 0.02) through fract(sin(x) * 43758),
+// so every boid position and heading was re-rolled to a new random value every frame; the "flock" was
+// frame-rate noise. The hash is now a fixed function of the boid id.
+fn boidBaseVelocity(id: u32) -> vec2<f32> {
     let idf = f32(id);
-    let seed = vec3<f32>(idf * 0.1, time * 0.01, idf * 0.01);
-    let h = hash3(seed);
-    return h.xy * 2.0 - 1.0;
-}
-
-fn getBoidVelocity(id: u32, time: f32) -> vec2<f32> {
-    let idf = f32(id);
-    let seed = vec3<f32>(idf * 0.2 + 100.0, time * 0.02, idf * 0.05);
-    let h = hash3(seed);
+    let h = hash3(vec3<f32>(idf * 0.2 + 100.0, 0.0, idf * 0.05));
     let angle = h.x * 6.28318530718;
     return vec2<f32>(cos(angle), sin(angle)) * (0.3 + h.y * 0.5);
+}
+
+// Idea 2: continuous flight. Straight drift from a fixed start, wrapped to the screen box.
+fn getBoidPosition(id: u32, time: f32, aspect: f32) -> vec2<f32> {
+    let idf = f32(id);
+    let h = hash3(vec3<f32>(idf * 0.1, 0.0, idf * 0.01));
+    let ext = vec2<f32>(aspect, 1.0);
+    let start = (h.xy * 2.0 - 1.0) * ext;
+    let drift = start + boidBaseVelocity(id) * time * 0.12;
+    return (fract((drift + ext) / (2.0 * ext)) * 2.0 - 1.0) * ext;
+}
+
+// Heading: the fixed base heading with a slow per-boid wander, so rules steer from a moving baseline.
+fn getBoidVelocity(id: u32, time: f32) -> vec2<f32> {
+    let idf = f32(id);
+    let base = boidBaseVelocity(id);
+    let wander = 0.35 * sin(time * 0.3 + idf * 1.7);
+    let c = cos(wander);
+    let s = sin(wander);
+    return vec2<f32>(base.x * c - base.y * s, base.x * s + base.y * c);
 }
 
 fn getBoidColor(id: u32, time: f32) -> vec3<f32> {
@@ -88,6 +87,7 @@ fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let uv = vec2<f32>(global_id.xy) / resolution;
     let px = vec2<i32>(global_id.xy);
     let coord = px;
@@ -126,12 +126,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var accumulated_color = vec3<f32>(0.0);
     var accumulated_density: f32 = 0.0;
     var total_energy: f32 = 0.0;
-    var velocity_field = vec2<f32>(0.0);
-    var velocity_weight: f32 = 0.0;
 
     for (var i: u32 = 0u; i < numBoids; i = i + 1u) {
-        var boidPos = getBoidPosition(i, time);
+        var boidPos = getBoidPosition(i, time, aspect);
         var boidVel = getBoidVelocity(i, time);
+        // Distance cull (exact within bounds): this boid can only reach pixels within streak length
+        // 0.4 of its final position, which is at most maxSpeed * 0.016 <= 0.08 from here. Boids near the
+        // wrap edge are never culled because a step can teleport them to the far side.
+        let edgeSafe = abs(boidPos.x) < aspect - 0.1 && abs(boidPos.y) < 0.9;
+        if (edgeSafe && length(screenUV - boidPos) > 0.6) { continue; }
         let boidColor = getBoidColor(i, time);
 
         var separation = vec2<f32>(0.0);
@@ -142,7 +145,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         for (var j: u32 = 0u; j < numBoids; j = j + 1u) {
             if (i == j) { continue; }
-            let neighborPos = getBoidPosition(j, time);
+            let neighborPos = getBoidPosition(j, time, aspect);
             let neighborVel = getBoidVelocity(j, time);
             let diff = boidPos - neighborPos;
             let dist = length(diff);
@@ -215,7 +218,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let perpVel = vec2<f32>(-velNorm.y, velNorm.x);
         let wingOffset = abs(dot(pixelToBoid, perpVel));
-        let wingShape = 1.0 - smoothstep(0.0, particle_radius * 2.0, wingOffset);
+        // Idea 3: wing beat — the wing span flaps, faster the faster the boid flies.
+        let flap = 0.65 + 0.35 * sin(time * (6.0 + current_speed * 8.0) + f32(i) * 1.3);
+        let wingShape = 1.0 - smoothstep(0.0, particle_radius * 2.0 * flap, wingOffset);
         let headDist = length(pixelToBoid - velNorm * particle_radius * 0.5);
         let wing_alpha = wingShape * (1.0 - smoothstep(0.0, particle_radius, headDist)) * 0.5;
 
@@ -231,8 +236,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         accumulated_density = accumulated_density + total_alpha * particle_opacity;
         total_energy = total_energy + total_alpha * emission;
 
-        velocity_field = velocity_field + boidVel * total_alpha;
-        velocity_weight = velocity_weight + total_alpha;
     }
 
     // Audio-reactive bass burst spawn (extra glow on bass hits)
@@ -261,18 +264,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     let opacity = 0.85;
-    let finalColor = mix(inputColor.rgb, output_color, final_alpha_boosted * opacity);
+    let liveColor = mix(inputColor.rgb, output_color, final_alpha_boosted * opacity);
+    // Idea 1: pheromone trails. The memory (read back through exact C, evaporating 0.92 per frame) is
+    // screen-composited under the live boids, so a deposit stays visible where the boid was.
+    let pheromoneVis = new_pheromone * (1.0 - final_alpha_boosted);
+    let finalColor = vec3<f32>(1.0) - (vec3<f32>(1.0) - liveColor) * (vec3<f32>(1.0) - pheromoneVis * 0.8);
     let finalAlpha = max(inputColor.a, final_alpha_boosted * opacity);
 
     textureStore(writeTexture, coord, vec4<f32>(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(3.0)), finalAlpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(inputDepth, 0.0, 0.0, 0.0));
 
-    // dataTextureA: store velocity field (R, G remapped) + density (B) + pheromone luma (A)
-    let velNorm2 = velocity_field / max(velocity_weight, 0.0001);
-    let velR = clamp(velNorm2.x * 0.5 + 0.5, 0.0, 1.0);
-    let velG = clamp(velNorm2.y * 0.5 + 0.5, 0.0, 1.0);
+    // dataTextureA: pheromone memory (RGB) + its luma (A). C is read as colour next frame, so A must
+    // be a colour history; HEAD stored velocity/density here and read them back as colour.
     let pherLuma = dot(new_pheromone, vec3<f32>(0.299, 0.587, 0.114));
-    textureStore(dataTextureA, coord, vec4<f32>(velR, velG, accumulated_density, pherLuma));
+    textureStore(dataTextureA, coord, vec4<f32>(new_pheromone, pherLuma));
 
     // dataTextureB: store accumulated color for downstream advection / pheromone field
     textureStore(dataTextureB, coord, vec4<f32>(new_pheromone, final_alpha_boosted));

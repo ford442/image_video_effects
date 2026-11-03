@@ -5,7 +5,8 @@
 //            bounded-click-ripples, audio-reactive, per-band-fft,
 //            boid-cohesion, henyey-greenstein, motion-blur, depth-aware,
 //            upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 60)
+//  Upgraded: 2026-08-23 (Batch 60), 2026-11-01
+//  Ideas (2026-11): Reynolds alignment from the neighbour velocities already fetched (C.zw); velocity-aligned motion-blur taps along -vel
 // ═══════════════════════════════════════════════════════════════════════════════
 //  A carries SIM STATE (rg = offset, ba = velocity) and comes back as
 //  dataTextureC next frame. Display goes to writeTexture.
@@ -45,26 +46,16 @@
 //       fast pointer moves drag the flock instead of teleporting it.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Stiffness, y=Force, z=Damping, w=Radius/Opacity
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Stiffness, y=Force, z=Damping, w=Radius/Opacity
-  ripples: array<vec4<f32>, 50>,
-};
+// FFT band k (0..7): engine FFT bins live in extraBuffer[5 .. 132] (bin 0 at [5]). HEAD read
+// plasmaBuffer[k + 1].x for these, but only plasmaBuffer[0] is ever written, so every "per-band"
+// term was a constant zero. Bins 0, 4, 8 ... 28 spread the eight bands from bass to upper mids.
+fn fftBand(k: u32) -> f32 {
+  let idx = 5u + (k % 8u) * 4u;
+  return select(0.0, extraBuffer[min(idx, arrayLength(&extraBuffer) - 1u)], arrayLength(&extraBuffer) > idx);
+}
 
 fn acesFilm(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
@@ -168,10 +159,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Neighbours' offsets come from the state texture. Cohesion steers toward
     // the local mean position; separation pushes off crowding. Without these
     // the field was N independent springs, not a swarm.
-    let nE = textureLoad(dataTextureC, clamp(coord + vec2<i32>( 2, 0), vec2<i32>(0), maxC), 0).xy;
-    let nW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-2, 0), vec2<i32>(0), maxC), 0).xy;
-    let nN = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0,  2), vec2<i32>(0), maxC), 0).xy;
-    let nS = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -2), vec2<i32>(0), maxC), 0).xy;
+    let nE4 = textureLoad(dataTextureC, clamp(coord + vec2<i32>( 2, 0), vec2<i32>(0), maxC), 0);
+    let nW4 = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-2, 0), vec2<i32>(0), maxC), 0);
+    let nN4 = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0,  2), vec2<i32>(0), maxC), 0);
+    let nS4 = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -2), vec2<i32>(0), maxC), 0);
+    let nE = nE4.xy;
+    let nW = nW4.xy;
+    let nN = nN4.xy;
+    let nS = nS4.xy;
+    // 2026-11 Idea 1: Reynolds alignment. Boids have three rules; HEAD had two. The same four
+    // neighbour fetches already carry their velocity in .zw, which was discarded: steer toward
+    // the mean neighbour velocity so neighbouring particles travel together, not just clump.
+    let alignment = ((nE4.zw + nW4.zw + nN4.zw + nS4.zw) * 0.25 - vel) * (0.10 + mids * 0.06);
     let neighbourMean = (nE + nW + nN + nS) * 0.25;
     let cohesion = (neighbourMean - offset) * (0.055 + mids * 0.05);
     // Separation: the closer a neighbour has drifted to us, the harder we push.
@@ -184,7 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Structure 2: per-particle FFT turbulence band ───────────────────────
     let bandIdx = u32(hash12(floor(uv * 64.0)) * 8.0) % 8u;
-    let band = plasmaBuffer[bandIdx + 1u].x;
+    let band = fftBand(bandIdx);
     let turbPhase = time * (0.6 + f32(bandIdx) * 0.17);
     let turbulence = vec2<f32>(sin(uv.y * 23.0 + turbPhase), cos(uv.x * 19.0 - turbPhase))
                    * band * 0.0016;
@@ -210,7 +209,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spring = -offset * stiffness;
 
     // Physics update
-    vel = (vel + interaction + spring + cohesion + separation + turbulence) * damping;
+    vel = (vel + interaction + spring + cohesion + separation + alignment + turbulence) * damping;
     offset = offset + vel;
 
     // Calculate speed for motion blur
@@ -222,7 +221,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Sample Image
     let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-    let base_color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    let plate_center = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+    // 2026-11 Idea 2: velocity-aligned motion-blur taps. `motion_blur` used to scale only alpha
+    // and depth; the plate was read at a single point. Two more taps along -vel (up to 0.03 uv)
+    // smear fast particles along their own travel, weighted by motion_blur.
+    let travelDir = vel / max(speed, 1e-5);
+    let blurLen = clamp(speed * 6.0, 0.0, 0.03);
+    let blurTapA = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - travelDir * blurLen * 0.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let blurTapB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - travelDir * blurLen, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let blurredPlate = (plate_center.rgb + blurTapA.rgb + blurTapB.rgb) * 0.3333333;
+    let base_color = vec4<f32>(mix(plate_center.rgb, blurredPlate, motion_blur * 0.8), plate_center.a);
 
     // ═══════════════════════════════════════════════════════════════
     //  ALPHA SCATTERING CALCULATION

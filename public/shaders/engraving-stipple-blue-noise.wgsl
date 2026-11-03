@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Engraving Stipple Blue Noise
 //  Category: advanced-hybrid
-//  Features: engraving-stipple, blue-noise, pointillism, mouse-driven
+//  Features: engraving-stipple, blue-noise, pointillism, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-11-02
+//  Ideas: drypoint shoulder; raking shadow
+//  A packing: ACES display RGBA
 //  Chunks From: engraving-stipple.wgsl, spec-blue-noise-stipple.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-22 — Artistic & Texture Enhancer
@@ -14,26 +17,7 @@
 //  Mouse acts as a raking light source revealing engraved depth.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn getLuma(color: vec3<f32>) -> f32 {
   return dot(color, vec3<f32>(0.299, 0.587, 0.114));
@@ -55,6 +39,10 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 fn blueNoiseOffset(pixelCoord: vec2<f32>, frame: f32) -> vec2<f32> {
     let phi2 = vec2<f32>(1.3247179572, 1.7548776662);
     return fract(pixelCoord * phi2 + frame * phi2);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -81,7 +69,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dist_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
     let dist = length(dist_vec);
     let light_radius = 0.3;
-    let light = smoothstep(light_radius, 0.0, dist);
+    let bass = plasmaBuffer[0].x;
+    let light = smoothstep(light_radius, 0.0, dist) * (1.0 + bass * 0.28);
     luma = luma + light * mouse_light_strength * 0.3;
 
     // ═══ BLUE-NOISE STIPPLE PLACEMENT ═══
@@ -96,7 +85,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dotCenter = (jitter - 0.5) * 0.8;
 
     // Sample local color for this cell
-    let sampleUV = (cellId + 0.5) / dotScale;
+    let sampleUV = clamp((cellId + 0.5) / dotScale, vec2<f32>(0.0), vec2<f32>(1.0));
     let localColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
     let localLuma = getLuma(localColor);
 
@@ -129,45 +118,48 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let ink = vec3<f32>(0.06, 0.06, 0.08);
     let paper = vec3<f32>(0.94, 0.92, 0.87);
+    let mark = select(0.0, 1.0, isMark);
 
-    var final_col: vec3<f32>;
-    var ink_alpha = 0.0;
+    let depth_alpha = mix(0.6, 0.95, mark_depth);
+    var ink_alpha = min(1.0, depth_alpha + burr_effect * 0.3) * mark;
+    let depth_darken = mix(0.85, 1.0, mark_depth);
+    var inkCol = ink * depth_darken;
+    inkCol = mix(inkCol, inkCol * 1.1, burr_effect);
+    let chromaticShift = hash22(cellId) - 0.5;
+    inkCol = inkCol + chromaticShift.xyx * 0.02;
 
-    if (isMark) {
-        let depth_alpha = mix(0.6, 0.95, mark_depth);
-        let burr_alpha = burr_effect * 0.3;
-        ink_alpha = depth_alpha + burr_alpha;
-        ink_alpha = min(1.0, ink_alpha);
-
-        let depth_darken = mix(0.85, 1.0, mark_depth);
-        final_col = ink * depth_darken;
-        final_col = mix(final_col, final_col * 1.1, burr_effect);
-
-        // Add subtle chromatic variation from blue-noise
-        let chromaticShift = hash22(cellId) - 0.5;
-        final_col += chromaticShift.xyx * 0.02;
-    } else {
-        // Paper shows through with blue-noise dither texture
-        final_col = paper * plate_tex;
-        // Subtle dot texture in non-ink areas
-        let paperDot = dotMask * 0.08;
-        final_col = mix(final_col, final_col * 0.96, paperDot);
-    }
+    let paperDot = dotMask * 0.08;
+    var paperCol = paper * plate_tex;
+    paperCol = mix(paperCol, paperCol * 0.96, paperDot);
+    var final_col = mix(paperCol, inkCol, mark);
 
     ink_alpha *= plate_tex;
     let edge_feather = smoothstep(0.0, 0.2, mark_depth);
     ink_alpha *= mix(0.85, 1.0, edge_feather);
 
+    // ── Idea 1: drypoint shoulder — a bright ring of raised metal just outside the engraved dot
+    let pastDot = distDot - (dotSize + edgeWidth);
+    let shoulder = smoothstep(0.0, 0.035, pastDot) * (1.0 - smoothstep(0.035, 0.11, pastDot));
+    final_col = final_col + vec3<f32>(0.10, 0.09, 0.06) * shoulder * (1.0 - mark) * burrTexture;
+
+    // ── Idea 2: raking shadow — each dot darkens the plate a short step away from the pointer
+    let away = dist_vec / max(dist, 1e-4);
+    let shadowCenter = dotCenter + away * 0.12;
+    let shadowDist = length(cellLocal - shadowCenter);
+    let shadow = (1.0 - smoothstep(dotSize * 0.85, dotSize * 0.85 + 0.14, shadowDist)) * mark * mouse_light_strength;
+    final_col = final_col * (1.0 - shadow * 0.4);
+
     // Mouse light vignette
     final_col = mix(final_col * 0.6, final_col, 0.5 + 0.5 * light);
 
-    if (luma > 0.7) {
-        let tint_strength = (luma - 0.7) * 0.3;
-        final_col = mix(final_col, color, tint_strength);
-    }
+    let tint_strength = clamp((luma - 0.7) * 0.3, 0.0, 0.3);
+    final_col = mix(final_col, color, tint_strength);
 
-    textureStore(writeTexture, coord, vec4<f32>(final_col, ink_alpha));
+    let mapped = acesToneMap(clamp(final_col, vec3<f32>(0.0), vec3<f32>(1.5)));
+    let shown = vec4<f32>(mapped, clamp(ink_alpha, 0.0, 1.0));
+    textureStore(writeTexture, coord, shown);
+    textureStore(dataTextureA, coord, shown);
 
-    let depth_val = select(0.0, mark_depth + burr_effect * 0.2, isMark);
+    let depth_val = mark * (mark_depth + burr_effect * 0.2);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth_val, 0.0, 0.0, ink_alpha));
 }

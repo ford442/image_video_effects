@@ -1,31 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Quantum Smear — Batch 58C
-//  Category: image
+//  Quantum Smear
+//  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal
 //  Complexity: High
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-11-01
+//  Ideas: still-lock; void rim
+//  A packing: clamped pre-ACES smear RGB (motion history). ACES on writeTexture only.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash2(p: vec2<f32>) -> vec2<f32> {
   var p2 = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
@@ -39,6 +22,10 @@ fn hash1(p: vec2<f32>) -> f32 {
 
 fn calculateMotion(current: vec3<f32>, previous: vec3<f32>) -> f32 {
   return length(current - previous) * 2.0;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn stochasticAdvect(uv: vec2<f32>, entropy: f32, depth: f32, baseRadius: f32, entropyScale: f32, time: f32) -> vec2<f32> {
@@ -85,7 +72,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let packet = sin(time * (2.0 + band * 4.0) + depth * 12.0) * 0.5 + 0.5;
 
   let advectedUV = stochasticAdvect(uv, motion + packet * 0.15, depth * depthMod, scatterRadius, entropyScale, time);
-  let advectedSample = textureSampleLevel(readTexture, u_sampler, clamp(advectedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  // ── Idea 1: still-lock ─────────────────────────────────────────
+  // Scatter collapses where this frame matches the last smear, so
+  // quiet pixels stop boiling. Intensity still sets the radius.
+  let still = smoothstep(0.02, 0.18, motion);
+  let lockedUV = mix(uv, advectedUV, still);
+  let advectedSample = textureSampleLevel(readTexture, u_sampler, clamp(lockedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 
   let coherence = coherenceStr + depth * 0.1 + mouseWell * 0.25;
   var result = mix(advectedSample, videoSample.rgb, coherence);
@@ -102,6 +94,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let voidNoise = hash1(uv * 20.0 + vec2<f32>(time * 0.5, 0.0));
   let voidHit = select(0.0, 1.0, voidPotential > 0.01 && voidNoise > (0.95 - voidStrength * 0.3));
   result = result - vec3<f32>(voidPotential * 2.0) * voidHit;
+  // ── Idea 2: void rim ───────────────────────────────────────────
+  // The hole still subtracts. A thin lip around a weak void piles
+  // the photo back up. Detail still scales density above.
+  let lip = smoothstep(0.0, 0.04, voidPotential) * (1.0 - smoothstep(0.04, 0.10, voidPotential));
+  result = result + videoSample.rgb * lip * 0.35;
 
   let shimmer = sin(time * 10.0 + uv.x * 20.0) * cos(time * 7.0 + uv.y * 15.0) * shimmerAmt;
   result = result * (1.0 + shimmer);
@@ -120,10 +117,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let luminance = dot(result, vec3<f32>(0.299, 0.587, 0.114));
   result = mix(result, vec3<f32>(luminance), blurAmount);
 
-  let alpha = clamp(0.35 + luminance * 0.45 + motion * 0.2 + mouseWell * 0.1, 0.1, 1.0);
-  let finalPixel = vec4<f32>(result, alpha);
+  let alpha = clamp(0.35 + luminance * 0.45 + motion * 0.2 + mouseWell * 0.1 + lip * 0.12 + still * 0.08, 0.1, 1.0);
+  let stored = vec4<f32>(clamp(result, vec3<f32>(0.0), vec3<f32>(4.0)), alpha);
+  let display = vec4<f32>(acesToneMap(max(result, vec3<f32>(0.0))), alpha);
 
-  textureStore(writeTexture, pixel, finalPixel);
+  textureStore(writeTexture, pixel, display);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, pixel, finalPixel);
+  textureStore(dataTextureA, pixel, stored);
 }

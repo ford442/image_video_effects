@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: multi-spectral split hue folding; joint depth-bilateral edge preservation; contour standing resonance waves
+//  Upgraded: 2026-09-06, 2026-11-01
+//  Ideas: multi-spectral split hue folding; joint depth-bilateral edge preservation; contour standing resonance waves; bilateral base feeds the fold; edge-gated resonance; pointer-radial dispersion
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -123,6 +104,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var accumColor = vec3<f32>(0.0);
     var accumWeight = 0.0;
+    var spatialSum = 0.0;
     let radius = i32(ceil(finalSigma * 2.5));
     let maxRadius = min(radius, 5);
 
@@ -144,6 +126,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let weight = spatialWeight * rangeWeight * depthWeight;
             accumColor += neighbor.rgb * weight;
             accumWeight += weight;
+            spatialSum += spatialWeight;
         }
     }
 
@@ -153,6 +136,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     let depthVal = centerDepth;
+
+    // ─── 2026-11 Idea 1 (bilateral base feeds the fold): agreement statistic ───
+    // accumWeight / spatialSum is 1 where every neighbour agrees in colour and depth
+    // and falls at the edges the kernel preserved. It was computed and thrown away.
+    let agreement = clamp(accumWeight / max(spatialSum, 1e-4), 0.0, 1.0);
+    let flatness = smoothstep(0.35, 0.9, agreement);
 
     // Hue gradient on bilateral-smoothed image
     let hR = rgb2hsv(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixelSize.x, 0.0), 0.0).rgb).x;
@@ -173,7 +162,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ─── Native Idea 3: Contour Standing Resonance Waves ───
     let resonancePhase = gradMagnitude * 38.0 - time * 3.5 + depthVal * 8.0;
-    let resonance = sin(resonancePhase) * (0.006 + bass * 0.012) * foldStrength;
+    // ─── 2026-11 Idea 2: edge-gated resonance ───
+    // Nodes sit in flat (high-agreement) regions, antinodes ride the preserved boundaries.
+    let resonanceGate = mix(1.0, 0.35, flatness);
+    let resonance = sin(resonancePhase) * (0.006 + bass * 0.012) * foldStrength * resonanceGate;
     let resonanceDisp = normalize(hueGrad + vec2<f32>(1e-4, 0.0)) * resonance;
 
     var totalDisp = dispBase + noiseDisp + resonanceDisp;
@@ -192,11 +184,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
-    let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    let rawDisplaced = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+    // 2026-11 Idea 1: flat regions fold the edge-preserved bilateral base, edges keep the raw tap.
+    let displacedColor = mix(rawDisplaced, srcColor, flatness * 0.6);
 
     // ─── Native Idea 1: Multi-Spectral Split Hue Folding ───
     var hsv = rgb2hsv(displacedColor);
-    let splitDelta = 0.035 * (1.0 + treble * 0.35);
+    // 2026-11 Idea 3: pointer-radial dispersion — lateral dispersion grows off-axis, so the
+    // split pivots tighten near the cursor and open outward.
+    let splitDelta = 0.035 * (1.0 + treble * 0.35) * (0.55 + 1.3 * clamp(mouseDist, 0.0, 1.0));
     let foldR = foldHue(hsv.x, fract(pivotHue + splitDelta), foldStrength);
     let foldG = foldHue(hsv.x, pivotHue, foldStrength);
     let foldB = foldHue(hsv.x, fract(pivotHue - splitDelta), foldStrength);

@@ -5,31 +5,14 @@
 //  ring bursts, held tighten+intensify, C-persisted halo trail,
 //  ACES + semantic alpha, FFT band shimmer.
 //
+//  Upgraded: 2026-11-02
+//  Ideas: mask trail from stored glow; normal-side halo
 //  A packing: (glowMask, mouseAura, packetEnergy, finalAlpha)
-//  B unused. C = previous-frame trail (exact textureLoad).
+//  B unused. C = previous-frame diagnostic (exact textureLoad).
 //  No extraBuffer writes.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn luminance(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
@@ -109,6 +92,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let glowColor = glowAccum / max(weightSum, 0.001);
 
+  // ── Idea 2: normal halo ──
+  // The streak runs along the tangent. A tube also has a short halo across the edge.
+  var haloAccum = vec3<f32>(0.0);
+  for (var s: i32 = -1; s <= 1; s = s + 2) {
+    let hoff = edgeNormal * glowRadius * 0.45 * px * f32(s);
+    haloAccum += textureSampleLevel(readTexture, u_sampler, clamp(uv + hoff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  }
+  let normalHalo = haloAccum * 0.5;
+
   // Bloom packets racing along edge tangents (distinct from radial blobs)
   let aspectUV = uv * vec2<f32>(aspect, 1.0);
   let tangentPhase = dot(aspectUV, edgeTangent) * (42.0 + treble * 18.0)
@@ -164,12 +156,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                  + oilSlick * packetEnergy * intensity * 0.85
                  + neonTint * clickRing * intensity * 0.55;
   finalColor = finalColor + glowColor * glowMask * intensity * 0.38 * (1.0 + mouseAura + packetEnergy * 0.4);
+  finalColor = finalColor + normalHalo * glowMask * intensity * 0.16;
   finalColor = mix(finalColor, finalColor * (1.0 + sharpened * 0.15), glowMask);
   // Thin-film fringe on strong edges / packets
   finalColor = mix(finalColor, finalColor * oilSlick * 1.15, glowMask * (0.18 + packetEnergy * 0.35 + heldF * 0.12));
 
-  let trailGlow = mix(prev.rgb * 0.9, finalColor, 0.22 + glowMask * 0.16);
-  finalColor = mix(finalColor, trailGlow, 0.28);
+  // ── Idea 1: mask trail ──
+  // A stores (glowMask, mouseAura, packetEnergy, alpha). Relight from those fields.
+  finalColor = finalColor + neonTint * prev.r * intensity * 0.22 + oilSlick * prev.z * intensity * 0.18;
 
   let depthFalloff = mix(1.0, 0.3, depth);
   finalColor = finalColor * depthFalloff;

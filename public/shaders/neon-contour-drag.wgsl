@@ -3,30 +3,12 @@
 //  Category: lighting-effects
 //  Physics: Emissive edges with UV warp and alpha occlusion
 //  Alpha: Core edge = 0.3, Glow = 0.0 (additive)
-//  Ideas: edge-tangent glow streaks; bass core pulse
-//  A packing: emissive RGBA, no history (unchanged)
+//  Upgraded: 2026-11-02
+//  Ideas: edge-tangent glow streaks; bass core pulse; drag shear; glass wall
+//  A packing: ACES display RGBA (C unread)
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Returns (gxLuma, gyLuma, magnitude). Magnitude is exactly the prior scalar
 // return value; gxLuma/gyLuma expose the gradient direction for Idea 1.
@@ -49,6 +31,11 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     var p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn calculateEmissiveAlpha(glowIntensity: f32, occlusionBalance: f32) -> f32 {
@@ -103,6 +90,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let streakBack = sobel(warpUV - edgeTangent * stepFine * 2.0, stepFine).z;
     let tangentStreak = (streakForward + streakBack) * 0.5;
 
+    // ── Idea 1: drag shear ──
+    // The pull is radial. Inside the warp disc the contour also smears along the pull's tangent.
+    let pullTangent = vec2<f32>(-safeDir.y, safeDir.x);
+    let shearStep = pullTangent * warpAmount * 0.06;
+    let shearA = sobel(clamp(warpUV + shearStep, vec2<f32>(0.0), vec2<f32>(1.0)), stepFine).z;
+    let shearB = sobel(clamp(warpUV - shearStep, vec2<f32>(0.0), vec2<f32>(1.0)), stepFine).z;
+    let dragShear = (shearA + shearB) * 0.5;
+    let edgeLit = mix(edge, dragShear, smoothstep(0.02, 0.25, warpAmount) * 0.45);
+
+    // ── Idea 2: glass wall ──
+    // One texel up the gradient is the lit glass; the dark side is the bore.
+    let edgeNormal = select(vec2<f32>(0.0, 1.0), edgeDir / max(edgeDirLen, 0.0001), edgeDirLen > 0.0001);
+    let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+    let centerLuma = dot(textureSampleLevel(readTexture, u_sampler, clamp(warpUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, lumaW);
+    let wallLuma = dot(textureSampleLevel(readTexture, u_sampler, clamp(warpUV + edgeNormal * stepFine, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, lumaW);
+    let glassWall = smoothstep(0.0, 0.06, wallLuma - centerLuma);
+
     let contourRunner = pow(max(0.0, sin(edge * 28.0 - time * (14.0 + bass * 6.0))), 12.0);
     let hueConveyor = pow(max(0.0, sin(dot(warpUV, vec2<f32>(1.2, 0.7)) * 40.0 - time * (18.0 + treble * 8.0))), 14.0);
 
@@ -120,8 +124,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hue = fract(time * 0.2 + dist * 2.0 + colorShift + hueConveyor * 0.12);
     let neonColor = hsv2rgb(vec3<f32>(hue, 0.8, 1.0));
 
-    let glow = edge * edgeStrength * glowIntensity * smoothstep(1.0, 0.0, dist * 0.5) * (1.0 + tangentStreak * 0.4);
+    let glow = edgeLit * edgeStrength * glowIntensity * smoothstep(1.0, 0.0, dist * 0.5) * (1.0 + tangentStreak * 0.4);
     var emission = neonColor * glow * (1.0 + contourRunner * 0.35 + clickFront * 0.4);
+    emission *= mix(1.0, mix(0.66, 1.22, glassWall), smoothstep(0.08, 0.5, edge));
 
     // Idea 2: bass core pulse — the inverted "pupil" at the cursor visibly
     // grows and shrinks on the beat instead of sitting at a fixed radius.
@@ -130,9 +135,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let glowStrength = length(emission);
     let finalAlpha = calculateEmissiveAlpha(glowStrength, occlusionBalance);
+    let display = aces(clamp(emission, vec3<f32>(0.0), vec3<f32>(12.0)));
+    let coord = vec2<i32>(global_id.xy);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(emission, finalAlpha));
+    textureStore(writeTexture, coord, vec4<f32>(display, finalAlpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, vec4<f32>(display, finalAlpha));
 }

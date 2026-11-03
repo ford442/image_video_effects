@@ -3,8 +3,8 @@
 //  Category: visual-effects
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, anamorphic, caustic, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: gradient-steered caustic refraction; anamorphic caustic glints (stretch-length horizontal smear)
+//  Upgraded: 2026-11-02
+//  Ideas: gradient-steered caustic refraction; anamorphic caustic glints (stretch-length horizontal smear); anamorphic oval bokeh on image highlights; Cauchy spectral caustics
 //  A packing: pre-ACES HDR RGB (post-feedback) + semantic alpha; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -123,6 +123,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let refractOffset = (causticGrad * slopeGain + biasDir) * refraction;
   let refractUV = clamp(uv + refractOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // ── Idea 4 (2026-11-02): spectral caustics ──────────────────────────
+  // Water disperses: n(λ) = A + B/λ² (B exaggerated ×10 so it reads), so red and blue light
+  // refract less / more than green and land displaced along the wave slope the green caustic
+  // already measures. R and B caustics are taken at c + ∇c·(n(λ)/n(550) − 1)·k — steep ridges
+  // split into red-outside / blue-inside fringes, flat regions stay neutral.
+  let cauchyR = (1.33 + 0.03 / (0.65 * 0.65) - 1.0) / (1.33 + 0.03 / (0.55 * 0.55) - 1.0) - 1.0;
+  let cauchyB = (1.33 + 0.03 / (0.45 * 0.45) - 1.0) / (1.33 + 0.03 / (0.55 * 0.55) - 1.0) - 1.0;
+  let specK = 2.2 / cFreq;
+  let cR = caustic(cP + causticGrad * (cauchyR * specK), cT, cFreq);
+  let cB = caustic(cP + causticGrad * (cauchyB * specK), cT, cFreq);
+  let causticMaskRGB = min(vec3<f32>(pow(cR, 2.0), pow(c, 2.0), pow(cB, 2.0)) * causticStrength
+    * (1.0 + bandLevel * 0.35) + vec3<f32>(burstEnergy * causticStrength * 0.8), vec3<f32>(3.0));
+
   // ── Idea 2: anamorphic caustic glints ───────────────────────────────
   // Caustic peaks are smeared into short horizontal streaks: 2 taps each side along x, with a
   // per-pixel jitter (hash21) so the taps blend into a continuous streak instead of beads.
@@ -151,11 +164,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let chromaRefract = vec3<f32>(rSample, refracted.g, bSample);
 
   // Blend refracted image with caustic highlights
-  let causticLight = vec3<f32>(0.65, 0.88, 1.0) * (causticMask * 1.6);
+  let causticLight = vec3<f32>(0.65, 0.88, 1.0) * (causticMaskRGB * 1.6);   // Idea 4: per channel
   var col = mix(input.rgb, chromaRefract, clamp(0.35 + causticMask * 0.55, 0.0, 1.0));
   col += causticLight * (0.4 + mids * 0.35);
   let glintCol = mix(flareCol, vec3<f32>(1.0), 0.45);
   col += glintCol * glint * 0.55;
+
+  // ── Idea 3 (2026-11-02): anamorphic oval bokeh ──────────────────────
+  // The other signature of a squeezed (2×) anamorphic lens: out-of-focus highlights render as
+  // vertical ovals. 8 golden-angle taps fill an ellipse twice as tall as it is wide (screen
+  // space), rotated per pixel to hide the pattern; only thresholded highlights contribute, and
+  // the bokeh takes the lens coating's cyan cast. Only the spill beyond the in-focus highlight
+  // is added (gather − centre), so flat bright areas stay put and highlights grow tall ovals.
+  // Size rides the Flare slider.
+  let bokehRy = 0.045 * (0.4 + flareParam * 0.6) * (1.0 + bass * 0.25);
+  let bokehR = vec2<f32>(bokehRy * 0.5 / aspect, bokehRy);
+  let bokehRot = hash21(vec2<f32>(pixel) + vec2<f32>(3.1, 7.7)) * 6.2831853;
+  var bokeh = vec3<f32>(0.0);
+  for (var k = 0; k < 8; k = k + 1) {
+    let a = f32(k) * 2.3999632 + bokehRot;
+    let rr = sqrt((f32(k) + 0.5) / 8.0);
+    let tapUV = clamp(uv + vec2<f32>(cos(a), sin(a)) * rr * bokehR, vec2<f32>(0.0), vec2<f32>(1.0));
+    let tap = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
+    let hot = smoothstep(0.6, 0.9, dot(tap, vec3<f32>(0.2126, 0.7152, 0.0722)));
+    bokeh += tap * hot;
+  }
+  let centreHot = input.rgb * smoothstep(0.6, 0.9, dot(input.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)));
+  let bokehSpill = max(bokeh / 8.0 - centreHot, vec3<f32>(0.0)) * vec3<f32>(0.8, 0.97, 1.1);
+  col += bokehSpill * (0.9 + flareParam * 0.8);
 
   // Anamorphic flare composite
   col = col * (1.0 - flareStrength * 0.2) + flare * 0.9;

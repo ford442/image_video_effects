@@ -33,8 +33,17 @@
       ]
     },
     "anisotropic-kuwahara-nlm": {
-      "hash": "980aadb7e331dbe7",
-      "history": []
+      "hash": "dd52a86ca163c5ae",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "dd52a86ca163c5ae",
+          "prev_hash": "980aadb7e331dbe7",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "ascii-flow-structure": {
       "hash": "563cf36c2e581a8e",
@@ -110,12 +119,30 @@
       ]
     },
     "aurora-rift-2-iridescence": {
-      "hash": "087e060fb9d49119",
-      "history": []
+      "hash": "d221180b5ee7b08a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "d221180b5ee7b08a",
+          "prev_hash": "087e060fb9d49119",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "aurora-rift-iridescence": {
-      "hash": "cfb0c334435814a0",
-      "history": []
+      "hash": "bdc4726f373432f9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "bdc4726f373432f9",
+          "prev_hash": "cfb0c334435814a0",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "bio-lenia-rgba": {
       "hash": "8c20dcc6a4674f6b",
@@ -184,8 +211,17 @@
       "history": []
     },
     "charcoal-rub-diffusion": {
-      "hash": "f7d489618c8881df",
-      "history": []
+      "hash": "f900a12e0dfdd098",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "f900a12e0dfdd098",
+          "prev_hash": "f7d489618c8881df",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "chroma-depth-tunnel-prismatic": {
       "hash": "da1e8aab58bc1d36",
@@ -208,20 +244,56 @@
       "history": []
     },
     "chromatic-crawler-structure": {
-      "hash": "9f4767d1c228bb1b",
-      "history": []
+      "hash": "0f3e5066961ee74c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "0f3e5066961ee74c",
+          "prev_hash": "9f4767d1c228bb1b",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-focus-coupled": {
-      "hash": "cd20c3f6ac773834",
-      "history": []
+      "hash": "233d8bcf742014cb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "233d8bcf742014cb",
+          "prev_hash": "cd20c3f6ac773834",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-focus-guided": {
-      "hash": "d91995e4cb06f2ef",
-      "history": []
+      "hash": "c6a5c1132b3e4fe2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "c6a5c1132b3e4fe2",
+          "prev_hash": "d91995e4cb06f2ef",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-folds-bilateral": {
-      "hash": "2e144f487caf2bf3",
-      "history": []
+      "hash": "280ef095ca426439",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "280ef095ca426439",
+          "prev_hash": "2e144f487caf2bf3",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
+        }
+      ]
     },
     "chromatic-reaction-diffusion": {
       "hash": "fa69a4e41f4c37ee",
@@ -393,8 +465,17 @@
       ]
     },
     "edge-glow-mouse-em": {
-      "hash": "b428a6f379c7017a",
-      "history": []
+      "hash": "b093b6655e2fb971",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "b093b6655e2fb971",
+          "prev_hash": "b428a6f379c7017a",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "elastic-chromatic-explosion": {
       "hash": "7a3b76ee3af8e88f",
@@ -418,8 +499,17 @@
       "history": []
     },
     "engraving-stipple-blue-noise": {
-      "hash": "5557bab0198caac9",
-      "history": []
+      "hash": "797e8065c6bd9d81",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "797e8065c6bd9d81",
+          "prev_hash": "5557bab0198caac9",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "ethereal-swirl-coupled": {
       "hash": "a256037b0eeee639",
@@ -451,12 +541,30 @@
       "history": []
     },
     "fractal-boids-field-coupled": {
-      "hash": "508fed1490843e1b",
-      "history": []
+      "hash": "f89a371df03fae8d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "f89a371df03fae8d",
+          "prev_hash": "508fed1490843e1b",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "fractal-boids-field": {
-      "hash": "598e1d58aac04b03",
-      "history": []
+      "hash": "b0c91dd8345ee2bd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "b0c91dd8345ee2bd",
+          "prev_hash": "598e1d58aac04b03",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "fractal-glass-distort-bilateral": {
       "hash": "d64473326ed3d1f2",
@@ -488,8 +596,17 @@
       "history": []
     },
     "gemstone-fractures-crystal": {
-      "hash": "65e8917e1a97c4e6",
-      "history": []
+      "hash": "a27bf40c2c9d6143",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "a27bf40c2c9d6143",
+          "prev_hash": "65e8917e1a97c4e6",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "gen-abyssal-leviathan-iridescence": {
       "hash": "991524b11780a7c9",
@@ -530,8 +647,17 @@
       ]
     },
     "gen-bismuth-citadel-crystal": {
-      "hash": "b20ccf1ec929b325",
-      "history": []
+      "hash": "2bb6e256d365d43c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "2bb6e256d365d43c",
+          "prev_hash": "b20ccf1ec929b325",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "gen-neural-fractal-hdr": {
       "hash": "615f700776e00576",
@@ -631,8 +757,17 @@
       ]
     },
     "gravity-well-em": {
-      "hash": "f73bf54a330e5237",
-      "history": []
+      "hash": "69939adf0e5bef9f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "69939adf0e5bef9f",
+          "prev_hash": "f73bf54a330e5237",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "heat-haze-volumetric": {
       "hash": "2e8296659a0406f8",
@@ -702,8 +837,17 @@
       "history": []
     },
     "impasto-swirl-bilateral": {
-      "hash": "97adcfba1c724211",
-      "history": []
+      "hash": "19f3d499042af6f2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "19f3d499042af6f2",
+          "prev_hash": "97adcfba1c724211",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "infinite-fractal-feedback-hdr": {
       "hash": "08344f0484e566cd",
@@ -752,8 +896,17 @@
       "history": []
     },
     "kimi-flock-symphony-em": {
-      "hash": "79f5e53898515a05",
-      "history": []
+      "hash": "10ce1d10ae143a22",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "10ce1d10ae143a22",
+          "prev_hash": "79f5e53898515a05",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "liquid-jelly-fluid": {
       "hash": "d6bbb19bd690e25b",
@@ -788,8 +941,17 @@
       "history": []
     },
     "nano-assembler-crystal": {
-      "hash": "026decad8b0beca7",
-      "history": []
+      "hash": "2e6335da6baf17db",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "2e6335da6baf17db",
+          "prev_hash": "026decad8b0beca7",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "neural-raymarcher-gabor": {
       "hash": "298847ff712cc5a6",
@@ -818,8 +980,17 @@
       ]
     },
     "painterly-oil-bilateral": {
-      "hash": "eff4fd236ffa9cfe",
-      "history": []
+      "hash": "86f9280ebfc07860",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "86f9280ebfc07860",
+          "prev_hash": "eff4fd236ffa9cfe",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "particle-dreams-hdr": {
       "hash": "b8e3594c5539d2fd",
@@ -931,8 +1102,17 @@
       "history": []
     },
     "spectral-flow-sorting": {
-      "hash": "85d3beeda69aabed",
-      "history": []
+      "hash": "593caa129bd8b373",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "593caa129bd8b373",
+          "prev_hash": "85d3beeda69aabed",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "spectral-flow-structure": {
       "hash": "6d1bc8d201812708",
@@ -1035,8 +1215,17 @@
       "history": []
     },
     "artistic_painterly_oil": {
-      "hash": "c315e9e26dd51818",
-      "history": []
+      "hash": "9be940e399a0b436",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "9be940e399a0b436",
+          "prev_hash": "c315e9e26dd51818",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "astral-kaleidoscope-gemini": {
       "hash": "b6b0650a00ded6c7",
@@ -1095,12 +1284,30 @@
       "history": []
     },
     "aurora-rift-gemini": {
-      "hash": "556f77d61ab0f841",
-      "history": []
+      "hash": "0ee3a5b57d264c70",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "0ee3a5b57d264c70",
+          "prev_hash": "556f77d61ab0f841",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "aurora-rift": {
-      "hash": "fc3380e3835e7294",
-      "history": []
+      "hash": "02ade13f843f7ce0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "02ade13f843f7ce0",
+          "prev_hash": "fc3380e3835e7294",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "bioluminescent": {
       "hash": "088220166fee0fbf",
@@ -1111,7 +1318,7 @@
       "history": []
     },
     "chromatic-crawler": {
-      "hash": "a588e2b84b469310",
+      "hash": "9b6d810e019494b6",
       "history": [
         {
           "event": "upgraded",
@@ -1120,11 +1327,19 @@
           "prev_hash": "011b8afb7bc196d4",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "9b6d810e019494b6",
+          "prev_hash": "a588e2b84b469310",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
     "chromatic-focus": {
-      "hash": "a09ae5b0e5b77fcb",
+      "hash": "74face0e23df4f59",
       "history": [
         {
           "event": "upgraded",
@@ -1133,11 +1348,19 @@
           "prev_hash": "15da01520b6816bf",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "74face0e23df4f59",
+          "prev_hash": "a09ae5b0e5b77fcb",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
     "chromatic-folds-2": {
-      "hash": "361355635a1070ad",
+      "hash": "47a2c65afc6fb85c",
       "history": [
         {
           "event": "upgraded",
@@ -1146,6 +1369,14 @@
           "prev_hash": "ea924ddca5224467",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "47a2c65afc6fb85c",
+          "prev_hash": "361355635a1070ad",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
@@ -1163,7 +1394,7 @@
       ]
     },
     "chromatic-folds": {
-      "hash": "771910dd82fc5d24",
+      "hash": "e9580737f147de86",
       "history": [
         {
           "event": "upgraded",
@@ -1180,6 +1411,14 @@
           "prev_hash": "ea833c55627bc42d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "e9580737f147de86",
+          "prev_hash": "771910dd82fc5d24",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
@@ -1197,7 +1436,7 @@
       ]
     },
     "chromatic-manifold-2": {
-      "hash": "2e3932901681a303",
+      "hash": "d97a9d92abd0d8cb",
       "history": [
         {
           "event": "upgraded",
@@ -1206,11 +1445,19 @@
           "prev_hash": "f816450979ed851c",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "d97a9d92abd0d8cb",
+          "prev_hash": "2e3932901681a303",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
     "chromatic-manifold": {
-      "hash": "227e55b4e9f90edc",
+      "hash": "a13027613196eca2",
       "history": [
         {
           "event": "upgraded",
@@ -1227,6 +1474,14 @@
           "prev_hash": "800b8c1ac6decfba",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:38:35.781Z",
+          "hash": "a13027613196eca2",
+          "prev_hash": "227e55b4e9f90edc",
+          "commit": "ba02e523",
+          "note": "2026-11-01 chromatic ten (claude) — agents/swarm-outputs/claude-2026-11-01-chromatic-ten/BRIEFS.md"
         }
       ]
     },
@@ -1272,16 +1527,34 @@
       "history": []
     },
     "engraving-stipple": {
-      "hash": "5360e093e4e02bec",
-      "history": []
+      "hash": "56219f9e9dd2145b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "56219f9e9dd2145b",
+          "prev_hash": "5360e093e4e02bec",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "fabric-step": {
       "hash": "d4bbb7a4205ccab6",
       "history": []
     },
     "film-cross-process": {
-      "hash": "e8123768be204c1b",
-      "history": []
+      "hash": "e6703d9428e08eaa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "e6703d9428e08eaa",
+          "prev_hash": "e8123768be204c1b",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "frosty-window": {
       "hash": "d52e34d095553e92",
@@ -1313,8 +1586,17 @@
       "history": []
     },
     "halftone-reveal": {
-      "hash": "7516f46d7561331b",
-      "history": []
+      "hash": "3eecbd96aa6b4b40",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "3eecbd96aa6b4b40",
+          "prev_hash": "7516f46d7561331b",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "holographic-contour": {
       "hash": "535e956759569617",
@@ -1485,7 +1767,7 @@
       ]
     },
     "neon-contour-interactive": {
-      "hash": "68de0eb20631368c",
+      "hash": "308ca392010d1c59",
       "history": [
         {
           "event": "upgraded",
@@ -1494,11 +1776,19 @@
           "prev_hash": "cc02c1d6952e05f8",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "308ca392010d1c59",
+          "prev_hash": "68de0eb20631368c",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
     "neon-edge-diffusion": {
-      "hash": "0051a11a5bf8ed55",
+      "hash": "7ce5d14963465eca",
       "history": [
         {
           "event": "upgraded",
@@ -1507,6 +1797,14 @@
           "prev_hash": "dd5e5106f7fa5315",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "7ce5d14963465eca",
+          "prev_hash": "0051a11a5bf8ed55",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
@@ -1532,8 +1830,17 @@
       "history": []
     },
     "particle_dreams_alpha": {
-      "hash": "e804ba97ad1150b2",
-      "history": []
+      "hash": "e3a8ee120112dd24",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "e3a8ee120112dd24",
+          "prev_hash": "e804ba97ad1150b2",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "physarum-gemini": {
       "hash": "5727c20a9823f7c3",
@@ -1582,8 +1889,17 @@
       ]
     },
     "polka-dot-reveal": {
-      "hash": "725240508ca98242",
-      "history": []
+      "hash": "6276981f98c679c4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "6276981f98c679c4",
+          "prev_hash": "725240508ca98242",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "porcelain-fracture-glow": {
       "hash": "61378dc0086129be",
@@ -1625,8 +1941,17 @@
       ]
     },
     "quantum-smear": {
-      "hash": "658b58985a64f9d9",
-      "history": []
+      "hash": "6fc65a4d1f8064b9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "6fc65a4d1f8064b9",
+          "prev_hash": "658b58985a64f9d9",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "quantum-wormhole": {
       "hash": "8456327c3b55b6a3",
@@ -1657,20 +1982,47 @@
       "history": []
     },
     "rorschach-inkblot": {
-      "hash": "bb0dee4f9d0af03a",
-      "history": []
+      "hash": "2513ba4155781b6f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "2513ba4155781b6f",
+          "prev_hash": "bb0dee4f9d0af03a",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "rotoscope-ink": {
-      "hash": "e63749e6eb1b5fbb",
-      "history": []
+      "hash": "9dbcdc9bc21539df",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "9dbcdc9bc21539df",
+          "prev_hash": "e63749e6eb1b5fbb",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "snow": {
       "hash": "dfb74328766f2629",
       "history": []
     },
     "spec-blue-noise-stipple": {
-      "hash": "88255d89afd313a4",
-      "history": []
+      "hash": "31da08b61d290b5a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "31da08b61d290b5a",
+          "prev_hash": "88255d89afd313a4",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "spectral-bleed-confinement": {
       "hash": "090f455cf8939fd3",
@@ -1745,8 +2097,17 @@
       "history": []
     },
     "stipple-render": {
-      "hash": "8e308f29638857db",
-      "history": []
+      "hash": "79c640fe2b2658b1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "79c640fe2b2658b1",
+          "prev_hash": "8e308f29638857db",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "temporal-echo": {
       "hash": "c8d5c49f2783d0b2",
@@ -1843,8 +2204,25 @@
       ]
     },
     "cyber-lens": {
-      "hash": "343798918f3cb489",
-      "history": []
+      "hash": "96c32a90f237b58b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "17df5cabe3e5a0bb",
+          "prev_hash": "343798918f3cb489",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "96c32a90f237b58b",
+          "prev_hash": "17df5cabe3e5a0bb",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
+        }
+      ]
     },
     "data-slicer": {
       "hash": "c7f827cbdad00668",
@@ -1954,8 +2332,17 @@
       "history": []
     },
     "glass-brick-distortion": {
-      "hash": "f25873debacad0d6",
-      "history": []
+      "hash": "4d3eed683563a858",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "4d3eed683563a858",
+          "prev_hash": "f25873debacad0d6",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        }
+      ]
     },
     "glass-brick-wall": {
       "hash": "31260c58e407e99d",
@@ -2005,8 +2392,17 @@
       ]
     },
     "infinite-zoom-lens": {
-      "hash": "721d4389a4d6186e",
-      "history": []
+      "hash": "079c113e1aa5dcc4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "079c113e1aa5dcc4",
+          "prev_hash": "721d4389a4d6186e",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        }
+      ]
     },
     "infinite-zoom": {
       "hash": "d8f5d861f620ee09",
@@ -2099,8 +2495,25 @@
       ]
     },
     "luma-glass": {
-      "hash": "b9e78c6d3950e12e",
-      "history": []
+      "hash": "25d37222f8c932f6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "6968bad51db37c30",
+          "prev_hash": "b9e78c6d3950e12e",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "25d37222f8c932f6",
+          "prev_hash": "6968bad51db37c30",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
+        }
+      ]
     },
     "luminescent-glass-tiles": {
       "hash": "7b4da1ac10708139",
@@ -2116,8 +2529,17 @@
       ]
     },
     "magnetic-field": {
-      "hash": "9ecf033f16293bd9",
-      "history": []
+      "hash": "2521d567d96edea1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "2521d567d96edea1",
+          "prev_hash": "9ecf033f16293bd9",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "parallax-shift": {
       "hash": "8fee8dcb8786d987",
@@ -2229,8 +2651,17 @@
       "history": []
     },
     "refraction-tunnel": {
-      "hash": "ec48812182be6809",
-      "history": []
+      "hash": "b5c470ec26e0f59a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "b5c470ec26e0f59a",
+          "prev_hash": "ec48812182be6809",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        }
+      ]
     },
     "scan-distort-gpt52": {
       "hash": "e07fd4aa58916419",
@@ -2483,8 +2914,17 @@
       "history": []
     },
     "crystalline-fracture": {
-      "hash": "bea1182bc2e1bab8",
-      "history": []
+      "hash": "8bc246cbcf7673bf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "8bc246cbcf7673bf",
+          "prev_hash": "bea1182bc2e1bab8",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "crystalline-veins": {
       "hash": "2166b55faae96205",
@@ -3558,7 +3998,7 @@
       ]
     },
     "gen-chronos-crystal-labyrinth": {
-      "hash": "61219acdf8b3a8d2",
+      "hash": "be79a3750d5c8191",
       "history": [
         {
           "event": "upgraded",
@@ -3567,6 +4007,14 @@
           "prev_hash": "2ad79ccfb0b94eed",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "be79a3750d5c8191",
+          "prev_hash": "61219acdf8b3a8d2",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     },
@@ -3719,7 +4167,7 @@
       ]
     },
     "gen-crystal-caverns": {
-      "hash": "04dbb8fc0d49191c",
+      "hash": "60b067d245fe9d02",
       "history": [
         {
           "event": "upgraded",
@@ -3728,6 +4176,14 @@
           "prev_hash": "1ca8bdb74a2a2c63",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "60b067d245fe9d02",
+          "prev_hash": "04dbb8fc0d49191c",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     },
@@ -4988,7 +5444,7 @@
       ]
     },
     "gen-glacial-aether-quantum-cavern": {
-      "hash": "17cf492f608aecf5",
+      "hash": "b95552b83324ee1a",
       "history": [
         {
           "event": "upgraded",
@@ -4997,6 +5453,14 @@
           "prev_hash": "b9018d8f053db2ab",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "b95552b83324ee1a",
+          "prev_hash": "17cf492f608aecf5",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     },
@@ -6095,8 +6559,17 @@
       ]
     },
     "gen-magnetic-field-warp": {
-      "hash": "892e9fc1d33cff47",
-      "history": []
+      "hash": "061161e22bfc1287",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "061161e22bfc1287",
+          "prev_hash": "892e9fc1d33cff47",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "gen-magnetic-kelp": {
       "hash": "0d2eefe0f7fd367a",
@@ -7876,7 +8349,7 @@
       ]
     },
     "gen-voronoi-crystal": {
-      "hash": "70d1b0245a7a3e71",
+      "hash": "3aec9edac0a3683f",
       "history": [
         {
           "event": "upgraded",
@@ -7885,6 +8358,14 @@
           "prev_hash": "97220364e86388c0",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "3aec9edac0a3683f",
+          "prev_hash": "70d1b0245a7a3e71",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     },
@@ -8188,8 +8669,17 @@
       ]
     },
     "gen-trails": {
-      "hash": "ab691d6bebaf92ec",
-      "history": []
+      "hash": "aaad5c36fec5a0d4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "aaad5c36fec5a0d4",
+          "prev_hash": "ab691d6bebaf92ec",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "gen-wave-equation": {
       "hash": "e1bf4abeaed0dc3a",
@@ -8691,12 +9181,30 @@
       "history": []
     },
     "neon-poly-grid": {
-      "hash": "eb368fd162292555",
-      "history": []
+      "hash": "2c8b508dc841f182",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "2c8b508dc841f182",
+          "prev_hash": "eb368fd162292555",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "neon-quantum-lattice": {
-      "hash": "16d5a1848fc2c892",
-      "history": []
+      "hash": "92772d24dda6c6af",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "92772d24dda6c6af",
+          "prev_hash": "16d5a1848fc2c892",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "spec-hypercube-projection": {
       "hash": "b2c33cfe75d2e5dd",
@@ -8780,8 +9288,17 @@
       "history": []
     },
     "hybrid-spectral-sorting": {
-      "hash": "3d68c8c300d9521c",
-      "history": []
+      "hash": "21d3e1ccf0d4ca39",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "21d3e1ccf0d4ca39",
+          "prev_hash": "3d68c8c300d9521c",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "hybrid-voronoi-glass": {
       "hash": "31fc9afbf31866a4",
@@ -8961,12 +9478,38 @@
       ]
     },
     "cyber-halftone-scanner": {
-      "hash": "0fa112f2ff329f82",
-      "history": []
+      "hash": "8676371bfd16fb45",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "8676371bfd16fb45",
+          "prev_hash": "0fa112f2ff329f82",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "digital-lens": {
-      "hash": "ff3d45207dc47f4d",
-      "history": []
+      "hash": "d13479db0633c29a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "f1403a8ea74f80aa",
+          "prev_hash": "ff3d45207dc47f4d",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "d13479db0633c29a",
+          "prev_hash": "f1403a8ea74f80aa",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
+        }
+      ]
     },
     "directional-blur-wipe": {
       "hash": "c8e631d4adcf4d5b",
@@ -9055,8 +9598,17 @@
       "history": []
     },
     "frosted-glass-lens": {
-      "hash": "29063ed580e7f005",
-      "history": []
+      "hash": "c5ce073df6752f73",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "c5ce073df6752f73",
+          "prev_hash": "29063ed580e7f005",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        }
+      ]
     },
     "gamma-ray-burst": {
       "hash": "165cc31771bb8184",
@@ -9080,16 +9632,42 @@
       "history": []
     },
     "graphic-novel": {
-      "hash": "a446396a1448bef1",
-      "history": []
+      "hash": "51f2518e4d27c8d7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "51f2518e4d27c8d7",
+          "prev_hash": "a446396a1448bef1",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "heat-haze-mirage": {
       "hash": "a9846d7d8a318713",
       "history": []
     },
     "hex-lens": {
-      "hash": "a064d901a911a19b",
-      "history": []
+      "hash": "4d5b806eb90e84e8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "d2c53888eec4984e",
+          "prev_hash": "a064d901a911a19b",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "4d5b806eb90e84e8",
+          "prev_hash": "d2c53888eec4984e",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
+        }
+      ]
     },
     "holographic-shatter": {
       "hash": "ea08a1d213ad517d",
@@ -9215,7 +9793,7 @@
       ]
     },
     "pixel-stretch-interactive": {
-      "hash": "a5db630615d3955d",
+      "hash": "8ce64cfe0cc251b8",
       "history": [
         {
           "event": "upgraded",
@@ -9224,6 +9802,14 @@
           "prev_hash": "e99401cccdd38f9a",
           "commit": "9cace4aa",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "8ce64cfe0cc251b8",
+          "prev_hash": "a5db630615d3955d",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
         }
       ]
     },
@@ -9245,12 +9831,30 @@
       "history": []
     },
     "polka-wave": {
-      "hash": "7030fb16431845fa",
-      "history": []
+      "hash": "668a8a8d1d458d84",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "668a8a8d1d458d84",
+          "prev_hash": "7030fb16431845fa",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "posterize-neon-edges": {
-      "hash": "3c0cf6a1aafcce4d",
-      "history": []
+      "hash": "3f35985068bf66a4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "3f35985068bf66a4",
+          "prev_hash": "3c0cf6a1aafcce4d",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "pyramid-bandprocess-pass2": {
       "hash": "115feb04c1b8a366",
@@ -9515,8 +10119,17 @@
       ]
     },
     "brush-strokes": {
-      "hash": "e1218cfbd0d29552",
-      "history": []
+      "hash": "85b0f75606c9481b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "85b0f75606c9481b",
+          "prev_hash": "e1218cfbd0d29552",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "bubble-wrap": {
       "hash": "223975ee87032ef5",
@@ -9655,8 +10268,17 @@
       ]
     },
     "crystal-freeze": {
-      "hash": "bacfc868f411f1c9",
-      "history": []
+      "hash": "92f7f3ba1de885db",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "92f7f3ba1de885db",
+          "prev_hash": "bacfc868f411f1c9",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
     },
     "crystal-illuminator": {
       "hash": "96651ceaab76aa8f",
@@ -9898,8 +10520,17 @@
       ]
     },
     "edge-glow-mouse": {
-      "hash": "737f38ab42e62672",
-      "history": []
+      "hash": "6331fc1c85d4ff01",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "6331fc1c85d4ff01",
+          "prev_hash": "737f38ab42e62672",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "energy-shield": {
       "hash": "0f5c806f22d06c38",
@@ -9987,8 +10618,25 @@
       "history": []
     },
     "glass-wall": {
-      "hash": "3af6521499e61712",
-      "history": []
+      "hash": "d39c4fe506033045",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "0c980fe5135fb7ca",
+          "prev_hash": "3af6521499e61712",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:59:56.748Z",
+          "hash": "d39c4fe506033045",
+          "prev_hash": "0c980fe5135fb7ca",
+          "commit": "1e585dfd",
+          "note": "2026-11-01 sonnet/batch-16 review fixes"
+        }
+      ]
     },
     "glitch-cathedral": {
       "hash": "03397c88c5ef8765",
@@ -10372,8 +11020,17 @@
       ]
     },
     "lighthouse-reveal": {
-      "hash": "2ad2c53aebcc0574",
-      "history": []
+      "hash": "3588f424d50567d6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "3588f424d50567d6",
+          "prev_hash": "2ad2c53aebcc0574",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "liquid-lens": {
       "hash": "fe371d7c1fb0b872",
@@ -10784,8 +11441,17 @@
       "history": []
     },
     "mouse-synesthetic-sound-paint": {
-      "hash": "23a37da390c5f8b4",
-      "history": []
+      "hash": "1805d09395f9654a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "1805d09395f9654a",
+          "prev_hash": "23a37da390c5f8b4",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "mouse-time-crystal": {
       "hash": "ccc2b78e25604c7a",
@@ -10813,8 +11479,17 @@
       "history": []
     },
     "neon-contour-drag": {
-      "hash": "fa1ece142a62dbcd",
-      "history": []
+      "hash": "d372aa7f395a15dd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "d372aa7f395a15dd",
+          "prev_hash": "fa1ece142a62dbcd",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "neon-cursor-trace": {
       "hash": "37e688f36ab5e6f0",
@@ -11055,8 +11730,17 @@
       ]
     },
     "particle-swarm": {
-      "hash": "ac70dd179d9d3d6c",
-      "history": []
+      "hash": "cf14c0e5ab43e7bf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "cf14c0e5ab43e7bf",
+          "prev_hash": "ac70dd179d9d3d6c",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "phosphor-magnifier": {
       "hash": "2d43bbd11a7c6dd2",
@@ -11072,8 +11756,17 @@
       ]
     },
     "pixel-drag-smear": {
-      "hash": "8ae2f3c6c2668146",
-      "history": []
+      "hash": "dc8fb3cdc6463ed9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "dc8fb3cdc6463ed9",
+          "prev_hash": "8ae2f3c6c2668146",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "pixel-explode": {
       "hash": "70f1b8d044ff80dc",
@@ -11143,12 +11836,30 @@
       ]
     },
     "pixel-sort-explorer": {
-      "hash": "6e067109348ad3e7",
-      "history": []
+      "hash": "79617d8d64235430",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "79617d8d64235430",
+          "prev_hash": "6e067109348ad3e7",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "pixel-sort-radial": {
-      "hash": "b7ba2c50d9b74c2e",
-      "history": []
+      "hash": "a383c0ca797ceded",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "a383c0ca797ceded",
+          "prev_hash": "b7ba2c50d9b74c2e",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "pixel-stretch-cross": {
       "hash": "ad24ac848b367bcb",
@@ -11247,7 +11958,7 @@
       "history": []
     },
     "radial-hex-lens": {
-      "hash": "1350d1041c312241",
+      "hash": "5e54c8ec622ccb0f",
       "history": [
         {
           "event": "upgraded",
@@ -11256,6 +11967,14 @@
           "prev_hash": "54bd96478c297d5a",
           "commit": "1008b956",
           "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T18:50:32.042Z",
+          "hash": "5e54c8ec622ccb0f",
+          "prev_hash": "1350d1041c312241",
+          "commit": "8f1ed184",
+          "note": "2026-11-01 sonnet/batch-16 lens & refractive glass ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-16"
         }
       ]
     },
@@ -11515,16 +12234,34 @@
       ]
     },
     "spectral-brush": {
-      "hash": "e251e3b35893fef6",
-      "history": []
+      "hash": "b31f05c4a30c63ce",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T04:04:14.029Z",
+          "hash": "b31f05c4a30c63ce",
+          "prev_hash": "e251e3b35893fef6",
+          "commit": "80f45b0d",
+          "note": "2026-11-01 painterly-brush-ten (claude) — agents/swarm-outputs/claude-2026-11-01-painterly-brush-ten"
+        }
+      ]
     },
     "spectral-distortion": {
       "hash": "6368c1e9876a08c7",
       "history": []
     },
     "spectral-smear": {
-      "hash": "4e1896e095c770f8",
-      "history": []
+      "hash": "036053ba8a3bb773",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "036053ba8a3bb773",
+          "prev_hash": "4e1896e095c770f8",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "spectral-waves": {
       "hash": "8079e98b91880592",
@@ -11905,12 +12642,30 @@
       ]
     },
     "cinematic-flare": {
-      "hash": "91a2869982b95b6a",
-      "history": []
+      "hash": "3f9fec0cffea6b99",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "3f9fec0cffea6b99",
+          "prev_hash": "91a2869982b95b6a",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "divine-light-gpt52": {
-      "hash": "bd6d35384357a05f",
-      "history": []
+      "hash": "b0cef9ff3882f130",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "b0cef9ff3882f130",
+          "prev_hash": "bd6d35384357a05f",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "divine-light": {
       "hash": "38ebc977827ace83",
@@ -11926,12 +12681,30 @@
       ]
     },
     "dynamic-lens-flares": {
-      "hash": "55c67bff17b57b4f",
-      "history": []
+      "hash": "c3eaf23e7494808c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "c3eaf23e7494808c",
+          "prev_hash": "55c67bff17b57b4f",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "lens-flare-brush": {
-      "hash": "664abff88d6bbb2d",
-      "history": []
+      "hash": "a17cd9d6deb68e91",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "a17cd9d6deb68e91",
+          "prev_hash": "664abff88d6bbb2d",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "matrix_digital_rain": {
       "hash": "df82af9209ad48e7",
@@ -12673,8 +13446,17 @@
       "history": []
     },
     "halftone": {
-      "hash": "d6923d45fc05f9c7",
-      "history": []
+      "hash": "deaddf9e8986b8c6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:01:04.404Z",
+          "hash": "deaddf9e8986b8c6",
+          "prev_hash": "d6923d45fc05f9c7",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-36 (Cursor(2)) — docs/agents/swarm-outputs/grok-2026-11-02-batch-36/"
+        }
+      ]
     },
     "holographic-glitch": {
       "hash": "7ad572fc598bb5c6",
@@ -12685,8 +13467,17 @@
       "history": []
     },
     "neon-edges": {
-      "hash": "54c42a8124eb5b62",
-      "history": []
+      "hash": "56c080f0c063dfd4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "56c080f0c063dfd4",
+          "prev_hash": "54c42a8124eb5b62",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "phosphor-decay": {
       "hash": "887e182d372c8cd0",
@@ -12757,7 +13548,7 @@
       "history": []
     },
     "spectral-glitch-sort": {
-      "hash": "e890aad641e0b3d4",
+      "hash": "4bb6b371502416fd",
       "history": [
         {
           "event": "upgraded",
@@ -12766,6 +13557,14 @@
           "prev_hash": "abe2160a79aff765",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "4bb6b371502416fd",
+          "prev_hash": "e890aad641e0b3d4",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
         }
       ]
     },
@@ -12816,8 +13615,17 @@
       "history": []
     },
     "alpha-em-field-simulation": {
-      "hash": "0b51f4eff1ebb426",
-      "history": []
+      "hash": "e60b3a8cc21745f7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T14:49:29.897Z",
+          "hash": "e60b3a8cc21745f7",
+          "prev_hash": "0b51f4eff1ebb426",
+          "commit": "00db5f72",
+          "note": "2026-11-01 sonnet batch 13 swarm/flock/field-line ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-13/BRIEFS.md"
+        }
+      ]
     },
     "alpha-erosion-terrain": {
       "hash": "5388b85c531974b5",
@@ -13374,8 +14182,17 @@
       ]
     },
     "anamorphic-caustic-flare": {
-      "hash": "4774ff5151e999a5",
-      "history": []
+      "hash": "379144ecb32e2ca2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T14:21:13.903Z",
+          "hash": "379144ecb32e2ca2",
+          "prev_hash": "4774ff5151e999a5",
+          "commit": "d23a1501",
+          "note": "2026-11-02 sonnet/batch-18 lens flare, light beam & aurora ten (Opus) — agents/swarm-outputs/claude-2026-11-02-sonnet-batch-18/NOTES.md"
+        }
+      ]
     },
     "ascii-shockwave": {
       "hash": "957ee42374db6ccd",
@@ -13457,12 +14274,30 @@
       ]
     },
     "electric-contours": {
-      "hash": "3fac35fa96caf69c",
-      "history": []
+      "hash": "454ebe89234cdd26",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "454ebe89234cdd26",
+          "prev_hash": "3fac35fa96caf69c",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "glitch-pixel-sort": {
-      "hash": "5afc9d97efe4337d",
-      "history": []
+      "hash": "8db895d4f77e4e72",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "8db895d4f77e4e72",
+          "prev_hash": "5afc9d97efe4337d",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "hex-circuit": {
       "hash": "3ee6044e327d2a31",
@@ -13515,7 +14350,7 @@
       "history": []
     },
     "luma-smear-interactive": {
-      "hash": "654f00414f3668f2",
+      "hash": "99b0fd29595fc06b",
       "history": [
         {
           "event": "upgraded",
@@ -13524,6 +14359,14 @@
           "prev_hash": "994aea931fbf212b",
           "commit": "9cace4aa",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "99b0fd29595fc06b",
+          "prev_hash": "654f00414f3668f2",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
         }
       ]
     },
@@ -13553,7 +14396,7 @@
       ]
     },
     "neon-edge-reveal": {
-      "hash": "8d9e2fb8f25d2995",
+      "hash": "ff4f7507368580fd",
       "history": [
         {
           "event": "upgraded",
@@ -13562,12 +14405,29 @@
           "prev_hash": "f51d400eee723a3d",
           "commit": "bb2b2aed",
           "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "ff4f7507368580fd",
+          "prev_hash": "8d9e2fb8f25d2995",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
     "neon-topology": {
-      "hash": "311446d4c2a2c9a9",
-      "history": []
+      "hash": "d3040ca7b83c7c92",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "d3040ca7b83c7c92",
+          "prev_hash": "311446d4c2a2c9a9",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "phantom-lag": {
       "hash": "db8c796697cd42de",
@@ -13583,8 +14443,17 @@
       ]
     },
     "pixel-sorter": {
-      "hash": "472245b9c82decd7",
-      "history": []
+      "hash": "4713a441bb87ac6d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T12:33:44.692Z",
+          "hash": "4713a441bb87ac6d",
+          "prev_hash": "472245b9c82decd7",
+          "commit": "00db5f72",
+          "note": "2026-11-01 pixel-sort / smear twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve"
+        }
+      ]
     },
     "quantum-field-visualizer": {
       "hash": "cdba5dd0283d1366",
@@ -13747,6 +14616,18 @@
           "hash": "899333d01258f734",
           "commit": "a232cbca",
           "note": "2026-10-26 cursor/batch-09 (grok) — docs/agents/swarm-outputs/cursor-2026-10-26-batch-09/BRIEFS.md"
+        }
+      ]
+    },
+    "gen-bismuth-quantum-reef": {
+      "hash": "97a2f2921b5e225f",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T14:47:27.669Z",
+          "hash": "97a2f2921b5e225f",
+          "commit": "cc2fd84c",
+          "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
         }
       ]
     }

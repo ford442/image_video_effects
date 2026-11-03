@@ -2,31 +2,12 @@
 //  Pixel Sort Explorer
 //  Category: image
 //  Features: pixel-sort, interactive-mouse, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-09
-//  Ideas: luma-hold hysteresis; exact-C streak persist
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: luma-hold hysteresis; exact-C streak persist; interval ticks; tail dust
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ── Canonical hash / noise (3-octave fbm drives the line wobble) ──
 fn hash21(p: vec2<f32>) -> f32 {
@@ -181,6 +162,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sortMix = clamp(mask * sorted * (0.85 + downBoost * 0.15), 0.0, 1.0);
     var rgb = mix(color.rgb, streak, sortMix);
 
+    // ── Idea 3: interval ticks ─────────────────────────────────────
+    // Dark stations along streakT so the segment length is visible.
+    // Smoothness still owns the stride that sets that length.
+    let tickPhase = fract(streakT * 5.0);
+    let tick = (1.0 - smoothstep(0.0, 0.08, tickPhase)) * sorted * mask;
+    rgb = rgb * (1.0 - 0.32 * tick);
+    // ── Idea 4: tail dust ──────────────────────────────────────────
+    // Stable spatial breakup at the dark end of the run. No frame hash.
+    let dust = hash21(floor(uv * resolution)) * smoothstep(0.55, 0.95, streakT) * sorted;
+    rgb = mix(rgb, rgb * 0.55, dust * 0.65);
+
     // ── Scan sweep: a read-out band traveling along the sort axis ──
     if (mask > 0.01) {
         let axisCoord = dot(dVec, dirVec) / max(rEff, 0.001);
@@ -209,7 +201,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rgb = clamp(rgb + vec3<f32>(grain), vec3<f32>(0.0), vec3<f32>(1.0));
 
     let acesRGB = acesToneMap(rgb);
-    let alpha = clamp(origAlpha * 0.35 + sortMix * 0.55 + mask * 0.15, 0.0, 1.0);
+    let alpha = clamp(origAlpha * 0.35 + sortMix * 0.55 + mask * 0.15 + tick * 0.1 + dust * 0.08, 0.0, 1.0);
     let outCol = vec4<f32>(acesRGB, alpha);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);

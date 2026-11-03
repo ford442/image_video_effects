@@ -4,28 +4,13 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            chromatic-focus, guided-filter-depth, semantic-alpha, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-11-01
+//  Ideas: depth-edge-gated dispersion (joint depth range); focus-plane detail re-injection (guided-filter base/detail, 12.2A)
+//  A packing: ACES display RGBA (C read as colour)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=AberrationIntensity, y=FocusRadius, z=SpectralSpread, w=AnimationSpeed
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=AberrationIntensity, y=FocusRadius, z=SpectralSpread, w=AnimationSpeed
 
 const SPECTRAL_RED:     f32 = 0.65;
 const SPECTRAL_ORANGE:  f32 = 0.59;
@@ -123,11 +108,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dist = length(distVec);
   let focusFactor = smoothstep(focusRadius, focusRadius + 0.4, dist);
   let effectiveStrength = aberIntensity * focusFactor;
+  let guide = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   let angle = atan2(distVec.y, distVec.x) + sin(animationOffset) * 0.2;
   let radialDir = vec2<f32>(cos(angle), sin(angle));
   let angularDispersion = vec2<f32>(cos(angle + 1.5707963), sin(angle + 1.5707963)) * 0.3;
   let dispersionDir = normalize(radialDir + angularDispersion);
+
+  // Idea 1: depth-edge-gated dispersion. The filter below only mixes in as colour; the
+  // dispersed taps themselves used to cross silhouettes freely. One probe where the bands
+  // land: if its depth differs from this pixel's, dispersion falls to 0.3x (joint depth
+  // range weight, sigma 0.04), so fringes stop at depth edges. Flat depth leaves it at 1x.
+  let probeUV = clamp(uv + dispersionDir * effectiveStrength * spectralSpread * 0.6, vec2<f32>(0.001), vec2<f32>(0.999));
+  let probeDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, probeUV, 0.0).r;
+  let depthStep = probeDepth - guide;
+  let crossKeep = mix(0.3, 1.0, exp(-depthStep * depthStep / (2.0 * 0.04 * 0.04)));
+  let gatedStrength = effectiveStrength * crossKeep;
 
   // Guided filter using depth to prevent cross-edge dispersion bleeding
   let maxRadius = 3;
@@ -159,17 +155,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let epsilon = 0.005;
   let a = (meanGI - meanGuide * meanInput) / (varGuide + epsilon);
   let b = meanInput - a * meanGuide;
-  let guide = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let guidedResult = a * guide + b;
 
   // Sample 7 spectral bands
-  let redSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_RED, effectiveStrength, spectralSpread);
-  let orangeSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_ORANGE, effectiveStrength, spectralSpread);
-  let yellowSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_YELLOW, effectiveStrength, spectralSpread);
-  let greenSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_GREEN, effectiveStrength, spectralSpread);
-  let blueSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_BLUE, effectiveStrength, spectralSpread);
-  let indigoSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_INDIGO, effectiveStrength, spectralSpread);
-  let violetSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_VIOLET, effectiveStrength, spectralSpread);
+  let redSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_RED, gatedStrength, spectralSpread);
+  let orangeSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_ORANGE, gatedStrength, spectralSpread);
+  let yellowSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_YELLOW, gatedStrength, spectralSpread);
+  let greenSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_GREEN, gatedStrength, spectralSpread);
+  let blueSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_BLUE, gatedStrength, spectralSpread);
+  let indigoSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_INDIGO, gatedStrength, spectralSpread);
+  let violetSample = sampleSpectralBand(uv, dispersionDir, SPECTRAL_VIOLET, gatedStrength, spectralSpread);
 
   var spectralColor = vec3<f32>(0.0);
   spectralColor += RED_W * redSample;
@@ -185,6 +180,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sharpWeight = 1.0 - focusFactor;
   var finalColor = mix(spectralColor, sharpColor, sharpWeight * 0.45);
   finalColor = mix(finalColor, guidedResult, 0.35 + mids * 0.2);
+
+  // Idea 2: focus-plane detail re-injection (guided-filter base/detail, 12.2A). guidedResult
+  // is the depth-guided edge-aware base, so (sharp - base) is the colour detail the base
+  // cannot explain. The in-focus weight puts a clamped share of it back, restoring
+  // crispness inside the focus disc without ringing past depth edges.
+  let focusDetail = clamp(sharpColor - guidedResult, vec3<f32>(-0.25), vec3<f32>(0.25));
+  finalColor = finalColor + focusDetail * sharpWeight * 0.5;
 
   // Click ripple shocks
   let rippleCount = min(u32(u.config.y), 50u);

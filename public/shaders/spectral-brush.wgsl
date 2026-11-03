@@ -5,31 +5,12 @@
 //             oklab, chromatic-aberration, aces-tone-mapped, premultiplied-alpha,
 //             alpha-layered, luminance-key
 //  Complexity: High
-//  Upgraded: 2026-10-04 (prev 2026-07-08)
-//  Ideas: stroke cooling along the blackbody locus; heat-haze shimmer above hot paint; cinder flicker in cooling embers
+//  Upgraded: 2026-11-01 (prev 2026-10-04)
+//  Ideas: stroke cooling along the blackbody locus; heat-haze shimmer above hot paint; cinder flicker in cooling embers; steel temper-colour film band on the cooling trail; flame-lick flicker on the live rim
 //  A packing: (heat mask, brush alpha, 0, out alpha) — unchanged; B = alpha-layer debug (HEAD)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -129,6 +110,14 @@ fn chromaticAberration(uv: vec2<f32>, amount: f32) -> vec3<f32> {
   return vec3<f32>(r, g, b);
 }
 
+fn vnoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x),
+             mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -160,7 +149,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let untouched = select(0.0, 1.0, cooledMask <= 0.0 && dist > brushSize);
 
   let innerRadius = brushSize * (1.0 - edgeHardness * 0.9) * depthDiffusion;
-  let brushVal = 1.0 - smoothstep(innerRadius, brushSize, dist);
+  var brushVal = 1.0 - smoothstep(innerRadius, brushSize, dist);
+  // Idea 5 — flame lick: the live rim of the brush flickers like torch flame, tongues rising (y grows down)
+  let lick = vnoise(vec2<f32>(uv.x * 55.0, uv.y * 40.0 + time * 5.0)) - 0.5;
+  brushVal = clamp(brushVal + lick * 0.9 * 4.0 * brushVal * (1.0 - brushVal) * (0.5 + treble), 0.0, 1.0);
   let finalMask = max(cooledMask, brushVal);
   let effectiveMask = mix(finalMask, 0.0, untouched);
 
@@ -191,6 +183,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Thin-film iridescence on the brush rim
   let film = 0.5 + 0.5 * cos(dist * 35.0 - time * 2.5 + bass * 3.0);
   bbLin = bbLin * (1.0 + film * 0.12 * effectiveMask);
+
+  // Idea 4 — temper film: as steel cools it passes straw -> purple -> blue oxide colours
+  let temperBand = smoothstep(0.22, 0.34, heat) * (1.0 - smoothstep(0.5, 0.64, heat));
+  let temperT = clamp((0.58 - heat) / 0.3, 0.0, 1.0);
+  let temperCol = mix(mix(vec3<f32>(0.85, 0.65, 0.28), vec3<f32>(0.45, 0.2, 0.55), smoothstep(0.0, 0.5, temperT)),
+                      vec3<f32>(0.15, 0.3, 0.75), smoothstep(0.5, 1.0, temperT));
+  bbLin = mix(bbLin, srgb_to_linear(temperCol) * 1.4, temperBand * 0.45);
 
   // Smooth, perceptually uniform spectral blend
   var color = mixOkLab(baseLin, bbLin, effectiveMask);

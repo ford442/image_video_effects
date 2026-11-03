@@ -2,14 +2,15 @@
   "id": "dynamic-lens-flares",
   "name": "Dynamic Lens Flares",
   "url": "shaders/dynamic-lens-flares.wgsl",
-  "description": "Cinematic optical train lens flare following cursor, featuring distributed ghost elements with Cauchy chromatic dispersion, internal reflection halos, starburst diffraction, ACES tone mapping, and temporal phosphor persistence.",
+  "description": "Cinematic optical train lens flare following cursor, featuring distributed ghost elements with Cauchy chromatic dispersion, internal reflection halos, starburst diffraction, ACES tone mapping, and temporal phosphor persistence. Off-axis ghosts are clipped into cat's-eye shapes by the lens barrel and their rims split red-outside, blue-inside.",
   "features": [
     "mouse-driven",
     "optical",
     "cinematic",
     "audio-reactive",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
