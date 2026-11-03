@@ -2,7 +2,7 @@
   "id": "astral-kaleidoscope-julia",
   "name": "Astral Kaleidoscope Julia",
   "url": "shaders/astral-kaleidoscope-julia.wgsl",
-  "description": "Astral Kaleidoscope Julia",
+  "description": "A 4D quaternion Julia set ray-marched through a kaleidoscope fold. The fractal reflects the photo with Schlick Fresnel, and the mirror seams show a dark gap with a thin bevel.",
   "tags": [
     "kaleidoscope",
     "quaternion-julia",
@@ -13,7 +13,9 @@
     "kaleidoscope",
     "quaternion-julia",
     "raymarching",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba",
+    "mouse-driven"
   ],
   "params": [
     {

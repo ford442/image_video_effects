@@ -16,13 +16,32 @@ FastAPI-based storage manager for Google Cloud Storage with shader library suppo
 ```bash
 GCP_BUCKET_NAME=your-bucket-name
 GCP_CREDENTIALS={"type": "service_account", ...}  # JSON string
+WEBHOOK_SIGNING_SECRET=...   # server-only, >= 32 chars: openssl rand -hex 32
 ```
+
+`WEBHOOK_SIGNING_SECRET` enables the browser write path (`POST /upload-token`, `POST /image-effects`).
+Unset or too short: the server logs a warning at startup and both routes return 503. Other
+optional knobs (`WEBHOOK_ALLOWED_ORIGINS`, `WEBHOOK_RATE_LIMIT_REQUESTS`, `WEBHOOK_MAX_BODY_BYTES`,
+`REDIS_URL`) are in [docs/STORAGE_API.md](../docs/STORAGE_API.md#operating-it).
+
+### Upload tokens: rotation
+
+1. `openssl rand -hex 32`
+2. Set it as `WEBHOOK_SIGNING_SECRET` on the host that runs storage_manager and restart it. Tokens
+   already issued (60 s lifetime) stop working; clients simply ask for a new one.
+3. **The old `REACT_APP_WEBHOOK_SECRET` was inlined into previously deployed JS bundles. Treat it as
+   public and rotate it everywhere it was accepted; delete it from `.env` files, CI secrets and hosting config.**
+4. Run more than one worker only with `REDIS_URL` set (single-use tokens are tracked there, in `WEBHOOK_REDIS_DB`,
+   default `REDIS_DB + 1`: never the response cache's DB, which is flushed on every shader save).
 
 ## Running Locally
 
 ```bash
 pip install -r requirements.txt
-uvicorn app:app --host 0.0.0.0 --port 7860 --reload
+# from the repository root (the package imports itself as `storage_manager`)
+uvicorn storage_manager.app:app --host 0.0.0.0 --port 7860 --reload
+# tests (either directory works)
+cd storage_manager && python -m pytest -q
 ```
 
 ## Deploy to Hugging Face Spaces
@@ -58,6 +77,10 @@ uvicorn app:app --host 0.0.0.0 --port 7860 --reload
 - `PATCH /api/songs/{item_id}` - Patch metadata
 - `POST /api/samples` - Upload sample file
 - `GET /api/samples/{sample_id}` - Stream sample file
+
+### Webhook writes (token-gated)
+- `POST /upload-token` (also `/webhook/upload-token`) - `{action, name}` -> 60 s single-use token
+- `POST /image-effects` (also `/webhook/image-effects`) - `Authorization: Bearer <token>`, performs the write
 
 ### Admin
 - `POST /api/admin/sync` - Rebuild indexes from GCS

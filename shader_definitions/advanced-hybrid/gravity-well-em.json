@@ -2,7 +2,7 @@
   "id": "gravity-well-em",
   "name": "Gravity Well Em",
   "url": "shaders/gravity-well-em.wgsl",
-  "description": "Catalog entry for Gravity Well Em.",
+  "description": "A gravitational well under the cursor: lensing with chromatic dispersion, a photon ring, frame-drag hue shear, a dimmer counter-image inside the Einstein ring, and gravitational redshift toward the core, with electromagnetic fields from the mouse.",
   "tags": [
     "gravitational-lensing",
     "electromagnetic-fields",

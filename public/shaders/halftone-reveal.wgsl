@@ -3,30 +3,11 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: per-plate newsprint gain; highlight knockout
+//  Upgraded: 2026-09-09, 2026-11-02
+//  Ideas: per-plate newsprint gain; highlight knockout; loupe twist; bitten dot edge
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
@@ -95,7 +76,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lum = dot(baseColor, vec3<f32>(0.299, 0.587, 0.114));
 
     let cmyk = rgbToCmyk(baseColor);
-    let angles = vec4<f32>(baseAngle, baseAngle + 0.5236, baseAngle - 0.5236, baseAngle + 1.5708);
+    // ── Idea 1: loupe twist — the glass turns the screens a few degrees at its center
+    let angles = vec4<f32>(baseAngle, baseAngle + 0.5236, baseAngle - 0.5236, baseAngle + 1.5708) + loupe * 0.22;
     let gridPos = (uv - mouse) * depthDotSize;
 
     let stippleScale = mix(1.4, 0.6, lum);
@@ -105,10 +87,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let yGrid = rotate2d(gridPos * stippleScale, angles.z);
     let kGrid = rotate2d(gridPos * stippleScale, angles.w);
 
-    let cDot = 1.0 - smoothstep(0.2, 0.55, length(fract(cGrid) - 0.5)) * cmyk.x;
-    let mDot = 1.0 - smoothstep(0.2, 0.55, length(fract(mGrid) - 0.5)) * cmyk.y;
-    let yDot = 1.0 - smoothstep(0.2, 0.55, length(fract(yGrid) - 0.5)) * cmyk.z;
-    let kDot = 1.0 - smoothstep(0.2, 0.55, length(fract(kGrid) - 0.5)) * cmyk.w;
+    // ── Idea 2: bitten dot edge — the paper tooth nibbles each plate, and only under the glass
+    let cBite = (hash2(floor(cGrid)) - 0.5) * 0.07 * revealMask;
+    let mBite = (hash2(floor(mGrid) + vec2<f32>(19.0, 7.0)) - 0.5) * 0.07 * revealMask;
+    let yBite = (hash2(floor(yGrid) + vec2<f32>(3.0, 23.0)) - 0.5) * 0.07 * revealMask;
+    let kBite = (hash2(floor(kGrid) + vec2<f32>(11.0, 13.0)) - 0.5) * 0.07 * revealMask;
+    let cDot = 1.0 - smoothstep(0.2, 0.55 + cBite, length(fract(cGrid) - 0.5)) * cmyk.x;
+    let mDot = 1.0 - smoothstep(0.2, 0.55 + mBite, length(fract(mGrid) - 0.5)) * cmyk.y;
+    let yDot = 1.0 - smoothstep(0.2, 0.55 + yBite, length(fract(yGrid) - 0.5)) * cmyk.z;
+    let kDot = 1.0 - smoothstep(0.2, 0.55 + kBite, length(fract(kGrid) - 0.5)) * cmyk.w;
 
     // Idea 1: per-plate newsprint gain — cyan spreads more than black.
     let gainBase = 0.88 + mids * 0.08;

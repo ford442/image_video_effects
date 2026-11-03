@@ -7,6 +7,9 @@
 //  Chunks From: kimi_flock_symphony.wgsl, mouse-electromagnetic-aurora.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-16 — Generative & Cosmic Enhancer
+//  Upgraded: 2026-11-01
+//  Ideas: charge-sign two-fluid split (E-direct push flips with sign, E x B drift common); drift-stretched particles
+//  A packing: unchanged - mouse state at A(0,0) only. HEAD tone curve (Reinhard + pow 0.8) kept as the look.
 // ═══════════════════════════════════════════════════════════════════
 //  A symphony of pseudo-flocking particles whose trajectories are
 //  bent by electromagnetic field lines generated from mouse motion.
@@ -15,26 +18,7 @@
 //  the flock with vortex forces.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash(p: f32) -> f32 {
     return fract(sin(p * 12.9898) * 43758.5453);
@@ -150,8 +134,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let seed = f32(i) * 1.61803398875;
         var b_pos = vec2<f32>(hash(seed), hash(seed + 100.0));
 
-        // Apply EM field displacement to particle position
-        let emDisp = fieldDir * fieldMag * 0.02 + vec2<f32>(-totalE.y, totalE.x) * totalB * 0.01;
+        // Idea 1: charge-sign two-fluid split. In a plasma the E-parallel push flips with the
+        // sign of the charge while the E x B drift does not, so the swarm separates into two
+        // fluids around the cursor. Each particle is +1 or -1 from its own hash.
+        let chargeSign = select(-1.0, 1.0, hash(seed + 300.0) > 0.5);
+        let emDisp = fieldDir * fieldMag * 0.02 * chargeSign + vec2<f32>(-totalE.y, totalE.x) * totalB * 0.01;
         b_pos = fract(b_pos + emDisp + vec2<f32>(
             noise(b_pos * 10.0 + time + f32(i)),
             noise(b_pos * 10.0 + time + f32(i) + 100.0)
@@ -166,14 +153,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             noise(b_pos * 20.0 + time * 0.5 + 50.0)
         );
 
-        var d = distance(pixel_pos, vec2<f32>(bx, by));
+        // Idea 2: drift-stretched particles. The dot is elongated along its own drift direction
+        // (noise heading + the field direction), stretch 1 .. ~4 with speed and field strength,
+        // and its alpha is divided by sqrt(stretch) so a streak is not brighter than a dot.
+        let stretch = 1.0 + 1.2 * length(vel) + min(fieldMag * 0.05, 1.5);
+        let dp = pixel_pos - vec2<f32>(bx, by);
+        var d = length(dp);
+
+        if (dot(dp, dp) < glow_radius * glow_radius * stretch * stretch) {
+            let driftHeading = normalize((vel - vec2<f32>(0.5)) * 2.0 + fieldDir * clamp(fieldMag * 0.02, 0.0, 1.0) * 2.0 + vec2<f32>(1e-4, 0.0));
+            let along = dot(dp, driftHeading);
+            let across = dot(dp, vec2<f32>(-driftHeading.y, driftHeading.x));
+            d = length(vec2<f32>(along / stretch, across));
+        }
 
         if (d < glow_radius) {
             let speed = length(vel);
-            let alpha = softParticleAlpha(d, glow_radius) * particle_opacity;
+            let alpha = softParticleAlpha(d, glow_radius) * particle_opacity * inverseSqrt(stretch);
 
-            // Hue rotated by magnetic field
-            var b_hue = fract(hash(seed + 200.0) + color_shift + totalB * 0.1);
+            // Hue rotated by magnetic field; negative particles sit on the cool side of the wheel
+            var b_hue = fract(hash(seed + 200.0) + color_shift + totalB * 0.1 + (1.0 - chargeSign) * 0.15);
             var rgb = hsl_to_rgb(b_hue, 0.8, 0.5);
 
             // EM field color shift
