@@ -2,7 +2,7 @@
   "id": "fractal-boids-field-coupled",
   "name": "Fractal Boids Field + Fluid Coupling",
   "url": "shaders/fractal-boids-field-coupled.wgsl",
-  "description": "Flocking behavior on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples spawn shockwaves through the flock.",
+  "description": "Flocking on a fractal vector field with viscous mouse fluid coupling. Mouse wakes push boids; click ripples scatter the flock (boids flee the front); bunched-up boids glow with a density halo.",
   "features": [
     "advanced-hybrid",
     "boids",
@@ -12,7 +12,8 @@
     "interactive",
     "randomization-safe",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {

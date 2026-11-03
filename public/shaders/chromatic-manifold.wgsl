@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chromatic Manifold
 //  Category: artistic
-//  Features: upgraded-rgba
+//  Features: audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-09
-//  Ideas: hue-distance neighbor weights; Beer-Lambert thickness follows warp length
-//  A packing: pre-ACES display RGB in A (C is color history); wavelength alpha is coverage
+//  Upgraded: 2026-10-09, 2026-11-01
+//  Ideas: hue-distance neighbor weights; Beer-Lambert thickness follows warp length; complementary colour-debt ghost; iso-hue contour lines
+//  A packing: pre-ACES SIGNED colour in A (negative = shadow debt; C is color history); wavelength alpha is coverage. ACES only on writeTexture, never on negative input
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -169,8 +169,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         grad = vec2<f32>(a, b);
     }
 
-    // warp UV using hue gradient
-    let warpStrength = clamp(u.zoom_params.y, 0.0, 1.0);
+    // warp UV using hue gradient (bass pushes the warp)
+    let bass = plasmaBuffer[0].x;
+    let warpStrength = clamp(u.zoom_params.y, 0.0, 1.0) * (1.0 + bass * 0.35);
     let warpedUV = clamp(uv + grad * (warpStrength * 0.1), vec2<f32>(0.0), vec2<f32>(1.0));
 
     // sample previous frame feedback
@@ -192,6 +193,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         outColor = mix(outColor, smearCol, 0.6);
         outColor = vec4<f32>(outColor.rgb + (maxRGB - 1.0) * 0.5, outColor.a);
     }
+
+    // ── Idea 2: iso-hue contour lines ───────────────────────────────────────
+    // `grad` is the manifold's own hue slope per uv and hueW the weighted hue it
+    // regresses, so the level sets of the hue field are lines where fract(8*hueW)
+    // crosses 0.5. Distance to the nearest line in pixels = e / (N*|grad|) * height;
+    // ~1.5 px wide, chroma-weighted. Added BEFORE the persistence mix so the history
+    // blends them instead of integrating them (no feedback gain).
+    let hueW = hue * (1.0 + sat * u.zoom_params.x);
+    let contourN = 8.0;
+    let contourE = abs(fract(hueW * contourN + 0.5) - 0.5);
+    let contourPx = contourE / max(contourN * length(grad), 1e-4) * dims.y;
+    let contourLine = (1.0 - smoothstep(0.6, 1.6, contourPx)) * clamp(sat * 3.0, 0.0, 1.0);
+    outColor = vec4<f32>(outColor.rgb * (1.0 + contourLine * 0.9), outColor.a);
 
     // Combine with persistence
     let persistence = mix(0.0, 0.99, clamp(u.zoom_config.z, 0.0, 1.0));
@@ -218,8 +232,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         combined.b * alphaB
     );
 
+    // ── Idea 1: complementary debt ghost ────────────────────────────────────
+    // Shadow debt is stored NEGATIVE in finalColor (that is the history, kept raw in A).
+    // Tone-mapping a negative number is undefined art, so the display shows what is
+    // owed as its hue complement: ghost = (maxDebt - debt) + meanDebt, on top of the
+    // positive credit. Repayment over the following frames fades it.
+    let debt = max(-finalColor, vec3<f32>(0.0));
+    let credit = max(finalColor, vec3<f32>(0.0));
+    let debtMax = max(max(debt.r, debt.g), debt.b);
+    let debtMean = (debt.r + debt.g + debt.b) * 0.3333333;
+    let debtGhost = (vec3<f32>(debtMax) - debt) * 0.9 + vec3<f32>(debtMean * 0.9);
+    let displayColor = credit + debtGhost;
+
     textureStore(dataTextureA, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(finalColor, finalAlpha));
-    textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(aces_tonemap(finalColor), finalAlpha));
+    textureStore(writeTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(aces_tonemap(displayColor), finalAlpha));
 
     textureStore(writeDepthTexture, vec2<i32>(i32(gid.x), i32(gid.y)), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
 }
