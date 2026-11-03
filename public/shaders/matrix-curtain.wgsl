@@ -4,28 +4,11 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal
 //  Complexity: High
 //  Chunks From: matrix-curtain, conway-gol, perlin-noise
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-11-01 (was 2026-05-30)
+//  Ideas: tail stem; curtain hem
+//  A packing: raw fields in A (brightness, curtainMask, glyph, alpha). ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
@@ -95,7 +78,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gol = gol_state(column, row, time);
   let glyphCell = fract(vec2<f32>(uv.x * density, (1.0 - fall) * 32.0));
   let glyphSeed = hash12(vec2<f32>(column, row));
-  let glyphStroke = max(step(abs(glyphCell.x - 0.5), 0.10 + glyphSeed * 0.08), step(abs(glyphCell.y - 0.5), 0.07));
+  // ── Idea 1: tail stem ────────────────────────────────────────────
+  // The scan head (fall near 0.12) keeps the full cross. Farther down the
+  // trail only the vertical stem remains.
+  let stem = step(abs(glyphCell.x - 0.5), 0.10 + glyphSeed * 0.08);
+  let bar = step(abs(glyphCell.y - 0.5), 0.07);
+  let headBand = smoothstep(0.28, 0.04, abs(fall - 0.12));
+  let glyphStroke = max(stem, bar * headBand);
   let glyph = step(0.55, gol * spawnRate + glyphSeed * 0.25) * glyphStroke;
 
   let curtainMask = smoothstep(width * 0.5 + 0.04, 0.0, abs(uv.x - mouse.x));
@@ -122,6 +111,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloom = vec3<f32>(0.15, 1.0, 0.4) * scan * curtainMask * (0.22 + bass * 0.18);
   let trail = phosphorGreen * ghost * curtainMask * 0.14;
   var hdr = baseColor.rgb * 0.25 + codeColor + bloom + trail + phosphorDecay * vec3<f32>(0.08, 0.35, 0.12) + hue * (front * 0.35 + abs(heldVortex) * 0.18);
+
+  // ── Idea 2: curtain hem ──────────────────────────────────────────
+  // A bright thread where the curtain mask is mid-range. Curtain Width
+  // still places that edge; Phosphor Glow scales the thread.
+  let hem = smoothstep(0.08, 0.38, curtainMask) * smoothstep(0.82, 0.42, curtainMask);
+  hdr += phosphorGreen * hem * (0.22 + glowAmt * 0.55);
 
   let scanlineBeat = sin(uv.y * resolution.y * 0.5 + time * 12.0 + bass * 6.28) * 0.5 + 0.5;
   hdr = hdr * (0.92 - scanlineBeat * 0.06);

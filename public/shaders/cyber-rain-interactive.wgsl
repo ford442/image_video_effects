@@ -1,6 +1,13 @@
-// Cyber Rain Interactive — Composer batch cyber/digital/glitch cohort 3
-// fp128 column flow, glyph ROM parallax sheets, C smear trails, racing head
-// packets, spring-free pointer (distinct from cyber-rain-em), capped EMP rings, ACES.
+// ═══════════════════════════════════════════════════════════════════
+//  Cyber Rain Interactive
+//  Category: retro-glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-01
+//  Ideas: head glyph flicker; far-sheet grey
+//  A packing: ACES display RGBA
+//  fp128 column flow, glyph ROM parallax sheets, C smear, racing head
+//  packet, spring-free pointer, capped EMP rings.
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -79,10 +86,18 @@ fn rainLayer(
         if (trail <= 0.001) { continue; }
 
         let cellY = floor(uv.y * rows);
-        let charStep = floor(time * fallSpeed * 12.0 + colRand * 32.0);
-        let gIdx = u32(hash12(vec2<f32>(cellX + layerSeed * 91.0, cellY + charStep)) * 8.0 + scramble * 5.0);
+        let trailStep = floor(time * fallSpeed * 4.0 + colRand * 32.0);
+        let headStep = floor(time * fallSpeed * 18.0 + colRand * 32.0);
+        let gTrail = u32(hash12(vec2<f32>(cellX + layerSeed * 91.0, cellY + trailStep)) * 8.0 + scramble * 5.0);
+        let gHead = u32(hash12(vec2<f32>(cellX + layerSeed * 91.0, cellY + headStep + 19.0)) * 8.0 + scramble * 5.0);
         let localUV = vec2<f32>(fract(uv.x * cols), fract(uv.y * rows));
-        let ig = glyphInk(gIdx, localUV, 0.28);
+        let igTrail = glyphInk(gTrail, localUV, 0.28);
+        let igHead = glyphInk(gHead, localUV, 0.28);
+        // ── Idea 1: head glyph flicker ───────────────────────────────
+        // The head cell re-rolls. The trail behind it keeps the slow step.
+        // Glitch still scrambles both.
+        let headGate = smoothstep(0.045, 0.0, d);
+        let ig = mix(igTrail, igHead, headGate);
 
         ink = max(ink, ig * trail);
         headAmt = max(headAmt, smoothstep(0.03, 0.0, d) * ig);
@@ -168,6 +183,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     rainColor += vec3<f32>(0.35, 0.75, 1.0) * mouseField * (0.8 + mids * 0.6);
     rainColor += vec3<f32>(0.6, 1.0, 0.85) * emp * (1.35 + wetness * 0.4);
     rainColor += vec3<f32>(0.4, 1.0, 0.7) * packet * 0.5;
+
+    // ── Idea 2: far-sheet grey ───────────────────────────────────────
+    // Only the far sheet's share of the ink moves toward the photo luma.
+    // Where the near sheet is brighter, the green stays.
+    let layerSum = near.x * wNear + midL.x * wMid + far.x * wFar;
+    let farShare = clamp(far.x * wFar / max(layerSum, 0.001), 0.0, 1.0);
+    rainColor = mix(rainColor, vec3<f32>(lumaImg) * (0.35 + brightness * 0.4), farShare * 0.7);
 
     var color = mix(imgColor * (0.12 + wetness * 0.28), rainColor, clamp(brightness, 0.0, 1.0));
 

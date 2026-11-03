@@ -1,31 +1,12 @@
 // Rorschach Inkblot — mirrored advected ink with chromatic diffusion memory.
 // A/C stores tone-mapped display RGBA. B and extraBuffer are unused.
 // Premium mixed-eight upgrade: 2026-08-27.
-//  Upgraded: 2026-09-21
-//  Ideas: fold crease (ink pools in the seam, paper shows the fold); press-off transfer half with
+//  Upgraded: 2026-11-01 (prev 2026-09-21)
+//  Ideas: ink backrun bloom with dark ring; dye chromatography at the blot rim; fold crease (ink pools in the seam, paper shows the fold); press-off transfer half with
 //         ink-starved stipple; capillary feathering along paper fibres at the blot edge
 //  A packing: ACES display RGBA with ink alpha
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -150,6 +131,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let crease = exp(-foldDist * 140.0);
   ink = max(ink, crease * smoothstep(0.08, 0.45, ink) * 1.1);
 
+  // Idea 4 — backrun bloom: watery ink creeping into drying ink leaves a lighter lobe ringed by a dark tide line
+  let bloomF = fbm(fieldP * 0.8 + vec2<f32>(11.3, 4.1) + n0 * 1.4);
+  let tide = exp(-pow((bloomF - 0.53) * 22.0, 2.0)) * smoothstep(0.4, 0.8, ink);
+  let lobe = smoothstep(0.53, 0.6, bloomF) * smoothstep(0.55, 0.95, ink);
+  ink = clamp(ink * (1.0 - lobe * 0.22) + tide * 0.14, 0.0, 1.0);
+
   ink = clamp(max(ink, history.a * (0.79 + bass * 0.055)) + clickInk * 0.22 + pointerInfluence * 0.08, 0.0, 1.0);
 
   // Idea 2 — press-off transfer. The half across the fold is a print taken off the wet half: the
@@ -161,7 +148,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   ink *= mix(1.0, (0.35 + 0.65 * contact) * 0.9, transferSide * smoothstep(0.1, 0.6, ink));
 
   let inkHue = 0.5 + 0.5 * cos(TAU * (vec3<f32>(0.03, 0.36, 0.69) + organic * 0.16 + time * 0.018 + treble * 0.04));
-  let darkInk = mix(vec3<f32>(0.008, 0.006, 0.014), inkHue * (0.15 + mids * 0.09), 0.32 + treble * 0.16);
+  // Idea 5 — chromatography: dye separates from carbon at the rim, so the blot edge picks up colour
+  let rim = ink * (1.0 - ink) * 4.0;
+  let darkInk = mix(vec3<f32>(0.008, 0.006, 0.014), inkHue * (0.15 + mids * 0.09), clamp(0.32 + treble * 0.16 + rim * 0.35, 0.0, 1.0));
   let foldShade = 1.0 + sign(foldSide) * exp(-foldDist * 45.0) * 0.05 - exp(-foldDist * 260.0) * 0.07;
   let paper = vec3<f32>(0.92, 0.88, 0.78) * (0.88 + n0 * 0.12) * foldShade;
   let normalColor = mix(paper, darkInk, ink);

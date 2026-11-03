@@ -6,6 +6,9 @@
 //  Chunks From: chunk-library.md (hash12, palette, fbm2, valueNoise)
 //  Created: 2026-04-18
 //  By: Agent 2C
+//  Upgraded: 2026-11-01
+//  Ideas: bass kick-ring expanding from the cursor; wet bleed diffuses stored energy to neighbours
+//  A packing: colour.rgb + energy.a; texel (0,0) = (prevMouse.xy, 0, 0) state
 // ═══════════════════════════════════════════════════════════════════
 //  Combines mouse interaction with audio reactivity. Screen regions
 //  map to different instruments. Without audio, falls back to mouse-
@@ -13,26 +16,7 @@
 //  drag speed determines energy. Alpha stores energy level.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -88,15 +72,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let mousePos = u.zoom_config.yz;
   let prevMouse = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).xy;
-  let mouseVel = length((mousePos - prevMouse) * vec2<f32>(aspect, 1.0)) * 60.0;
+  let isStateTexel = global_id.x == 0u && global_id.y == 0u;
+  let mouseVel = min(length((mousePos - prevMouse) * vec2<f32>(aspect, 1.0)) * 60.0, 4.0);
 
-  // Store mouse position
-  if (global_id.x == 0u && global_id.y == 0u) {
-    textureStore(dataTextureA, vec2<i32>(0, 0), vec4<f32>(mousePos, 0.0, 0.0));
+  // Read previous energy exactly from dataTextureC; Idea 2 — wet bleed: energy spreads to the 4 neighbours
+  // (texel (0,0) holds mouse state, so it is never sampled as energy)
+  let pc = vec2<i32>(global_id.xy);
+  let maxPc = vec2<i32>(resolution) - vec2<i32>(1);
+  var bleedSum = 0.0;
+  var bleedN = 0.0;
+  for (var k = 0; k < 4; k = k + 1) {
+    var d = vec2<i32>(1, 0);
+    if (k == 1) { d = vec2<i32>(-1, 0); }
+    if (k == 2) { d = vec2<i32>(0, 1); }
+    if (k == 3) { d = vec2<i32>(0, -1); }
+    let q = clamp(pc + d, vec2<i32>(0), maxPc);
+    if (q.x != 0 || q.y != 0) {
+      bleedSum = bleedSum + textureLoad(dataTextureC, q, 0).a;
+      bleedN = bleedN + 1.0;
+    }
   }
-
-  // Read previous energy from dataTextureC
-  let prevEnergy = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).a;
+  let ownEnergy = select(textureLoad(dataTextureC, pc, 0).a, 0.0, isStateTexel);
+  let prevEnergy = mix(ownEnergy, bleedSum / max(bleedN, 1.0), 0.22);
 
   // Audio input (if available)
   let bass = plasmaBuffer[0].x * audioSensitivity;
@@ -127,7 +124,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let midRegion = smoothstep(0.3, 0.7, region) * mids;
     let midWave = sin(uv.x * 20.0 + time * 3.0) * midRegion * mouseInfluence;
 
-    energy = energy + bassBlob + trebleSparkle + abs(midWave);
+    // Idea 1 — kick ring: each bass swell sends a ring out from the cursor
+    let ringR = fract(time * 0.9) * 0.35;
+    let kickRing = exp(-pow((mouseDist - ringR) * 40.0, 2.0)) * bass * smoothstep(0.4, 0.0, region) * (1.0 - ringR / 0.35);
+    energy = energy + bassBlob + trebleSparkle + abs(midWave) + kickRing * 0.8;
   }
 
   // Ripple bursts add energy
@@ -178,7 +178,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor = finalColor + vec3<f32>(0.5, 0.3, 0.8) * energy * mouseInfluence * 0.3;
 
   // Store energy for temporal continuity
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, energy));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), select(vec4<f32>(finalColor, energy), vec4<f32>(mousePos, 0.0, 0.0), isStateTexel));
 
   // Alpha = energy level
   let alpha = clamp(energy * 0.3, 0.0, 1.0);

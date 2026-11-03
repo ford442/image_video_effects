@@ -2,7 +2,7 @@
   "id": "digital-lens",
   "name": "Digital Lens",
   "url": "shaders/digital-lens.wgsl",
-  "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion, caustic streaks, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+  "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion and caustic streaks. Astigmatic corner softening smears along the radius as r² and lens strength grow, and internal-reflection ghosts re-image bright pixels through the focus axis. Preserved [bassEnvelope, trailRGB] A packing.",
   "workgroup_size": [
     16,
     16,
@@ -57,7 +57,9 @@
     "continuous-motion",
     "bounded-click-ripples",
     "spring-cursor",
-    "held-drag"
+    "held-drag",
+    "astigmatism",
+    "lens-ghosts"
   ],
   "tags": [
     "filter",

@@ -11,7 +11,7 @@
     "mathematical",
     "pointcloud"
   ],
-  "description": "Iterated function system rendering a 3D Sierpinski tetrahedron using the chaos game algorithm. Thousands of point samples create intricate cloud-like renders of the fractal solid with depth-based coloring and perspective projection. Mouse rotates the 3D view in real-time.",
+  "description": "Chaos-game rendering of a 3D Sierpinski tetrahedron. Splat size follows perspective, and the last two vertex picks name the sub-tetrahedron so the self-similar nesting shows as coloured sub-copies, over attractor-biased chaos, corner flares and temporal accumulation. Mouse rotates the view.",
   "workgroup_size": [
     16,
     16,

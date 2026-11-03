@@ -6,6 +6,9 @@
 //  Chunks From: artistic_painterly_oil.wgsl, conv-bilateral-dream.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-10 — Image Processing & Artistry Enhancer
+//  Upgraded: 2026-11-01
+//  Ideas: focus-pulled posterisation; out-of-focus halation on bilateral highlights; oil pigment rim at stroke edges
+//  A packing: ACES display RGB + paint thickness.a — unchanged
 // ═══════════════════════════════════════════════════════════════════
 //
 //  Hybrid Approach:
@@ -22,26 +25,8 @@
 //
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BrushSize, y=Wetness, z=BilateralDream, w=MouseFocus
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BrushSize, y=Wetness, z=BilateralDream, w=MouseFocus
 
 const PI: f32 = 3.14159265359;
 
@@ -154,8 +139,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Apply anisotropic Kuwahara filter
     var color = kuwahara(uv, invRes, brushSize, edgeDir);
 
-    // Color quantization
-    let colorLevels = i32(2.0 + paintWetness * 6.0);
+    // Idea 1 — focus-pulled posterisation: the aperture near the cursor resolves more tonal steps
+    let focusDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
+    let focusPull = exp(-focusDist * focusDist * 8.0) * mouseInfluence * select(1.0, 1.45, held);
+    let colorLevels = i32(2.0 + paintWetness * 6.0 + floor(focusPull * 5.0));
     color = quantizeColor(color, colorLevels);
 
     // Impasto height
@@ -217,6 +204,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wetMemory = clamp(paintWetness * (0.18 + bass * 0.08), 0.0, 0.35);
     finalColor = mix(finalColor, history.rgb, wetMemory);
     finalColor += vec3<f32>(0.18, 0.08 + mids * 0.08, 0.22 + treble * 0.12) * edgeMag * 0.06;
+
+    // Idea 2 — halation: out-of-focus highlights of the dream layer bloom warm
+    let halo = max(luminance(bilateralResult) - 0.6, 0.0);
+    finalColor += vec3<f32>(1.0, 0.82, 0.62) * halo * bilateralDream * (1.0 - focusPull) * (0.35 + bass * 0.3);
+
+    // Idea 3 — pigment rim: oil collects dark along the edge of each stroke
+    finalColor *= 1.0 - smoothstep(0.3, 1.0, edgeMag) * paintWetness * 0.16;
 
     // Canvas texture
     let canvas_tex = hash12(uv * 100.0) * 0.1 + 0.9;

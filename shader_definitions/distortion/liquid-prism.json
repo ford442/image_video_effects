@@ -16,7 +16,7 @@
     "caustic-fronts",
     "temporal-afterglow"
   ],
-  "description": "Ripple glass with wavelength-correct Cauchy dispersion: n(lambda) = A + B/lambda^2 sets each channel's sample offset, so blue bends hardest as real glass does. Fixes the dead-audio bug where u.config.y (the ripple count) was read as an audio level. Clicks emit bounded caustic wavefronts.",
+  "description": "Ripple glass with wavelength-correct Cauchy dispersion. Light focuses into caustics where the ripple's refraction Jacobian goes to zero, steep ripple faces beyond the critical angle show total internal reflection, and clicks emit bounded caustic wavefronts.",
   "params": [
     {
       "id": "strength",

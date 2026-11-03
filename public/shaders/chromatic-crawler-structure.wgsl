@@ -1,31 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  chromatic-crawler-structure
 //  Category: advanced-hybrid
-//  Features: chromatic-crawler, structure-tensor-flow, temporal
-//  Ideas: Cauchy tendril bifurcation, photoelastic fringe birefringence, bioluminescent pulse waves
-//  A packing: display RGBA (RGB=ACES display color, A=edge coherency confidence)
+//  Features: chromatic-crawler, structure-tensor-flow, temporal, audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: Cauchy tendril bifurcation, photoelastic fringe birefringence, bioluminescent pulse waves; line-integral crawl along the tensor flow (12.2A); Harris nucleation spores; staggered swap epochs
+//  A packing: display RGBA (RGB=ACES display color, A=edge coherency confidence + spore coverage)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var p3 = vec3<f32>(
@@ -68,6 +51,17 @@ fn smoothTensor(uv: vec2<f32>, pixelSize: vec2<f32>) -> vec4<f32> {
         }
     }
     return sum / 9.0;
+}
+
+// 2026-11 Idea 1: line-integral crawl. 5-tap Gaussian line integral along +-step vector (taps at 0, +-1, +-2
+// steps). The caller scales step by coherency, so incoherent areas collapse to one tap.
+fn licSample(base: vec2<f32>, along: vec2<f32>) -> vec3<f32> {
+    var acc = textureSampleLevel(readTexture, u_sampler, base, 0.0).rgb * 0.38;
+    acc += textureSampleLevel(readTexture, u_sampler, clamp(base + along, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.24;
+    acc += textureSampleLevel(readTexture, u_sampler, clamp(base - along, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.24;
+    acc += textureSampleLevel(readTexture, u_sampler, clamp(base + along * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.07;
+    acc += textureSampleLevel(readTexture, u_sampler, clamp(base - along * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.07;
+    return acc;
 }
 
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
@@ -151,13 +145,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let crawledUVB = clamp(uv + crawlOffsetB, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let region = floor(crawledUVG * vec2<f32>(10.0, 8.0));
-    let hash = hash3(vec3<f32>(region.x * 100.0, region.y * 100.0, time * 2.0));
+    // 2026-11 Idea 3: staggered swap epochs. HEAD hashed continuous time, so every region re-rolled
+    // its permutation every frame. Each region now holds it ~0.5 s on its own phase.
+    let regionPhase = fract(sin(dot(region, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+    let swapEpoch = floor(time * 2.0 + regionPhase);
+    let hash = hash3(vec3<f32>(region.x * 100.0, region.y * 100.0, swapEpoch * 0.137));
     let swapPattern = u32(hash.x * 6.0);
 
     // Multi-spectral chromatic sampling along bifurcated tendrils
-    let sampleR = textureSampleLevel(readTexture, u_sampler, crawledUVR, 0.0).r;
-    let sampleG = textureSampleLevel(readTexture, u_sampler, crawledUVG, 0.0).g;
-    let sampleB = textureSampleLevel(readTexture, u_sampler, crawledUVB, 0.0).b;
+    // 2026-11 Idea 1: each channel integrates along the tensor flow on its OWN tendril UV
+    // (edge-directed taps, 12.2A); step is 4 px * coherency along the eigenvector.
+    let licStep = eigenvec * pixelSize * (4.0 * coherency);
+    let sampleR = licSample(crawledUVR, licStep).r;
+    let sampleG = licSample(crawledUVG, licStep).g;
+    let sampleB = licSample(crawledUVB, licStep).b;
     let chromaticSample = vec3<f32>(sampleR, sampleG, sampleB);
 
     var swappedColor = chromaticSample;
@@ -181,6 +182,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let stressRetardation = (lambda1 - lambda2) * 28.0;
     let birefringenceFringes = 0.5 + 0.5 * cos(stressRetardation + vec3<f32>(0.0, 2.094, 4.188));
     swappedColor += birefringenceFringes * coherency * 0.35 * (0.8 + mids * 0.5);
+
+    // 2026-11 Idea 2: Harris nucleation spores. lambda1*lambda2 - k*trace^2 is positive at corners,
+    // negative along edges: where structure nucleates instead of running. A twinkling spore
+    // in the existing fringe colour blooms there (lambda2 was only used inside coherency).
+    let harris = lambda1 * lambda2 - 0.05 * trace * trace;
+    let spore = smoothstep(0.005, 0.05, harris);
+    let sporeTwinkle = 0.65 + 0.35 * sin(time * 6.0 + hash.z * 6.28318);
+    swappedColor += birefringenceFringes * spore * sporeTwinkle * 0.6 * (0.7 + treble * 0.6);
 
     // IDEA 3: Bioluminescent streamline pulse waves
     // High-frequency photon packet pulse propagating along the tensor orientation
@@ -222,7 +231,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     finalColor = finalColor + glowColor;
 
     let displayColor = acesFilm(max(finalColor, vec3<f32>(0.0)));
-    let confidenceAlpha = clamp(0.7 + coherency * 0.28, 0.0, 1.0);
+    let confidenceAlpha = clamp(0.7 + coherency * 0.28 + spore * 0.2, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(displayColor, confidenceAlpha));
     textureStore(dataTextureA, coord, vec4<f32>(displayColor, confidenceAlpha));

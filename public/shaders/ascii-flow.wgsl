@@ -3,9 +3,9 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-09-21, 2026-11-01
 //  Ideas: ink-coverage glyph ramp; coverage-weighted glyph blend;
-//         typed-cell wake under the pointer
+//         typed-cell wake under the pointer; flow lean; upstream streak
 //  A packing: ACES display RGBA (C is read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -119,10 +119,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         clickFront += exp(-age * 1.8) * exp(-abs(length(uv - event.xy) - age * 0.4) * 60.0);
     }
 
-    // Sample texture at offset position (simulate flow source)
-    // We sample 'upstream'
+    // ── Idea 1: flow lean ────────────────────────────────────────────
+    // Stems shear along the flow so the glyph leans downstream.
+    // Intensity already scales how hard the field pushes.
+    let flowLen = length(flow);
+    let shear = clamp(flow, vec2<f32>(-0.65), vec2<f32>(0.65)) * (0.28 + intensity * 0.45);
+    let centered = cell_uv - 0.5;
+    let glyphUV = vec2<f32>(
+        centered.x + centered.y * shear.x,
+        centered.y + centered.x * shear.y
+    ) + 0.5;
+
+    // Sample texture upstream of the cell.
     let sample_pos = cell_center_uv - flow * 0.05;
-    let color = textureSampleLevel(readTexture, u_sampler, clamp(sample_pos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let nearColor = textureSampleLevel(readTexture, u_sampler, clamp(sample_pos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    // ── Idea 2: upstream streak ──────────────────────────────────────
+    // A second tap further upstream mixes in by flow length. Fast cells smear.
+    let far_pos = cell_center_uv - flow * 0.14;
+    let farColor = textureSampleLevel(readTexture, u_sampler, clamp(far_pos, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let color = mix(nearColor, farColor, clamp(flowLen * 0.55, 0.0, 0.6));
     let gray = dot(color, vec3<f32>(0.299, 0.587, 0.114));
 
     // ── Idea 1: ink-coverage glyph ramp ───────────────────────────────
@@ -137,8 +152,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // A cell sitting between two rungs of the ramp renders as a weighted
     // mix of both, so tone survives the quantisation instead of snapping to
     // eight hard steps and flattening every gradient in the picture.
-    let glyph_lo = draw_glyph(cell_uv, ramp_glyph(step_idx));
-    let glyph_hi = draw_glyph(cell_uv, ramp_glyph(step_idx + 1));
+    let glyph_lo = draw_glyph(glyphUV, ramp_glyph(step_idx));
+    let glyph_hi = draw_glyph(glyphUV, ramp_glyph(step_idx + 1));
     let shape = mix(glyph_lo, glyph_hi, sub) * mix(0.65, 1.0, scanGlyph);
 
     // Green phosphor look or keep original color?

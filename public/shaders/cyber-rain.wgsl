@@ -1,29 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Rain — Batch 59
-//  Neon rain on wet glass: spring wiper, capped EMP ripples, held punch,
-//  exact C wetness trail, extraBuffer[133..138] spring at (0,0) only.
+//  Cyber Rain
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-01
+//  Ideas: beaded drop; wiper lip
+//  A packing: pre-ACES wet-trail RGB in A.rgb, bass envelope in A.a. ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -132,13 +116,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bandRain = 1.0 + plasmaBuffer[band + 1u].x * 0.35;
 
     let rainUV = uv * vec2<f32>(24.0, 2.5) + vec2<f32>(time * (0.2 + rainBend * 4.0), time * (8.0 + env * 12.0));
-    let drop = smoothstep(0.88, 0.95, hash12(floor(rainUV))) * rainIntensity * (1.0 - wiper) * bandRain;
+    let rainCell = fract(rainUV);
+    let dropGate = smoothstep(0.88, 0.95, hash12(floor(rainUV)));
+    // ── Idea 1: beaded drop ──────────────────────────────────────────
+    // The hash still gates the cell. Inside it, light sits in a bead low
+    // in the cell, with a dimmer body above.
+    let bead = 1.0 - smoothstep(0.08, 0.28, length(rainCell - vec2<f32>(0.5, 0.72)));
+    let body = 1.0 - smoothstep(0.12, 0.48, length((rainCell - vec2<f32>(0.5, 0.55)) * vec2<f32>(1.35, 0.85)));
+    let drop = dropGate * (0.28 * body + bead) * rainIntensity * (1.0 - wiper) * bandRain;
 
     let streakUV = uv * vec2<f32>(8.0, 40.0) + vec2<f32>(time * 0.3 + rainBend * 2.0, time * 25.0);
     let streak = smoothstep(0.92, 0.98, hash12(floor(streakUV))) * rainIntensity * (1.0 - wiper) * 0.5;
 
     let rainColor = vec3<f32>(0.45, 0.75, 1.0) + vec3<f32>(0.2, 0.1, 0.0) * env;
     color += rainColor * (drop + streak);
+
+    // ── Idea 2: wiper lip ────────────────────────────────────────────
+    // Water the blade is pushing, as a ring at the existing wiper radius.
+    let lipD = (dist - wiperSize) / max(wiperSize * 0.08, 0.004);
+    let lip = exp(-lipD * lipD * 6.0) * rainIntensity;
+    color += rainColor * lip * 0.7;
 
     var shock = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);

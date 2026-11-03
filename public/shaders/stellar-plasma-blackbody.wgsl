@@ -3,8 +3,8 @@
 //  Category: advanced-hybrid
 //  Features: generative, blackbody-radiation, procedural, audio-reactive, mouse-driven, HDR, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: |∇f| magnetic filaments; warp-advected C heat
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: |∇f| magnetic filaments; warp-advected C heat; Stefan-Boltzmann cooling wake (replaces max ratchet); Beer-Lambert dust lanes from warp vector q; hot-core halo from C heat
 //  A packing: raw thermal RGB + normalized T
 // ═══════════════════════════════════════════════════════════════════
 //  Cosmic nebula domain-warped FBM blended with Planck's law
@@ -13,26 +13,7 @@
 //  blue-white with physically-correct radiance scaling.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const HASH_CONST1: vec3<f32> = vec3<f32>(0.1031, 0.1031, 0.1031);
 const HASH_CONST2: vec3<f32> = vec3<f32>(33.33, 33.33, 33.33);
@@ -80,20 +61,25 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
-    let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
+    // Tanner Helland's fit works in T/100 (the previous T/1000 units zeroed g/b below
+    // ~5000 K, so the ember-red voids never showed and the hot branch was off-scale).
+    let t = clamp(temperatureK / 100.0, 10.0, 300.0);
     var r: f32;
     var g: f32;
     var b: f32;
-    if (t <= 6.5) {
+    if (t <= 66.0) {
         r = 1.0;
-        g = clamp(0.39 * log(t) - 0.63, 0.0, 1.0);
-        b = clamp(0.54 * log(t - 1.0) - 1.0, 0.0, 1.0);
+        g = clamp(0.39 * log(t) - 0.632, 0.0, 1.0);
+        b = select(clamp(0.543 * log(max(t - 10.0, 1.0)) - 1.196, 0.0, 1.0), 0.0, t <= 19.0);
     } else {
-        r = clamp(1.29 * pow(t - 0.6, -0.133), 0.0, 1.0);
-        g = clamp(1.29 * pow(t - 0.6, -0.076), 0.0, 1.0);
+        let h = max(t - 60.0, 1.0);
+        r = clamp(1.29 * pow(h, -0.1332), 0.0, 1.0);
+        g = clamp(1.13 * pow(h, -0.0755), 0.0, 1.0);
         b = 1.0;
     }
-    let radiance = pow(t / 6.5, 4.0);
+    // Visible-band radiance ~ T^2, 1.0 at 10 kK (bolometric T^4 spans 10^4 and ACES
+    // clipped every pixel above ~6500 K to white); floor keeps the coolest voids a dim ember.
+    let radiance = max(pow(temperatureK / 10000.0, 2.0), 0.03);
     return vec3<f32>(r, g, b) * radiance;
 }
 
@@ -161,19 +147,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let energy = clamp(f * f * f + 0.4 * f * f + 0.3 * length(q) + 0.2 * length(r.x), 0.0, 1.0);
     let audioHeatBoost = (bass - treble) * 0.15;
-    var temperature = mix(1200.0, 12000.0, energy + tempShift * 0.3 + audioHeatBoost);
+    // energy sits in ~0.3..1.0 (mean 0.6), so mapping it straight onto 1.2..12 kK put the
+    // whole nebula above 8 kK (white); re-centre so the voids reach ember temperatures.
+    var temperature = mix(1200.0, 12000.0, (energy - 0.42) * 1.7 + tempShift * 0.3 + audioHeatBoost);
     temperature = clamp(temperature, 800.0, 15000.0);
 
     // Idea 2 — warp-advected C heat along existing r
     let advectUV = clamp(uv - r * 0.035, vec2<f32>(0.0), vec2<f32>(1.0));
     let prevCoord = vec2<i32>(advectUV * res);
     let prev = loadC(prevCoord, max_coord);
-    let prevT = prev.a * 15000.0;
-    temperature = mix(temperature, max(temperature, prevT), 0.32);
+    // ── Idea 3: Stefan-Boltzmann cooling wake ───────────────────────
+    // dT/dt ∝ -T^4 → T' = T / (1 + 3 k T^3 dt)^(1/3). Hot plasma advected from C now
+    // cools fast and cool plasma barely changes (HEAD's max() ratchet only ever heated).
+    let tn = clamp(prev.a, 0.0, 1.0);
+    let cooledT = tn / pow(1.0 + 0.35 * tn * tn * tn, 0.3333333) * 15000.0;
+    temperature = mix(temperature, max(temperature, cooledT), 0.32);
 
     var thermalColor = blackbodyColor(temperature) * thermalIntensity;
     thermalColor = mix(thermalColor, prev.rgb, 0.18);
     thermalColor += blackbodyColor(clamp(temperature * 1.12, 800.0, 15000.0)) * filament * 0.55;
+
+    // ── Idea 4: Beer-Lambert dust lanes ─────────────────────────────
+    // Cool foreground dust (long warp vector q, low energy) absorbs the hotter
+    // plasma behind it: transmittance exp(-tau * dust).
+    let dust = smoothstep(0.55, 0.95, length(q)) * (1.0 - energy);
+    thermalColor *= exp(-2.4 * dust);
+
+    // ── Idea 5: hot-core halo from C heat ───────────────────────────
+    // Energy-conserving: heat above 9000 K in four exact C taps is spread as a blue-white
+    // halo, and the core it came from is bled by a matching fraction.
+    var haloT = 0.0;
+    for (var k = 0; k < 4; k = k + 1) {
+        let o = vec2<i32>(select(-7, 7, (k & 1) == 1), select(-7, 7, (k & 2) == 2));
+        haloT += max(loadC(coord + o, max_coord).a - 0.6, 0.0);
+    }
+    haloT *= 0.25;
+    let coreExcess = clamp((temperature / 15000.0 - 0.6) * 4.0, 0.0, 1.0);
+    thermalColor = thermalColor * (1.0 - 0.18 * coreExcess) + blackbodyColor(11000.0) * haloT * 1.6;
 
     if (u.zoom_config.w > 0.5) {
         let mouseDistUV = length(uv - u.zoom_config.yz);

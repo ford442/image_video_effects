@@ -2,7 +2,7 @@
   "id": "gen-grok41-mandelbrot",
   "name": "Buddhabrot Nebula",
   "url": "shaders/gen_grok41_mandelbrot.wgsl",
-  "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation. Long orbits leave warm comets, and the real-axis antenna tip anchors the silhouette.",
+  "description": "Audio-reactive Buddhabrot orbit accumulation: orbits are coloured by length into Nebulabrot red, green and blue, the Mandelbrot body carries smooth potential bands with binary-decomposition rays, and long orbits leave warm comets. The Center X/Y sliders glide the view, clicks pull it toward the click point, and stars dance with FFT bands.",
   "features": [
     "mouse-driven",
     "depth-aware",

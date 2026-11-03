@@ -64,7 +64,7 @@
       "step": 0.01
     }
   ],
-  "description": "Rose-FBM kaleidoscope whose mirror bank is now steerable: the segment fan pivots and re-centres on a spring-damped pointer in extraBuffer[133..134] instead of being pinned to frame centre, and each mirror segment owns one FFT bin driving its own petal amplitude and Gabor texture gain. Fixes a shader that never read the mouse at all, and adds the dataTextureA writeback the slot was missing.",
+  "description": "Rose-FBM kaleidoscope with a steerable mirror pivot: per-segment FFT bands drive petal amplitude, the squircle aperture shows wavelength-dependent diffraction fringes, and the colour split follows Cauchy's law instead of equal and opposite shifts. The segment count is now an even integer, so the fan closes without a seam.",
   "x-meta": {
     "upgrade": {
       "params": [
