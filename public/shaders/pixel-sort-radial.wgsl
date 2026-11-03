@@ -3,31 +3,12 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: radial Asendorf interval; ring seam at run close
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: radial Asendorf interval; ring seam at run close; spoke gutter; inward stack
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var pp = p;
@@ -116,6 +97,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let nextL = dot(textureSampleLevel(readTexture, u_sampler, nextUV, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
   let ringSeam = select(0.0, 1.0, inRun && nextL < threshold) * influence;
 
+  // ── Idea 3: spoke gutter ───────────────────────────────────────
+  // Angular bins around the pointer. The boundary between spokes is a
+  // dark ray, gated by the existing influence and the luma run.
+  let spokeAng = atan2(dirToMouse.y, dirToMouse.x);
+  let spokePhase = fract(spokeAng * (24.0 / 6.2831853));
+  let spoke = smoothstep(0.93, 1.0, spokePhase) * influence * select(0.0, 1.0, inRun);
+
   let finalUV = clamp(mix(uv, uv - dir * stretchFactor * 0.2 + tangent * isActive * (0.015 + radialRunner * 0.012), isActive), vec2<f32>(0.0), vec2<f32>(1.0));
   let caStrength = stretchFactor * 0.015;
   let rUV = finalUV + dir * caStrength;
@@ -124,11 +112,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
   let stretched = mix(vec3<f32>(r, g, b), best, 0.55 * f32(inRun) * isActive);
+  // ── Idea 4: inward stack ───────────────────────────────────────
+  // Direction below 0.5 pulls toward the pointer and piles the
+  // brightest sample there. Outward runs spend saturation with stretch.
+  let inward = 1.0 - step(0.5, direction);
+  let pile = inward * influence * (1.0 - smoothstep(0.0, max(breathe, 0.001), dist)) * select(0.0, 1.0, inRun);
+  let stacked = mix(stretched, best, pile * 0.55);
+  let spentL = dot(stacked, vec3<f32>(0.299, 0.587, 0.114));
+  let stretchedOut = mix(stacked, vec3<f32>(spentL), clamp((1.0 - inward) * stretchFactor * 0.35, 0.0, 0.45));
 
-  let bloom = max(dot(stretched, vec3<f32>(0.299, 0.587, 0.114)) - 0.8, 0.0) * 2.0;
-  let alpha = mix(color.a, clamp(color.a + stretchFactor * 0.3 + bloom + ringSeam * 0.2, 0.0, 1.0), isActive);
+  let bloom = max(dot(stretchedOut, vec3<f32>(0.299, 0.587, 0.114)) - 0.8, 0.0) * 2.0;
+  let alpha = mix(color.a, clamp(color.a + stretchFactor * 0.3 + bloom + ringSeam * 0.2 + spoke * 0.12 + pile * 0.1, 0.0, 1.0), isActive);
   let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + dist * 24.0 - time * (0.8 + treble));
-  var rgb = mix(color.rgb, stretched, isActive) + spectral * (abs(radialRunner) * 0.1 + clickFront * 0.2);
+  var rgb = mix(color.rgb, stretchedOut, isActive) + spectral * (abs(radialRunner) * 0.1 + clickFront * 0.2);
+  rgb = rgb * (1.0 - 0.28 * spoke);
   rgb = rgb + vec3<f32>(0.16, 0.14, 0.11) * ringSeam * (0.5 + treble * 0.5);
   rgb = rgb * (1.0 + closed * mids * 0.04);
   let finalColor = vec4<f32>(acesToneMap(rgb), alpha);

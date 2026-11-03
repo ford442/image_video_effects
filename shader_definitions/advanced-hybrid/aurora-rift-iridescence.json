@@ -2,7 +2,7 @@
   "id": "aurora-rift-iridescence",
   "name": "Aurora Rift Iridescence",
   "url": "shaders/aurora-rift-iridescence.wgsl",
-  "description": "Atmospheric curl-flow aurora blended with thin-film interference. Pattern density drives soap-bubble and oil-slick film thickness, producing flowing iridescence with ACES tone mapping and continuous plasma persistence.",
+  "description": "Atmospheric curl-flow aurora blended with thin-film interference. The film drains under gravity into horizontal interference bands (thin black film at the top) and its thickness streams along the flow, with ACES tone mapping and continuous plasma persistence.",
   "tags": [
     "iridescence",
     "thin-film",
@@ -21,7 +21,8 @@
     "HDR",
     "audio-reactive",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

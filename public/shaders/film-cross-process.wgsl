@@ -3,32 +3,14 @@
 //  Category: artistic
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Low
-//  Upgraded: 2026-09-08
-//  Ideas: per-channel grain; highlight cyan-green XPro crossover
+//  Upgraded: 2026-09-08, 2026-11-02
+//  Ideas: per-channel grain; highlight cyan-green XPro crossover; density-weighted grain (§12.2A); shadow teal
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=contrast, y=color_skew, z=grain, w=vignette
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,  // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>,  // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>,  // x=contrast, y=skew, z=grain, w=vignette
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=contrast, y=skew, z=grain, w=vignette
 
 // S-curve via smooth cubic — maps [0,1] to [0,1] with user pivot
 fn scurve(t: f32, pivot: f32, slope: f32) -> f32 {
@@ -141,15 +123,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     g = mix(g, luma, shadowMix);
     b = mix(b, luma, shadowMix);
 
+    // ── Idea 2: shadow teal — C-41 in E-6 lifts the shadows toward teal; highlights stay the existing crossover
+    let shadowTeal = shadowMix * skew;
+    r = clamp(r - shadowTeal * 0.22, 0.0, 1.0);
+    g = clamp(g + shadowTeal * 0.05, 0.0, 1.0);
+    b = clamp(b + shadowTeal * 0.28, 0.0, 1.0);
+
     // Film grain (denser with treble) — per-channel stock
     let grainAmt  = (u.zoom_params.z * 0.08 + treble * 0.04) * (1.0 + regionVoice * 0.3);
     let grainSeed = uv * 3791.3 + vec2<f32>(fract(time * 0.1), fract(time * 0.17 + 0.3));
     let gR = (hash21(grainSeed) - 0.5);
     let gG = (hash21(grainSeed * vec2<f32>(1.17, 0.91) + vec2<f32>(17.1, 9.3)) - 0.5);
     let gB = (hash21(grainSeed * vec2<f32>(0.83, 1.29) + vec2<f32>(3.7, 28.4)) - 0.5);
-    r = clamp(r + gR * grainAmt, 0.0, 1.0);
-    g = clamp(g + gG * grainAmt * 0.85, 0.0, 1.0);
-    b = clamp(b + gB * grainAmt * 1.12, 0.0, 1.0);
+    // ── Idea 1: density-weighted grain — midtones carry the stock, clear base and dense black stay clean (§12.2A)
+    let printLuma = clamp(0.299 * r + 0.587 * g + 0.114 * b, 0.0, 1.0);
+    let densityGrain = sqrt(max(printLuma * (1.0 - printLuma), 0.0)) * 2.0;
+    let grainW = mix(0.25, 1.0, densityGrain);
+    r = clamp(r + gR * grainAmt * grainW, 0.0, 1.0);
+    g = clamp(g + gG * grainAmt * 0.85 * grainW, 0.0, 1.0);
+    b = clamp(b + gB * grainAmt * 1.12 * grainW, 0.0, 1.0);
 
     // Vignette
     let vigStrength = u.zoom_params.w * 1.2;

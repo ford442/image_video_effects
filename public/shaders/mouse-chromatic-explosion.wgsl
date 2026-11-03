@@ -6,7 +6,9 @@
 //  Chunks From: chunk-library.md (none)
 //  Created: 2026-04-18
 //  By: Agent 2C
-//  Upgraded: Single displacement field + spectral tint via mix
+//  Upgraded: 2026-11-01
+//  Ideas: radial push on the tangential field; spectrum wheel around the pointer
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  The mouse drives a smooth displacement field. Spectral variation
 //  is applied via mix() with wavelengthToRGB, not per-channel UV
@@ -14,26 +16,11 @@
 //  translucency compositing. Audio-reactive bass pulses the field.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn tentAlpha(x: f32) -> f32 {
   return smoothstep(0.0, 0.4, x) * (1.0 - smoothstep(0.4, 1.0, x));
@@ -88,7 +75,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Deflection proportional to distance (inverse) with bass pulse
   let deflection = prismStrength * bassPulse / max(distToMouse, 0.02);
   let perpendicular = vec2<f32>(-sin(prismAngle), cos(prismAngle));
-  let smoothOffset = perpendicular * deflection;
+  // ── Idea 1: radial push beside the existing tangential shear.
+  let radialDir = toMouse / max(length(toMouse), 1e-4);
+  let smoothOffset = perpendicular * deflection + radialDir * deflection * 0.28;
 
   // Ripple contributions: accumulate into single offset (not per-channel)
   let rippleCount = min(u32(u.config.y), 50u);
@@ -118,11 +107,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Single displaced UV — sample full RGB once
   let totalOffset = (smoothOffset + rippleOffset + microWobble) * intensity;
-  let displacedUV = uv + totalOffset;
+  let displacedUV = clamp(uv + totalOffset, vec2<f32>(0.0), vec2<f32>(1.0));
   let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
-  // Spectral tint via mix(), NOT per-channel sampling
-  let wavelength = mix(380.0, 780.0, dispersion * 0.5 + length(totalOffset) * 3.0);
+  // Spectral tint via mix(), NOT per-channel sampling.
+  // ── Idea 2: the wavelength wheels around the pointer. Dispersion still sets the span.
+  let wheel = fract((prismAngle + 3.14159265) * 0.15915494);
+  let along = clamp(length(totalOffset) * 2.0, 0.0, 1.0);
+  let span = clamp(dispersion / 3.0, 0.2, 1.0);
+  let wavelength = mix(430.0, 680.0, clamp(mix(along, wheel, 0.65) * span, 0.0, 1.0));
   let spectralTint = wavelengthToRGB(wavelength);
   let tintStrength = clamp(length(totalOffset) * 4.0, 0.0, 1.0);
   let color = mix(baseColor, baseColor * spectralTint, tintStrength);
@@ -159,9 +152,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depthAlpha = alpha * mix(0.5, 1.0, 1.0 - depth * 0.5);
 
   // Store color with translucency alpha for compositing
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(depthBlended, depthAlpha));
+  let display = acesToneMap(max(depthBlended, vec3<f32>(0.0)));
+  let coord = vec2<i32>(global_id.xy);
+  let outColor = vec4<f32>(display, depthAlpha);
+  textureStore(writeTexture, coord, outColor);
+  textureStore(dataTextureA, coord, outColor);
 
-  // Depth passthrough to preserve depth pipeline
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(d, 0.0, 0.0, 0.0));
 }

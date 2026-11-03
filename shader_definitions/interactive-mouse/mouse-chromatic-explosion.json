@@ -5,7 +5,8 @@
   "features": [
     "mouse-driven",
     "chromatic-aberration",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "description": "The mouse drives a smooth displacement field with spectral tinting via mix and alpha translucency blending. Click ripples launch shockwaves. Audio-reactive bass pulses the entire field.",
   "params": [
@@ -44,5 +45,43 @@
     "chromatic",
     "prism",
     "psychedelic"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "prismStrength",
+          "name": "Prism Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "mapping": "zoom_params.x"
+        },
+        {
+          "id": "dispersion",
+          "name": "Dispersion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "mapping": "zoom_params.y"
+        },
+        {
+          "id": "rippleStrength",
+          "name": "Ripple Chromatics",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "mapping": "zoom_params.z"
+        },
+        {
+          "id": "saturationBoost",
+          "name": "Saturation Boost",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "mapping": "zoom_params.w"
+        }
+      ]
+    }
+  }
 }

@@ -2,35 +2,15 @@
 //  astral-kaleidoscope
 //  Category: psychedelic
 //  Features: upgraded-rgba, depth-aware, mouse-driven, audio-reactive
-//  Upgraded: 2026-09-11
-//  Ideas: pointer-anchored fold center on hold; treble/bass mirror-seam glint
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: pointer-anchored fold center on hold; treble/bass mirror-seam glint; mirror reflectivity per bounce (silvered fall-off); end-cap tunnel ghost
 //  A packing: display RGBA light-trail history (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
+#include "_prelude.wgsl"
+// zoom_params: x=segments, y=rotationSpeed, z=spiralStrength, w=trailPersistence
 
 // Using the persistence buffer for "light trails"
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>,       // x=time, yz=mouse_uv, w=mouse_down
-  zoom_params: vec4<f32>,       // x=segments, y=rotationSpeed, z=spiralStrength, w=trailPersistence
-  ripples:     array<vec4<f32>, 50>,
-};
 
 // ---------------------------------------------------------------
 //  Constants and Math Utilities
@@ -127,7 +107,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  1️⃣  Parameters
     // -----------------------------------------------------------------
-    let segments    = max(3.0, u.zoom_params.x * 12.0 + 3.0);  // 3 to 15 mirrors
+    // A mirror fan only closes for an integer count; a fractional count left a fixed seam along the
+    // atan2 branch cut. Rounded (the default, 9, is unchanged).
+    let segments    = max(3.0, round(u.zoom_params.x * 12.0 + 3.0));  // 3 to 15 mirrors
     let rotSpeed    = u.zoom_params.y * 0.5;
     let spiralStr   = u.zoom_params.z * 2.0;
     let trails      = u.zoom_params.w;                         // 0.0 to 1.0
@@ -164,6 +146,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Divide into segments using modulo
     let segmentAngle = 2.0 * PI / segments;
+    // 2026-11 Idea 1: how many mirror reflections this sample took. The wedge index counts them
+    // around the fan; the shorter way round is min(k, N - k).
+    let wedgeK = fmod(floor(a / segmentAngle), segments);
+    let bounces = min(wedgeK, segments - wedgeK);
     a = fmod(a, segmentAngle);
     
     // Make sure angle is positive
@@ -184,6 +170,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let r_pulse = r - log(r + 0.1) * (pulsePower * sin(time));
     let sampleUV = center + vec2<f32>(cos(a), sin(a)) * r_pulse;
 
+    // 2026-11 Idea 2: end-cap tunnel ghost. A real scope has an end mirror; beyond the cap radius a
+    // second tap samples the radius reflected about the cap (2 R_cap - r), blended up to 45 %.
+    let capR = 0.45 + bass * 0.05;
+    let rCap = select(r_pulse, max(2.0 * capR - r_pulse, 0.0), r_pulse > capR);
+    let capUV = center + vec2<f32>(cos(a), sin(a)) * rCap;
+    let capColor = textureSampleLevel(readTexture, u_sampler, clamp(capUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let capWeight = smoothstep(capR * 0.9, capR * 1.4, r_pulse) * 0.45;
+
     // -----------------------------------------------------------------
     //  4️⃣  Chromatic Separation (The "Trippy" Part)
     // -----------------------------------------------------------------
@@ -199,7 +193,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let colG = textureSampleLevel(readTexture, u_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     
-    var color = vec3<f32>(colR, colG, colB);
+    var color = mix(vec3<f32>(colR, colG, colB), capColor, capWeight);
     
     // -----------------------------------------------------------------
     //  5️⃣  Psychedelic Color Grading
@@ -209,11 +203,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     hsl.x = fract(hsl.x + time * 0.1 + r * hueShift); // Rainbow ripple
     hsl.y = min(hsl.y * 1.2, 1.0); // Boost saturation
     color = hsl2rgb(hsl);
+    // 2026-11 Idea 1: each reflection costs energy and tints toward the silvering: rho^bounces.
+    color = color * pow(vec3<f32>(0.945, 0.955, 0.96), vec3<f32>(bounces));
     
     // -----------------------------------------------------------------
     //  6️⃣  Trails / Feedback
     // -----------------------------------------------------------------
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).rgb;
     
     // Create a feedback loop with configurable decay
     let decay = 0.9 + (trails * 0.09); // Map 0..1 to 0.90..0.99
@@ -230,7 +226,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Calculate luminance-based alpha
     let luma = dot(finalCol, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.7, 1.0, luma);
+    // clamped: luma of the unbounded feedback can exceed 1, which pushed alpha above 1 at HEAD
+    let alpha = clamp(mix(0.7, 1.0, luma), 0.0, 1.0);
     let finalAlpha = mix(alpha * 0.8, alpha, staticDepth);
     
     

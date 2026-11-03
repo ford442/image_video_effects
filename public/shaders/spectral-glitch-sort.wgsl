@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: sort walk; chroma sort
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas: sort walk; chroma sort; block-shared step (§12.2B); directional tear
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -101,7 +101,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fftIndex = 5u + (u32(max(block.x, 0.0)) * 7u + u32(max(block.y, 0.0)) * 13u) % 128u;
   let fftVoice = extraBuffer[fftIndex];
   let voicedNoise = noise * (1.0 + fftVoice * 1.5 + treble * 0.35);
-  let localStrength = strength * (1.0 + influence * 2.0) + tearBoost * strength;
+  // ── Idea 4: directional tear ───────────────────────────────────
+  // Click energy throws harder down the sort axis than against it.
+  let side = dot(dir, uv - springPos);
+  let tearBias = 1.0 + tearBoost * clamp(side * 6.0, -0.4, 0.8);
+  let localStrength = (strength * (1.0 + influence * 2.0) + tearBoost * strength) * tearBias;
   let offset = -dir * localStrength * sortable * mix(1.0, voicedNoise * 2.0, noiseAmount);
   let sortedUv = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
@@ -116,6 +120,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     walkUv = select(walkUv, stepUv, takeStep);
     walkLuma = select(walkLuma, stepLuma, takeStep);
   }
+
+  // ── Idea 3: block-shared step (§12.2B macroblock) ──────────────
+  // Digital Noise mixes the per-pixel walk toward one step count
+  // shared by the block, so a tear is rectangular.
+  let sharedStep = floor(clamp(noise, 0.0, 0.999) * 4.0);
+  let blockShift = clamp(uv + dir * stepLen * sharedStep, vec2<f32>(0.0), vec2<f32>(1.0));
+  walkUv = mix(walkUv, blockShift, noiseAmount * sortable);
 
   var hdr = textureSampleLevel(readTexture, u_sampler, walkUv, 0.0).rgb;
   let split = smoothstep(0.004, 0.04, length(offset));

@@ -5,8 +5,8 @@
 //  Complexity: Very High
 //  Chunks From: hyper-space-jump, spec-blackbody-thermal
 //  Created: 2026-04-18
-//  Upgraded: 2026-09-15
-//  Ideas: Lorentz length-contracted streaks; relativistic beaming on dir_norm chroma
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: Lorentz length-contracted streaks; relativistic beaming on dir_norm chroma; Cauchy split on the streak (§12.2F); cooling afterglow from C
 //  A packing: pre-ACES RGB + vignette alpha
 // ═══════════════════════════════════════════════════════════════════
 //  High-velocity radial streaking where each streak's luminance maps
@@ -14,26 +14,7 @@
 //  streaks glow amber-red. Creates a thermally-colored warp tunnel.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
@@ -42,8 +23,8 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     var b: f32;
     if (t <= 6.5) {
         r = 1.0;
-        g = clamp(0.39 * log(t) - 0.63, 0.0, 1.0);
-        b = clamp(0.54 * log(t - 1.0) - 1.0, 0.0, 1.0);
+        g = clamp(0.39 * log(max(t, 1e-3)) - 0.63, 0.0, 1.0);
+        b = clamp(0.54 * log(max(t - 1.0, 1e-3)) - 1.0, 0.0, 1.0);
     } else {
         r = clamp(1.29 * pow(t - 0.6, -0.133), 0.0, 1.0);
         g = clamp(1.29 * pow(t - 0.6, -0.076), 0.0, 1.0);
@@ -51,6 +32,13 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     }
     let radiance = pow(t / 6.5, 4.0);
     return vec3<f32>(r, g, b) * radiance;
+}
+
+fn cauchyScale(spreadB: f32) -> vec3<f32> {
+    let lam = vec3<f32>(0.650, 0.550, 0.450);
+    let lam2 = lam * lam;
+    let n = 1.0 + spreadB / max(lam2, vec3<f32>(1e-4));
+    return n / max(n.y, 1e-4);
 }
 
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
@@ -101,6 +89,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Idea 1 — Lorentz-like stretch: tunnel elongates at the rim
     let beta = clamp(dist * 0.85, 0.0, 0.95);
     let gammaStretch = 1.0 / max(sqrt(1.0 - beta * beta), 0.2);
+    let cauchy = cauchyScale(mix(0.02, 0.22, chromaticSpread));
 
     for (var i = 0; i < samples; i = i + 1) {
         let f = f32(i);
@@ -111,10 +100,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         let jitter_offset = offset * (noise - 0.5) * 0.1 * (1.0 + treble * 0.25);
 
-        // Idea 2 — chromatic_spread on dir_norm (not the uniform 0.001*f*dist hack)
-        let chrom_uv = vec2<f32>(dir_norm.x / aspect, dir_norm.y) * chromaticSpread * 0.012 * f;
-        let r_uv = clamp(sample_uv + jitter_offset + chrom_uv, vec2<f32>(0.0), vec2<f32>(1.0));
-        let b_uv = clamp(sample_uv + jitter_offset - chrom_uv, vec2<f32>(0.0), vec2<f32>(1.0));
+        // ── Idea: Cauchy split (§12.2F). Chromatic Spread still sets the magnitude.
+        let chromBase = vec2<f32>(dir_norm.x / aspect, dir_norm.y) * chromaticSpread * 0.012 * f;
+        let r_uv = clamp(sample_uv + jitter_offset + chromBase * cauchy.x, vec2<f32>(0.0), vec2<f32>(1.0));
+        let b_uv = clamp(sample_uv + jitter_offset - chromBase * cauchy.z, vec2<f32>(0.0), vec2<f32>(1.0));
         let g_uv = clamp(sample_uv + jitter_offset, vec2<f32>(0.0), vec2<f32>(1.0));
 
         let s_color = textureSampleLevel(readTexture, u_sampler, g_uv, 0.0);
@@ -143,6 +132,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         final_color = blackbodyColor(mix(tempRangeLow, tempRangeHigh, luma));
     }
 
+    // ── Idea: cooling afterglow. Last frame's pre-ACES heat shifts toward red.
+    let prevHeat = textureLoad(dataTextureC, coord, 0).rgb;
+    let cooled = prevHeat * vec3<f32>(1.08, 0.62, 0.38);
+    final_color = mix(final_color, cooled, 0.14);
+
     let vignette = 1.0 - smoothstep(0.3, 1.2, dist);
     final_color *= vignette;
 
@@ -152,7 +146,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hotColor = blackbodyColor(tempRangeHigh * 1.2);
     final_color = mix(final_color, hotColor, select(0.0, mouseHeat * 0.5, mouseHeat > 0.001));
 
-    let display = toneMapACES(final_color);
+    let display = toneMapACES(max(final_color, vec3<f32>(0.0)));
     let alpha = clamp(vignette, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(display, alpha));

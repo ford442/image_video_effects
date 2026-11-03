@@ -5,8 +5,8 @@
 //  Complexity: Very High
 //  Chunks From: gamma-ray-burst.wgsl, spec-blackbody-thermal.wgsl
 //  Created: 2026-04-18
-//  Upgraded: 2026-09-15
-//  Ideas: bipolar jet lobes on atan2; afterglow energy stored in C.a
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: bipolar jet lobes on atan2; afterglow energy stored in C.a; blast-wave shell; red cooling afterglow
 //  A packing: raw burst RGB + energy
 // ═══════════════════════════════════════════════════════════════════
 //  Intense gamma-ray burst with physically-correct blackbody thermal
@@ -15,26 +15,7 @@
 //  blue-white plasma at the epicenter.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
@@ -131,6 +112,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rayColor = mix(vec3<f32>(0.5, 0.8, 1.0), blackbodyColor(tempRangeHigh) * thermalIntensity, 0.5);
     rawColor += rayColor * (jetMask * 0.22 + rayInJet * 0.08) * intensity / (dist + 0.1);
 
+    // ── Idea 3: blast-wave shell. The burst's own ring, not a click ripple.
+    let shellR = fract(time * (0.17 + bass * 0.1)) * 0.9;
+    let shell = exp(-abs(dist - shellR) * 28.0) * (1.0 - shellR) * intensity;
+    rawColor += blackbodyColor(tempRangeHigh * (1.0 - shellR * 0.4)) * thermalIntensity * shell * 0.2;
+
     let glare = 1.0 / (dist * 10.0 + 0.1);
     let coreTemp = mix(tempRangeHigh * 0.8, tempRangeHigh, smoothstep(0.1, 0.0, dist));
     let coreColor = mix(vec3<f32>(1.0, 0.95, 0.8), blackbodyColor(coreTemp) * thermalIntensity, 0.5);
@@ -140,7 +126,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Idea 2 — afterglow from exact C (energy in .a, raw RGB; not display)
     let prev = textureLoad(dataTextureC, coord, 0);
-    let cooled = prev.rgb * (0.78 + decay * 0.12);
+    // ── Idea 4: red afterglow. The stored tail is warmer than the prompt.
+    let cooled = prev.rgb * (0.78 + decay * 0.12) * vec3<f32>(1.0, 0.46, 0.14);
     rawColor += cooled * prev.a * 0.55;
 
     let energy = clamp(length(rawColor) * 0.12 + glare * 0.15 + jetMask * 0.35, 0.0, 1.0);

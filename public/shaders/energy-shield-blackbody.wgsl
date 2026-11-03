@@ -3,8 +3,8 @@
 //  Category: advanced-hybrid
 //  Features: hex-grid, blackbody-thermal, mouse-driven, HDR, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: discrete hex-cell strikes; edge Faraday current
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: discrete hex-cell strikes; edge Faraday current; neighbor-cell conduction; cooling blackbody tail
 //  A packing: raw trail scalar in A.r
 // ═══════════════════════════════════════════════════════════════════
 //  Hexagonal energy shield with physically-correct blackbody thermal
@@ -12,26 +12,7 @@
 //  white-hot to blue plasma, creating a thermal energy barrier effect.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     let t = clamp(temperatureK / 1000.0, 0.5, 30.0);
@@ -155,8 +136,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let prev = loadC(coord, max_coord);
     let activation = cellHit;
-    let newTrail = max(prev.r * decay, activation);
-    finalColor = finalColor + vec3<f32>(0.0, 0.5, 1.0) * newTrail * 0.5;
+    // ── Idea 3: neighbor conduction. Decay still multiplies only this pixel's trail.
+    let stepX = max(i32(res.y / max(hexScale, 1.0)), 3);
+    let stepY = max(i32(res.y * 1.73 / max(hexScale, 1.0)), 3);
+    let nTrail = max(
+        max(loadC(coord + vec2<i32>(stepX, 0), max_coord).r, loadC(coord - vec2<i32>(stepX, 0), max_coord).r),
+        max(loadC(coord + vec2<i32>(0, stepY), max_coord).r, loadC(coord - vec2<i32>(0, stepY), max_coord).r)
+    );
+    let newTrail = max(prev.r * decay, max(activation, nTrail * 0.28));
+    // ── Idea 4: cooling tail. Fresh strikes stay cyan; a decayed trail cools through blackbody.
+    let trailT = mix(1400.0, 9800.0, clamp(newTrail, 0.0, 1.0));
+    let trailGlow = toneMapACES(blackbodyColor(trailT));
+    finalColor = finalColor + vec3<f32>(0.0, 0.5, 1.0) * newTrail * mix(0.22, 0.5, cellHit);
+    finalColor = finalColor + trailGlow * newTrail * (1.0 - cellHit) * 0.55;
     textureStore(dataTextureA, gid.xy, vec4<f32>(newTrail, 0.0, 0.0, 1.0));
 
     let alpha = clamp(0.35 + glow * 0.5 + newTrail * 0.2 + cellHit * 0.1, 0.0, 1.0);

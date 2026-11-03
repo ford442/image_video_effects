@@ -3,13 +3,10 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, flashlight-reveal,
 //            neon-tube, burn-in-persistence
-//  Ideas:    1. real reveal — the photo shows through under the flashlight beam and at
-//               click flares (HEAD only brightened the edges)
-//            2. neon tube physics — white-hot core on strong edges, a wide halo from a
-//               3 px Sobel, and the gas colour leans by edge orientation (Ne red / Ar blue)
-//            3. burn-in persistence — lit edges keep glowing after the beam moves on (C)
+//  Ideas: photo reveal; tube core and gas orientation; burn-in; flashlight hotspot; gas afterimage
+//  A packing: soft-knee display RGBA (C is that burn, exact load)
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-23, 2026-11-02
 //  Swarm upgrade: 2026-07-31 (Batch 20, Algorithmist)
 //   - Slider roles rewired (ids/names/defaults unchanged — preset contract):
 //       x Intensity -> emission/glow intensity (x * 2.0, default = x1.0)
@@ -100,7 +97,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let aspect = resolution.x / resolution.y;
     let distToMouse = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(beamPos.x * aspect, beamPos.y));
-    let revealFalloff = 1.0 - smoothstep(0.0, max(revealRadius, 0.0001), distToMouse);
+    // ── Idea 1: flashlight hotspot ──
+    // Scale still sets the outer beam. The inner disc is the bulb; the skirt is penumbra.
+    let beamOuter = 1.0 - smoothstep(0.0, max(revealRadius, 0.0001), distToMouse);
+    let beamHot = 1.0 - smoothstep(0.0, max(revealRadius * 0.38, 0.0001), distToMouse);
+    let revealFalloff = max(beamOuter * 0.62, beamHot);
 
     // Click flare bursts: each live ripple temporarily ignites the reveal at
     // its click point (~1.2s fade), so nearby edges flash awake on click.
@@ -154,7 +155,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 3: burn-in persistence. C holds last frame's output; lit edges and
     // the revealed patch fade out over about half a second after the beam leaves.
     let prev = textureLoad(dataTextureC, coord, 0).rgb;
-    emission = max(emission, prev * (0.86 + bass * 0.04));
+    // ── Idea 2: gas afterimage ──
+    // The white core dies first. Neon red fades next; argon blue lingers.
+    let persisted = prev * vec3<f32>(0.78, 0.86, 0.93) * (0.86 + bass * 0.04);
+    emission = max(emission, persisted);
 
     let glowStrength = length(emission);
 

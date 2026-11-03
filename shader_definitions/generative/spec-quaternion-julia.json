@@ -2,7 +2,7 @@
   "id": "spec-quaternion-julia",
   "name": "Quaternion Julia",
   "url": "shaders/spec-quaternion-julia.wgsl",
-  "description": "4D quaternion Julia set raymarched in real-time. The 4th dimension animates over time creating organic morphing fractal forms with orbit-trap coloring and physically-based lighting.",
+  "description": "4D quaternion Julia set raymarched in real time. The 3D cross-section slides through the 4th dimension so lobes grow and pinch, the lobes cast soft shadows on each other, and orbit-trap colouring is lit with specular and Fresnel terms.",
   "tags": [
     "quaternion",
     "julia",

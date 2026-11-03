@@ -3,8 +3,8 @@
 //  
 //  Category: generative
 //  Features: audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-27 (was 2026-09-21, Batch 42)
-//  Ideas: 3x5 segment glyph font; white-hot flickering leader at each drop head; column gaps; bottom restart flash
+//  Upgraded: 2026-09-27, 2026-11-01 (was 2026-09-21, Batch 42)
+//  Ideas: 3x5 segment glyph font; white-hot flickering leader at each drop head; column gaps; bottom restart flash; barrel scanlines; corner misconvergence
 //  A packing: raw HDR display RGBA history (C read back as the same)
 //  Techniques:
 //    - Falling digital rain (Matrix-style)
@@ -13,26 +13,7 @@
 //    - Temporal accumulation trails via dataTextureC
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -115,19 +96,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let leaderBit = hash12(gridUV + floor(time * 30.0) * 1.37 + 17.0);
         let bit = mix(dataBit, leaderBit, step(0.5, leader));
         let strokeWidth = mix(0.22, 0.055, glyphSharpness);
+        // ── Idea 2: corner misconvergence ────────────────────────────
+        // The CRT bulge already warps uv. Corners shift the red and blue
+        // glyph taps apart; where the taps still agree, the fringe is zero.
+        let bulge = dot(uvFull * 2.0 - 1.0, uvFull * 2.0 - 1.0);
+        let shift = bulge * 0.045;
         let glyph = segmentGlyph(cellUV, bit, strokeWidth * 0.5);
+        let glyphR = segmentGlyph(cellUV + vec2<f32>(shift, 0.0), bit, strokeWidth * 0.5);
+        let glyphB = segmentGlyph(cellUV - vec2<f32>(shift, 0.0), bit, strokeWidth * 0.5);
         // Column gaps: seeded blanks so the trail is glyph blocks, not a solid streak.
         let gap = step(0.64, hash12(vec2<f32>(gridUV.x, floor(trail * 7.0) + wrapGen)));
         let intensity = (1.0 - trail) * step(trail, 0.34) * glyph * (1.0 - gap);
         let phosphor = mix(vec3<f32>(0.03, 0.72, 0.16), vec3<f32>(0.12, 1.0, 0.68), mids);
         col = phosphor * intensity * characterBrightness * (1.0 + bass * 2.0 + treble * bit);
+        let fringe = smoothstep(0.2, 0.9, bulge);
+        let body = characterBrightness * (1.0 + bass * 2.0 + treble * bit) * (1.0 - gap) * step(trail, 0.34);
+        col += vec3<f32>(0.5, 0.04, 0.06) * max(glyphR - glyph, 0.0) * body * fringe;
+        col += vec3<f32>(0.04, 0.06, 0.45) * max(glyphB - glyph, 0.0) * body * fringe;
         col += vec3<f32>(0.78, 1.0, 0.86) * glyph * leader * (1.0 - gap) * characterBrightness * 1.6;
         // Bottom restart: one cold-green frame where the column wraps, then the new seed.
         let wrapFlash = smoothstep(0.9, 1.0, uv.y) * (1.0 - smoothstep(0.0, 0.04, dropPos));
         col += vec3<f32>(0.16, 0.48, 0.28) * wrapFlash * glyph * characterBrightness * 1.5;
         
-        // Scanlines
-        let scan = 0.78 + 0.22 * sin(uvFull.y * resolution.y * 3.14159);
+        // ── Idea 1: barrel scanlines ────────────────────────────────────
+        // The mask follows the curved glass uv, not the flat frame.
+        // Scanline Bloom still scales the bloom below.
+        let scan = 0.78 + 0.22 * sin(uv.y * resolution.y * 3.14159);
         col *= scan;
         col += phosphor * pow(max(scan, 0.0), 10.0) * scanlineBloom * intensity * 0.18;
     }

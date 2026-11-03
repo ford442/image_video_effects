@@ -3,14 +3,15 @@
   "name": "Infinite Zoom Lens",
   "category": "distortion",
   "url": "shaders/infinite-zoom-lens.wgsl",
-  "description": "Droste zoom lens with axial packets, interference runners, analytic rainbow caustics, held aim, click rings. Diagnostic A packing preserved.",
+  "description": "Droste zoom lens: log-periodic nesting with endless fall and picture-frame seams, now an Escher conformal spiral (each generation rotates as well as shrinks, riding Twist) with a dimmer screen per generation. Axial packets, interference runners, rainbow caustics, held aim and click rings. Display RGBA in A.",
   "features": [
     "mouse-driven",
     "audio-reactive",
     "upgraded-rgba",
     "temporal",
     "held-drag",
-    "bounded-click-ripples"
+    "bounded-click-ripples",
+    "escher-spiral"
   ],
   "tags": [
     "zoom",

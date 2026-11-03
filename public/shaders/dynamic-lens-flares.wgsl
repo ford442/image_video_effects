@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, click-reactive
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: veiling glare along optical axis; ghost aperture breathing from C.a bass envelope
+//  Upgraded: 2026-11-02
+//  Ideas: veiling glare along optical axis; ghost aperture breathing from C.a bass envelope; cat's-eye ghost vignetting by the lens barrel; Cauchy-dispersed ghost rims
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -116,6 +97,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let veilFog = exp(-axisDist * 28.0) * exp(-abs(axisT - 0.5) * 5.5);
   let veiling = vec3<f32>(1.0, 0.93, 0.78) * veilFog * lumaHot * intensity * 0.42;
 
+  // Idea 2 constants: Cauchy n(λ) = A + B/λ² (BK7-ish, λ in µm) at 650/550/450 nm. A ghost is an
+  // out-of-focus image, so its rim radius follows the focal length f ∝ 1/(n − 1): red lands
+  // outside, blue inside, and the split is non-linear (blue moves ~1.7× as far as red).
+  // RIM_SPLIT exaggerates the ~1% physical split so it reads at flare scale.
+  let nRGB = vec3<f32>(1.5046, 1.5046, 1.5046) + vec3<f32>(0.00420) / (vec3<f32>(0.65, 0.55, 0.45) * vec3<f32>(0.65, 0.55, 0.45));
+  let RIM_SPLIT = 14.0;
+  let rimScale = vec3<f32>(1.0) + RIM_SPLIT * ((nRGB.y - 1.0) / (nRGB - vec3<f32>(1.0)) - vec3<f32>(1.0));
+
   // Render optical ghosts along the axis
   let maxGhosts = 8;
   for (var i = 0; i < maxGhosts; i = i + 1) {
@@ -129,7 +118,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let breathe = 1.0 + bassEnvelope * 0.35 * sin(time * 2.4 + fi * 0.9);
     let size = (0.04 + 0.06 * sin(fi * 1.8 + time * 0.3)) * (1.0 + mids * 0.25) * breathe;
     let softness = 0.02 + 0.015 * fi;
-    let weight = smoothstep(size + softness, size * 0.2, d);
+    // Idea 1: cat's-eye vignetting. The lens barrel clips off-axis ghost bundles: intersect the
+    // ghost with a slightly larger barrel disc displaced toward the frame centre by an amount
+    // ∝ the ghost's distance from centre. On-axis ghosts stay round; outer ones become lemons.
+    let gOff = (clampedGhostPos - center) * aspectVec;
+    let barrelR = size * 1.15 + softness * 0.5;
+    let barrelC = clampedGhostPos - (gOff * (size * 2.6)) / aspectVec;
+    let dBarrel = length((uv - barrelC) * aspectVec);
+    let barrel = smoothstep(barrelR + softness * 0.5, barrelR - softness * 0.25, dBarrel);
+    let weight = smoothstep(size + softness, size * 0.2, d) * barrel;
 
     // Multi-spectral chromatic dispersion on ghost elements
     let hue = fi * 0.75 + time * 0.1;
@@ -139,8 +136,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       cos(hue + 4.188) * 0.5 + 0.5
     );
 
-    let ringD = abs(d - size * 0.75);
-    let ringGlow = exp(-ringD * 80.0) * 0.4;
+    // Idea 2: Cauchy rims — one ring per channel at radius·f(λ)/f(550), clipped by the barrel too.
+    let ringD = abs(vec3<f32>(d) - size * 0.75 * rimScale);
+    let ringGlow = exp(-ringD * 80.0) * 0.4 * barrel;
 
     flareAccum += (ghostSpectral * 0.7 + baseLightColor * 0.3) * lightColor * (weight + ringGlow) * 0.45;
   }

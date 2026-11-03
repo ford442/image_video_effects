@@ -5,29 +5,12 @@
 //            depth-aware, aces-tone-map, ign-dither, blackbody-temperature,
 //            split-tone, hue-preserve-clamp, vignette
 //  Complexity: Medium
-//  Upgraded: 2026-07-12 (retry)
+//  Upgraded: 2026-07-12 (retry), 2026-11-01
+//  Ideas: FLIR isotherms on the heat scalar; detail unsharp of the 5-tap blur (§12.2A)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = delta_time, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = zoom, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // .xyzw = user params p1..p4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -114,14 +97,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let thermalBlur = p4;
 
     let l = sampleLuma(uv);
-    let blurredLuma = mix(l, (l + sampleLuma(uv + vec2<f32>(texel.x, 0.0)) + sampleLuma(uv - vec2<f32>(texel.x, 0.0)) + sampleLuma(uv + vec2<f32>(0.0, texel.y)) + sampleLuma(uv - vec2<f32>(0.0, texel.y))) / 5.0, thermalBlur);
+    let boxLuma = (l + sampleLuma(uv + vec2<f32>(texel.x, 0.0)) + sampleLuma(uv - vec2<f32>(texel.x, 0.0)) + sampleLuma(uv + vec2<f32>(0.0, texel.y)) + sampleLuma(uv - vec2<f32>(0.0, texel.y))) / 5.0;
+    let blurredLuma = mix(l, boxLuma, thermalBlur);
     let drift = 0.6 + treble * 1.6;
     let n = fbm(uv * res * 0.04 + vec2<f32>(time * drift, -time * drift * 0.6), 4) - 0.5;
-    let heat = clamp((blurredLuma + n * sensorNoise) * sensitivity, 0.0, 1.0);
+    // ── Idea 2: detail unsharp (§12.2A). Thermal Blur still only mixes the box.
+    let detail = l - boxLuma;
+    let heat = clamp((blurredLuma + detail * 0.85 + n * sensorNoise) * sensitivity, 0.0, 1.0);
 
-    var thermalColor = thermal_gradient(pow(heat, mix(1.5, 0.55, colorRange)));
+    var thermalColor = thermal_gradient(pow(max(heat, 0.0), mix(1.5, 0.55, colorRange)));
     let bb = blackbody(heat);
     thermalColor = mix(thermalColor, bb, smoothstep(0.35, 0.9, heat) * colorRange * 0.7);
+    // ── Idea 1: FLIR isotherms. Color Range sets the step count.
+    let isoSteps = mix(4.0, 10.0, colorRange);
+    let iso = 1.0 - smoothstep(0.0, 0.032, abs(fract(heat * isoSteps + 0.5) - 0.5));
+    thermalColor = mix(thermalColor, vec3<f32>(1.0), iso * 0.7);
 
     let hotspot = smoothstep(0.75, 1.0, heat) * (0.15 + treble * 0.1);
     var color = mix(base.rgb * 0.25, thermalColor, 0.85) + vec3<f32>(hotspot);
@@ -134,7 +124,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = huePreserveClamp(color);
     color += (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
 
-    let alpha = clamp(base.a * 0.4 + heat * 0.4 + bass * 0.05, 0.1, 1.0);
+    let alpha = clamp(base.a * 0.4 + heat * 0.4 + iso * 0.2 + bass * 0.05, 0.1, 1.0);
     let outDepth = clamp(depth + heat * 0.04, 0.0, 1.0);
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));

@@ -5,8 +5,8 @@
 //  Complexity: Very High
 //  Chunks From: gen-audio-spirograph.wgsl, mouse-julia-morph.wgsl
 //  Created: 2026-04-18
-//  Upgraded: 2026-09-15
-//  Ideas: hypotrochoid inner-loop ring family on even harmonics; Julia orbit-trap filaments along the curves
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: hypotrochoid inner-loop ring family on even harmonics; Julia orbit-trap filaments along the curves; pen-driven Julia constant per ring; ink tail (three fading segments behind each pen)
 //  A packing: ACES display RGBA
 //  By: Agent CB-5 — Generative & Hybrid Enhancer
 // ═══════════════════════════════════════════════════════════════════
@@ -16,26 +16,7 @@
 //  mathematical flora that responds to both sound and touch.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -160,6 +141,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var curveColor = vec3<f32>(0.0);
   var totalIntensity = 0.0;
   var juliaIter = 0.0;
+  var inkTail = vec3<f32>(0.0);
 
   // Generate spirograph curves with embedded Julia patterns
   for (var i: i32 = 0; i < 5; i++) {
@@ -182,14 +164,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let dist = distToSegment(uv, pos, prevPos);
 
+    // 2026-11 Idea 2: ink tail. HEAD drew each ring as a single 0.05-time segment (the pen at one
+    // instant) and relied on the trail history for any visible curve. Three more segments behind
+    // the pen, fading 0.7 / 0.45 / 0.25, give every ring a crisp comet of ink of its own.
+    let tailP2 = select(epitrochoid(time - 0.10, R, r, d), hypotrochoid(time - 0.10, R, r, d), isEven);
+    let tailP3 = select(epitrochoid(time - 0.15, R, r, d), hypotrochoid(time - 0.15, R, r, d), isEven);
+    let tailP4 = select(epitrochoid(time - 0.20, R, r, d), hypotrochoid(time - 0.20, R, r, d), isEven);
+    let tailStroke = max(
+        0.7 * smoothstep(lineThickness * 4.0, lineThickness, distToSegment(uv, prevPos, tailP2)),
+        max(0.45 * smoothstep(lineThickness * 4.0, lineThickness, distToSegment(uv, tailP2, tailP3)),
+            0.25 * smoothstep(lineThickness * 4.0, lineThickness, distToSegment(uv, tailP3, tailP4))));
+
+    // 2026-11 Idea 1: pen-driven Julia constant. The embedded Julia uses c_i = juliaC + 0.25 * pen
+    // position, so the filaments around a ring morph as its pen travels (HEAD: one global c).
+    let ringC = juliaC + pos * 0.25;
+
     // Julia coloring at this curve point
     let z0 = (uv - pos * 0.5) * vec2<f32>(3.0 * aspect, 3.0);
-    let jResult = julia(z0, juliaC, 30);
+    let jResult = julia(z0, ringC, 30);
     let jIter = jResult.x;
 
     // Idea 2 — orbit-trap filaments: where the Julia orbit stays bounded the
     // curve glow condenses into neon filaments; escaped zones stay diffuse.
-    let trap = juliaTrap(z0, juliaC, 30);
+    let trap = juliaTrap(z0, ringC, 30);
     let filament = smoothstep(0.45, 0.05, trap);
 
     let hue = fract(f32(i) * 0.2 + t * 0.05 + jIter * 0.02);
@@ -198,6 +195,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let col = hsl2rgb(hue, sat, light) * (0.35 + 1.4 * filament);
 
     let intensity = 1.0 / (1.0 + f32(i) * 0.5);
+    inkTail = inkTail + col * intensity * tailStroke;
     let closer = dist < minDist;
     minDist = select(minDist, dist, closer);
     curveColor = select(curveColor, col * intensity, closer);
@@ -220,7 +218,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   ) * juliaMix * 0.3;
 
   // Final color
-  var col = curveColor * glow + vec3<f32>(1.0) * core * 0.5;
+  var col = curveColor * glow + vec3<f32>(1.0) * core * 0.5 + inkTail * 0.6;
   col = col + juliaPattern;
 
   // Add trail accumulation
@@ -233,7 +231,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Semantic alpha from curve energy (was hardcoded 1.0); truthful depth
   // from the same energy (was 0.0).
-  let alphaOut = clamp(glow * 0.7 + core * 0.5 + juliaMix * 0.2, 0.05, 0.95);
+  let alphaOut = clamp(glow * 0.7 + core * 0.5 + juliaMix * 0.2 + max(inkTail.r, max(inkTail.g, inkTail.b)) * 0.25, 0.05, 0.95);
   let depthOut = clamp(glow * 0.6 + core * 0.4, 0.0, 1.0);
 
   // Store for feedback

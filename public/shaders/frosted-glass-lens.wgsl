@@ -3,7 +3,9 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-23 (Batch 64)
+//  Upgraded: 2026-11-01 (previous pass: 2026-08-23, Batch 64)
+//  Ideas: Beckmann microfacet scatter lobe; depth-dependent frost thickness; Henyey-Greenstein forward-scatter veil (two-ring halo + veiling glare); polished meniscus bevel on the clear window (radial refraction + rim glint)
+//  A packing: display RGBA (ACES) + semantic alpha; C read as colour history
 //
 //  Brought up to the pool standard: no ACES (the output was written raw), no
 //  click response, and `dataTextureC` was never read.
@@ -126,6 +128,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     clearFront = min(clearFront, 1.0);
 
+    // ── Idea 3: Henyey-Greenstein forward-scatter veil. Frost scatters mostly forward (g ~ 0.6), so a
+    // bright source bleeds a soft halo and the whole plate loses a little contrast (veiling glare).
+    // Two rings of taps carry the phase function: the inner ring at ~0.15 rad weighs 0.70, the outer
+    // ring at ~0.5 rad weighs 0.30 (HG(0.15)/HG(0.5) = 8.9 : 3.8, normalised).
+    let veilR = (0.010 + 0.028 * frost_cold) * lens_mask;
+    let vx = vec2<f32>(veilR / aspect, 0.0);
+    let vy = vec2<f32>(0.0, veilR);
+    let vd1 = vec2<f32>(veilR / aspect, veilR) * 1.8384;
+    let vd2 = vec2<f32>(veilR / aspect, -veilR) * 1.8384;
+    let inner = (textureSampleLevel(readTexture, u_sampler, clamp(uv + vx, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+               + textureSampleLevel(readTexture, u_sampler, clamp(uv - vx, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+               + textureSampleLevel(readTexture, u_sampler, clamp(uv + vy, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+               + textureSampleLevel(readTexture, u_sampler, clamp(uv - vy, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb) * 0.25;
+    let outer = (textureSampleLevel(readTexture, u_sampler, clamp(uv + vd1, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+               + textureSampleLevel(readTexture, u_sampler, clamp(uv - vd1, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+               + textureSampleLevel(readTexture, u_sampler, clamp(uv + vd2, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+               + textureSampleLevel(readTexture, u_sampler, clamp(uv - vd2, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb) * 0.25;
+    let veil = inner * 0.70 + outer * 0.30;
+    let veilHot = smoothstep(0.5, 1.0, dot(veil, vec3<f32>(0.2126, 0.7152, 0.0722)));
+
     // Fresnel via rough normal
     let roughNormal = normalize(vec3<f32>(frost_offset * 20.0, 0.0, 1.0 - frost_dyn * 0.5));
     let viewDir     = vec3<f32>(0.0, 0.0, 1.0);
@@ -176,10 +198,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ab_mask = smoothstep(lens_radius, lens_radius + edge_softness * 0.5, dist) *
                   (1.0 - smoothstep(lens_radius + edge_softness * 0.5, lens_radius + edge_softness, dist));
 
+    // ── Idea 4: polished meniscus bevel. The clear window is hand-polished with a convex bevel, so
+    // across the edge band the view is pulled toward the lens centre (a weak converging meniscus) and
+    // the bevel catches a thin glint on the light side.
+    let radialDir = dist_vec / max(dist, 1e-4);
+    let meniscus = -radialDir / vec2<f32>(aspect, 1.0) * ab_mask * edge_softness * 0.45;
+    let bevelGlint = exp(-pow((dist - lens_radius - edge_softness * 0.5) / max(edge_softness * 0.16, 1e-4), 2.0))
+                   * (0.35 + 0.65 * max(dot(radialDir, vec2<f32>(-0.6, -0.8)), 0.0));
+
     // Final sampling with chromatic aberration (overrides blended_rgb for final color)
-    let uv_r = uv + vec2<f32>(frost_offset) + vec2<f32>(aberration * ab_mask, 0.0);
-    let uv_g = uv + vec2<f32>(frost_offset);
-    let uv_b = uv + vec2<f32>(frost_offset) - vec2<f32>(aberration * ab_mask, 0.0);
+    let uv_r = uv + meniscus + vec2<f32>(frost_offset) + vec2<f32>(aberration * ab_mask, 0.0);
+    let uv_g = uv + meniscus + vec2<f32>(frost_offset);
+    let uv_b = uv + meniscus + vec2<f32>(frost_offset) - vec2<f32>(aberration * ab_mask, 0.0);
 
     let col_r = textureSampleLevel(readTexture, u_sampler, uv_r, 0.0).r;
     let col_g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
@@ -192,6 +222,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Where we have aberration (ab_mask > 0), use aberrated color; elsewhere use blended
     var final_rgb = mix(blended_rgb, ab_rgb, ab_mask);
+    // Idea 3 applied: halo from hot sources + veiling glare, both only on the frosted side.
+    final_rgb += veil * veilHot * frost_cold * lens_mask * 0.30 * (1.0 + treble * 0.3);
+    final_rgb = mix(final_rgb, veil, 0.10 * frost_cold * lens_mask);
+    // Idea 4 applied: rim glint.
+    final_rgb += vec3<f32>(0.9, 0.96, 1.0) * bevelGlint * 0.14 * (1.0 - clearFront);
     // Click fronts wipe back toward the clear plate.
     let clearSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     final_rgb = mix(final_rgb, clearSample, clearFront * 0.85);
