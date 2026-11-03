@@ -103,9 +103,9 @@ describe('Graph Lab WGSL editor', () => {
   it('a typed error shows naga\'s diagnostic on the user line, in the banner and the lint state', async () => {
     const { manager } = fakeManager();
     const view = await renderOpen(manager);
-    type(view, 'let t = u.config.x', 'let t = u.confg.x');
+    type(view, 'let t = u.config.x * u.zoom_params.x', 'let t = u.confg.x');
     const banner = await screen.findByTestId('graph-lab-wgsl-error');
-    const line = WGSL_TEMPLATE.split('\n').findIndex((l) => l.includes('let t = u.config.x')) + 1;
+    const line = WGSL_TEMPLATE.split('\n').findIndex((l) => l.includes('let t = u.config.x * u.zoom_params.x')) + 1;
     expect(banner.textContent).toMatch(new RegExp(`^L${line}:`));
     const marks: number[] = [];
     forEachDiagnostic(view.state, (_d, from) => marks.push(view.state.doc.lineAt(from).number));
@@ -125,7 +125,7 @@ describe('Graph Lab WGSL editor', () => {
     expect(compiled).toContain('@group(0) @binding(1) var readTexture');
     expect(compiled).not.toMatch(/^#include/m);
 
-    type(view, 'let t = u.config.x', 'let t = nope');
+    type(view, 'let t = u.config.x * u.zoom_params.x', 'let t = nope');
     await screen.findByTestId('graph-lab-wgsl-error');
     await new Promise((r) => setTimeout(r, 50));
     expect(m.loadShader).toHaveBeenCalledTimes(1);

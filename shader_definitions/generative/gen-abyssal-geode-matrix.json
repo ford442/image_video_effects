@@ -20,7 +20,7 @@
     "abyss",
     "audio-reactive"
   ],
-  "workgroup_size": [16, 16],
+  "workgroup_size": [16, 16, 1],
   "params": [
     {
       "id": "gravityPull",

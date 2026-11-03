@@ -43,7 +43,7 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     // Fractal Fold
     var s = 1.0;
-    let t = u.config.x * u.zoom_params.y;
+    let t = u.config.x * u.zoom_params.y * u.zoom_params.w;
     for(var i=0; i<4; i++) {
         p = abs(p) - vec3<f32>(1.0, 0.5, 0.2) * s;
         let r_mat = rot(t * 0.2 + f32(i));
@@ -67,7 +67,7 @@ fn getNormal(p: vec3<f32>) -> vec3<f32> {
     return normalize(n);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dimensions = vec2<f32>(u.config.zw);
     let coord = vec2<f32>(f32(id.x), f32(id.y));
