@@ -1444,7 +1444,7 @@
       "mathematical",
       "pointcloud"
     ],
-    "description": "Iterated function system rendering a 3D Sierpinski tetrahedron using the chaos game algorithm. Thousands of point samples create intricate cloud-like renders of the fractal solid with depth-based coloring and perspective projection. Mouse rotates the 3D view in real-time.",
+    "description": "Chaos-game rendering of a 3D Sierpinski tetrahedron. Splat size follows perspective, and the last two vertex picks name the sub-tetrahedron so the self-similar nesting shows as coloured sub-copies, over attractor-biased chaos, corner flares and temporal accumulation. Mouse rotates the view.",
     "workgroup_size": [
       16,
       16,
@@ -14241,7 +14241,7 @@
     "id": "gen-grok41-mandelbrot",
     "name": "Buddhabrot Nebula",
     "url": "shaders/gen_grok41_mandelbrot.wgsl",
-    "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation. Long orbits leave warm comets, and the real-axis antenna tip anchors the silhouette.",
+    "description": "Audio-reactive Buddhabrot orbit accumulation: orbits are coloured by length into Nebulabrot red, green and blue, the Mandelbrot body carries smooth potential bands with binary-decomposition rays, and long orbits leave warm comets. The Center X/Y sliders glide the view, clicks pull it toward the click point, and stars dance with FFT bands.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -16617,7 +16617,7 @@
     "id": "gen-julia-set",
     "name": "Julia Set — Orbit Trap",
     "url": "shaders/gen_julia_set.wgsl",
-    "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth (continuous) iteration count μ=i−log₂(log₂|z|), multi-trap orbit colouring (circle, line, cross traps), and animated Julia parameter c orbiting a Mandelbrot cardioid boundary. Audio-driven trap scale.",
+    "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth iteration count, circle/line/cross orbit traps and a velocity trap, c orbiting a cardioid. A distance estimate lights a thin lace along the set's true boundary, and the interior bands around each attracting cycle. Audio-driven trap scale.",
     "features": [
       "audio-reactive",
       "procedural",
@@ -19117,7 +19117,7 @@
       "metallic",
       "futuristic"
     ],
-    "description": "2D cross-section of the 3D Mandelbox fractal with box folding, sphere folding, and orbit-trap coloring. Metallic surface with ambient occlusion, HDR specular highlights, and ACES tone mapping.",
+    "description": "2D cross-section of the 3D Mandelbox fractal with box folding, sphere folding and orbit traps (origin, diagonal and the fold walls). A polished-metal surface reflects a sky gradient with Schlick Fresnel, with distance-estimate lighting, HDR specular highlights and a glassy interior.",
     "workgroup_size": [
       16,
       16,
@@ -28769,7 +28769,7 @@
     "id": "gen_mandelbulb_3d",
     "name": "Mandelbulb 3D",
     "url": "shaders/gen_mandelbulb_3d.wgsl",
-    "description": "3D Mandelbulb fractal with ray marching, orbit trap coloring, soft shadows, and distance-based alpha for atmospheric depth",
+    "description": "3D Mandelbulb fractal with ray marching, orbit-trap colouring and soft shadows. Distance-field ambient occlusion darkens crevices, curvature wears the ridges bright and tarnishes the hollows, and distance-based alpha adds atmospheric depth.",
     "tags": [
       "mandelbulb",
       "fractal",
@@ -28782,7 +28782,9 @@
       "ray-marching",
       "sdf",
       "orbit-trap",
-      "3d-fractal"
+      "3d-fractal",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -29437,7 +29439,7 @@
     "id": "kimi-fractal-dreams",
     "name": "Kimi Fractal Dreams",
     "url": "shaders/kimi_fractal_dreams.wgsl",
-    "description": "Multi-layer fractal with orbit traps, burning ship variant, and smooth color cycling.",
+    "description": "Multi-layer Burning-Ship Julia fractal with orbit traps. Reflection parity tiles the escape region into mirrored colour regions, stripe-average colouring adds fine grain, and a spring-damped Julia constant follows the mouse.",
     "features": [
       "mouse-driven",
       "generative",
@@ -31352,7 +31354,7 @@
     "id": "spec-quaternion-julia",
     "name": "Quaternion Julia",
     "url": "shaders/spec-quaternion-julia.wgsl",
-    "description": "4D quaternion Julia set raymarched in real-time. The 4th dimension animates over time creating organic morphing fractal forms with orbit-trap coloring and physically-based lighting.",
+    "description": "4D quaternion Julia set raymarched in real time. The 3D cross-section slides through the 4th dimension so lobes grow and pinch, the lobes cast soft shadows on each other, and orbit-trap colouring is lit with specular and Fresnel terms.",
     "tags": [
       "quaternion",
       "julia",

@@ -5408,7 +5408,7 @@
     "id": "gen-audio-spirograph-julia",
     "name": "Audio Spirograph Julia",
     "url": "shaders/gen-audio-spirograph-julia.wgsl",
-    "description": "Audio-reactive spirograph curves that unfold into mouse-driven Julia set fractals. Each harmonic ring breathes with audio while the Julia constant morphs via mouse position.",
+    "description": "Audio-reactive spirograph rings unfold into mouse-driven Julia fractals. Each ring's pen drives its own Julia constant and leaves a fading ink tail; hypotrochoid and epitrochoid families alternate by harmonic.",
     "tags": [
       "audio-reactive",
       "fractal",
@@ -6985,7 +6985,7 @@
     "id": "hyperbolic-dreamweaver-julia",
     "name": "Hyperbolic Dreamweaver Julia",
     "url": "shaders/hyperbolic-dreamweaver-julia.wgsl",
-    "description": "Hyperbolic Dreamweaver Julia",
+    "description": "A 4D quaternion Julia set raymarched through a Poincare-disk view. Rays follow hyperbolic perspective so the scene compresses toward the rim, the input photo shows through the surface refracted by Snell's law with a chromatic split, and horocycle fog thickens toward the edge.",
     "tags": [
       "hyperbolic-geometry",
       "quaternion-julia",
@@ -8021,16 +8021,14 @@
     "id": "multi-fractal-compositor",
     "name": "Multi-Fractal Compositor",
     "url": "shaders/multi-fractal-compositor.wgsl",
-    "description": "Smoothly blend between multiple fractal types. Mandelbrot, Julia, Burning Ship, and Newton fractals.",
+    "description": "Layered zoom tunnel of the input image: five staggered octave layers form a self-similar Droste-style zoom that composites into the picture, with zoom-lens chroma fringing, flow-noise domain warp, depth edge glow and fog. (It is not a Mandelbrot, Julia or Newton blend, despite the name.)",
     "features": [
       "advanced-hybrid",
-      "mandelbrot",
-      "julia",
-      "burning-ship",
-      "smooth-blend",
       "randomization-safe",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "layered-zoom",
+      "upgraded-rgba"
     ],
     "params": [
       {
