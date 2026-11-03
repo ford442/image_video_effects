@@ -6,6 +6,7 @@ from fastapi import Request
 from fastapi.responses import PlainTextResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from . import config
 from .config import RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW, RATE_LIMIT_PATHS, RATE_LIMIT_IP_HEADER
 
 
@@ -20,8 +21,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
-        if not any(path.startswith(prefix) for prefix in self.path_prefixes):
+        # Token issuance + webhook writes always get their own, stricter bucket,
+        # regardless of how RATE_LIMIT_PATHS is configured.
+        is_webhook = any(path.startswith(prefix) for prefix in config.WEBHOOK_PATH_PREFIXES)
+        if not is_webhook and not any(path.startswith(prefix) for prefix in self.path_prefixes):
             return await call_next(request)
+        limit = config.WEBHOOK_RATE_LIMIT_REQUESTS if is_webhook else self.requests
 
         client_ip = request.headers.get(RATE_LIMIT_IP_HEADER, "")
         if client_ip:
@@ -31,7 +36,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if not client_ip:
             client_ip = "unknown"
 
-        key = f"{client_ip}:{request.method}:api"
+        key = f"{client_ip}:{request.method}:{'webhook' if is_webhook else 'api'}"
         now = time.time()
 
         async with self.lock:
@@ -42,7 +47,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 entry[0] += 1
             count, reset = self.counters[key]
 
-        if count > self.requests:
+        if count > limit:
             retry_after = max(1, int(reset - now))
             return PlainTextResponse(
                 "Too many requests",
@@ -51,8 +56,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             )
 
         response = await call_next(request)
-        response.headers["X-RateLimit-Limit"] = str(self.requests)
-        response.headers["X-RateLimit-Remaining"] = str(max(0, self.requests - count))
+        response.headers["X-RateLimit-Limit"] = str(limit)
+        response.headers["X-RateLimit-Remaining"] = str(max(0, limit - count))
         response.headers["X-RateLimit-Reset"] = str(int(reset))
         return response
 

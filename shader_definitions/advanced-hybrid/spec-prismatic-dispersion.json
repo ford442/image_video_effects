@@ -2,7 +2,7 @@
   "id": "spec-prismatic-dispersion",
   "name": "Prismatic Dispersion",
   "url": "shaders/spec-prismatic-dispersion.wgsl",
-  "description": "4-band spectral dispersion through glass using Cauchy's equation. Treats RGBA as physical wavelengths with refractive index variation, reconstructing color via CIE color matching.",
+  "description": "4-band spectral dispersion through glass using Cauchy's equation. The spectral reconstruction is white-balanced so white stays white, and an anti-reflective coating tints the internal-reflection ghosts of bright highlights.",
   "tags": [
     "spectral",
     "prismatic",

@@ -2,7 +2,7 @@
   "id": "refraction-tunnel",
   "name": "Refraction Tunnel",
   "url": "shaders/refraction-tunnel.wgsl",
-  "description": "Chromatic refraction tunnel with wall ribs, hoop rings, helical rails, analytic liquid-rainbow caustics, held aim, and bounded click shock rings. Display RGBA is packed in A.",
+  "description": "Chromatic refraction tunnel with wall ribs, hoop rings, helical rails and liquid-rainbow caustics. The hoops are glass ridges that refract the wall radially, and Beer-Lambert absorption down the tube tints the far end green-cyan; pipe-wall reflection, held aim and click shock rings. Display RGBA is packed in A.",
   "params": [
     {
       "id": "depth",
@@ -42,7 +42,9 @@
     "upgraded-rgba",
     "held-drag",
     "bounded-click-ripples",
-    "liquid-rainbow-caustics"
+    "liquid-rainbow-caustics",
+    "beer-lambert",
+    "refractive-hoops"
   ],
   "tags": [
     "distortion",

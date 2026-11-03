@@ -1,30 +1,30 @@
-// Aurora Rift Iridescence — dimensional auroral plasma rift with curl advection, Voronoi foam, and thin-film interference.
-// A/C stores ACES display RGBA for continuous plasma trail persistence; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Aurora Rift Iridescence — dimensional auroral plasma rift with curl advection, Voronoi foam, and thin-film interference.
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, click-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-02
+//  Ideas: gravity-drained film (thins to first-order black film at the top, slow drainage); Marangoni streaming (thickness carried upstream along the curl flow)
+//  A packing: ACES display RGBA (C read as colour, 6% persistence); B unused; depth passes through
+// ═══════════════════════════════════════════════════════════════════
+//  HEAD fixes (2026-11-02): fbm summed white hash noise, so the "curl flow" was per-pixel random
+//  → smooth value noise. The thin-film sum was not white-balanced (Σ wavelengthToRGB differs per
+//  channel), which made the whole frame a beige wash; it is now normalised per channel, and the
+//  reflectance carries the half-wave phase loss of a film in air (sin², so a vanishing film is black).
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash2(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
   return fract(sin(h) * 43758.5453123);
+}
+
+fn vnoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash2(i), hash2(i + vec2<f32>(1.0, 0.0)), w.x),
+             mix(hash2(i + vec2<f32>(0.0, 1.0)), hash2(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
 }
 
 fn fbm(p: vec2<f32>, time: f32) -> f32 {
@@ -32,7 +32,7 @@ fn fbm(p: vec2<f32>, time: f32) -> f32 {
   var amp = 0.5;
   var freq = 1.0;
   for (var i: i32 = 0; i < 4; i = i + 1) {
-    sum += amp * (hash2(p * freq + time * 0.1) - 0.5);
+    sum += amp * (vnoise(p * freq + time * 0.1) - 0.5);
     freq *= 2.0;
     amp *= 0.5;
   }
@@ -76,14 +76,17 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
   let cosTheta_t = sqrt(max(1.0 - sinTheta_t * sinTheta_t, 0.0));
   let opd = 2.0 * filmIOR * thicknessNm * cosTheta_t;
   var color = vec3<f32>(0.0);
-  var sampleCount = 0.0;
+  var norm = vec3<f32>(0.0);
   for (var lambda = 400.0; lambda <= 700.0; lambda = lambda + 30.0) {
     let phase = opd / lambda;
-    let interference = cos(phase * 6.28318530718) * 0.5 + 0.5;
-    color += wavelengthToRGB(lambda) * interference;
-    sampleCount = sampleCount + 1.0;
+    // Air–film–air: one reflection gains a half wave, so R(λ) ∝ sin²(π·opd/λ); a film much
+    // thinner than λ/4 reflects nothing (the "black film" of a draining bubble).
+    let interference = 0.5 - 0.5 * cos(phase * 6.28318530718);
+    let w = wavelengthToRGB(lambda);
+    color += w * interference;
+    norm += w;
   }
-  return color / max(sampleCount, 1.0);
+  return color / max(norm, vec3<f32>(1e-3));
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -182,9 +185,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dist = length(toCenter);
   let cosTheta = sqrt(max(1.0 - dist * dist * 0.5, 0.01));
 
-  let noiseVal = hash2(uv * 14.0 + time * 0.1) * 0.5 + hash2(uv * 28.0 - time * 0.15) * 0.25;
-  let filmThicknessBase = mix(260.0, 760.0, pattern);
+  // Idea 2: Marangoni streaming — surface-tension gradients drag the film along the flow, so the
+  // thickness is read upstream along the curl/parallax warp (HEAD used per-pixel hash grain here).
+  let upstream = uv - curl * 0.03 - totalWarp * 0.12;
+  let noiseVal = vnoise(upstream * 7.0 + vec2<f32>(0.0, time * 0.12)) * 0.5
+               + vnoise(upstream * 15.0 - vec2<f32>(time * 0.07, 0.0)) * 0.25;
+  let filmThicknessBase = mix(260.0, 760.0, clamp(pattern, 0.0, 1.0));
   var thickness = filmThicknessBase * (0.75 + depth * 0.5 + noiseVal * 0.4);
+
+  // Idea 1: gravity drainage — a vertical film drains downward: thin at the top (uv.y = 0),
+  // thick at the bottom, so the interference orders stack in horizontal bands (black and
+  // silver/gold first order high up, vivid second/third order mid-frame, pastel high orders at
+  // the bottom). The top slowly thins into black film and re-floods (a 40 s drainage cycle);
+  // bass shakes fresh film down.
+  let drainCycle = 0.5 + 0.5 * sin(time * 0.157 + bass * 0.6);
+  let drainTop = mix(0.04, 0.3, drainCycle);
+  let fall = clamp(uv.y + (noiseVal - 0.375) * 0.2, 0.0, 1.0);
+  thickness *= mix(drainTop, 1.15, pow(fall, 1.6));
 
   if (held) {
     let mouseInfluence = exp(-mouseDist * mouseDist * 40.0);

@@ -1,35 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Pixel Drag Smear
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, temporal
+//  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: pixel-drag-smear.wgsl
 //  Created: 2026-05-17
 //  By: WGSL Upgrade Agent
-//  Ideas: bristle streak sampling; treble-split pigment bleed
+//  Ideas: bristle streak sampling; treble-split pigment bleed; bristle splay; drying (§12.2C)
+//  Upgraded: 2026-11-01
 //  A packing: display RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var pp = fract(p * vec2(0.1031, 0.1030));
@@ -98,10 +80,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Idea 1: bristle streak sampling — average three taps stepped along the drag
   // offset vector so the smear reads as dragged bristles, not one soft blur tap.
+  // ── Idea 3: bristle splay ──────────────────────────────────────
+  // The side taps leave the drag line by a fraction of Brush Radius.
   let bristleStep = offset * 0.5;
+  let dragDir = select(vec2<f32>(0.0), normalize(offset), length(offset) > 0.0001);
+  let splay = vec2<f32>(-dragDir.y, dragDir.x) * brushRadius * 0.35 * influence;
   let histUV0 = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
-  let histUV1 = clamp(uv - offset + bristleStep, vec2<f32>(0.0), vec2<f32>(1.0));
-  let histUV2 = clamp(uv - offset - bristleStep, vec2<f32>(0.0), vec2<f32>(1.0));
+  let histUV1 = clamp(uv - offset + bristleStep + splay, vec2<f32>(0.0), vec2<f32>(1.0));
+  let histUV2 = clamp(uv - offset - bristleStep - splay, vec2<f32>(0.0), vec2<f32>(1.0));
   let bristle0 = textureLoad(dataTextureC, vec2<i32>(clamp(histUV0 * resolution, vec2<f32>(0.0), resolution - 1.0)), 0);
   let bristle1 = textureLoad(dataTextureC, vec2<i32>(clamp(histUV1 * resolution, vec2<f32>(0.0), resolution - 1.0)), 0);
   let bristle2 = textureLoad(dataTextureC, vec2<i32>(clamp(histUV2 * resolution, vec2<f32>(0.0), resolution - 1.0)), 0);
@@ -110,17 +96,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2: treble-split pigment bleed — nudge R/B taps apart along the drag
   // direction by an amount keyed to audioTreble, bleeding chroma at the bristle
   // edge on treble transients (extends the existing psychedelic-color identity).
-  let bleedDir = select(vec2<f32>(0.0), normalize(offset), length(offset) > 0.0001);
+  let bleedDir = dragDir;
   let bleedAmt = audioTreble * 0.01;
   let bleedR = textureLoad(dataTextureC, vec2<i32>(clamp((histUV0 + bleedDir * bleedAmt) * resolution, vec2<f32>(0.0), resolution - 1.0)), 0).r;
   let bleedB = textureLoad(dataTextureC, vec2<i32>(clamp((histUV0 - bleedDir * bleedAmt) * resolution, vec2<f32>(0.0), resolution - 1.0)), 0).b;
   let historyColor = vec4<f32>(bleedR, bristled.g, bleedB, bristled.a);
   let videoColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // ── Idea 4: drying (§12.2C) ────────────────────────────────────
+  // Outside the brush, old paint falls back toward the live photo.
+  // Decay Rate still holds the trail inside the stroke.
+  let smearGate = select(0.0, 1.0, influence > 0.001);
+  let dry = clamp((1.0 - decay) * 3.0, 0.0, 1.0) * (1.0 - smearGate);
+  let driedRgb = mix(historyColor.rgb, videoColor.rgb, dry * 0.65);
+  let driedHist = vec4<f32>(driedRgb, historyColor.a);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  let smearWeight = select(0.0, 0.9, influence > 0.001);
-  let baseMix = mix(videoColor.rgb, historyColor.rgb, decay);
-  let smearMix = mix(baseMix, historyColor.rgb, smearWeight);
+  let smearWeight = smearGate * 0.9;
+  let baseMix = mix(videoColor.rgb, driedHist.rgb, decay);
+  let smearMix = mix(baseMix, driedHist.rgb, smearWeight);
   let blended = lumaMix(baseMix, smearMix, influence);
 
   let velocity = length(offset) * 20.0;

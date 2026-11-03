@@ -1,26 +1,14 @@
-// Spectral Smear — Batch 58D exact-history paint upgrade
-// A owns the decayed spectral display history; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Spectral Smear
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-01
+//  Ideas: speed-thinned brush (§12.2C); stroke-sheared hue
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -97,7 +85,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseDistance = length(p - springPos * aspectVec);
   let edgeNoise = fbm(p * 7.0 + vec2<f32>(time * 0.35, -time * 0.22));
   let held = select(0.45, 1.0, u.zoom_config.w > 0.5);
-  let brush = smoothstep(brushRadius, brushRadius * 0.72, mouseDistance * (0.82 + 0.32 * edgeNoise)) * held;
+  // ── Idea 1: speed-thinned brush (§12.2C) ───────────────────────
+  // A fast spring stroke narrows. Brush Radius stays the base width.
+  let thinRadius = brushRadius / (1.0 + length(springVel) * 1.8);
+  let brush = smoothstep(thinRadius, thinRadius * 0.72, mouseDistance * (0.82 + 0.32 * edgeNoise)) * held;
 
   var clickBloom = 0.0;
   var clickHue = 0.0;
@@ -116,7 +107,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                        fbm(p * 3.0 + vec2<f32>(5.2, 1.3 - time * 0.08))) - vec2<f32>(0.5);
   let historyUv = clamp(uv - flow * (0.020 + mids * 0.008) - springVel * brush * 0.7, vec2<f32>(0.0), vec2<f32>(1.0));
   let previous = textureLoad(dataTextureC, historyCoord(historyUv, dims), 0);
-  let hue = fract(time * colorSpeed + mouseDistance * 1.6 + (edgeNoise - 0.5) * 0.25 + clickHue);
+  // ── Idea 2: stroke-sheared hue ─────────────────────────────────
+  // Hue still spins with Color Speed and also advances along the
+  // spring velocity, so a stroke is a ramp rather than one colour.
+  let velDir = springVel / max(length(springVel), 1e-4);
+  let alongStroke = dot((uv - springPos) * aspectVec, velDir);
+  let hue = fract(time * colorSpeed + mouseDistance * 1.6 + alongStroke * colorSpeed * 0.35 + (edgeNoise - 0.5) * 0.25 + clickHue);
   let paint = mix(source.rgb, spectralPalette(hue), 0.65) * (1.0 + clickBloom * 1.2);
   let paintMask = clamp((brush + clickBloom) * intensity, 0.0, 1.0);
   let decayed = previous.rgb * (0.90 + 0.09 * trailDecay);

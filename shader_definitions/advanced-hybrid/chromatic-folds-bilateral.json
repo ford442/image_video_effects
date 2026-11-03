@@ -2,7 +2,7 @@
   "id": "chromatic-folds-bilateral",
   "name": "Chromatic Folds Bilateral",
   "url": "shaders/chromatic-folds-bilateral.wgsl",
-  "description": "Chromatic Folds Bilateral",
+  "description": "Chromatic folds on a joint colour and depth bilateral neighbourhood. Flat regions fold the edge-preserved base, resonance waves ring at preserved boundaries, and split-spectrum pivots open outward from the cursor.",
   "tags": [
     "chromatic-folds",
     "bilateral-dream",

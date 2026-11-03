@@ -13,7 +13,8 @@
     "edge-detection",
     "electromagnetic-field",
     "mouse-driven",
-    "chromatic"
+    "chromatic",
+    "upgraded-rgba"
   ],
   "params": [
     {

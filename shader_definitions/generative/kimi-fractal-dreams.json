@@ -2,7 +2,7 @@
   "id": "kimi-fractal-dreams",
   "name": "Kimi Fractal Dreams",
   "url": "shaders/kimi_fractal_dreams.wgsl",
-  "description": "Multi-layer fractal with orbit traps, burning ship variant, and smooth color cycling.",
+  "description": "Multi-layer Burning-Ship Julia fractal with orbit traps. Reflection parity tiles the escape region into mirrored colour regions, stripe-average colouring adds fine grain, and a spring-damped Julia constant follows the mouse.",
   "features": [
     "mouse-driven",
     "generative",

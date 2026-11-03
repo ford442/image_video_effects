@@ -25,6 +25,48 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
   - 2026-11-01: sent cursor/batch-29, twelve ASCII, glyph, and digital-rain shaders (ascii-decode through bayer-dither-interactive). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/`.
+  - 2026-11-01: sent a pixel-sort / smear twelve (glitch-pixel-sort through quantum-smear). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve/`.
+  - 2026-11-02: sent cursor/batch-35 (Cursor(1)), twelve neon edge and contour shaders (neon-contour-drag through posterize-neon-edges). Notes in `docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/`.
+
+## 2026-11-02 — cursor/batch-35 neon edge and contour (12 shaders)
+
+- IDs: neon-contour-drag, neon-contour-interactive, neon-edge-diffusion, neon-edge-reveal, neon-edges, neon-topology, neon-poly-grid, neon-quantum-lattice, electric-contours, edge-glow-mouse, edge-glow-mouse-em, posterize-neon-edges.
+- Per shader, the ideas actually added:
+  - neon-contour-drag: drag shear; glass wall. Dual-scale Sobel, tangent streaks, and the bass core kept.
+  - neon-contour-interactive: electrode caps; mercury bead. Six-tube palette, radial pulse, and starter flicker kept.
+  - neon-edge-diffusion: filament core; energy-conserving bloom (§12.2F). Tile dilation and luma² hex taps kept.
+  - neon-edge-reveal: flashlight hotspot; gas afterimage. Photo reveal, hot core, and the C burn kept. No spring.
+  - neon-edges: scale agreement; Mach trough. Five scales, isotherms, and the inverse-square spotlight kept.
+  - neon-topology: index gap; slope shade. Hachures, majors, lens, and quakes kept.
+  - neon-poly-grid: shared wall; dying-tail flicker. Hex grid, trail in A.r, and the existing spring kept.
+  - neon-quantum-lattice: phason kink; Ammann beat. Three layers, defect highlight, and electron hop kept.
+  - electric-contours: electrode discs; dielectric polarization. Equipotentials, field lines, and diagnostic A kept.
+  - edge-glow-mouse: mask trail; normal-side halo. Oil-slick, packets, and diagnostic A kept.
+  - edge-glow-mouse-em: soft inverse-square core (§12.2F); leading-edge glow. Corona and the field-line streak kept.
+  - posterize-neon-edges: cel filament; tangent ink waver. Band-hold flats and the Sobel ridge kept.
+- Floor: prelude include on the three pasted headers; 16×16; exact C; A packing as documented; saved params exact.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1531 passed (1 skipped); one unrelated RendererManager device-loss test failed once and passed 45/45 on re-run. `SKIP_WASM_BUILD=1 npm run build` succeeded.
+  - 2026-11-02: sent cursor/batch-36 (Cursor(2)), twelve halftone, stipple, and ink shaders (halftone through graphic-novel). `graphic-novel` is `graphic_novel.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-02-batch-36/`.
+
+## 2026-11-02 — cursor/batch-36 halftone, stipple, and ink (12 shaders)
+
+- IDs: halftone, halftone-reveal, engraving-stipple, engraving-stipple-blue-noise, spec-blue-noise-stipple, stipple-render, cyber-halftone-scanner, polka-dot-reveal, polka-wave, rotoscope-ink, film-cross-process, graphic-novel.
+- Per shader, the ideas actually added:
+  - halftone: Murray-Davies midtone gain; black trap under K. Highlight skip, overprint, and plate misregistration kept.
+  - halftone-reveal: loupe twist; bitten dot edge. Per-plate gain and highlight knockout kept.
+  - engraving-stipple: foul bite; wipe sheen. Roulette, burin taper, and click rings kept. A stays telemetry.
+  - engraving-stipple-blue-noise: drypoint shoulder; raking shadow. Blue-noise jitter and the threshold stay. First ACES display write; C unread.
+  - spec-blue-noise-stipple: void push; stacked pigment. Dark-cell packing and neighbor skip kept.
+  - stipple-render: downhill stipple; coffee ring. Contour hatch and exact-C wet memory kept.
+  - cyber-halftone-scanner: interlaced field shear (§12.2B); lamp dropout (§12.2B). AM cells, scan bursts, and hard-dot kept.
+  - polka-dot-reveal: chain holes; dot pip. Chain merge and drag stretch kept. A stays bass, mouse, trail. ACES on the display write only.
+  - polka-wave: crest squash; rosette eye. Four-plate wave and dot gain kept.
+  - rotoscope-ink: double weight; cel boil. Edge weight and hold-flats kept. A stays telemetry.
+  - film-cross-process: density-weighted grain (§12.2A); shadow teal. Highlight crossover and the enlarger spring kept.
+  - graphic-novel: feather into the spot; panel rule. Spot blacks, pen hatch, and shadow-side weight kept.
+- Floor: prelude include on the eight pasted headers; 16×16; exact C; A packing as documented; saved params exact. `x-meta.upgrade.params` added for engraving-stipple-blue-noise and polka-dot-reveal.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped) after the device-loss file was re-run clear of the parallel build. `SKIP_WASM_BUILD=1 npm run build` succeeded.
+- Real-GPU visual QA: external.
 
 ## 2026-10-26 — liquid ten (10 shaders)
 
@@ -242,6 +284,25 @@ _Learn about the person you're helping. Update this as you go._
   - bayer-dither-interactive: error coring; tile seam. 8×8 Bayer, IGN assist, and channel rotation kept.
 - Floor: prelude include on all twelve (four pasted headers migrated); 16×16; exact C where C is read; A packing as documented; saved params exact.
 - Gates: Naga 12/12, precommit 12/12, extraBuffer 0 new, dead sliders 0 new on a full catalog re-scan, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
+
+## 2026-11-01 — pixel-sort / smear twelve (12 shaders)
+
+- IDs: glitch-pixel-sort, pixel-sorter, pixel-sort-radial, pixel-sort-explorer, spectral-glitch-sort, spectral-flow-sorting, hybrid-spectral-sorting, pixel-drag-smear, pixel-stretch-interactive, luma-smear-interactive, spectral-smear, quantum-smear.
+- Per shader, the ideas actually added:
+  - glitch-pixel-sort: chroma delay line (§12.2B); dropout tail (§12.2B). fp128 displacement, melt, and the packet kept. No spring.
+  - pixel-sorter: head-to-tail ramp; sort-axis comb. Asendorf close and the span seam kept.
+  - pixel-sort-radial: spoke gutter; inward stack. Radial Asendorf and the ring seam kept. No spring.
+  - pixel-sort-explorer: interval ticks; tail dust. Luma-hold and streak persist kept. No spring.
+  - spectral-glitch-sort: block-shared step (§12.2B); directional tear. Walk, chroma sort, and the existing spring kept.
+  - spectral-flow-sorting: aperture gate; flow barb. Lucas-Kanade and the raw previous-RGB store kept.
+  - hybrid-spectral-sorting: band gutter; band head. Band walk, palette, and hue shift kept. No spring.
+  - pixel-drag-smear: bristle splay; drying (§12.2C). Three-tap drag and treble bleed kept. No spring.
+  - pixel-stretch-interactive: Cauchy channel scale (§12.2F); coherence gutter. Tensor and luma-sorted taps kept. Chromatic Scale still sets the reach.
+  - luma-smear-interactive: uphill stick; fringe spends the trail. Downhill slide, ridge, and the (0,0) state texel kept.
+  - spectral-smear: speed-thinned brush (§12.2C); stroke-sheared hue. Palette and the existing spring kept.
+  - quantum-smear: still-lock; void rim. Stochastic advection kept. A stays pre-ACES so motion stays a colour difference.
+- Floor: prelude include on the six pasted headers; 16×16; exact C where C is read; A packing as documented; saved params exact.
+- Gates: Naga 12/12, precommit 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 - Real-GPU visual QA: external.
 
 ## Context

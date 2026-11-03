@@ -3,8 +3,8 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-06
-//  Ideas: luma-gradient slide (bright bleeds downhill into dark); wet-edge pigment ridge where trail energy ends
+//  Upgraded: 2026-10-06, 2026-11-01
+//  Ideas: luma-gradient slide (bright bleeds downhill into dark); wet-edge pigment ridge where trail energy ends; uphill stick; fringe spends the trail
 //  A packing: linear pre-ACES trail RGB (pre-audio/boost/ridge) + A.a = trail energy; (0,0) = state texel (prev mouse xy, prev time, sentinel -7)
 //  Motion: chromatic R-lag / B-lead streaks + curl-advected exact-C trails (2026-08-30)
 // ═══════════════════════════════════════════════════════════════════
@@ -123,6 +123,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lU = lumaOf(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, px.y), 0.0).rgb);
   let lumaGrad = vec2<f32>(lR - lL, lD - lU) * 0.5;
   velocity = velocity - lumaGrad * smearAmt * viscosity * 0.06;
+  // ── Idea 3: uphill stick ───────────────────────────────────────
+  // Pigment still slides downhill. The part of the drag aimed up the
+  // same luma gradient is removed. The eraser still zeros velocity.
+  let gradLen = max(length(lumaGrad), 1e-4);
+  let gradDir = lumaGrad / gradLen;
+  let uphill = max(dot(velocity, gradDir), 0.0);
+  velocity = velocity - gradDir * uphill * 0.65;
   velocity = select(velocity, vec2<f32>(0.0), held && eraserMask > 0.55);
 
   var clickKick = 0.0;
@@ -145,6 +152,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var trail = mix(src.rgb, chromaPrev, persist * smearAmt / max(smearAmt + 0.15, 0.001));
   trail = mix(trail, src.rgb, eraserMask * select(0.35, 1.0, held));
+  // ── Idea 4: fringe spends the trail ────────────────────────────
+  // Where red and blue have pulled apart, the trail desaturates.
+  // Color Shift still sets how far the two taps sit.
+  let fringe = clamp(abs(rTrail - bTrail) * (0.5 + colorShift), 0.0, 1.0);
+  let trailL = lumaOf(trail);
+  trail = mix(trail, vec3<f32>(trailL), fringe * 0.45);
   var hdr = trail + vec3<f32>(treble * 0.08, treble * 0.05, clickKick * 0.12);
   let luma2 = lumaOf(hdr);
   hdr = luma2 + (hdr - vec3<f32>(luma2)) * (1.15 + colorShift * 0.35);

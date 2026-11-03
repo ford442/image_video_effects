@@ -2,34 +2,13 @@
 //  astral-kaleidoscope-gemini
 //  Category: psychedelic
 //  Features: upgraded-rgba, depth-aware, mouse-driven, audio-reactive
-//  Upgraded: 2026-09-11
-//  Ideas: bass/treble-driven warp swell; held-pointer becomes a second warp epicenter
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: bass/treble-driven warp swell; held-pointer becomes a second warp epicenter; eyepiece field stop with cos^4 fall-off; object-chamber defocus
 //  A packing: display RGBA feedback trail (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>,       // x=time, yz=mouse_uv, w=mouse_down
-  zoom_params: vec4<f32>,       // x=segments, y=rotationSpeed, z=spiralStrength, w=trails
-  ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=segments, y=rotationSpeed, z=spiralStrength, w=trails
 
 // ---------------------------------------------------------------
 //  Constants and Math Utilities
@@ -130,7 +109,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  1️⃣  Parameters
     // -----------------------------------------------------------------
-    let segments    = max(2.0, u.zoom_params.x * 14.0 + 2.0);
+    // A mirror fan only closes for an integer count (a fractional count left a seam at the atan2 cut).
+    let segments    = max(2.0, round(u.zoom_params.x * 14.0 + 2.0));
     let rotSpeed    = u.zoom_params.y * 0.4 - 0.2; // Allows reverse rotation
     let spiralStr   = u.zoom_params.z * 3.0;
     let trails      = u.zoom_params.w;
@@ -203,6 +183,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let colG = textureSampleLevel(readTexture, u_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     var color = vec3<f32>(colR, colG, colB);
+
+    // 2026-11 Idea 2: object-chamber defocus. The loose objects sit off the eye's focal plane away
+    // from the axis: four extra taps (+-radial, +-tangential in the folded space) average into the
+    // sample, with a blur radius that grows as r^2.
+    let defocusR = 0.006 * (r / 0.5) * (r / 0.5);
+    let radialDir = vec2<f32>(cos(a), sin(a));
+    let tangentDir = vec2<f32>(-sin(a), cos(a));
+    let dfA = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + radialDir * defocusR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let dfB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - radialDir * defocusR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let dfC = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + tangentDir * defocusR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let dfD = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - tangentDir * defocusR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    color = mix(color, (dfA + dfB + dfC + dfD) * 0.25, smoothstep(0.15, 0.6, r) * 0.6);
     
     // -----------------------------------------------------------------
     //  5️⃣  Evolved Psychedelic Color Grading
@@ -217,7 +209,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  6️⃣  Enhanced Feedback Trails
     // -----------------------------------------------------------------
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).rgb;
     let decay = 0.88 + (trails * 0.11); // Map 0..1 to 0.88..0.99
     
     // ✨ GEMINI UPGRADE: Mix in a subtle noise shimmer into the feedback
@@ -229,11 +221,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  7️⃣  Final Output
     // ---------------------------------------------------------------
-    let finalCol = mix(color, feedback, 0.6); // Slightly more feedback visibility
+    var finalCol = mix(color, feedback, 0.6); // Slightly more feedback visibility
+
+    // 2026-11 Idea 1: eyepiece field stop with cos^4 fall-off. A scope is seen through a round tube:
+    // brightness falls as cos^4(theta) = 1 / (1 + (rho / f)^2)^2 with f = 1.1 (a long focal length, so
+    // the fall-off is gentle), and a soft circular stop at rho ~ 0.62 dims what lies outside to 35 %.
+    // Applied to the display only; the trail history is left untouched.
+    let eyeRho = length((uv - vec2<f32>(0.5)) * vec2<f32>(dims.x / dims.y, 1.0));
+    let eyeFall = 1.0 / ((1.0 + (eyeRho / 1.1) * (eyeRho / 1.1)) * (1.0 + (eyeRho / 1.1) * (eyeRho / 1.1)));
+    let eyeStop = mix(0.35, 1.0, 1.0 - smoothstep(0.58, 0.66, eyeRho));
+    finalCol = finalCol * eyeFall * eyeStop;
     
     // Calculate luminance-based alpha
     let luma = dot(finalCol, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.7, 1.0, luma);
+    // clamped: luma of the unbounded feedback can exceed 1, which pushed alpha above 1 at HEAD
+    let alpha = clamp(mix(0.7, 1.0, luma), 0.0, 1.0);
     let finalAlpha = mix(alpha * 0.8, alpha, staticDepth);
     
     textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(acesToneMap(finalCol), finalAlpha));

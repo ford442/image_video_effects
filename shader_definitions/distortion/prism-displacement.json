@@ -16,7 +16,7 @@
     "mouse-driven",
     "temporal"
   ],
-  "description": "Prism lens at the cursor: white-balanced spectral dispersion with a Cauchy fan, a rotating anamorphic axis, depth-weighted magnification and a Fresnel rim.",
+  "description": "Prism lens at the cursor: white-balanced spectral dispersion with a Cauchy fan whose fringe grows toward the rim, Beer-Lambert absorption through the glass dome, a rotating anamorphic axis and a Fresnel rim.",
   "params": [
     {
       "id": "zoomAmount",

@@ -6,6 +6,9 @@
 //  Chunks From: fractal-boids-field, mouse-fluid-coupling
 //  Created: 2026-04-18
 //  By: Agent CB-4 - Mouse Physics Injector
+//  Upgraded: 2026-11-01
+//  Ideas: alarm scatter (boids flee click fronts - position and heading); flock-density halo from the neighbour loop
+//  A packing: unchanged - A(0,0).xy = mouse state for the next frame, no other pixel is written
 // ═══════════════════════════════════════════════════════════════════
 //  Flocking behavior on a fractal vector field with viscous mouse
 //  fluid coupling. Mouse movement creates wakes that push boids.
@@ -13,26 +16,7 @@
 //  Alpha stores combined fluid density and boid presence.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -78,6 +62,11 @@ fn domainWarpFBM(p: vec2<f32>, time: f32, audioReactivity: f32) -> vec2<f32> {
   return r;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ═══ FLOW FIELD SAMPLE ═══
 fn sampleFlowField(uv: vec2<f32>, time: f32, flowStrength: f32, audioReactivity: f32) -> vec2<f32> {
   let warped = domainWarpFBM(uv * 5.0, time * 0.1 * audioReactivity, audioReactivity);
@@ -108,12 +97,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let id = vec2<i32>(global_id.xy);
   let aspect = resolution.x / resolution.y;
 
-  let audioOverall = u.zoom_config.x;
-  let audioReactivity = 1.0 + audioOverall * 0.3;
+  // HEAD read u.zoom_config.x (engine TIME, not audio) here, so the flow-field time term ran
+  // away roughly as time^2. Audio now comes from plasmaBuffer and rides the flow strength;
+  // audioReactivity stays 1.0 (HEAD's value at t = 0).
+  let audioOverall = clamp((plasmaBuffer[0].x + plasmaBuffer[0].y + plasmaBuffer[0].z) * 0.3333333, 0.0, 2.0);
+  let audioReactivity = 1.0;
 
   // Parameters
   let boidCount = mix(10.0, 50.0, u.zoom_params.x);
-  let flowStrength = mix(0.5, 3.0, u.zoom_params.y);
+  let flowStrength = mix(0.5, 3.0, u.zoom_params.y) * (1.0 + audioOverall * 0.2);
   let trailPersist = u.zoom_params.z;
   let separation = mix(0.02, 0.1, u.zoom_params.w);
 
@@ -148,6 +140,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cos(time * (1.0 + boidId * 1.5) + boidId * 10.0)
   ) * 0.5 / boidCount;
 
+  // ── Idea 1: alarm scatter ──────────────────────────────────────────────
+  // HEAD's ripples only flashed colour; the flock never moved. A boid near a click front now
+  // gets a radial impulse from that front (Reynolds flee): a small position kick (<= 0.015 uv,
+  // inside its own cell) and a strong heading kick, so the hue ring of the front shows the flock parting.
+  var alarmDir = vec2<f32>(0.0);
+  let alarmCount = min(u32(u.config.y), 50u);
+  for (var a: u32 = 0u; a < alarmCount; a = a + 1u) {
+    let rp = u.ripples[a];
+    let ageA = time - rp.z;
+    if (ageA > 0.0 && ageA < 2.0) {
+      let toB = (boidPos - rp.xy) * vec2<f32>(aspect, 1.0);
+      let rdB = max(length(toB), 0.0001);
+      let frontB = rdB - ageA * 0.35;
+      let envB = exp(-frontB * frontB * 180.0) * exp(-ageA * 1.5);
+      alarmDir = alarmDir + (toB / rdB) * envB;
+    }
+  }
+  boidPos = boidPos + alarmDir * 0.015 / vec2<f32>(aspect, 1.0);
+
   // Get flow field at boid position
   let flow = sampleFlowField(boidPos, time, flowStrength, audioReactivity);
 
@@ -158,6 +169,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var sep = vec2<f32>(0.0);
   var alignment = flow;
   var cohesion = vec2<f32>(0.0);
+  var crowd = 0.0;
 
   // Sample neighbors (simplified grid-based)
   for (var y: i32 = -1; y <= 1; y = y + 1) {
@@ -178,13 +190,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       }
 
       cohesion = cohesion + neighborPos;
+      // Idea 2: soft neighbour density (about 1.1 for an evenly spread neighbourhood, more as boids bunch up)
+      crowd = crowd + exp(-dist * boidCount * 2.0);
     }
   }
 
   cohesion = cohesion / 8.0 - boidPos;
 
   // Combine forces with fluid coupling
-  let velocity = normalize(sep * 1.5 + alignment * 1.0 + cohesion * 0.5 + flow * 2.0 + boidFluidVel * fluidInfluence);
+  let velocity = normalize(sep * 1.5 + alignment * 1.0 + cohesion * 0.5 + flow * 2.0 + boidFluidVel * fluidInfluence + alarmDir * 3.0);
 
   // Trail rendering
   let toBoid = uv - boidPos;
@@ -211,6 +225,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       boidColor = max(boidColor, trailColor);
     }
   }
+
+  // Idea 2: flock-density halo — a warm halo around boids whose neighbourhood is bunched up.
+  let crowdHalo = smoothstep(1.2, 3.5, crowd);
+  let haloR = distToBoid / (0.02 * (1.0 + boidId));
+  boidColor = boidColor + vec3<f32>(1.0, 0.7, 0.35) * exp(-haloR * haloR) * crowdHalo * 0.6;
 
   // Click ripple shockwaves
   var rippleDisturbance = 0.0;
@@ -246,6 +265,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Alpha = boid density + fluid density + ripple disturbance
   let alpha = clamp(mix(0.75, 1.0, length(boidColor)) + fluidMag * 0.2 + rippleDisturbance * 0.1, 0.0, 1.0);
 
-  textureStore(writeTexture, id, vec4<f32>(color, alpha));
+  textureStore(writeTexture, id, vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), alpha));
   textureStore(writeDepthTexture, id, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

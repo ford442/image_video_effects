@@ -7,8 +7,8 @@
 //  Complexity: High
 //  Chunks From: chromatic-focus
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-05
-//  Ideas: highlight bokeh discs with rim ring; cat's-eye vignetting; bokeh fringing (longitudinal CA)
+//  Upgraded: 2026-10-05, 2026-11-01
+//  Ideas: highlight bokeh discs with rim ring; cat's-eye vignetting; bokeh fringing (longitudinal CA); depth-driven circle of confusion; spherical-aberration rim bias
 //  A packing: mask (focusMask, blurMask, spectralSpread*40, alpha) — no reader
 // ═══════════════════════════════════════════════════════════════════
 
@@ -145,12 +145,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // frame edges turns into cat's-eye lenses (on-axis every tap survives).
   let catShift = (vec2<f32>(0.5) - uv) * 0.8;
 
+  // Depth under the pixel vs depth under the cursor (the focus plane). Sampled before
+  // the tap loop now: the blur radius and rim weighting below both need it, not only
+  // the fringe colour (depth 1 = near, so defocus > 0 means in front of the plane).
+  let pixDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let defocus = pixDepth - focusDepth;
+
+  // 2026-11 Idea 1: depth-driven circle of confusion — CoC grows with |depth - focus plane|
+  // (x1 at the plane / flat depth, up to x2 at a 0.33 depth gap).
+  let cocScale = 1.0 + clamp(abs(defocus) * 3.0, 0.0, 1.0);
+  // 2026-11 Idea 2: spherical-aberration rim bias — behind the plane (defocus < 0) discs go
+  // bright-edged, in front (defocus > 0) soft and centre-heavy. 0.35 at defocus 0 is HEAD's constant.
+  let sphericalBias = clamp(defocus * 3.0, -1.0, 1.0);
+  let rimGain = 0.35 - 0.45 * sphericalBias;
+  let coreGain = 0.3 * max(sphericalBias, 0.0);
+
   // Rotating blur samples — HEAD's 6-tap ring (aperture coord 0.667, same
   // radius as HEAD) plus
   // Idea 1: Highlight bokeh discs — every tap is weighted by luma^4 so bright
   // highlights dominate and bloom into discs, and a second rim ring of 6 taps
   // sits at the aperture edge (coord 1.0) with rim brightening (soap-bubble).
-  let blurRadius = aperture * (1.0 + blurMask * 2.0);
+  let blurRadius = aperture * (1.0 + blurMask * 2.0) * cocScale;
   let angleStep = 6.28318 / 6.0;
   var coreAccum = vec3<f32>(0.0);
   var coreWeight = 0.0;
@@ -169,10 +185,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     w = w * (1.0 - smoothstep(1.0, 1.2, length(dir * ringCoord - catShift)));
     if (isRim) {
       // Idea 1: rim brightening — the aperture edge carries more energy
-      w = w * (1.0 + 0.35 * blurMask);
+      w = w * (1.0 + rimGain * blurMask);
       rimAccum = rimAccum + c * w;
       rimWeight = rimWeight + w;
     } else {
+      w = w * (1.0 + coreGain * blurMask);
       coreAccum = coreAccum + c * w;
       coreWeight = coreWeight + w;
     }
@@ -186,9 +203,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // (the disc's edge), out-of-focus pixels nearer than the focus plane
   // (depth 1 = near) get a magenta rim, farther ones a green rim. Flat depth
   // reads as "behind the focus plane" (background bokeh) at reduced strength.
-  let pixDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let defocus = pixDepth - focusDepth;
   let fringeAmt = clamp(0.35 + abs(defocus) * 3.0, 0.0, 1.0) * blurMask;
   let coreAvg = coreAccum / max(coreWeight, 1e-4);
   let rimAvg = rimAccum / max(rimWeight, 1e-4);

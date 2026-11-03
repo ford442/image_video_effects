@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: refractive time-fault seams; hour-line facet caustics; growth-zoning bands; corridor near-miss glow
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas: refractive time-fault seams; hour-line facet caustics; growth-zoning bands; corridor near-miss glow; Cauchy-dispersed hour lines (§12.2F); step-count AO from SDF taps (§12.2E)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -58,6 +58,24 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
         map(p + e.yxy).x - map(p - e.yxy).x,
         map(p + e.yyx).x - map(p - e.yyx).x
     ));
+}
+
+// ── Idea 5: step-count AO (§12.2E) — 4 SDF taps along the normal; crevices between folded facets darken.
+fn aoFour(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 4; i = i + 1) {
+        let h = 0.05 + 0.4 * f32(i) / 4.0;
+        occ += max(h - map(p + n * h).x, 0.0) * sca;
+        sca *= 0.55;
+    }
+    return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
+}
+
+// Hour-line caustic profile (the HEAD expression, now a function of the probe position).
+fn hourLine(pp: vec3<f32>) -> f32 {
+    let hour_phase = abs(fract(atan2(pp.y, pp.x) / TAU * 12.0 + pp.z * 0.18 - u.config.x * 0.12) - 0.5);
+    return pow(1.0 - clamp(hour_phase * 7.0, 0.0, 1.0), 3.0);
 }
 
 // Raymarching loop
@@ -137,6 +155,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let glow = u.zoom_params.w * (1.0 / (1.0 + t*t*0.1));
 
         col = vec3<f32>(dif) * vec3<f32>(0.5, 0.7, 1.0) + vec3<f32>(glow * 0.5, glow * 0.2, glow * 0.8);
+        // ── Idea 5: crevice occlusion on the lit body (seams/caustics added below stay bright)
+        let ao = aoFour(p, n);
+        col *= mix(0.45, 1.0, ao);
 
         // Add pseudo-dispersion colors based on normal
         col += vec3<f32>(abs(rR.x), abs(rG.y), abs(rB.z)) * 0.3;
@@ -146,10 +167,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += fault_chroma * (0.35 + disp * 0.4);
 
         // Idea 2: twelve narrow hour lines sweep across folded facets as caustics.
-        let hour_phase = abs(fract(atan2(p.y, p.x) / TAU * 12.0 + p.z * 0.18 - u.config.x * 0.12) - 0.5);
-        let hour_caustic = pow(1.0 - clamp(hour_phase * 7.0, 0.0, 1.0), 3.0);
+        // ── Idea 4: Cauchy dispersion (§12.2F) — n(λ)=1.45+B/λ², B from Dispersion; each channel's refracted ray
+        // shifts the probe position, so the twelve lines split into R/G/B fringes (Dispersion 0 → HEAD mono lines).
+        let cauchyB = u.zoom_params.x * 0.08;
+        let nCol = vec3<f32>(1.45) + cauchyB / vec3<f32>(0.4225, 0.3025, 0.2025);
+        let refR = refract(rd, n, 1.0 / nCol.x);
+        let refG = refract(rd, n, 1.0 / nCol.y);
+        let refB = refract(rd, n, 1.0 / nCol.z);
+        let pR = p + (refR - refG) * 3.0;
+        let pB = p + (refB - refG) * 3.0;
+        let hourRGB = vec3<f32>(hourLine(pR), hourLine(p), hourLine(pB));
+        let hour_caustic = hourRGB.y;
         let caustic_color = mix(vec3<f32>(0.15, 0.55, 1.0), vec3<f32>(1.0, 0.65, 0.12), fault_seam);
-        col += caustic_color * hour_caustic * (0.3 + glow * 0.15 + audio.z * 0.08);
+        col += caustic_color * hourRGB * (0.3 + glow * 0.15 + audio.z * 0.08);
 
         // Idea 3 — growth zoning: bands parallel to facet edges, like zoned quartz; Fractal Fold sets density
         var zq = abs(p) - u.zoom_params.z;
@@ -160,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let zoneLine = smoothstep(0.08, 0.0, abs(zone - 0.5) - 0.38);
         let zoneTint = mix(vec3<f32>(0.75, 0.6, 1.0), vec3<f32>(0.6, 0.95, 1.0), fract(floor(edgeDist * bandCount) * 0.37));
         col = col * (0.88 + 0.12 * zone) + zoneTint * zoneLine * (0.12 + disp * 0.15 + audio.y * 0.06);
-        alpha = clamp(0.2 + dif * 0.45 + fault_seam * 0.2 + hour_caustic * 0.25 + glow * 0.08 + zoneLine * 0.05, 0.0, 1.0);
+        alpha = clamp(0.2 + dif * 0.45 + fault_seam * 0.2 + max(hourRGB.x, max(hourRGB.y, hourRGB.z)) * 0.25 + glow * 0.08 + zoneLine * 0.05, 0.0, 1.0);
     } else {
         // Background
         col = vec3<f32>(0.05, 0.05, 0.1) * (1.0 - length(uv) * 0.5);
