@@ -170,8 +170,17 @@
       "history": []
     },
     "black-hole-iridescence": {
-      "hash": "8c66abc6be5e82c6",
-      "history": []
+      "hash": "f25628e6dbd716f0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "f25628e6dbd716f0",
+          "prev_hash": "8c66abc6be5e82c6",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
     },
     "block-distort-em": {
       "hash": "320f7f756d6cffcb",
@@ -1150,8 +1159,17 @@
       "history": []
     },
     "stellar-plasma-blackbody": {
-      "hash": "07ef8b6e3f2dedc7",
-      "history": []
+      "hash": "ebb6abeda367aeb9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "ebb6abeda367aeb9",
+          "prev_hash": "07ef8b6e3f2dedc7",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
     },
     "tensor-flow-morphological": {
       "hash": "83b454b3743f8a79",
@@ -3150,8 +3168,17 @@
       ]
     },
     "gen-aetherial-plasma-loom": {
-      "hash": "92a4d26065dedf42",
-      "history": []
+      "hash": "0f048f9468b830dd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "0f048f9468b830dd",
+          "prev_hash": "92a4d26065dedf42",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
     },
     "gen-alien-flora-ecosystem": {
       "hash": "ef54c1a020431562",
@@ -5556,7 +5583,7 @@
       ]
     },
     "gen-gravito-phononic-accretion": {
-      "hash": "b4db06da770bc2a9",
+      "hash": "a74b1cb58a85761d",
       "history": [
         {
           "event": "upgraded",
@@ -5565,6 +5592,14 @@
           "prev_hash": "6bd8be64b51a49a0",
           "commit": "4653c738",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "a74b1cb58a85761d",
+          "prev_hash": "b4db06da770bc2a9",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
         }
       ]
     },
@@ -7682,8 +7717,17 @@
       ]
     },
     "gen-radiant-cyber-bismuth-nebula-colossus": {
-      "hash": "1d95026037f63ba7",
-      "history": []
+      "hash": "609a0569ca36d5bf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "609a0569ca36d5bf",
+          "prev_hash": "1d95026037f63ba7",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
     },
     "gen-radiant-cyber-chrono-void-stag": {
       "hash": "577c9ec2dcfbb633",
@@ -7770,8 +7814,17 @@
       "history": []
     },
     "gen-resonant-quantum-obsidian-astro-manta": {
-      "hash": "483ce817ee5f7666",
-      "history": []
+      "hash": "4e2f1704417861ac",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "4e2f1704417861ac",
+          "prev_hash": "483ce817ee5f7666",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
     },
     "gen-resonant-quantum-obsidian-scarab-engine": {
       "hash": "a65870acad9cc4e6",
@@ -9020,8 +9073,17 @@
       "history": []
     },
     "plasma-jet-stream": {
-      "hash": "9700540c3cfa92b8",
-      "history": []
+      "hash": "f397ffc850a73e74",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "f397ffc850a73e74",
+          "prev_hash": "9700540c3cfa92b8",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
     },
     "plasma-orb": {
       "hash": "21b53906f8524b1c",
@@ -9079,8 +9141,17 @@
       ]
     },
     "solar-flare-cascade": {
-      "hash": "8c4e461cc94194a8",
-      "history": []
+      "hash": "797e1095b530969f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "797e1095b530969f",
+          "prev_hash": "8c4e461cc94194a8",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
     },
     "spec-analytic-noise-flow": {
       "hash": "3f0c6a4071805ba4",
@@ -9372,8 +9443,17 @@
       "history": []
     },
     "hybrid-sdf-plasma": {
-      "hash": "cf1fdb765427a595",
-      "history": []
+      "hash": "8759508b5e9e97db",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "8759508b5e9e97db",
+          "prev_hash": "cf1fdb765427a595",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
+        }
+      ]
     },
     "hybrid-spectral-sorting": {
       "hash": "21d3e1ccf0d4ca39",
@@ -14716,6 +14796,18 @@
           "hash": "97a2f2921b5e225f",
           "commit": "cc2fd84c",
           "note": "2026-11-01 sonnet/batch-12 crystal & gemstone ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-12"
+        }
+      ]
+    },
+    "gen-crystalline-nebula-weaver-forge": {
+      "hash": "618c3c7335be89fa",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-01T16:25:52.218Z",
+          "hash": "618c3c7335be89fa",
+          "commit": "123b8f0c",
+          "note": "2026-11-01 sonnet/batch-14 stellar-plasma & cosmic-forge ten (Sonnet) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-14"
         }
       ]
     }
