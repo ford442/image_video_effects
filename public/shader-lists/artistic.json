@@ -349,10 +349,13 @@
     "id": "astral-kaleidoscope-gemini",
     "name": "Astral Kaleidoscope Gemini",
     "url": "shaders/astral-kaleidoscope-gemini.wgsl",
-    "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+    "description": "Kaleidoscope with a noise warp that the bass swells and a held pointer that becomes a second warp centre. It is seen through a round eyepiece with cos^4 fall-off, and the rim of the field is softly out of focus.",
     "features": [
       "mouse-driven",
-      "time-driven"
+      "time-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -397,10 +400,13 @@
     "id": "astral-kaleidoscope-grokcf1",
     "name": "Astral Kaleidoscope grokcf1",
     "url": "shaders/astral-kaleidoscope-grokcf1.wgsl",
-    "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+    "description": "Kaleidoscope where bass and mids torque the spin and a held pointer grabs the spiral toward the cursor. A second object chamber turns the other way and is blended in, and a logarithmic spiral term makes the arms self-similar.",
     "features": [
       "mouse-driven",
-      "time-driven"
+      "time-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -445,9 +451,12 @@
     "id": "astral-kaleidoscope",
     "name": "Astral Kaleidoscope",
     "url": "shaders/astral-kaleidoscope.wgsl",
-    "description": "Cosmic kaleidoscope with astral color schemes.",
+    "description": "Depth-parallax kaleidoscope with spiral twist and light trails. Each mirror reflection loses a little energy and picks up the silvering's tint, and an end-cap mirror reflects the field's outer ring back as a tunnel ghost.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
