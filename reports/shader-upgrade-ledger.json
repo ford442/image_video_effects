@@ -447,8 +447,17 @@
       ]
     },
     "edge-glow-mouse-em": {
-      "hash": "b428a6f379c7017a",
-      "history": []
+      "hash": "b093b6655e2fb971",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "b093b6655e2fb971",
+          "prev_hash": "b428a6f379c7017a",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "elastic-chromatic-explosion": {
       "hash": "7a3b76ee3af8e88f",
@@ -1668,7 +1677,7 @@
       ]
     },
     "neon-contour-interactive": {
-      "hash": "68de0eb20631368c",
+      "hash": "308ca392010d1c59",
       "history": [
         {
           "event": "upgraded",
@@ -1677,11 +1686,19 @@
           "prev_hash": "cc02c1d6952e05f8",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "308ca392010d1c59",
+          "prev_hash": "68de0eb20631368c",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
     "neon-edge-diffusion": {
-      "hash": "0051a11a5bf8ed55",
+      "hash": "7ce5d14963465eca",
       "history": [
         {
           "event": "upgraded",
@@ -1690,6 +1707,14 @@
           "prev_hash": "dd5e5106f7fa5315",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "7ce5d14963465eca",
+          "prev_hash": "0051a11a5bf8ed55",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
@@ -8996,12 +9021,30 @@
       "history": []
     },
     "neon-poly-grid": {
-      "hash": "eb368fd162292555",
-      "history": []
+      "hash": "2c8b508dc841f182",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "2c8b508dc841f182",
+          "prev_hash": "eb368fd162292555",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "neon-quantum-lattice": {
-      "hash": "16d5a1848fc2c892",
-      "history": []
+      "hash": "92772d24dda6c6af",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "92772d24dda6c6af",
+          "prev_hash": "16d5a1848fc2c892",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "spec-hypercube-projection": {
       "hash": "b2c33cfe75d2e5dd",
@@ -9614,8 +9657,17 @@
       "history": []
     },
     "posterize-neon-edges": {
-      "hash": "3c0cf6a1aafcce4d",
-      "history": []
+      "hash": "3f35985068bf66a4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "3f35985068bf66a4",
+          "prev_hash": "3c0cf6a1aafcce4d",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "pyramid-bandprocess-pass2": {
       "hash": "115feb04c1b8a366",
@@ -10281,8 +10333,17 @@
       ]
     },
     "edge-glow-mouse": {
-      "hash": "737f38ab42e62672",
-      "history": []
+      "hash": "6331fc1c85d4ff01",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "6331fc1c85d4ff01",
+          "prev_hash": "737f38ab42e62672",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "energy-shield": {
       "hash": "0f5c806f22d06c38",
@@ -11231,8 +11292,17 @@
       "history": []
     },
     "neon-contour-drag": {
-      "hash": "fa1ece142a62dbcd",
-      "history": []
+      "hash": "d372aa7f395a15dd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "d372aa7f395a15dd",
+          "prev_hash": "fa1ece142a62dbcd",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "neon-cursor-trace": {
       "hash": "37e688f36ab5e6f0",
@@ -13201,8 +13271,17 @@
       "history": []
     },
     "neon-edges": {
-      "hash": "54c42a8124eb5b62",
-      "history": []
+      "hash": "56c080f0c063dfd4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "56c080f0c063dfd4",
+          "prev_hash": "54c42a8124eb5b62",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "phosphor-decay": {
       "hash": "887e182d372c8cd0",
@@ -13999,8 +14078,17 @@
       ]
     },
     "electric-contours": {
-      "hash": "3fac35fa96caf69c",
-      "history": []
+      "hash": "454ebe89234cdd26",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "454ebe89234cdd26",
+          "prev_hash": "3fac35fa96caf69c",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "glitch-pixel-sort": {
       "hash": "8db895d4f77e4e72",
@@ -14112,7 +14200,7 @@
       ]
     },
     "neon-edge-reveal": {
-      "hash": "8d9e2fb8f25d2995",
+      "hash": "ff4f7507368580fd",
       "history": [
         {
           "event": "upgraded",
@@ -14121,12 +14209,29 @@
           "prev_hash": "f51d400eee723a3d",
           "commit": "bb2b2aed",
           "note": "2026-10-04 holo-display-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-holo-display-eight/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "ff4f7507368580fd",
+          "prev_hash": "8d9e2fb8f25d2995",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
         }
       ]
     },
     "neon-topology": {
-      "hash": "311446d4c2a2c9a9",
-      "history": []
+      "hash": "d3040ca7b83c7c92",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-02T18:00:40.829Z",
+          "hash": "d3040ca7b83c7c92",
+          "prev_hash": "311446d4c2a2c9a9",
+          "commit": "e46fc028",
+          "note": "2026-11-02 cursor/batch-35 (Cursor(1)) — docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/NOTES.md"
+        }
+      ]
     },
     "phantom-lag": {
       "hash": "db8c796697cd42de",
