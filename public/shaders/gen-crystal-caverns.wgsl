@@ -7,8 +7,8 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Tags: crystal, gem, caustics, 3d, raymarching, subsurface
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-10-11
-//  Ideas: phantom growth shell; basal pinacoid; prism striations; fluid inclusions
+//  Upgraded: 2026-10-11, 2026-11-01
+//  Ideas: phantom growth shell; basal pinacoid; prism striations; fluid inclusions; Beer-Lambert chord-depth body colour (§12.2F); arris wear from SDF curvature (§12.2E)
 //  A packing: ACES display RGBA
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════
@@ -18,6 +18,8 @@
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
+
+fn sq(x: f32) -> f32 { return x * x; }
 
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 { return length(p) - r; }
 
@@ -81,9 +83,12 @@ fn subsurfaceScattering(p: vec3<f32>, n: vec3<f32>, l: vec3<f32>, thickness: f32
 fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32, audioReactivity: f32) -> vec2<f32> {
   let ps = warpDomain(p * scale, time);
   var d = ps.y + 1.5;
-  d = min(d, length(ps.xz) - 12.0 + sin(ps.y * 2.0) * 0.8);
+  // Cavern wall: solid OUTSIDE the wall radius (HEAD had the sign flipped, so the camera started inside rock).
+  // Radius tracks Cave Scale so the orbit camera (world r≈10) stays inside at every slider value; = 12 at the default.
+  d = min(d, (14.0 * scale + 4.0) - length(ps.xz) + sin(ps.y * 2.0) * 0.8);
   let cell = floor(ps * 0.8);
-  var q = ps - cell * 1.25;
+  // Centre each crystal in its cell (HEAD sat it on the corner, clipping it to one octant).
+  var q = ps - (cell + vec3<f32>(0.5)) * 1.25;
   let tmod = sin(time * pulse * audioReactivity * 8.0 + length(cell)) * 0.3;
   let id = (cell.x + cell.y + cell.z) % 3.0;
   let qCrystal = q + vec3<f32>(0.0, tmod, 0.0);
@@ -104,8 +109,9 @@ fn map(p: vec3<f32>, scale: f32, pulse: f32, time: f32, audioReactivity: f32) ->
   let shell = abs(inner) - mix(0.022, 0.0, purity);
   let withPhantom = min(habit, max(shell, habit));
   let crystal = mix(withPhantom, habit, purity);
-  let finalD = min(d, crystal * (1.0 + id * 0.2));
-  return vec2<f32>(finalD, 2.0);
+  let crystalD = crystal * (1.0 + id * 0.2);
+  // Material 2 = crystal, 1 = rock (HEAD returned 2.0 always, so the rock branch was dead).
+  return vec2<f32>(min(d, crystalD), select(1.0, 2.0, crystalD < d));
 }
 
 fn getNormal(p: vec3<f32>, scale: f32, pulse: f32, time: f32, audioReactivity: f32) -> vec3<f32> {
@@ -115,6 +121,28 @@ fn getNormal(p: vec3<f32>, scale: f32, pulse: f32, time: f32, audioReactivity: f
   let nz = map(p + e.yyx, scale, pulse, time, audioReactivity).x;
   let c = map(p, scale, pulse, time, audioReactivity).x;
   return normalize(vec3<f32>(nx - c, ny - c, nz - c));
+}
+
+// ── Idea 1: Beer-Lambert chord depth — three inward probes along -n measure how much crystal
+// the light must cross; thin edges stay pale, thick cores absorb red/green and go violet.
+fn chordDepth(p: vec3<f32>, n: vec3<f32>, scale: f32, pulse: f32, time: f32, ar: f32) -> f32 {
+  var depth = 0.0;
+  for (var k: i32 = 0; k < 3; k = k + 1) {
+    let h = (0.05 + 0.14 * f32(k)) * scale;
+    depth = depth + max(-map(p - n * h, scale, pulse, time, ar).x, 0.0);
+  }
+  return clamp(depth * 2.4, 0.0, 1.0);
+}
+
+// ── Idea 2: arris wear — 6-tap Laplacian of the SDF is large and positive on convex edges.
+fn arrisWear(p: vec3<f32>, scale: f32, pulse: f32, time: f32, ar: f32) -> f32 {
+  let e = 0.035 * scale;
+  let c = map(p, scale, pulse, time, ar).x;
+  let s = map(p + vec3<f32>(e, 0.0, 0.0), scale, pulse, time, ar).x + map(p - vec3<f32>(e, 0.0, 0.0), scale, pulse, time, ar).x
+        + map(p + vec3<f32>(0.0, e, 0.0), scale, pulse, time, ar).x + map(p - vec3<f32>(0.0, e, 0.0), scale, pulse, time, ar).x
+        + map(p + vec3<f32>(0.0, 0.0, e), scale, pulse, time, ar).x + map(p - vec3<f32>(0.0, 0.0, e), scale, pulse, time, ar).x;
+  let lap = (s - 6.0 * c) / (e * e);
+  return smoothstep(2.0, 7.0, lap);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -128,7 +156,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   var mouse = u.zoom_config.yz;
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
   let uv01 = (vec2<f32>(id.xy) + 0.5) / res;
-  var uv = (uv01 - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+  var uv = (uv01 - 0.5) * vec2<f32>(res.x / res.y, -1.0); // y-down pixels → up-positive (HEAD was upside-down)
   let scale = u.zoom_params.x * 1.9 + 0.1;
   let purity = clamp(u.zoom_params.y, 0.0, 1.0);
   let glowIntensity = u.zoom_params.z * 2.0;
@@ -172,10 +200,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     );
     let caustics = causticIntensity(p, sources, time) * glowIntensity * (0.35 + purity * 1.1);
     if (mat > 1.5) {
-      let sss = subsurfaceScattering(p, n, lightDir, mix(0.65, 0.16, purity), vec3<f32>(0.6, 0.8, 1.0));
-      let glow = pow(glowIntensity * 1.5 + sin(time * 8.0 * audioReactivity) * 0.3, 2.0);
-      col = vec3<f32>(0.4, 0.8, 1.0) * glow + vec3<f32>(0.6, 0.3, 1.0) * 0.6;
+      let pulseV = 0.2 + purity * 0.8;
+      let arEff = audioReactivity + shock * 0.35;
+      // ── Idea 1: Beer-Lambert — measured chord depth drives absorption and the SSS thickness.
+      let chord = chordDepth(p, n, scale, pulseV, time, arEff);
+      let absorb = exp(-chord * vec3<f32>(1.3, 2.6, 0.4));
+      let sss = subsurfaceScattering(p, n, lightDir, mix(0.65, 0.16, purity) * (0.4 + 1.2 * chord), vec3<f32>(0.6, 0.8, 1.0) * absorb);
+      // HEAD pow(glow*1.5 + sin*0.3, 2) could take a negative base and summed to ~2 before ACES (white wash).
+      let g0 = sq(max(glowIntensity * 1.5 + sin(time * 8.0 * audioReactivity) * 0.3, 0.0));
+      let glow = g0 / (1.0 + g0 * 0.5) * 0.45;
+      col = vec3<f32>(0.4, 0.8, 1.0) * absorb * glow + vec3<f32>(0.6, 0.3, 1.0) * 0.14 * (0.4 + chord);
       col = col + sss * 0.4 + vec3<f32>(0.8, 0.9, 1.0) * caustics * 0.5;
+      // ── Idea 2: arris wear — convex edges of the habits catch a bright cut-edge line.
+      let arris = arrisWear(p, scale, pulseV, time, arEff);
+      col += vec3<f32>(0.75, 0.9, 1.0) * arris * (0.25 + 0.5 * glowIntensity) * (1.0 - 0.5 * chord);
       // Prism striations — lines down the walls, quiet on the flat pinacoid.
       let wall = 1.0 - smoothstep(0.25, 0.75, abs(n.y));
       let stripe = 1.0 - smoothstep(0.02, 0.09, abs(fract(p.x * 7.0 + p.z * 5.0) - 0.5));
@@ -189,7 +227,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       col = col + sss * 0.15;
     }
   }
-  let mouseCentered = (mouse - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+  let mouseCentered = (mouse - 0.5) * vec2<f32>(res.x / res.y, -1.0);
   let mouseLight = max(0.0, 1.0 - length(uv - mouseCentered) * 3.0);
   col = col + vec3<f32>(0.8, 0.6, 1.0) * mouseLight * (0.25 + held * 0.85);
   col += vec3<f32>(0.22, 0.72, 1.0) * shock * (0.35 + audioHigh * 0.7);

@@ -3,17 +3,21 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, persistence, voronoi crystals
 //  Simulates ice crystal formation with light transmission
+//  Ideas: Batch-67 dendrite fronts; facet light-burst whip; per-cell ice spectrum; hexagonal-axis frost creep (§12.2D anisotropic growth); age-driven annealing and sublimation; grain-boundary hoar
+//  A packing: raw (r = freeze, g = ice age, b = burst flash (display only), a = -0.6875 ownership sentinel)
 // ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-08-23 (Batch 67 — fast motion / psychedelic / high energy)
+//  Upgraded: 2026-08-23 (Batch 67 — fast motion / psychedelic / high energy), 2026-11-01
 //
 //  Contract: canonical `@workgroup_size(16, 16, 1)` (house convention); the
 //  freeze state is now read with exact `textureLoad` rather than through a
 //  sampler; bounded click response and ACES added.
 //
-//  A carries the FREEZE STATE (r = freeze, g = growth front), read back as
-//  dataTextureC; display goes to `writeTexture`.
+//  A carries the FREEZE STATE (r = freeze, g = ice age since 2026-11-01; was a
+//  never-read growth front), read back as dataTextureC; display goes to
+//  `writeTexture`. A.a is an ownership sentinel so C left by another shader is
+//  ignored instead of being read as ghost ice.
 //
 //  FAST MOTION (two analytic techniques)
 //
@@ -36,26 +40,11 @@
 //  and blow a full-spectrum light burst through the facets.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+// A.a ownership sentinel (C from another shader never holds exactly this)
+const FREEZE_SENTINEL: f32 = -0.6875;
+const HEX_STEP: f32 = 1.0471975512;
 
 // Ice IOR
 const IOR_ICE: f32 = 1.31;
@@ -127,8 +116,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
 
     // Update Freeze State — exact load (dataTextureC is rgba32float).
+    // Rescue: HEAD read C.r as freeze unconditionally, so after a shader switch the
+    // previous shader's red channel became ghost ice. Unowned C reads as empty.
     let oldState = textureLoad(dataTextureC, coord, 0);
-    let oldFreeze = oldState.r;
+    let ownedSelf = abs(oldState.a - FREEZE_SENTINEL) < 1e-3;
+    let oldFreeze = select(0.0, oldState.r, ownedSelf);
+    let oldAge = select(0.0, clamp(oldState.g, 0.0, 1.0), ownedSelf);
+
+    // Voronoi grains (hoisted from the display block: the creep below needs each
+    // grain's crystal axis and the hoar needs F2 - F1 for every pixel).
+    let gCell = floor(uv * crystalScale);
+    let fCell = fract(uv * crystalScale);
+    var minLoading = 1.0;
+    var secondLoading = 1.0;
+    var center = vec2<f32>(0.0);
+    var cellId = vec2<f32>(0.0);
+    for (var y: i32 = -1; y <= 1; y++) {
+        for (var x: i32 = -1; x <= 1; x++) {
+            let lattice = vec2<f32>(f32(x), f32(y));
+            let offset = hash22(gCell + lattice);
+            let dd = distance(lattice + offset, fCell);
+            let closer = dd < minLoading;
+            secondLoading = select(min(secondLoading, dd), minLoading, closer);
+            center = select(center, lattice + offset, closer);
+            cellId = select(cellId, gCell + lattice, closer);
+            minLoading = select(minLoading, dd, closer);
+        }
+    }
 
     // Mouse interaction
     let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -163,13 +177,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     burstFlash = min(burstFlash, 1.5);
 
-    // New freeze value: decayed history, pointer brush, growth front, clicks.
-    let newFreeze = clamp(max(max(oldFreeze * decay, brush),
+    // ── Idea 1: hexagonal-axis frost creep (§12.2D anisotropic growth) ───────
+    // Ice Ih grows along six axes. Each Voronoi grain has its own axis; ice creeps
+    // from frozen history texels (exact C loads) along that grain's six arms, plus
+    // a weak isotropic body, attenuating per hop — star dendrites bend at grain
+    // boundaries instead of the freeze staying a brush-shaped blob.
+    let stepPx = max(resolution.y / 256.0, 1.0);
+    let axis = hash21(cellId + vec2<f32>(7.31, 2.17)) * HEX_STEP;
+    let maxC = vec2<i32>(resolution) - vec2<i32>(1);
+    var creep = 0.0;
+    for (var k = 0; k < 6; k = k + 1) {
+        let ang = axis + f32(k) * HEX_STEP;
+        let off = vec2<i32>(round(vec2<f32>(cos(ang), sin(ang)) * stepPx));
+        let nb = textureLoad(dataTextureC, clamp(coord + off, vec2<i32>(0), maxC), 0);
+        creep = max(creep, select(0.0, nb.r, abs(nb.a - FREEZE_SENTINEL) < 1e-3));
+    }
+    var bodyCreep = 0.0;
+    for (var k = 0; k < 4; k = k + 1) {
+        let sgn = f32(1 - 2 * (k & 1));
+        let off = vec2<i32>(round(select(vec2<f32>(sgn, 0.0), vec2<f32>(0.0, sgn), k >= 2) * stepPx));
+        let nb = textureLoad(dataTextureC, clamp(coord + off, vec2<i32>(0), maxC), 0);
+        bodyCreep = max(bodyCreep, select(0.0, nb.r, abs(nb.a - FREEZE_SENTINEL) < 1e-3));
+    }
+    let frostCreep = max(creep * 0.9, bodyCreep * 0.35);
+
+    // ── Idea 2 (state): age-driven sublimation ───────────────────────────────
+    // Thin, old ice evaporates from the edges first; thick cores keep the saved
+    // Freeze Decay. Fresh growth keeps age low.
+    let sublimeDecay = decay - 0.012 * oldAge * (1.0 - smoothstep(0.15, 0.55, oldFreeze));
+
+    // New freeze value: decayed history, pointer brush, growth front, clicks, creep.
+    let newFreeze = clamp(max(max(max(oldFreeze * sublimeDecay, brush), frostCreep),
                               max(pointerFront * brush * 1.2, clickFreeze)), 0.0, 1.0);
     let growthVel = clamp(abs(newFreeze - oldFreeze) * 30.0, 0.0, 1.0);
 
+    let growing = newFreeze > oldFreeze + 0.01;
+    var newAge = select(min(oldAge + 0.012, 1.0), oldAge * 0.8, growing);
+    newAge = select(0.0, newAge, newFreeze > 0.04);
+
     // A carries the FREEZE STATE, not display colour.
-    textureStore(dataTextureA, coord, vec4<f32>(newFreeze, growthVel, burstFlash, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(newFreeze, newAge, burstFlash, FREEZE_SENTINEL));
 
     // Calculate IOR based on freeze state (frozen areas have higher IOR)
     let baseIOR = mix(IOR_ICE, IOR_GLASS, iorMix);
@@ -181,34 +228,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var transmissionAlpha = 1.0; // Full transmission where no crystal
 
     if (newFreeze > 0.01) {
-        // Simple Voronoi
-        let g = floor(uv * crystalScale);
-        let f = fract(uv * crystalScale);
-
-        var minLoading = 1.0;
-        var center = vec2<f32>(0.0);
-        var cellId = vec2<f32>(0.0);
-
-        // 3x3 search
-        for (var y: i32 = -1; y <= 1; y++) {
-            for (var x: i32 = -1; x <= 1; x++) {
-                let lattice = vec2<f32>(f32(x), f32(y));
-                let offset = hash22(g + lattice);
-                var dist = distance(lattice + offset, f);
-
-                if (dist < minLoading) {
-                    minLoading = dist;
-                    center = lattice + offset;
-                    cellId = g + lattice;
-                }
-            }
-        }
-
         // Calculate vector from pixel to cell center
-        let toCenter = (center - f) / crystalScale;
+        let toCenter = (center - fCell) / crystalScale;
+
+        // ── Idea 2 (display): rime anneals clear with age ──────────────────
+        // Fresh frost is cloudy and white; old ice clears (purity rises).
+        let anneal = smoothstep(0.0, 0.8, newAge);
 
         // Per-cell purity variation
-        let cellPurity = icePurity * (0.5 + 0.5 * hash21(cellId));
+        let cellPurity = icePurity * (0.5 + 0.5 * hash21(cellId)) * mix(0.6, 1.0, anneal);
         
         // Refraction strength varies by frozen amount and purity
         let refraction = 0.1 * newFreeze * (0.5 + 0.5 / max(cellPurity, 0.1));
@@ -240,6 +268,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let iceTint = mix(vec3<f32>(1.0), pow(spectrum(iceHue), vec3<f32>(0.7)) * 1.6,
                           newFreeze * 0.85);
         crystalColor = crystalColor * iceTint;
+        let rimeAmt = (1.0 - anneal) * (0.15 + 0.7 * (1.0 - icePurity));
+        crystalColor = mix(crystalColor, vec3<f32>(0.94, 0.97, 1.0), rimeAmt);
+        // ── Idea 3: grain-boundary hoar ────────────────────────────────────
+        // Frost nucleates where two grains meet (F2 - F1 -> 0), strongest while young.
+        let seam = 1.0 - smoothstep(0.0, 0.09, secondLoading - minLoading);
+        let hoar = seam * (0.25 + 0.75 * (1.0 - anneal));
+        crystalColor += vec3<f32>(0.85, 0.93, 1.0) * hoar * 0.55;
         // Whip flash rides the facets full-spectrum.
         crystalColor += spectrum(fract(iceHue + 0.35)) * whipAlign * newFreeze
                       * (0.35 + treble * 1.1);
@@ -263,7 +298,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let absorption = exp(-absorptionCoeff * pathLength);
         
         // Transmission coefficient
-        let transmission = absorption * (1.0 - fresnel) * cellPurity;
+        let transmission = absorption * (1.0 - fresnel) * cellPurity * (1.0 - 0.5 * hoar);
         
         // Facet brightness for gem look
         let facet = smoothstep(0.0, 1.0, 1.0 - minLoading);

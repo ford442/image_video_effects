@@ -7,8 +7,8 @@
 //            thin-film-iridescence, per-facet-glints, frost-tessellation
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-10-10
-//  Ideas: trapped air bubbles (3-D cell bubbles frozen in the ice that glint pin-sharp); thin-ice transmission (SDF probe behind the surface lets cyan light bleed through thin shells); kept: ablation scallops on ice walls; meltwater film specular on downward faces
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas: trapped air bubbles (3-D cell bubbles frozen in the ice that glint pin-sharp); thin-ice transmission (SDF probe behind the surface lets cyan light bleed through thin shells); kept: ablation scallops on ice walls; meltwater film specular on downward faces; fold-count twin domains (§12.2E); Henyey-Greenstein aurora forward scatter through thin ice (§12.2F)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -50,11 +50,15 @@ fn thinFilm(cosV: f32, thickness: f32) -> vec3<f32> {
 
 // Faceted ice-crystal SDF: sphere-fold fractal intersected with octahedral
 // prisms; material id in .y (0 = ice wall, 1 = crystal facet, 2 = plasma vein)
-fn mapCavern(p: vec3<f32>, bass: f32) -> vec2<f32> {
+// .z = how many of the axis reflections flipped sign on the way in (fold count, 0..12)
+fn mapCavern(p: vec3<f32>, bass: f32) -> vec3<f32> {
     var q = p;
     var scale = 1.0;
+    var folds = 0.0;
     let cavernScale = u.zoom_params.w * (1.0 + bass * 0.3);
     for (var i = 0; i < 4; i++) {
+        // ── Idea 3: fold count — remember which mirror domain this point was reflected through
+        folds += dot(select(vec3<f32>(0.0), vec3<f32>(1.0), q < vec3<f32>(0.0)), vec3<f32>(1.0));
         q = abs(q) - vec3<f32>(1.0) * cavernScale;
         let qxy = q.xy * rotate(u.config.x * (0.1 + u.zoom_params.z * 0.35) + bass * 0.25);
         q = vec3<f32>(qxy.x, qxy.y, q.z);
@@ -75,7 +79,7 @@ fn mapCavern(p: vec3<f32>, bass: f32) -> vec2<f32> {
     let d = min(crystalD, vein);
     var matId = select(0.0, 1.0, octD > sphereD);
     matId = select(matId, 2.0, vein < crystalD);
-    return vec2<f32>(d, matId);
+    return vec3<f32>(d, matId, folds);
 }
 
 fn mapDist(p: vec3<f32>, bass: f32) -> f32 {
@@ -99,6 +103,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let coord = vec2<i32>(id.xy);
     let uv = vec2<f32>(id.xy) / res;
+    // y-up, aspect-correct view plane (HEAD ray y followed the y-down pixel row: upside-down, stretched on wide frames)
+    var vp = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res * 2.0 - vec2<f32>(1.0);
+    vp = vec2<f32>(vp.x * res.x / res.y, -vp.y);
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -107,8 +114,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = vec3<f32>(0.0);
 
     let camPulse = 1.0 + bass * 0.4;
-    var ro = vec3<f32>(0.0, 0.0, -5.0 + u.config.x) * camPulse;
-    var rd = normalize(vec3<f32>(uv * 2.0 - 1.0, 1.0));
+    // HEAD flew straight through (-5 + t) and left the fractal after ~10 s, then rendered black forever.
+    // A slow dolly between -5 and -1.5 keeps the cavern in view (t≈0 start unchanged).
+    var ro = vec3<f32>(0.0, 0.0, -5.0 + 1.75 * (1.0 - cos(u.config.x * 0.3))) * camPulse;
+    var rd = normalize(vec3<f32>(vp, 1.0));
     rd = vec3<f32>(rd.xy * rotate((u.zoom_config.y - 0.5) * 3.14), rd.z);
     let yz = rd.yz * rotate((u.zoom_config.z - 0.5) * 3.14);
     rd = vec3<f32>(rd.x, yz.x, yz.y);
@@ -123,13 +132,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var min_dist = 100.0;
     var steps = 0.0;
     var matId = 0.0;
+    var foldCount = 0.0;
 
     for (var i = 0; i < 64; i++) {
         let p = ro + rd * t;
         let dm = mapCavern(p, bass);
         min_dist = min(min_dist, dm.x);
         steps += 1.0;
-        if (dm.x < 0.01) { hit = true; matId = dm.y; break; }
+        if (dm.x < 0.01) { hit = true; matId = dm.y; foldCount = dm.z; break; }
         if (t > max_dist) { break; }
         t += dm.x;
     }
@@ -168,7 +178,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let facetMask = select(0.0, 1.0, matId > 0.5 && matId < 1.5);
     let iceAlbedo = vec3<f32>(0.10, 0.34, 0.62);
     let facetAlbedo = mix(vec3<f32>(0.5, 0.82, 1.0), vec3<f32>(0.75, 0.6, 1.0), facetHash);
-    let albedo = mix(iceAlbedo, facetAlbedo, facetMask);
+    // ── Idea 3: twin domains — odd-parity mirror domains lean aurora-green, even ones glacier-blue;
+    // fold depth also thins/thickens the frost inlay below. Domain boundaries read as twin planes.
+    let foldPar = foldCount - 2.0 * floor(foldCount * 0.5);
+    let domainTint = mix(vec3<f32>(0.85, 0.95, 1.16), vec3<f32>(0.68, 1.2, 0.95), foldPar);
+    let albedo = mix(iceAlbedo, facetAlbedo, facetMask) * domainTint;
 
     // Tessellated frost inlay: triangular grid projected triplanar-style
     let an = abs(n);
@@ -179,7 +193,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let l1 = abs(fract(sp.x + sp.y * 0.57735027) - 0.5);
     let l2 = abs(fract(sp.x - sp.y * 0.57735027) - 0.5);
     let l3 = abs(fract(sp.y * 1.1547005) - 0.5);
-    let frostLine = 1.0 - smoothstep(0.015, 0.07, min(min(l1, l2), l3));
+    let frostLine = (1.0 - smoothstep(0.015, 0.07, min(min(l1, l2), l3))) * (0.6 + 0.8 * fract(foldCount * 0.382));
 
     // Thin-film iridescence on crystal shells
     let iri = thinFilm(cosV, 0.6 + facetHash * 1.7) * fres;
@@ -212,6 +226,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Idea 2 - thin-ice transmission: probe behind the surface, thin shells let cyan through
     let thin = smoothstep(-0.18, 0.0, mapDist(p - n * 0.2, bass));
     hitColor += vec3<f32>(0.08, 0.8, 0.95) * thin * (1.0 - veinMask) * (0.12 + mids * 0.25) * (0.4 + fres);
+    // ── Idea 4: Henyey-Greenstein forward scatter — the aurora fill light leaks through thin shells
+    // when the ray looks toward it (g = 0.55, normalised so a side-on view is ~1).
+    let hgG = 0.55;
+    let hgC = clamp(dot(rd, fillDir), -1.0, 1.0);
+    let hg = (1.0 - hgG * hgG) / pow(max(1.0 + hgG * hgG - 2.0 * hgG * hgC, 0.05), 1.5);
+    hitColor += fillCol * hg * 0.12 * thin * (1.0 - veinMask) * (0.5 + mids * 0.5) * ao;
     hitColor *= depth_fade * glow;
 
     let missColor = vec3<f32>(0.05, 0.1, 0.2) * (1.0 / max(1.0 + min_dist * 10.0, 0.001)) * glow;

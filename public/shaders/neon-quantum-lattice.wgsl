@@ -3,8 +3,8 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-11
-//  Ideas: electron hop glow on treble beats; defect pentagon tile highlight
+//  Upgraded: 2026-09-11, 2026-11-02
+//  Ideas: electron hop glow; defect pentagon highlight; phason kink; Ammann beat
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -105,7 +105,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let layer2UV = uv - depth * parallax * 0.5 - conveyor * 0.34 + phason.yx * 0.004;
     let layer3UV = uv + vec2<f32>(sin(t * 0.91), cos(t * 0.83)) * parallax * 0.3 - phason * 0.003;
 
-    let d1 = penrose_dist(layer1UV - mouse * 0.1, inflation);
+    // ── Idea 1: phason kink ──
+    // A defect is a tile flip. Nudge only the first layer along the phason already in motion.
+    let defectSite = penrose_defect(layer1UV - mouse * 0.1, inflation);
+    let kink = phason * defectSite * (0.01 + bass * 0.004);
+    let d1 = penrose_dist(layer1UV + kink - mouse * 0.1, inflation);
     let d2 = penrose_dist(layer2UV + mouse * 0.05, inflation * 1.618);
     let d3 = penrose_dist(layer3UV, inflation * 2.618);
 
@@ -126,9 +130,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hopPhase = fract(dot(floor(layer1UV * inflation * 2.0), vec2<f32>(0.618, 1.414)) - t * (5.0 + treble * 7.0));
     let electronHop = exp(-pow((hopPhase - 0.5) / 0.07, 2.0)) * edge1 * trebleBeat;
 
-    // Defect pentagon tile highlight at quasi-crystal mismatch sites.
-    let defectSite = penrose_defect(layer1UV - mouse * 0.1, inflation);
-
     let mouseDist = length(uv - mouse);
     let uncertainty = 1.0 - smoothstep(0.0, 0.35, mouseDist);
     let quantumSeed = fract(sin(dot(floor(uv * dims * 0.2), vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -143,6 +144,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let neonInner = vec3<f32>(1.0, 0.3, 0.7) * edge2 * (1.0 + mids * 0.5);
     let neonDeep = vec3<f32>(0.5, 0.2, 1.0) * edge3 * (1.0 + treble * 0.3);
     var rgb = metallic + neonRim + neonInner * 0.6 + neonDeep * 0.3;
+
+    // ── Idea 2: Ammann beat ──
+    // Where two layers nearly share a bar, the gap between them lights. Vertices stay the crossings.
+    let beat = exp(-abs(d1 - d2) * inflation * 1.4) * (1.0 - max(edge1, edge2));
+    rgb += vec3<f32>(0.35, 0.85, 1.0) * beat * (0.1 + mids * 0.06);
 
     rgb += vec3<f32>(1.0, 0.9, 0.5) * (vertexGlow + vertexGlow2) * 0.2;
     rgb += vec3<f32>(0.1, 0.4, 1.0) * quantumZone * edgeConfidence;

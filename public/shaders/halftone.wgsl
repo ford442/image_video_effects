@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-focus, screen-rotation, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: highlight skip (newsprint shine); overprint gain on plate overlap
+//  Upgraded: 2026-09-09, 2026-11-02
+//  Ideas: highlight skip (newsprint shine); overprint gain on plate overlap; Murray-Davies midtone gain; black trap under the K plate
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -51,7 +51,9 @@ fn screen_dot(uv: vec2<f32>, scale: f32, angle: f32, sample: vec3<f32>, channelM
     let grid = floor(rUV);
     let cellUv = rUV - grid;
     let density = clamp(dot((1.0 - sample) * channelMask, vec3<f32>(1.0)) * contrast, 0.0, 1.0);
-    let radius = density * 0.5;
+    // ── Idea 1: Murray-Davies midtone gain — newsprint prints the midtone dot larger than the film
+    let gained = clamp(density + 0.22 * density * (1.0 - density), 0.0, 1.0);
+    let radius = gained * 0.5;
     return ellipDot(cellUv, vec2<f32>(0.5), radius, axis, stretch);
 }
 
@@ -113,19 +115,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cDot = screen_dot(uv, baseScale, baseAngle + 15.0 * PI / 180.0, sampC, vec3<f32>(1.0, 0.0, 0.0), velAxis, stretch, skipContrast);
     let mDot = screen_dot(uv, baseScale, baseAngle + 75.0 * PI / 180.0, sampM, vec3<f32>(0.0, 1.0, 0.0), velAxis, stretch, skipContrast);
     let yDot = screen_dot(uv, baseScale, baseAngle +  0.0 * PI / 180.0, sampY, vec3<f32>(0.0, 0.0, 1.0), velAxis, stretch, skipContrast);
-    let kDot = screen_dot(uv, baseScale * 1.05, baseAngle + 45.0 * PI / 180.0, sampleColor, vec3<f32>(0.299, 0.587, 0.114), velAxis, stretch, skipContrast);
+    // ── Idea 2: black trap — the K plate spreads, and CMY chokes under it so a loose press does not flash paper
+    let kDot = screen_dot(uv, baseScale * 1.05, baseAngle + 45.0 * PI / 180.0, sampleColor, vec3<f32>(0.299, 0.587, 0.114), velAxis, stretch, skipContrast * 1.12);
+    let choke = kDot * 0.28;
+    let cInk = cDot * (1.0 - choke);
+    let mInk = mDot * (1.0 - choke);
+    let yInk = yDot * (1.0 - choke);
     let cyan    = vec3<f32>(0.0, 0.7, 0.9);
     let magenta = vec3<f32>(0.9, 0.0, 0.6);
     let yellow  = vec3<f32>(0.95, 0.85, 0.0);
     let black   = vec3<f32>(0.05, 0.05, 0.08);
     var cmykColor = vec3<f32>(1.0);
-    cmykColor *= mix(vec3<f32>(1.0), cyan,    cDot);
-    cmykColor *= mix(vec3<f32>(1.0), magenta, mDot);
-    cmykColor *= mix(vec3<f32>(1.0), yellow,  yDot);
+    cmykColor *= mix(vec3<f32>(1.0), cyan,    cInk);
+    cmykColor *= mix(vec3<f32>(1.0), magenta, mInk);
+    cmykColor *= mix(vec3<f32>(1.0), yellow,  yInk);
     cmykColor *= mix(vec3<f32>(1.0), black,   kDot);
 
-    // Idea 2: overprint gain — dots swell where plates overlap.
-    let overprint = cDot * mDot + mDot * yDot + yDot * kDot + cDot * kDot;
+    // Overprint gain (kept) — dots swell where plates overlap.
+    let overprint = cInk * mInk + mInk * yInk + yInk * kDot + cInk * kDot;
     cmykColor *= 1.0 - clamp(overprint * 0.12, 0.0, 0.35);
 
     let isMono = select(0.0, 1.0, u.zoom_params.z < 0.5);

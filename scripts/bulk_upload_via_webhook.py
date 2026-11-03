@@ -12,7 +12,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import sys
 
 # Configuration
-WEBHOOK_URL = "https://storage.noahcohn.com/webhook/image-effects"
+WEBHOOK_BASE = "https://storage.noahcohn.com/webhook"
+WEBHOOK_URL = f"{WEBHOOK_BASE}/image-effects"
+TOKEN_URL = f"{WEBHOOK_BASE}/upload-token"
+# storage_manager only issues tokens to allow-listed browser origins.
+ORIGIN = "https://test.1ink.us"
 SHADERS_DIR = Path("public/shaders")
 COORDINATES_FILE = Path("public/shader_coordinates.json")
 MAX_WORKERS = 5
@@ -39,9 +43,19 @@ def upload_via_webhook(shader_id: str, meta: dict, wgsl_code: str) -> dict:
     }
     
     try:
+        # One short-lived, single-use token per write, scoped to action + name.
+        token_resp = requests.post(
+            TOKEN_URL,
+            json={"action": payload["action"], "name": payload["name"]},
+            headers={"Origin": ORIGIN},
+            timeout=30,
+        )
+        if token_resp.status_code != 200:
+            return {"id": shader_id, "status": "failed", "error": f"token HTTP {token_resp.status_code}: {token_resp.text[:100]}"}
         resp = requests.post(
             WEBHOOK_URL,
             json=payload,
+            headers={"Origin": ORIGIN, "Authorization": f"Bearer {token_resp.json()['token']}"},
             timeout=30
         )
         if resp.status_code == 200:

@@ -3,7 +3,7 @@
   "name": "Hex Lens Interactive",
   "category": "image",
   "url": "shaders/hex-lens.wgsl",
-  "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
+  "description": "Honeycomb microlenses with hexagonal bokeh, aperture diffraction starbursts and FBM warp. Each cell is a domed lenslet: Snell refraction through the cap with Cauchy per-channel dispersion fringes that grow toward the rim, a focal hot-spot at the cell centre and cos⁴ rim falloff. Luminance ACES tone map; audio-reactive rotation and shimmer.",
   "params": [
     {
       "id": "tile_size",
@@ -41,7 +41,10 @@
     "chromatic-aberration",
     "hexagonal-bokeh",
     "chromatic-dispersion",
-    "diffraction-patterns"
+    "diffraction-patterns",
+    "snell-refraction",
+    "cauchy-dispersion",
+    "aces"
   ],
   "tags": [
     "hex",

@@ -2,29 +2,12 @@
 // Glass Wall — Upgraded with Alpha-Channel Translucency Blending
 // Category: interactive-mouse
 // Features: refraction, spectral-tint, upgraded-rgba
-// Upgraded: 2026-05-17
+// Upgraded: 2026-11-01
+// Ideas: per-channel refraction (R/G/B sample at 1-k / 1 / 1+k of the glass offset, k from thickness); hammered-glass curvature caustic (Laplacian of the height field focuses warm filaments on convex crests)
+// A packing: display RGBA (ACES) + semantic alpha
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ Math Snippets ═══
 fn ACESFilm(x: vec3<f32>) -> vec3<f32> {
@@ -131,17 +114,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Exact textureLoad from dataTextureC
   let dataC = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
 
-  // Capped click ripples
+  // Capped click ripples. HEAD gated on ripples[i].w, which is always 0 (padding), so clicks never
+  // reached the glass; the age now comes from ripples[i].z like every other shader.
   var rippleOffset = vec2<f32>(0.0);
-  for (var i = 0u; i < 50u; i = i + 1u) {
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i = 0u; i < rippleCount; i = i + 1u) {
     let r = u.ripples[i];
-    if (r.w > 0.0 && r.w < 5.0) {
+    let rAge = time - r.z;
+    if (rAge >= 0.0 && rAge < 4.0) {
       let d = distance(uv, r.xy);
-      let waveFront = r.w * 0.8;
+      let waveFront = rAge * 0.8;
       let distFromFront = abs(d - waveFront);
       if (distFromFront < 0.1) {
         let wave = sin((d - waveFront) * 50.0) * smoothstep(0.1, 0.0, distFromFront);
-        let attenuation = exp(-r.w * 1.5) / (1.0 + d * 5.0);
+        let attenuation = exp(-rAge * 1.5) / (1.0 + d * 5.0);
         rippleOffset += normalize(uv - r.xy + 0.0001) * wave * attenuation * 0.03;
       }
     }
@@ -153,7 +139,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let h = glassHeight(uv * gridScale, time, bass, mid);
   let hx = glassHeight((uv + vec2<f32>(eps, 0.0)) * gridScale, time, bass, mid);
   let hy = glassHeight((uv + vec2<f32>(0.0, eps)) * gridScale, time, bass, mid);
-  var normal = normalize(vec3<f32>(h - hx, h - hy, eps * 15.0));
+  // Floor fix (not an idea): HEAD's z of eps*15 left the normal almost horizontal everywhere, so the
+  // tilt sat at ~1, the spectral tint pinned to 650 nm and the whole wall rendered as a red wash
+  // (the shipped thumbnail is that wash). eps*200 keeps the tilt in the 0.2..0.6 range the tint expects.
+  var normal = normalize(vec3<f32>(h - hx, h - hy, eps * 200.0));
+
+  // Idea 2: hammered-glass curvature caustic. Second differences of the same height field (two more
+  // evaluations on the minus side). Where the surface is convex (negative Laplacian) it acts as a
+  // converging lens and focuses light into bright filaments; concave and flat regions get nothing.
+  let hxm = glassHeight((uv - vec2<f32>(eps, 0.0)) * gridScale, time, bass, mid);
+  let hym = glassHeight((uv - vec2<f32>(0.0, eps)) * gridScale, time, bass, mid);
+  let lapH = ((hx + hxm - 2.0 * h) + (hy + hym - 2.0 * h)) / (eps * eps);
+  let convexity = clamp(-lapH / (gridScale * gridScale * 420.0), 0.0, 3.0);
+  let causticFocus = smoothstep(0.55, 1.6, convexity);
 
   // Add spring pointer influence
   let interactionRad = mix(1.0, 8.0, u.zoom_params.z);
@@ -169,7 +167,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let offset = normal.xy * refractionStrength;
   let finalUV = uv + offset;
   
-  var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
+  // Idea 1: per-channel refraction. Blue bends more than red through glass, so the three channels
+  // sample at 1-k / 1 / 1+k of the offset, with k growing with the local thickness. The spectral tint
+  // below stays; this adds the lateral fringe it only imitated.
+  let thickness = 0.1 + abs(h) * 0.2;
+  let dispK = (0.05 + thickness * 0.25) * (1.0 + bass * 0.5);
+  var color = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, uv + offset * (1.0 - dispK), 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, uv + offset * (1.0 + dispK), 0.0).b
+  );
 
   // Prismatic chromatic aberration / spectral tint
   let tiltMag = length(normal.xy);
@@ -184,13 +191,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let unused_z = u.zoom_params.z;
 
   let glassDensity = u.zoom_params.w * 2.0 + 0.5;
-  let thickness = 0.1 + abs(h) * 0.2;
   
   // Specular lighting
   let lightDir = normalize(vec3<f32>(0.5, 0.5, 1.0));
   let viewDir = vec3<f32>(0.0, 0.0, 1.0);
   let halfDir = normalize(lightDir + viewDir);
-  let spec = pow(max(dot(normal, halfDir), 0.0), 32.0);
+  // Exponent 32 -> 160: with the rescued (flatter) normal the old lobe covered the whole frame as a veil.
+  let spec = pow(max(dot(normal, halfDir), 0.0), 160.0);
   
   // Fresnel
   let cosTheta = max(dot(viewDir, normal), 0.0);
@@ -204,6 +211,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Add specular and fresnel
   color += vec3<f32>(spec) * (0.8 + treble * 0.2) + fresnel * 0.5;
+  color += vec3<f32>(1.0, 0.92, 0.72) * causticFocus * (0.25 + thickness) * (0.55 + bass * 0.4 + treble * 0.2);
 
   // Depth compositing
   let depthOut = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

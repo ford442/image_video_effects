@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: triple-junction grain corners; L∞ facet flats; dislocation glide lines; annealing front bloom; crystalline structural faults; piezoelectric charge flashes
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas: triple-junction grain corners; L∞ facet flats; dislocation glide lines; annealing front bloom; crystalline structural faults; piezoelectric charge flashes; Michel–Lévy polarised-light grain tint (§12.2F); grain-local twin lamellae; misorientation-weighted grain boundaries
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -35,8 +35,15 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Smooth Voronoi with animated seeds
-fn voronoiCrystal(uv: vec2<f32>, t: f32, crystalCount: f32, irregularity: f32) -> vec4<f32> {
+// Smooth Voronoi with animated seeds. Also returns the nearest seed's grain-local
+// vector and the second-nearest grain's hash (second-pass ideas 5–7 promote them).
+struct Voro {
+    m: vec4<f32>,
+    local: vec2<f32>,
+    nb: f32,
+}
+
+fn voronoiCrystal(uv: vec2<f32>, t: f32, crystalCount: f32, irregularity: f32) -> Voro {
     let n = floor(uv * crystalCount);
     let f = fract(uv * crystalCount);
     
@@ -45,6 +52,8 @@ fn voronoiCrystal(uv: vec2<f32>, t: f32, crystalCount: f32, irregularity: f32) -
     var f3 = 10.0;  // Idea 1 — third nearest (triple junctions)
     var cellId = vec2<f32>(0.0);
     var seedPos = vec2<f32>(0.0);
+    var cell2 = n;
+    var localVec = vec2<f32>(0.0);
     
     // Search neighborhood
     for (var j: i32 = -1; j <= 1; j++) {
@@ -76,18 +85,21 @@ fn voronoiCrystal(uv: vec2<f32>, t: f32, crystalCount: f32, irregularity: f32) -
                 f3 = f2;
                 f2 = f1;
                 f1 = d;
+                cell2 = cellId;
                 cellId = cell;
                 seedPos = o;
+                localVec = rotated;
             } else if (d < f2) {
                 f3 = f2;
                 f2 = d;
+                cell2 = cell;
             } else if (d < f3) {
                 f3 = d;
             }
         }
     }
     
-    return vec4<f32>(f1, f2, f3, hash21(cellId));
+    return Voro(vec4<f32>(f1, f2, f3, hash21(cellId)), localVec, hash21(cell2));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -136,7 +148,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     p = p + vec2<f32>(sin(t * 0.05) * 0.1, cos(t * 0.03) * 0.1);
     
     // Get Voronoi data
-    let voro = voronoiCrystal(p, t * growthSpeed * (1.0 + bass * 0.18), crystalCount, irregularity);
+    let vo = voronoiCrystal(p, t * growthSpeed * (1.0 + bass * 0.18), crystalCount, irregularity);
+    let voro = vo.m;
     let f1 = voro.x;
     let f2 = voro.y;
     let f3 = voro.z;
@@ -167,18 +180,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Base crystal color
     let h = baseHue + iridescence;
-    let crystalCol = vec3<f32>(
+    let crystalBase = vec3<f32>(
         0.5 + 0.5 * cos(6.28 * (h + 0.0)),
         0.5 + 0.5 * cos(6.28 * (h + 0.33)),
         0.5 + 0.5 * cos(6.28 * (h + 0.67))
     );
+
+    // ── Idea 5: Michel–Lévy polarised-light tint (§12.2F phase/interference).
+    // Seen between crossed polars a grain shows I(λ) = sin²(2θ)·sin²(π·Γ/λ): θ is the
+    // grain axis against a slowly turning stage, Γ the retardation. The wedge-thin
+    // grain edge (small f1) is first-order grey, the thick centre climbs the orders.
+    let grainTheta = cellHash * 3.14159265;
+    // ── Idea 6: polysynthetic twin lamellae. Stripes run in the grain-LOCAL frame
+    // (anchored to the grain, unlike the world-anchored dislocation lines); every other
+    // lamella of a twinned grain flips its axis θ → −θ, so extinction alternates.
+    let lamCoord = vo.local.x * (7.0 + 9.0 * fract(cellHash * 37.0));
+    let lamOdd = f32(i32(floor(lamCoord)) & 1);
+    let twinned = step(0.5, fract(cellHash * 13.7));
+    let thetaEff = grainTheta * (1.0 - 2.0 * lamOdd * twinned);
+    let stageAngle = t * 0.12;
+    let retardNm = 140.0 + 780.0 * f1;
+    let polPhase = 3.14159265 * retardNm / vec3<f32>(650.0, 550.0, 450.0);
+    let polS = sin(polPhase);
+    let sin2 = sin(2.0 * (thetaEff - stageAngle));
+    let polTint = vec3<f32>(sin2 * sin2) * (polS * polS);
+    let lamLine = smoothstep(0.06, 0.0, abs(fract(lamCoord) - 0.5) - 0.42) * twinned;
+    let crystalCol = max(mix(crystalBase, crystalBase * 0.45 + polTint * 1.25, 0.5) * (1.0 - 0.28 * lamLine), vec3<f32>(0.0));
     
     // Darker interior, brighter edges
     let interior = smoothstep(0.0, 0.3, f1);
     col = crystalCol * (0.3 + 0.7 * interior);
     
     // Add edge glow (facets)
-    let edgeGlow = vec3<f32>(0.9, 0.95, 1.0) * edgeMask * glowIntensity;
+    // ── Idea 7: misorientation-weighted grain boundaries. The second-nearest grain's hash
+    // (promoted from the kernel) gives the axis difference: near-equal axes are faint
+    // low-angle boundaries, large differences are bright high-angle ones.
+    let misorient = abs(cellHash - vo.nb);
+    let highAngle = smoothstep(0.05, 0.45, misorient);
+    let edgeGlow = vec3<f32>(0.9, 0.95, 1.0) * edgeMask * glowIntensity * mix(0.4, 1.3, highAngle);
     col = col + edgeGlow;
     
     // Add depth shading

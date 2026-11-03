@@ -2,7 +2,7 @@
   "id": "chromatic-crawler",
   "name": "Chromatic Crawler",
   "url": "shaders/chromatic-crawler.wgsl",
-  "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi-based patterns, temporal feedback trails, and alpha translucency blending. Cell membranes glow in the neighbour's wavelength, trails stream behind the crawl, and the cursor joins it.",
+  "description": "Smooth hue-rotating regions that crawl across the screen with Voronoi cells, temporal feedback trails and alpha translucency. Cells have nuclei tinted in their own wavelength, membranes glow in the neighbour's wavelength, hues dissolve between epochs instead of popping, and the cursor joins the crawl.",
   "features": [
     "mouse-driven",
     "audio-reactive",

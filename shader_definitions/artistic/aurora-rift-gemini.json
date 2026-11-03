@@ -2,10 +2,12 @@
   "id": "aurora-rift-gemini",
   "name": "Aurora Rift Gemini",
   "url": "shaders/aurora-rift-gemini.wgsl",
-  "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering, mouse-driven particle effects.",
+  "description": "An enhanced simulation of aurora borealis, with dynamic, time-driven color shifts, deeper atmospheric rifts, and shimmering particle effects. The rift light runs along magnetic field-line arcs between two poles (the mouse drags one) and foam cells blink like pulsating aurora.",
   "features": [
     "mouse-driven",
-    "time-driven"
+    "time-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
@@ -44,5 +46,43 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Scale",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Flow Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Diffusion Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "FBM Octaves",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }
