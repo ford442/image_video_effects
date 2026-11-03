@@ -2,7 +2,7 @@
   "id": "aurora-rift-2-iridescence",
   "name": "Aurora Rift 2 Iridescence",
   "url": "shaders/aurora-rift-2-iridescence.wgsl",
-  "description": "5-layer volumetric aurora curtains with multi-order thin-film interference, Beer's Law physical transmittance, geomagnetic turbulence, ACES tone mapping, and atmospheric luminescence persistence.",
+  "description": "5-layer volumetric aurora curtains with a sharp lower border and ray-striated upward glow, brighter where the curtains fold, multi-order thin-film interference, Beer's Law physical transmittance, geomagnetic turbulence, ACES tone mapping, and atmospheric luminescence persistence.",
   "tags": [
     "aurora-rift-2",
     "thin-film-interference",
@@ -20,7 +20,8 @@
     "mouse-driven",
     "audio-reactive",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

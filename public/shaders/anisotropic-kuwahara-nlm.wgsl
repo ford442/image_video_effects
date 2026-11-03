@@ -6,6 +6,9 @@
 //  Chunks From: anisotropic-kuwahara.wgsl, conv-non-local-means.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-10 — Image Processing & Artistry Enhancer
+//  Upgraded: 2026-11-01
+//  Ideas: NLM search window sheared along the flow; detail keeper restores grain on unique patches
+//  A packing: raw flow field (flow.xy, |flow|) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 //
 //  Hybrid Approach:
@@ -21,26 +24,8 @@
 //
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=WindowSize, y=Anisotropy, z=NLMStrength, w=FlowStrength
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=WindowSize, y=Anisotropy, z=NLMStrength, w=FlowStrength
 
 const PI: f32 = 3.14159265359;
 
@@ -214,13 +199,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var accumColor = vec3<f32>(0.0);
   var accumWeight = 0.0;
   var similaritySum = 0.0;
+  // Idea 1 — stroke-aligned search: neighbours are drawn from an ellipse long along the flow
+  let flowLen = max(length(flow), 1e-4);
+  let fdir = flow / flowLen;
+  let fperp = vec2<f32>(-fdir.y, fdir.x);
+  let shear = mix(1.0, 1.7, clamp((flowLen - 0.5) * 2.0, 0.0, 1.0));
 
   let maxSearch = min(searchRadius, 5);
 
   for (var dy = -maxSearch; dy <= maxSearch; dy++) {
     for (var dx = -maxSearch; dx <= maxSearch; dx++) {
       if (dx == 0 && dy == 0) { continue; }
-      let offset = vec2<f32>(f32(dx), f32(dy)) * texelSize;
+      let rawOff = vec2<f32>(f32(dx), f32(dy));
+      let offset = (fdir * rawOff.x * shear + fperp * rawOff.y / shear) * texelSize;
       let neighborUV = uv + offset;
       let pd = patchDistance(uv, neighborUV, patchRadius, texelSize);
       let weight = exp(-pd / hParam);
@@ -248,6 +239,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let originalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   let edgeEnhance = (originalColor - paintedColor) * 0.5;
   finalColor = finalColor + edgeEnhance * 0.2 * (1.0 - nlmStrength);
+
+  // Idea 2 — detail keeper: patches that match nothing nearby are brushwork, not noise
+  let importanceKeep = clamp(1.0 - similaritySum / (f32(maxSearch * maxSearch * 4) + 1.0), 0.0, 1.0);
+  finalColor = finalColor + (originalColor - finalColor) * importanceKeep * nlmStrength * 0.35;
 
   // Brush stroke texture based on flow
   let strokeFreq = 30.0;

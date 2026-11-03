@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: edge-detection, electromagnetic-field, mouse-driven, chromatic, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: Laplacian corona; field-line advection streak
+//  Upgraded: 2026-09-11, 2026-11-02
+//  Ideas: Laplacian corona; field-line advection streak; soft inverse-square core (§12.2F); leading-edge glow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -46,10 +27,12 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn electricField(pos: vec2<f32>, chargePos: vec2<f32>, charge: f32) -> vec2<f32> {
+fn electricField(pos: vec2<f32>, chargePos: vec2<f32>, charge: f32, core: f32) -> vec2<f32> {
   let r = pos - chargePos;
-  let dist = max(length(r), 0.001);
-  return charge * normalize(r) / (dist * dist);
+  let dist = max(length(r), 1e-4);
+  // ── Idea 1: soft inverse-square (§12.2F) ──
+  // Glow Radius sets the core so the coulomb field stays finite on the cursor.
+  return (r / dist) * charge / (dist * dist + core * core);
 }
 
 fn magneticField(pos: vec2<f32>, chargePos: vec2<f32>, velocity: vec2<f32>, charge: f32) -> f32 {
@@ -107,7 +90,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let mouseVel = (mousePos - prevMouse) * 60.0;
 
-  let eField = electricField(uv, mousePos, chargeStrength);
+  let fieldCore = 0.035 + glowRadius * 0.28;
+  let eField = electricField(uv, mousePos, chargeStrength, fieldCore);
   let bField = magneticField(uv, mousePos, mouseVel, chargeStrength);
   let fieldMag = length(eField);
   let fieldDir = select(vec2<f32>(0.0), normalize(eField), fieldMag > 0.0001);
@@ -125,6 +109,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     0.5 + 0.5 * sin(time * 2.0 + 2.09 + colorCycle),
     0.5 + 0.5 * sin(time * 2.0 + 4.18 + colorCycle)
   ) * colorEdge * glowIntensity * glowFalloff;
+  let fromCharge = uv - mousePos;
+  let fromLen = length(fromCharge);
+  let velLen = length(mouseVel);
+  let velDir = mouseVel / max(velLen, 1e-4);
+  // ── Idea 2: leading-edge glow ──
+  // The moving charge piles edge light on the side it is heading into.
+  let lead = max(dot(fromCharge / max(fromLen, 1e-4), velDir), 0.0)
+    * smoothstep(0.2, 1.4, velLen)
+    * smoothstep(0.0, 0.03, fromLen);
+  let leadGlow = edgeGlowColor * (1.0 + lead * 0.7);
 
   // Idea 2 — field-line advection streak: smear edge glow along ∇E from exact C
   let advectOffset = vec2<i32>(round(fieldDir * fieldMag * 3.0 / pixelSize));
@@ -133,7 +127,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let hueRot = bField * colorCycle * 0.5;
   var color = hueShift(baseColor, hueRot);
-  color = color + edgeGlowColor + streakGlow;
+  color = color + leadGlow + streakGlow;
   color = color + vec3<f32>(0.7, 0.85, 1.0) * corona * glowIntensity * 0.4;
 
   let fieldColor = mix(vec3<f32>(0.0, 0.6, 1.0), vec3<f32>(1.0, 0.8, 0.0), atan2(fieldDir.y, fieldDir.x) * 0.159 + 0.5);

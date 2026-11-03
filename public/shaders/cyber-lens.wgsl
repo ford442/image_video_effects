@@ -4,28 +4,15 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, chromatic-aberration,
 //            hud-overlay, rolling-shutter, telemetry-rings, semantic-alpha, ACES
 //  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: cursor-velocity lead vector (track state in A corner texels) with lock-on ring that closes as the cursor settles (range ticks spin while seeking); Sobel contour trace of the scene inside the lens disc
+//  A packing: display RGBA (ACES) + semantic alpha; texels (0,0)/(1,0) hold cursor-track state [mouse,time]/[velocity] with sentinel w=0.7371
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=HUDScale, y=TargetSize, z=GlitchIntensity, w=ChromaticAberration
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=HUDScale, y=TargetSize, z=GlitchIntensity, w=ChromaticAberration
-  ripples: array<vec4<f32>, 50>,
-};
+const TAU: f32 = 6.28318530718;
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -46,6 +33,18 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 
 fn hudFlicker(t: f32, bass: f32) -> f32 {
   return 1.0 - step(0.92 + bass * 0.06, fract(sin(t * 37.0) * 43758.5453)) * 0.35;
+}
+
+fn lumaAt(uvc: vec2<f32>) -> f32 {
+  return dot(textureSampleLevel(readTexture, u_sampler, clamp(uvc, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+// Distance from p to the segment a-b.
+fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
+  let pa = p - a;
+  let ba = b - a;
+  let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);
+  return length(pa - ba * h);
 }
 
 fn hexDist(p: vec2<f32>) -> f32 {
@@ -145,6 +144,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let glitchColor = textureSampleLevel(readTexture, u_sampler, clamp(glitchUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   lensColor = mix(lensColor, glitchColor, glitchLine);
 
+  // ── Idea 2: contour trace. Inside the lens disc the sensor outlines what it sees: central-difference
+  // gradient of the shuttered image, thresholded into thin cyan contours that fade with the lens edge.
+  let ct = vec2<f32>(2.0) / dims;
+  let cGx = lumaAt(shutterUV + vec2<f32>(ct.x, 0.0)) - lumaAt(shutterUV - vec2<f32>(ct.x, 0.0));
+  let cGy = lumaAt(shutterUV + vec2<f32>(0.0, ct.y)) - lumaAt(shutterUV - vec2<f32>(0.0, ct.y));
+  let contour = smoothstep(0.035, 0.18, length(vec2<f32>(cGx, cGy))) * lensMask;
+
   // Primary HUD grid
   let gridUV = hudUV1 * 48.0;
   let lineX = 1.0 - smoothstep(0.0, 0.05, abs(fract(gridUV.x - timeWarp * 0.5) - 0.5));
@@ -154,12 +160,41 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Scan lines
   let scan = 0.85 + 0.15 * sin(uv.y * dims.y * 0.5 + timeWarp * 9.0);
 
+  // ── Idea 1: lead vector + lock-on. Cursor track state cannot live in extraBuffer[133..138] (the host
+  // re-uploads those slots every frame), so the previous cursor sample rides texels (0,0) and (1,0) of A
+  // (read back as C): (0,0) = [mouse.xy, time, sentinel], (1,0) = [smoothed velocity.xy, 0, sentinel].
+  // A fast cursor opens the ring (no lock) and leaves a lead tick pointing where it is heading; a settled
+  // cursor closes the ring to targetSize (idle = HEAD). Those two display pixels are sacrificed.
+  let trackA = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let trackB = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+  let trackOk = abs(trackA.w - 0.7371) < 0.0001 && abs(trackB.w - 0.7371) < 0.0001;
+  let trackDt = time - trackA.z;
+  let trackLive = trackOk && trackDt > 0.0005 && trackDt < 0.25;
+  let instVel = (rawMouse - trackA.xy) / max(trackDt, 0.0005);
+  let sVelNew = select(vec2<f32>(0.0), mix(trackB.xy, instVel, 0.25), trackLive);
+  let sVel = sVelNew * vec2<f32>(aspect, 1.0);
+  let sSpeed = length(sVel);
+  let lock = exp(-sSpeed * 3.0);
+  let lockSize = targetSize * (1.0 + (1.0 - lock) * 0.5);
+
   // Targeting reticle at mouse
-  let reticleDist = length((hudUV1 - mouse) * vec2<f32>(aspect, 1.0));
-  let reticleRing = smoothstep(targetSize, targetSize - 0.005, reticleDist) - smoothstep(targetSize - 0.005, targetSize - 0.01, reticleDist);
-  let reticleCrossH = (1.0 - smoothstep(0.0, 0.003, abs(hudUV1.y - mouse.y))) * step(reticleDist, targetSize * 1.3);
-  let reticleCrossV = (1.0 - smoothstep(0.0, 0.003, abs(hudUV1.x - mouse.x))) * step(reticleDist, targetSize * 1.3);
-  let reticle = (reticleRing + reticleCrossH + reticleCrossV) * flicker;
+  let toRet = (hudUV1 - mouse) * vec2<f32>(aspect, 1.0);
+  let reticleDist = length(toRet);
+  let reticleRing = smoothstep(lockSize, lockSize - 0.005, reticleDist) - smoothstep(lockSize - 0.005, lockSize - 0.01, reticleDist);
+  let reticleCrossH = (1.0 - smoothstep(0.0, 0.003, abs(hudUV1.y - mouse.y))) * step(reticleDist, lockSize * 1.3);
+  let reticleCrossV = (1.0 - smoothstep(0.0, 0.003, abs(hudUV1.x - mouse.x))) * step(reticleDist, lockSize * 1.3);
+  // Range ticks around the ring: 24 ticks, every sixth one long; they spin while still seeking.
+  let tickAng = atan2(toRet.y, toRet.x) + (1.0 - lock) * time * 2.2;
+  let tickCell = fract(tickAng / TAU * 24.0 + 0.5) - 0.5;
+  let tickIdx = floor(tickAng / TAU * 24.0 + 0.5);
+  let tickLong = select(0.0, 1.0, (u32(tickIdx + 48.0) % 6u) == 0u);
+  let tickBand = smoothstep(lockSize * 1.02, lockSize * 1.06, reticleDist) * (1.0 - smoothstep(lockSize * (1.10 + tickLong * 0.08), lockSize * (1.14 + tickLong * 0.08), reticleDist));
+  let ticks = tickBand * (1.0 - smoothstep(0.0, 0.14, abs(tickCell))) * (0.5 + 0.5 * lock);
+  let leadDir = sVel / max(sSpeed, 1e-4);
+  let leadLen = clamp(sSpeed * 0.16, 0.0, 0.14);
+  let leadD = segDist(toRet, leadDir * lockSize * 1.2, leadDir * (lockSize * 1.2 + leadLen));
+  let lead = (1.0 - smoothstep(0.0012, 0.0035, leadD)) * smoothstep(0.02, 0.12, sSpeed);
+  let reticle = (reticleRing + reticleCrossH + reticleCrossV + ticks * 0.8) * flicker;
 
   // Corner brackets
   let cornerUV = abs(hudUV2 - 0.5);
@@ -213,10 +248,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var finalColor = lensColor * scan + hudColor + vec3<f32>(bloom) + grain + radialGlow;
   finalColor += vec3<f32>(0.25, 1.0, 0.75) * telemetry * 0.35;
+  finalColor += vec3<f32>(0.1, 1.0, 0.9) * contour * flicker * (0.45 + audio.y * 0.5);
+  finalColor += vec3<f32>(1.0, 0.8, 0.2) * lead * flicker * 0.9;
   finalColor += vec3<f32>(1.0, 0.55, 0.25) * lockPing * (0.5 + audio.x * 0.8);
 
   // Phosphor persistence (exact dataTextureC load)
-  let prevFrame = textureLoad(dataTextureC, coord, 0);
+  let isTrackTexel = (coord.y == 0 && coord.x < 2);
+  let prevFrame = select(textureLoad(dataTextureC, coord, 0), vec4<f32>(0.0), isTrackTexel);
   finalColor = max(finalColor, prevFrame.rgb * (0.70 + glitchIntensity * 0.14));
 
   finalColor = acesToneMap(finalColor);
@@ -224,14 +262,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vignette = 1.0 - smoothstep(0.3, 0.8, dist) * 0.2;
   finalColor = finalColor * vignette;
 
-  let hudIntensity = clamp(lensMask + grid * 0.5 + reticle * 0.8 + corner * 0.4 + telemetry * 0.3, 0.0, 1.0);
-  let targetingConfidence = smoothstep(targetSize * 2.0, 0.0, reticleDist);
+  let hudIntensity = clamp(lensMask + grid * 0.5 + reticle * 0.8 + corner * 0.4 + telemetry * 0.3 + contour * 0.3 + lead * 0.3, 0.0, 1.0);
+  let targetingConfidence = smoothstep(lockSize * 2.0, 0.0, reticleDist);
   let finalAlpha = clamp(hudIntensity * targetingConfidence * depth + lockPing * 0.25 + telemetry * 0.15 + 0.1, 0.08, 0.98);
 
   let outDepth = clamp(mix(depth, 0.3 + hudIntensity * 0.5, 0.25), 0.0, 1.0);
 
   let outColor = vec4<f32>(finalColor, finalAlpha);
   textureStore(writeTexture, coord, outColor);
-  textureStore(dataTextureA, coord, outColor);
+  var aOut = outColor;
+  if (coord.y == 0 && coord.x == 0) { aOut = vec4<f32>(rawMouse, time, 0.7371); }
+  if (coord.y == 0 && coord.x == 1) { aOut = vec4<f32>(sVelNew, 0.0, 0.7371); }
+  textureStore(dataTextureA, coord, aOut);
   textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }

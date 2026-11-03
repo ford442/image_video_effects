@@ -2,7 +2,7 @@
   "id": "gen-trails",
   "name": "Boids Flocking",
   "url": "shaders/gen_trails.wgsl",
-  "description": "Audio-reactive Reynolds boids flocking with bass-driven panic, mids cohesion, treble flash bursts, mouse attraction, motion-blur streaks, and pheromone trails.",
+  "description": "Audio-reactive Reynolds boids that fly continuous paths in six flocks, with bass-driven panic, mids cohesion, treble flashes, mouse attraction, beating wings, motion-blur streaks and pheromone trails that evaporate over time.",
   "features": [
     "mouse-driven",
     "depth-aware",

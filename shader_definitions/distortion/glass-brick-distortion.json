@@ -2,14 +2,16 @@
   "id": "glass-brick-distortion",
   "name": "Glass Brick Distortion",
   "url": "shaders/glass-brick-distortion.wgsl",
-  "description": "Architectural glass brick wall with plano-convex lens distortion, chromatic aberration, Fresnel reflection, and depth-based thickness variation.",
+  "description": "Architectural glass-block wall: plano-convex lens per brick, fluted ribs, mirrored grout bevel, per-batch tint, Fresnel and Beer-Lambert thickness. Cast-glass detail: hashed trapped seed bubbles act as inverted micro-lenses with rim glints, and each block's hollow core shows a fused seam and a second parallaxed lens shift.",
   "features": [
     "mouse-driven",
     "depth-aware",
     "audio-reactive",
     "temporal",
     "chromatic-aberration",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "seed-bubbles",
+    "hollow-core"
   ],
   "tags": [
     "distortion",
