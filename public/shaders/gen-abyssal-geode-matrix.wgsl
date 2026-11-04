@@ -44,7 +44,7 @@ fn map(p_in: vec3<f32>) -> f32 {
     // Fractal Fold
     var s = 1.0;
     let t = u.config.x * u.zoom_params.y;
-    for(var i=0; i<4; i++) {
+    for(var i=0; i<i32(4.0 + u.zoom_params.w * 3.0); i++) {
         p = abs(p) - vec3<f32>(1.0, 0.5, 0.2) * s;
         let r_mat = rot(t * 0.2 + f32(i));
         p = vec3<f32>(r_mat * p.xy, p.z);
