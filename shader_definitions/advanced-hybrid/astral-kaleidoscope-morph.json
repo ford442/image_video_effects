@@ -2,7 +2,7 @@
   "id": "astral-kaleidoscope-morph",
   "name": "Astral Kaleidoscope + Morphological",
   "url": "shaders/astral-kaleidoscope-morph.wgsl",
-  "description": "Psychedelic kaleidoscope with chromatic separation enhanced by morphological erosion/dilation operations. Morphological gradient creates glowing halos around segments, top-hat transform isolates bright sparkles.",
+  "description": "Kaleidoscope followed by morphological erosion and dilation. A radial line structuring element streaks bright edges along the mirrors, the morphological gradient halos the segments, and lateral chroma fringing appears only where the gradient is strong.",
   "tags": [
     "kaleidoscope",
     "morphological",
@@ -16,7 +16,6 @@
     "advanced-convolution",
     "upgraded-rgba",
     "depth-aware",
-    "mouse-driven",
     "temporal",
     "randomization-safe"
   ],

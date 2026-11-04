@@ -1,27 +1,14 @@
-// Paper Burn — fibrous thermal diffusion, char curl, and drifting ember fronts.
-// A/C packing remains [burn state, 0, 0, 1]. B and extraBuffer are unused.
-// Premium mixed-eight upgrade: 2026-08-27.
+// ═══════════════════════════════════════════════════════════════════
+//  Paper Burn
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-08-27, 2026-11-01
+//  Ideas: fibrous diffusion; ember fronts; scorch browning; char curl
+//  A packing: raw burn in A.r (C.r is the burn). ACES on the display write only
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -102,7 +89,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var burn = clamp(diffusion + liveEdge * burnSpeed * fiberBias + max(pointerIgnition, clickIgnition) * burnSpeed * 5.0, 0.0, 1.0);
   if (reset) { burn = 0.0; }
 
-  let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // ── Idea 2: char curl — the live edge lifts along the burn gradient ──
+  let burnGrad = vec2<f32>(right - left, bottom - top);
+  let curlUV = clamp(uv + burnGrad * (0.035 + charWidth * 0.1) * liveEdge, vec2<f32>(0.0), vec2<f32>(1.0));
+  let source = textureSampleLevel(readTexture, u_sampler, curlUV, 0.0);
   let frontCenter = 0.48 + grain * 0.07;
   let emberBand = smoothstep(frontCenter - charWidth, frontCenter, burn) * (1.0 - smoothstep(frontCenter, frontCenter + charWidth * 0.55, burn));
   let charBand = smoothstep(0.08, max(0.1, frontCenter - charWidth * 0.35), burn) * (1.0 - smoothstep(frontCenter + charWidth * 0.25, 0.96, burn));
@@ -111,6 +101,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let emberColor = vec3<f32>(2.8 + bass, 0.38 + mids * 0.22, 0.018 + treble * 0.035);
   let charColor = mix(vec3<f32>(0.055, 0.018, 0.006), vec3<f32>(0.24, 0.075, 0.012), ashFiber);
   var hdr = mix(source.rgb, charColor, clamp(charBand + hole * 0.88, 0.0, 1.0));
+  // ── Idea 1: scorch browning — paper yellows just ahead of the ember ──
+  let ahead = frontCenter - charWidth * 0.85;
+  let scorch = smoothstep(ahead - charWidth * 0.9, ahead, burn) * (1.0 - smoothstep(ahead, frontCenter, burn));
+  let paperL = dot(source.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let browned = mix(source.rgb, vec3<f32>(0.55, 0.28, 0.08) * (0.4 + paperL), 0.75);
+  hdr = mix(hdr, browned, scorch * (1.0 - charBand) * (1.0 - hole));
   hdr += emberColor * emberBand * (0.62 + mids * 0.65 + clickIgnition * 0.4);
   hdr += vec3<f32>(0.32, 0.12, 0.025) * ashFiber * treble;
   let display = aces(max(hdr, vec3<f32>(0.0)));
@@ -119,5 +115,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   textureStore(dataTextureA, coord, vec4<f32>(burn, 0.0, 0.0, 1.0));
   textureStore(writeTexture, coord, vec4<f32>(display, alpha));
   let depth = textureLoad(readDepthTexture, coord, 0).r;
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let depthOut = clamp(depth + liveEdge * 0.07 - hole * 0.06, 0.0, 1.0);
+  textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

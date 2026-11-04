@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: age-tint; luma-weighted persist
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: age-tint; luma-weighted persist; neighbor glow; attack flash
 //  A packing: display RGB + luminance history in A (A.a)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -90,6 +71,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     1.0 - colorShift * 0.2
   );
   displayColor *= mix(vec3<f32>(1.0), historyTint, smoothstep(0.0, 0.5, newAvgLuma));
+  // ── Idea 3: attack flash ─────────────────────────────────────────
+  // New light flashes white before the cool age-tint takes it.
+  let attack = smoothstep(0.02, 0.22, currentLuma - prevAvgLuma);
+  displayColor += vec3<f32>(1.0) * attack * 0.28 * (0.45 + bass * 0.35 + mids * 0.15);
 
   let mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
@@ -115,6 +100,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let up = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0);
   let diffusedAvg = (left.a + right.a + down.a + up.a) * 0.125 + finalAvgLuma * 0.5;
   let _diff = diffusion;
+  // ── Idea 4: neighbor glow ────────────────────────────────────────
+  // The four luma taps already loaded for diffusion bloom where they
+  // outshine the live pixel.
+  let neighborLuma = (left.a + right.a + down.a + up.a) * 0.25;
+  let neighborGlow = max(0.0, neighborLuma - currentLuma);
+  displayColor += vec3<f32>(1.0, 0.85, 0.6) * neighborGlow * glowIntensity * 0.35;
 
   let luma = dot(displayColor, vec3<f32>(0.299, 0.587, 0.114));
   let alpha = mix(0.75, 1.0, luma * persist);

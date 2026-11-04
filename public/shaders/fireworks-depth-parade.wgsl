@@ -1,9 +1,9 @@
 // Fireworks Depth Parade — depth-sorted layer launches
 // Batch 23: normalized pointer coordinates, discrete click barrages, and
 // source/shell-derived depth while preserving the display feedback packing.
-// Upgraded: 2026-10-27
-// Ideas: image-depth occlusion; atmospheric distance
-// A packing: ACES display RGBA; B: dimmed display/previous-color echo
+// Upgraded: 2026-11-01
+//  Ideas: image-depth occlusion; atmospheric distance; mortar rise; foreground smoke veil
+//  A packing: ACES display RGBA; B: dimmed display/previous-color echo
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
@@ -44,6 +44,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let imgCol = sampleImg(uv);
   var col = imgCol * (0.5 + depth*0.15);
   var shellDepthSignal = 0.0;
+  var nearVeil = 0.0;
 
   // Three depth layers: foreground (0.7+), mid (0.35-0.7), background (<0.35)
   let layers = 3;
@@ -63,17 +64,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let cycle = 3.0/speed;
       let birth = floor((time*speed*0.5+seed*2.0+lf*0.8)/cycle)*cycle-seed*2.0-lf*0.8;
       let age = time-birth; if (age < 0.0 || age > 5.5) { continue; }
-      let layerAge = max(0.0, age - layerDelay);
-      if (layerAge <= 0.0) { continue; }
-
       let energy = (0.5 + pDepth * depthBoost + bass*0.4) * depthMatch;
       let launchH = 0.5 + pDepth * depthBoost * 0.8;
       let center = probe + vec2<f32>(0.0, launchH);
-      let fade = smoothstep(4.5, 0.2, layerAge);
-
       let visibility = 1.0 - 0.45 * smoothstep(0.0, 0.18, depth - layerDepth);
       let distanceColor = mix(pCol, vec3<f32>(dot(pCol, vec3<f32>(0.299, 0.587, 0.114))), lf * 0.12);
-      let launchGlow = exp(-layerAge*7.0) * energy * softGlow(uv, center, 0.04+lf*0.01, 1.2) * visibility;
+      let layerAge = max(0.0, age - layerDelay);
+      // ── Idea 1: mortar rise — far layers climb before they break
+      if (layerAge <= 0.0) {
+        let riseT = clamp(age / max(layerDelay, 0.05), 0.0, 1.0);
+        let head = mix(probe, center, riseT * riseT);
+        let riseGlow = softGlow(uv, head, 0.011, energy * (1.15 - riseT));
+        col += distanceColor * riseGlow * visibility;
+        col += distanceColor * softGlow(uv, mix(probe, head, 0.5), 0.007, energy * (1.0 - riseT) * 0.4);
+        shellDepthSignal = max(shellDepthSignal, riseGlow * layerDepth);
+        continue;
+      }
+      let fade = smoothstep(4.5, 0.2, layerAge);
+      let veilDim = select(1.0, 1.0 - nearVeil * 0.62, layer > 0);
+
+      let launchGlow = exp(-layerAge*7.0) * energy * softGlow(uv, center, 0.04+lf*0.01, 1.2) * visibility * veilDim;
       col += distanceColor * launchGlow;
       shellDepthSignal = max(shellDepthSignal, launchGlow * layerDepth);
       let n = i32(14.0 + energy*22.0 + mids*8.0);
@@ -83,12 +93,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let spd = (0.25+js*0.35)*energy*(0.7+pDepth*0.5);
         let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*spd, layerAge, 0.7+lf*0.15);
         let sparkGlow = softGlow(uv, sp, (0.005+js*0.003)*(1.0+lf*0.15),
-          fade*energy*(0.8+treble*0.4)*visibility*(1.0-lf*0.1));
+          fade*energy*(0.8+treble*0.4)*visibility*(1.0-lf*0.1)*veilDim);
         col += distanceColor * sparkGlow;
         shellDepthSignal = max(shellDepthSignal, sparkGlow * layerDepth);
       }
+      // ── Idea 2: foreground smoke that the farther layers fire through
+      if (layer == 0) {
+        nearVeil = max(nearVeil, exp(-length(uv - center) * 1.7) * fade * clamp(energy, 0.0, 1.6) * 0.55);
+      }
     }
   }
+  col += vec3<f32>(0.40, 0.32, 0.26) * nearVeil * 0.22;
   if (u.zoom_config.w > 0.5) {
     let mUV = normToCentered(u.zoom_config.yz, res);
     let mDepth = sampleDepth(mUV);
@@ -122,10 +137,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let dlf = f32(dl);
       let layerDepth = 0.85 - dlf * 0.35;
       let barrageAge = clickAge - dlf * layerSep * 0.9;
-      if (barrageAge < 0.0 || barrageAge > 3.0) { continue; }
+      if (barrageAge > 3.0) { continue; }
       let depthMatch = clamp(1.0 - abs(clickDepth - layerDepth) / max(layerSep, 0.15), 0.2, 1.0);
       let seed = hash1(f32(ri) * 43.0 + dlf * 17.0 + rp.x * 61.0);
       let shellCenter = clickOrigin + vec2<f32>((seed - 0.5) * 0.18, -0.28 - layerDepth * 0.24);
+      // ── Idea 1: the click parade climbs before the far layers break
+      if (barrageAge < 0.0) {
+        let wait = max(dlf * layerSep * 0.9, 0.05);
+        let riseT = clamp(clickAge / wait, 0.0, 1.0);
+        let head = mix(clickOrigin, shellCenter, riseT * riseT);
+        let riseColor = mix(clickColor, vec3<f32>(dot(clickColor, vec3<f32>(0.299, 0.587, 0.114))), dlf * 0.12);
+        col += riseColor * softGlow(uv, head, 0.01, depthMatch * (0.85 + bass * 0.3) * (1.15 - riseT));
+        continue;
+      }
       let shellEnergy = (0.65 + clickDepth * depthBoost + bass * 0.35) * depthMatch;
       let shellFade = smoothstep(2.8, 0.10, barrageAge);
       let visibility = 1.0 - 0.45 * smoothstep(0.0, 0.18, depth - layerDepth);

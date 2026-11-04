@@ -3,7 +3,7 @@
   "name": "Holographic Interference",
   "category": "generative",
   "url": "shaders/holographic_interference.wgsl",
-  "description": "Laser interference pattern simulation with multiple coherent sources, object beam and reference beam phase accumulation, speckle pattern, chromatic dispersion on holographic fringes, HDR bloom, and ACES tone mapping. Bass drives reference beam angle, mouse moves the virtual object, depth controls holographic parallax.",
+  "description": "Three coherent sources: an object beam from the pointer and a planar reference, with speckle and a thin-film tint. Fringe visibility falls as the two paths diverge, and the speckle pitch follows the wave scale.",
   "tags": [
     "holographic",
     "interference",

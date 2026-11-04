@@ -2,7 +2,7 @@
   "id": "holographic-projection-gpt52",
   "name": "Holo Projection Prism gpt52",
   "url": "shaders/holographic-projection-gpt52.wgsl",
-  "description": "Prismatic volume hologram with Bragg diffraction physics, stabilized focus, scan interference, and spectral tinting.",
+  "description": "Volume hologram: Bragg sinc per wavelength, a thin-film order, scan jitter, and a Pepper's ghost. Brightness oscillates through scene depth, and the sample walks along the diffracted ray where the sinc is efficient.",
   "features": [
     "mouse-driven",
     "glitch",

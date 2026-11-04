@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
 //            temporal, procedural, animated-accumulation
-//  Upgraded: 2026-10-17
-//  Ideas: Mandelbrot body; dwell iso-bands; slow-escape comet; antenna tip
+//  Upgraded: 2026-10-17, 2026-11-01
+//  Ideas: Mandelbrot body; dwell iso-bands; slow-escape comet; antenna tip; Nebulabrot channels (orbit length -> R/G/B); smooth potential + binary-decomposition rays
 //  A packing: linear RGB accumulation + presence (ACES display only)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -13,6 +13,13 @@
 fn hash2(p: vec2<f32>) -> vec2<f32> {
     let p2 = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
     return fract(sin(p2) * 43758.5453);
+}
+
+// FFT band k (0..7): engine FFT bins live in extraBuffer[5 .. 132]. HEAD read plasmaBuffer[k + 1].x,
+// but only plasmaBuffer[0] is ever written, so the per-star band energy was a constant zero.
+fn fftBand(k: u32) -> f32 {
+    let idx = 5u + (k % 8u) * 4u;
+    return select(0.0, extraBuffer[min(idx, arrayLength(&extraBuffer) - 1u)], arrayLength(&extraBuffer) > idx);
 }
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
@@ -113,13 +120,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ripple pulls the spring goal toward its complex-plane click position
     // with a weight that decays over ~1.4s.
     let rippleCount = min(u32(u.config.y), 50u);
-    var clickCenter = navCenter;
+    // Repair: HEAD built the spring goal from `navCenter` only, so after the first frame the Center X/Y
+    // sliders did nothing; the goal now starts from the slider targets. The click pull also multiplied by
+    // ripple.w (padding, always 0) and aged ripples with `time` (x5 fast-motion), so it never fired:
+    // it now uses real seconds and the 1 - age/1.4 weight alone.
+    let goalBase = vec2<f32>(targetCX, targetCY);
+    var clickCenter = goalBase;
     var clickPull = 0.0;
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
-        let age = time - ripple.z;
+        let age = u.config.x - ripple.z;
         if (age > 0.0 && age < 1.4) {
-            let w = (1.0 - age / 1.4) * clamp(ripple.w, 0.0, 1.0);
+            let w = 1.0 - age / 1.4;
             let curScale = mix(0.05, 2.5, navZoom);
             let cUV = (ripple.xy - 0.5) * 2.0;
             let cPoint = navCenter + vec2<f32>(cUV.x * aspect, cUV.y) * curScale;
@@ -127,7 +139,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             clickPull = max(clickPull, w);
         }
     }
-    let goalCenter = mix(navCenter, clickCenter, clickPull);
+    let goalCenter = mix(goalBase, clickCenter, clickPull);
 
     // Single invocation integrates the spring-damper; all invocations read
     // the persistent state (racy by one frame at worst, visually benign).
@@ -161,6 +173,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var density: f32 = 0.0;
     var rainbow: vec3<f32> = vec3<f32>(0.0);
     var comet: vec3<f32> = vec3<f32>(0.0);
+    var nebula: vec3<f32> = vec3<f32>(0.0);
     let pixel_seed = vec2<f32>(f32(global_id.x), f32(global_id.y));
 
     for (var s: u32 = 0u; s < 40u; s = s + 1u) {
@@ -168,7 +181,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let seed = vec3<f32>(pixel_seed, f32(s) + t * 100.0);
         let c_rand = random_c(seed, view_center, view_scale);
 
-        if (escapes(c_rand, 64u)) {
+        // Exact perf skip: c inside the main cardioid or the period-2 bulb never escapes, so it
+        // contributes nothing but used to cost the full 64-iteration test.
+        let cq = (c_rand.x - 0.25) * (c_rand.x - 0.25) + c_rand.y * c_rand.y;
+        let inCardioid = cq * (cq + (c_rand.x - 0.25)) <= 0.25 * c_rand.y * c_rand.y;
+        let inBulb = (c_rand.x + 1.0) * (c_rand.x + 1.0) + c_rand.y * c_rand.y <= 0.0625;
+        if (!(inCardioid || inBulb) && escapes(c_rand, 64u)) {
             var z = vec2<f32>(0.0);
             var orbit_points: array<vec2<f32>, 64>;
             var orbit_len: u32 = 0u;
@@ -199,6 +217,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 // Idea 3 — long orbits leave a warm comet along the filament
                 let slowEscape = smoothstep(28.0, 58.0, f32(orbit_len));
                 comet = comet + vec3<f32>(1.0, 0.62, 0.28) * contribution * slowEscape * (0.25 + orbitT);
+                // 2026-11 Idea 1: Nebulabrot channels. The canonical Buddhabrot colours by orbit LENGTH
+                // (three iteration limits -> R/G/B): long orbits red, mid green, short blue.
+                let lenF = f32(orbit_len);
+                let wLong = smoothstep(30.0, 56.0, lenF);
+                let wMid = smoothstep(8.0, 24.0, lenF) * (1.0 - smoothstep(36.0, 56.0, lenF));
+                let wShort = 1.0 - smoothstep(8.0, 24.0, lenF);
+                nebula = nebula + vec3<f32>(wLong, wMid, wShort) * contribution;
             }
         }
     }
@@ -210,6 +235,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     density = density / (1.0 + density);
 
     rainbow = rainbow / max(f32(sample_count) * 8.0, 1.0);
+    nebula = nebula / max(f32(sample_count) * 8.0, 1.0);
 
     // Idea 1+2 — Mandelbrot body + dwell bands for this pixel's c (not a new map)
     var zPix = vec2<f32>(0.0);
@@ -218,19 +244,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var k: u32 = 0u; k < 64u; k = k + 1u) {
         zPix = cmul(zPix, zPix) + c_pixel;
         dwell = dwell + 1u;
-        if (dot(zPix, zPix) > 4.0) {
+        // bailout 256 (HEAD 4): a large bailout is what makes the smooth potential below smooth
+        if (dot(zPix, zPix) > 256.0) {
             escapedPix = true;
             break;
         }
     }
     let setBody = select(1.0, 0.0, escapedPix);
-    let dwellBand = 0.5 + 0.5 * sin(f32(dwell) * 0.42 + t);
+    // 2026-11 Idea 2: smooth potential mu = n + 1 - log2(log2|z|) (12.2E smooth iteration count) in
+    // place of the integer dwell, plus binary decomposition: the sign of Im z_n at escape flips the tint,
+    // so the external rays show as a checker running along the potential bands.
+    let muEsc = f32(dwell) + 1.0 - log2(max(0.5 * log2(max(dot(zPix, zPix), 1.0001)), 1e-4));
+    let dwellBand = 0.5 + 0.5 * sin(muEsc * 0.42 + t);
+    let rayParity = select(0.6, 1.4, zPix.y > 0.0);
 
     // Mids drive nebula palette hue shift
     var color = nebula_color(density, t, mids * 0.5);
     color = color + rainbow * 0.6;
     color = mix(color, vec3<f32>(0.04, 0.02, 0.08), setBody * 0.55);
-    color = color + vec3<f32>(0.08, 0.18, 0.32) * dwellBand * select(0.22, 0.0, !escapedPix) * (0.4 + mids * 0.4);
+    color = color + vec3<f32>(0.08, 0.18, 0.32) * dwellBand * rayParity * select(0.22, 0.0, !escapedPix) * (0.4 + mids * 0.4);
+    color = color + nebula * 0.9;
     color = color + comet / max(f32(sample_count), 1.0) * 0.85;
     // Idea 4 — antenna tip anchors the real-axis spike of the silhouette
     let antenna = exp(-length(c_pixel - vec2<f32>(-1.75, 0.0)) * 22.0);
@@ -242,7 +275,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // starfield dances with the spectrum instead of just global treble.
     let starSel = hash2(pixel_seed * 0.37 + vec2<f32>(13.7, 91.3));
     let starBin = 1u + u32(floor(starSel.y * 7.999));
-    let bandEnergy = plasmaBuffer[starBin].x;
+    let bandEnergy = fftBand(starBin - 1u);
     let star_noise = hash3(vec3<f32>(pixel_seed * 0.01, t * 0.01));
     let starThresh = 0.998 - treble * 0.003 - bandEnergy * 0.004;
     if (star_noise.x > starThresh) {

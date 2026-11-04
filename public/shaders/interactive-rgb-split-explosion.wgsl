@@ -4,8 +4,9 @@
 //  Features: mouse-driven, chromatic, prism, ripple, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: interactive-rgb-split.wgsl, mouse-chromatic-explosion.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-25
+//  Upgraded: 2026-11-01
+//  Ideas: radial split along the pointer; falloff lip on the existing gate
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Prismatic RGB channel separation controlled by mouse distance.
 //  Combines localized radial/directional split with wavelength-based
@@ -13,26 +14,11 @@
 //  Alpha stores total chromatic displacement.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn prismDisplace(uv: vec2<f32>, mousePos: vec2<f32>, wavelengthOffset: f32, strength: f32) -> vec2<f32> {
   let toMouse = uv - mousePos;
@@ -68,15 +54,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv_aspect = uv * vec2<f32>(aspect, 1.0);
   let center_aspect = mousePos * vec2<f32>(aspect, 1.0);
   let dist = distance(uv_aspect, center_aspect);
-  var amount = prismStrength;
-  if (falloff > 0.0) {
-      amount *= smoothstep(0.8, 0.0, dist * falloff * 2.0);
-  }
+  let falloffOn = falloff > 0.0;
+  let gated = prismStrength * smoothstep(0.8, 0.0, dist * max(falloff, 0.0) * 2.0);
+  var amount = select(prismStrength, gated, falloffOn);
+  // ── Idea 2: falloff lip. Falloff 0 still leaves the split ungated.
+  let fallDist = dist * max(falloff, 0.0) * 2.0;
+  let lip = smoothstep(0.25, 0.55, fallDist) * smoothstep(0.95, 0.55, fallDist) * select(0.0, 1.0, falloffOn);
+  amount = amount * mix(1.0, 1.7, lip);
 
-  // Prism displacement
-  let rUV = prismDisplace(uv, mousePos, -1.0, amount);
+  // ── Idea 1: radial split along the pointer, same amount as the tangential prism.
+  let toPointer = uv - mousePos;
+  let radialDir = toPointer / max(length(toPointer), 1e-4);
+  let radial = radialDir * amount * 1.35;
+  let rUV = prismDisplace(uv, mousePos, -1.0, amount) - radial;
   let gUV = prismDisplace(uv, mousePos, 0.0, amount);
-  let bUV = prismDisplace(uv, mousePos, 1.0, amount);
+  let bUV = prismDisplace(uv, mousePos, 1.0, amount) + radial;
 
   // Ripple chromatic shockwaves
   let rippleCount = min(u32(u.config.y), 50u);
@@ -101,9 +93,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let intensity = 1.0 + mouseDown * 1.5 + bass * 0.8;
-  let r = textureSampleLevel(readTexture, u_sampler, rUV + rOffset * intensity, 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, gUV + gOffset * intensity, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, bUV + bOffset * intensity, 0.0).b;
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(rUV + rOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, clamp(gUV + gOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(bUV + bOffset * intensity, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
   var color = vec3<f32>(r, g, b);
 
@@ -117,13 +109,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = color + vec3<f32>(0.5, 0.3, 0.8) * glow * (1.0 + bass * 0.7);
 
   // Mids drive a spectral corona ring expanding from the cursor
-  let ring = exp(-pow(mouseDist * 6.0 - mids * 3.0, 2.0) * 4.0) * mids;
+  let ringDelta = mouseDist * 6.0 - mids * 3.0;
+  let ring = exp(-ringDelta * ringDelta * 4.0) * mids;
   color = color + vec3<f32>(1.0, 0.55, 0.2) * ring * 0.5;
 
   let totalDisp = length(rUV - gUV) + length(gUV - bUV) + length(rOffset) + length(gOffset) + length(bOffset);
   let alpha = clamp(totalDisp * 5.0 + ring * 0.4, 0.0, 1.0);
-
-  let outColor = vec4<f32>(color, alpha);
+  let display = acesToneMap(max(color, vec3<f32>(0.0)));
+  let outColor = vec4<f32>(display, alpha);
   textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
   textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 

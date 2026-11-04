@@ -1,9 +1,9 @@
 // Fireworks Portrait Burst — bright regions detonate
 // Upgraded (Batch 18): fixed mouse coordinate bug, honest luminance depth,
 // one-shot ripple click bursts. Spark physics preserved verbatim.
-// Upgraded: 2026-10-27
-// Ideas: highlight bloom; cooling embers
-// A packing: ACES display RGBA; B: dimmed display/previous-color echo
+// Upgraded: 2026-11-01
+//  Ideas: highlight bloom; cooling embers; catchlight pin; outward highlight bias
+//  A packing: ACES display RGBA; B: dimmed display/previous-color echo
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
@@ -55,6 +55,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bright = smoothstep(thresh*0.5, thresh, lum);
   let dissolveAmt = bright * dissolve * (0.3 + bass*0.2);
   var col = imgCol * (0.55 - dissolveAmt*0.4);
+  // ── Idea 1: catchlight pin — the brightest core stays in the portrait
+  let catchHi = min(max(thresh, 0.5) + 0.16, 0.99);
+  let catchPin = smoothstep(max(thresh, 0.5), catchHi, lum);
+  col += imgCol * catchPin * (0.22 + (1.0 - dissolve) * 0.28);
+  col += vec3<f32>(1.0, 0.98, 0.94) * catchPin * catchPin * (0.35 * (1.0 - dissolve * 0.5));
   var sparkGlow = 0.0;
 
   // --- Auto detonations: 7 probes search for bright cores in the image ---
@@ -68,6 +73,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let birth = floor((time*0.65+seed*1.4)/cycle)*cycle-seed*1.4;
     let age = time-birth; if (age < 0.0 || age > 5.5) { continue; }
     let energy = burstSize * pLum * (0.65+bass*0.7);
+    // ── Idea 2: sparks leave along the highlight, not a perfect circle
+    let gxv = dot(sampleImg(probe + vec2<f32>(0.02, 0.0)) - pCol, lumWeights);
+    let gyv = dot(sampleImg(probe + vec2<f32>(0.0, 0.02)) - pCol, lumWeights);
+    let gLen = length(vec2<f32>(gxv, gyv));
+    let outDir = vec2<f32>(gxv, gyv) / max(gLen, 0.001);
+    let outBias = smoothstep(0.02, 0.12, gLen);
     let bAge = max(0.0, age-0.8);
     if (bAge > 0.0 && bAge < 4.5) {
       let center = probe + vec2<f32>(0.0, 0.3);
@@ -83,7 +94,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let js = hash1(si*71.0+f32(j)*3.1);
         let ang = f32(j)/f32(n)*TAU + (js-0.5)*0.8;
         let spd = (0.3+js*0.5)*energy;
-        let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*spd, bAge, 0.9);
+        let vel = vec2<f32>(cos(ang),sin(ang))*spd + outDir * spd * 0.45 * outBias;
+        let sp = sparkPos(center, vel, bAge, 0.9);
         let cooling = smoothstep(0.1, 2.4, bAge);
         var sc = mix(pCol, ember, warmth*(0.25+cooling*0.55));
         sc = mix(sc, vec3<f32>(1.0,0.95,0.85), smoothstep(0.5,0.0,bAge*0.3));

@@ -4,28 +4,12 @@
 //  Features: mouse-driven, audio-reactive, phase-field-crystal,
 //            hopper-crystals, thin-film-oxide-iridescence, semantic-alpha, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-11-01
+//  Ideas: hopper staircase from latent-heat isotherms; per-terrace oxide thickness; facet-locked glint
+//  A packing: raw sim state (phase, temp, orientation, impurity); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -214,12 +198,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   displayColor = mix(displayColor, interfaceColor, interfaceMask * 0.6);
   displayColor = mix(displayColor, vec3<f32>(0.85, 0.65, 0.45), impurity * 0.35);
 
+  // ── Idea 1: hopper staircase from isotherms ───────────────────────
+  // Inside the solid `phase` is ~1, so the ledges only lived on the interface.
+  // The latent-heat wake in `temp` (already averaged with the four loaded
+  // neighbours) steps inward behind the front like a hopper's recessed
+  // terraces. Step count rides Color Frequency (its existing "ledge" role).
+  // (Measured on SwiftShader: the solid's wake spans only ~0.15 in temp, hence
+  // the gain; ~6 steps at the default Color Frequency.)
+  let tWake = (temp * 4.0 + left.g + right.g + down.g + up.g) * 0.125;
+  let terraceCoord = max(tWake + 0.4, 0.0) * max(colorFreq * 0.8, 2.0) * 6.0;
+  let terraceId = floor(terraceCoord);
+  let terraceFrac = fract(terraceCoord);
+  let solidMask = smoothstep(0.6, 0.95, phase);
+  let riserLit = exp(-terraceFrac * 18.0);
+  let riserShade = smoothstep(0.82, 1.0, terraceFrac);
+  displayColor = displayColor * (1.0 - solidMask * riserShade * 0.35);
+  displayColor = displayColor + vec3<f32>(1.0, 0.96, 0.88) * solidMask * riserLit * 0.22;
+
   // Bismuth oxide thin-film rainbow iridescence
   let cosTheta = clamp(1.0 - length((uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0)) * 0.6, 0.0, 1.0);
   let F0_bismuth = vec3<f32>(0.82, 0.86, 0.92);
   let fresnel = fresnelMetal(cosTheta, F0_bismuth);
 
-  let oxideThickness = (phase * colorFreq + time * 0.15 + treble * 0.4) * TAU;
+  // ── Idea 2: per-terrace oxide thickness ──────────────────────────
+  // Each terrace is a plateau with its own oxide thickness, so the existing
+  // oxide palette jumps colour at every riser instead of sweeping the crystal.
+  let oxideThickness = (phase * colorFreq + time * 0.15 + treble * 0.4 + terraceId * 0.37 * solidMask) * TAU;
   let rainbowOxide = vec3<f32>(
     0.5 + 0.5 * cos(oxideThickness + 0.0),
     0.5 + 0.5 * cos(oxideThickness + 2.094),
@@ -232,12 +236,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let stepEdge = abs(gradLen) * 3.0;
   displayColor += vec3<f32>(1.0, 0.98, 0.92) * (stepEdge * phase * 0.5);
 
+  // ── Idea 3: facet-locked glint ───────────────────────────────────
+  // Where the interface normal lies on a crystal axis (the same cos(4θ) term
+  // as anisoStep) the ledge is a flat facet and mirrors a slowly turning light.
+  let facetAlign = max(cos(4.0 * (gradAngle - orientation)), 0.0);
+  let facetFlat = facetAlign * facetAlign * facetAlign * facetAlign;
+  let lightSweep = 0.5 + 0.5 * cos(orientation * 2.0 - time * 0.6 + bass * 1.5);
+  let ifaceStrength = smoothstep(0.01, 0.06, gradLen) * smoothstep(0.1, 0.4, phase);
+  let facetGlint = facetFlat * lightSweep * lightSweep * ifaceStrength;
+  displayColor = displayColor + vec3<f32>(0.85, 0.95, 1.0) * facetGlint * 0.55;
+
   // ACES Tonemap
   let finalRGB = aces(displayColor);
 
   // Semantic alpha: metallic solid presence + liquid transparency
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let alpha = clamp(mix(src.a, 0.45 + phase * 0.55, 0.8) + interfaceMask * 0.15, 0.35, 1.0);
+  let alpha = clamp(mix(src.a, 0.45 + phase * 0.55, 0.8) + interfaceMask * 0.15 + facetGlint * 0.1, 0.35, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(writeTexture, coord, finalPixel);

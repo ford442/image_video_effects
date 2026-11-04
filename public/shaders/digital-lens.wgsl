@@ -3,6 +3,9 @@
 //  Category: image
 //  Features: sprung gravity-well focus, held boost, capped ripples,
 //            barrel-distortion, chromatic-dispersion, temporal-feedback
+//  Upgraded: 2026-11-01
+//  Ideas: astigmatic field softening (sagittal radial smear + weaker tangential, growing with r^2 and |k1|); internal-reflection ghosts through the focus axis (lens-flare ghost chain)
+//  A packing: [bassEnv, display colour.rgb] (HEAD)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -196,6 +199,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g,
     textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
   );
+
+  // ── Idea 1: astigmatic field softening. Real glass is sharpest on-axis and goes soft toward the
+  // corners, smearing along the radius (sagittal) before across it. Taps widen with r^2 and with the
+  // lens strength |k1|; on-axis the offsets vanish, so the centre keeps HEAD's sharpness.
+  let tanUV = vec2<f32>(-radialUV.y, radialUV.x);
+  let astig = r * r * (0.012 + abs(k1) * 0.02);
+  let gRGB = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).rgb;
+  let sagP = textureSampleLevel(readTexture, u_sampler, clamp(gUV + radialUV * astig, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let sagM = textureSampleLevel(readTexture, u_sampler, clamp(gUV - radialUV * astig, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let tanP = textureSampleLevel(readTexture, u_sampler, clamp(gUV + tanUV * astig * 0.4, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let tanM = textureSampleLevel(readTexture, u_sampler, clamp(gUV - tanUV * astig * 0.4, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  // Second difference around the green tap, added to the per-channel colour so the R/B fringe survives.
+  let astigDelta = (sagP + sagM - 2.0 * gRGB) * 0.35 + (tanP + tanM - 2.0 * gRGB) * 0.075;
+  color += astigDelta * clamp(r * r * 3.0, 0.0, 0.85) * 1.6;
+
+  // ── Idea 2: internal-reflection ghosts. Light bouncing between lens elements re-images bright
+  // pixels on the far side of the optical axis (here the sprung focus point), shrunk and tinted per
+  // bounce, strongest near the axis and gone toward the frame edge.
+  let axisOff = (uv01 - focusPoint) * vec2<f32>(aspect, 1.0);
+  let axisFade = 1.0 - smoothstep(0.35, 0.95, length(axisOff));
+  var ghosts = vec3<f32>(0.0);
+  let ghostS = array<f32, 2>(0.45, 1.25);
+  let ghostTint = array<vec3<f32>, 2>(vec3<f32>(0.55, 0.8, 1.0), vec3<f32>(1.0, 0.7, 0.45));
+  for (var gi = 0u; gi < 2u; gi = gi + 1u) {
+    let gUVs = focusPoint + (focusPoint - uv01) * ghostS[gi];
+    let inFrame = smoothstep(0.0, 0.08, gUVs.x) * smoothstep(1.0, 0.92, gUVs.x) * smoothstep(0.0, 0.08, gUVs.y) * smoothstep(1.0, 0.92, gUVs.y);
+    let gSample = textureSampleLevel(readTexture, u_sampler, clamp(gUVs, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let hot = smoothstep(0.55, 0.95, luminance(gSample));
+    ghosts += gSample * ghostTint[gi] * hot * inFrame;
+  }
+  color += ghosts * axisFade * (0.10 + p2 * 0.3) * (1.0 + treble * 0.5 + bassEnv * 0.4);
 
   // ── Film grain + treble sparkle ──────────────────────────────────
   let grainPhase = hash22(uv01 * 800.0).x * TAU;

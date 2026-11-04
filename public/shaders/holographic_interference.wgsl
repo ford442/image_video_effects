@@ -1,9 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Holographic Interference v2.1 — Visualist upgrade (2026-07-22)
+//  Holographic Interference
 //  Category: generative
 //  Features: generative, laser-interference, animated-speckle, thin-film-tint,
 //            mouse-parallax, depth-aware, audio-reactive, aces, upgraded-rgba
-//  Complexity: Very High
+//  Complexity: High
+//  Upgraded: 2026-07-22, 2026-11-01
+//  Ideas: visibility envelope versus path difference; wavenumber speckle
+//  A packing: ACES display RGBA (C is not read)
 //  Chunks From: holographic_interference, interference-sim, aces-tonemap
 //  Upgrade notes:
 //    - Animated laser speckle grain (treble-scaled "boiling" cell hash)
@@ -12,26 +15,7 @@
 //    - depthWeight slider now drives parallax/attenuation strength
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -120,7 +104,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var interference = 0.0;
   var speckleCoherence = 0.0;
   var grainAccum = 0.0;
-  let sourceCount = 3 + i32(plasmaBuffer[(u32(fract(time * 0.1) * 8.0) % 8u) + 1u].x * 2.0);
+  var pathAbs = 0.0;
+  // Three sources. The old count added a read of plasmaBuffer[1..], which is empty.
+  let sourceCount = 3;
+  // ── Idea 2: wavenumber speckle ────────────────────────────────────
+  // Wave Scale is the wavenumber, so the grain pitch moves with the fringes.
+  let grainScale = 160.0 + waveScale * 110.0;
   for (var i = 0; i < sourceCount; i = i + 1) {
     let fi = f32(i);
     let srcAngle = fi * PI * 0.67 + time * 0.12;
@@ -135,17 +124,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Phase accumulation from interference
     let phaseAccum = objPhase - refPhase + time * 0.3;
     interference = interference + cos(phaseAccum);
+    pathAbs = pathAbs + abs(objPath - abs(refPath));
     // Speckle from coherent source interference (static component)
-    speckleCoherence = speckleCoherence + speckleNoise(uv + fi * 4.1, 600.0 + fi * 300.0);
+    speckleCoherence = speckleCoherence + speckleNoise(uv + fi * 4.1, grainScale * (1.5 + fi * 0.35));
     // Animated grain per source at slightly different scales/time offsets
-    grainAccum = grainAccum + animatedSpeckle(uv, 380.0 + fi * 260.0, time + fi * 7.7, treble);
+    grainAccum = grainAccum + animatedSpeckle(uv, grainScale * (0.8 + fi * 0.25), time + fi * 7.7, treble);
   }
   interference = interference / f32(sourceCount);
   speckleCoherence = speckleCoherence / f32(sourceCount);
   grainAccum = grainAccum / f32(sourceCount);
+  pathAbs = pathAbs / f32(sourceCount);
+
+  // ── Idea 1: visibility envelope ───────────────────────────────────
+  // Fringes wash out as the object path and the reference path diverge.
+  // Film Thickness sets how long that difference can be.
+  let cohLen = 0.35 + filmThickness * 0.9;
+  let visibility = exp(-(pathAbs * pathAbs) / max(cohLen * cohLen * 4.0, 0.04));
 
   // Interference contrast envelope
-  let contrast = 0.5 + 0.5 * interference;
+  let contrast = 0.5 + 0.5 * interference * visibility;
 
   // Chromatic dispersion: different wavelengths have different fringe spacing
   let rPhase = contrast * (1.0 + chromaAberr) * 12.0;

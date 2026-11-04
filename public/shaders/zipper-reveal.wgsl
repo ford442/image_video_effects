@@ -5,8 +5,8 @@
 //  Complexity: High
 //  Chunks From: zipper-reveal
 //  Created: 2026-05-30
-//  Upgraded: 2026-09-11
-//  Ideas: slider puller at zipper head; staggered L/R teeth
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: slider puller at zipper head; staggered L/R teeth; binding stitch; lip shadow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -104,7 +104,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Under-fabric
   let underPattern = 0.5 + 0.5 * sin(local.y * 100.0 + time * 5.0);
-  let underColor = mix(vec3<f32>(0.03, 0.02, 0.05), vec3<f32>(0.2, 0.04, 0.25), underPattern);
+  var underColor = mix(vec3<f32>(0.03, 0.02, 0.05), vec3<f32>(0.2, 0.04, 0.25), underPattern);
+  // ── Idea 2: lip shadow — the opened slot darkens against each fabric edge ──
+  let lipDist = max(halfGap - abs(local.x), 0.0);
+  let lipShadow = exp(-lipDist / max(toothSize * 1.6, 0.002)) * openMask;
+  underColor = underColor * (1.0 - lipShadow * 0.55);
 
   // Fabric edge confidence
   let edgeConf = smoothstep(0.0, toothSize * 2.0, abs(abs(local.x) - halfGap));
@@ -115,6 +119,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pullerMetal = vec3<f32>(0.75, 0.72, 0.68) + spec * 0.4;
   finalColor = mix(finalColor, pullerMetal, puller * openMask);
 
+  // ── Idea 1: binding stitch — dashed thread just outside the teeth ──
+  let stitchX = abs(abs(local.x) - (halfGap + toothSize * 1.85));
+  let stitchLine = 1.0 - smoothstep(0.0, max(toothSize * 0.28, 0.0008), stitchX);
+  let stitchDash = smoothstep(0.38, 0.62, fract(local.y / toothPitch + 0.5));
+  let stitch = stitchLine * stitchDash * (1.0 - puller);
+  let thread = vec3<f32>(0.62, 0.48, 0.32) * (0.75 + weave * 0.35);
+  finalColor = mix(finalColor, thread, stitch * 0.88);
+
   // ACES tone mapping
   finalColor = aces_tone_map(finalColor);
 
@@ -122,6 +134,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(toothMask * 0.9 + edgeConf * 0.4 * openMask + depth * 0.3, 0.1, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth + toothMask * 0.1, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth + toothMask * 0.1 + stitch * 0.04, 0.0, 1.0), 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 }

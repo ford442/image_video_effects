@@ -2,7 +2,7 @@
   "id": "holographic-failure-iridescence",
   "name": "Holographic Failure Iridescence",
   "url": "shaders/holographic-failure-iridescence.wgsl",
-  "description": "Simulated hologram projection failure merged with physical thin-film interference iridescence. Glitching phase carriers, block tearing, and laser flicker overlay soap-bubble spectral colors driven by depth, viewing angle, and audio dynamics.",
+  "description": "Failing hologram over thin-film colour: glitch rows, tears, and laser flicker. Glitch rows dewet into holes with a bright rim, and a second photo sample replays one step along the carrier.",
   "tags": [
     "hologram",
     "iridescence",
@@ -22,7 +22,8 @@
     "audio-reactive",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba"
   ],
   "params": [
     {

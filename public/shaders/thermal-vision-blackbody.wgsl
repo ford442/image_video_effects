@@ -3,8 +3,8 @@
 //  Category: advanced-hybrid
 //  Features: blackbody-radiation, thermal-vision, mouse-driven, HDR, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-15
-//  Ideas: NUC/scanline banding; hot-object lag stored in C.a
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: NUC/scanline banding; hot-object lag stored in C.a; narcissus cold spot; well overflow on the glow
 //  A packing: raw thermal RGB + normalized T
 // ═══════════════════════════════════════════════════════════════════
 //  Physically-correct thermal vision using blackbody radiation.
@@ -13,26 +13,7 @@
 //  Mouse acts as a local heat source with configurable intensity.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
@@ -120,8 +101,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lagT = max(temperature, prevT * 0.94);
     temperature = mix(temperature, lagT, 0.65);
     temperature = clamp(temperature, 800.0, 15000.0);
+    let storedT = temperature;
 
-    var thermalColor = blackbodyColor(temperature);
+    // ── Idea 3: narcissus. Optical cold hole; A.a keeps storedT.
+    let narcR = length((uv - 0.5) * vec2<f32>(aspect, 1.0));
+    let narcAmp = 0.07 + 0.06 * clamp((contrast - 0.2) / 4.8, 0.0, 1.0);
+    let narcissus = exp(-narcR * narcR * 28.0) * narcAmp;
+    let viewT = clamp(storedT * (1.0 - narcissus), 800.0, 15000.0);
+
+    var thermalColor = blackbodyColor(viewT);
 
     let glowRadius = 0.03;
     var glowAccum = vec3<f32>(0.0);
@@ -135,17 +123,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         glowAccum += blackbodyColor(sTemp);
     }
     glowAccum /= f32(glowSamples);
-    thermalColor = mix(thermalColor, glowAccum, 0.3);
+    // ── Idea 4: well overflow. The glow mix follows saturation of storedT.
+    let well = smoothstep(0.72, 0.98, clamp((storedT - tempRangeLow) / max(tempRangeHigh - tempRangeLow, 1.0), 0.0, 1.0));
+    thermalColor = mix(thermalColor, glowAccum, 0.12 + 0.4 * well);
 
     let displayColor = toneMapACES(thermalColor);
     let noise = hash(uv + fract(time * 0.1)) * 0.03 - 0.015;
     let finalColor = displayColor + noise;
 
-    let heatAmt = clamp((temperature - tempRangeLow) / max(tempRangeHigh - tempRangeLow, 1.0), 0.0, 1.0);
+    let heatAmt = clamp((viewT - tempRangeLow) / max(tempRangeHigh - tempRangeLow, 1.0), 0.0, 1.0);
     let alpha = clamp(0.42 + heatAmt * 0.48 + mouseHeat * 0.12 + mids * 0.04, 0.0, 1.0);
 
     textureStore(writeTexture, gid.xy, vec4<f32>(finalColor, alpha));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(thermalColor, temperature / 15000.0));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(thermalColor, storedT / 15000.0));
 
     let depth = textureLoad(readDepthTexture, coord, 0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

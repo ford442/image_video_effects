@@ -4,6 +4,9 @@
 //  Features: advanced-hybrid, interference-patterns, holography,
 //            phase-coloring, audio-reactive, mouse-driven, exact-feedback
 //  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: equal-phase contours; coherence envelope versus path difference
+//  A packing: pre-ACES linear display RGBA; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 //  Simulated optical hologram with physical interference fringes.
 //  Reference and object laser wavefronts interfere across depth and
@@ -11,26 +14,8 @@
 //  speckle coherence and parallax depth reconstruction.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, zw=Resolution
-    zoom_config: vec4<f32>,  // x=Time, yz=MouseUV, w=MouseDown
-    zoom_params: vec4<f32>,  // x=FringeDensity, y=Coherence, z=ReconAngle, w=Saturation
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FringeDensity, y=Coherence, z=ReconAngle, w=Saturation
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -60,11 +45,11 @@ fn speckleNoise(uv: vec2<f32>, coherence: f32, time: f32) -> f32 {
     return s * 0.25;
 }
 
-fn interferencePattern(uv: vec2<f32>, depth: f32, fringeDensity: f32, angle: f32, distortion: f32) -> f32 {
+fn interferencePattern(uv: vec2<f32>, depth: f32, fringeDensity: f32, angle: f32, distortion: f32) -> vec2<f32> {
     let objectPhase = depth * fringeDensity * 12.0 + distortion;
     let refPhase = (uv.x * cos(angle) + uv.y * sin(angle)) * fringeDensity * 45.0;
-    let phaseDiff = objectPhase + refPhase;
-    return 0.5 + 0.5 * cos(phaseDiff);
+    // x = the same cosine the plate always drew. y = object path minus reference path.
+    return vec2<f32>(0.5 + 0.5 * cos(objectPhase + refPhase), objectPhase - refPhase);
 }
 
 fn spectralReconstruct(totalPhase: f32, intensity: f32, satVal: f32) -> vec3<f32> {
@@ -97,38 +82,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isMouseDown = u.zoom_config.w > 0.5;
     let mouseUV = u.zoom_config.yz;
 
-    // Persistent single-writer state management (spring-damper & click edge)
-    if (global_id.x == 0u && global_id.y == 0u) {
-        var targetPos = mouseUV;
-        if (!isMouseDown && extraBuffer[137] < 0.5) {
-            targetPos = vec2<f32>(0.5 + 0.2 * cos(time * 0.7), 0.5 + 0.2 * sin(time * 0.9));
-        }
-
-        var curP = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        if (curP.x == 0.0 && curP.y == 0.0) { curP = mouseUV; }
-
-        var pVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        let diff = targetPos - curP;
-        pVel = pVel + diff * 0.18;
-        pVel = pVel * 0.82;
-        curP = curP + pVel;
-
-        extraBuffer[133] = clamp(curP.x, 0.0, 1.0);
-        extraBuffer[134] = clamp(curP.y, 0.0, 1.0);
-        extraBuffer[135] = clamp(pVel.x, -0.05, 0.05);
-        extraBuffer[136] = clamp(pVel.y, -0.05, 0.05);
-
-        let prevDown = extraBuffer[137];
-        var rippleImpulse = extraBuffer[138] * 0.94;
-        if (isMouseDown && prevDown < 0.5) {
-            rippleImpulse = 1.0;
-        }
-        extraBuffer[137] = select(0.0, 1.0, isMouseDown);
-        extraBuffer[138] = rippleImpulse;
-    }
-
-    let smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    let clickImpulse = extraBuffer[138];
+    // Live pointer. The extraBuffer spring was cleared by the host every frame.
+    let smoothMouse = mouseUV;
+    let clickImpulse = select(0.0, 1.0, isMouseDown);
 
     let uv = (vec2<f32>(pixel) + 0.5) / res;
     let aspect = res.x / res.y;
@@ -172,8 +128,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rippleDistortion = rippleDistortion + holdEffect * 0.25;
 
     // Hologram interference & spectral reconstruction
-    let interference = interferencePattern(uv, depth, fringeDensity, reconAngle, rippleDistortion);
-    let phase = acos(clamp(interference * 2.0 - 1.0, -1.0, 1.0));
+    let pattern = interferencePattern(uv, depth, fringeDensity, reconAngle, rippleDistortion);
+    let interference = pattern.x;
+    // ── Idea 2: coherence envelope ────────────────────────────────────
+    // Path difference is in radians of the carrier. Coherence Length is how
+    // far that difference can grow before the fringes wash out. Speckle
+    // scale below is unchanged.
+    let pathNorm = pattern.y / max(fringeDensity, 1.0);
+    let cohLen = mix(1.6, 28.0, coherence);
+    let envelope = exp(-(pathNorm * pathNorm) / max(cohLen * cohLen, 0.25));
+    let interferenceVis = mix(0.5, interference, envelope);
+    let phase = acos(clamp(interferenceVis * 2.0 - 1.0, -1.0, 1.0));
     let reconPhase = (uv.x * cos(reconAngle + 0.5) + uv.y * sin(reconAngle + 0.5)) * 24.0;
     let totalPhase = phase + reconPhase + rippleDistortion * 4.0;
 
@@ -195,15 +160,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = mix(sourceColor * 0.25, hologram + fringeColor * 0.3, 0.75);
     color = mix(color, parallaxColor * holoSpectral, clamp(depth * 0.4 + holdEffect * 0.3, 0.0, 1.0));
 
-    // Exact temporal feedback from dataTextureC
+    // ── Idea 1: equal-phase contours ──────────────────────────────────
+    // The dark line sits where the cosine crosses a half-fringe.
+    let contour = smoothstep(0.045, 0.0, abs(interference - 0.5));
+    color = mix(color, color * 0.12, contour * 0.7);
+
+    // Exact temporal feedback from dataTextureC (linear, same space as A).
     let prev = textureLoad(dataTextureC, pixel, 0).rgb;
-    color = mix(color, prev, 0.12 + mids * 0.08);
+    color = max(mix(color, prev, 0.12 + mids * 0.08), vec3<f32>(0.0));
 
     let finalColor = acesToneMap(color * (1.0 + treble * 0.15));
-    let alpha = clamp(luma * 0.6 + fringes * 0.3 + holdEffect * 0.2 + clickImpulse * 0.2, 0.15, 0.98);
-    let outputRGBA = vec4<f32>(finalColor, alpha);
+    let alpha = clamp(luma * 0.6 + fringes * 0.3 + holdEffect * 0.2 + clickImpulse * 0.2 + contour * 0.15, 0.15, 0.98);
 
-    textureStore(writeTexture, pixel, outputRGBA);
-    textureStore(dataTextureA, pixel, outputRGBA);
+    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

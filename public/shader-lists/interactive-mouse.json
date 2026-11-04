@@ -49,7 +49,8 @@
     "name": "ASCII Decode",
     "url": "shaders/ascii-decode.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "description": "Renders the view as a digital ASCII matrix. Mouse movement acts as a decoding lens.",
     "params": [
@@ -1171,7 +1172,7 @@
     "id": "crystal-freeze",
     "name": "Crystal Freeze",
     "url": "shaders/crystal-freeze.wgsl",
-    "description": "Mouse freezes the image into growing ice crystals with physical light transmission. Features Voronoi-based crystal cells with Fresnel reflection, path absorption, and purity-based scattering.",
+    "description": "Mouse freezes the image into growing ice crystals with physical light transmission. Features Voronoi-based crystal cells with Fresnel reflection, path absorption, purity-based scattering, hexagonal-axis frost creep, age-annealed rime and grain-boundary hoar.",
     "params": [
       {
         "id": "decay",
@@ -1859,7 +1860,7 @@
       "temporal",
       "upgraded-rgba"
     ],
-    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
+    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Linear scroll RGBA in A; ACES on the display.",
     "params": [
       {
         "name": "Scan Speed",
@@ -3266,14 +3267,19 @@
     "url": "shaders/glass-wall.wgsl",
     "features": [
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "chromatic-dispersion",
+      "caustics"
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
     "name": "Glass Wall",
-    "description": "Physical glass refraction with single-sample spectral tint, depth-aware mortar edges, and alpha translucency from refraction strength and glass thickness.",
+    "description": "Wavy hammered glass over the image: height-field normals refract with per-channel dispersion, spectral tint, Beer-Lambert thickness and Fresnel; convex crests focus warm caustic filaments. A held pointer bulges the glass and click ripples now travel (they were dead). Alpha from thickness and pointer influence.",
     "params": [
       {
         "id": "refraction_strength",
@@ -3568,7 +3574,7 @@
     "name": "Holographic Prism",
     "category": "interactive-mouse",
     "url": "shaders/holographic-prism.wgsl",
-    "description": "Triangular prism dispersion with Snell's law refraction, wavelength-accurate rainbow spectrum, holographic interference fringes and speckle. Bass rotates prism, mouse controls incident angle, depth drives parallax.",
+    "description": "A prism under the pointer. Snell refraction, facet count, and wavelength caustics stay. Dispersion follows Cauchy's n(λ), and facets past the critical angle flash instead of refracting.",
     "params": [
       {
         "id": "facets",
@@ -3661,7 +3667,9 @@
       "multi-tap-temporal",
       "lens-distortion",
       "motion-trails",
-      "audio-reverb"
+      "audio-reverb",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -5191,7 +5199,7 @@
     "id": "lighthouse-reveal",
     "name": "Lighthouse Reveal",
     "url": "shaders/lighthouse-reveal.wgsl",
-    "description": "A rotating lighthouse beam sweeps out from the mouse position and reveals the image in a dark, foggy scene. The lamp is a 3-panel Fresnel bull's-eye lens: panel bands run along the shaft and a group of flashes fires as each panel faces the viewer (bass strengthens the flashes and the reveal). Near depth along the beam blocks it, casting radial shadow streaks down the shaft.",
+    "description": "A rotating lighthouse beam sweeps out from the mouse position and reveals the image in a dark, foggy scene. The lamp is a 3-panel Fresnel bull's-eye lens: panel bands run along the shaft and a group of flashes fires as each panel faces the viewer (bass strengthens the flashes and the reveal). Near depth along the beam blocks it, casting radial shadow streaks down the shaft. The shaft brightens as it swings toward the viewer (forward scatter) and fades through dense mist.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -6486,7 +6494,8 @@
     "features": [
       "mouse-driven",
       "chromatic-aberration",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "description": "The mouse drives a smooth displacement field with spectral tinting via mix and alpha translucency blending. Click ripples launch shockwaves. Audio-reactive bass pulses the entire field.",
     "params": [
@@ -8293,6 +8302,7 @@
       "stateful-simulation",
       "exact-history",
       "aces-tone-map",
+      "upgraded-rgba",
       "three-band-audio",
       "held-pointer",
       "click-reactive",
@@ -8483,7 +8493,7 @@
     "id": "particle-swarm",
     "name": "Particle Swarm",
     "url": "shaders/particle-swarm.wgsl",
-    "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion and separation, so the field forms travelling flocks instead of N independent springs. Per-particle FFT bands drive turbulence and the attractor is spring-damped through extraBuffer[133..136]. Fixes a missing bounds guard and a degenerate Henyey-Greenstein term whose cosine was dotted against vec2(0,0), making the phase function a constant.",
+    "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion, separation and alignment, so the field forms travelling flocks that move together. Per-particle FFT bands drive turbulence, the attractor is spring-damped through extraBuffer[133..136], and fast particles smear the plate along their travel.",
     "params": [
       {
         "id": "stiffness",
@@ -9754,12 +9764,13 @@
     "id": "radial-hex-lens",
     "name": "Radial Hex Lens",
     "url": "shaders/radial-hex-lens.wgsl",
-    "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. FBM warp, hex bokeh, depth-aware fog and semantic alpha for slot-chain compositing.",
+    "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. Cells aligned with the cursor go dark (pseudopupil) and the fringing cells glint with a hashed gold/green tapetum eyeshine. FBM warp, hex bokeh, depth-aware fog and semantic alpha.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "hex-bokeh",
+      "pseudopupil",
       "upgraded-rgba"
     ],
     "workgroup_size": [

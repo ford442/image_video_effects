@@ -364,7 +364,7 @@
     "id": "anamorphic-caustic-flare",
     "name": "Anamorphic Caustic Flare",
     "url": "shaders/anamorphic-caustic-flare.wgsl",
-    "description": "Cinematic anamorphic lens flare combined with living water caustics that refract the source footage along the caustic slope. Caustic peaks are squeezed into short horizontal glints whose length follows Caustic Stretch, matching the flare's anamorphic look. Bass stretches the flare and glints, treble brightens the caustics, and clicks fire local horizontal flare bursts. Mouse tilts the virtual lens.",
+    "description": "Cinematic anamorphic lens flare combined with living water caustics that refract the source footage along the caustic slope. Caustic peaks are squeezed into short horizontal glints whose length follows Caustic Stretch, matching the flare's anamorphic look. Bass stretches the flare and glints, treble brightens the caustics, and clicks fire local horizontal flare bursts. Mouse tilts the virtual lens. Bright highlights bloom into tall anamorphic oval bokeh and the caustic ridges split into red/blue spectral fringes.",
     "tags": [
       "anamorphic",
       "caustic",
@@ -1150,7 +1150,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1208,7 +1210,7 @@
     "name": "Holographic Flicker",
     "category": "visual-effects",
     "url": "shaders/holographic-flicker.wgsl",
-    "description": "Unstable laser hologram: mode-hopping laser lines with matching fringes, per-channel phosphor trails, vertical-hold slips and a rotating hex emblem.",
+    "description": "Unstable laser hologram: mode-hopping lines, per-channel phosphor trails, vertical-hold slips, and a hex emblem. Speckle grain follows the hopped wavelength, and the slow red phosphor smears a few pixels back along the scan.",
     "params": [
       {
         "id": "flickerSpeed",
@@ -1265,7 +1267,7 @@
     "id": "holographic-projection-gpt52",
     "name": "Holo Projection Prism gpt52",
     "url": "shaders/holographic-projection-gpt52.wgsl",
-    "description": "Prismatic volume hologram with Bragg diffraction physics, stabilized focus, scan interference, and spectral tinting.",
+    "description": "Volume hologram: Bragg sinc per wavelength, a thin-film order, scan jitter, and a Pepper's ghost. Brightness oscillates through scene depth, and the sample walks along the diffracted ray where the sinc is efficient.",
     "features": [
       "mouse-driven",
       "glitch",
@@ -1322,7 +1324,7 @@
     "id": "holographic-projection",
     "name": "Holo Projector",
     "url": "shaders/holographic-projection.wgsl",
-    "description": "Hologram projection with laser speckle, rainbow Bragg colour that shifts with viewing angle, and a rolling refresh band. Move the mouse to focus and stabilize it.",
+    "description": "Plate projector with object-locked speckle, Bragg colour versus viewing angle, and a rolling refresh band. The undiffracted photo leaks through dark fringes, and the reconstruction holds only near the cursor's vertical angle.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1436,7 +1438,7 @@
     "id": "hyper-space-jump",
     "name": "Hyper Space Jump",
     "url": "shaders/hyper-space-jump.wgsl",
-    "description": "Continuous relativistic streak integration combines a Doppler palette, helical flight, a movable vanishing point, held acceleration, and age-bounded jump shocks.",
+    "description": "Radial streak tunnel toward the pointer. Jump Strength, Streak Decay, Chromatic Spread, and Vignette Size drive the blur. The rim shifts blue, and the previous frame leaves a short afterimage.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1444,7 +1446,8 @@
       "doppler-color",
       "helical-motion",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "hyperspace",
@@ -2421,7 +2424,8 @@
     "description": "Multi-slit temporal scan with curved parametric slits, polar drift, and time-warp color tinting.",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

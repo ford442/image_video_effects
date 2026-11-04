@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: multi-species-ecosystem, seasonal-cycles, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: ecotone ridge where s1≈s2; toxin stain from stored A
+//  Upgraded: 2026-09-12, 2026-10-31
+//  Ideas: ecotone ridge where s1≈s2; toxin stain from stored A; chemotactic foraging drift; drought refugia and bloom germination
 //  A packing: raw (s1, s2, resource, toxin)
 // ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
@@ -17,26 +17,7 @@
 //  Updated: 2026-05-31 — Grok (real ecosystem with audio seasons + keystone dynamics)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -44,8 +25,19 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
         vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// A.r of the corner texel marks C as this shader's own state (f16-exact, never a density).
+// Without it (shader switched in after start, or after another shader's history) C is foreign
+// and reads as an empty field that re-seeds; `time < 0.1` alone never fires mid-session.
+const STATE_SENTINEL: f32 = -0.6875;
+var<private> stateOwned: bool = false;
+
+// Exact history load. Foreign history reads as an empty field.
 fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
-    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  if (!stateOwned) { return vec4<f32>(0.0, 0.0, 0.5, 0.0); }
+  let q = clamp(p, vec2<i32>(0), dims - vec2<i32>(1));
+  var v = textureLoad(dataTextureC, q, 0);
+  if (q.x == 0 && q.y == 0) { v.r = 0.0; }
+  return v;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -54,10 +46,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
-    let ps = 1.0 / res;
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
     let dims = vec2<i32>(res);
     let time = u.config.x;
+
+    stateOwned = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).r == STATE_SENTINEL;
 
     // === AUDIO SEASONS (plasmaBuffer as climate) ===
     let bass = plasmaBuffer[0].x;
@@ -78,8 +71,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var resourceVal = prevState.b;
     var toxin = prevState.a;
 
-    // Seed on first frame
-    if (time < 0.1) {
+    // Seed on first frame, or whenever history is not ours (shader switched in later)
+    if (time < 0.1 || !stateOwned) {
         s1 = 0.0;
         s2 = 0.0;
         resourceVal = 0.5;
@@ -122,7 +115,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Volatile seasons add chaotic diffusion variance
     let volatileFactor = 1.0 + seasonVolatile * 0.6;
-    let dt = 0.48;
 
     // === EVOLVING ECOSYSTEM DYNAMICS (birth, competition, extinction) ===
     // Species consume resources to grow — but only above a small birth threshold
@@ -151,6 +143,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     s1 += food1 - competition - toxinDamage + lapS1 * diffusionRate;
     s2 += food2 - competition - toxinDamage + lapS2 * diffusionRate * 0.86;
 
+    // ── Idea 3: chemotactic foraging drift along ∇resource - 0.5·∇toxin ──
+    let chemoGrad = vec2<f32>(
+        (right.b - left.b) - 0.5 * (right.a - left.a),
+        (up.b - down.b) - 0.5 * (up.a - down.a)
+    );
+    let upS1x = select(left.r, right.r, chemoGrad.x > 0.0);
+    let upS1y = select(down.r, up.r, chemoGrad.y > 0.0);
+    let upS2x = select(left.g, right.g, chemoGrad.x > 0.0);
+    let upS2y = select(down.g, up.g, chemoGrad.y > 0.0);
+    let chemoStep = diffusionRate * 0.45;
+    s1 += ((upS1x - s1) * abs(chemoGrad.x) + (upS1y - s1) * abs(chemoGrad.y)) * chemoStep * s1;
+    s2 += ((upS2x - s2) * abs(chemoGrad.x) + (upS2y - s2) * abs(chemoGrad.y)) * chemoStep * 0.85 * s2;
+
     // Toxin dynamics — lingers longer in harsh seasons
     toxin += (toxinProduction1 + toxinProduction2) * toxinStrength - toxin * (0.009 + seasonHarsh * 0.01);
     toxin += lapToxin * 0.07;
@@ -160,6 +165,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let seasonalDeath = 1.0 - deathRate;
     s1 *= seasonalDeath;
     s2 *= seasonalDeath;
+
+    // ── Idea 4: drought refugia & bloom germination in fertile low-toxin pockets ──
+    let refugium = smoothstep(0.45, 0.72, resourceVal) * (1.0 - smoothstep(0.08, 0.26, toxin));
+    let cystFloor = birthThreshold * 1.15 * refugium;
+    s1 = select(s1, max(s1, cystFloor), prevState.r > birthThreshold * 0.5);
+    s2 = select(s2, max(s2, cystFloor), prevState.g > birthThreshold * 0.5);
+    let germinationSurge = refugium * seasonBloom * 0.018;
+    s1 += germinationSurge * step(birthThreshold * 0.5, s1);
+    s2 += germinationSurge * 0.9 * step(birthThreshold * 0.5, s2);
 
     // Clamp
     s1 = clamp(s1, 0.0, 2.0);
@@ -208,9 +222,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     s1 = clamp(s1, 0.0, 2.5);
     s2 = clamp(s2, 0.0, 2.5);
+    resourceVal = clamp(resourceVal, 0.0, 2.0);
 
     // === STORE STATE ===
-    textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resourceVal, toxin));
+    let isCorner = gid.x == 0u && gid.y == 0u;
+    textureStore(dataTextureA, coord, vec4<f32>(select(s1, STATE_SENTINEL, isCorner), s2, resourceVal, toxin));
 
     // === LIVING ECOSYSTEM VISUALIZATION + SEASONAL COLOR ===
     // Species 1 = teal/cyan, Species 2 = magenta, with seasonal hue shifts
@@ -245,6 +261,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let stain = min(toxin, 1.4) * (0.45 + stainCell * 0.55) * (0.5 + seasonHarsh * 0.5);
     displayColor = mix(displayColor, vec3<f32>(0.22, 0.02, 0.28), clamp(stain, 0.0, 0.65));
 
+    // Highlight chemotactic foraging trails & refugia germination pockets
+    let chemoFlow = length(chemoGrad) * (s1 + s2);
+    displayColor += vec3<f32>(0.35, 0.95, 0.65) * (chemoFlow * 0.22 + refugium * seasonBloom * 0.25);
+
     // Depth stratification: deeper areas appear slightly cooler/darker
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthTint = mix(vec3<f32>(0.92, 0.95, 1.05), vec3<f32>(1.0), depth);
@@ -258,7 +278,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let finalAlpha = mix(bioAlpha * 0.8, bioAlpha, depth);
 
     let a = clamp(finalAlpha, 0.0, 1.0);
-    textureStore(writeTexture, coord, vec4<f32>(aces(displayColor), a));
+    textureStore(writeTexture, coord, vec4<f32>(aces(max(displayColor, vec3<f32>(0.0))), a));
 
     // Depth output modulated by biomass (deeper biomass = slightly different depth feel)
     let outDepth = mix(depth, depth * 0.9 + totalBiomass * 0.06, 0.4);

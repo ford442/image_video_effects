@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, field-simulation, organic, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: mitosis twin pulse; membrane depolarization wave
+//  Upgraded: 2026-09-11, 2026-10-31
+//  Ideas: mitosis twin pulse; membrane depolarization wave; polar electroporation micro-pores; ion-channel refractory memory from C
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   let k = vec2<f32>(
@@ -150,8 +131,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Idea 1 — mitosis twin pulse: bass triggers paired brighten on division axis
   let cellId = floor(voronoiUV);
+  let cellLocal = fract(voronoiUV) - vec2<f32>(0.5);
   let divisionAxis = normalize(hash22(cellId) - vec2<f32>(0.5));
-  let alongAxis = abs(dot(fract(voronoiUV) - vec2<f32>(0.5), divisionAxis));
+  let alongAxis = abs(dot(cellLocal, divisionAxis));
   let twinPulse = smoothstep(0.35, 0.0, alongAxis) * smoothstep(0.25, 0.55, bass) * glow;
   let mitosisGlow = twinPulse * (0.5 + 0.5 * sin(time * 6.0 + bass * 8.0));
 
@@ -160,8 +142,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depolWave = 0.5 + 0.5 * sin(dot(uv, fieldDir) * 40.0 - time * 4.0 + fieldMag * 3.0);
   let membraneWave = membrane * depolWave * smoothstep(0.0, 0.6, fieldMag);
 
+  // ── Idea 3: polar electroporation micro-pores where cell wall aligns with E-field ──
+  let cellRadial = select(vec2<f32>(1.0, 0.0), normalize(cellLocal), length(cellLocal) > 1e-4);
+  let polarAlign = abs(dot(cellRadial, fieldDir));
+  let electropore = membrane * smoothstep(0.76, 0.96, polarAlign) * smoothstep(0.25, 1.35, fieldMag) * (1.0 + mids * 0.5);
+
   let pulse = 0.5 + 0.5 * sin(time * (2.0 + u.zoom_params.w * 5.0) - dist * 10.0 + totalB * 2.0);
-  let finalGlow = glow * influence * pulse * (1.0 + mouseDown * 2.0) + mitosisGlow * 0.8 + membraneWave * 0.6;
+  let finalGlow = glow * influence * pulse * (1.0 + mouseDown * 2.0) + mitosisGlow * 0.8 + membraneWave * 0.6 + electropore * 0.95;
 
   let displacedUV = clamp(uv + fieldDistort * influence, vec2<f32>(0.0), vec2<f32>(1.0));
   let src = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
@@ -174,6 +161,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var outColor = src.rgb + tint * finalGlow;
   outColor = outColor + vec3<f32>(0.9, 0.4, 1.0) * mitosisGlow * 0.35;
   outColor = outColor + vec3<f32>(0.3, 0.85, 1.0) * membraneWave * 0.25;
+  outColor = outColor + vec3<f32>(0.45, 1.0, 0.78) * electropore * 0.42;
 
   let streamUV = uv + fieldDir * hash12(uv * 100.0 + time * 0.5) * 0.02;
   let streamNoise = hash12(streamUV * 200.0 + fieldMag * 10.0);
@@ -184,8 +172,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coreGlow = exp(-dist * dist * 400.0) * fieldStrength;
   outColor = outColor + vec3<f32>(0.6, 0.9, 1.0) * coreGlow;
 
-  let alpha = clamp(influence + streamline * 0.2 + mitosisGlow * 0.3 + membraneWave * 0.2 + src.a * 0.25, 0.0, 1.0);
-  let displayRgb = acesToneMap(outColor);
+  // ── Idea 4: ion-channel refractory memory read from exact dataTextureC ──
+  let prev = textureLoad(dataTextureC, pixel, 0);
+  let refractoryGate = clamp((membrane + influence * 0.6) * 0.22, 0.0, 0.32);
+  let displayRgb = mix(acesToneMap(max(outColor, vec3<f32>(0.0))), prev.rgb * 0.94, refractoryGate);
+  let alpha = clamp(influence + streamline * 0.2 + mitosisGlow * 0.3 + membraneWave * 0.2 + electropore * 0.25 + prev.a * 0.12 + src.a * 0.2, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(displayRgb, alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(displayRgb, alpha));

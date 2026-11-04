@@ -10,7 +10,7 @@
     "metallic",
     "futuristic"
   ],
-  "description": "2D cross-section of the 3D Mandelbox fractal with box folding, sphere folding, and orbit-trap coloring. Metallic surface with ambient occlusion, HDR specular highlights, and ACES tone mapping.",
+  "description": "2D cross-section of the 3D Mandelbox fractal with box folding, sphere folding and orbit traps (origin, diagonal and the fold walls). A polished-metal surface reflects a sky gradient with Schlick Fresnel, with distance-estimate lighting, HDR specular highlights and a glassy interior.",
   "workgroup_size": [
     16,
     16,

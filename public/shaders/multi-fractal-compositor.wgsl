@@ -1,36 +1,21 @@
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-}
+// ═══════════════════════════════════════════════════════════════════
+//  Multi Fractal Compositor
+//  Category: advanced-hybrid
+//  Features: layered-zoom, depth-aware, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: staggered octave composite (the layer composite finally reaches the picture; Droste-style self-similar zoom, sin^2 birth/death windows); zoom dispersion (R/B taps at zoom*(1 -+ 0.018))
+//  A packing: none - writes no A, reads no C. ACES display on writeTexture.
+//  Note: despite the name and JSON text this is a layered zoom tunnel of the input image, not a
+//  Mandelbrot/Julia/Newton blend; the identity is kept and the description now says so.
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) 
-var u_sampler: sampler;
-@group(0) @binding(1) 
-var readTexture: texture_2d<f32>;
-@group(0) @binding(2) 
-var writeTexture: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(3) 
-var<uniform> u: Uniforms;
-@group(0) @binding(4) 
-var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) 
-var non_filtering_sampler: sampler;
-@group(0) @binding(6) 
-var writeDepthTexture: texture_storage_2d<r32float,write>;
-@group(0) @binding(7) 
-var dataTextureA: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(8) 
-var dataTextureB: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(9) 
-var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) 
-var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) 
-var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) 
-var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn ping_pong(a: f32) -> f32 {
     return (1.0 - abs(((fract((a * 0.5)) * 2.0) - 1.0)));
@@ -147,10 +132,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var totalWeight: f32 = 0.0;
     var i: i32 = 0;
     var chroma: f32;
+    var ghostAcc: vec3<f32> = vec3(0.0);
+    var ghostWeight: f32 = 0.0;
+    var ghostDensity: f32 = 0.0;
 
     let _e4 = u.config.z;
     let _e8 = u.config.w;
     resolution = vec2<f32>(_e4, _e8);
+    // HEAD had no bounds guard: every dispatched invocation wrote.
+    if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
+        return;
+    }
     let _e13 = resolution;
     uv = (vec2<f32>(gid.xy) / _e13);
     let time = u.config.x;
@@ -180,7 +172,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let _e75 = u.zoom_params.x;
             let _e79 = u.zoom_params.y;
             let layerSpeed = mix(_e75, _e79, layerDepth_1);
-            let layerZoom = (1.0 + (fract((zoom_time * layerSpeed)) * 4.0));
+            // 2026-11 Idea 1: staggered octave layers. Layer i runs at phase fract(t * speed + i / 5) with an
+            // exponential zoom 2^(2.32 * phase) (1..5), so the five layers sit at different scales of the same
+            // self-similar zoom (HEAD: all layers shared one phase and a linear 1..5 zoom, snapping on wrap).
+            let layerPhase = fract(zoom_time * layerSpeed + f32(_e66) * 0.2);
+            let layerZoom = exp2(layerPhase * 2.3219281);
+            let layerWindow = sin(3.14159265 * layerPhase) * sin(3.14159265 * layerPhase);
             let _e87 = uv;
             let toCenter = (_e87 - zoom_center);
             let angle = atan2(toCenter.y, toCenter.x);
@@ -191,17 +188,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let rotatedUV = (vec2<f32>(((cos(spinAngle) * toCenter.x) - (sin(spinAngle) * toCenter.y)), ((sin(spinAngle) * toCenter.x) + (cos(spinAngle) * toCenter.y))) + zoom_center);
             let _e126 = noise(((rotatedUV * 6.0) + vec2<f32>((time * 0.15), 0.0)));
             let _e132 = noise(((rotatedUV * 6.0) + vec2<f32>(0.0, (time * 0.15))));
-            let flowUV = (rotatedUV + ((vec2<f32>(_e126, _e132) * 0.015) * layerDepth_1));
+            // slider z (saved "Domain Warp") was not referenced anywhere: it now scales the flow-noise warp
+            let warpAmp = 0.015 * (1.0 + 6.0 * u.zoom_params.z);
+            let flowUV = (rotatedUV + ((vec2<f32>(_e126, _e132) * warpAmp) * layerDepth_1));
             let transformed = (((flowUV - zoom_center) / vec2(layerZoom)) + zoom_center);
             let _e142 = ping_pong_v2_(transformed);
             let _e146 = textureSampleLevel(readTexture, u_sampler, _e142, 0.0);
             let sampleColor = _e146.xyz;
+            // 2026-11 Idea 2: zoom dispersion. Red and blue sample the layer at zoom * (1 -+ 0.018), the
+            // chromatic fringe of a zoom lens, growing with the layer's own zoom.
+            let uvTapR = ping_pong_v2_(((flowUV - zoom_center) / vec2(layerZoom * 0.982)) + zoom_center);
+            let uvTapB = ping_pong_v2_(((flowUV - zoom_center) / vec2(layerZoom * 1.018)) + zoom_center);
+            let tapR = textureSampleLevel(readTexture, u_sampler, uvTapR, 0.0).x;
+            let tapB = textureSampleLevel(readTexture, u_sampler, uvTapB, 0.0).z;
             let _e151 = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0);
             let sampleDepth = _e151.x;
             let density = exp((-(layerDepth_1) * 1.5));
             let weight = (density * (1.0 + (sampleDepth * 0.5)));
             let _e162 = accumulatedColor;
             accumulatedColor = (_e162 + (sampleColor * weight));
+            ghostAcc = ghostAcc + vec3<f32>(tapR, sampleColor.y, tapB) * density * layerWindow;
+            ghostWeight = ghostWeight + density * layerWindow;
+            ghostDensity = ghostDensity + density;
             let _e165 = accumulatedDepth;
             accumulatedDepth = (_e165 + (sampleDepth * weight));
             let _e168 = totalWeight;
@@ -218,12 +226,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e179 = accumulatedDepth;
     let _e180 = totalWeight;
     let baseDepth = (_e179 / max(_e180, 0.0001));
-    if (arrayLength((&extraBuffer)) > 0u) {
-        let _e192 = extraBuffer[0];
-        chroma = _e192;
-    } else {
-        chroma = 0.02;
-    }
+    // HEAD read extraBuffer[0] (engine layout: bass, 0..1) and used it raw as a UV offset times depth, so
+    // a loud bass moved red and blue by up to a whole screen. Same audio value, scaled to a lens-like split.
+    chroma = plasmaBuffer[0].x * 0.05;
     let _e196 = uv;
     let _e197 = chroma;
     let _e203 = textureSampleLevel(readTexture, u_sampler, (_e196 + vec2<f32>((_e197 * baseDepth), 0.0)), 0.0);
@@ -247,7 +252,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthY = _e250.x;
     let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
     let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
-    let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
+    // 2026-11 Idea 1: the windowed layer composite (HEAD's baseColor, computed and never used) reaches the
+    // picture, up to 55 %; the window average is ~0.5 for evenly staggered layers.
+    let ghostColor = ghostAcc / max(ghostWeight, 0.0001);
+    let ghostPresence = ghostWeight / max(ghostDensity, 0.0001);
+    let layered = mix(chromaticColor, ghostColor, 0.55 * clamp(ghostPresence * 2.0, 0.0, 1.0));
+    let finalColor = (layered + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
     let fogDensity_1 = u.zoom_params.w;
     let _e273 = uv;
     let _e274 = reconstruct_normal(_e273, baseDepth);
@@ -259,7 +269,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fog = exp(((-(baseDepth) * fogDensity_1) * 3.0));
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let outColor = mix(finalColor, fogColor, (1.0 - fog));
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, _e284));
+    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(acesToneMap(max(outColor, vec3<f32>(0.0))), _e284));
     textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
     return;
 }

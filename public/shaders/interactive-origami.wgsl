@@ -3,8 +3,8 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: mountain-valley fold parity; wet-fold shadow along crease tangent
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: mountain-valley fold parity; wet-fold shadow along crease tangent; score line; reverse face
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -111,8 +111,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let wetFoldShadow = valleyMask * (0.26 + (1.0 - tangentAlign) * 0.24) * lightInt * influence;
   color *= (1.0 - wetFoldShadow);
 
+  // ── Idea 1: score line — hairline where the hinge crosses zero ──
+  let score = exp(-abs(h0) * 28.0) * smoothstep(0.015, 0.18, length(grad));
+  color = color * (1.0 - score * 0.55 * lightInt);
+  // ── Idea 2: reverse face — the back of the sheet is duller and cooler ──
+  let backFace = step(0.0, -foldParity);
+  let faceGray = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  color = mix(color, mix(vec3<f32>(faceGray), color * vec3<f32>(0.82, 0.86, 0.94), 0.45), backFace * 0.55);
+
   let slick = hsv2rgb(vec3<f32>(fract(0.15 + abs(h0) * 0.35 + mids * 0.18 + time * 0.06), 0.55, 1.0));
-  color = mix(color, color * slick * 1.25, (0.16 + treble * 0.14) * clamp(ridgePeak + runners, 0.0, 1.0));
+  color = mix(color, color * slick * 1.25, (0.16 + treble * 0.14) * clamp(ridgePeak + runners, 0.0, 1.0) * (1.0 - backFace * 0.7));
   color += slick * (runners * 0.18 + rippleFold * 0.28);
   color = mix(color, prev.rgb * 0.92, 0.08);
   color = acesToneMap(max(color, vec3<f32>(0.0)));

@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  gen_mandelbulb_3d.wgsl - 3D Mandelbulb Fractal with Audio Reactivity & Trails
 //  
-//  Upgraded: 2026-08-21 (Batch 42)
+//  Upgraded: 2026-08-21 (Batch 42), 2026-11-01
+//  Ideas (2026-11): DE ambient occlusion (5 taps along the normal); curvature edge wear (DE Laplacian: ridges catch light, crevices tarnish)
+//  A packing: final display colour + alpha in A (read as C colour); Reinhard-style tone curve kept as the look
 //  Techniques:
 //    - 3D Mandelbulb fractal (power 8)
 //    - Audio-reactive power, glow, and color shifting via plasmaBuffer
@@ -10,28 +12,17 @@
 //    - Orbit traps for coloring variation
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
+// Calibrated on a SwiftShader run (64 px, default camera, 4085 hit pixels): the Mandelbulb DE is a
+// Lipschitz bound, not an exact distance, so its Laplacian is biased positive: percentiles 2/10/50/90/98
+// were -841 / -27 / 35 / 98 / 142. Occlusion occ had median 0.084 on ordinary surface, 0.052-0.107 spread.
+const RIDGE_LAP_LO: f32 = 55.0;    // DE Laplacian where ridge wear starts / is full (1 / length)
+const RIDGE_LAP_HI: f32 = 130.0;
+const CREVICE_LAP: f32 = 60.0;     // Laplacian magnitude of a fully tarnished crevice
+const AO_BASE: f32 = 0.075;        // occ of an unoccluded surface
+const AO_GAIN: f32 = 7.0;
 
 // Mandelbulb distance estimator
 fn mandelbulbDE(pos: vec3<f32>, power: f32, maxIter: i32) -> vec2<f32> {
@@ -113,6 +104,35 @@ fn calcNormal(pos: vec3<f32>, power: f32) -> vec3<f32> {
     ));
 }
 
+// 2026-11 Idea 1: ambient occlusion from the DE field itself (§12.2E step-count AO).
+// Five taps along the normal: occ = sum (h - d(p + n h)) * 0.5^i; a surface point sitting in a
+// crevice sees the field close in along its own normal and is darkened.
+fn bulbAO(pos: vec3<f32>, n: vec3<f32>, power: f32) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i: i32 = 1; i <= 5; i = i + 1) {
+        let h = 0.01 + 0.12 * f32(i) / 5.0;
+        occ += (h - mandelbulbDE(pos + n * h, power, 8).x) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - (occ - AO_BASE) * AO_GAIN, 0.35, 1.0);
+}
+
+// 2026-11 Idea 2: SDF curvature (§12.2E): (sum d(p +- e axis) - 6 d(p)) / e^2, the Laplacian of the
+// distance field. Positive on convex ridges, negative in concave crevices. The probe radius is wide
+// (0.008) so f32 noise in the DE does not dominate the second difference.
+fn bulbCurvature(pos: vec3<f32>, power: f32) -> f32 {
+    let e = 0.008;
+    let d0 = mandelbulbDE(pos, power, 10).x;
+    let s = mandelbulbDE(pos + vec3<f32>(e, 0.0, 0.0), power, 10).x
+          + mandelbulbDE(pos - vec3<f32>(e, 0.0, 0.0), power, 10).x
+          + mandelbulbDE(pos + vec3<f32>(0.0, e, 0.0), power, 10).x
+          + mandelbulbDE(pos - vec3<f32>(0.0, e, 0.0), power, 10).x
+          + mandelbulbDE(pos + vec3<f32>(0.0, 0.0, e), power, 10).x
+          + mandelbulbDE(pos - vec3<f32>(0.0, 0.0, e), power, 10).x;
+    return (s - 6.0 * d0) / (e * e);
+}
+
 fn softShadow(ro: vec3<f32>, rd: vec3<f32>, mint: f32, maxt: f32, power: f32) -> f32 {
     var res = 1.0;
     var t = mint;
@@ -150,6 +170,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let zoom = 0.5 + u.zoom_params.y * 2.0; 
     let fogDensity = u.zoom_params.z; 
     let colorShift = u.zoom_params.w + mids * 0.5;
+
+    // HEAD used `mouse` without declaring it (a compile error): mouse uv, y = 0 at the top.
+    let mouse = u.zoom_config.yz;
     
     let theta = time * 0.2 + mouse.x * 3.14;
     let phi = sin(time * 0.1) * 0.5 + (mouse.y - 0.5) * 2.0;
@@ -191,6 +214,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     var finalRGB: vec3<f32>;
     var finalAlpha: f32;
+    var hitAlpha = 0.0;   // HEAD declared this inside `if (hit)` and read it after the block
     
     let inputColor = textureSampleLevel(readTexture, u_sampler, uvFull, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvFull, 0.0).r;
@@ -207,10 +231,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let shadow = softShadow(pos, lightDir, 0.01, 2.0, power);
         
         let trapColor = orbitTrapColor(pos, power, time, vec3<f32>(bass, mids, treble));
-        let hitColor = mix(vec3<f32>(0.8, 0.7, 0.9), trapColor, 0.5 + colorShift * 0.5);
-        
-        let shadedColor = hitColor * diffuse * shadow + vec3<f32>(0.1) + vec3<f32>(1.0) * specular + vec3<f32>(glow * 0.5);
-        let hitAlpha = 1.0 - smoothstep(2.0, 5.0, t) * fogDensity;
+        var hitColor = mix(vec3<f32>(0.8, 0.7, 0.9), trapColor, 0.5 + colorShift * 0.5);
+
+        let ao = bulbAO(pos, normal, power);
+        let lap = bulbCurvature(pos, power);
+        let ridge = smoothstep(RIDGE_LAP_LO, RIDGE_LAP_HI, lap);
+        let crevice = clamp(-lap / CREVICE_LAP, 0.0, 1.0);
+        // crevices tarnish toward the cool end of the trap palette
+        hitColor = mix(hitColor, hitColor * vec3<f32>(0.55, 0.68, 0.95), crevice * 0.55);
+        let wear = vec3<f32>(1.0, 0.82, 0.55) * ridge * 0.35 * (0.4 + 0.6 * diffuse);
+
+        let shadedColor = hitColor * diffuse * shadow * ao + vec3<f32>(0.1) * ao + vec3<f32>(1.0) * specular + vec3<f32>(glow * 0.5) + wear;
+        hitAlpha = 1.0 - smoothstep(2.0, 5.0, t) * fogDensity;
         
         finalRGB = mix(inputColor.rgb, shadedColor, hitAlpha * opacity);
         finalAlpha = max(inputColor.a, hitAlpha * opacity);
@@ -223,7 +255,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalRGB = mix(finalRGB, fogColor, smoothstep(1.0, 4.0, t) * fogDensity);
     
     // Temporal Trails
-    let prevColor = textureSampleLevel(dataTextureC, u_sampler, uvFull, 0.0).rgb;
+    // exact load: a filtering sampler on rgba32float history is not allowed
+    let prevColor = textureLoad(dataTextureC, vec2<i32>(coord), 0).rgb;
     finalRGB = mix(finalRGB, prevColor, 0.5 * (1.0 - hitAlpha));
     
     finalRGB = finalRGB / (1.0 + finalRGB * 0.5);

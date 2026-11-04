@@ -1841,7 +1841,7 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion, caustic streaks, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+    "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion and caustic streaks. Astigmatic corner softening smears along the radius as r² and lens strength grow, and internal-reflection ghosts re-image bright pixels through the focus axis. Preserved [bassEnvelope, trailRGB] A packing.",
     "workgroup_size": [
       16,
       16,
@@ -1896,7 +1896,9 @@
       "continuous-motion",
       "bounded-click-ripples",
       "spring-cursor",
-      "held-drag"
+      "held-drag",
+      "astigmatism",
+      "lens-ghosts"
     ],
     "tags": [
       "filter",
@@ -1973,7 +1975,7 @@
     "id": "ember-drift-dissolve",
     "name": "Ember Drift Dissolve",
     "url": "shaders/ember-drift-dissolve.wgsl",
-    "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow. Held press opens a furnace under the cursor — stronger rise, denser birth, white-hot cores cooling through amber into ash wisps. Click bursts ignite local fires that the heat field then advects. Exact textureLoad history, ACES on the display path only.",
+    "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow. Held press opens a furnace under the cursor — stronger rise, denser birth, white-hot cores cooling through amber into ash wisps. Click bursts ignite local fires that the heat field then advects. Exact textureLoad history, ACES on the display path only. White-hot embers outrun the ash, and a scorch stain stays in the photo after the glow fades.",
     "tags": [
       "ember",
       "fire",
@@ -1993,7 +1995,8 @@
       "aces-tone-mapping",
       "mouse-driven",
       "held-interaction",
-      "click-ignition"
+      "click-ignition",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2035,7 +2038,7 @@
     "id": "fireworks-depth-parade",
     "name": "4th of July — Depth Parade",
     "url": "shaders/fireworks-depth-parade.wgsl",
-    "description": "Depth layers of your image launch fireworks in parade sequence — foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage.",
+    "description": "Depth layers of your image launch fireworks in parade sequence — foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage. Far layers climb as mortars before they break, and foreground smoke dims the shells behind them.",
     "tags": [
       "fireworks",
       "depth",
@@ -2097,7 +2100,7 @@
     "id": "fireworks-edge-ignite",
     "name": "4th of July — Edge Ignite",
     "url": "shaders/fireworks-edge-ignite.wgsl",
-    "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor.",
+    "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor. A hot bead travels each contour and leaves a charred lip behind it.",
     "tags": [
       "fireworks",
       "edge",
@@ -2155,7 +2158,7 @@
     "id": "fireworks-patriotic-july4",
     "name": "4th of July — Patriotic Pyro",
     "url": "shaders/fireworks-patriotic-july4.wgsl",
-    "description": "Happy July 4th! Your image fuels a red, white, and blue fireworks spectacular. Bright regions launch patriotic shells cycling through crimson, silver-white, and electric blue. Image hues blend with the classic American palette for a backyard celebration feel. Bass booms the big shells, treble crackles the finale. Mouse fires a patriotic barrage.",
+    "description": "Happy July 4th! Your image fuels a red, white, and blue fireworks spectacular. Bright regions launch patriotic shells cycling through crimson, silver-white, and electric blue. Image hues blend with the classic American palette for a backyard celebration feel. Bass booms the big shells, treble crackles the finale. Mouse fires a patriotic barrage. Each shell breaks red, then white, then blue, and the flag stripes show a cloth crease.",
     "tags": [
       "fireworks",
       "patriotic",
@@ -2213,7 +2216,7 @@
     "id": "fireworks-portrait-burst",
     "name": "4th of July — Portrait Burst",
     "url": "shaders/fireworks-portrait-burst.wgsl",
-    "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself — portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor.",
+    "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself — portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor. The brightest catchlight stays in the portrait, and sparks leave along the highlight.",
     "tags": [
       "fireworks",
       "portrait",
@@ -2372,7 +2375,7 @@
     "id": "frosted-glass-lens",
     "name": "Frosted Glass Lens",
     "url": "shaders/frosted-glass-lens.wgsl",
-    "description": "Frosted lens with a Beckmann microfacet scattering lobe — five taps drawn from a Beckmann slope distribution, giving the heavy-tailed blur of ground glass rather than a single offset — and depth-dependent frost thickness so far, cold geometry frosts over while near geometry stays clear. Adds ACES, bounded click frost-clear fronts and dataTextureC persistence, and replaces a per-frame hash grain that strobed as static with a spatially coherent drifting field.",
+    "description": "Frosted lens with a Beckmann microfacet scatter lobe and depth-dependent frost thickness (far geometry frosts first). Frost forward-scatters in a Henyey-Greenstein two-ring halo with veiling glare; the clear window is a polished meniscus whose rim refracts radially and glints. ACES, bounded click frost-clear fronts and dataTextureC frost memory.",
     "params": [
       {
         "id": "frost_amt",
@@ -2417,7 +2420,9 @@
       "fresnel",
       "beer-lambert",
       "chromatic-aberration",
-      "temporal-frost"
+      "temporal-frost",
+      "forward-scatter",
+      "meniscus-bevel"
     ],
     "tags": [
       "filter",
@@ -2726,7 +2731,7 @@
     "name": "Hex Lens Interactive",
     "category": "image",
     "url": "shaders/hex-lens.wgsl",
-    "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
+    "description": "Honeycomb microlenses with hexagonal bokeh, aperture diffraction starbursts and FBM warp. Each cell is a domed lenslet: Snell refraction through the cap with Cauchy per-channel dispersion fringes that grow toward the rim, a focal hot-spot at the cell centre and cos⁴ rim falloff. Luminance ACES tone map; audio-reactive rotation and shimmer.",
     "params": [
       {
         "id": "tile_size",
@@ -2764,7 +2769,10 @@
       "chromatic-aberration",
       "hexagonal-bokeh",
       "chromatic-dispersion",
-      "diffraction-patterns"
+      "diffraction-patterns",
+      "snell-refraction",
+      "cauchy-dispersion",
+      "aces"
     ],
     "tags": [
       "hex",
@@ -2783,7 +2791,7 @@
     "id": "holographic-shatter",
     "name": "Holographic Shatter",
     "url": "shaders/holographic-shatter.wgsl",
-    "description": "Fractures the image into digital shards with temporal shard velocity persistence, chromatic edge refraction per shard, audio-driven impact intensity, holographic interference patterns, and plasma palette tinting.",
+    "description": "The photo cracked into flying shards, with a per-shard grating, a two-beam ghost, and a scan sweep. The rim facing the flight is lit and the trailing rim is dark. A flying shard opens a crack that shows the ghost.",
     "features": [
       "mouse-driven",
       "audio-reactive",
