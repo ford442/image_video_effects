@@ -6,7 +6,7 @@
  * adapter. Compositor screenshots of a WebGPU canvas stay blank there, so pixel
  * checks read back through the renderer (`captureThumbnailPng`).
  *
- * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2`.
+ * Needs a production build: `npm run build && npm run test:engine2`.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { resolve } from 'path';

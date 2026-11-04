@@ -4,31 +4,12 @@
 //  Features: firefly, rainbow, dance, audio-reactive, mouse-driven,
 //            semantic-alpha, upgraded-rgba, temporal-feedback, depth-aware
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
-//  Ideas: velocity-stretched comet tails; click mini-swarms; Photinus flash codes (per-fly hash duty cycle, bass shortens the dark); courtship antiphase (even/odd delayed flash, held mouse tightens pairing)
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: velocity-stretched comet tails; click mini-swarms; Photinus flash codes (per-fly hash duty cycle, bass shortens the dark); courtship antiphase (even/odd delayed flash, held mouse tightens pairing); flash-lit foliage (soft inverse-square light from each flash onto the flow field, 12.2F); luciferin afterglow ember in the dark interval; wingbeat bob
 //  A packing: linear HDR history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
@@ -88,13 +69,19 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+struct FireflyOut {
+    col: vec3<f32>,
+    lit: vec3<f32>,
+};
+
 // Compute firefly field at a given UV (for chromatic aberration)
 fn fireflyField(
     uv: vec2<f32>, time: f32, speed: f32, scale: f32,
     colorShift: f32, intensity: f32, bass: f32, numFireflies: i32,
     mouseNorm: vec2<f32>, mouseDown: f32
-) -> vec3<f32> {
+) -> FireflyOut {
     var col = vec3<f32>(0.0);
+    var lit = vec3<f32>(0.0);   // Idea 4 accumulator: light each flash throws on its surroundings
     let bassPulse = 1.0 + bass * 0.5;
     for (var i: i32 = 0; i < numFireflies; i = i + 1) {
         let fi = f32(i);
@@ -123,6 +110,8 @@ fn fireflyField(
 
         // Firefly position
         var fPos = vec2<f32>(swirlX, swirlY) + turb;
+        // ── Idea 3: wingbeat bob — fast small vertical wobble scaled by flight speed
+        fPos.y += 0.005 * sin(time * 38.0 + fi * 2.3) * min(length(velocity), 1.2);
 
         // Mouse attraction — held tightens courtship pairing (stronger pull)
         let toMouse = mouseNorm - fPos;
@@ -149,7 +138,11 @@ fn fireflyField(
         let answerDelay = select(0.0, mix(0.18, 0.04, mouseDown), (i & 1) == 0);
         let flashPhase = fract(time * flashRate + seed * 6.283185 + answerDelay);
         let flash = smoothstep(0.0, 0.05, flashPhase) * (1.0 - smoothstep(duty, duty + 0.07, flashPhase));
-        let pulseFlash = pulse * (0.08 + 0.92 * flash);
+        // ── Idea 2: luciferin afterglow — the lantern decays exponentially after
+        // the flash instead of dropping straight to the dark floor.
+        let ember = exp(-max(flashPhase - 0.05, 0.0) * 6.0) * 0.16;
+        let flashLevel = flash + ember * (1.0 - flash);
+        let pulseFlash = pulse * (0.08 + 0.92 * flashLevel);
 
         // Velocity-stretched comet tail: one swarm evaluation replaces the
         // former three complete chromatic field passes.
@@ -163,8 +156,10 @@ fn fireflyField(
         let glow = fireflyGlow(uv, fPos, fSize, intensity);
         let spectralTail = hue2rgb(hue + behind * 4.0 + bass * 0.08);
         col += (fColor * glow + spectralTail * tail * 0.32) * pulseFlash * intensity * 2.5;
+        // ── Idea 1: flash-lit foliage — soft inverse-square (no singularity) light
+        lit += fColor * pulseFlash / (dot(rel, rel) + 0.015);
     }
-    return col;
+    return FireflyOut(col, lit);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -196,15 +191,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bgCol = hue2rgb(bgHue) * 0.06;
     col += bgCol + vec3<f32>(0.02, 0.01, 0.04);
 
+    let numFireflies = i32(56.0 + bass * 18.0);
+    let ff = fireflyField(uv, time, speed, scale, colorShift, intensity, bass,
+                          numFireflies, mouseNorm, mouseDown);
+    let fireflyCol = ff.col;
+
     // Organic flowing field background
     let flow1 = vnoise(uv * 3.0 * scale + vec2<f32>(time * 0.1 * speed, time * 0.07 * speed));
     let flow2 = vnoise(uv * 5.0 * scale + vec2<f32>(-time * 0.08 * speed, time * 0.12 * speed));
     let flow = flow1 * flow2;
     col += hue2rgb(fract(flow + time * 0.03 * speed + colorShift + treble * 0.1)) * flow * 0.15 * intensity * (1.0 + mids * 0.2);
+    // Idea 1: the flow field is the foliage the flashes light — brighter where the noise has body
+    col += ff.lit * (0.1 + 2.0 * flow) * 0.0004 * intensity;
 
-    let numFireflies = i32(56.0 + bass * 18.0);
-    let fireflyCol = fireflyField(uv, time, speed, scale, colorShift, intensity, bass,
-                                 numFireflies, mouseNorm, mouseDown);
 
     // Clicks release fast radial mini-swarms with segmented firefly heads.
     var clickSwarm = 0.0;

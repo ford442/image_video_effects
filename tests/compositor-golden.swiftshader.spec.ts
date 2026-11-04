@@ -13,7 +13,7 @@
  * exact. Pixels are read back through the renderer (`captureThumbnailPng`): compositor
  * screenshots of a WebGPU canvas stay blank on SwiftShader.
  *
- * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2 -- compositor-golden`.
+ * Needs a production build: `npm run build && npm run test:engine2 -- compositor-golden`.
  */
 import { expect, test, type Page } from '@playwright/test';
 import sharp from 'sharp';

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: real crystal refraction (refract() + short interior march tinted by absorption, driven by Crystal Refraction); pulsing forge core (emissive core in the 1.5 hollow lighting the facets with 1/d² falloff, paced by Core Pulse Speed + bass); woven light threads (filaments along the fold axes, accumulated as a trap in the fold loop)
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas: real crystal refraction (refract() + short interior march tinted by absorption, driven by Crystal Refraction); pulsing forge core (emissive core in the 1.5 hollow lighting the facets with 1/d² falloff, paced by Core Pulse Speed + bass); woven light threads (filaments along the fold axes, accumulated as a trap in the fold loop); Cauchy dispersion on the exit refraction (§12.2F, per-channel ior, fringes scale with Crystal Refraction); fold-count growth-sector tint (§12.2E, mirror reflections counted in the KIFS loop); step-count ambient occlusion in contact crevices (§12.2E, 5 taps)
 //  A packing: ACES display RGBA, a = coverage minus transmission (hit) / glow (background); C unread
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -43,6 +43,7 @@ struct Scene {
     core: f32,    // core only
     thread: f32,  // Idea 3: distance to the nearest woven thread
     along: f32,   // coordinate along that thread
+    folds: f32,   // Idea 5: mirror reflections the point went through in the KIFS loop
 };
 
 // Kaleidoscopic Iterated Function System (KIFS) fractal
@@ -70,11 +71,14 @@ fn mapScene(p_in: vec3<f32>) -> Scene {
     var scale = 1.0;
     var thread = 1e3;
     var along = 0.0;
+    var folds = 0.0;
 
     // Complexity mapped to zoom_params.x
     let iters = i32(floor(mix(3.0, 7.0, u.zoom_params.x)));
 
     for(var i = 0; i < iters; i++) {
+        // Idea 5: each negative coordinate is one mirror reflection (growth-sector count)
+        folds += f32(p.x < 0.0) + f32(p.y < 0.0) + f32(p.z < 0.0);
         p = abs(p) - vec3<f32>(0.5, 0.4, 0.5) * scale;
         let r = rot2D(PI / 4.0 + t * 0.1);
         let pxy = p.xy * r;
@@ -111,6 +115,7 @@ fn mapScene(p_in: vec3<f32>) -> Scene {
     s.d = min(crystal, core);
     s.thread = thread;
     s.along = along;
+    s.folds = folds;
     return s;
 }
 
@@ -122,6 +127,20 @@ fn crystalNormal(p: vec3<f32>) -> vec3<f32> {
         mapScene(p + e.yyx).crystal - mapScene(p - e.yyx).crystal
     );
     return normalize(n + vec3<f32>(1e-6));
+}
+
+// Idea 6: step-count ambient occlusion (§12.2E) on the surface already marched: 5 taps
+// along the normal compare the distance walked with the distance the SDF reports, so
+// crystals that crowd each other (contact crevices, the hollow's rim) sit darker.
+fn crystalAO(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 5; i = i + 1) {
+        let h = 0.01 + 0.12 * f32(i) / 5.0;
+        occ += max(h - mapScene(p + n * h).crystal, 0.0) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
 }
 
 // Light the core casts on a point: 1/d² falloff, facing term.
@@ -167,6 +186,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var coreHaze = 0.0;
     var hitCore = false;
     var hit = false;
+    var hitFolds = 0.0;
     let threadRate = 1.0 + u.zoom_params.w * 3.0;
     for(i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * t;
@@ -186,6 +206,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if(abs(d) < SURF_DIST) {
             hit = true;
             hitCore = s.core <= s.crystal;
+            hitFolds = s.folds;
             break;
         }
         if (t > MAX_DIST) { break; }
@@ -225,8 +246,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         color = diff * vec3<f32>(0.8, 0.9, 1.0) * 0.1 + spec * vec3<f32>(1.0) + fresnel * iridescence;
         color = mix(color, glow_color, 0.3); // Mix with internal glow
 
+        // ── Idea 5: fold-count growth sectors (§12.2E). Facets that were mirrored a different
+        // number of times take a different hue, like sector zoning in a real crystal.
+        let sector = 0.5 + 0.5 * cos(hitFolds * 0.85 + vec3<f32>(0.0, 2.1, 4.2));
+        color = color * mix(vec3<f32>(1.0), 0.55 + 0.9 * sector, 0.7) + sector * diff * 0.06;
+
         // Idea 2: facets lit by the core (1/d² falloff)
         color += coreLight(p, n, cs.y) * 0.35;
+
+        // ── Idea 6: crevice occlusion on the lit surface (not on the transmitted light below).
+        color *= mix(0.4, 1.0, crystalAO(p, n));
 
         // Idea 1: real crystal refraction — bend into the crystal, march to the
         // far face, absorb by thickness, bend out and see what lies behind.
@@ -245,7 +274,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var rdOut = refract(rdIn, nOut, ior);
         if (dot(rdOut, rdOut) < 1e-4) { rdOut = reflect(rdIn, nOut); } // total internal reflection
         let absorb = exp(-ti * vec3<f32>(3.0, 1.3, 0.5) * (1.0 + refrAmt * 3.0));
-        let behind = background + coreGlowAlong(pOut, rdOut, cs.x, cs.y) + glow_color * 0.15;
+        // ── Idea 4: Cauchy dispersion (§12.2F). n(λ) = A + B/λ² at 650/550/450 nm; green keeps
+        // the original exit ray, red and blue leave it at their own ior, so fringes grow with
+        // Crystal Refraction and with the exit face's tilt.
+        let cauchyB = 0.08 * refrAmt;
+        var rdR = refract(rdIn, nOut, ior - 0.94 * cauchyB);
+        if (dot(rdR, rdR) < 1e-4) { rdR = rdOut; }
+        var rdB = refract(rdIn, nOut, ior + 1.63 * cauchyB);
+        if (dot(rdB, rdB) < 1e-4) { rdB = rdOut; }
+        let glowG = coreGlowAlong(pOut, rdOut, cs.x, cs.y).y;
+        let glowR = coreGlowAlong(pOut, rdR, cs.x, cs.y).x;
+        let glowB = coreGlowAlong(pOut, rdB, cs.x, cs.y).z;
+        let behind = background + glow_color * 0.15 + vec3<f32>(glowR, glowG, glowB);
         let transmit = behind * absorb * (1.0 - fresnel);
         color += transmit * refrAmt * 1.5;
 

@@ -2,7 +2,7 @@
   "id": "astral-veins",
   "name": "Astral Veins",
   "url": "shaders/astral-veins.wgsl",
-  "description": "Glowing, flowing veins that wrap around geometry, pulse, and colour‑cycle. Click to seed new veins.",
+  "description": "Glowing, flowing veins that wrap around geometry, pulse along their currents, and colour-cycle. The cursor aims the light the veins forward-scatter toward.",
   "params": [
     {
       "id": "speed",
@@ -37,7 +37,9 @@
     "depth-aware",
     "temporal-persistence",
     "interactive",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

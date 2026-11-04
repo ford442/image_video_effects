@@ -2,7 +2,7 @@
   "id": "gen-audio-spirograph-julia",
   "name": "Audio Spirograph Julia",
   "url": "shaders/gen-audio-spirograph-julia.wgsl",
-  "description": "Audio-reactive spirograph curves that unfold into mouse-driven Julia set fractals. Each harmonic ring breathes with audio while the Julia constant morphs via mouse position.",
+  "description": "Audio-reactive spirograph rings unfold into mouse-driven Julia fractals. Each ring's pen drives its own Julia constant and leaves a fading ink tail; hypotrochoid and epitrochoid families alternate by harmonic.",
   "tags": [
     "audio-reactive",
     "fractal",

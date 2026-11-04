@@ -17,7 +17,7 @@
 #
 # Local / other CI:
 #   bash scripts/jules-setup.sh
-#   SKIP_WASM_BUILD=1 npm run build     # safe build
+#   npm run build                       # no emcc needed
 #   BROWSER=none npm start              # dev server (no browser pop)
 #
 # Notes:
@@ -96,12 +96,11 @@ fi
 
 # -------------------------------------------------------------------
 # 4. WASM handling
-#    Committed artifacts in public/wasm/ let you run without emcc.
-#    The wasm:build script (and thus prebuild) respects SKIP_WASM_BUILD=1.
+#    Committed artifacts in public/wasm/ let you run without emcc:
+#    plain `npm run build` uses them. BUILD_WASM=1 opts into an emcc rebuild.
 # -------------------------------------------------------------------
-export SKIP_WASM_BUILD=1
-echo "🧩 WASM: SKIP_WASM_BUILD=1 (using committed public/wasm/ artifacts)"
-echo "   To force a real WASM build you would need emsdk in the env."
+echo "🧩 WASM: npm run build uses the committed public/wasm/ artifacts"
+echo "   To force a real WASM build: BUILD_WASM=1 npm run build (needs emsdk)."
 
 # Quick validation of artifacts (does not require build)
 if npm run wasm:validate --if-present >/dev/null 2>&1; then
@@ -114,15 +113,15 @@ fi
 # 5. Optional fast smoke (safe, no GPU, no browser)
 #    Uncomment in Jules config if you want a build/test gate in setup.
 # -------------------------------------------------------------------
-# echo "🔍 Optional: light build check (SKIP_WASM_BUILD=1)..."
-# SKIP_WASM_BUILD=1 npm run build --if-present || echo "Build check skipped"
+# echo "🔍 Optional: light build check..."
+# npm run build --if-present || echo "Build check skipped"
 
 echo ""
 echo "✅ [Jules] image_video_effects environment ready!"
 echo ""
 echo "Recommended commands from here:"
 echo "  BROWSER=none npm start"
-echo "  SKIP_WASM_BUILD=1 npm run build"
+echo "  npm run build"
 echo "  npm run test:ci"
 echo "  npm run test:wasm:unit"
 echo ""

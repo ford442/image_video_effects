@@ -22,7 +22,12 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-10-25: sent Grok high batch-02 (gen-cymatic-plasma-mandalas through gen-crystalline-mandala-bloom, 15 shaders, 151–197 lines). Notes in `docs/agents/swarm-outputs/grok-2026-10-25-batch-02/`.
   - 2026-10-26: sent a liquid ten (quantum-foam, vortex, liquid-optimized, hybrid-particle-fluid, ink-bleed, ambient-liquid, magnetic-interference, lava-lamp-blobs, tornado-vortex, gen-reaction-diffusion). `gen-reaction-diffusion` is `gen_reaction_diffusion.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-liquid-ten/`.
   - 2026-10-26: sent a fluid twelve (gen-wave-equation, fluid-grid, spec-runge-kutta-advection, sim-slime-mold-growth, particle-disperse, alpha-fluid-simulation-paint, liquid-metal, ferrofluid-em, sim-ink-diffusion, gen-ferrofluid-monolith, sim-smoke-trails, navier-stokes-dye). `gen-wave-equation` is `gen_wave_equation.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-26-fluid-twelve/`.
+  - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-10-31: sent a mosaic/grid twelve (hex-mosaic through voronoi-light). Notes in `docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/`.
+  - 2026-11-01: sent an explosion/warp twelve (cmyk-halftone-explosion through warp-drive). `warp-drive` is `warp_drive.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/`.
+  - 2026-11-01: sent a thermal / blackbody twelve (thermal-vision through gamma-ray-burst-blackbody). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-thermal-blackbody-twelve/`.
+  - 2026-11-01: sent cursor/batch-29, twelve ASCII, glyph, and digital-rain shaders (ascii-decode through bayer-dither-interactive). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-ascii-rain-twelve/`.
+  - 2026-11-01: sent a pixel-sort / smear twelve (glitch-pixel-sort through quantum-smear). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve/`.
   - 2026-10-31: sent a light/optical twelve (divine-light through spec-spherical-harmonics-light). `kimi-spotlight` is `kimi_spotlight.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-10-31-light-optical-twelve/`.
   - 2026-11-01: sent an explosion/warp twelve (cmyk-halftone-explosion through warp-drive). `warp-drive` is `warp_drive.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-01-explosion-warp-twelve/`.
   - 2026-11-01: sent a pixel-sort / smear twelve (glitch-pixel-sort through quantum-smear). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-pixel-sort-smear-twelve/`.
@@ -51,6 +56,7 @@ _Learn about the person you're helping. Update this as you go._
   - posterize-neon-edges: cel filament; tangent ink waver. Band-hold flats and the Sobel ridge kept.
 - Floor: prelude include on the three pasted headers; 16×16; exact C; A packing as documented; saved params exact.
 - Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1531 passed (1 skipped); one unrelated RendererManager device-loss test failed once and passed 45/45 on re-run. `SKIP_WASM_BUILD=1 npm run build` succeeded.
+  - 2026-11-02: sent cursor/batch-36 (Cursor(2)), twelve halftone, stipple, and ink shaders (halftone through graphic-novel). `graphic-novel` is `graphic_novel.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-02-batch-36/`.
 - Real-GPU visual QA: external.
 
 ## 2026-11-02 — cursor/batch-36 halftone, stipple, and ink (12 shaders)
@@ -71,6 +77,7 @@ _Learn about the person you're helping. Update this as you go._
   - graphic-novel: feather into the spot; panel rule. Spot blacks, pen hatch, and shadow-side weight kept.
 - Floor: prelude include on the eight pasted headers; 16×16; exact C; A packing as documented; saved params exact. `x-meta.upgrade.params` added for engraving-stipple-blue-noise and polka-dot-reveal.
 - Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped) after the device-loss file was re-run clear of the parallel build. `SKIP_WASM_BUILD=1 npm run build` succeeded.
+  - 2026-11-01: sent cursor/batch-30 (Cursor(2)), twelve physical-material shaders (crumpled-paper through zipper-reveal). `kinetic-tiles` is `kinetic_tiles.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-01-batch-30/`.
 - Real-GPU visual QA: external.
 
 ## 2026-11-01 — cursor/batch-31 fireworks and embers (12 shaders)
@@ -291,6 +298,24 @@ _Learn about the person you're helping. Update this as you go._
 - Gates: Naga 12/12, extraBuffer, dead sliders (glitch-cathedral's three baseline sliders now read), catalogs, ledger.
 - Real-GPU visual QA: external.
 
+## 2026-11-01 — explosion and warp twelve (12 shaders)
+
+- IDs: cmyk-halftone-explosion, elastic-chromatic-explosion, interactive-rgb-split-explosion, cursor-aura-explosion, chronos-brush-explosion, circuit-breaker-explosion, mouse-chromatic-explosion, chromatic-shockwave, zoom-burst, hyper-space-jump, hyper-space-jump-blackbody, warp-drive (`warp_drive.wgsl`).
+- Per shader, the ideas actually added:
+  - cmyk-halftone-explosion: black plate holds registration (shorter prism and a softer shock); screen dots stretch into ellipses along the summed shock. CMYK plates and the blast radius kept.
+  - elastic-chromatic-explosion: spring velocity smears red with the motion and blue against it; the caustic desaturates the lagged colour before the highlight. Existing spring and lag offsets kept.
+  - interactive-rgb-split-explosion: radial split along the pointer; a lip on the falloff window multiplies the split. Tangential prism and the audio ring kept.
+  - cursor-aura-explosion: prism peaks on the limb; the core spends the photo toward a darker luma before the violet glow. Cosine ring kept.
+  - chronos-brush-explosion: prism follows the freeze rim; after Decay, alpha thaws faster on that rim. Freeze deposit and exact C kept. A stores raw freeze.
+  - circuit-breaker-explosion: trace glow falls with pointer distance; node flash is a Schmitt latch in A.a with a buzz only while the contact is held. Trace lattice kept.
+  - mouse-chromatic-explosion: radial push is a fraction of the same deflection; wavelength follows the prism angle. Single sample and tangential field kept.
+  - chromatic-shockwave: the summed wave becomes an N-wave; continuous-wave aberration is gated by the crest. Click shells, Beer–Lambert alpha, and the existing spring kept.
+  - zoom-burst: gaps between the eight speed-line spokes darken; far taps mix toward luma. Comets, dwell ghost, and the spring kept.
+  - hyper-space-jump: rim blue-shift on the streak; a short afterimage from exact C. Streak integral kept. Decay, chroma, and vignette sliders now reach the picture; defaults stay near the old look. Depth stays 0.
+  - hyper-space-jump-blackbody: Cauchy scales on the existing chrom offset; exact C returns cooler and redder before the vignette. Planck ramp kept. A stores pre-ACES colour.
+  - warp-drive: a wall spike at mid-integral, scaled by Core Glow; Doppler follows the ray (bow blue, wake red). Stars, oil-slick packet, and the diagnostic A write kept.
+- Floor: prelude include on the ten pasted headers; 16×16; exact C where C is read; A packing as documented; saved params exact. No new springs.
+- Gates: Naga 12/12, extraBuffer 0 new, dead sliders 0 new, catalogs regenerated, ledger recorded for these twelve. Real-GPU visual QA: external.
 ## 2026-10-31 — light / optical twelve (12 shaders)
 
 - IDs: divine-light, neon-light, volumetric-god-rays, light-leaks, kimi-spotlight (`kimi_spotlight.wgsl`), alpha-aurora-bands, aurora_borealis, pp-bloom, velvet-scatter-bloom, neon-pulse-edge, interactive-film-burn, spec-spherical-harmonics-light.
@@ -311,6 +336,57 @@ _Learn about the person you're helping. Update this as you go._
 - Gates: Naga 12/12, extraBuffer, dead sliders, catalogs. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 - Real-GPU visual QA: external.
 
+## 2026-11-01 — thermal / blackbody twelve (12 shaders)
+
+- IDs: thermal-vision, thermal-vision-blackbody, thermal-touch-blackbody, spec-blackbody-thermal, sim-heat-haze-blackbody, heat-haze-gpt52, honey-melt-blackbody, melting-oil-blackbody, warp-drive-blackbody, energy-shield-blackbody, gamma-ray-burst, gamma-ray-burst-blackbody.
+- Per shader, the ideas actually added:
+  - thermal-vision: FLIR isotherms; detail unsharp of the 5-tap blur (§12.2A). False-color ramp kept. No pointer.
+  - thermal-vision-blackbody: narcissus cold spot; well overflow on the glow. NUC bars and hot-object lag kept.
+  - thermal-touch-blackbody: dwell from same-pixel C.a; scorch under the iron. Halo and ember streak kept.
+  - spec-blackbody-thermal: edges cool faster; energy-conserving glow (§12.2F). Wien fringe and ember persistence kept.
+  - sim-heat-haze-blackbody: binomial heat kernel; temperature rises off the ground. Schlieren and plume shear kept.
+  - heat-haze-gpt52: ground-line glitter; Beer–Lambert veil (§12.2F). Inferior mirage and the held pool kept.
+  - honey-melt-blackbody: drip neck from stored speed; wax crust on cool thick honey. Hex solver kept.
+  - melting-oil-blackbody: Marangoni toward cooler oil; contact meniscus. Downhill flow kept.
+  - warp-drive-blackbody: quiescent pocket inside the wall; wake afterglow from C.a. Bow/wake Doppler kept.
+  - energy-shield-blackbody: neighbor-cell conduction; cooling blackbody tail. Whole-cell strikes kept.
+  - gamma-ray-burst: synchrotron cooling through the cycle; jet break past 6/jetSpread. The non-compiling IQ clock-ring was removed. Spring kept.
+  - gamma-ray-burst-blackbody: blast-wave shell; red cooling afterglow. Bipolar lobes kept.
+- Floor: prelude include on the eleven pasted headers; 16×16; exact C where C is read; A packing as documented; saved params exact. gamma-ray-burst left the naga known-failure list (ratchet 21).
+## 2026-10-31 — ecosystem / biological ten (10 shaders)
+
+- IDs: cyber-organic-ecosystem, gen-xeno-botanical-ecosystem, alpha-multi-state-ecosystem, gen-emergent-calligraphic-ecosystems, predator-prey, predator-prey-rgba, boids-rgba-ecosystem, digital-moss-rgba, bioluminescent, bio-touch-em.
+- Per shader, the ideas actually added:
+  - cyber-organic-ecosystem: scanner-beam inoculation; warped tissue and rim refraction from the previously unused `warp` vector; isotropic 9-point Laplacian (§12.2D). Sweep and 4-species ecosystem kept.
+  - gen-xeno-botanical-ecosystem: vascular sap transport along the radial branch vector; sporangia fruiting nodes and toxin chlorosis. Radial FBM leaf mask and 4-species reaction-diffusion kept.
+  - alpha-multi-state-ecosystem: chemotactic foraging drift along `∇resource - 0.5·∇toxin`; drought refugia and bloom germination in fertile low-toxin pockets. Ecotone ridge and toxin stain kept.
+  - gen-emergent-calligraphic-ecosystems: flying-white (`feibai`) dry-brush tail and entry nib reservoir; palimpsest ghost under-script from `dataTextureC`. Existing Ideas 1–6 and flora/fauna strokes kept.
+  - predator-prey: adaptive trait inheritance in `.b`; trophic migration and depth habitat stratification. Reciprocal hunt, carcass compost, and 4-state CA kept.
+  - predator-prey-rgba: Holling Type II satiation and herd vigilance; nitrogen mineralization from decaying toxin and chase-front canopy disturbance. Gradient pursuit/flee and Lotka-Volterra PDE kept.
+  - boids-rgba-ecosystem: predator-evasion and prey-interception steering; flock-heading wing-flash and wake. Wired the two baseline dead sliders (`diffusion`, `toxinStrength`) and replaced filtered `dataTextureC` reads with exact `textureLoad`.
+  - digital-moss-rgba: isotropic 9-point Laplacian (§12.2D); cushion micro-relief normal and moisture dewdrop specular. Territorial ridge, capsule stalks, and coupled Gray-Scott kept.
+  - bioluminescent: luciferin metabolic recharge wave in `dataTextureA.g`; hyphal tip frontier and mature fruiting gill striations. Spore tropism and quorum flash kept.
+  - bio-touch-em: polar electroporation micro-pores where cell walls align with `fieldDir`; ion-channel refractory memory read from `dataTextureC` (previously written to `A` and unread). Mitosis twin pulse and depolarization wave kept.
+- Floor: prelude include on the nine pasted headers; 16×16; exact C on all ten; A packing as documented; saved params exact.
+- Gates: Naga 10/10, precommit 10/10, extraBuffer 0 new, dead sliders 0 new (and 2 baseline fixed on `boids-rgba-ecosystem`), catalogs regenerated.
+## 2026-11-01 — cursor/batch-29 ASCII / glyph / digital-rain twelve (12 shaders)
+
+- IDs: ascii-decode, ascii-flow, ascii-glyph, gen-cyber-terminal, matrix-curtain, pixel-rain, spectral-rain, cyber-rain, cyber-rain-interactive, retro-gameboy, flip-matrix, bayer-dither-interactive.
+- Per shader, the ideas actually added:
+  - ascii-decode: falling column head; cell gutter; decode rim. Seven glyphs and the decode lens kept. No spring.
+  - ascii-flow: flow lean; upstream streak. Ink ramp, coverage blend, and typed wake kept.
+  - ascii-glyph: stroke weight from luma; lens bezel. Cross-or-dot, phosphor smear, and the sprung lens kept.
+  - gen-cyber-terminal: barrel scanlines; corner misconvergence. Segment font, leader, and raw HDR history kept.
+  - matrix-curtain: tail stem; curtain hem. Hashed birth, scan head, and phosphor from the pixel above kept. A stays raw fields.
+  - pixel-rain: head core; sheet stagger. Three sheets, glyph tail, and column blank kept.
+  - spectral-rain: streak core; column slant. Per-column spectrum trail and the chromatic split kept.
+  - cyber-rain: beaded drop; wiper lip. Wet blur, EMP rings, and the bass envelope in A.a kept.
+  - cyber-rain-interactive: head glyph flicker; far-sheet grey. ROM sheets, fp128 flow, and the spring-free pointer kept.
+  - retro-gameboy: slow rise; unlit well. Four greens, round LCD dots, and the palette ghost kept.
+  - flip-matrix: hinge pin; gutter shadow. Back-face mirror and the cam notch kept.
+  - bayer-dither-interactive: error coring; tile seam. 8×8 Bayer, IGN assist, and channel rotation kept.
+- Floor: prelude include on all twelve (four pasted headers migrated); 16×16; exact C where C is read; A packing as documented; saved params exact.
+- Gates: Naga 12/12, precommit 12/12, extraBuffer 0 new, dead sliders 0 new on a full catalog re-scan, catalogs regenerated. Vitest 180 files / 1532 passed (1 skipped). `SKIP_WASM_BUILD=1 npm run build` succeeded.
 ## 2026-11-01 — explosion / warp twelve (12 shaders)
 
 - IDs: cmyk-halftone-explosion, elastic-chromatic-explosion, interactive-rgb-split-explosion, cursor-aura-explosion, chronos-brush-explosion, circuit-breaker-explosion, mouse-chromatic-explosion, chromatic-shockwave, zoom-burst, hyper-space-jump, hyper-space-jump-blackbody, warp-drive (`warp_drive.wgsl`).

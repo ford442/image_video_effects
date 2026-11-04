@@ -1,7 +1,12 @@
-// ----------------------------------------------------------------
-// Bismuth Quantum Reef
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Bismuth Quantum Reef
+//  Category: generative
+//  Features: raymarching, audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: hopper stair-steps on crystal facets (§12.2E); per-crystal / per-step oxide zoning (§12.2E fold-as-material); Beer–Lambert interior SSS (§12.2F)
+//  A packing: raw (normal.xyz, depth) in dataTextureA as before; ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 // Constants & Utilities
@@ -39,25 +44,23 @@ fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
     return (q.x + q.y + q.z - s) * 0.57735027;
 }
 
-// Map function (Domain repetition + SDF evaluation)
-fn map(p_in: vec3<f32>) -> f32 {
+// Domain-repeated cell frame, shared by map() and the shading pass so the
+// per-crystal hash and facet octant are available as a material (Idea 2).
+struct Cell {
+    p: vec3<f32>,
+    r: vec3<f32>,
+}
+
+fn cellFrame(p_in: vec3<f32>) -> Cell {
     var p = p_in;
     let t = u.config.x;
-
-    // Params
-    let quantum_fluctuation = u.zoom_params.x; // 0.0 - 1.0
     let crystal_density = u.zoom_params.y; // 0.5 - 2.0
-
-    // Audio reactivity
-    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
-    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
-    let audio_pulse = mix(0.0, bass * 0.5 + mids * 0.2, 0.5);
 
     // Mouse distortion (Gravity Well)
     if (u.zoom_config.w > 0.0) {
         let mouse_uv = u.zoom_config.yz;
-        // Simple mapping of mouse UV to a target point in front of the camera
-        let target_pt = vec3<f32>((mouse_uv.x - 0.5) * 10.0, -(mouse_uv.y - 0.5) * 10.0, 5.0 + t);
+        // Target point in front of the camera (camera z = t * 2, so the well rides with it)
+        let target_pt = vec3<f32>((mouse_uv.x - 0.5) * 10.0, -(mouse_uv.y - 0.5) * 10.0, 5.0 + t * 2.0);
         let dist_to_mouse = length(p - target_pt);
         if (dist_to_mouse < 4.0) {
             let pull = smoothstep(4.0, 0.0, dist_to_mouse) * 2.0;
@@ -79,12 +82,40 @@ fn map(p_in: vec3<f32>) -> f32 {
 
     var pxz = p.xz * rot2D(t * 0.3 + r.y * 6.28);
     p = vec3<f32>(pxz.x, p.y, pxz.y);
+    return Cell(p, r);
+}
+
+// Map function (Domain repetition + SDF evaluation)
+fn map(p_in: vec3<f32>) -> f32 {
+    let t = u.config.x;
+
+    // Params
+    let quantum_fluctuation = u.zoom_params.x; // 0.0 - 1.0
+
+    // Audio reactivity
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let audio_pulse = mix(0.0, bass * 0.5 + mids * 0.2, 0.5);
+
+    let cell = cellFrame(p_in);
+    let p = cell.p;
+    let r = cell.r;
 
     // Base crystal SDF (intersection of box and octahedron)
     let s = 1.0 + audio_pulse * 0.5 + r.x * 0.5;
     let d1 = sdBox(p, vec3<f32>(s * 0.7));
     let d2 = sdOctahedron(p, s * 1.2);
     var d = max(d1, d2); // Intersection
+
+    // ── Idea 1: hopper stair-steps (§12.2E). Bismuth grows as hoppers: nested
+    // terraces on every facet. The octahedral coordinate |x|+|y|+|z| is turned
+    // into a continuous stair profile (flat tread, steep riser) and carved only
+    // where the octahedron facet is the active surface.
+    let hop = (abs(p.x) + abs(p.y) + abs(p.z)) * 2.2 / s;
+    let hopFr = fract(hop);
+    let stair = smoothstep(0.62, 0.95, hopFr) - hopFr;
+    let facetOn = smoothstep(-0.05, 0.05, d2 - d1);
+    d += 0.045 * stair * facetOn;
 
     // Noise displacement (quantum fluctuation)
     if (quantum_fluctuation > 0.0) {
@@ -125,6 +156,10 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
 }
 
 // Iridescent Color Palette
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn palette(t: f32) -> vec3<f32> {
     // Cosine based palette for Bismuth colors
     // a = 0.5, b = 0.5, c = 1.0, d = vec3(0.0, 0.33, 0.67)
@@ -164,6 +199,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = vec3<f32>(0.01, 0.02, 0.05);
     var depth = 1.0;
     var out_n = vec3<f32>(0.0);
+    var glow_t = 0.0;
+    var fres_a = 0.0;
 
     if (d < MAX_DIST) {
         let p = ro + rd * d;
@@ -176,9 +213,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Shading
         let viewDir = normalize(ro - p);
         let fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 3.0);
+        fres_a = fresnel;
+
+        // ── Idea 2: per-crystal / per-facet / per-step oxide zoning (§12.2E). Each crystal
+        // carries its own hue epoch, each of its 8 facet octants and each hopper step
+        // adds an offset, so the field is zoned instead of one smooth rainbow.
+        let cell = cellFrame(p);
+        let octant = f32(u32(cell.p.x > 0.0) + 2u * u32(cell.p.y > 0.0) + 4u * u32(cell.p.z > 0.0));
+        let stepIdx = floor((abs(cell.p.x) + abs(cell.p.y) + abs(cell.p.z)) * 2.2 / (1.0 + cell.r.x * 0.5));
+        let zoning = cell.r.x * 0.37 + octant * 0.071 + stepIdx * 0.045;
 
         // Base color based on position and normal
-        let color_t = fract(p.z * 0.1 + p.x * 0.05 + p.y * 0.05 + fresnel * 2.0 + iridescence_shift + t * 0.1);
+        let color_t = fract(p.z * 0.1 + p.x * 0.05 + p.y * 0.05 + fresnel * 2.0 + iridescence_shift + t * 0.1 + zoning);
         var base_col = palette(color_t);
 
         // Fake SSS
@@ -186,6 +232,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let sss_val = map(p + viewDir * sss_sample_dist);
         let sss_factor = smoothstep(0.0, sss_sample_dist, sss_val);
         base_col += vec3<f32>(0.0, 0.8, 1.0) * sss_glow * (1.0 - sss_factor) * 0.5;
+
+        // ── Idea 3: Beer–Lambert interior SSS (§12.2F). Probe the crystal body behind
+        // the surface along -n; thin shells (edges, step lips) transmit exp(-σ·thickness)
+        // of the cyan glow, thick bodies stay dark.
+        var thin = 0.0;
+        var wsum = 0.0;
+        for (var k = 1; k <= 3; k = k + 1) {
+            let sd = 0.12 * f32(k);
+            let inside = clamp(sd + map(p - n * sd), 0.0, sd) / sd; // 0 = solid behind, 1 = already outside
+            thin += inside / f32(k);
+            wsum += 1.0 / f32(k);
+        }
+        let thickness = 1.0 - thin / wsum;
+        let transmit = exp(-3.0 * thickness);
+        glow_t = transmit;
+        base_col += vec3<f32>(0.1, 0.9, 1.0) * sss_glow * transmit * 0.6;
 
         // Lighting
         let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
@@ -212,7 +274,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Post-processing (vignette)
     col *= 1.0 - 0.5 * dot(uv, uv);
 
-    let finalColor = vec4<f32>(col, 1.0);
+    // display ACES; alpha = coverage (hit) with edge fresnel and interior glow, background 0.9
+    col = acesToneMap(max(col, vec3<f32>(0.0)));
+    let hitA = clamp(0.82 + 0.12 * fres_a + 0.06 * glow_t, 0.0, 1.0);
+    let finalColor = vec4<f32>(col, select(0.9, hitA, depth < 1.0));
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
 
     // Write to other required textures

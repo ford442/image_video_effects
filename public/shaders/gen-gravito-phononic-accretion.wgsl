@@ -8,8 +8,8 @@
 //  Wolfram: Blackbody radiation (3000K–10000K) for accretion disk colors.
 //           Gravitational lensing Einstein radius ~3.6 arcsec for cluster.
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-17
-//  Ideas: relativistic beaming crescent on the approaching disk limb; phononic spiral density waves; Roche-lobe mass-transfer bridges between neighbouring bodies; Keplerian hot spots (omega ~ r^-1.5) with a mids-driven QPO flicker
+//  Upgraded: 2026-10-17, 2026-11-01
+//  Ideas: relativistic beaming crescent on the approaching disk limb; phononic spiral density waves; Roche-lobe mass-transfer bridges between neighbouring bodies; Keplerian hot spots (omega ~ r^-1.5) with a mids-driven QPO flicker; gravitational redshift g=sqrt(1-rs/r) on disk temperature + beamed photon ring and shadow (§12.2F); Einstein ring that magnifies a lens-shifted starfield (§12.2F); differentially sheared hot-spot tails (§12.2E direction)
 //  A packing: tone-mapped temporal display RGB + semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 
@@ -147,6 +147,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hotSpots = vec3<f32>(0.0);
     var bodyPositions: array<vec2<f32>, 6>;
     var bodyMasses: array<f32, 6>;
+    var einstein = 0.0;                       // Idea 6: summed Einstein-ring magnification
+    var photonRing = vec3<f32>(0.0);          // Idea 5: photon rings (added after the shadow)
+    var shadow = 1.0;                         // Idea 5: dark horizon shadow mask
 
     for (var i = 0; i < nBodies; i++) {
         let fi = f32(i);
@@ -179,11 +182,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let approach = clamp(dot(radial, tangent), 0.0, 1.0);
         let beaming = 0.55 + approach * 0.9;
 
+        // ── Idea 5: gravitational redshift (§12.2F). Light climbing out of the well is
+        // reddened and dimmed by g = sqrt(1 - rs/r); the disk's hottest, innermost
+        // annulus is where that matters, so temperature gets g and intensity g².
+        let rs = diskInner * 0.3;
+        let gz = sqrt(max(1.0 - rs / max(dist, rs * 1.05), 0.0));
+
         // Inner disk hotter (blue-white 10000K), outer cooler (red 3000K)
-        let diskTemp = mix(10000.0, 3000.0, smoothstep(diskInner, diskOuter, dist));
+        let diskTemp = mix(10000.0, 3000.0, smoothstep(diskInner, diskOuter, dist)) * gz;
         let diskBB = blackbodyColor(diskTemp) * (1.0 + audioAmp * 0.5);
 
-        let diskVal = diskProfile * bodyMass * shear * densityAmt * beaming;
+        // Photon ring hugging the shadow edge, brighter on the approaching limb (same beaming).
+        let rPh = rs * 2.6;
+        let ringW = 0.003;
+        let ringD = (dist - rPh) / ringW;
+        photonRing += blackbodyColor(9500.0) * exp(-ringD * ringD) * (0.3 + approach * 0.9) * min(bodyMass, 2.5) * 0.8;
+        shadow = min(shadow, mix(0.15, 1.0, smoothstep(rPh * 0.75, rPh * 1.15, dist)));
+
+        // ── Idea 6: Einstein ring just outside the disk; magnifies whatever lies behind it.
+        let rE = diskOuter + 0.02 + 0.03 * sqrt(bodyMass);
+        let eD = (dist - rE) / 0.007;
+        einstein += exp(-eD * eD) * min(bodyMass, 2.0) * 0.5;
+
+        let diskVal = diskProfile * bodyMass * shear * densityAmt * beaming * gz * gz;
         accretion += diskVal;
         accretionColor += diskBB * diskVal;
 
@@ -195,8 +216,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let omega = 1.1 * pow(0.045 / rK, 1.5);
             let spotAng = t * omega + bodySeed.y * TAU + fk * 2.1;
             let spotPos = bodyPos + rK * vec2<f32>(cos(spotAng), sin(spotAng));
-            let sd = uvA - spotPos;
-            let blob = exp(-dot(sd, sd) / (0.012 * 0.012));
+            // ── Idea 7: differential rotation shears each clump into a trailing arc: sharp
+            // leading edge as before, exponential tail behind it along the orbit (§12.2E direction).
+            let dAng = atan2(sin(angle - spotAng), cos(angle - spotAng));
+            let arcLen = dAng * rK;
+            let dRad = (dist - rK) / 0.012;
+            let tailL = 0.022 + 0.018 * fk;
+            let azim = select(exp(-arcLen * arcLen / (0.012 * 0.012)), exp(arcLen / tailL), dAng < 0.0);
+            let blob = exp(-dRad * dRad) * azim * 0.8;
             let qpo = 0.75 + 0.25 * sin(t * omega * 3.0 + fk) * (0.4 + mids * 1.2);
             hotSpots += blackbodyColor(mix(9000.0, 5000.0, fk * 0.5)) * blob * bodyMass * qpo * 0.9;
         }
@@ -241,16 +268,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     color += bridgeColor + hotSpots;
+    // Idea 5: horizon shadow darkens gas inside the photon ring, then the ring itself glows over it.
+    color = color * shadow + photonRing;
 
     // Lensing artifacts: bright arcs
     let lensArc = length(lensDisplace) * 200.0;
     color += vec3<f32>(0.9, 0.7, 0.3) * smoothstep(0.5, 1.5, lensArc) * treble;
 
-    // Stellar background: faint point stars
-    let starNoise = hash12(uvA * 400.0 + vec2<f32>(1.3, 2.7));
+    // Stellar background: faint point stars, seen through a bounded share of the existing
+    // lens deflection (Idea 6: shifted/stretched images) and magnified on each Einstein ring.
+    let lensShift = lensDisplace * (0.06 / (length(lensDisplace) + 0.06));
+    let starNoise = hash12(floor((uvA + lensShift) * 400.0) + vec2<f32>(1.3, 2.7));
     if (starNoise > 0.985) {
-        color += vec3<f32>(0.8, 0.9, 1.0) * (starNoise - 0.985) * 50.0;
+        color += vec3<f32>(0.8, 0.9, 1.0) * (starNoise - 0.985) * 50.0 * (1.0 + 7.0 * min(einstein, 1.0));
     }
+    color += vec3<f32>(0.55, 0.7, 1.0) * einstein * 0.1 * (0.5 + densityB);
 
     // Chromatic aberration
     let caStr = 0.003 * (1.0 + bass);

@@ -663,7 +663,7 @@ function verifyWasmCompileFlags() {
   }
 
   // CI setup-emsdk must use the pin, not `latest`.
-  const emsdkStep = ci.match(/uses:\s*mymindstorm\/setup-emsdk@[^\n]*[\s\S]*?version:\s*['"]?([^'"\s]+)/g) || [];
+  const emsdkStep = ci.match(/uses:\s*(?:mymindstorm|emscripten-core)\/setup-emsdk@[^\n]*[\s\S]*?version:\s*['"]?([^'"\s]+)/g) || [];
   if (emsdkStep.length === 0) fail('wasm.yml: setup-emsdk step with version: not found');
   for (const step of emsdkStep) {
     const v = step.match(/version:\s*['"]?([^'"\s]+)/)[1];

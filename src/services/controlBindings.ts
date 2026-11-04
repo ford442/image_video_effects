@@ -107,6 +107,17 @@ export function makeTrigger(source: ControlSource, id: string): ControlTrigger {
   return { source, id };
 }
 
+const controlEventTaps = new Set<ControlEventCallback>();
+
+/**
+ * Observe every dispatched control event (bound or not). The modulation bus (#1513) uses
+ * this as its external source: values arrive keyed `${source}:${id}`.
+ */
+export function addControlEventTap(tap: ControlEventCallback): () => void {
+  controlEventTaps.add(tap);
+  return () => controlEventTaps.delete(tap);
+}
+
 export class ControlBindingRegistry {
   private bindings = new Map<string, ControlBinding>();
 
@@ -135,6 +146,7 @@ export class ControlBindingRegistry {
   }
 
   dispatch(event: ControlEvent, handle: LiveActionsHandle): boolean {
+    for (const tap of controlEventTaps) tap(event);
     const binding = this.bindings.get(triggerKey(event));
     if (!binding) return false;
 

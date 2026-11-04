@@ -3,30 +3,14 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-03 (Batch 33)
+//  Upgraded: 2026-08-03 (Batch 33), 2026-11-01
+//  Ideas: crest foam (whitewater beads with per-bead sparkle); Beer-Lambert depth absorption;
+//         per-channel Cauchy-style dispersion in the transmission; camera uv.y flipped (was upside-down)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=waveHeight, y=glassRefraction, z=particleDensity, w=audioReactivity
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=waveHeight, y=glassRefraction, z=particleDensity, w=audioReactivity
 
 // Utils
 fn hash31(p: vec3<f32>) -> f32 {
@@ -43,6 +27,11 @@ fn rot(a: f32) -> mat2x2<f32> {
 fn smin(a: f32, b: f32, k: f32) -> f32 {
     let h = max(k - abs(a - b), 0.0) / k;
     return min(a, b) - h * h * k * 0.25;
+}
+
+// Wave surface height at an xz position (shared by map() and the crest foam idea)
+fn waveSurface(pxz: vec2<f32>, time: f32, waveHeight: f32) -> f32 {
+    return sin(pxz.x * 0.5 - time) * cos(pxz.y * 0.5 - time) * waveHeight;
 }
 
 // Map function
@@ -70,7 +59,7 @@ fn map(pos: vec3<f32>, time: f32) -> f32 {
     }
 
     // Wave displacement
-    let waveOffset = sin(p.x * 0.5 - time) * cos(p.z * 0.5 - time) * waveHeight;
+    let waveOffset = waveSurface(p.xz, time, waveHeight);
     p.y -= waveOffset + audio * sin(p.x * 2.0);
 
     // Domain repetition
@@ -111,6 +100,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var uv = (pixel - 0.5 * dims) / dims.y;
+    uv.y = -uv.y; // pixel y runs down; flip so the world is upright (rd.y was inverted)
     let time = u.config.x;
 
     // Audio reactivity: mids boost fresnel caustics, treble adds spec sparkle
@@ -136,7 +126,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     rd.x = rot_xz.x;
     rd.z = rot_xz.y;
 
-    var t = 0.0;
+    // Near clip: the camera sits inside the repeated lattice, so beads right at the lens
+    // filled the frame as giant smeared ellipses.
+    var t = 1.4;
     var d = 0.0;
     var p = vec3<f32>(0.0);
     var col = vec3<f32>(0.0);
@@ -163,13 +155,37 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 5.0);
         surfFresnel = fresnel;
         let eta = mix(0.62, 0.92, glassRefraction);
-        let refracted = refract(rd, n, eta);
-        let transmission = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.1, 4.2) + refracted.y * 5.0 + refracted.x * 2.0);
+        // Idea 3: Cauchy-style dispersion. Blue bends more than red, so each channel refracts
+        // with its own eta and the cosine transmission palette splits into fringes.
+        let etaRGB = clamp(vec3<f32>(eta * 1.02, eta, eta * 0.98), vec3<f32>(0.3), vec3<f32>(0.98));
+        let refR = refract(rd, n, etaRGB.x);
+        let refG = refract(rd, n, etaRGB.y);
+        let refB = refract(rd, n, etaRGB.z);
+        let transmission = vec3<f32>(
+            0.5 + 0.5 * cos(0.0 + refR.y * 5.0 + refR.x * 2.0),
+            0.5 + 0.5 * cos(2.1 + refG.y * 5.0 + refG.x * 2.0),
+            0.5 + 0.5 * cos(4.2 + refB.y * 5.0 + refB.x * 2.0));
 
         col = vec3<f32>(0.1, 0.4, 0.8) * diff; // base water color
         col += transmission * (0.25 + glassRefraction * 0.55) * (1.0 - fresnel) * (1.0 + mids * 0.35);
         col += vec3<f32>(0.8, 0.9, 1.0) * fresnel * glassRefraction * (1.0 + mids * 0.6); // caustics
         col += pow(max(dot(r, l), 0.0), 32.0) * vec3<f32>(1.0) * (1.0 + treble * 1.5); // spec
+
+        // Idea 2: Beer-Lambert absorption. Beads sunk below the wave plane have more water
+        // above them, and red goes first (teal -> deep blue).
+        let surfY = waveSurface(p.xz, time, u.zoom_params.x);
+        let sunk = clamp((surfY - p.y) * 0.18 + 0.15, 0.0, 2.0);
+        col *= exp(-vec3<f32>(1.1, 0.35, 0.12) * sunk);
+
+        // Idea 1: crest foam. Beads near the wave crest turn to whitewater; each bead
+        // sparkles on its own phase (hash of its lattice cell), treble adds glints.
+        let wh = max(u.zoom_params.x, 0.1);
+        let crest = smoothstep(0.45, 0.95, waveSurface(p.xz, time, 1.0));
+        let spacingH = 1.0 / max(u.zoom_params.z, 0.1);
+        let cellId = floor(vec3<f32>(p.x, p.y - surfY, p.z) / spacingH);
+        let sparkle = 0.55 + 0.45 * sin(time * 6.0 + hash31(cellId) * 40.0);
+        let foam = crest * min(wh, 1.0) * sparkle * (0.7 + treble * 0.8);
+        col = mix(col, vec3<f32>(1.0, 1.0, 1.0) * (0.9 + 0.5 * diff), clamp(foam, 0.0, 0.85));
 
         // Fog
         col = mix(col, vec3<f32>(0.05, 0.1, 0.2), 1.0 - exp(-0.02 * t * t));

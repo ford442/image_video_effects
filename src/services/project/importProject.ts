@@ -15,6 +15,8 @@ export interface ProjectImportEnvironment {
   isMediaRefAvailable?: (source: ProjectSource) => boolean;
 }
 
+const structuredCloneRoute = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
+
 /** Parse, migrate, and validate the whole document without touching live state. */
 export function parseProjectFile(serialized: string): ProjectParseResult {
   if (!serialized.trim()) return { ok: false, errors: ['Project file is empty'] };
@@ -89,6 +91,11 @@ export function createProjectApplyPlan(
       ? { audio: { ...(project.audio.mappings ? { mappings: [...project.audio.mappings] } : {}) } }
       : {}),
     ...(project.timeline ? { timeline: project.timeline } : {}),
+    modulation: project.modulation.filter((route) => {
+      if (slots[route.target.slot]?.shaderId) return true;
+      warnings.push(`Modulation route "${route.id}" targets empty slot ${route.target.slot + 1}; dropped.`);
+      return false;
+    }).map((route) => ({ ...route, source: structuredCloneRoute(route.source), target: { ...route.target } })),
     warnings,
   };
 }

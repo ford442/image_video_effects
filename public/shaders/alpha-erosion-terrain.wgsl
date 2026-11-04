@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: alluvial fans where slope flattens; stream incision where water concentrates
+//  Upgraded: 2026-09-12, 2026-11-01
+//  Ideas: alluvial fans where slope flattens; stream incision where water concentrates; talus slump (thermal erosion, mass-conserving); hillshaded relief with wet sheen
 //  A packing: raw (height, water, sediment, erosion)
 // ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
@@ -17,26 +17,7 @@
 //  the terrain either flat or cliff with no gradual valleys.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -46,6 +27,15 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
 
 fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
     return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+}
+
+// 2026-11-01 Idea 1 helper: flux into a cell from one neighbour when the height
+// difference exceeds the angle of repose. Built from previous-frame heights and
+// the pair-averaged water, so the neighbour computes the exact opposite value
+// (mass moves, it is not created).
+fn slumpFlux(h0: f32, w0: f32, n: vec4<f32>, talus: f32) -> f32 {
+    let wet = 0.4 + min(0.5 * (w0 + n.g), 1.0);
+    return wet * (max(n.r - h0 - talus, 0.0) - max(h0 - n.r - talus, 0.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -123,6 +113,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     height += fanDeposit;
     sediment -= fanDeposit;
 
+    // ── 2026-11-01 Idea 1: talus slump (thermal erosion) ───────────────
+    // Hydraulic erosion's partner: banks steeper than the angle of repose fail
+    // and slide downhill, faster when saturated. Speed rides Erosion Rate.
+    let talus = 0.03;
+    let slumpK = erosionRate * 0.08;
+    let slumpNet = slumpK * (slumpFlux(prevState.r, prevState.g, left, talus)
+                           + slumpFlux(prevState.r, prevState.g, right, talus)
+                           + slumpFlux(prevState.r, prevState.g, down, talus)
+                           + slumpFlux(prevState.r, prevState.g, up, talus));
+    height += slumpNet;
+    erosion += max(-slumpNet, 0.0);
+
     // === WATER MOVEMENT (advect toward lower neighbors) ===
     var flowOut = 0.0;
     let myTotalHeight = height + water * 0.1;
@@ -191,6 +193,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         terrainColor = highColor;
     }
 
+    // ── 2026-11-01 Idea 2: hillshaded relief ───────────────────────────
+    // Lambert from a low north-west sun on the height gradient already loaded
+    // for the solver (flat ground = 1.0), so incised channels and fans read as
+    // relief and not only as colour.
+    let reliefGrad = vec2<f32>(right.r - left.r, up.r - down.r) * 12.0;
+    let reliefN = normalize(vec3<f32>(-reliefGrad.x, -reliefGrad.y, 1.0));
+    let sunDir = normalize(vec3<f32>(-0.55, -0.55, 0.63));
+    let hillshade = clamp(dot(reliefN, sunDir) / 0.63, 0.0, 1.6);
+    terrainColor = terrainColor * mix(1.0, hillshade, 0.7);
+
     // Water overlay
     let waterColor = vec3<f32>(0.2, 0.4, 0.6);
     let waterVis = min(water, 1.0);
@@ -211,6 +223,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Stream incision visual: darker wet channel
     let channelVis = smoothstep(0.05, 0.22, water) * smoothstep(0.03, 0.16, slope);
     displayColor = mix(displayColor, vec3<f32>(0.12, 0.18, 0.22), channelVis * 0.4);
+
+    // Idea 2 (cont.): wet sheen — tight glint from the water-surface gradient.
+    let waterN = normalize(vec3<f32>(-(right.g - left.g) * 3.0, -(up.g - down.g) * 3.0, 1.0));
+    let sunHalf = normalize(sunDir + vec3<f32>(0.0, 0.0, 1.0));
+    let waterSpec = pow(max(dot(waterN, sunHalf), 0.0), 48.0);
+    displayColor += vec3<f32>(0.85, 0.93, 1.0) * waterSpec * waterVis * 0.6;
 
     displayColor += audio * vec3<f32>(0.05, 0.08, 0.12) * waterVis;
 

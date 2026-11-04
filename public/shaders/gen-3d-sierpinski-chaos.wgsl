@@ -4,31 +4,13 @@
 //  Features: sierpinski, chaos-game, 3d-fractal, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-05-31 — Kimi Agent (Bright batch)
-//  Upgraded: 2026-09-15, 2026-09-27
-//  Ideas: attractor-biased chaos; repeat-vertex corner flares; iteration-age hue; opposite-face chroma; midpoint cavity; edge filament
+//  Upgraded: 2026-09-15, 2026-09-27, 2026-11-01
+//  Ideas: attractor-biased chaos; repeat-vertex corner flares; iteration-age hue; opposite-face chroma; midpoint cavity; edge filament; IFS address colouring (last two picks name the level-2 sub-tetrahedron); perspective splat radius
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Point Density, .y = Rotation Speed, .z = Point Size, .w = Color Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Point Density, .y = Rotation Speed, .z = Point Size, .w = Color Shift
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -201,6 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     vi = select(vi, attractor, mouseDown && bias < 0.4);
     // Idea 2: consecutive same-index picks flare the tet corners.
     let repeatCorner = select(0.0, 1.0, vi == lastVi);
+    let prevPick = min(lastVi, 3u);
     lastVi = vi;
     point = (point + vertices[vi]) * 0.5;
     if (i < WARMUP_ITERS) { continue; }       // convergence discard, folded in
@@ -212,9 +195,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let diff = uv - proj;
     let distSq = dot(diff, diff);
-    if (distSq >= pointRadius) { continue; }  // coarse cull before shading
+    // 2026-11 Idea 2: perspective splat radius. Splats are world-space points but had a constant screen
+    // radius; the squared radius now scales with (CAMERA_DIST / projZ)^2, so near points are bigger.
+    let perspScale = clamp((CAMERA_DIST * CAMERA_DIST) / (projZ * projZ), 0.4, 3.0);
+    let radiusEff = pointRadius * perspScale;
+    if (distSq >= radiusEff) { continue; }  // coarse cull before shading
 
-    let influence = 1.0 - distSq / pointRadius;
+    let influence = 1.0 - distSq / radiusEff;
     let depthWeight = 1.0 / projZ;
     // Idea 3: farthest vertex names the opposite face (four-face chroma).
     let dv0 = dot(point - vertices[0], point - vertices[0]);
@@ -227,7 +214,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     farIdx = select(farIdx, 2u, dv2 > farD); farD = max(farD, dv2);
     farIdx = select(farIdx, 3u, dv3 > farD);
     let age = f32(i) / max(f32(numPoints), 1.0);
-    let hue = fract(f32(vi) * 0.12 + f32(farIdx) * 0.25 + hueBase + rp.y * 0.15 + age * 0.18);
+    // 2026-11 Idea 1: IFS address colouring. The last two vertex picks (16 sub-tetrahedra at level 2)
+    // offset the hue, so the self-similar nesting shows as coloured sub-copies.
+    let addressHue = f32(vi * 4u + prevPick) * (1.0 / 16.0) * 0.6;
+    let hue = fract(f32(vi) * 0.12 + f32(farIdx) * 0.25 + hueBase + rp.y * 0.15 + age * 0.18 + addressHue);
     // Idea: midpoint cavity — the chaos game never fills the tet hole.
     // Nearly equal distances to all four vertices is that open center.
     let dMean = (dv0 + dv1 + dv2 + dv3) * 0.25;

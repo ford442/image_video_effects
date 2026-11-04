@@ -2,34 +2,13 @@
 //  astral-kaleidoscope-grokcf1
 //  Category: psychedelic
 //  Features: upgraded-rgba, depth-aware, mouse-driven, audio-reactive
-//  Upgraded: 2026-09-11
-//  Ideas: bass/mids-driven spin (rotation + spiral); held-pointer spiral grab toward cursor angle
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: bass/mids-driven spin (rotation + spiral); held-pointer spiral grab toward cursor angle; second counter-rotating object chamber; log-spiral twist term
 //  A packing: display RGBA feedback trail (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture:    texture_2d<f32>;
-@group(0) @binding(2) var writeTexture:     texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture:   texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture:   texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>,       // x=time, yz=mouse_uv, w=mouse_down
-  zoom_params: vec4<f32>,       // x=segments, y=rotationSpeed, z=spiralStrength, w=trails
-  ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=segments, y=rotationSpeed, z=spiralStrength, w=trails
 
 // ---------------------------------------------------------------
 //  Constants and Math Utilities
@@ -45,6 +24,14 @@ fn rotate(v: vec2<f32>, a: f32) -> vec2<f32> {
     var s = sin(a);
     let c = cos(a);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+// Fold an angle into one mirrored wedge (same operation as the main fold, reused for chamber 2).
+fn foldAngle(angle: f32, segAngle: f32) -> f32 {
+    var f = fmod(angle, segAngle);
+    if (f < 0.0) { f += segAngle; }
+    if (f > segAngle * 0.5) { f = segAngle - f; }
+    return f;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -130,7 +117,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  1️⃣  Parameters
     // -----------------------------------------------------------------
-    let segments    = max(2.0, u.zoom_params.x * 14.0 + 2.0);
+    // A mirror fan only closes for an integer count (a fractional count left a seam at the atan2 cut).
+    let segments    = max(2.0, round(u.zoom_params.x * 14.0 + 2.0));
     // grokcf1 UPGRADE: bass/mids torque the rotation and spiral engine
     // directly (instead of the warp channel gemini uses), so beats visibly
     // spin the mirror.
@@ -176,7 +164,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pointerAngle = atan2(pointerUV.y - center.y, pointerUV.x - center.x);
     let grabSpiral = pointerHeld * sin(pointerAngle - a) * 1.4;
 
-    a = a + rotation + spiral + grabSpiral;
+    // 2026-11 Idea 2: log-spiral twist. HEAD's spiral is linear in r (Archimedean); a logarithmic term
+    // makes the arms self-similar toward the centre.
+    let logSpiral = 0.12 * spiralStr * log(r + 0.05) * sin(time * 0.2 + 1.0);
+    // 2026-11 Idea 1: the second object chamber starts from the same angle but turns the other way.
+    let chamberAngle = a - 0.7 * (rotation + spiral) + 1.3;
+
+    a = a + rotation + spiral + grabSpiral + logSpiral;
     
     let segmentAngle = 2.0 * PI / segments;
     a = fmod(a, segmentAngle);
@@ -202,6 +196,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let colG = textureSampleLevel(readTexture, u_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
     let colB = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     var color = vec3<f32>(colR, colG, colB);
+
+    // 2026-11 Idea 1: second object chamber. A real scope's loose objects tumble in a chamber that
+    // turns independently of the mirrors; a second tap through the same fold with a counter-rotating
+    // angle is screen-blended in at 50 %.
+    let segAngle2 = 2.0 * PI / segments;
+    let a2 = foldAngle(chamberAngle, segAngle2);
+    let chamberUV = center + vec2<f32>(cos(a2), sin(a2)) * r_pulse;
+    let chamber2 = textureSampleLevel(readTexture, u_sampler, clamp(chamberUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    color = vec3<f32>(1.0) - (vec3<f32>(1.0) - color) * (vec3<f32>(1.0) - chamber2 * 0.5);
     
     // -----------------------------------------------------------------
     //  5️⃣  Evolved Psychedelic Color Grading
@@ -216,7 +219,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // -----------------------------------------------------------------
     //  6️⃣  Enhanced Feedback Trails
     // -----------------------------------------------------------------
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).rgb;
     let decay = 0.88 + (trails * 0.11); // Map 0..1 to 0.88..0.99
     
     // ✨ grokcf1 UPGRADE: Mix in a subtle noise shimmer into the feedback
@@ -232,7 +235,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     // Calculate luminance-based alpha
     let luma = dot(finalCol, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = mix(0.7, 1.0, luma);
+    // clamped: luma of the unbounded feedback can exceed 1, which pushed alpha above 1 at HEAD
+    let alpha = clamp(mix(0.7, 1.0, luma), 0.0, 1.0);
     let finalAlpha = mix(alpha * 0.8, alpha, staticDepth);
     
     textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(acesToneMap(finalCol), finalAlpha));

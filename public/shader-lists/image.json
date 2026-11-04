@@ -1841,7 +1841,7 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion, caustic streaks, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+    "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion and caustic streaks. Astigmatic corner softening smears along the radius as r² and lens strength grow, and internal-reflection ghosts re-image bright pixels through the focus axis. Preserved [bassEnvelope, trailRGB] A packing.",
     "workgroup_size": [
       16,
       16,
@@ -1896,7 +1896,9 @@
       "continuous-motion",
       "bounded-click-ripples",
       "spring-cursor",
-      "held-drag"
+      "held-drag",
+      "astigmatism",
+      "lens-ghosts"
     ],
     "tags": [
       "filter",
@@ -2373,7 +2375,7 @@
     "id": "frosted-glass-lens",
     "name": "Frosted Glass Lens",
     "url": "shaders/frosted-glass-lens.wgsl",
-    "description": "Frosted lens with a Beckmann microfacet scattering lobe — five taps drawn from a Beckmann slope distribution, giving the heavy-tailed blur of ground glass rather than a single offset — and depth-dependent frost thickness so far, cold geometry frosts over while near geometry stays clear. Adds ACES, bounded click frost-clear fronts and dataTextureC persistence, and replaces a per-frame hash grain that strobed as static with a spatially coherent drifting field.",
+    "description": "Frosted lens with a Beckmann microfacet scatter lobe and depth-dependent frost thickness (far geometry frosts first). Frost forward-scatters in a Henyey-Greenstein two-ring halo with veiling glare; the clear window is a polished meniscus whose rim refracts radially and glints. ACES, bounded click frost-clear fronts and dataTextureC frost memory.",
     "params": [
       {
         "id": "frost_amt",
@@ -2418,7 +2420,9 @@
       "fresnel",
       "beer-lambert",
       "chromatic-aberration",
-      "temporal-frost"
+      "temporal-frost",
+      "forward-scatter",
+      "meniscus-bevel"
     ],
     "tags": [
       "filter",
@@ -2727,7 +2731,7 @@
     "name": "Hex Lens Interactive",
     "category": "image",
     "url": "shaders/hex-lens.wgsl",
-    "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
+    "description": "Honeycomb microlenses with hexagonal bokeh, aperture diffraction starbursts and FBM warp. Each cell is a domed lenslet: Snell refraction through the cap with Cauchy per-channel dispersion fringes that grow toward the rim, a focal hot-spot at the cell centre and cos⁴ rim falloff. Luminance ACES tone map; audio-reactive rotation and shimmer.",
     "params": [
       {
         "id": "tile_size",
@@ -2765,7 +2769,10 @@
       "chromatic-aberration",
       "hexagonal-bokeh",
       "chromatic-dispersion",
-      "diffraction-patterns"
+      "diffraction-patterns",
+      "snell-refraction",
+      "cauchy-dispersion",
+      "aces"
     ],
     "tags": [
       "hex",
@@ -3342,7 +3349,7 @@
     "name": "Oil Slick Iridescence",
     "url": "shaders/oil-slick-iridescence.wgsl",
     "category": "image",
-    "description": "Nanometre-scale thin-film interference: film thickness is expressed in real nanometres (120–900 nm), the incidence angle comes from the height field's own gradient, the in-film angle follows Snell's law, and the two reflected beams combine with Fresnel weighting plus the pi phase step at the external interface. Curl-noise flow banded by the FFT transports the film; pointer and bounded click ring waves deform its surface.",
+    "description": "Nanometre-scale thin-film interference: film thickness is expressed in real nanometres (120–900 nm), the incidence angle comes from the height field's own gradient, the in-film angle follows Snell's law, and the two reflected beams combine with Fresnel weighting plus the pi phase step at the external interface. Curl-noise flow banded by the FFT transports the film; pointer and bounded click ring waves deform its surface. Cauchy dispersion shifts each channel's film angle, gravity drainage thins the slick toward the top into common-black film, and finite-bandwidth channels wash high orders to pastel.",
     "tags": [
       "iridescence",
       "oil",
@@ -3352,7 +3359,9 @@
       "audio-reactive",
       "cinematic",
       "snell",
-      "fresnel"
+      "fresnel",
+      "dispersion",
+      "drainage"
     ],
     "features": [
       "mouse-driven",

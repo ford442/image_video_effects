@@ -2,14 +2,15 @@
   "id": "kimi-flock-symphony-em",
   "name": "Kimi Flock Symphony Em",
   "url": "shaders/kimi-flock-symphony-em.wgsl",
-  "description": "Kimi Flock Symphony Em",
+  "description": "A swarm of 2048 glowing particles bent by electric and magnetic fields from the mouse. Particles carry a charge sign, so the swarm splits into two fluids around the cursor, and each streaks along its own drift direction.",
   "tags": [
     "flocking-particles",
     "electromagnetic-fields"
   ],
   "features": [
     "flocking-particles",
-    "electromagnetic-fields"
+    "electromagnetic-fields",
+    "mouse-driven"
   ],
   "params": [
     {

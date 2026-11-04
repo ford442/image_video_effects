@@ -2,7 +2,15 @@
   "generated": "2026-11-02T14:13:04.000534+00:00",
   "defs_scanned": 12,
   "defs_with_params": 12,
-  "new_dead_sliders": [],
+  "new_dead_sliders": [
+    {
+      "id": "gen-abyssal-geode-matrix",
+      "category": "generative",
+      "param_id": "fractalDetail",
+      "name": "Fractal Detail",
+      "field": "w"
+    }
+  ],
   "known_dead_sliders": [],
   "errors": [],
   "baseline": "reports/dead_sliders_audit_baseline.json"

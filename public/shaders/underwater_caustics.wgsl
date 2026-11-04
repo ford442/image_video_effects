@@ -3,31 +3,12 @@
 //  Category: lighting-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: dual-frequency caustic beat; suspended particulate glitter
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: dual-frequency caustic beat; suspended particulate glitter; Cauchy-dispersed caustic ridges (§12.2F); Beer-Lambert tinted caustic sheet (§12.2F)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 struct SurfaceSample {
   height: f32,
@@ -77,6 +58,11 @@ fn surfaceAt(p: vec2<f32>, time: f32, waveScale: f32, audio: vec3<f32>) -> Surfa
     result.hyy += curvature * direction.y * direction.y;
   }
   return result;
+}
+
+fn jacobianFocus(s: SurfaceSample, k: f32) -> f32 {
+  let det = (1.0 - k * s.hxx) * (1.0 - k * s.hyy) - k * k * s.hxy * s.hxy;
+  return min(7.0, 1.0 / max(abs(det), 0.12));
 }
 
 fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
@@ -158,6 +144,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ridgePrimary = pow(clamp((focus - 0.75) / 5.5, 0.0, 1.0), 1.55);
   let ridgeBeat = pow(clamp((focusBeat - 0.75) / 5.5, 0.0, 1.0), 1.55);
   let causticRidge = ridgePrimary * mix(0.65, ridgeBeat, 0.55);
+  // ── Idea 3: Cauchy dispersion of the caustic ridge (§12.2F) ──────────
+  // Blue bends slightly more than red, so the Jacobian is evaluated with a
+  // per-channel refractive scale; ridge edges fringe red/blue.
+  let dispersion = vec3<f32>(0.93, 1.0, 1.08);
+  var ridgeRGB = vec3<f32>(0.0);
+  for (var c = 0; c < 3; c = c + 1) {
+    let kc = refractiveScale * dispersion[c];
+    let rp = pow(clamp((jacobianFocus(surface, kc) - 0.75) / 5.5, 0.0, 1.0), 1.55);
+    let rb = pow(clamp((jacobianFocus(surfaceBeat, kc) - 0.75) / 5.5, 0.0, 1.0), 1.55);
+    ridgeRGB[c] = rp * mix(0.65, rb, 0.55);
+  }
   let normal = normalize(vec3<f32>(-surface.gradient, 1.0));
   let lightDirection = normalize(vec3<f32>((sun - uv) * aspectVec, 0.7));
   let specular = pow(max(dot(reflect(-lightDirection, normal), vec3<f32>(0.0, 0.0, 1.0)), 0.0), 42.0);
@@ -172,7 +169,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cyanScatter = vec3<f32>(0.04, 0.42, 0.55);
   let history = historyAt(uv - surface.gradient / aspectVec * 0.002, resolution);
   var hdr = transmitted + deepWater * (0.45 + waterDepth * 0.18);
-  hdr += sunColor * (causticRidge * causticIntensity * (0.7 + audio.y * 0.35) + specular * 0.65 + rippleLight * 0.12);
+  // ── Idea 4: Beer-Lambert tint (§12.2F) — the sunlight that makes the caustic
+  // crossed the water column, so red is absorbed first and the sheet runs cyan with depth.
+  let causticTint = exp(-absorption * 0.45);
+  hdr += sunColor * causticTint * ridgeRGB * causticIntensity * (0.7 + audio.y * 0.35);
+  hdr += sunColor * (specular * 0.65 + rippleLight * 0.12);
 
   // Suspended particulate glitter in high-focus cells
   let glitterMask = smoothstep(2.6, 4.2, focus * focusBeat);

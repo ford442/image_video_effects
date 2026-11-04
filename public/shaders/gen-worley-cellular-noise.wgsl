@@ -4,7 +4,7 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, depth-aware, temporal-feedback
 //  Complexity: High
 //  Upgraded: 2026-10-10
-//  Ideas: membrane aberration; turgor domes; triple junctions; nucleus disk; plasmodesmata pores
+//  Ideas: membrane aberration; turgor domes; triple junctions; nucleus disk; plasmodesmata pores; cyclosis streaming; organelle granules; secondary-wall ring
 //  A packing: (f1 + drift, F2−F1 boundary + drift, wall scatter, alpha) fields; C read back with exact textureLoad, .g feeds the organic drift
 // ═══════════════════════════════════════════════════════════════════
 
@@ -58,6 +58,7 @@ struct CellField {
   f2: f32,
   f3: f32,          // third-nearest distance (triple-junction vertices)
   cellId: f32,      // hash of the nearest feature's cell (tissue tint)
+  local: vec2<f32>, // p − nearest feature point (cell-local frame for cyclosis / granules)
   grad: vec2<f32>,  // analytic ∇(F2−F1) (membrane aberration direction)
 };
 
@@ -102,6 +103,7 @@ fn worleyField(p: vec2<f32>, time: f32, speed: f32, bass: f32, mids: f32, clickB
   out.f2 = f2;
   out.f3 = f3;
   out.cellId = id;
+  out.local = p - pt1;
   out.grad = (p - pt2) / max(f2, 1e-4) - (p - pt1) / max(f1, 1e-4);
   return out;
 }
@@ -115,7 +117,7 @@ struct TissueShade {
 // HEAD tissue shading (palette, SSS scatter, fBm, boundary glow, audio tint) as a function
 // of the cell fields, so the membrane aberration can re-evaluate it at displaced taps.
 fn shadeTissue(w: CellField, drift: f32, org: f32, organic: f32,
-               bass: f32, mids: f32, treble: f32, clickBurst: f32) -> TissueShade {
+               bass: f32, mids: f32, treble: f32, clickBurst: f32, time: f32) -> TissueShade {
   let f1 = w.f1 + drift;
   let boundary = (w.f2 - w.f1) + drift * 0.5;
 
@@ -168,6 +170,28 @@ fn shadeTissue(w: CellField, drift: f32, org: f32, organic: f32,
   let pore = smoothstep(0.62, 0.88, org) * exp(-wallB * 3.5);
   color = color + ivory * pore * organic * 0.4;
 
+  // Idea 4 — secondary-wall ring: a thin lignified contour at a fixed fraction of the dome
+  // (rWall≈0.72) inside each membrane, warm-tinted and only on cells whose id is "woody".
+  let ring = exp(-pow((rWall - 0.72) / 0.045, 2.0)) * smoothstep(0.35, 0.75, w.cellId);
+  color = color * (1.0 - 0.25 * ring) + vec3<f32>(0.75, 0.5, 0.3) * ring * 0.35;
+
+  // Idea 5 — cyclosis: cytoplasm streams around the nucleus. Angular streaks in the
+  // cell-local frame (rotation direction alternates per cell, speed follows the Animation slider).
+  let ang = atan2(w.local.y, w.local.x);
+  let dirn = select(-1.0, 1.0, w.cellId > 0.5);
+  let stream = noise2(vec2<f32>(ang * 2.2 + dirn * time * 0.6, w.f1 * 5.0 - w.cellId * 9.0));
+  let streamBand = smoothstep(0.08, 0.3, w.f1) * (1.0 - smoothstep(0.55, 0.95, rWall));
+  color = color * (1.0 + (stream - 0.5) * 0.45 * streamBand * (0.5 + organic));
+
+  // Idea 6 — organelle granules: small bright beads on a ring of the cell-local frame,
+  // orbiting with the stream, so the stream reads as moving cargo (lysosomes catch treble).
+  let gA = ang + dirn * time * 0.6 + w.cellId * 6.28;
+  let gSector = floor(gA * 1.9099);          // 12 beads around the ring
+  let gOff = (fract(gA * 1.9099) - 0.5);
+  let gR = 0.16 + 0.12 * hash21(vec2<f32>(gSector, w.cellId * 31.0));
+  let bead = exp(-(gOff * gOff * 5.0 + pow((w.f1 - gR) * 22.0, 2.0)));
+  color = color + vec3<f32>(1.0, 0.82, 0.62) * bead * (0.18 + treble * 0.35) * streamBand;
+
   var s: TissueShade;
   s.hdr = color;
   s.scatter = scatter;
@@ -217,7 +241,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let org = fbm(p * 2.0 + vec2<f32>(time * 0.1, 0.0));
 
   let wc = worleyField(p, time, speed, bass, mids, clickBurst);
-  let centre = shadeTissue(wc, drift, org, organic, bass, mids, treble, clickBurst);
+  let centre = shadeTissue(wc, drift, org, organic, bass, mids, treble, clickBurst, time);
   var hdr = centre.hdr;
 
   // Idea 1 — real membrane aberration: the wall acts as a thin lens. R and B re-run the
@@ -231,8 +255,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let offs = dir * caAmt * 0.07 * (1.0 + treble) * wallBand;
     let wr = worleyField(p + offs, time, speed, bass, mids, clickBurst);
     let wb = worleyField(p - offs, time, speed, bass, mids, clickBurst);
-    hdr.r = shadeTissue(wr, drift, org, organic, bass, mids, treble, clickBurst).hdr.r;
-    hdr.b = shadeTissue(wb, drift, org, organic, bass, mids, treble, clickBurst).hdr.b;
+    hdr.r = shadeTissue(wr, drift, org, organic, bass, mids, treble, clickBurst, time).hdr.r;
+    hdr.b = shadeTissue(wb, drift, org, organic, bass, mids, treble, clickBurst, time).hdr.b;
   }
 
   let color = acesToneMap(hdr * 1.2);

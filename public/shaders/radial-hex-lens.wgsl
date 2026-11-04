@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, hex-bokeh, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: compound eye — every hex cell is a tiny parallaxed lens; domed facets lit from the cursor side
+//  Upgraded: 2026-11-01
+//  Ideas: compound eye — every hex cell is a tiny parallaxed lens; domed facets lit from the cursor side; pseudopupil — cells whose axis points at the cursor go dark and the dark spot tracks it; tapetum eyeshine — a hashed gold/green retro-reflected ring on the cells fringing the pseudopupil
 //  A packing: raw fields (falloff, hex_size, alpha, bass); B diagnostics (historyBlend, zoom, dist/radius, fog)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const HEX_TAPS = array<vec2<f32>, 7>(
     vec2<f32>(0.0, 0.0), vec2<f32>(1.0, 0.0), vec2<f32>(0.5, 0.866),
@@ -153,6 +134,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let domeShade = 0.72 + 0.28 * max(dot(domeN, L), 0.0);
     let domeGlint = pow(max(dot(domeN, H), 0.0), 40.0) * 0.45 * (1.0 + bass * 0.5);
     lensColor = lensColor * domeShade + vec3<f32>(domeGlint);
+    // Idea 3: pseudopupil. In a real compound eye the ommatidia whose axis points at the viewer absorb
+    // the light and look dark, and that dark spot follows the viewing direction. Cells near the cursor
+    // get a dark pupil disc, weighted by how closely the cell is aligned to the cursor.
+    let cellOff = center - mouseA;
+    let alignSigma = max(radius * 0.22, hex_size * 2.0);
+    let axisAlign = exp(-dot(cellOff, cellOff) / (alignSigma * alignSigma));
+    let localLen = length(local);
+    let pupilR = hex_size * 0.22;
+    let pupil = (1.0 - smoothstep(pupilR * 0.7, pupilR, localLen)) * axisAlign * falloff;
+    lensColor = lensColor * (1.0 - 0.65 * pupil);
+
+    // Idea 4: tapetum eyeshine. Cells just outside the aligned patch retro-reflect: a thin sheen ring at
+    // the dome's rim whose colour is fixed per cell (gold to green), brightest where alignment is half.
+    let cellKey = round(center / max(hex_size, 1.0e-4));
+    let shineTint = mix(vec3<f32>(0.95, 0.78, 0.25), vec3<f32>(0.3, 0.95, 0.55), hash21(cellKey));
+    let fringe = exp(-dot(cellOff, cellOff) / (alignSigma * alignSigma * 2.8)) * (1.0 - axisAlign * 0.7);
+    let shineRing = exp(-pow((localLen - hex_size * 0.36) / max(hex_size * 0.05, 1.0e-4), 2.0));
+    lensColor = lensColor + shineTint * shineRing * fringe * falloff * 0.5 * (1.0 + bass * 0.5);
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let color = mix(baseColor, lensColor, falloff);
 

@@ -21,6 +21,7 @@ import { loadDisplayP3 } from '../../services/displayP3';
 import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, InternalColorFormat } from '../../config/formatPolicy';
 import { createDefaultBreadcrumbs } from '../../gpuChores/types';
 import { reportError } from '../ErrorHandling';
+import { modulationStore, type ModulationSnapshot } from '../../modulation/store';
 import { VideoFramePump, VideoIngestStats } from '../media/videoFramePump';
 import type { MultipassGraphDef } from '../multipassGraph';
 import type { RuntimeSimRingRequest } from '../runtimeGraphs';
@@ -145,6 +146,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private shutdown = false;
   private fatalErrorHandler: ((message: string, info?: DeviceLossInfo) => void) | null = null;
   private lastDeviceLoss: DeviceLossInfo | null = null;
+  private unsubscribeModulation: (() => void) | null = null;
 
   constructor(
     private readonly config: RendererConfig,
@@ -221,6 +223,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     if (typeof location !== 'undefined' && new URLSearchParams(location.search).has('no_direct_present')) {
       client.send({ type: 'setDirectPresentEnabled', enabled: false });
     }
+    this.forwardModulation(client);
     console.log('✅ TypeScript WebGPU renderer running in the render worker');
     return true;
   }
@@ -244,8 +247,22 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
     return this.destroy();
   }
 
+  /**
+   * The modulation bus lives in the worker (#1513): send the current routes now (fresh
+   * worker or device-loss recovery) and every change after; no per-frame round trip.
+   */
+  private forwardModulation(client: RenderWorkerClient): void {
+    const send = ({ routes, bpm }: ModulationSnapshot) => client.send({ type: 'setModulation', routes: [...routes], bpm });
+    send(modulationStore.getSnapshot());
+    const offRoutes = modulationStore.subscribe(send);
+    const offExternal = modulationStore.subscribeExternal((values) => client.send({ type: 'setModulationExternal', values }));
+    this.unsubscribeModulation = () => { offRoutes(); offExternal(); };
+  }
+
   private shutdownClient(): void {
     this.shutdown = true;
+    this.unsubscribeModulation?.();
+    this.unsubscribeModulation = null;
     this.ring = null;
     clearRendererDevice('render worker shut down', this);
     this.unregisterCompiler?.();

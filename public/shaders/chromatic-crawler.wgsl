@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, temporal-feedback, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: cell membranes tinted by the neighbour's wavelength; trails stream behind the crawl; cursor joins the crawl
+//  Upgraded: 2026-10-05, 2026-11-01
+//  Ideas: cell membranes tinted by the neighbour's wavelength; trails stream behind the crawl; cursor joins the crawl; cell nuclei at the Voronoi seeds; dissolving hue epochs
 //  A packing: linear pre-ACES display RGB (≥0) + coverage alpha; C read as colour
 // ═══════════════════════════════════════════════════════════════════
 
@@ -57,6 +57,7 @@ struct VoronoiCells {
   neighId: vec2<f32>,    // second-nearest seed's cell (Idea 1)
   cellUV: vec2<f32>,     // nearest seed position in uv
   edge: f32,             // F2 - F1 in cell units (Idea 1)
+  f1: f32,               // distance to the nearest seed in cell units (2026-11 Idea 1: nucleus)
   grid: vec2<f32>,
 };
 
@@ -98,6 +99,7 @@ fn voronoiRegions(uv: vec2<f32>, time: f32, regionSize: f32) -> VoronoiCells {
   cells.neighId = secId;
   cells.cellUV = (id + minSeed) / max(grid, vec2<f32>(0.0001));
   cells.edge = secDist - minDist;
+  cells.f1 = minDist;
   cells.grid = grid;
   return cells;
 }
@@ -125,6 +127,16 @@ fn createCrawlingRegions(uv: vec2<f32>, time: f32, crawlSpeed: f32, mouse: vec2<
     cos(totalInfluence * 15.0 + t * 3.0) * 0.08
   );
   return uv + crawlOffset;
+}
+
+// 2026-11 Idea 2: dissolving epochs. A cell's hash is held for one epoch and cross-fades into
+// the next epoch's hash over the last quarter instead of popping on the floor() edge.
+fn cellRoll(id: vec2<f32>, epochF: f32) -> vec3<f32> {
+  let e = floor(epochF);
+  let blend = smoothstep(0.75, 1.0, epochF - e);
+  let a = hash3(vec3<f32>(id.x, id.y, e * 0.137));
+  let b = hash3(vec3<f32>(id.x, id.y, (e + 1.0) * 0.137));
+  return mix(a, b, blend);
 }
 
 fn hueRotate(color: vec3<f32>, angle: f32) -> vec3<f32> {
@@ -197,8 +209,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = dims.x / max(dims.y, 1.0);
   let cursorCell = (1.0 - smoothstep(0.05, 0.3, length((cells.cellUV - mouse) * vec2<f32>(aspect, 1.0)))) * mouseHeld;
   let swapRate = 2.0 * mix(1.0, 6.0, cursorCell);
-  let epoch = floor(time * swapRate + cellPhase);
-  let regionHash = hash3(vec3<f32>(cells.cellId.x, cells.cellId.y, epoch * 0.137));
+  let regionHash = cellRoll(cells.cellId, time * swapRate + cellPhase);
   let hueAngle = (regionHash.x - 0.5) * 3.14159 * 2.0 * swapIntensity;
   let rotatedColor = hueRotate(inputColor, hueAngle);
   let lambda = mix(450.0, 650.0, regionHash.y);
@@ -213,7 +224,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea 1: Cell membranes — thin seam where F2−F1 → 0, tinted by the
   // *neighbour* cell's spectral wavelength, so cells read as living cells pressing
   // against each other. Width is ~1.5 px (cell units per pixel = grid/dims).
-  let neighHash = hash3(vec3<f32>(cells.neighId.x, cells.neighId.y, floor(time * 2.0 + hash1(cells.neighId * 0.731 + 3.17)) * 0.137));
+  let neighHash = cellRoll(cells.neighId, time * 2.0 + hash1(cells.neighId * 0.731 + 3.17));
   let neighTint = wavelengthToRGB(mix(450.0, 650.0, neighHash.y));
   // Cell units per pixel through the crawl warp (the crawl compresses space up to ~16×
   // near the crawl centres); membranes fade where cells shrink below ~6 px, else they alias to speckle.
@@ -224,6 +235,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let membraneAmt = membrane * (0.25 + 0.6 * swapIntensity);
   let lumIn = dot(inputColor, vec3<f32>(0.299, 0.587, 0.114));
   color = mix(color, neighTint * (0.5 + 0.7 * lumIn), membraneAmt);
+
+  // 2026-11 Idea 1: cell nuclei. Every cell has a nucleus at its seed (F1 is the distance to it
+  // in cell units), tinted with the cell's OWN wavelength; like the membranes it fades
+  // once cells are squeezed below ~6 px, else it aliases to speckle.
+  let nucleus = (1.0 - smoothstep(0.06, 0.2, cells.f1)) * (1.0 - smoothstep(0.12, 0.3, edgePx));
+  let nucleusAmt = nucleus * (0.3 + 0.35 * swapIntensity);
+  color = mix(color, spectralTint * (0.45 + 0.9 * lumIn), nucleusAmt);
 
   // Idea 2: Trails stream behind the crawl — C is read upstream along this pixel's
   // per-frame crawl motion (crawl at t vs t − 16 ms, so it scales with crawlSpeed),
@@ -270,7 +288,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Alpha = crawl intensity mapped through smooth tent curve
   // Membranes are opaque tissue: they raise coverage.
-  let alpha = max(tentAlpha(crawlMag * 4.0) * (0.6 + swapIntensity * 0.4), membraneAmt);
+  let alpha = max(max(tentAlpha(crawlMag * 4.0) * (0.6 + swapIntensity * 0.4), membraneAmt), nucleusAmt);
   let finalAlpha = clamp(alpha + glowAmount * 0.15, 0.15, 0.9);
 
   // hueRotate can go negative — clamp before storing history and before ACES.

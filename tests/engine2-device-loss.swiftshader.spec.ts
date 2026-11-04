@@ -8,7 +8,7 @@
  * error in the render worker, which recovers the same way (#1395). Pixels are read back through the
  * renderer (`captureThumbnailPng`) because compositor screenshots stay blank.
  *
- * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2`.
+ * Needs a production build: `npm run build && npm run test:engine2`.
  */
 import { expect, test, type Page } from '@playwright/test';
 import sharp from 'sharp';

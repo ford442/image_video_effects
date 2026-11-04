@@ -11,7 +11,7 @@
  * same-frame dataA → dataC handoff plus cross-frame feedback). Its entry ids are
  * read from the shipped definition, not hard-coded.
  *
- * Needs a production build: `SKIP_WASM_BUILD=1 npm run build && npm run test:engine2`.
+ * Needs a production build: `npm run build && npm run test:engine2`.
  */
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'fs';
@@ -270,6 +270,76 @@ test.describe('Graph Lab: a draft graph through the TS renderer', () => {
       await page.getByTestId('graph-lab-stop').click();
       await expect(page.getByTestId('graph-lab-run')).toBeVisible();
       expect(await page.evaluate(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId)).not.toBe(ROOT_ID);
+      expect(await gpuErrors(page, mode)).toEqual([]);
+    });
+  }
+});
+
+/**
+ * Inline WGSL editor (#1513 Part B): CodeMirror + the committed naga-wasm in the
+ * browser, hot-swapped into slot 0. An invalid edit must keep the last good
+ * pipeline on screen (pixels read back through the renderer stay non-blank).
+ */
+test.describe('Graph Lab: inline WGSL draft through the TS renderer', () => {
+  const WGSL_PREFIX = 'graphlab-wgsl-0-';
+  const slotShader = (page: Page) =>
+    page.evaluate(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId as string | null);
+
+  for (const mode of MODES) {
+    test(`validates with naga, runs, survives an invalid edit and hot-swaps the fix [${mode}]`, async ({ page }) => {
+      await setup(page, mode, 'ultra', '&graphlab=1');
+      await page.evaluate(() => window.localStorage.removeItem('graphlab.wgsl.v1'));
+      await page.getByTestId('graph-lab-toggle').click();
+      await page.getByTestId('graph-lab-wgsl-toggle').click();
+      await expect(page.getByTestId('graph-lab-wgsl-valid')).toBeVisible({ timeout: 60_000 });
+
+      await page.getByTestId('graph-lab-wgsl-run').click();
+      await expect.poll(() => slotShader(page), { timeout: 60_000 }).toMatch(new RegExp(`^${WGSL_PREFIX}`));
+      const good = await slotShader(page);
+      await page.evaluate(() => (window as any).__pixelocity__.setTestRenderState({ time: 2.5, mouseX: 0.5, mouseY: 0.5 }));
+      await waitForRenderedFrames(page, 4);
+      const before = await thumbnailStats(page);
+      expect(before.max, `draft output looks blank: ${JSON.stringify(before)}`).toBeGreaterThan(8);
+
+      // Type an error on a new last line; time the banner against the last keystroke, in the page.
+      const lines = await page.locator('.cm-content .cm-line').count();
+      await page.evaluate(() => {
+        const w = window as any;
+        w.__lastKey = 0;
+        w.__diagAt = 0;
+        document.addEventListener('keydown', () => (w.__lastKey = performance.now()), true);
+        new MutationObserver(() => {
+          if (!w.__diagAt && document.querySelector('[data-testid="graph-lab-wgsl-error"]')) w.__diagAt = performance.now();
+        }).observe(document.body, { subtree: true, childList: true, characterData: true });
+      });
+      await page.getByTestId('graph-lab-wgsl-editor-content').click();
+      await page.keyboard.press('ControlOrMeta+End');
+      await page.keyboard.type('fn bad() -> f32 { return nope; }');
+      const banner = page.getByTestId('graph-lab-wgsl-error');
+      await expect(banner).toBeVisible({ timeout: 10_000 });
+      await expect(banner).toContainText(new RegExp(`^L${lines}:`));
+      await expect(banner).toContainText('nope');
+      await expect(page.locator('.cm-lint-marker-error')).toHaveCount(1);
+      const latency = await page.evaluate(() => (window as any).__diagAt - (window as any).__lastKey);
+      console.log(`[graph-lab wgsl ${mode}] diagnostic ${latency.toFixed(0)} ms after the last keystroke`);
+      // Target 300 ms (measured ~160 ms on SwiftShader); the main-thread renderer competes with the page for the CPU.
+      expect(latency).toBeLessThan(mode === 'worker' ? 300 : 1000);
+
+      // The broken text never reached the GPU: same pipeline bound, still drawing.
+      expect(await slotShader(page)).toBe(good);
+      await waitForRenderedFrames(page, 8);
+      const during = await thumbnailStats(page);
+      expect(during.max, `frame went blank on an invalid edit: ${JSON.stringify(during)}`).toBeGreaterThan(8);
+
+      // Delete the typed line → valid again → swapped onto the other runtime id.
+      await page.keyboard.press('Shift+Home');
+      await page.keyboard.press('Backspace');
+      await expect(page.getByTestId('graph-lab-wgsl-valid')).toContainText('live', { timeout: 10_000 });
+      await expect.poll(() => slotShader(page), { timeout: 60_000 }).not.toBe(good);
+      expect(await slotShader(page)).toMatch(new RegExp(`^${WGSL_PREFIX}`));
+
+      await page.getByTestId('graph-lab-wgsl-stop').click();
+      expect(await slotShader(page)).not.toMatch(new RegExp(`^${WGSL_PREFIX}`));
       expect(await gpuErrors(page, mode)).toEqual([]);
     });
   }

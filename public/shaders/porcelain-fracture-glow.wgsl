@@ -9,31 +9,16 @@
 //  Upgraded: 2026-08-02 — click fracture impacts (drop-the-plate crack bursts with slow heal + vein flash),
 //            critically-damped sprung crack focus, per-band FFT vein song
 //  Upgraded: 2026-09-21
+//  Upgraded: 2026-11-01 (sonnet/batch-06 second pass)
 //  Ideas: crack memory (held/click cracks persist in C.b and ripen from an open dark gap into a
 //         gold kintsugi seam); tea-stained glaze crazing whose spread follows Patina Age
+//         + subsurface translucency (last-frame vein leak gathered on a two-radius ring bleeds warm
+//          light into the glaze); crack-broken glaze specular (luma-slope normal, hairlines break it)
 //  A packing: R totalCrack, G leak, B drawn-crack memory (was a copy of the Light slider), A alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // [time, rippleCount, resW, resH]
-  zoom_config: vec4<f32>,  // [time, mouseX, mouseY, mouseDown]
-  zoom_params: vec4<f32>,  // x=Crack, y=Glow, z=Light, w=Age
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Crack, y=Glow, z=Light, w=Age
 
 fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -120,10 +105,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Crack network — follows image edges + organic noise
     let edgeUvX = clamp(uv + vec2<f32>(0.0012, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let edgeUvY = clamp(uv + vec2<f32>(0.0, 0.0012), vec2<f32>(0.0), vec2<f32>(1.0));
-    let edge = length(vec2<f32>(
+    let lumaGrad = vec2<f32>(
         luma - dot(textureSampleLevel(readTexture, u_sampler, edgeUvX, 0.0).rgb, vec3<f32>(0.299,0.587,0.114)),
         luma - dot(textureSampleLevel(readTexture, u_sampler, edgeUvY, 0.0).rgb, vec3<f32>(0.299,0.587,0.114))
-    )) * 2.2;
+    );
+    let edge = length(lumaGrad) * 2.2;
 
     let crackNoise = fbm(uv * 18.0 + age * 1.5, 4) * 0.6 + fbm(uv * 41.0 - time * 0.03, 3) * 0.4;
     let crack = smoothstep(0.32, 0.78, edge + crackNoise * 0.55) * crackAmt;
@@ -191,6 +177,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Subtle rim light on cracks
     col += veinColor * pow(vein, 2.5) * 0.8;
+
+    // Idea 3 — subsurface translucency. Porcelain is translucent: light inside a crack scatters
+    // through the thin glaze and warms the body around it. Last frame's leak (C.g) is gathered on
+    // a 12-tap ring at two radii, so the glow bleeds out softly past the hairline.
+    var bleed = 0.0;
+    let pxC = vec2<i32>(global_id.xy);
+    let maxC = vec2<i32>(res) - vec2<i32>(1);
+    for (var k = 0; k < 12; k = k + 1) {
+        let a = f32(k) * 0.5236;
+        let r = select(5.0, 11.0, (k & 1) == 1);
+        let o = vec2<i32>(vec2<f32>(cos(a), sin(a)) * r);
+        bleed += clamp(textureLoad(dataTextureC, clamp(pxC + o, vec2<i32>(0), maxC), 0).g, 0.0, 2.0);
+    }
+    bleed = bleed / 12.0;
+    col += veinColor * bleed * 0.55 * glowAmt * (1.0 - totalCrack * 0.5);
+
+    // Idea 4 — crack-broken glaze specular. The image's own luma slope is the glaze normal; a
+    // soft window-light highlight rides it, and every hairline breaks the highlight apart.
+    let glazeN = normalize(vec3<f32>(-lumaGrad * 40.0, 1.0));
+    let halfV = normalize(vec3<f32>(-0.35, -0.45, 1.0));
+    let spec = pow(max(dot(glazeN, halfV), 0.0), 48.0);
+    col += vec3<f32>(1.0, 0.98, 0.95) * spec * 0.35 * (1.0 - clamp(totalCrack * 1.3 + crackMemory, 0.0, 1.0));
 
     // Age patina
     let patina = fbm(uv * 3.0, 2) * age * 0.12;

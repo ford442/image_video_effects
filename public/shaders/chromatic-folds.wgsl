@@ -3,9 +3,9 @@
 //  Category: artistic
 //  Features: mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-09
-//  Ideas: geodesic bend of the hue gradient; saturation-tightened foldHue
-//  A packing: pre-ACES display RGB in A (C is color history)
+//  Upgraded: 2026-10-09, 2026-11-01
+//  Ideas: geodesic bend of the hue gradient; saturation-tightened foldHue; crease facets with stress-whitened pivot line; reverse-sheet tap at uv - totalDisp
+//  A packing: pre-ACES display RGB in A (C is color history); A.a = fold alpha (+ crease coverage)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -100,7 +100,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pivotHue = u.zoom_params.y;                            // 0 - 1
   let satScale = u.zoom_params.z * 0.5 + 0.75;              // 0.75 - 1.25
   let depthInfluence = u.zoom_params.w;                      // 0 - 1
-  let noiseAmount = u.zoom_config.x * 0.003;                 // noise displacement
+  // zoom_config.x is engine TIME, not a slider: the old read made this noise grow
+  // without bound. Held at the old slider midpoint (0.5 * 0.003).
+  let noiseAmount = 0.0015;                                  // noise displacement
   let feedbackStrength = u.zoom_config.y * 0.15 + 0.8;      // 0.8 - 0.95
   let rippleStrength = u.zoom_config.z * 0.005;             // ripple amplitude
 
@@ -173,15 +175,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let displacedUV = clamp(uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
   let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
 
+  // ── Idea 2: reverse-sheet tap ───────────────────────────────────────────
+  // A folded sheet shows its back face where it overlaps itself. One tap at
+  // uv - totalDisp is the sheet seen from behind (shaded); it only shows through
+  // where the hue gradient is strong, i.e. at the hue edges that actually fold.
+  let backUV = clamp(uv - totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
+  let backColor = textureSampleLevel(readTexture, u_sampler, backUV, 0.0).rgb;
+  let sheetOverlap = smoothstep(0.02, 0.12, length(hueGrad)) * 0.5;
+  let sheetColor = mix(displacedColor, backColor * 0.82, sheetOverlap);
+
   // ──────────────────────────────────────────────────────────────────────────
   //  7. Fold the hue of the sampled color
   // ──────────────────────────────────────────────────────────────────────────
-  var hsv = rgb2hsv(displacedColor);
+  var hsv = rgb2hsv(sheetColor);
+  let preFoldHue = hsv.x;
   // Higher saturation tightens the existing foldHue exponent.
   let foldExp = foldStrength * mix(0.82, 1.28, clamp(srcSat, 0.0, 1.0));
   hsv.x = foldHue(hsv.x, pivotHue, foldExp);
   hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
-  let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
+  var foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
+
+  // ── Idea 1: crease facets ───────────────────────────────────────────────
+  // foldHue folds about the pivot, so sign(h - pivot) is which face of the fold a
+  // pixel is on and |h - pivot| its distance to the crease. Faces are lit/shaded
+  // (+-16 %) and the pivot line itself stress-whitens like a creased sheet:
+  // brighter and desaturated toward luma, energy moved rather than invented.
+  let creaseDelta = preFoldHue - pivotHue;
+  let creaseDist = abs(creaseDelta);
+  let facet = sign(creaseDelta) * (1.0 - smoothstep(0.0, 0.3, creaseDist));
+  let creaseLine = exp(-creaseDist * creaseDist / (2.0 * 0.015 * 0.015));
+  foldedColor = foldedColor * (1.0 + 0.16 * facet);
+  let foldedLuma = dot(foldedColor, vec3<f32>(0.299, 0.587, 0.114));
+  foldedColor = mix(foldedColor, vec3<f32>(foldedLuma + 0.18), creaseLine * 0.5);
 
   // ──────────────────────────────────────────────────────────────────────────
   //  8. Feedback: blend with previous frame
@@ -193,7 +218,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // ──────────────────────────────────────────────────────────────────────────
   //  9. Write outputs
   // ──────────────────────────────────────────────────────────────────────────
-  let foldAlpha = clamp(0.32 + length(hueGrad) * 2.4 + srcSat * 0.28, 0.0, 1.0);
+  let foldAlpha = clamp(0.32 + length(hueGrad) * 2.4 + srcSat * 0.28 + creaseLine * 0.2, 0.0, 1.0);
   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(aces_tonemap(finalColor), foldAlpha));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(finalColor, foldAlpha));

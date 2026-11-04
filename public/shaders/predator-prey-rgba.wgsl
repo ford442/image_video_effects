@@ -22,8 +22,19 @@ fn hash21(p: vec2<f32>) -> f32 {
     return fract((p3.x + p3.y) * p3.z);
 }
 
+// A.r of the corner texel marks C as this shader's own state (f16-exact, never a density).
+// Without it (shader switched in after start, or after another shader's history) C is foreign
+// and reads as an empty field that re-seeds; `time < 0.1` alone never fires mid-session.
+const STATE_SENTINEL: f32 = -0.6875;
+var<private> stateOwned: bool = false;
+
+// Exact history load. Foreign history reads as an empty field.
 fn stateAt(coord: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
-    return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  if (!stateOwned) { return vec4<f32>(0.0); }
+  let q = clamp(coord, vec2<i32>(0), dims - vec2<i32>(1));
+  var v = textureLoad(dataTextureC, q, 0);
+  if (q.x == 0 && q.y == 0) { v.r = 0.0; }
+  return v;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -36,6 +47,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
     let dims = vec2<i32>(res);
     let time = u.config.x;
+
+    stateOwned = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).r == STATE_SENTINEL;
     let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
 
     let prevState = stateAt(coord, dims);
@@ -44,7 +57,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var carnivores = prevState.b;
     var toxin = prevState.a;
 
-    if (time < 0.1) {
+    if (time < 0.1 || !stateOwned) {
         plants = 0.0;
         herbivores = 0.0;
         carnivores = 0.0;
@@ -153,7 +166,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     carnivores = clamp(carnivores, 0.0, 2.0);
     herbivores = clamp(herbivores, 0.0, 2.0);
 
-    textureStore(dataTextureA, coord, vec4<f32>(plants, herbivores, carnivores, toxin));
+    let isCorner = gid.x == 0u && gid.y == 0u;
+    textureStore(dataTextureA, coord, vec4<f32>(select(plants, STATE_SENTINEL, isCorner), herbivores, carnivores, toxin));
+
+    // ── Idea 4 (part b): chase-front canopy disturbance refracts underlying sourceColor ──
+    let chaseVec = herbGrad * carnivores - carnGrad * herbivores;
+    let chaseIntensity = clamp(abs(pursuit) + abs(flee), 0.0, 1.0);
+    let canopyUV = clamp(uv + chaseVec * ps * 14.0, vec2<f32>(0.0), vec2<f32>(1.0));
+    let disturbedCanopy = textureSampleLevel(readTexture, u_sampler, canopyUV, 0.0).rgb;
 
     // ── Idea 4 (part b): chase-front canopy disturbance refracts underlying sourceColor ──
     let chaseVec = herbGrad * carnivores - carnGrad * herbivores;

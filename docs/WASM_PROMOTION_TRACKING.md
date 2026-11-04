@@ -86,7 +86,7 @@ Integration epics #817–#890 are closed; remaining work is **measurement**, not
 
 1. On **discrete GPU** machine (e.g. NVIDIA GTX 1060+):  
    `npm run build && WASM_GPU_TESTS=1 npm run test:wasm:bench`  
-   (`prebuild` runs `wasm:build` once; use `SKIP_WASM_BUILD=1 npm run build` only when reusing committed artifacts.)  
+   (`npm run build` uses the committed artifacts; `BUILD_WASM=1 npm run build` recompiles them first.)  
    Attach `test-results/wasm-benchmark-report.json` + `lspci` / `chrome://gpu` notes.
 
 2. On **iGPU or second vendor** (Intel/AMD): repeat bench + parity.

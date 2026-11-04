@@ -20,6 +20,7 @@ import {
   type ProjectApplyPlan,
   type ProjectSource,
 } from '../services/project';
+import { modulationStore } from '../modulation/store';
 
 export interface UseProjectFileOptions {
   modes: RenderMode[];
@@ -105,6 +106,8 @@ async function applyPlan(plan: ProjectApplyPlan, options: UseProjectFileOptions)
   if (plan.render.hdr) options.setHdrToneMap?.(plan.render.hdr);
   if (plan.audio?.mappings) options.setBindings(plan.audio.mappings);
   if (plan.timeline?.timeline) options.setTimeline(plan.timeline.timeline);
+  // Modulation routes (v3, #1513): a project replaces the whole bus (v1/v2 files clear it).
+  modulationStore.setRoutes(plan.modulation);
 
   try {
     switch (plan.source.kind) {
@@ -165,6 +168,7 @@ export function useProjectFile(options: UseProjectFileOptions): UseProjectFileRe
       hdr: options.hdrToneMap,
       audioMappings: options.bindings,
       timeline,
+      modulation: modulationStore.getRoutes(),
     });
     return {
       contents: serializeProjectFile(project),

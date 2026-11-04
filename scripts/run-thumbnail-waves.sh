@@ -54,7 +54,7 @@ wave_w3() {
 }
 
 echo "Building production app..."
-SKIP_WASM_BUILD=1 npm run build
+npm run build
 retry_integrity_failures
 
 case "$WAVE" in

@@ -4,12 +4,14 @@
 //  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
 //            upgraded-rgba, aces-tone-map, chromatic-aberration
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-11-01
 //  Ideas: selvage fray noise along ribbon width edges; held-crease memory blended from exact C when mouse down;
 //         2nd pass (2026-10-10): shot-silk dichroism (fold-slope shifts warp-gold vs cool weft,
 //         anisotropic highlight with thread striations); ribbon half-twist (width x |cos twist|,
 //         darker back-face, thin spec line at the flip); click pluck now has a real strength
-//         (ripples[].w is always 0, so it was dead)
+//         (ripples[].w is always 0, so it was dead);
+//         3rd pass (2026-11-01): inter-layer contact shadow (soft offset drape shadow);
+//         satin cross-section lustre (half-cylinder lambert roll-off + grazing rim)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -91,6 +93,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var accumulatedAlpha = 0.0;
 
   let numLayers = i32(layerDensity);
+  var shadowAcc = 0.0;   // Idea 3rd-pass A: shadow cast by earlier ribbons onto later ones
 
   for (var li: i32 = 0; li < numLayers; li = li + 1) {
     let layerDepth = f32(li) / f32(numLayers - 1); // 0=back, 1=front
@@ -168,12 +171,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     layerColor = layerColor * mix(vec3<f32>(0.62, 0.68, 0.76), vec3<f32>(1.0), frontFace);
     layerColor += silkHighlight * exp(-cosT * cosT * 40.0) * 0.35 * depthDarken;
 
+    // Idea 3rd-pass B: satin cross-section lustre. Treat the ribbon as a half-cylinder:
+    // relNorm = -1..1 across its width. Lambert rolls off toward the far edge (light from the
+    // upper-left) and a grazing-angle rim lifts both edges, as on satin.
+    let relNorm = clamp((uv.x - gatherX) / max(ribbonWidth, 0.001), -1.0, 1.0);
+    let cylN = sqrt(max(1.0 - relNorm * relNorm, 0.0));
+    let lam = clamp(0.62 + 0.38 * cylN - 0.22 * relNorm, 0.0, 1.2);
+    layerColor = layerColor * mix(1.0, lam, 0.55);
+    let grazing = pow(1.0 - cylN, 3.0);
+    layerColor += goldSheen * grazing * 0.16 * (0.4 + sheenAmount) * depthDarken * frontFace;
+
+    // Idea 3rd-pass A: inter-layer contact shadow. Earlier ribbons drop a soft shadow
+    // (offset right/down-light) on whatever is composited after them.
+    layerColor = layerColor * (1.0 - 0.5 * shadowAcc);
+
     // Held-crease color memory when mouse down
     let heldCrease = smoothstep(0.035, 0.0, abs(uv.x - gatherX)) * mouseDown * ribbonMask;
     layerColor = mix(layerColor, creaseMem * depthDarken, heldCrease * 0.32);
 
     // Layer alpha: front layers more opaque
     let layerAlpha = ribbonMask * mix(0.25, 0.75, layerDepth) * (0.8 + mids * 0.2);
+
+    // Grow the shadow mask with this ribbon's footprint, offset away from the light
+    let shadowEdge = smoothstep(ribbonWidth * 1.5 + 0.015, ribbonWidth * 0.3, abs(uv.x - 0.022 - gatherX));
+    shadowAcc = max(shadowAcc, shadowEdge * mix(0.5, 1.0, layerDepth) * (1.0 - 0.5 * accumulatedAlpha));
 
     // Front-to-back compositing
     accumulatedColor = mix(accumulatedColor, layerColor, layerAlpha * (1.0 - accumulatedAlpha));
