@@ -2,8 +2,8 @@
 //  Neon Poly Grid
 //  A glowing hexagonal grid that lights up on mouse interaction
 //  and leaves a fading trail.
-//  Upgraded: 2026-09-10
-//  Ideas: dual-lattice vertex glow; occupied-cell fill from the trail
+//  Upgraded: 2026-09-10, 2026-11-02
+//  Ideas: dual-lattice vertex glow; occupied-cell fill; shared wall; dying-tail flicker
 //  A packing: trail in A.r (HEAD); ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════
 
@@ -117,31 +117,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyColor = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
     let newTrail = clamp(max(historyColor.r * decay, max(activation, clickTrail)), 0.0, 1.0);
 
-    // Store new trail state
+    // Store new trail state. Flicker stays on the display; A.r is the clean decay.
     textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(newTrail, 0.0, 0.0, newTrail));
+
+    // ── Idea 1: shared wall ──
+    // An edge claimed by two occupied cells burns hotter than a free edge.
+    let span = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
+    let here = vec2<i32>(global_id.xy);
+    let nTrail = max(
+        max(textureLoad(dataTextureC, clamp(here + vec2<i32>(1, 0), vec2<i32>(0), span), 0).r,
+            textureLoad(dataTextureC, clamp(here + vec2<i32>(-1, 0), vec2<i32>(0), span), 0).r),
+        max(textureLoad(dataTextureC, clamp(here + vec2<i32>(0, 1), vec2<i32>(0), span), 0).r,
+            textureLoad(dataTextureC, clamp(here + vec2<i32>(0, -1), vec2<i32>(0), span), 0).r));
 
     // Render
     let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
     // Grid Lines
     let lineGlow = 1.0 - smoothstep(0.0, lineWidth, distToEdge);
+    let sharedWall = lineGlow * newTrail * nTrail;
 
     // Combine trail with grid
     // Grid lights up where trail is active
-    let activeGrid = lineGlow * newTrail * glowStrength;
+    // ── Idea 2: dying-tail flicker ──
+    // Fresh cells stay solid. Only the decaying part of the trail flickers, per cell.
+    let cellCode = u32(abs(hex.z * 17.0 + hex.w * 31.0));
+    let fresh = max(activation, clickTrail);
+    let tail = clamp(newTrail - fresh, 0.0, 1.0);
+    let flicker = 0.55 + 0.45 * abs(sin(time * (6.5 + f32(cellCode % 5u)) + f32(cellCode) * 0.17));
+    let litTrail = clamp(fresh + tail * flicker, 0.0, 1.0);
+    let activeGrid = lineGlow * litTrail * glowStrength;
 
     // Base grid (dim)
     let baseGrid = lineGlow * 0.1;
 
-    let cellCode = u32(abs(hex.z * 17.0 + hex.w * 31.0));
     let fftVoice = clamp(plasmaBuffer[(cellCode % 8u) + 1u].x, 0.0, 1.0);
     let cyanVoice = vec3<f32>(0.0, 0.75 + fftVoice * 0.25, 1.0);
-    let cellFill = (1.0 - lineGlow) * newTrail * 0.16;
-    let vertexGlow = vertex * newTrail * glowStrength * 0.55;
+    let cellFill = (1.0 - lineGlow) * litTrail * 0.16;
+    let vertexGlow = vertex * litTrail * glowStrength * 0.55;
     let gridColor = cyanVoice * activeGrid * (0.85 + fftVoice * 0.35)
         + vec3<f32>(0.2, 0.0, 0.5) * baseGrid
         + cyanVoice * cellFill
-        + vec3<f32>(0.85, 0.95, 1.0) * vertexGlow;
+        + vec3<f32>(0.85, 0.95, 1.0) * vertexGlow
+        + cyanVoice * sharedWall * glowStrength * 0.4;
 
     let finalColor = acesToneMap(soft_ceiling(sourceColor.rgb + gridColor));
 

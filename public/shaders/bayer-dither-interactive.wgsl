@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: interleaved-gradient-noise assist; channel-rotated Bayer
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: interleaved-gradient-noise assist; channel-rotated Bayer; error coring; tile seam
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -95,7 +95,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let neighbor = textureSampleLevel(readTexture, u_sampler, clamp(pixelUV + vec2<f32>(texel.x, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let nQ = floor(neighbor * levels) / levels;
-    let errDiff = (neighbor - nQ) * 0.25 * influence;
+    // ── Idea 1: error coring ─────────────────────────────────────────
+    // Residuals smaller than a fraction of one level do not diffuse.
+    // Influence still gates how much of the rest is applied.
+    let errMag = length(errVec);
+    let core = smoothstep(0.12 / max(levels, 1.0), 0.4 / max(levels, 1.0), errMag);
+    let errDiff = (neighbor - nQ) * 0.25 * influence * core;
     let dithered = vec3<f32>(
         floor((contrasted.r + threshold + errDiff.r) * levels) / levels,
         floor((contrasted.g + thrG + errDiff.g) * levels) / levels,
@@ -125,7 +130,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let scanline = smoothstep(0.85, 0.2, abs(fract(uv.y * resolution.y / pixelScale) - 0.5));
     let halo = vec3<f32>(1.0, 0.15 + treble * 0.15, 0.65) * scanline * influence * 0.1;
 
-    let finalColor = acesToneMap(caColor + halo);
+    // ── Idea 2: tile seam ────────────────────────────────────────────
+    // The 8×8 Bayer period darkens on its boundary when Dither Spread is up.
+    let onTileEdge = select(0.0, 1.0, (global_id.x & 7u) == 0u || (global_id.y & 7u) == 0u);
+    let seam = onTileEdge * clamp(spread, 0.0, 1.0) * 0.22;
+    let finalColor = acesToneMap(max((caColor + halo) * (1.0 - seam), vec3<f32>(0.0)));
 
     let ditherConf = 1.0 - length(errDiff) * 2.0;
     let srcA = textureSampleLevel(readTexture, u_sampler, pixelUV, 0.0).a;

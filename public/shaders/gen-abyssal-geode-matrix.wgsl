@@ -67,7 +67,7 @@ fn getNormal(p: vec3<f32>) -> vec3<f32> {
     return normalize(n);
 }
 
-@compute @workgroup_size(16, 16)
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let dimensions = vec2<f32>(u.config.zw);
     let coord = vec2<f32>(f32(id.x), f32(id.y));

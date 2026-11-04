@@ -3,31 +3,13 @@
 //  Category: advanced-hybrid
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: internal double-refraction caustic rings; anti-reflective purplish-amber lens sheen; astigmatic chromatic radial streaks
+//  Upgraded: 2026-09-06, 2026-11-01
+//  Ideas: internal double-refraction caustic rings; anti-reflective purplish-amber lens sheen; astigmatic chromatic radial streaks; white-balanced spectral reconstruction (energy accounting); AR-tinted internal-reflection ghost
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=GlassCurvature, y=CauchyB, z=GlassThickness, w=SpectralSaturation
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=GlassCurvature, y=CauchyB, z=GlassThickness, w=SpectralSaturation
 
 fn cauchyIOR(wavelengthNm: f32, A: f32, B: f32) -> f32 {
   let lambdaUm = wavelengthNm * 0.001;
@@ -128,6 +110,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let WAVELENGTHS = array<f32, 4>(450.0, 520.0, 600.0, 680.0);
   var finalColor = vec3<f32>(0.0);
+  // 2026-11 Idea 1: energy accounting. The band response to a WHITE input (without absorption) per
+  // channel; dividing by it makes white stay white (HEAD: white-in came out (2.30, 0.74, 0.59), a
+  // 3:1 red cast) while the absorption below still tints by thickness.
+  var whiteResponse = vec3<f32>(0.0);
 
   for (var i: i32 = 0; i < 4; i = i + 1) {
     let ior = cauchyIOR(WAVELENGTHS[i], 1.5, cauchyB);
@@ -139,7 +125,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let absorption = exp(-glassThickness * (4.0 - f32(i)) * 0.15);
     let bandIntensity = dot(sample.rgb, wavelengthToRGB(WAVELENGTHS[i])) * absorption;
     finalColor += wavelengthToRGB(WAVELENGTHS[i]) * bandIntensity * spectralSat;
+    let bandW = wavelengthToRGB(WAVELENGTHS[i]);
+    whiteResponse += bandW * (bandW.x + bandW.y + bandW.z);
   }
+  finalColor = finalColor / max(whiteResponse, vec3<f32>(1e-3));
 
   // ─── Native Idea 1: Internal Double-Refraction Caustic Rings ───
   let distToLens = length((uv - lensCenter) * vec2<f32>(aspect, 1.0));
@@ -160,6 +149,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let streakSample = textureSampleLevel(readTexture, u_sampler, clamp(uv + streakOffset, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
   let streakHighlight = max(streakSample - vec3<f32>(0.62), vec3<f32>(0.0)) * 1.6;
   finalColor += streakHighlight * spectralSat * 0.32;
+
+  // 2026-11 Idea 2: AR-tinted internal-reflection ghost. The coating exists to suppress lens-flare
+  // ghosts, which this file never drew: a dim copy of the bright (> 0.62) highlights taken at the point
+  // reflected through the lens centre (x 0.35), tinted by the coating's own purple/amber.
+  let ghostUV = clamp(lensCenter - (uv - lensCenter) * 0.35, vec2<f32>(0.001), vec2<f32>(0.999));
+  let ghostSample = textureSampleLevel(readTexture, u_sampler, ghostUV, 0.0).rgb;
+  let ghostHighlight = max(ghostSample - vec3<f32>(0.62), vec3<f32>(0.0)) * 1.2;
+  let ghostTint = mix(vec3<f32>(0.28, 0.12, 0.65), vec3<f32>(0.65, 0.38, 0.12), sin(viewAngle * 3.5) * 0.5 + 0.5) * 1.6;
+  finalColor += ghostHighlight * ghostTint * 0.35 * spectralSat;
 
   // Chromatic glow
   let glowRadius = glassCurvature * 0.02;

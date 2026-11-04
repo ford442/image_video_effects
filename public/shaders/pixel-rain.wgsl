@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: glyph tail; column blank
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas: glyph tail; column blank; head core; sheet stagger
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -19,11 +19,16 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn rainLayer(uv: vec2<f32>, time: f32, density: f32, speed: f32, depthT: f32, seed: f32) -> vec3<f32> {
-  let colIndex = floor(uv.x * density + seed * 31.0);
+  // ── Idea: sheet stagger ──────────────────────────────────────────
+  // Each sheet shifts by a fraction of its own column so the three layers
+  // do not share an edge. Density still sets the column count.
+  let pitch = 1.0 / max(density, 1.0);
+  let uvSheet = vec2<f32>(uv.x + pitch * (seed - 2.0) * 0.45, uv.y);
+  let colIndex = floor(uvSheet.x * density + seed * 31.0);
   let colRand = fract(sin(colIndex * 12.9898 + seed * 78.233) * 43758.5453);
   let dropSpeed = (colRand * 0.6 + 0.4) * speed;
-  let cell = floor(uv.y * density * 1.6);
-  let phase = fract(uv.y + time * dropSpeed + colRand);
+  let cell = floor(uvSheet.y * density * 1.6);
+  let phase = fract(uvSheet.y + time * dropSpeed + colRand);
   let head = smoothstep(0.0, 0.04, phase) * exp(-phase * 5.0);
   let flick = step(0.35, fract(sin(cell * 1.7 + colIndex * 4.1 + floor(time * 6.0) * 0.13) * 9999.0));
   let bright = mix(0.18, 1.0, depthT) * head * flick;
@@ -116,7 +121,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let rainPhase = fract(uv.y + scrollY + colRandom);
   if (rainPhase < 0.05) {
+    // ── Idea: head core ────────────────────────────────────────────
+    // The existing band stays green. A narrower core inside it is near-white.
+    // Glitch still scales both.
     color += vec3<f32>(0.4, 1.0, 0.4) * glitchIntensity;
+    color += vec3<f32>(0.75, 1.0, 0.72) * glitchIntensity * smoothstep(0.018, 0.0, rainPhase);
   }
 
   let fallBoost = 1.0 + bass * 0.6;

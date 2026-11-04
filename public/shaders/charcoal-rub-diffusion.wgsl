@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: advanced-convolution, upgraded-rgba, mouse-driven, temporal, audio-reactive
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: contour vine strokes; kneaded-eraser skip
+//  Upgraded: 2026-11-01 (prev 2026-09-09)
+//  Ideas: contour vine strokes; kneaded-eraser skip; tonal cross-hatching in photo shadows where rubbed; burnish sheen where heavy rubbing fills the tooth
 //  A packing: raw reveal mask in A.r
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -164,10 +145,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2 — kneaded-eraser skip on bright diffused regions
   let kneadSkip = 1.0 - smoothstep(0.62, 0.88, diffusedLuma) * (0.55 + mids * 0.2);
 
+  // Idea 3 — tonal hatching: the shadows of the photo are built from two crossing hatch sets, only where rubbed
+  let darkness = 1.0 - smoothstep(0.15, 0.6, diffusedLuma);
+  let hatchBase = (uv_aspect.x + uv_aspect.y) * textureScale * 0.9 + (noise(uv * textureScale * 0.5) - 0.5) * 0.9;
+  let hatchBase2 = (uv_aspect.x - uv_aspect.y) * textureScale * 0.9 + (noise(uv * textureScale * 0.5 + 7.0) - 0.5) * 0.9;
+  let hatch1 = smoothstep(0.55, 0.95, sin(hatchBase * 6.28318));
+  let hatch2 = smoothstep(0.55, 0.95, sin(hatchBase2 * 6.28318));
+  let hatch = max(hatch1 * darkness, hatch2 * smoothstep(0.55, 1.0, darkness)) * smoothstep(0.02, 0.25, state);
+
   let paperGrainVal = paperGrain(uv, textureScale * 0.1);
   let charcoal_density = state * (0.5 + 0.5 * paperGrainVal);
   let diffusionModulation = mix(0.7, 1.3, avgCoeff);
-  var adjustedDensity = charcoal_density * diffusionModulation * (0.72 + vineStroke * 0.55) * kneadSkip;
+  var adjustedDensity = charcoal_density * diffusionModulation * (0.72 + vineStroke * 0.55) * kneadSkip + hatch * 0.22 * kneadSkip;
 
   var charcoal_alpha = smoothstep(0.0, 0.3, adjustedDensity);
   charcoal_alpha = mix(0.0, 0.9, charcoal_alpha * charcoal_alpha);
@@ -183,6 +172,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let revealMask = smoothstep(1.0 - hardness, 1.0, state * paperGrainVal * kneadSkip);
   var final_rgb = mix(paperBaseColor, charcoal_shade, revealMask);
   final_rgb = mix(final_rgb, charcoalColor * 0.55, vineStroke * state * 0.35);
+
+  final_rgb = mix(final_rgb, charcoalColor * 0.6, hatch * 0.4);
+
+  // Idea 4 — burnish sheen: heavy rubbing flattens the tooth, leaving a faint graphite gloss in grain valleys
+  let burnish = smoothstep(0.85, 1.0, state) * (1.0 - grain_influence) * (1.0 - revealMask * 0.4);
+  final_rgb = final_rgb + vec3<f32>(0.10, 0.10, 0.11) * burnish;
 
   let dust_scatter = smoothstep(0.0, 0.15, state) * (1.0 - revealMask) * 0.3;
   let dust_color = vec3<f32>(0.15, 0.14, 0.12) * paperGrainVal;

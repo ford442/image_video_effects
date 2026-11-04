@@ -3,31 +3,13 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, temporal
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: honest spectral dispersion (7 wavelength taps weighted by a per-channel-normalised wavelength->RGB response, Cauchy delta scaled by Refraction Depth); Laplacian caustic network (luma-height curvature focuses the pointer light, replaces the N.L caustic)
+//  Upgraded: 2026-11-01
+//  Ideas: honest spectral dispersion (7 wavelength taps weighted by a per-channel-normalised wavelength->RGB response, Cauchy delta scaled by Refraction Depth); Laplacian caustic network (luma-height curvature focuses the pointer light, replaces the N.L caustic); Schlick environment reflection (F0 from the slab index; the picture mirrored through the luma normal replaces the flat white Fresnel add); back-surface double glint (second specular lobe from the light displaced through the slab)
 //  A packing: ACES display RGB + semantic alpha; C read back at exact texel as colour, mixed at 0.08
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=RefractionDepth, y=SurfaceSmoothness, z=SpecularShine, w=LightDistance
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=RefractionDepth, y=SurfaceSmoothness, z=SpecularShine, w=LightDistance
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -187,6 +169,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let specular = pow(max(dot(surfaceNormal, halfDir), 0.0), mix(12.0, 96.0, specularShine));
   let fresnel = pow(1.0 - max(dot(surfaceNormal, viewDir), 0.0), 3.0);
 
+  // Idea 3 (3rd pass): Schlick environment reflection. F0 = ((n-1)/(n+1))^2 for this slab's index; the
+  // reflected view ray about the luma normal looks back into the picture, so steep ridges mirror their
+  // surroundings at grazing angles instead of adding flat white. Weighted x3 (artistic) so a 3% F0 reads.
+  let cosV = max(dot(surfaceNormal, viewDir), 0.0);
+  let F0 = pow((nGlass - 1.0) / (nGlass + 1.0), 2.0);
+  let schlickR = F0 + (1.0 - F0) * pow(1.0 - cosV, 5.0);
+  let reflXY = 2.0 * surfaceNormal.z * surfaceNormal.xy;
+  let reflUV = clamp(uv + reflXY * (0.10 + 0.10 * refractBase), vec2<f32>(0.001), vec2<f32>(0.999));
+  let envRefl = textureSampleLevel(readTexture, u_sampler, reflUV, 0.0).rgb * min(schlickR * 3.0, 0.8);
+
+  // Idea 4 (3rd pass): back-surface double glint. A thick slab reflects the light off its far face too;
+  // the ray exits displaced laterally by t*tan(theta_t), so the second lobe's light direction is shifted
+  // that way and the glint sits beside the first, dimmer and tighter.
+  let backShift = lightDir.xy / max(lightDir.z, 0.2) * glassThickness * (0.16 / nGlass);
+  let lightDir2 = normalize(lightPos - pixelPos - vec3<f32>(backShift, 0.0));
+  let halfDir2 = normalize(lightDir2 + viewDir);
+  let specBack = pow(max(dot(surfaceNormal, halfDir2), 0.0), mix(12.0, 96.0, specularShine) * 1.6) * (1.0 - schlickR);
+
   // Idea 2: Laplacian caustic network. The luma height field's curvature decides
   // where the slab focuses the pointer light: convex crests (negative Laplacian)
   // converge it into bright filaments, flat/concave areas get nothing. A coarse
@@ -216,7 +216,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     0.3 + specularShine * 0.5
   );
   let shimmer = vec3<f32>(0.2, 0.5 + treble * 0.1, 0.8) * specular * (0.5 + bass * 0.5);
-  var color = spectralColor * tint + shimmer + fresnel * 0.18 + caustic + sss;
+  let shimmerBack = vec3<f32>(0.2, 0.5 + treble * 0.1, 0.8) * specBack * (0.28 + bass * 0.2);
+  var color = spectralColor * tint + shimmer + shimmerBack + fresnel * 0.06 + envRefl * 0.45 + caustic + sss;
 
   // Exact dataTextureC persistence
   let prevC = textureLoad(dataTextureC, pixel, 0).rgb;

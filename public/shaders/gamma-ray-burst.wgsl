@@ -4,7 +4,9 @@
 //  Features: mouse-driven, click-reactive, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: gamma-ray-burst, relativistic-jet
-//  Upgraded: 2026-08-02 (Batch 30)
+//  Upgraded: 2026-08-02 (Batch 30), 2026-11-01
+//  Ideas: synchrotron cooling through the burst cycle; jet break past 6/jetSpread
+//  A packing: diagnostic (burst, dopplerBeaming, magneticSpiral, alpha)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -23,9 +25,12 @@ fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
 
 fn synchrotron_spectrum(t: f32, freq: f32) -> vec3<f32> {
   let peak = 0.55 + t * 0.25;
-  let r = exp(-pow((freq - peak) * 3.5, 2.0));
-  let g = exp(-pow((freq - peak + 0.12) * 4.0, 2.0));
-  let b = exp(-pow((freq - peak + 0.22) * 5.0, 2.0));
+  let dr = (freq - peak) * 3.5;
+  let dg = (freq - peak + 0.12) * 4.0;
+  let db = (freq - peak + 0.22) * 5.0;
+  let r = exp(-dr * dr);
+  let g = exp(-dg * dg);
+  let b = exp(-db * db);
   return vec3<f32>(r, g * 0.85, b * 0.65);
 }
 
@@ -88,7 +93,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dopplerBeaming = min(pow(lorentz, 2.0), 12.0);
   let magneticSpiral = sin(angle * jetSpread + dist * 12.0 - time * 3.0 + burstPhase);
   let jetCore = exp(-dist * (4.0 + decay * 16.0)) * min(dopplerBeaming, 4.0);
-  let jetWings = exp(-abs(magneticSpiral) * (1.5 + decay * 6.0) - dist * (1.2 + decay * 4.0)) * 0.6;
+  let jetWings0 = exp(-abs(magneticSpiral) * (1.5 + decay * 6.0) - dist * (1.2 + decay * 4.0)) * 0.6;
+  // ── Idea 2: jet break. Tighter Jet Spread breaks closer in; the core falloff stays.
+  let breakR = 6.0 / max(jetSpread, 0.001);
+  let pastBreak = smoothstep(breakR, breakR + 0.2, dist);
+  let jetWings = jetWings0 * (1.0 - pastBreak * 0.8);
   var clickBurst = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -118,7 +127,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
 
   let freq = dist * 2.0 + mids * 0.3;
-  let synchro = synchrotron_spectrum(treble, freq) * burst * (3.2 + spectralVoice * 1.6);
+  let cycle = fract(time * 1.5);
+  // ── Idea 1: synchrotron cooling. Blue dies as the existing burst cycle ages.
+  let synchroRaw = synchrotron_spectrum(treble, freq);
+  let synchro = synchroRaw * vec3<f32>(1.0, mix(1.0, 0.42, cycle), mix(1.0, 0.12, cycle)) * burst * (3.2 + spectralVoice * 1.6);
   let hdrFlare = vec3<f32>(1.0, 0.78 + mids * 0.18, 0.35 + treble * 0.25) * burst * (1.2 + exposure * 1.5);
   let core = smoothstep(0.06, 0.0, dist) * vec3<f32>(1.0, 0.95, 0.85) * (0.6 + burstTrigger);
 
@@ -133,22 +145,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let outDepth = clamp(depth + jetIntensity * 0.08, 0.0, 1.0);
   let finalPixel = vec4<f32>(tonemapped, alpha);
 
-  
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(vec2<i32>(global_id.xy)) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
-
-    let __finalRGB = finalPixel.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, finalPixel.a));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), finalPixel);
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(min(burst, 5.0), dopplerBeaming, magneticSpiral, alpha));
 }

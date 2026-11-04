@@ -2,31 +2,12 @@
 //  Bioluminescent Growth
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal-persistence, depth-aware
-//  Upgraded: 2026-09-12
-//  Ideas: spore tropism toward live click inoculum; quorum flash where growth exceeds neighbors
-//  A packing: raw (growth, 0, 0, 1)
+//  Upgraded: 2026-09-12, 2026-10-31
+//  Ideas: spore tropism toward live click inoculum; quorum flash where growth exceeds neighbors; luciferin recharge wave in C.g; hyphal tip frontier and fruiting gill striations
+//  A packing: raw (growth, luciferinCharge, 0, 1)
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const BIO_TISSUE_DENSITY: f32 = 2.0;
 const VEIN_OPACITY: f32 = 0.85;
@@ -41,20 +22,20 @@ fn hash(p: vec2<f32>) -> f32 {
 fn noise3d(p: vec3<f32>) -> f32 {
     var i = floor(p);
     var f = fract(p);
-    var u = f * f * (3.0 - 2.0 * f);
+    var u2 = f * f * (3.0 - 2.0 * f);
     let n = i.x + i.y * 57.0 + i.z * 113.0;
-    return mix(mix(mix(hash(vec2<f32>(n + 0.0, 0.0)), hash(vec2<f32>(n + 1.0, 0.0)), u.x),
-                   mix(hash(vec2<f32>(n + 57.0, 0.0)), hash(vec2<f32>(n + 58.0, 0.0)), u.x), u.y),
-               mix(mix(hash(vec2<f32>(n + 113.0, 0.0)), hash(vec2<f32>(n + 114.0, 0.0)), u.x),
-                   mix(hash(vec2<f32>(n + 170.0, 0.0)), hash(vec2<f32>(n + 171.0, 0.0)), u.x), u.y), u.z);
+    return mix(mix(mix(hash(vec2<f32>(n + 0.0, 0.0)), hash(vec2<f32>(n + 1.0, 0.0)), u2.x),
+                   mix(hash(vec2<f32>(n + 57.0, 0.0)), hash(vec2<f32>(n + 58.0, 0.0)), u2.x), u2.y),
+               mix(mix(hash(vec2<f32>(n + 113.0, 0.0)), hash(vec2<f32>(n + 114.0, 0.0)), u2.x),
+                   mix(hash(vec2<f32>(n + 170.0, 0.0)), hash(vec2<f32>(n + 171.0, 0.0)), u2.x), u2.y), u2.z);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn loadGrowth(coord: vec2<i32>, maxCoord: vec2<i32>) -> f32 {
-    return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0).r;
+fn loadState(coord: vec2<i32>, maxCoord: vec2<i32>) -> vec2<f32> {
+    return textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), maxCoord), 0).rg;
 }
 
 fn bio_color(t: f32, mode: f32, pulse: f32) -> vec3<f32> {
@@ -121,7 +102,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureLoad(readDepthTexture, coord, 0).r;
     let base_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-    var growth = loadGrowth(coord, maxCoord);
+    let prev = loadState(coord, maxCoord);
+    var growth = prev.x;
+    var luciferin = select(prev.y, 0.75, time < 0.1);
 
     let ripple_count = min(u32(u.config.y), 50u);
     var nearest = 8.0;
@@ -133,6 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let d_aspect = distance(uv * vec2<f32>(aspect, 1.0), ripple.xy * vec2<f32>(aspect, 1.0));
             let influence = smoothstep(0.05, 0.0, d_aspect) * (1.0 - smoothstep(1.5, 2.0, age));
             growth = max(growth, influence);
+            luciferin = max(luciferin, influence);
             if (d_aspect < nearest) {
                 nearest = d_aspect;
                 sporeDir = ripple.xy - uv;
@@ -143,39 +127,61 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let heldDist = distance(uv * vec2<f32>(aspect, 1.0), mouse * vec2<f32>(aspect, 1.0));
     growth = max(growth, smoothstep(0.045, 0.0, heldDist) * f32(held) * 0.85);
 
-    let nL = loadGrowth(coord + vec2<i32>(-1, 0), maxCoord);
-    let nR = loadGrowth(coord + vec2<i32>(1, 0), maxCoord);
-    let nD = loadGrowth(coord + vec2<i32>(0, -1), maxCoord);
-    let nU = loadGrowth(coord + vec2<i32>(0, 1), maxCoord);
+    let sL = loadState(coord + vec2<i32>(-1, 0), maxCoord);
+    let sR = loadState(coord + vec2<i32>(1, 0), maxCoord);
+    let sD = loadState(coord + vec2<i32>(0, -1), maxCoord);
+    let sU = loadState(coord + vec2<i32>(0, 1), maxCoord);
+    let nL = sL.x;
+    let nR = sR.x;
+    let nD = sD.x;
+    let nU = sU.x;
     let neighbor_avg = (nL + nR + nD + nU) * 0.25;
-    let depth_mask = smoothstep(0.1, 0.9, depth);
+    let neighbor_luciferin = (sL.y + sR.y + sD.y + sU.y) * 0.25;
+    // depth is all zeros until a depth model has run: smoothstep alone gave 0 and froze every colony,
+    // so keep a floor and let depth only modulate the spread.
+    let depth_mask = mix(0.45, 1.0, smoothstep(0.1, 0.9, depth));
     growth = min(1.0, growth * 0.998 + neighbor_avg * spread_mult * depth_mask * branch_density);
 
     // Idea 1 — spore tropism: extra growth from the neighbor that faces the inoculum
     let dirLen = max(length(sporeDir), 0.0001);
     let dir = sporeDir / dirLen;
     let towardCoord = coord + vec2<i32>(i32(sign(dir.x)), i32(sign(dir.y)));
-    let toward = loadGrowth(towardCoord, maxCoord);
+    let toward = loadState(towardCoord, maxCoord).x;
     let tropism = (1.0 - smoothstep(0.0, 0.28, nearest)) * (0.12 + u.zoom_params.x * 0.08);
     growth = min(1.0, growth + toward * tropism * (1.0 - growth));
 
-    textureStore(dataTextureA, coord, vec4<f32>(growth, 0.0, 0.0, 1.0));
+    // Idea 2 — quorum flash where local growth exceeds the neighbor field
+    let quorum = clamp(growth - neighbor_avg, 0.0, 1.0);
+
+    // ── Idea 3: luciferin metabolic recharge wave in dataTextureA.g ──
+    let recharge = (0.022 + neighbor_luciferin * 0.08) * (1.0 - luciferin) * smoothstep(0.05, 0.35, growth);
+    let discharge = quorum * 0.38 * luciferin;
+    luciferin = clamp(mix(luciferin, neighbor_luciferin, 0.14) + recharge - discharge, 0.0, 1.0);
+
+    textureStore(dataTextureA, coord, vec4<f32>(growth, luciferin, 0.0, 1.0));
 
     let vein_noise = noise3d(vec3<f32>(uv * 20.0, time * 0.5 * (1.0 + treble * 0.2)));
     let veins = smoothstep(0.3, 0.7, growth + vein_noise * 0.2);
 
-    let glow_falloff = pow(growth, 2.0) * glow_intensity;
-    var bio_light = bio_color(time, color_mode, pulse) * glow_falloff;
+    let glow_falloff = pow(max(growth, 0.0), 2.0) * glow_intensity;
+    let metabolicWave = 0.65 + 0.35 * sin(time * 5.5 - growth * 10.0 + luciferin * 6.28318);
+    var bio_light = bio_color(time, color_mode, pulse) * glow_falloff * (0.6 + 0.65 * luciferin * metabolicWave);
 
-    // Idea 2 — quorum flash where local growth exceeds the neighbor field
-    let quorum = clamp(growth - neighbor_avg, 0.0, 1.0);
-    bio_light += bio_light * pow(quorum * 3.2, 2.0) * (0.55 + bass * 0.6);
+    bio_light += bio_light * pow(quorum * 3.2, 2.0) * (0.55 + bass * 0.6) * (0.5 + 0.8 * luciferin);
+
+    // ── Idea 4: hyphal tip frontier & mature fruiting gill striations ──
+    let growthGrad = vec2<f32>(nR - nL, nU - nD);
+    let gradMag = length(growthGrad);
+    let hyphalTip = gradMag * smoothstep(0.06, 0.45, growth) * (1.0 - smoothstep(0.65, 0.92, growth));
+    let gillAngle = atan2(growthGrad.y, growthGrad.x);
+    let gillStriation = (0.5 + 0.5 * cos(gillAngle * 12.0 + dot(uv, vec2<f32>(45.0, -38.0)))) * smoothstep(0.62, 0.92, growth);
+    bio_light += vec3<f32>(0.35, 1.0, 0.78) * hyphalTip * glow_intensity * 1.4;
 
     let ss_scatter = smoothstep(0.0, 0.5, growth) * 0.3;
-    let scatteredBase = growthSSS(growth, veins, base_color);
+    let scatteredBase = growthSSS(growth, veins, base_color) * (1.0 - gillStriation * 0.22);
     let growth_alpha = calculateGrowthAlpha(growth, veins, glow_intensity);
     var final_color = scatteredBase * (1.0 - veins * 0.3) + bio_light + ss_scatter;
-    final_color = acesToneMap(final_color);
+    final_color = acesToneMap(max(final_color, vec3<f32>(0.0)));
 
     textureStore(writeTexture, coord, vec4<f32>(final_color, growth_alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

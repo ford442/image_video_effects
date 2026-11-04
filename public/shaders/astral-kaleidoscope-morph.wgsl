@@ -3,6 +3,9 @@
 //  Category: advanced-hybrid
 //  Features: advanced-convolution, upgraded-rgba, depth-aware, mouse-driven
 //  Complexity: Very High
+//  Upgraded: 2026-11-01
+//  Ideas: radial line structuring element (oriented morphology along the mirror fan); gradient-driven lateral chroma
+//  A packing: feedback colour + luma in A (read as C colour); ACES display on writeTexture
 //  Chunks From: astral-kaleidoscope.wgsl, conv-morphological-erosion-dilation.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-10 — Image Processing & Artistry Enhancer
@@ -22,28 +25,21 @@
 //
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var videoSampler: sampler;
-@group(0) @binding(1) var videoTex:    texture_2d<f32>;
-@group(0) @binding(2) var outTex:     texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var depthTex:   texture_2d<f32>;
-@group(0) @binding(5) var depthSampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var historyBuf: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var unusedBuf:  texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var historyTex: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var compSampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=frame, z=resX, w=resY
-  zoom_params: vec4<f32>,       // x=segments, y=rotationSpeed, z=morphBlend, w=trailPersistence
-  zoom_config: vec4<f32>,       // x=colorShift, y=aberration, z=centerOsc, w=pulsePower
-  ripples:     array<vec4<f32>, 50>,
-};
+// Hand migration (2026-11-01): HEAD pasted renamed bindings (videoTex, outTex, historyBuf, ...) and a
+// struct Uniforms with zoom_params BEFORE zoom_config, which is not the engine layout (config,
+// zoom_config, zoom_params). migrate_to_prelude.py refuses that by design. With the canonical prelude,
+// u.zoom_params.* are the four saved sliders (segments, rotation speed, morph blend, trail persistence),
+// which is what the names always said. HEAD's u.zoom_params.* actually read engine time / mouse
+// (segments = 3 + 12 * time, unbounded) and its four sliders drove hue shift, aberration, centre
+// oscillation and pulse power. The four reads that were never sliders are held at their old midpoints.
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ═══ CHUNK: fmod (from astral-kaleidoscope.wgsl) ═══
 fn fmod(x: f32, y: f32) -> f32 {
@@ -117,20 +113,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let time = u.config.x;
 
     // Parameters
-    let segments    = max(3.0, u.zoom_params.x * 12.0 + 3.0);
+    // A mirror fan only closes for an integer count (a fractional count left a seam at the atan2 cut).
+    let segments    = max(3.0, round(u.zoom_params.x * 12.0 + 3.0));
     let rotSpeed    = u.zoom_params.y * 0.5;
     let morphBlend  = u.zoom_params.z;
     let trails      = u.zoom_params.w;
-    let hueShift    = u.zoom_config.x;
-    let aberration  = u.zoom_config.y * 0.02;
-    let centerOsc   = u.zoom_config.z * 0.15;
-    let pulsePower  = u.zoom_config.w * 0.5 + 0.5;
+    // Never sliders (engine time / mouse under the canonical layout): old slider midpoints.
+    let hueShift    = 1.0;
+    let aberration  = 0.5 * 0.02;
+    let centerOsc   = 0.5 * 0.15;
+    let pulsePower  = 0.5 * 0.5 + 0.5;
 
     // Dynamic Center
     var center = vec2<f32>(0.5, 0.5) + vec2<f32>(sin(time * 0.3), cos(time * 0.4)) * centerOsc;
 
     // Depth-Aware Coordinates
-    let staticDepth = textureSampleLevel(depthTex, depthSampler, uv, 0.0).r;
+    let staticDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthFactor = 1.0 + (1.0 - staticDepth) * 2.0;
 
     // Convert to Polar
@@ -155,9 +153,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uvG = sampleUV;
     let uvB = rotate(sampleUV - center, -chromaOffset) + center;
 
-    let colR = textureSampleLevel(videoTex, videoSampler, clamp(uvR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let colG = textureSampleLevel(videoTex, videoSampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-    let colB = textureSampleLevel(videoTex, videoSampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let colR = textureSampleLevel(readTexture, u_sampler, clamp(uvR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let colG = textureSampleLevel(readTexture, u_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
+    let colB = textureSampleLevel(readTexture, u_sampler, clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     var color = vec3<f32>(colR, colG, colB);
 
     // Psychedelic Color Grading
@@ -182,7 +180,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
             // Sample from kaleidoscope-transformed position
             let morphUV = sampleUV + offset;
-            let sample = textureSampleLevel(videoTex, videoSampler, clamp(morphUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+            let sample = textureSampleLevel(readTexture, u_sampler, clamp(morphUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
             let luma = dot(sample, vec3<f32>(0.299, 0.587, 0.114));
             minVal = min(minVal, sample);
             maxVal = max(maxVal, sample);
@@ -206,12 +204,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Mix morphological texture with kaleidoscope
     color = mix(color, morphRGB, morphBlend * 0.5);
 
+    // 2026-11 Idea 1: radial line structuring element. The disc element above ignores the picture's own
+    // structure, which here is the radial mirror fan. A 7-tap line along the radial direction of the
+    // folded sample (step 1..3 px with Morph Blend) is the oriented dilation; it streaks bright edges
+    // along the mirrors.
+    let radialDirM = normalize(sampleUV - center + vec2<f32>(1e-5, 0.0));
+    let lineStep = mix(1.0, 3.0, morphBlend);
+    var lineMax = color;
+    for (var k = -3; k <= 3; k++) {
+        let tapUV = sampleUV + radialDirM * (f32(k) * lineStep) * pixelSize;
+        lineMax = max(lineMax, textureSampleLevel(readTexture, u_sampler, clamp(tapUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+    }
+    color = mix(color, lineMax, 0.3 * morphBlend);
+
+    // 2026-11 Idea 2: gradient-driven lateral chroma. The morphological gradient marks the edges; a real
+    // lens fringes only where contrast is high. R and B are re-tapped along the radial direction by an
+    // amount proportional to the gradient luma (<= 0.02 uv) and mixed in by how large that shift is.
+    let caShift = clamp(gradientLuma * 0.03, 0.0, 0.02);
+    let caR = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + radialDirM * caShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let caB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - radialDirM * caShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    let caMix = smoothstep(0.0, 0.01, caShift) * 0.7;
+    color = vec3<f32>(mix(color.r, caR, caMix), color.g, mix(color.b, caB, caMix));
+
     // Trails / Feedback
-    let prev = textureSampleLevel(historyTex, depthSampler, uv, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0).rgb;
     let decay = 0.9 + (trails * 0.09);
     let feedback = max(color, prev * decay);
     let feedback_luma = dot(feedback, vec3<f32>(0.299, 0.587, 0.114));
-    textureStore(historyBuf, vec2<i32>(gid.xy), vec4<f32>(feedback, feedback_luma));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(feedback, feedback_luma));
 
     let finalCol = mix(color, feedback, 0.5);
 
@@ -221,6 +241,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let alpha = mix(0.7, 1.0, luma) + topHatLuma * morphBlend * 0.3;
     let finalAlpha = mix(alpha * 0.8, min(alpha, 1.0), staticDepth);
 
-    textureStore(outTex, vec2<i32>(gid.xy), vec4<f32>(finalCol, finalAlpha));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(acesToneMap(max(finalCol, vec3<f32>(0.0))), finalAlpha));
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(staticDepth, 0.0, 0.0, 0.0));
 }

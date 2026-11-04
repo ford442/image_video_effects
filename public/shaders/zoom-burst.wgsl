@@ -3,32 +3,13 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-08-30, 2026-09-21
-//  Ideas: highlight comets (luminance-weighted taps); zoom-ring dwell ghost at streak end
+//  Upgraded: 2026-08-30, 2026-09-21, 2026-11-01
+//  Ideas: highlight comets (luminance-weighted taps); zoom-ring dwell ghost at streak end; spoke gaps between speed lines; far-streak chroma loss
 //  A packing: ACES display RGBA
 //  Motion: radial speed lines + rotational shear streaks
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn sampleColor(uv: vec2<f32>) -> vec3<f32> {
   return textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
@@ -135,8 +116,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rayAngle = abs(sin(atan2(dir.y, dir.x) * 4.0 + time * 0.6));
     // Idea 1 — highlight comets. A zoom exposure integrates light, so highlights drag
     // long bright tails while midtones blur normally: taps are weighted by their luma.
-    let tap = vec3<f32>(rch, gch, bch);
-    let tapLum = dot(tap, vec3<f32>(0.299, 0.587, 0.114));
+    let tapRaw = vec3<f32>(rch, gch, bch);
+    let tapLum = dot(tapRaw, vec3<f32>(0.299, 0.587, 0.114));
+    // ── Idea: far-streak chroma loss. The head of the streak keeps colour.
+    let tap = mix(tapRaw, vec3<f32>(tapLum), t * 0.7);
     let comet = 1.0 + max(tapLum - 0.55, 0.0) * 4.0 * t;
     let w = mix(1.0, 0.22, t) * (1.0 + rayAngle * 0.55) * (1.0 + bass * 0.4) * comet;
     accum = accum + tap * w;
@@ -151,11 +134,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let burst = mix(accum / max(weightSum, 1e-4), ghost, 0.16);
   let lum = dot(burst, vec3<f32>(0.299, 0.587, 0.114));
   let bloom = max(lum - 0.50, 0.0) * 0.6;
-  let speedLine = pow(max(0.0, sin(atan2(dir.y, dir.x) * 8.0 - time * (4.0 + bass * 2.0)) * 0.5 + 0.5), 10.0)
+  let spokePhase = sin(atan2(dir.y, dir.x) * 8.0 - time * (4.0 + bass * 2.0)) * 0.5 + 0.5;
+  let speedLine = pow(max(spokePhase, 0.0), 10.0)
     * exp(-dist * 2.2) * (0.22 + treble * 0.15 + binA * 0.08);
+  // ── Idea: spoke gaps. The same 8-blade phase darkens the burst between lines.
+  let spokeGap = (1.0 - smoothstep(0.0, 0.4, spokePhase)) * exp(-dist * 1.7) * 0.36;
   let tint = mix(vec3<f32>(0.10, 0.8, 1.0), vec3<f32>(1.0, 0.50, 0.70), 0.5 + 0.5 * sin(time * 0.8 + binB));
 
   var hdr = mix(src.rgb, burst + bloom, 0.82);
+  hdr = hdr * (1.0 - spokeGap);
   hdr = hdr + tint * speedLine + tint * click * 0.28 + exp(-dist * 5.0) * 0.16 * (1.0 + bass);
   hdr = mix(hdr, hist.rgb, 0.12);
   hdr = hdr + filmGrain(uv, time);

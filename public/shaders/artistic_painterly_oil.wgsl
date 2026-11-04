@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, paint, oil, audio-viscosity, impasto, depth-brush, pigment-mix, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: scumble skip on canvas peaks; wet-in-wet from exact C
+//  Upgraded: 2026-11-01 (prev 2026-09-09)
+//  Ideas: scumble skip on canvas peaks; wet-in-wet from exact C; bristle ridges along the stroke tangent catch the specular; pigment pooling in cavities
 //  A packing: pre-ACES color.rgb + thickness.a
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -121,6 +102,15 @@ fn wetPaintSpecular(color: vec3<f32>, normal: vec2<f32>, lightDir: vec2<f32>) ->
     return vec3<f32>(specular * 0.3);
 }
 
+// Idea 3 — bristle ridges: fine hair-lines run along the stroke tangent (perp of the edge normal)
+fn bristleRidge(uv: vec2<f32>, edgeDir: vec2<f32>, res: vec2<f32>) -> f32 {
+    let px = uv * res;
+    let across = dot(px, vec2<f32>(-edgeDir.y, edgeDir.x));
+    let along = dot(px, edgeDir);
+    let r = hash12(vec2<f32>(floor(across * 0.55), floor(along * 0.04)));
+    return r * 0.5 + 0.5 * (0.5 + 0.5 * sin(across * 1.7 + r * 6.28));
+}
+
 fn canvasTexture(uv: vec2<f32>, scale: f32) -> f32 {
     let grid = sin(uv.x * scale * 100.0) * sin(uv.y * scale * 100.0);
     return grid * 0.5 + 0.5;
@@ -168,13 +158,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Impasto effect - calculate physical paint height
     let lum = luminance(color);
-    let height = impastoHeight(lum, edgeMag);
+    let ridgeK = 0.07 * (0.4 + impastoStrength);
+    let height = impastoHeight(lum, edgeMag) + bristleRidge(uv, edgeDir, resolution) * ridgeK;
     
     // Normal from height for lighting
-    let heightR = impastoHeight(luminance(kuwahara(uv + vec2<f32>(invRes.x, 0.0), invRes, brushSize, edgeDir)), edgeMag);
-    let heightU = impastoHeight(luminance(kuwahara(uv + vec2<f32>(0.0, invRes.y), invRes, brushSize, edgeDir)), edgeMag);
+    let heightR = impastoHeight(luminance(kuwahara(uv + vec2<f32>(invRes.x, 0.0), invRes, brushSize, edgeDir)), edgeMag)
+        + bristleRidge(uv + vec2<f32>(invRes.x, 0.0), edgeDir, resolution) * ridgeK;
+    let heightU = impastoHeight(luminance(kuwahara(uv + vec2<f32>(0.0, invRes.y), invRes, brushSize, edgeDir)), edgeMag)
+        + bristleRidge(uv + vec2<f32>(0.0, invRes.y), edgeDir, resolution) * ridgeK;
     let normal = normalize(vec2<f32>(height - heightR, height - heightU) * 10.0);
     
+    // Idea 4 — pigment pools in cavities: valleys between ridges sit darker and richer
+    let cavity = clamp((heightR + heightU) * 0.5 - height, 0.0, 0.25) * 4.0;
+    color *= 1.0 - cavity * (0.12 + impastoStrength * 0.2);
+
     // Wet paint specular
     let lightDir = normalize(vec2<f32>(cos(time * 0.5), sin(time * 0.5)));
     let specular = wetPaintSpecular(color, normal, lightDir);

@@ -1,38 +1,37 @@
 // ═══════════════════════════════════════════════════════════════════
 //  cyber-organic-ecosystem
 //  Category: advanced-hybrid
-//  Features: mouse-driven, temporal, rgba-state-machine, organic
+//  Features: mouse-driven, temporal, rgba-state-machine, organic, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: cyber-organic.wgsl, alpha-multi-state-ecosystem.wgsl
 //  Created: 2026-04-18
-//  By: Agent CB-17
-// ═══════════════════════════════════════════════════════════════════
-//  Scans the image to reveal a living multi-species ecosystem
-//  beneath. The organic layer is a real ecosystem simulation with
-//  species competing for resources while producing toxins. Mouse
-//  nurtures the ecosystem, scanner beam seeds new life.
+//  Upgraded: 2026-10-31
+//  Ideas: scanner-beam inoculation; warped tissue and rim refraction; isotropic 9-point Laplacian (§12.2D)
+//  A packing: raw (s1, s2, resourceLevel, toxin)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) /
+    max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)),
+    vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// A.r of the corner texel marks C as this shader's own state (f16-exact, never a density).
+// Without it (shader switched in after start, or after another shader's history) C is foreign
+// and reads as an empty field that re-seeds; `time < 0.1` alone never fires mid-session.
+const STATE_SENTINEL: f32 = -0.6875;
+var<private> stateOwned: bool = false;
+
+// Exact history load. Foreign history reads as an empty field.
+fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
+  if (!stateOwned) { return vec4<f32>(0.0, 0.0, 0.5, 0.0); }
+  let q = clamp(p, vec2<i32>(0), dims - vec2<i32>(1));
+  var v = textureLoad(dataTextureC, q, 0);
+  if (q.x == 0 && q.y == 0) { v.r = 0.0; }
+  return v;
+}
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(.1031, .1030, .0973));
@@ -43,11 +42,11 @@ fn hash22(p: vec2<f32>) -> vec2<f32> {
 fn noise(p: vec2<f32>) -> f32 {
   var i = floor(p);
   let f = fract(p);
-  let u = f * f * (3.0 - 2.0 * f);
+  let u2 = f * f * (3.0 - 2.0 * f);
   return mix(mix(dot(hash22(i + vec2<f32>(0.0, 0.0)), f - vec2<f32>(0.0, 0.0)),
-                 dot(hash22(i + vec2<f32>(1.0, 0.0)), f - vec2<f32>(1.0, 0.0)), u.x),
+                 dot(hash22(i + vec2<f32>(1.0, 0.0)), f - vec2<f32>(1.0, 0.0)), u2.x),
              mix(dot(hash22(i + vec2<f32>(0.0, 1.0)), f - vec2<f32>(0.0, 1.0)),
-                 dot(hash22(i + vec2<f32>(1.0, 1.0)), f - vec2<f32>(1.0, 1.0)), u.x), u.y);
+                 dot(hash22(i + vec2<f32>(1.0, 1.0)), f - vec2<f32>(1.0, 1.0)), u2.x), u2.y);
 }
 
 fn fbm(p: vec2<f32>) -> f32 {
@@ -67,10 +66,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let res = u.config.zw;
   if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
 
-  let uv = vec2<f32>(gid.xy) / res;
+  let uv = (vec2<f32>(gid.xy) + 0.5) / res;
   let ps = 1.0 / res;
   let coord = vec2<i32>(i32(gid.x), i32(gid.y));
+  let dims = vec2<i32>(res);
   let time = u.config.x;
+
+  stateOwned = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).r == STATE_SENTINEL;
   let aspect = res.x / res.y;
 
   let scanSpeed = u.zoom_params.x * 2.0;
@@ -78,16 +80,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let revealRadius = u.zoom_params.z * 0.5;
   let pulseSpeed = u.zoom_params.w * 5.0;
 
-  var mouse = u.zoom_config.yz;
+  let mouse = u.zoom_config.yz;
+
+  // Scanner front geometry (shared by inoculation and reveal mask)
+  let scanPos = fract(time * scanSpeed * 0.2);
+  let scanDist = abs(uv.x - scanPos);
+  let scanMask = smoothstep(0.05, 0.0, scanDist) * 0.5;
+  let scanNoise = noise(vec2<f32>(uv.y * 50.0, time * 10.0));
+  let finalScanMask = scanMask * step(0.2, scanNoise);
 
   // === ECOSYSTEM SIMULATION ===
-  let prevState = textureLoad(dataTextureC, coord, 0);
+  let prevState = stateAt(coord, dims);
   var s1 = prevState.r;
   var s2 = prevState.g;
   var resourceLevel = prevState.b;
   var toxin = prevState.a;
 
-  if (time < 0.1) {
+  if (time < 0.1 || !stateOwned) {
     s1 = 0.0; s2 = 0.0; resourceLevel = 0.5; toxin = 0.0;
     let n1 = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
     if (n1 > 0.92) { s1 = 0.8; }
@@ -100,19 +109,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   resourceLevel = clamp(resourceLevel, 0.0, 2.0);
   toxin = clamp(toxin, 0.0, 2.0);
 
-  let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(ps.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv - vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-  let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, ps.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  // ── Idea 3: isotropic 9-point Laplacian (§12.2D) on exact dataTextureC ──
+  let left = stateAt(coord + vec2<i32>(-1, 0), dims);
+  let right = stateAt(coord + vec2<i32>(1, 0), dims);
+  let down = stateAt(coord + vec2<i32>(0, -1), dims);
+  let up = stateAt(coord + vec2<i32>(0, 1), dims);
+  let dl = stateAt(coord + vec2<i32>(-1, -1), dims);
+  let dr = stateAt(coord + vec2<i32>(1, -1), dims);
+  let ul = stateAt(coord + vec2<i32>(-1, 1), dims);
+  let ur = stateAt(coord + vec2<i32>(1, 1), dims);
 
-  let lapS1 = left.r + right.r + down.r + up.r - 4.0 * s1;
-  let lapS2 = left.g + right.g + down.g + up.g - 4.0 * s2;
-  let lapResource = left.b + right.b + down.b + up.b - 4.0 * resourceLevel;
-  let lapToxin = left.a + right.a + down.a + up.a - 4.0 * toxin;
+  let lap9 = (left + right + down + up) * 0.20 + (dl + dr + ul + ur) * 0.05 - prevState;
+  let lapS1 = lap9.r * 4.0;
+  let lapS2 = lap9.g * 4.0;
+  let lapResource = lap9.b * 4.0;
+  let lapToxin = lap9.a * 4.0;
 
   let growthRate1 = mix(0.02f, 0.08f, 0.5f);
   let growthRate2 = mix(0.015f, 0.06f, 0.4f);
-  let dt = 0.5;
 
   let food1 = s1 * resourceLevel * growthRate1;
   let food2 = s2 * resourceLevel * growthRate2;
@@ -128,6 +142,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   toxin *= 0.95;
   s1 *= 0.998;
   s2 *= 0.998;
+
+  // ── Idea 1: scanner-beam inoculation — sweeping scan line seeds spores & nutrients ──
+  let beamCore = smoothstep(0.018, 0.0, scanDist) * step(0.15, scanNoise);
+  let bandSelect = step(0.5, fract(uv.y * organicScale + time * 0.35));
+  resourceLevel += beamCore * 0.08;
+  s1 += beamCore * bandSelect * 0.06;
+  s2 += beamCore * (1.0 - bandSelect) * 0.06;
 
   s1 = clamp(s1, 0.0, 2.0);
   s2 = clamp(s2, 0.0, 2.0);
@@ -157,8 +178,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   s1 = clamp(s1, 0.0, 2.0);
   s2 = clamp(s2, 0.0, 2.0);
+  resourceLevel = clamp(resourceLevel, 0.0, 2.0);
 
-  textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resourceLevel, toxin));
+  let isCorner = gid.x == 0u && gid.y == 0u;
+  textureStore(dataTextureA, coord, vec4<f32>(select(s1, STATE_SENTINEL, isCorner), s2, resourceLevel, toxin));
 
   // === VISUALIZATION ===
   let colorS1 = vec3<f32>(0.0, 0.8, 1.0) * min(s1, 1.0);
@@ -174,26 +197,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   ecosystemColor += vec3<f32>(1.0, 0.9, 0.5) * edgeHighlight * 0.3;
   ecosystemColor = clamp(ecosystemColor, vec3<f32>(0.0), vec3<f32>(1.0));
 
-  // Organic warp overlay
+  // ── Idea 2: warped tissue & rim refraction using the organic FBM warp vector ──
   let warp = vec2<f32>(
-    fbm(uv * organicScale + vec2<f32>(time * 0.1, 0.0)),
-    fbm(uv * organicScale + vec2<f32>(0.0, time * 0.1))
+    fbm(uv * organicScale + vec2<f32>(time * 0.1, 0.0)) - 0.5,
+    fbm(uv * organicScale + vec2<f32>(0.0, time * 0.1)) - 0.5
   );
   ecosystemColor = mix(ecosystemColor, vec3<f32>(0.8, 0.2, 0.6), 0.15);
-  let vein = smoothstep(0.4, 0.6, abs(fbm(uv * organicScale * 2.0 + time * 0.2) - 0.5));
-  ecosystemColor += vec3<f32>(vein * sin(time * pulseSpeed) * 0.5, 0.0, 0.0);
+  let warpedVeinUV = uv * organicScale * 2.0 + warp * 1.4 + time * 0.2;
+  let vein = smoothstep(0.4, 0.6, abs(fbm(warpedVeinUV) - 0.5));
+  ecosystemColor += vec3<f32>(max(vein * sin(time * pulseSpeed) * 0.5, 0.0), vein * 0.08, vein * 0.12);
 
   // === REVEAL MASKS ===
   let mouseUV = mouse;
   let distVec = (uv - mouseUV) * vec2<f32>(aspect, 1.0);
   let mDist = length(distVec);
   let mouseMask = smoothstep(revealRadius, revealRadius * 0.8, mDist);
-
-  let scanPos = fract(time * scanSpeed * 0.2);
-  let scanDist = abs(uv.x - scanPos);
-  let scanMask = smoothstep(0.05, 0.0, scanDist) * 0.5;
-  let scanNoise = noise(vec2<f32>(uv.y * 50.0, time * 10.0));
-  let finalScanMask = scanMask * step(0.2, scanNoise);
 
   let reveal = clamp(mouseMask + finalScanMask, 0.0, 1.0);
 
@@ -202,14 +220,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let edge = smoothstep(0.0, 0.1, abs(reveal - 0.5)) * (1.0 - abs(reveal - 0.5) * 2.0);
   let gridOverlay = grid * edge * vec3<f32>(0.0, 1.0, 0.5);
 
-  // Base image
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Base image refracted across the organic transition rim by warp
+  let refractedUV = clamp(uv + warp * ps * 18.0 * edge, vec2<f32>(0.0), vec2<f32>(1.0));
+  let baseColor = textureSampleLevel(readTexture, u_sampler, refractedUV, 0.0);
 
   // Mix base with ecosystem
-  var finalColor = mix(baseColor, vec4<f32>(ecosystemColor, 1.0), reveal);
-  finalColor += vec4<f32>(gridOverlay, 0.0);
+  let rawRgb = max(mix(baseColor.rgb, ecosystemColor, reveal) + gridOverlay, vec3<f32>(0.0));
+  let mappedRgb = aces(rawRgb);
+  let biomass = min(s1 + s2, 1.0);
+  let outAlpha = clamp(mix(baseColor.a, 0.68 + biomass * 0.32, reveal) + edge * 0.15, 0.0, 1.0);
 
-  textureStore(writeTexture, coord, finalColor);
+  textureStore(writeTexture, coord, vec4<f32>(mappedRgb, outAlpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

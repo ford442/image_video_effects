@@ -5,12 +5,18 @@
 //  Complexity: Medium
 //  Created: 2026-05-10
 //  Upgraded: 2026-05-23 (Phase A Upgrade Swarm)
-//  Upgraded: 2026-07-31 (Batch 20 — per-column FFT voices, springed
+//  Upgraded: 2026-07-31, 2026-11-01 (Batch 20 — per-column FFT voices, springed
 //            rain controls, click splash bursts; mids/treble now live)
+//  Ideas: streak core; column slant
+//  A packing: ACES display RGBA (C unread)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 // zoom_params: x=Density, y=ChromaticStr, z=TrailLen, w=AngleControl
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * .1031);
@@ -67,11 +73,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     speedPos = mix(speedPos, speedGoal, stateZero);
     let angleSpring = spring_step(anglePos, angleVel, angleGoal, dt);
     let speedSpring = spring_step(speedPos, speedVel, speedGoal, dt);
-    extraBuffer[133] = angleSpring.x;
-    extraBuffer[134] = angleSpring.y;
-    extraBuffer[135] = speedSpring.x;
-    extraBuffer[136] = speedSpring.y;
-    extraBuffer[137] = time;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = angleSpring.x;
+        extraBuffer[134] = angleSpring.y;
+        extraBuffer[135] = speedSpring.x;
+        extraBuffer[136] = speedSpring.y;
+        extraBuffer[137] = time;
+    }
     // Eased controls: direction changes sweep smoothly instead of snapping.
     let angleVal = angleSpring.x;
     let speedVal = speedSpring.x;
@@ -102,9 +110,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trailLen = clamp(trailLenBase * (1.0 + (colBin - 0.5) * 0.4), 0.02, 0.95);
 
     let colSpeed = hash12(vec2<f32>(gridID.x, 0.0)) * 0.5 + 0.5;
-    let yPos = rotUV.y + time * speedVal * colSpeed;
+    // ── Idea 2: column slant ────────────────────────────────────────
+    // Faster columns lean inside the rotated field. Rain Angle Scale
+    // still owns how much direction varies.
+    let slant = (colSpeed - 0.75) * 0.55 * u.zoom_params.w;
+    let yPos = rotUV.y + time * speedVal * colSpeed + rotUV.x * slant;
     let dropNoise = fract(yPos * density * 0.1 + hash12(vec2<f32>(gridID.x, 10.0)) * 100.0);
     let drop = smoothstep(1.0 - trailLen, 1.0, dropNoise);
+    // ── Idea 1: streak core ─────────────────────────────────────────
+    // The tip stays sharp and bright. Chromatic displace uses the tail.
+    // Trail Length still sets how long that tail is.
+    let headSpan = min(trailLen * 0.22, 0.045);
+    let head = smoothstep(1.0 - headSpan, 1.0, dropNoise);
+    let tail = drop * (1.0 - head);
 
     // ── Click splash bursts ─────────────────────────────────────────
     // Each live ripple adds a radial chromatic kick at its click point:
@@ -127,7 +145,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     splash = splash * (1.0 + mids * 0.6);
 
     // Apply displacement
-    let displace = vec2<f32>(s, c) * drop * chromaticStr + splash;
+    let displace = vec2<f32>(s, c) * tail * chromaticStr + splash;
 
     let samplePos = clamp(uv + displace, vec2<f32>(0.0), vec2<f32>(1.0));
     let sampleNeg = clamp(uv - displace, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -137,13 +155,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, sampleNeg, 0.0).b;
 
     // Column FFT voice lifts the drop brightness; treble adds shimmer.
-    let bright = drop * 0.1 * (0.6 + colBin * 1.2) * (1.0 + treble * 0.4);
+    let bright = (head * 0.45 + tail * 0.1) * (0.6 + colBin * 1.2) * (1.0 + treble * 0.4);
 
     // Semantic alpha
     let baseLum = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(drop * 0.6 + bright * 2.0 + length(displace) * 8.0 + baseLum * 0.15 + 0.1, 0.1, 1.0);
+    let alpha = clamp(drop * 0.6 + head * 0.25 + bright * 2.0 + length(displace) * 8.0 + baseLum * 0.15 + 0.1, 0.1, 1.0);
 
-    let finalRGB = vec3<f32>(r + bright, g + bright, b + bright);
+    let finalRGB = acesToneMap(max(vec3<f32>(r + bright, g + bright, b + bright), vec3<f32>(0.0)));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

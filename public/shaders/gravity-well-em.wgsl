@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: gravitational-lensing, electromagnetic-fields, chromatic, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-11
-//  Ideas: photon ring halo; frame-drag hue shear
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: photon ring halo; frame-drag hue shear; lensed counter-image inside the Einstein ring; gravitational redshift toward the well
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -141,6 +122,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sampleB = textureSampleLevel(readTexture, u_sampler, uv_b, 0.0);
 
     finalColor = vec3<f32>(sampleR.r, sampleG.g, sampleB.b);
+
+    // 2026-11 Idea 1: counter-image. A point lens makes two images of the background: the
+    // primary (the shifted sample above) and a dimmer, inverted one at r' = thetaE^2 / r on the
+    // far side of the lens. Sample the background there (point-reflected through the well) and
+    // blend it in near the core, fading with distance; it is clamped to half strength.
+    let thetaE = radius * (1.0 + strength * 0.35);
+    let rCounter = thetaE * thetaE / max(dist, 0.0001);
+    let counterAspect = -dir * rCounter;
+    let counterUV = clamp(mouse + vec2<f32>(counterAspect.x / aspect, counterAspect.y), vec2<f32>(0.0), vec2<f32>(1.0));
+    let counterColor = textureSampleLevel(readTexture, u_sampler, counterUV, 0.0).rgb;
+    let counterWeight = min(0.55 * exp(-distSurface / max(0.5 * thetaE, 0.01)), 0.5) * clamp(strength * 1.5, 0.0, 1.0);
+    finalColor = mix(finalColor, counterColor, counterWeight);
+
+    // 2026-11 Idea 2: gravitational redshift. Light climbing out of the well loses energy:
+    // 1 + z = 1 / sqrt(1 - rs / r), with rs scaled from the existing radius and strength. The
+    // brightness falls and the blue falls fastest, 1/(1+z)^(0.5, 1.0, 1.8) per channel.
+    let rsRedshift = radius * 0.8 * strength;
+    let redshiftZ = 1.0 / sqrt(max(1.0 - rsRedshift / max(dist, 0.0001), 0.05)) - 1.0;
+    finalColor = finalColor * pow(vec3<f32>(1.0 / (1.0 + redshiftZ)), vec3<f32>(0.5, 1.0, 1.8));
 
     // Idea 2 — frame-drag hue shear: azimuthal hue rotation outside the well
     let azimuth = atan2(d_vec_aspect.y, d_vec_aspect.x);

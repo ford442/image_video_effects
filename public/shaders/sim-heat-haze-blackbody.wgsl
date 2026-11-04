@@ -3,8 +3,8 @@
 //  Category: advanced-hybrid
 //  Features: simulation, blackbody-radiation, temperature-field, convection, mouse-driven, HDR, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: Schlieren along ∇T; buoyant plume shear from dT/dy
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: Schlieren along ∇T; buoyant plume shear from dT/dy; binomial heat kernel; rising temperature off the ground
 //  A packing: raw temperature in A.r
 // ═══════════════════════════════════════════════════════════════════
 //  Temperature field convection simulation with physically-correct
@@ -13,26 +13,7 @@
 //  intense heat sources glow from red ember to blue-white.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -91,13 +72,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let heatSources = mix(1.0, 5.0, u.zoom_params.w);
     let thermalIntensity = mix(0.5, 2.0, temperature);
 
+    // ── Idea 3: binomial heat kernel. Same 3×3, corners lighter than edges.
     var sum = 0.0;
+    var wsum = 0.0;
     for (var y: i32 = -1; y <= 1; y++) {
         for (var x: i32 = -1; x <= 1; x++) {
-            sum += loadTemp(coord + vec2<i32>(x, y), max_coord);
+            let manhattan = abs(x) + abs(y);
+            let w = select(select(1.0, 2.0, manhattan == 1), 4.0, manhattan == 0);
+            sum += loadTemp(coord + vec2<i32>(x, y), max_coord) * w;
+            wsum += w;
         }
     }
-    let diffused = sum / 9.0;
+    let diffused = sum / max(wsum, 1.0);
     let cooled = diffused * 0.98;
 
     let groundHeat = smoothstep(0.15, 0.0, uv.y) * temperature * (1.0 + bass * 0.2);
@@ -116,7 +102,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mouseDist = length(uv - mousePos);
     let mouseHeat = smoothstep(0.1, 0.0, mouseDist) * temperature * 0.3;
 
-    let newTemp = min(cooled + groundHeat + sourceHeat + mouseHeat, 1.0);
+    let pooled = min(cooled + groundHeat + sourceHeat + mouseHeat, 1.0);
+    // ── Idea 4: temperature rises off the ground. Convection Speed still shears the photo.
+    let riseSteps = 1 + i32(convectionSpeed);
+    let fromGround = loadTemp(coord - vec2<i32>(0, riseSteps), max_coord);
+    let carry = clamp(fromGround * convectionSpeed * 0.12, 0.0, 0.5);
+    let newTemp = min(mix(pooled, fromGround, carry), 1.0);
     textureStore(dataTextureA, gid.xy, vec4<f32>(newTemp, 0.0, 0.0, 1.0));
 
     let tempRight = loadTemp(coord + vec2<i32>(1, 0), max_coord);

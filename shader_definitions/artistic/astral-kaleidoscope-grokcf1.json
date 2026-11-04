@@ -2,10 +2,13 @@
   "id": "astral-kaleidoscope-grokcf1",
   "name": "Astral Kaleidoscope grokcf1",
   "url": "shaders/astral-kaleidoscope-grokcf1.wgsl",
-  "description": "An enhanced cosmic kaleidoscope with astral color schemes, featuring dynamic, time-driven evolution and intricate, mouse-driven fractal details.",
+  "description": "Kaleidoscope where bass and mids torque the spin and a held pointer grabs the spiral toward the cursor. A second object chamber turns the other way and is blended in, and a logarithmic spiral term makes the arms self-similar.",
   "features": [
     "mouse-driven",
-    "time-driven"
+    "time-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

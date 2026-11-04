@@ -13,12 +13,14 @@
     "emergent",
     "interactive",
     "mouse-driven",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "features": [
     "mouse-driven",
     "temporal",
-    "rgba-state-machine"
+    "rgba-state-machine",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -53,5 +55,47 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "version": 1,
+      "date": "2026-10-31",
+      "alphaSemantics": "species-biomass-s1-plus-s2",
+      "feedbackPacking": "raw (s1, s2, resourceVal, toxin)",
+      "params": [
+        {
+          "slot": "x",
+          "id": "flockCohesion",
+          "name": "Flock Cohesion",
+          "min": 0,
+          "max": 1,
+          "default": 0.5
+        },
+        {
+          "slot": "y",
+          "id": "predationRate",
+          "name": "Predation Rate",
+          "min": 0,
+          "max": 1,
+          "default": 0.5
+        },
+        {
+          "slot": "z",
+          "id": "diffusion",
+          "name": "Diffusion Rate",
+          "min": 0,
+          "max": 1,
+          "default": 0.3
+        },
+        {
+          "slot": "w",
+          "id": "toxinStrength",
+          "name": "Toxin Strength",
+          "min": 0,
+          "max": 1,
+          "default": 0.5
+        }
+      ]
+    }
+  }
 }

@@ -2,9 +2,11 @@
   "id": "chromatic-folds-2",
   "name": "Chromatic Folds V2",
   "url": "shaders/chromatic-folds-2.wgsl",
-  "description": "Enhanced geometric color folding with improved warping.",
+  "description": "Enhanced geometric colour folding: five roaming Möbius, Klein and hyperbolic fold centres. Where two fold basins meet a bright, aberrating seam forms, and the trail is twisted about the strongest Möbius centre as it crosses a fold.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

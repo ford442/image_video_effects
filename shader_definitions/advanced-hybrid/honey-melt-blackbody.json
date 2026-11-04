@@ -13,7 +13,11 @@
     "hex-grid",
     "blackbody-radiation",
     "viscous-material",
-    "subsurface"
+    "subsurface",
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

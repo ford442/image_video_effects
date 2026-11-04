@@ -3,8 +3,8 @@
 //  Category: distortion
 //  Features: mouse-driven, depth-aware, audio-reactive, temporal, chromatic-aberration, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: vertical fluted ribs with crest highlight; grout-edge mirror bevel with specular line; per-brick batch tint and thickness
+//  Upgraded: 2026-11-01
+//  Ideas: vertical fluted ribs with crest highlight; grout-edge mirror bevel with specular line; per-brick batch tint and thickness; trapped seed bubbles (hashed per brick, strong inverted micro-lens + rim glint); hollow-core fused seam (inset cavity edge line + second parallaxed lens shift)
 //  A packing: ACES display RGBA (HEAD; C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 //  Each brick is a plano-convex lens magnifying its own centre, now ribbed
@@ -12,26 +12,8 @@
 //  ripple shocks. The extraBuffer[133..138] spring is HEAD's (runtime zeroes
 //  that range each frame, so it is a harmless no-op and mouse = raw pointer).
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BrickSize, y=IORStrength, z=ChromaticAberration, w=DepthInfluence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BrickSize, y=IORStrength, z=ChromaticAberration, w=DepthInfluence
 
 fn schlick(cosTheta: f32, R0: f32) -> f32 {
   return R0 + (1.0 - R0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
@@ -132,7 +114,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fluteCount = 6.0;
   let flutePhase = brickUV.x * fluteCount * 6.2831853;
   let fluteOffset = vec2<f32>(sin(flutePhase) * iorEff * 0.045, 0.0);
-  let baseOffset = lensOffset + fluteOffset;
+  // Idea 4 (3rd pass): trapped seed bubbles. Cast glass blocks carry air bubbles: each brick hashes up
+  // to two (70% / 22%); a bubble is a strong diverging micro-lens, so the image inside it flips and
+  // shrinks, and its rim catches a crescent glint on the light side. Bubbles ride the brick drift.
+  var bubbleOff = vec2<f32>(0.0);
+  var bubbleMask = 0.0;
+  var bubbleRim = 0.0;
+  for (var k = 0u; k < 2u; k = k + 1u) {
+    let sk = f32(k);
+    let hb = hash21(brickId + vec2<f32>(5.3 + sk * 13.7, 9.1 + sk * 7.3));
+    let hx = hash21(brickId + vec2<f32>(11.1 + sk * 3.1, 2.7 + sk * 5.9));
+    let hy = hash21(brickId + vec2<f32>(7.7 + sk * 9.3, 15.3 + sk * 1.7));
+    let present = step(select(0.3, 0.78, k == 1u), hb);
+    let bc = vec2<f32>(0.22 + 0.56 * hx, 0.22 + 0.56 * hy);
+    let rad = (0.05 + 0.05 * fract(hb * 7.31)) * select(1.0, 0.7, k == 1u);
+    let bd2 = brickUV - bc;
+    let bdist = length(bd2);
+    let inside = (1.0 - smoothstep(rad * 0.85, rad, bdist)) * present;
+    bubbleMask = max(bubbleMask, inside);
+    bubbleOff += bd2 * (-iorEff * 3.0) * inside;
+    let ring = exp(-pow((bdist - rad) / (rad * 0.18), 2.0)) * present;
+    bubbleRim = max(bubbleRim, ring * (0.35 + 0.65 * max(dot(bd2 / max(bdist, 1e-4), vec2<f32>(-0.6, -0.8)), 0.0)));
+  }
+
+  // Idea 5 (3rd pass): hollow-core fused seam. A glass block is two half-shells fused around a hollow
+  // cavity: looking through it the ray crosses two more air/glass faces, so the cavity shows a second,
+  // stronger lens shift, and the fusion line shows as a thin bright rectangle inset from the grout.
+  let cavM = max(abs(bCentered.x), abs(bCentered.y));
+  let cavity = 1.0 - smoothstep(0.30, 0.34, cavM);
+  let seamLine = exp(-pow((cavM - 0.32) / 0.012, 2.0));
+  let cavityOffset = bCentered * iorEff * 0.8 * cavity;
+
+  let baseOffset = lensOffset + fluteOffset + cavityOffset + bubbleOff;
 
   // Prismatic dispersion
   let chDisp = chromaStr * (1.0 + treble * 0.5);
@@ -181,6 +194,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let specT = (edgeDist - (groutW + 0.014)) / 0.007;
     color += vec3<f32>(0.9, 0.95, 1.0) * exp(-specT * specT) * 0.35 * (1.0 - isGrout) * (1.0 - clearMask);
   }
+
+  color = color * (1.0 - 0.18 * bubbleMask * activeMask) + vec3<f32>(0.95, 0.98, 1.0) * bubbleRim * 0.4 * activeMask * (1.0 + treble * 0.5);
+  color += vec3<f32>(0.9, 0.97, 1.0) * seamLine * 0.22 * activeMask * (1.0 + treble * 0.4);
 
   // Idea 3 — Per-brick batch tint: mixed-batch glass-block walls vary from
   // green to blue and in thickness. Deviations are centred on HEAD's glass.

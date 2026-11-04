@@ -4,8 +4,9 @@
 //  Features: mouse-driven, audio-reactive, animated, depth-luminance,
 //            bass-character-swap, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: phosphor persistence smear on character index changes; CRT scanline mask
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: phosphor persistence smear on character index changes; CRT scanline mask;
+//         stroke weight from luma; lens bezel
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -69,10 +70,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let damping = 0.78;
     lensVel = (lensVel + (rawMouse - lensPos) * springK) * damping;
     lensPos = lensPos + lensVel;
-    extraBuffer[133] = lensPos.x;
-    extraBuffer[134] = lensPos.y;
-    extraBuffer[135] = lensVel.x;
-    extraBuffer[136] = lensVel.y;
+    if (global_id.x == 0u && global_id.y == 0u) {
+        extraBuffer[133] = lensPos.x;
+        extraBuffer[134] = lensPos.y;
+        extraBuffer[135] = lensVel.x;
+        extraBuffer[136] = lensVel.y;
+    }
 
     // Aspect-corrected distance so the lens stays circular on any canvas.
     let lensDelta = (uv - lensPos) * vec2<f32>(aspect, 1.0);
@@ -129,7 +132,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Glyph SDF approximation: simple cross/dot
     let crossDist = min(abs(cellUV.x - 0.5), abs(cellUV.y - 0.5));
     let dotDist = length(cellUV - vec2<f32>(0.5));
-    let glyphShape = select(1.0 - smoothstep(0.0, 0.15, crossDist), 1.0 - smoothstep(0.0, 0.2, dotDist), glyphPattern > 0.5);
+    // ── Idea 1: stroke weight from luma ──────────────────────────────
+    // Bright cells lay a thicker cross or dot. Density Boost still decides
+    // whether a glyph exists; Brightness still scales the ink.
+    let weight = mix(0.06, 0.22, clamp(depthLuma + densityBoost * 0.2, 0.0, 1.0));
+    let glyphShape = select(1.0 - smoothstep(0.0, weight, crossDist), 1.0 - smoothstep(0.0, weight * 1.35, dotDist), glyphPattern > 0.5);
     let glyphAlpha = glyphShape * isGlyph;
 
     // Depth-based color: foreground brighter, background darker
@@ -154,6 +161,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // CRT horizontal scanline mask modulating glyph brightness.
     let scanMask = 0.86 + 0.14 * sin(pixelUV.y * 3.14159265 * 2.0 / max(glyphSize, 1.0));
     finalRGB *= scanMask;
+
+    // ── Idea 2: lens bezel ───────────────────────────────────────────
+    // The sprung lens already refines type inside lensRadius. A dark ring
+    // at that radius frames the window.
+    let bezel = smoothstep(0.028, 0.0, abs(lensDist - lensRadius));
+    finalRGB *= 1.0 - bezel * 0.72;
 
     finalRGB = acesToneMap(max(finalRGB, vec3<f32>(0.0)));
     let alpha = clamp(glyphAlpha * brightness + bass * 0.05, 0.0, 1.0);

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-11-01T03:03:14.474523+00:00",
+  "generated": "2026-11-03T03:39:57.448720+00:00",
   "files_scanned": 1443,
   "new_violations": [],
   "known_violations": [
@@ -114,46 +114,6 @@
       "op": "=",
       "index": 3,
       "class": "reserved"
-    },
-    {
-      "file": "public/shaders/symbiotic-light-propagation-networks.wgsl",
-      "line": 81,
-      "expr": "SEED_X",
-      "op": "=",
-      "index": 5,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/symbiotic-light-propagation-networks.wgsl",
-      "line": 82,
-      "expr": "SEED_Y",
-      "op": "=",
-      "index": 6,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/symbiotic-light-propagation-networks.wgsl",
-      "line": 83,
-      "expr": "SEED_T",
-      "op": "=",
-      "index": 7,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/symbiotic-light-propagation-networks.wgsl",
-      "line": 84,
-      "expr": "SEED_S",
-      "op": "=",
-      "index": 8,
-      "class": "fft-zone"
-    },
-    {
-      "file": "public/shaders/symbiotic-light-propagation-networks.wgsl",
-      "line": 86,
-      "expr": "SEED_PREV",
-      "op": "=",
-      "index": 9,
-      "class": "fft-zone"
     },
     {
       "file": "public/shaders/temporal-rgb-smear.wgsl",
