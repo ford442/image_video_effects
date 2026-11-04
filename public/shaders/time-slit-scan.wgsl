@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Time Slit Scan
-//  Category: artistic
-//  Features: mouse-driven, audio-reactive
-//  Complexity: Medium-High
-//  Upgraded: 2026-04-25
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-01
+//  Ideas: width-scaled jaws; exposure streak; along-slit age
+//  A packing: linear slit RGBA (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -94,6 +96,16 @@ fn slitBlendFactor(distance: f32, width: f32, feather: f32) -> f32 {
   return smoothstep(width + feather, max(width - feather, 0.0), distance);
 }
 
+fn loadHist(p: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+  let c = clamp(vec2<i32>(p * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  return textureLoad(dataTextureC, c, 0);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 // ── MAIN ─────────────────────────────────────────────────────
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -104,10 +116,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let slitCount = i32(clamp(u.zoom_params.x * 2.0 + 1.0, 1.0, 3.0));
   let slitShape = i32(clamp(u.zoom_params.y * 2.0 + 0.5, 0.0, 2.0));
-  let driftSpeed = u.zoom_params.z;
-  let slitWidth = mix(0.01, 0.15, u.zoom_params.w);
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let driftSpeed = u.zoom_params.z * (1.0 + bass * 0.35);
+  let slitWidth = mix(0.01, 0.15, u.zoom_params.w) * (1.0 + mids * 0.15);
 
-  let center = vec2<f32>(0.5);
+  let mouse = u.zoom_config.yz;
+  let center = mix(vec2<f32>(0.5), mouse, 0.4);
   let phase = time * driftSpeed * 2.0;
 
   var slitAlpha = 0.0;
@@ -128,7 +143,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       dist = sdSpiralSlit(slitUV, center, 2.0 + f32(s), slitWidth);
     }
 
-    let inSlit = slitBlendFactor(dist, 0.0, 0.02);
+    // ── Idea 1: width-scaled jaws ────────────────────────────────────
+    let inSlit = slitBlendFactor(dist, 0.0, slitWidth * 0.45 + 0.004);
     slitAlpha = slitAlpha + inSlit;
 
     if (inSlit > 0.0) {
@@ -147,9 +163,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         driftUV = center + vec2<f32>(cos(angle), sin(angle)) * r;
       }
 
-      let sampleColor = textureSampleLevel(dataTextureC, u_sampler, clamp(driftUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-      // Time-warp tinting: older frames bluer, newer redder
-      let tint = mix(vec3<f32>(0.8, 0.9, 1.2), vec3<f32>(1.2, 0.9, 0.8), f32(s) * 0.3);
+      // ── Idea 2: exposure streak ──────────────────────────────────
+      // One step back along the drift, averaged with the slit sample.
+      let along = select(
+        vec2<f32>(0.018 * (0.35 + driftSpeed), 0.0),
+        (driftUV - center) * 0.045,
+        slitShape != 0
+      );
+      let sampleColor = mix(
+        loadHist(driftUV, resolution),
+        loadHist(clamp(driftUV - along, vec2<f32>(0.0), vec2<f32>(1.0)), resolution),
+        0.5
+      );
+      // ── Idea 3: along-slit age ─────────────────────────────────
+      // The blue-to-warm tint runs along the slit as well as across slits.
+      let alongAge = select(
+        uv.x,
+        fract(atan2(slitUV.y - center.y, slitUV.x - center.x) / 6.2831853 + 1.0),
+        slitShape != 0
+      );
+      let tint = mix(vec3<f32>(0.8, 0.9, 1.2), vec3<f32>(1.2, 0.9, 0.8), clamp(mix(f32(s) * 0.33, alongAge, 0.55), 0.0, 1.0));
       slitColor = slitColor + sampleColor.rgb * tint * inSlit;
     }
   }
@@ -163,9 +196,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Alpha: full in slit, lower outside
   let finalAlpha = mix(0.4, 1.0, slitAlpha);
 
-  let out = vec4<f32>(finalColor, finalAlpha);
-  textureStore(writeTexture, global_id.xy, out);
-  textureStore(dataTextureA, global_id.xy, out);
+  let mapped = aces(max(finalColor, vec3<f32>(0.0)));
+  textureStore(writeTexture, global_id.xy, vec4<f32>(mapped, finalAlpha));
+  textureStore(dataTextureA, global_id.xy, vec4<f32>(finalColor, finalAlpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

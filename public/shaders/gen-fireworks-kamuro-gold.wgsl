@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-10
-//  Ideas: independent twinkle per glitter; hang plateau then resume fall; dross fission satellites at twinkle peaks; charcoal cooling after the plateau
+//  Upgraded: 2026-11-01
+//  Ideas: independent twinkle per glitter; hang plateau then resume fall; dross fission satellites at twinkle peaks; charcoal cooling after the plateau; cloud sag; fine-mesh hang
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -127,8 +127,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       col += vec3<f32>(1.0, 0.93, 0.62) * flash;
       heat += flash * 0.8;
 
-      // golden atmospheric haze: warm ambient glow lingering around the cloud
-      let haze = exp(-length(uv - center) * 2.2) * fade * energy;
+      // ── Idea 1: cloud sag — the haze drops with the glitter after the hang
+      let sag = fallSpd * max(0.0, bAge - hang * 1.15) * 0.12;
+      let hazeCenter = center - vec2<f32>(0.0, sag);
+      let haze = exp(-length(uv - hazeCenter) * 2.2) * fade * energy;
       col += vec3<f32>(1.0, 0.78, 0.35) * haze * (0.12 + density*0.06 + mids*0.05);
       heat += haze * 0.12;
 
@@ -144,7 +146,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let sp = kamuroPos(center, vel, bAge, fallSpd, hang);
         // Idea 4 — charcoal cooling: after the plateau, glitter cools to dull red and shrinks.
         let charcoalCool = smoothstep(plateauEnd, plateauEnd + 2.6 + js2, bAge);
-        let sz = (0.003 + js*0.003) * (1.0 - 0.45 * charcoalCool);
+        // ── Idea 2: fine-mesh hang — a longer hang is a smaller flake
+        let mesh = mix(1.15, 0.42, clamp((hang - 0.3) / 0.9, 0.0, 1.0));
+        let sz = (0.003 + js*0.003) * mesh * (1.0 - 0.45 * charcoalCool);
 
         // main glitter spark (audio temperature shifts gold <-> silver)
         let g = softGlow(uv, sp, sz, fade*energy*(0.7 + js2*0.5)*(1.0 - 0.55 * charcoalCool));

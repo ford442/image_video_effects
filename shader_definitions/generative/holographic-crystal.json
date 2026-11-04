@@ -3,7 +3,7 @@
   "name": "Holographic Crystal",
   "url": "shaders/holographic-crystal.wgsl",
   "category": "generative",
-  "description": "Crystal facet interference patterns with rainbow holographic shifts. Mouse tilts the crystal lattice.",
+  "description": "Crystal facet interference with stepped diffraction orders and dark grooves. A lit bevel sits on the lit side of each groove, and a caustic runs the square's diagonal. Mouse tilt and click warps stay.",
   "tags": [
     "generative",
     "crystal",

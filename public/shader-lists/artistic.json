@@ -2273,7 +2273,7 @@
       "interference",
       "line-art"
     ],
-    "description": "Sobel contour extraction cross-modulated with a reference-beam interference plate, so the output is a recorded fringe pattern rather than a flat edge trace. Fringe spacing comes from the eight FFT bins and the reference-beam angle follows the pointer. Contours are extracted at three parallax offsets driven by scene depth, stacking them as plates at different heights. Fixes dead audio (plasmaBuffer was bound but never read despite the audio-reactive tag), a depth clobber, and a dead halftone radius; the transpiler-generated source was rewritten as readable WGSL."
+    "description": "Twisted holographic lattice marched over the photo, with click rings. A Sobel ridge is drawn in holographic ink on top of the luma gate, and the march distance beats a tilted reference beam. Saved sliders keep their current roles: lattice scale, edge gate, fringe frequency, ink."
   },
   {
     "id": "ink-diffusion",

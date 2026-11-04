@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: muzzle flash at the tube mouth; per-tube color sequence on starCol; interstitial gold fountain between shots; burnout gutter flicker
+//  Upgraded: 2026-11-01
+//  Ideas: muzzle flash at the tube mouth; per-tube color sequence on starCol; interstitial gold fountain between shots; burnout gutter flicker; candle tube; apex report
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -88,6 +88,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let bAge = age-1.2;
         let burstY = tubeY + 1.2*energy;
         let burstC = vec2<f32>(tubeX, burstY);
+        // ── Idea 2: apex report — a white pop ahead of the colored sparks
+        col += vec3<f32>(1.0, 0.97, 0.9) * softGlow(uv, burstC, sz * 3.2, exp(-bAge * 16.0) * energy * 1.6);
         let burstSparks = 10 + i32(trebleDetail * 8.0);
         for (var sp = 0; sp < burstSparks; sp = sp + 1) {
           let ang = f32(sp)/f32(burstSparks)*TAU;
@@ -112,6 +114,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         col += vec3<f32>(1.0,0.72,0.28)*softGlow(uv, fp, starSize*0.35, fountain*(1.0 - fAge*3.0)*0.9);
       }
     }
+    // ── Idea 1: candle tube — dark case behind the mouth, bright lip on the rim
+    let tubeMask = exp(-abs(uv.x - tubeX) * 110.0)
+      * smoothstep(tubeY - 0.16, tubeY - 0.03, uv.y)
+      * smoothstep(tubeY + 0.008, tubeY - 0.004, uv.y);
+    col = mix(col, vec3<f32>(0.015, 0.012, 0.01), tubeMask * 0.8);
+    let lip = exp(-abs(uv.x - tubeX) * 95.0) * exp(-abs(uv.y - (tubeY + 0.012)) * 140.0);
+    col += vec3<f32>(1.0, 0.78, 0.4) * lip * (0.45 + bass * 0.2);
     // Tube glow at base
     col += vec3<f32>(0.8,0.4,0.1)*softGlow(uv, vec2<f32>(tubeX, tubeY), 0.012, 0.4+treble*0.3);
   }

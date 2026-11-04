@@ -1860,7 +1860,7 @@
       "temporal",
       "upgraded-rgba"
     ],
-    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
+    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Linear scroll RGBA in A; ACES on the display.",
     "params": [
       {
         "name": "Scan Speed",
@@ -3574,7 +3574,7 @@
     "name": "Holographic Prism",
     "category": "interactive-mouse",
     "url": "shaders/holographic-prism.wgsl",
-    "description": "Triangular prism dispersion with Snell's law refraction, wavelength-accurate rainbow spectrum, holographic interference fringes and speckle. Bass rotates prism, mouse controls incident angle, depth drives parallax.",
+    "description": "A prism under the pointer. Snell refraction, facet count, and wavelength caustics stay. Dispersion follows Cauchy's n(λ), and facets past the critical angle flash instead of refracting.",
     "params": [
       {
         "id": "facets",
@@ -3667,7 +3667,9 @@
       "multi-tap-temporal",
       "lens-distortion",
       "motion-trails",
-      "audio-reverb"
+      "audio-reverb",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

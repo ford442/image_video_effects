@@ -175,6 +175,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let canopyUV = clamp(uv + chaseVec * ps * 14.0, vec2<f32>(0.0), vec2<f32>(1.0));
     let disturbedCanopy = textureSampleLevel(readTexture, u_sampler, canopyUV, 0.0).rgb;
 
+    // ── Idea 4 (part b): chase-front canopy disturbance refracts underlying sourceColor ──
+    let chaseVec = herbGrad * carnivores - carnGrad * herbivores;
+    let chaseIntensity = clamp(abs(pursuit) + abs(flee), 0.0, 1.0);
+    let canopyUV = clamp(uv + chaseVec * ps * 14.0, vec2<f32>(0.0), vec2<f32>(1.0));
+    let disturbedCanopy = textureSampleLevel(readTexture, u_sampler, canopyUV, 0.0).rgb;
+
     let plantColor = vec3<f32>(0.2, 0.8, 0.2) * min(plants, 1.0);
     let herbColor = vec3<f32>(0.2, 0.5, 0.9) * min(herbivores, 1.0);
     let carnColor = vec3<f32>(0.9, 0.2, 0.2) * min(carnivores, 1.0);

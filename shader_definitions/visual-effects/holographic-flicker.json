@@ -3,7 +3,7 @@
   "name": "Holographic Flicker",
   "category": "visual-effects",
   "url": "shaders/holographic-flicker.wgsl",
-  "description": "Unstable laser hologram: mode-hopping laser lines with matching fringes, per-channel phosphor trails, vertical-hold slips and a rotating hex emblem.",
+  "description": "Unstable laser hologram: mode-hopping lines, per-channel phosphor trails, vertical-hold slips, and a hex emblem. Speckle grain follows the hopped wavelength, and the slow red phosphor smears a few pixels back along the scan.",
   "params": [
     {
       "id": "flickerSpeed",

@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, click-reactive, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: bristle along stroke; wet C trail
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: bristle along stroke; wet C trail; semi-Lagrangian channel lag (§12.2C); wet-edge absorption (§12.2C)
 //  A packing: delayed RGB (C is previous delayed color)
 // ═══════════════════════════════════════════════════════════════════
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 const WAVELENGTH_RED:    f32 = 650.0;
 const WAVELENGTH_GREEN:  f32 = 550.0;
@@ -121,6 +102,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bristle = textureLoad(dataTextureC, bristleCoord, 0);
   // Idea 2 — wet C trail under the mask.
   let wet = mix(prev, bristle, 0.35 * mask);
+  // ── Idea 3: semi-Lagrangian channel lag (§12.2C) ─────────────────
+  // Green and blue are read from behind the stroke. Blue sits further back.
+  // A still brush (no spring velocity) keeps the pixel's own wet color.
+  let moving = smoothstep(0.04, 0.35, length(springVel));
+  let greenUV = clamp(uv - springVel * (0.004 + split * 0.01) * mask, vec2<f32>(0.0), vec2<f32>(1.0));
+  let blueUV = clamp(uv - springVel * (0.012 + split * 0.028) * mask, vec2<f32>(0.0), vec2<f32>(1.0));
+  let greenLag = textureLoad(dataTextureC, clamp(vec2<i32>(greenUV * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  let blueLag = textureLoad(dataTextureC, clamp(vec2<i32>(blueUV * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  let wetRgb = mix(wet.rgb, vec3<f32>(wet.r, greenLag.g, blueLag.b), moving * mask);
 
   let base_speed = (1.0 - persistence) * 2.0;
   let redVoice = plasmaBuffer[2].x;
@@ -131,12 +121,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let s_b = max(0.001, base_speed - (mask * split * 0.1)) * (1.0 + blueVoice * 0.08);
 
   var delayed = vec3<f32>(
-    mix(wet.r, current.r, clamp(s_r, 0.0, 1.0)),
-    mix(wet.g, current.g, clamp(s_g, 0.0, 1.0)),
-    mix(wet.b, current.b, clamp(s_b, 0.0, 1.0))
+    mix(wetRgb.r, current.r, clamp(s_r, 0.0, 1.0)),
+    mix(wetRgb.g, current.g, clamp(s_g, 0.0, 1.0)),
+    mix(wetRgb.b, current.b, clamp(s_b, 0.0, 1.0))
   );
 
-  let temporalThickness = mask * split * mix(1.0, 10.0, u.zoom_params.w);
+  // ── Idea 4: wet-edge absorption (§12.2C) ─────────────────────────
+  // The rim of the dab (mask near 0.5) is thicker, so it goes darker.
+  let rim = mask * (1.0 - mask) * 4.0;
+  let temporalThickness = mask * split * mix(1.0, 10.0, u.zoom_params.w) * (1.0 + rim * 0.85);
   let alphaR = calculateChannelAlpha(temporalThickness, WAVELENGTH_RED);
   let alphaG = calculateChannelAlpha(temporalThickness, WAVELENGTH_GREEN);
   let alphaB = calculateChannelAlpha(temporalThickness, WAVELENGTH_BLUE);

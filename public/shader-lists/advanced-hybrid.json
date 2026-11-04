@@ -6465,7 +6465,7 @@
     "id": "holographic-failure-iridescence",
     "name": "Holographic Failure Iridescence",
     "url": "shaders/holographic-failure-iridescence.wgsl",
-    "description": "Simulated hologram projection failure merged with physical thin-film interference iridescence. Glitching phase carriers, block tearing, and laser flicker overlay soap-bubble spectral colors driven by depth, viewing angle, and audio dynamics.",
+    "description": "Failing hologram over thin-film colour: glitch rows, tears, and laser flicker. Glitch rows dewet into holes with a bright rim, and a second photo sample replays one step along the carrier.",
     "tags": [
       "hologram",
       "iridescence",
@@ -6485,7 +6485,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6608,7 +6609,7 @@
     "id": "holographic-interferometry",
     "name": "Holographic Interferometry",
     "url": "shaders/holographic-interferometry.wgsl",
-    "description": "Simulated optical hologram with interference fringe patterns. Reference and object laser wavefronts interfere across depth and luma fields, creating iridescent diffraction fringes with laser speckle coherence and parallax depth reconstruction.",
+    "description": "Object and reference beams interfere across depth and luma, with speckle and a parallax reconstruction. Equal-phase lines ink the half-fringe, and Coherence Length fades the fringes as the path difference grows.",
     "tags": [
       "hologram",
       "interference",

@@ -1,26 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Chrono Slit Scan — Phase B Multi-Pass-Architect Upgrade
+//  Chrono Slit Scan
 //  Category: image
-//  Features: temporal-persistence, audio-reactive, fbm-warp, sdf-composition,
-//            upgraded-rgba, multi-slit, branchless-slit, depth-aware, lod-noise,
-//            early-exit, sparse-sampling
+//  Features: temporal-persistence, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//
-//  Phase B changes:
-//   - Coarse slit field computed first; nearest slit is refined with LOD fbm.
-//   - Skip current-frame texture sample when mask is negligible (early exit).
-//   - Pixel-aligned textureLoad for source/history cuts sampler pressure.
-//   - Branchless slit gating preserved; loop invariants hoisted.
-//
-//  Pipeline notes:
-//   - dataTextureA/B used for temporal state; dataTextureC is previous frame.
-//   - writeDepthTexture passthrough preserves depth for downstream slots.
-//   - Output alpha encodes slit intensity for compositing.
-//
-//  Recommended slots:
-//   - Slot 0: image/video source
-//   - Slot 1+: temporal feedback via dataTextureA/B chain
-//   - Final output: writeTexture with depth passthrough
+//  Upgraded: 2026-11-01
+//  Ideas: jaw lip; transport weave
+//  A packing: linear history RGBA (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -60,6 +45,11 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
 // ── Color / SDF helpers ───────────────────────────────────────────
 fn luma(rgb: vec3<f32>) -> f32 {
   return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn smin(a: f32, b: f32, k: f32) -> f32 {
@@ -157,7 +147,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Feathered slit mask enriched by the moving heads and bounded click fronts.
-  let mask = max(1.0 - smoothstep(slitW * feather, slitW, dist),
+  // ── Idea 1: jaw lip ──────────────────────────────────────────────
+  // The metal jaws sit where the distance field meets the slit width.
+  // That edge exposes a thin line the smoothstep used to fade to zero.
+  let jaw = exp(-abs(dist - slitW) / max(slitW * 0.35, 0.0015));
+  let mask = max(max(1.0 - smoothstep(slitW * feather, slitW, dist), jaw * 0.85),
                  max(slitHead * 0.85, max(crossRunner * 0.5, clickWave * 0.75)));
 
   // Spatially-varying temporal decay
@@ -173,14 +167,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (mask < 0.005) {
     let faded = history.rgb * decay;
     let alpha = history.a * decay;
-    textureStore(writeTexture, pixel, vec4<f32>(faded, alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(aces(max(faded, vec3<f32>(0.0))), alpha));
     textureStore(dataTextureA, pixel, vec4<f32>(faded, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
     return;
   }
 
-  // Sample current frame only inside the slit region
-  let current = textureLoad(readTexture, pixel, 0);
+  // ── Idea 2: transport weave ──────────────────────────────────────
+  // The gate creeps vertically while the slit is open. Slit Speed sets
+  // how far that creep goes; outside the mask this sample is never taken.
+  let weave = sin(time * 1.7 + uv.x * 12.0) * slitSpeed * 0.008;
+  let weavePx = clamp(pixel + vec2<i32>(0, i32(round(weave * res.y))), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  let current = textureLoad(readTexture, weavePx, 0);
 
   // Compose: freshly scanned regions pick up current color and intensity
   let alpha = mix(history.a * decay, saturate(luma(current.rgb) + 0.2), mask);
@@ -189,7 +187,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                                          + vec3<f32>(0.0, 0.33, 0.67)));
   color += spectralHead * (slitHead * 0.22 + clickWave * 0.18) * (0.5 + treble);
 
-  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(writeTexture, pixel, vec4<f32>(aces(max(color, vec3<f32>(0.0))), alpha));
   textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

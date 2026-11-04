@@ -4,31 +4,13 @@
 //  Features: procedural, audio-reactive, mouse-driven, temporal, chromatic,
 //            upgraded-rgba, depth-aware, aces-tone-map, continuous-geometry
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: facet grooves at integer crystalR; stepped diffraction orders
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: facet grooves at integer crystalR; stepped diffraction orders; lit bevel on the groove; diagonal caustic
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,        // .x = time, .y = delta_time, .zw = resolution
-  zoom_config: vec4<f32>,   // .x = time, .yz = mouse_uv (0-1), .w = mouse_down
-  zoom_params: vec4<f32>,   // .xyzw = facets / tilt / interference / dispersion
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .xyzw = facets / tilt / interference / dispersion
 
 const PI: f32 = 3.14159265359;
 
@@ -75,10 +57,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         extraBuffer[137] = clamp(next_vel, -50.0, 50.0);
     }
 
-    let s_bass = extraBuffer[133];
-    let s_mid = extraBuffer[134];
-    let s_treb = extraBuffer[135];
-    let held = extraBuffer[136];
+    // Live bands and the live button. The smoothed copies in extraBuffer
+    // are cleared by the host before this dispatch, so they never moved.
+    let s_bass = plasmaBuffer[0].x;
+    let s_mid = plasmaBuffer[0].y;
+    let s_treb = plasmaBuffer[0].z;
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
     let facets = mix(3.0, 16.0, u.zoom_params.x);
     let tilt = mix(0.0, 1.0, u.zoom_params.y);
@@ -110,7 +94,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let radius = age * 1.5;
             let width = 0.05 + age * 0.05;
             let strength = exp(-age * 2.0);
-            let wave = exp(-pow(dist - radius, 2.0) / (width * width));
+            let radial = dist - radius;
+            let wave = exp(-(radial * radial) / (width * width));
             clickFront += wave * strength;
             pp += normalize(pp - event_p + 1e-5) * wave * strength * 0.1;
         }
@@ -125,10 +110,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let crystalShape = max(abs(crystal_p.x), abs(crystal_p.y));
     
-    // Audio bins structural perturbation (continuous geometry)
-    let bin_idx = u32(clamp(crystalShape * 8.0, 1.0, 8.0));
-    let bin_val = plasmaBuffer[bin_idx].x;
-    crystal_p += normalize(crystal_p + 1e-5) * bin_val * 0.02 * s_bass;
+    // Shape picks which band shoves the section. Silence leaves it still.
+    let band = mix(s_bass, mix(s_mid, s_treb, smoothstep(0.35, 0.7, crystalShape)), smoothstep(0.0, 0.35, crystalShape));
+    crystal_p += normalize(crystal_p + vec2<f32>(1e-5, 0.0)) * band * 0.02;
 
     let crystalR = crystalShape * facets;
 
@@ -180,6 +164,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     holo_color += vec3<f32>(1.0, 0.9, 0.8) * spec * (0.5 + s_treb) * 2.0;
     holo_color += clickFront * vec3<f32>(0.2, 0.6, 1.0) * 1.5;
+
+    // ── Idea 1: lit bevel ─────────────────────────────────────────────
+    // The groove stays a dark cut. The lit side of that cut takes a thin lip.
+    let grooveSide = fract(crystalR);
+    let bevel = smoothstep(0.0, 0.07, grooveSide) * (1.0 - smoothstep(0.07, 0.16, grooveSide));
+    let facing = clamp(dot(normalize(crystal_p + vec2<f32>(1e-5, 0.0)), light_dir.xy), 0.0, 1.0);
+    holo_color += vec3<f32>(1.0, 0.95, 0.85) * bevel * facing * (0.35 + s_treb * 0.4);
+
+    // ── Idea 2: diagonal caustic ──────────────────────────────────────
+    // A square section focuses along |x| = |y|. Interference is the amount.
+    let diag = abs(abs(crystal_p.x) - abs(crystal_p.y));
+    let caustic = exp(-diag * diag * 80.0);
+    holo_color += vec3<f32>(0.65, 0.85, 1.0) * caustic * interference * 0.28;
 
     var final_color = mix(bg_color, holo_color, edge_mask);
 

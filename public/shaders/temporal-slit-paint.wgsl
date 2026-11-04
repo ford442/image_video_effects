@@ -3,32 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-10-04 (prev 2026-08-30)
-//  Ideas: revived velocity stretch from a C state texel; slit-scan stamping along the stroke; exposure frame-lines
+//  Upgraded: 2026-10-04, 2026-11-01
+//  Ideas: revived velocity stretch from a C state texel; slit-scan stamping along the stroke; exposure frame-lines; Gaussian slit exposure; stroke integration
 //  A packing: raw canvas RGBA (linear paint / coverage) — display is ACES on writeTexture; texel (0,0) = cursor state (prevMouse.xy, vel.xy)
 //  Motion: velocity-stretched brush + traveling slit-head runners
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -131,11 +112,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let slitMix = smoothstep(0.15, 1.0, speed);
   let slitOffset = vec2<f32>(local.y * sa, local.y * ca); // R(+velAng) * (0, local.y); sa = sin(-velAng)
   let slitUV = clamp(spring + slitOffset / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
-  let slitColor = textureSampleLevel(readTexture, u_sampler, slitUV, 0.0).rgb;
+  // ── Idea 4: stroke integration ───────────────────────────────────
+  // A moving slit exposes the frames it just passed, not one instant.
+  let frameStep = springVel / 60.0;
+  let slitUV1 = clamp(slitUV - frameStep, vec2<f32>(0.0), vec2<f32>(1.0));
+  let slitUV2 = clamp(slitUV - frameStep * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
+  let slitColor = (
+    textureSampleLevel(readTexture, u_sampler, slitUV, 0.0).rgb
+    + textureSampleLevel(readTexture, u_sampler, slitUV1, 0.0).rgb
+    + textureSampleLevel(readTexture, u_sampler, slitUV2, 0.0).rgb
+  ) * (1.0 / 3.0);
   // Idea 3 — exposure frame-lines: a brief darkening every quarter second marks equal time
   // intervals across a moving stroke, like frame lines on slit-scan film.
   let frameLine = mix(0.72, 1.0, smoothstep(0.0, 0.1, fract(time * 4.0)));
-  let stampColor = mix(current.rgb, slitColor * mix(1.0, frameLine, slitMix), slitMix);
+  var stampColor = mix(current.rgb, slitColor * mix(1.0, frameLine, slitMix), slitMix);
+  // ── Idea 5: Gaussian slit exposure ───────────────────────────────
+  // The open slit is brightest on its centerline. Softness widens the jaws.
+  let sigma = max(brushSize * (0.28 + softness * 0.85), 0.004);
+  let exposure = mix(0.58, 1.0, exp(-local.y * local.y / max(2.0 * sigma * sigma, 1e-5)));
+  stampColor = mix(stampColor, stampColor * exposure, slitMix);
 
   let stamp = max(mask * select(0.15, 1.0, held), runner * 0.65 + click * 0.45);
   var canvas = mix(hist, vec4<f32>(stampColor, 1.0), clamp(stamp, 0.0, 1.0));
