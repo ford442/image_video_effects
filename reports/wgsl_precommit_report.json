@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-11-03T04:36:29.566974",
+  "timestamp": "2026-11-04T01:23:24.082082",
   "naga_bin": "/root/.cargo/bin/naga",
   "naga_available": false,
-  "total": 12,
-  "passed": 12,
+  "total": 7,
+  "passed": 7,
   "failed": 0,
   "skipped": 0,
   "workgroup_blocking": 0,
@@ -13,7 +13,7 @@
   "prelude_violations": 0,
   "results": [
     {
-      "file": "public/shaders/energy-shield-blackbody.wgsl",
+      "file": "public/shaders/alpha-multi-state-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -30,7 +30,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gamma-ray-burst-blackbody.wgsl",
+      "file": "public/shaders/bioluminescent.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -47,7 +47,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/gamma-ray-burst.wgsl",
+      "file": "public/shaders/boids-rgba-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -64,7 +64,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/heat-haze-gpt52.wgsl",
+      "file": "public/shaders/chromatic-folds-bilateral.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -81,7 +81,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/honey-melt-blackbody.wgsl",
+      "file": "public/shaders/cyber-organic-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -98,7 +98,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/melting-oil-blackbody.wgsl",
+      "file": "public/shaders/gen-xeno-botanical-ecosystem.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,
@@ -115,92 +115,7 @@
       "ok": true
     },
     {
-      "file": "public/shaders/sim-heat-haze-blackbody.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "prelude_errors": [],
-      "prelude_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/spec-blackbody-thermal.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "prelude_errors": [],
-      "prelude_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/thermal-touch-blackbody.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "prelude_errors": [],
-      "prelude_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/thermal-vision-blackbody.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "prelude_errors": [],
-      "prelude_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/thermal-vision.wgsl",
-      "skipped": false,
-      "skip_reason": null,
-      "naga_ok": null,
-      "naga_skipped": true,
-      "naga_error": null,
-      "bindgroup_status": "compatible",
-      "bindgroup_errors": [],
-      "workgroup_errors": [],
-      "workgroup_warnings": [],
-      "workgroup_grace": false,
-      "extrabuffer_violations": [],
-      "prelude_errors": [],
-      "prelude_warnings": [],
-      "ok": true
-    },
-    {
-      "file": "public/shaders/warp-drive-blackbody.wgsl",
+      "file": "public/shaders/predator-prey-rgba.wgsl",
       "skipped": false,
       "skip_reason": null,
       "naga_ok": null,

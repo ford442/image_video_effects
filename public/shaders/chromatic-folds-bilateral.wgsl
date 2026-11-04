@@ -73,7 +73,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let satScale = u.zoom_params.z * 0.5 + 0.75;
     let depthInfluence = u.zoom_params.w;
 
-    let spatialSigmaBase = mix(0.1, 1.0, u.zoom_config.x);
+    // zoom_config.x is engine TIME: mix() extrapolated past 1.0 and the blur radius grew without
+    // bound (~54 after a minute). Held at the old slider midpoint, as the sibling chromatic shaders were.
+    let spatialSigmaBase = 0.55; // mix(0.1, 1.0, 0.5)
     let colorSigma = mix(0.05, 1.0, u.zoom_config.y);
     let hueShiftAmt = u.zoom_config.z;
 

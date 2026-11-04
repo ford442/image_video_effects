@@ -137,7 +137,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nU = sU.x;
     let neighbor_avg = (nL + nR + nD + nU) * 0.25;
     let neighbor_luciferin = (sL.y + sR.y + sD.y + sU.y) * 0.25;
-    let depth_mask = smoothstep(0.1, 0.9, depth);
+    // depth is all zeros until a depth model has run: smoothstep alone gave 0 and froze every colony,
+    // so keep a floor and let depth only modulate the spread.
+    let depth_mask = mix(0.45, 1.0, smoothstep(0.1, 0.9, depth));
     growth = min(1.0, growth * 0.998 + neighbor_avg * spread_mult * depth_mask * branch_density);
 
     // Idea 1 — spore tropism: extra growth from the neighbor that faces the inoculum
