@@ -5359,7 +5359,9 @@
       "interactive",
       "depth-aware",
       "physics",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "geometric",
