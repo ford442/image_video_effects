@@ -25,8 +25,19 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
         vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// A.r of the corner texel marks C as this shader's own state (f16-exact, never a density).
+// Without it (shader switched in after start, or after another shader's history) C is foreign
+// and reads as an empty field that re-seeds; `time < 0.1` alone never fires mid-session.
+const STATE_SENTINEL: f32 = -0.6875;
+var<private> stateOwned: bool = false;
+
+// Exact history load. Foreign history reads as an empty field.
 fn stateAt(p: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
-    return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), dims - vec2<i32>(1)), 0);
+  if (!stateOwned) { return vec4<f32>(0.0, 0.0, 0.5, 0.0); }
+  let q = clamp(p, vec2<i32>(0), dims - vec2<i32>(1));
+  var v = textureLoad(dataTextureC, q, 0);
+  if (q.x == 0 && q.y == 0) { v.r = 0.0; }
+  return v;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -38,6 +49,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coord = vec2<i32>(i32(gid.x), i32(gid.y));
     let dims = vec2<i32>(res);
     let time = u.config.x;
+
+    stateOwned = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).r == STATE_SENTINEL;
 
     // === AUDIO SEASONS (plasmaBuffer as climate) ===
     let bass = plasmaBuffer[0].x;
@@ -58,8 +71,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var resourceVal = prevState.b;
     var toxin = prevState.a;
 
-    // Seed on first frame
-    if (time < 0.1) {
+    // Seed on first frame, or whenever history is not ours (shader switched in later)
+    if (time < 0.1 || !stateOwned) {
         s1 = 0.0;
         s2 = 0.0;
         resourceVal = 0.5;
@@ -212,7 +225,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     resourceVal = clamp(resourceVal, 0.0, 2.0);
 
     // === STORE STATE ===
-    textureStore(dataTextureA, coord, vec4<f32>(s1, s2, resourceVal, toxin));
+    let isCorner = gid.x == 0u && gid.y == 0u;
+    textureStore(dataTextureA, coord, vec4<f32>(select(s1, STATE_SENTINEL, isCorner), s2, resourceVal, toxin));
 
     // === LIVING ECOSYSTEM VISUALIZATION + SEASONAL COLOR ===
     // Species 1 = teal/cyan, Species 2 = magenta, with seasonal hue shifts
