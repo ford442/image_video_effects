@@ -484,7 +484,7 @@ async def image_effects(request: Request):
     try:
         message, files = await _dispatch(action, name, body)
     except (_BadPayload, ValueError) as exc:
-        return _error(400, "invalid_payload", str(exc))
+        return _error(400, "invalid_payload", "Payload is invalid")
     except Exception:
         _logger.exception("webhook write failed (action=%s)", action)
         return _error(500, "write_failed", "Storage write failed")

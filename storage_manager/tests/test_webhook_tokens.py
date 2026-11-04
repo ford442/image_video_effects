@@ -177,7 +177,9 @@ def test_all_six_documented_actions_are_allow_listed():
 
 
 def test_bad_payloads_are_400_not_500(client):
-    assert write(client, token_for(client), data={}).status_code == 400  # no wgsl_code
+    response = write(client, token_for(client), data={})
+    assert response.status_code == 400  # no wgsl_code
+    assert response.json()["message"] == "Payload is invalid"
     t = token_for(client, "save_output", "x")
     assert write(client, t, action="save_output", name="x", data={"image_data": ""}).status_code == 400
 
