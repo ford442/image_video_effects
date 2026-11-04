@@ -3,8 +3,8 @@
 //  Category: simulation
 //  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: secondary dendrite arms at high impurity; grain-boundary darkening
+//  Upgraded: 2026-09-12, 2026-11-01
+//  Ideas: secondary dendrite arms at high impurity; grain-boundary darkening; recalescence thermal layer + incandescent tips; interface thermal noise seeding side branches
 //  A packing: raw (phase, temp, orientation, impurity)
 // ═══════════════════════════════════════════════════════════════════
 //  RGBA Channels:
@@ -17,26 +17,7 @@
 //  dendritic branching. Orientation needs full 0-2pi range.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -126,6 +107,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sideAlign = abs(dot(normalize(gradPhase + vec2<f32>(0.0001)), perp));
     let sideArm = impurity * impurityLevel * sideAlign * frontBand * growthRate * 1.6;
     phase += sideArm;
+
+    // ── 2026-11-01 Idea 2: interface thermal noise (Karma–Rappel Langevin term):
+    // a small zero-mean fluctuation on the driving force, confined to the
+    // interface band and scaled by Growth Rate and Impurity Level, so side
+    // branches nucleate irregularly between the deterministic impurity sites.
+    // The solver integrates it; the seed cadence is 10 Hz, not per-frame strobe.
+    let phasePreNoise = phase;   // freezing-rate signal below excludes the noise
+    let thermalNoise = hash12(vec2<f32>(gid.xy) + floor(time * 10.0) * 7.31) - 0.5;
+    phase += thermalNoise * frontBand * growthRate * (0.4 + impurityLevel) * 0.15;
     phase = clamp(phase, 0.0, 1.0);
 
     // === TEMPERATURE UPDATE ===
@@ -206,6 +196,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Impurity tint
     displayColor = mix(displayColor, vec3<f32>(0.8, 0.6, 0.4), impurity * 0.3);
+
+    // ── 2026-11-01 Idea 1: recalescence. Latent heat warms a thermal boundary
+    // layer in the liquid ahead of the front. It is drawn the way growth is
+    // photographed — schlieren, i.e. the magnitude of the temperature gradient
+    // (scale-free: the bulk melt warms as the crystal fills, so an absolute
+    // temperature threshold would drift). Tips that are solidifying right now
+    // (reaction-driven phase change, noise excluded, normalised by Growth Rate)
+    // glow incandescent; settled solid stays cool.
+    let gradT = 0.5 * length(vec2<f32>(right.g - left.g, up.g - down.g));
+    let thermalLayer = smoothstep(0.003, 0.03, gradT) * (1.0 - smoothstep(0.25, 0.6, phase));
+    let freezeRate = max(phasePreNoise - prevState.r, 0.0) / (growthRate * 0.2 + 0.0001);
+    let tipFreezing = smoothstep(0.12, 0.5, freezeRate) * interfaceMask;
+    displayColor += vec3<f32>(0.95, 0.42, 0.12) * thermalLayer * 0.4;
+    displayColor += vec3<f32>(1.0, 0.86, 0.55) * tipFreezing * 0.7;
 
     // Idea 2 — grain-boundary darkening where neighbor orientation jumps
     let wrap2pi = 6.283185307;
