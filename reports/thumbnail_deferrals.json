@@ -38,6 +38,13 @@
       "failure_note": "Needs WebGPU to render"
     },
     {
+      "id": "gen-bioluminescent-mycelial-nexus",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-04",
+      "expires": "2026-12-04",
+      "reason": "other"
+    },
+    {
       "id": "gen-bioluminescent-neural-coral-matrix",
       "added_by": "Jules",
       "deferred_at": "2026-10-20",
