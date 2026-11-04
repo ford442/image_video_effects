@@ -3,9 +3,9 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: staggered domino row delay; grout mortar compression darkening
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: staggered domino row delay; grout mortar compression darkening; leading lip; mortar joint
+//  A packing: linear pre-ACES trail RGB in A (C.rgb is that trail). ACES on the display write only
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -145,14 +145,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     
     let groutCompress = smoothstep(0.09, 0.0, edgeDist) * totalImpulse * (0.38 + abs(currentAngle) * 0.22);
     color = vec3<f32>(rCol, gCol, bCol) * (0.75 + 0.25 * bevel) * (1.0 - groutCompress);
-    
+
+    // ── Idea 1: leading lip — the edge facing the spin catches light ──
+    let spinDir = vec2<f32>(-sin(currentAngle), cos(currentAngle));
+    let rightEdge = 1.0 - smoothstep(0.0, 0.14, 1.0 - inTileUV.x);
+    let leftEdge = 1.0 - smoothstep(0.0, 0.14, inTileUV.x);
+    let topEdge = 1.0 - smoothstep(0.0, 0.14, 1.0 - inTileUV.y);
+    let botEdge = 1.0 - smoothstep(0.0, 0.14, inTileUV.y);
+    let lead = rightEdge * max(spinDir.x, 0.0) + leftEdge * max(-spinDir.x, 0.0)
+      + topEdge * max(spinDir.y, 0.0) + botEdge * max(-spinDir.y, 0.0);
+    let trailEdge = rightEdge * max(-spinDir.x, 0.0) + leftEdge * max(spinDir.x, 0.0)
+      + topEdge * max(-spinDir.y, 0.0) + botEdge * max(spinDir.y, 0.0);
+    color = color + vec3<f32>(1.0, 0.94, 0.82) * lead * totalImpulse * 0.32;
+    color = color * (1.0 - trailEdge * totalImpulse * 0.22);
+
     // Metallic specular glint based on angle
     let glintAngle = abs(sin(currentAngle * 2.0 + time * 2.0));
     color += vec3<f32>(1.0, 0.9, 0.7) * pow(glintAngle, 8.0) * borderGlint * 1.5;
   } else {
     // Gap underneath tiles - show underlying raw texture darkened with shadow
     let underCol = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    color = underCol * 0.15;
+    // ── Idea 2: mortar joint — sandy grout, darker in the valley ──
+    let gapMetric = max(max(-inTileUV.x, inTileUV.x - 1.0), max(-inTileUV.y, inTileUV.y - 1.0));
+    let valley = smoothstep(0.0, 0.16, gapMetric);
+    let mortar = vec3<f32>(0.46, 0.4, 0.32);
+    color = mix(mortar * 0.55, mix(mortar, underCol * 0.45, 0.35), valley);
   }
 
   // Load exact temporal history from dataTextureC

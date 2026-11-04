@@ -8300,6 +8300,7 @@
       "stateful-simulation",
       "exact-history",
       "aces-tone-map",
+      "upgraded-rgba",
       "three-band-audio",
       "held-pointer",
       "click-reactive",

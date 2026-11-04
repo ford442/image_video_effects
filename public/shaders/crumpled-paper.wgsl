@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: fibre grain along crease tangent; ironing memory via exact C
+//  Upgraded: 2026-09-06, 2026-11-01
+//  Ideas: fibre grain along crease tangent; ironing memory via exact C; facet cockle; calender sheen
 //  A packing: display RGB + height in alpha
 // ═══════════════════════════════════════════════════════════════════
 
@@ -46,6 +46,11 @@ fn paperHeight(uv: vec2<f32>, scale: f32, depthAmt: f32) -> vec2<f32> {
   return vec2<f32>(h, ridge);
 }
 
+fn facetCockle(uv: vec2<f32>, scale: f32, depthAmt: f32, ridge: f32) -> f32 {
+  let buckle = valueNoise2D(uv * scale * 17.0 + vec2<f32>(2.4, 9.1)) - 0.5;
+  return buckle * depthAmt * 0.28 * (1.0 - ridge);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
@@ -68,7 +73,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sr = max(0.001, smoothRadius);
 
   let hr = paperHeight(uv, scale, depthAmt);
-  var height = hr.x;
+  // ── Idea 1: facet cockle — panels buckle, creases stay sharp ──
+  var height = hr.x + facetCockle(uv, scale, depthAmt, hr.y);
   let ridge = hr.y;
 
   let dist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
@@ -80,10 +86,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   height = ironed;
 
   let eps = 0.005;
-  let hR = paperHeight(uv + vec2<f32>(eps, 0.0), scale, depthAmt).x;
+  let hrR = paperHeight(uv + vec2<f32>(eps, 0.0), scale, depthAmt);
+  let hR = hrR.x + facetCockle(uv + vec2<f32>(eps, 0.0), scale, depthAmt, hrR.y);
   let distR = length(((uv + vec2<f32>(eps, 0.0)) - mouse) * vec2<f32>(aspect, 1.0));
   let finalHR = hR * (1.0 - (1.0 - smoothstep(0.0, sr, distR)));
-  let hU = paperHeight(uv + vec2<f32>(0.0, eps), scale, depthAmt).x;
+  let hrU = paperHeight(uv + vec2<f32>(0.0, eps), scale, depthAmt);
+  let hU = hrU.x + facetCockle(uv + vec2<f32>(0.0, eps), scale, depthAmt, hrU.y);
   let distU = length(((uv + vec2<f32>(0.0, eps)) - mouse) * vec2<f32>(aspect, 1.0));
   let finalHU = hU * (1.0 - (1.0 - smoothstep(0.0, sr, distU)));
 
@@ -100,11 +108,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let viewDir = vec3<f32>(0.0, 0.0, 1.0);
   let halfDir = normalize(lightDir + viewDir);
   let creaseSteep = clamp(length(normal.xy) * 2.2, 0.0, 1.0);
-  let specular = pow(max(dot(normal, halfDir), 0.0), 48.0) * creaseSteep * 0.6;
+  // ── Idea 2: calender sheen — the iron burnishes a broad warm highlight ──
+  let sheenPow = mix(48.0, 14.0, smoothFactor);
+  let sheenMask = mix(creaseSteep, 1.0, smoothFactor * 0.65);
+  let specular = pow(max(dot(normal, halfDir), 0.0), sheenPow) * sheenMask * 0.6;
   let creaseWear = pow(ridge, 3.0) * smoothstep(0.25, 0.6, depthAmt);
 
   let tangent = normalize(vec2<f32>(-normal.y, normal.x) + vec2<f32>(1e-4, 0.0));
-  let fibre = (hash21(uv * 420.0 + tangent * 90.0) - 0.5) * creaseSteep * (0.10 + treble * 0.08);
+  let fibre = (hash21(uv * 420.0 + tangent * 90.0) - 0.5) * creaseSteep * (0.10 + treble * 0.08) * (1.0 - smoothFactor);
 
   let distortStr = 0.02 * depthAmt;
   let finalUV = clamp(uv + normal.xy * distortStr, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -114,6 +125,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor + vec3<f32>(specular) * lightStrength;
   finalColor = mix(finalColor, vec3<f32>(0.96, 0.96, 0.93), creaseWear * 0.5 * lightStrength);
   finalColor += vec3<f32>(fibre) * lightStrength;
+  finalColor = mix(finalColor, finalColor * vec3<f32>(1.05, 1.02, 0.96), smoothFactor * lightStrength * 0.45);
 
   let display = acesToneMap(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.6)));
   let alpha = clamp(0.55 + creaseSteep * 0.35 + (1.0 - smoothFactor) * 0.1, 0.0, 1.0);
