@@ -92,4 +92,4 @@ Measured on SwiftShader, not on a GPU: quasicrystal `NODE_LO/HI` = 0.30/0.45 (to
 
 ## Gates (details in `NOTES.md` and the PR)
 
-naga-wasm 10/10; Tint via SwiftShader pipeline creation 10/10; `wgsl_precommit_gate.py` 10/10; `audit:extrabuffer` 0 new; `audit:dead-sliders` 0 new; SwiftShader execution harness 10/10 with 0 NaN/Inf; saved params and `x-meta` byte-identical in all ten JSONs; shader lists regenerated (only these ten descriptions changed); `npm run test:ci` and `npm run build` per the PR text. **Real-GPU visual QA: external.**
+naga-wasm 10/10; Tint via SwiftShader pipeline creation 10/10; `wgsl_precommit_gate.py` 10/10; `audit:extrabuffer` 0 new; `audit:dead-sliders` 0 new; SwiftShader execution harness 10/10 with 0 NaN/Inf; saved params and `x-meta` byte-identical in all ten JSONs; shader lists regenerated (only these ten descriptions changed); `npm run test:ci` 1609 passed, 1 skipped, 0 failed and `npm run build` passed, both re-run on the tree merged with current `main`; `check_prelude_migration.py` passes. **Real-GPU visual QA: external.**

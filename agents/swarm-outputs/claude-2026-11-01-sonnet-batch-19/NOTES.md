@@ -42,7 +42,7 @@ The smallest changes (quasicrystal, tesseract struts, neon tubes) are deliberate
 - gen-hopf-fibration-fiber-bundle: 40 fibres × 32 segments per pixel (HEAD); only per-sample multipliers added.
 - gen-aperiodic-monotile history is display colour mixed at 6 % into linear colour (a mild iterated-ACES; not changed, unlike islamic where it dominated).
 - gen-islamic-star-rose JSON has no top-level `params` (sliders only in `x-meta.upgrade.params`).
-- Remaining prelude-tracker stale entries: 17 on clean `main`, none of this batch's ids.
+- Prelude tracker: on the base this batch started from (`e46fc028`) `check_prelude_migration.py` reported 17 stale entries, none of this batch's ids. `main` has since cleaned them; after merging current `main` (`c9679656`) the check passes ("tracker consistent") with this batch's four migrated ids removed from `pending` (1078 → 1082 shaders include the prelude, pending 367 → 363).
 
 ## Per shader
 
@@ -109,4 +109,5 @@ The smallest changes (quasicrystal, tesseract struts, neon tubes) are deliberate
 - `wgsl_precommit_gate.py --skip-naga --files …`: 10/10, 0 pasted headers, 0 extraBuffer violations. `audit:extrabuffer`: 0 new. `audit:dead-sliders -- --files …`: 0 new (9 definitions scanned: gen-islamic-star-rose has no `params`).
 - **SwiftShader execution harness** (throwaway, not committed): all 13 bindings, A→C ping-pong, moving mouse, held press, click ripples, synthetic image/depth, non-zero FFT bins; 20–30 frames at 64–96 px (400 frames at 32 px for the epicycles |v| measurement). 10/10 ran: **0 NaN/Inf in display or A, no GPU validation errors.** Plus the HEAD-vs-new difference table above. Numeric sanity only.
 - Saved `params` and `x-meta` byte-identical to HEAD in all ten JSONs.
-- `generate_shader_lists.js`, `npm run test:ci`, `npm run build`: see PR.
+- **Merge with `main` (after the work above).** `main` moved 54 commits while this batch was open (other batches, none touching these ten files). `origin/main` was merged into the branch; the only conflict was `src/contracts/prelude_migration.json`, resolved by taking `main`'s file and deleting exactly this batch's four ids (diff against `main` is those four lines). `public/shader-lists/*.json` and `reports/shader-upgrade-ledger.json` auto-merged; both were re-derived to check (lists: `generate_shader_lists.js` reproduces them, diff against `main` is the ten descriptions only; ledger: a fresh `upgrades:record` on `main`'s ledger gives identical entries apart from each entry's `commit` field). Gates were re-run on the merged tree.
+- Post-merge results: naga 10/10, precommit 10/10, `audit:extrabuffer` and `audit:dead-sliders` 0 new, `npm run test:ci` **193 files, 1609 passed, 1 skipped, 0 failed** (the two failures seen on the older base are gone on current `main`), `npm run build` passed (its regenerated README, search index and alias timestamps were reverted).
