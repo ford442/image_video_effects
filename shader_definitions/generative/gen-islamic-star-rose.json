@@ -13,7 +13,7 @@
     "metallic",
     "wolfram"
   ],
-  "description": "Procedurally generated Islamic geometric patterns enriched by Wolfram Alpha regular pentagon data. Interior angle 108\u00b0, central angle 72\u00b0. Diagonal/edge ratio \u03c6\u22481.618 determines petal proportions. Features girih-style star and polygon tessellations with pentagram-aware geometry. Bass rotates the tessellation. Mouse morphs between star and rose forms. Temporal feedback and chromatic aberration complete the upgraded-rgba stack.",
+  "description": "Procedurally generated Islamic geometric patterns: girih stars and polygons with pentagram-aware geometry, true {n/2} star proportions, and strapwork that interlaces over and under the star outlines. Bass rotates the tessellation, the mouse morphs between star and rose forms, and temporal feedback is accumulated in linear space.",
   "workgroup_size": [
     16,
     16,

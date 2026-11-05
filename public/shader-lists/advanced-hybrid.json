@@ -5622,7 +5622,7 @@
     "id": "gen-quasicrystal-iridescence",
     "name": "Gen Quasicrystal Iridescence",
     "url": "shaders/gen-quasicrystal-iridescence.wgsl",
-    "description": "Gen Quasicrystal Iridescence",
+    "description": "Penrose-style quasicrystal tiling with thin-film iridescence: the tiling's depth drives film thickness, the film drains thin at the top and thick at the bottom, and the thinnest regions go black like a soap film. The spectral film is now a visible base layer that grows toward the frame edge.",
     "tags": [
       "generative",
       "quasicrystal",

@@ -16,7 +16,7 @@
     "fresnel",
     "gem"
   ],
-  "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices. Upgraded with domain-warped FBM, Voronoi/Worley noise, Fresnel-Schlick gem surfaces, enhanced harmonics, and deep audio reactivity.",
+  "description": "Penrose-tiling-inspired quasicrystal patterns with n-fold symmetry from higher-dimensional projection. Lattice nodes glint where every wave is in phase, a warm glow marks where the phason strain makes tiles flip, and domain-warped FBM, Voronoi noise, Fresnel gem surfaces and audio reactivity complete the look.",
   "workgroup_size": [
     16,
     16,

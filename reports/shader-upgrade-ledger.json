@@ -529,8 +529,17 @@
       ]
     },
     "gen-quasicrystal-iridescence": {
-      "hash": "b34023bbb13bfb58",
-      "history": []
+      "hash": "f76b667724697fe3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "f76b667724697fe3",
+          "prev_hash": "b34023bbb13bfb58",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
+        }
+      ]
     },
     "gen-raptor-mini-flow": {
       "hash": "00a299f444259ff0",
@@ -2611,7 +2620,7 @@
       "history": []
     },
     "gen-aperiodic-monotile": {
-      "hash": "7f42181de333775e",
+      "hash": "4f397b881e2be188",
       "history": [
         {
           "event": "upgraded",
@@ -2620,6 +2629,14 @@
           "prev_hash": "004db0488a000642",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "4f397b881e2be188",
+          "prev_hash": "7f42181de333775e",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
         }
       ]
     },
@@ -3313,7 +3330,7 @@
       ]
     },
     "gen-chromatic-zonohedron": {
-      "hash": "da4673fde79e4f13",
+      "hash": "a2b314599d40ae01",
       "history": [
         {
           "event": "upgraded",
@@ -3322,6 +3339,14 @@
           "prev_hash": "07c8b0105b13d9b2",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "a2b314599d40ae01",
+          "prev_hash": "da4673fde79e4f13",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
         }
       ]
     },
@@ -4725,7 +4750,7 @@
       ]
     },
     "gen-fourier-epicycles": {
-      "hash": "a4d07df44070aff6",
+      "hash": "fa0e6033e76bbf18",
       "history": [
         {
           "event": "upgraded",
@@ -4734,6 +4759,14 @@
           "prev_hash": "2a1fb20c938ccd5b",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "fa0e6033e76bbf18",
+          "prev_hash": "a4d07df44070aff6",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
         }
       ]
     },
@@ -5101,7 +5134,7 @@
       ]
     },
     "gen-hopf-fibration-fiber-bundle": {
-      "hash": "ceada5d264d28730",
+      "hash": "eebe5d1372479da4",
       "history": [
         {
           "event": "upgraded",
@@ -5118,6 +5151,14 @@
           "prev_hash": "faf12ed7b3b306c8",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "eebe5d1372479da4",
+          "prev_hash": "ceada5d264d28730",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
         }
       ]
     },
@@ -5172,7 +5213,7 @@
       ]
     },
     "gen-hyper-dimensional-tesseract-labyrinth": {
-      "hash": "7954629c7fd6d77d",
+      "hash": "efc110a23966a47b",
       "history": [
         {
           "event": "upgraded",
@@ -5181,6 +5222,14 @@
           "prev_hash": "6ce6088c58721e75",
           "commit": "4653c738",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "efc110a23966a47b",
+          "prev_hash": "7954629c7fd6d77d",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
         }
       ]
     },
@@ -5448,7 +5497,7 @@
       ]
     },
     "gen-islamic-star-rose": {
-      "hash": "574bf24109aa374d",
+      "hash": "b68c9b186fde0fdb",
       "history": [
         {
           "event": "upgraded",
@@ -5457,6 +5506,14 @@
           "prev_hash": "7f5d0e8f85f598ae",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "b68c9b186fde0fdb",
+          "prev_hash": "574bf24109aa374d",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
         }
       ]
     },
@@ -6302,8 +6359,17 @@
       "history": []
     },
     "gen-neon-stellated-octahedron": {
-      "hash": "003573b9021d6f4c",
-      "history": []
+      "hash": "41d261df6073e2af",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "41d261df6073e2af",
+          "prev_hash": "003573b9021d6f4c",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
+        }
+      ]
     },
     "gen-neon-tropical-paradise": {
       "hash": "2290bcd2d5d4adfa",
@@ -7060,8 +7126,17 @@
       "history": []
     },
     "gen-quasicrystal": {
-      "hash": "8768b04eb1f16c42",
-      "history": []
+      "hash": "413d30b96845f8d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "413d30b96845f8d2",
+          "prev_hash": "8768b04eb1f16c42",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
+        }
+      ]
     },
     "gen-radiant-chrono-glass-nautilus": {
       "hash": "91720900e88a5be9",
@@ -7136,8 +7211,17 @@
       ]
     },
     "gen-rainbow-icosahedron-cascade": {
-      "hash": "45841913ab5bb29d",
-      "history": []
+      "hash": "37745e76e7e1616e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-05T01:23:53.690Z",
+          "hash": "37745e76e7e1616e",
+          "prev_hash": "45841913ab5bb29d",
+          "commit": "e46fc028",
+          "note": "2026-11-01 sonnet batch 19 polyhedra/tiling/topology ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-19/BRIEFS.md"
+        }
+      ]
     },
     "gen-raptor-mini": {
       "hash": "93894f926f6e6456",

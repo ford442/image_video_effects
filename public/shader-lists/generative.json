@@ -2710,7 +2710,7 @@
       "raymarch",
       "depth"
     ],
-    "description": "A stylized monotile-inspired 2D pattern with animated edge glow, paired with a raymarched geometric relief sculpture. It is an artistic motif rather than a proof-accurate hat tiling; scale, rotation, edge width, saturation, mouse, and audio remain live. Each hat has a crown button, and metatile cells share a substitution tint.",
+    "description": "A stylized monotile-inspired hat pattern with animated edge glow, paired with a raymarched geometric relief sculpture. Each hat shows its kite seams, metatile cells share a substitution tint, and a fainter second-generation supertile outline marks the next inflation. It is an artistic motif rather than a proof-accurate hat tiling.",
     "workgroup_size": [
       16,
       16,
@@ -6267,7 +6267,7 @@
       "prismatic",
       "audio-reactive"
     ],
-    "description": "A spinning rhombic zonohedron projected into 2D — each facet filled with a unique spectral color and neon edge outlines. Three-axis rhomb tiling creates jewel-like cells that pulse with bass and shimmer with treble. Mouse shifts the focal center.",
+    "description": "A tumbling rhombic zonohedron projected into 2D: four generators foreshorten as it turns, each facet has a spectral colour, and the exact zonogon silhouette is outlined with the tiling dimmed outside it. Neon edges, zone belts and vertex stars pulse with bass and shimmer with treble.",
     "workgroup_size": [
       16,
       16,
@@ -12847,7 +12847,7 @@
       "audio-reactive",
       "vj"
     ],
-    "description": "Rotating Fourier epicycle wheels tracing harmonic curves with chromatic separation, metallic rim glow, and temporal trajectory trails. Bass drives rotation speed, mouse reshapes coefficients. Each wheel carries a phase tick at the rim, and the pen blots when the chain slows into a cusp.",
+    "description": "Rotating Fourier epicycle wheels tracing harmonic curves. Each rim carries a comet that shows which way the wheel turns, the pen's true velocity thins its ink at speed, and it blots into a pool at the cusps.",
     "workgroup_size": [
       16,
       16,
@@ -15037,7 +15037,7 @@
       "geometric",
       "chromatic"
     ],
-    "description": "Hopf fibration visualization from S³ to S². Each screen pixel maps to a point on S² whose fiber is a circle in S³, projected via stereographic projection to 2D. Linked circles colored by base-space coordinate with HDR bloom at crossings. Knot-diagram over/under gaps make the linking readable, bass-pumped beads ride each fiber's U(1) phase, and a small base-space S² inset shows the fibers' base points. A stereographic horizon traces the projection boundary while transverse depth-separated links flare at true crossings. The equatorial fiber is the brighter Hopf generator, and a double-angle seam rules each circle.",
+    "description": "Hopf fibration from S3 to S2: forty fibres stereographically projected as linked circles with knot-diagram gaps, beads, a base-space S2 inset and hot crossings. Tubes thin with perspective depth and distant strands cool and desaturate.",
     "workgroup_size": [
       16,
       16,
@@ -15261,7 +15261,7 @@
       "audio-reactive",
       "raymarching"
     ],
-    "description": "A dizzying, gravity-defying maze of glowing hyper-cubes that unfold and rotate through 4D space, creating impossible, Escher-like geometries driven by sound.",
+    "description": "A maze of glowing hypercube cells rotating through 4D space. Eight hyper-edge struts join each cell's frame to its W-slice ghost frame, and edge glow is coloured by the fourth coordinate, warm for +w and cool for -w.",
     "workgroup_size": [
       16,
       16,
@@ -16488,7 +16488,7 @@
       "metallic",
       "wolfram"
     ],
-    "description": "Procedurally generated Islamic geometric patterns enriched by Wolfram Alpha regular pentagon data. Interior angle 108°, central angle 72°. Diagonal/edge ratio φ≈1.618 determines petal proportions. Features girih-style star and polygon tessellations with pentagram-aware geometry. Bass rotates the tessellation. Mouse morphs between star and rose forms. Temporal feedback and chromatic aberration complete the upgraded-rgba stack.",
+    "description": "Procedurally generated Islamic geometric patterns: girih stars and polygons with pentagram-aware geometry, true {n/2} star proportions, and strapwork that interlaces over and under the star outlines. Bass rotates the tessellation, the mouse morphs between star and rose forms, and temporal feedback is accumulated in linear space.",
     "workgroup_size": [
       16,
       16,
@@ -20538,7 +20538,7 @@
       "kaleidoscope",
       "audio-reactive"
     ],
-    "description": "A neon-lit stellated octahedron (star tetrahedron) — two interpenetrating tetrahedra with blazing rainbow edges and dual-color facet glow. Six-fold kaleidoscopic symmetry multiplies the geometry; bass pulses the star scale, treble ignites vertex spikes. Mouse spins the form through space.",
+    "description": "A neon slice through a stellated octahedron (two interpenetrating tetrahedra) with six-fold kaleidoscopic symmetry. Edges glow like real neon tubes, with a white-hot core and an inverse-square halo, and the section rim takes the hue of the face it lies on.",
     "workgroup_size": [
       16,
       16,
@@ -24368,7 +24368,7 @@
       "fresnel",
       "gem"
     ],
-    "description": "Penrose tiling-inspired quasicrystal patterns with n-fold symmetry using the projection method from higher-dimensional lattices. Upgraded with domain-warped FBM, Voronoi/Worley noise, Fresnel-Schlick gem surfaces, enhanced harmonics, and deep audio reactivity.",
+    "description": "Penrose-tiling-inspired quasicrystal patterns with n-fold symmetry from higher-dimensional projection. Lattice nodes glint where every wave is in phase, a warm glow marks where the phason strain makes tiles flip, and domain-warped FBM, Voronoi noise, Fresnel gem surfaces and audio reactivity complete the look.",
     "workgroup_size": [
       16,
       16,
@@ -24923,7 +24923,7 @@
       "audio-reactive",
       "mouse-driven"
     ],
-    "description": "Nested concentric icosahedral wireframe shells radiating spectral edge glow. Each golden-ratio shell cycles through a full rainbow palette; bass expands the cascade, treble shimmers facet hues. Mouse orbits the entire structure through 3D space.",
+    "description": "Nested concentric icosahedral wireframe shells with spectral edge glow, beads at the twelve five-fold vertices, dual-dodecahedron sparks and a signed depth cue that warms front edges and cools back edges. Mouse orbits the whole structure; bass expands the cascade.",
     "workgroup_size": [
       16,
       16,

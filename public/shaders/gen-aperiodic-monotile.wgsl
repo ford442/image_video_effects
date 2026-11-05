@@ -3,7 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-11
+//  Upgraded: 2026-10-11, 2026-11-01
+//  Ideas (2026-11): kite seams (the hat is a polykite: seams from the cell's cube coordinates); second-generation supertile outline (16-cell level, the next inflation)
 //  Ideas: reflected hats on odd cells; chevron brim notch; kite notch; metatile outline; hat crown; substitution tint
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
@@ -120,6 +121,33 @@ fn hatTileField(uv: vec2<f32>, scale: f32) -> vec4<f32> {
     return vec4<f32>(d, chirality, brim, metaEdge);
 }
 
+// 2026-11 Ideas 1+2 (kept out of hatTileField so its vec4 contract is unchanged).
+// x = kite seam: where two of the cell's cube coordinates |q|, |r|, |s| are equal, the lines that cut the hexagon
+// into kites (the hat is a polykite of 8 kites). y = the 16-cell (second-generation) supertile outline, the next
+// substitution level above HEAD's 4-cell metatile outline.
+fn hatExtras(uv: vec2<f32>, scale: f32) -> vec2<f32> {
+    let p = uv * scale;
+    let hex_q = p.x * 0.57735 + p.y * 0.33333;
+    let hex_r = p.y * 0.66667;
+    let qf = floor(hex_q);
+    let rf = floor(hex_r);
+    let chirality = select(1.0, -1.0, ((i32(qf) + i32(rf)) & 1) == 0);
+    let localQ = (hex_q - qf - 0.5) * chirality;
+    let localR = hex_r - rf - 0.5;
+    let localS = -localQ - localR;
+    let aQ = abs(localQ);
+    let aR = abs(localR);
+    let aS = abs(localS);
+    let seam = min(min(abs(aQ - aR), abs(aR - aS)), abs(aS - aQ));
+    let kite = 1.0 - smoothstep(0.0, 0.035, seam);
+    let sq2 = fract(hex_q * 0.25) - 0.5;
+    let sr2 = fract(hex_r * 0.25) - 0.5;
+    let ss2 = -sq2 - sr2;
+    let superD2 = max(abs(sq2), max(abs(sr2), abs(ss2))) * 2.0;
+    let meta2 = 1.0 - smoothstep(0.02, 0.07, abs(superD2 - 0.92));
+    return vec2<f32>(kite, meta2);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -179,6 +207,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var liveRGB = rgb * val + edgeColor;
     liveRGB += vec3<f32>(0.95, 0.88, 0.62) * metaEdge * 0.28;
+    // 2026-11: kite seams inside each hat and the second-generation supertile outline.
+    let extras = hatExtras(p, scale);
+    liveRGB += vec3<f32>(0.85, 0.8, 0.65) * extras.x * 0.12 * (1.0 - smoothstep(-0.05, 0.1, d));
+    liveRGB += vec3<f32>(0.9, 0.82, 0.58) * extras.y * 0.14;
     // Hat crown — a button at the center of each hat.
     let hexQ = p.x * scale * 0.57735 + p.y * scale * 0.33333;
     let hexR = p.y * scale * 0.66667;
