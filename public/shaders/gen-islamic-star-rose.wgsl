@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven,
 //    islamic, star, rose, geometric, girih, tessellation
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: nested φ pentagrams; 10-fold rose from 36° sectors; overlapping star point shadows; central rose bloom
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas (2026-11): true {n/2} star proportions (inner radius cos(2pi/n)/cos(pi/n) for n != 5); interlace gaps (strap rings hidden inside shapes, over/under at every crossing). A packing CHANGED: linear temporal mix in A (HEAD stored ACES output and tone-mapped its own history every frame). Earlier: nested φ pentagrams; 10-fold rose from 36° sectors; overlapping star point shadows; central rose bloom
 //  A packing: ACES display RGBA
 //  Wolfram Data: Regular pentagon — interior angle 108° = 3π/5 rad;
 //    central angle 72° = 2π/5 rad; diagonal/edge ratio φ = (1+√5)/2 ≈ 1.618;
@@ -195,6 +195,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let is_star = hashf(pattern_seed) > 0.4;
 
       var shape_dist: f32;
+      var signedShape: f32;   // 2026-11 Idea 2: the signed distance, kept before any abs()
       if is_star {
         // Prefer pentagram (5-pointed star) when star is chosen
         let star_points = 4 + i32(hashf(pattern_seed + 1.0) * mix(4.0, 8.0, p1));
@@ -205,17 +206,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           shape_dist = sd_star(local, outer, inner, 5) / hex_r;
         } else {
           let outer_r = hex_r * 0.7;
-          let inner_r = hex_r * 0.3;
+          // 2026-11 Idea 1: true {n/2} star polygon. The inner radius of the regular star {n/2} is
+          // R cos(2 pi / n) / cos(pi / n) (clamped: n = 4 degenerates). HEAD used a fixed 3/7 for every n.
+          let nf = f32(star_points);
+          let trueRatio = clamp(cos(6.28318530718 / nf) / cos(3.14159265359 / nf), 0.2, 0.9);
+          let inner_r = outer_r * trueRatio;
           shape_dist = sd_star(local, outer_r, inner_r, star_points) / hex_r;
         }
         // Idea 1 — nested φ pentagram (second star at outer/φ in the same hex)
         let nestOuter = hex_r * 0.7 / PHI;
         let nestInner = nestOuter / PHI;
         let nested = sd_star(local, nestOuter, nestInner, max(star_points, 5)) / hex_r;
+        signedShape = shape_dist;
         shape_dist = min(abs(shape_dist), abs(nested));
       } else {
         let ngon_sides = 4 + i32(hashf(pattern_seed + 2.0) * 4.0);
         shape_dist = sd_ngon(local, hex_r * 0.5, ngon_sides) / hex_r;
+        signedShape = shape_dist;
       }
 
       // Girih strapwork lines (concentric patterns); p1 adds an inner strap
@@ -225,7 +232,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let min_strap = min(strap1, min(strap2, mix(1.0, strap3, p1)));
 
       // Combine shape and strapwork
-      let combined_dist = min(abs(shape_dist), min_strap * 0.5);
+      // 2026-11 Idea 2: interlace. Inside a shape the strap rings are pushed 0.12 away, so each ring shows outside
+      // the star and is hidden inside it: over/under alternates at every crossing.
+      let strapHidden = 1.0 - smoothstep(-0.02, 0.02, signedShape);
+      let combined_dist = min(abs(shape_dist), (min_strap + strapHidden * 0.12) * 0.5);
 
       if combined_dist < min_dist {
         min_dist = combined_dist;
@@ -283,14 +293,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   // Temporal feedback — exact C load (display RGBA)
+  // A holds the LINEAR temporal mix: HEAD stored the ACES output, read it back as colour and tone-mapped the mix
+  // again every frame (iterated tone-mapping flattened the pattern to a 0.63..0.80 grey on SwiftShader).
   let prev = textureLoad(dataTextureC, pixel, 0);
-  color = mix(prev.rgb * 0.96, color, 0.25);
+  let linearMix = mix(prev.rgb * 0.96, color, 0.25);
 
-  // ACES tone mapping + semantic alpha
-  color = acesToneMap(color * 1.1);
+  // ACES tone mapping (display only) + semantic alpha
+  color = acesToneMap(linearMix * 1.1);
   let alpha = clamp(length(color) * 1.2 + roseEdge * 0.12, 0.2, 0.95);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
-  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(linearMix, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(0.15 + (1.0 - edge_dist) * 0.55 + roseEdge * 0.2, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

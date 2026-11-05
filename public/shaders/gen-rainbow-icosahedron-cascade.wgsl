@@ -4,31 +4,13 @@
 //  Features: nested icosahedral shells, spectral facet coloring, orbit-trap
 //            edges, audio-reactive scale, mouse orbit, temporal feedback
 //  Complexity: High
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas (2026-11): five-fold vertex beads (12 per shell); signed depth cue (front warm/bright, back cool/dim). REPAIR: HEAD rendered nothing (SDF sampled on the plane z = 2.8, outside every shell; alpha max 0.002) - now an orthographic wire projection; edge table had six edges missing and six duplicated.
 //  Ideas: silhouette orbit-trap on edges; golden-angle yaw offset per shell; dual dodeca vertices (20 triangle-centroid sparks per shell); click shell pulse (ripple age breathes radius/thickness)
 //  A packing: linear HDR history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -51,12 +33,6 @@ fn rotY(v: vec3<f32>, a: f32) -> vec3<f32> {
 fn rotX(v: vec3<f32>, a: f32) -> vec3<f32> {
   let c = cos(a); let s = sin(a);
   return vec3<f32>(v.x, c * v.y - s * v.z, s * v.y + c * v.z);
-}
-
-fn sdSegment3(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>) -> f32 {
-  let pa = p - a; let ba = b - a;
-  let h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-  return length(pa - ba * h);
 }
 
 // Icosahedron vertices (unit sphere, golden-ratio construction)
@@ -86,8 +62,9 @@ fn icosaEdges() -> array<vec2<i32>, 30> {
     vec2<i32>(3,10), vec2<i32>(3,11), vec2<i32>(3,5), vec2<i32>(3,7),
     vec2<i32>(4,8), vec2<i32>(4,10), vec2<i32>(5,8), vec2<i32>(5,10),
     vec2<i32>(6,9), vec2<i32>(6,11), vec2<i32>(7,9), vec2<i32>(7,11),
-    vec2<i32>(8,2), vec2<i32>(9,2), vec2<i32>(10,3), vec2<i32>(11,3),
-    vec2<i32>(4,1), vec2<i32>(6,1)
+    // Repair: HEAD listed (8,2) (9,2) (10,3) (11,3) (4,1) (6,1), duplicates of (2,8) (2,9) (3,10) (3,11) (1,4)
+    // (1,6), and so omitted six real edges. The six missing edges (the coordinate-axis pairs):
+    vec2<i32>(0,2), vec2<i32>(1,3), vec2<i32>(4,6), vec2<i32>(5,7), vec2<i32>(8,10), vec2<i32>(9,11)
   );
 }
 
@@ -102,19 +79,6 @@ fn icosaFaces() -> array<vec3<i32>, 20> {
     vec3<i32>(9, 2, 7), vec3<i32>(9, 7, 11),
     vec3<i32>(5, 2, 7)
   );
-}
-
-fn icosaShellSDF(p: vec3<f32>, scale: f32, thick: f32) -> f32 {
-  let verts = icosaVerts();
-  let edges = icosaEdges();
-  var md = 1e9;
-  for (var i = 0; i < 30; i = i + 1) {
-    let e = edges[i];
-    let a = verts[e.x] * scale;
-    let b = verts[e.y] * scale;
-    md = min(md, sdSegment3(p, a, b) - thick);
-  }
-  return md;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -136,10 +100,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hueDrift = u.zoom_params.w;
 
   let aspect = res.x / max(res.y, 1.0);
-  var p = vec3<f32>((uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.2, 2.8);
+  // Wire projection (repair): HEAD evaluated a 3-D SDF at (uv * 2.2, 2.8), a plane farther from the origin than
+  // every shell's circumradius, so nothing rendered. The object is now rotated (shell golden-angle yaw, then the
+  // mouse/auto yaw and pitch) and projected; edges, dual centres and vertices are measured in 2-D, with the
+  // depth of the nearest point kept for the depth cues.
+  let pix = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.2;
   let yaw = (mouse.x - 0.5) * TAU + time * mix(0.08, 0.35, u.zoom_params.y);
   let pitch = (mouse.y - 0.5) * PI * 0.7 + sin(time * 0.25) * 0.15;
-  p = rotY(rotX(p, pitch), yaw);
 
   var color = vec3<f32>(0.02, 0.01, 0.06);
   var alpha = 0.0;
@@ -148,6 +115,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let baseScale = 0.55 + bass * 0.15;
   let verts = icosaVerts();
+  let edges = icosaEdges();
   let faces = icosaFaces();
   let rippleCount = min(u32(u.config.y), 50u);
 
@@ -166,35 +134,70 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     let scale = (baseScale + sf * shellGap * (1.0 + mids * 0.2)) * (1.0 + clickPulse * 0.22);
     let thick = edgeGlow * (1.0 - sf * 0.08) * (1.0 + clickPulse * 0.45);
-    let pShell = rotY(p, sf * GOLDEN_ANGLE);
-    let d = icosaShellSDF(pShell, scale, thick);
+
+    // Project this shell's 12 vertices (3-D kept for the depth cues, 2-D for the distances).
+    var pv: array<vec2<f32>, 12>;
+    var pz: array<f32, 12>;
+    for (var vi = 0; vi < 12; vi = vi + 1) {
+      let w = rotX(rotY(rotY(verts[vi] * scale, sf * GOLDEN_ANGLE), yaw), pitch);
+      let persp = 1.0 / max(1.0 - w.z * 0.12, 0.4);
+      pv[vi] = w.xy * persp;
+      pz[vi] = w.z;
+    }
+
+    // Nearest projected edge and the depth at that point.
+    var dMin = 1e9;
+    var zNear = 0.0;
+    for (var ei = 0; ei < 30; ei = ei + 1) {
+      let e = edges[ei];
+      let a = pv[e.x];
+      let b = pv[e.y];
+      let ba = b - a;
+      let h = clamp(dot(pix - a, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+      let dseg = length(pix - (a + ba * h));
+      if (dseg < dMin) { dMin = dseg; zNear = mix(pz[e.x], pz[e.y], h); }
+    }
+    let d = dMin - thick;
     minDist = min(minDist, d);
 
     let edge = exp(-abs(d) * 80.0);
     let facet = exp(-max(d, 0.0) * 25.0);
-    let hue = fract(sf * 0.17 + hueDrift + time * 0.04 + length(pShell) * 0.3);
-    let spec = spectral(hue + treble * 0.1);
-    let sil = 1.0 - abs(pShell.z / max(length(pShell), 0.001));
+    let hue = fract(sf * 0.17 + hueDrift + time * 0.04 + length(pix) * 0.3);
+    // Idea 2 (2026-11): signed depth cue. Front edges are brighter and warmer, back edges dimmer and cooler;
+    // HEAD's silhouette term below is symmetric in z.
+    let depthCue = clamp(zNear / scale, -1.0, 1.0);
+    let spec = spectral(hue + treble * 0.1 - depthCue * 0.05);
+    let sil = 1.0 - abs(depthCue);
+    let cueGain = 0.78 + 0.3 * depthCue;
 
-    // Idea 1 — dual dodeca vertices: triangle centroids of the icosa faces.
+    // Idea 1 — dual dodeca vertices: triangle centroids of the icosa faces (projected).
     var dualGlow = 0.0;
     for (var fi = 0; fi < 20; fi = fi + 1) {
       let fa = faces[fi];
       let centroid = verts[fa.x] + verts[fa.y] + verts[fa.z];
-      let dualP = normalize(centroid) * scale;
-      let dd = length(pShell - dualP);
+      let wd = rotX(rotY(rotY(normalize(centroid) * scale, sf * GOLDEN_ANGLE), yaw), pitch);
+      let dd = length(pix - wd.xy / max(1.0 - wd.z * 0.12, 0.4));
       dualGlow += exp(-dd * dd * 420.0);
     }
 
-    color += spec * edge * (1.2 + bass * 0.5) * (0.55 + sil * 0.9);
+    // Idea 1 (2026-11): five-fold vertex beads. The 12 vertices are where five edges meet; HEAD marked only
+    // the 20 three-fold face centres.
+    var beadGlow = 0.0;
+    for (var bi = 0; bi < 12; bi = bi + 1) {
+      let db = length(pix - pv[bi]);
+      beadGlow += exp(-db * db * 900.0) * (0.6 + 0.4 * smoothstep(-0.6, 0.6, pz[bi] / scale));
+    }
+
+    color += spec * edge * (1.2 + bass * 0.5) * (0.55 + sil * 0.9) * cueGain;
     color += spec * facet * 0.25 * (0.6 + mids * 0.4);
     color += spec * dualGlow * (0.28 + treble * 0.22) * (1.0 + clickPulse);
+    color += vec3<f32>(1.0, 0.96, 0.88) * beadGlow * (0.45 + treble * 0.4) * (1.0 + clickPulse * 0.6);
     facetHue = mix(facetHue, hue, edge);
-    alpha = max(alpha, max(edge * (0.7 - sf * 0.08), dualGlow * 0.35));
+    alpha = max(alpha, max(edge * (0.7 - sf * 0.08), max(dualGlow * 0.35, beadGlow * 0.5)));
   }
 
   // Inner glow core
-  let core = exp(-length(p) * 1.8) * spectral(facetHue + 0.1);
+  let core = exp(-length(pix) * 1.8) * spectral(facetHue + 0.1);
   color += core * (0.4 + treble * 0.3);
 
   let prev = textureLoad(dataTextureC, pixel, 0);
