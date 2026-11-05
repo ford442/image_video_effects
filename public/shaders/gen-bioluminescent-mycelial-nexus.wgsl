@@ -1,3 +1,7 @@
+// ----------------------------------------------------------------
+// Bioluminescent Mycelial Nexus
+// Category: generative
+// ----------------------------------------------------------------
 #include "_prelude.wgsl"
 
 // --- IMPLEMENTATION SKELETON ---
@@ -53,8 +57,8 @@ fn map(p: vec3<f32>) -> f32 {
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let thickness = 0.05 + bass * 0.05;
 
-    pos += fbm(pos * 2.0 + u.config.x * 0.5) * 0.5;
-    let cell = fract(pos * u.zoom_params.x) - 0.5;
+    pos += fbm(pos * u.zoom_params.x + u.config.x * u.zoom_params.z) * 0.5;
+    let cell = fract(pos) - 0.5;
 
     let d1 = length(cell.xy) - thickness;
     let d2 = length(cell.yz) - thickness;
@@ -81,7 +85,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
     let uv = (vec2<f32>(id.xy) - 0.5 * resolution) / resolution.y;
 
-    let time = u.config.x * u.zoom_params.z * 0.5;
+    let time = u.config.x * 0.5;
     let ro = vec3<f32>(sin(time) * 2.0, cos(time*0.5) * 2.0, time * 2.0);
     let ta = ro + vec3<f32>(sin(time*0.7), cos(time*0.3), 1.0);
     let cw = normalize(ta - ro);
@@ -106,13 +110,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let lightDir = normalize(vec3<f32>(1.0, 1.0, -1.0));
         let diff = max(dot(n, lightDir), 0.0);
 
-        let sss = smoothstep(0.0, 0.5, map(p + lightDir * 0.1)) * 0.5;
+        let sss = smoothstep(0.0, u.zoom_params.w, map(p + lightDir * 0.1)) * u.zoom_params.w;
 
         let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
-        let emit = pow(max(0.0, sin(p.z * 10.0 - u.config.x * 5.0)), 4.0) * treble;
+        let emit = pow(max(0.0, sin(p.z * 10.0 - u.config.x * 5.0)), 4.0) * treble * u.zoom_params.y;
 
         let baseCol = mix(vec3<f32>(0.1, 0.4, 0.8), vec3<f32>(0.1, 0.8, 0.4), fract(p.z * 0.2));
-        col = baseCol * (diff + sss * u.zoom_params.w) + emit * vec3<f32>(0.2, 1.0, 0.8) * u.zoom_params.y * 2.0;
+        col = baseCol * (diff + sss * 0.5) + emit * vec3<f32>(0.2, 1.0, 0.8) * 2.0;
     }
 
     col = mix(col, vec3<f32>(0.02, 0.01, 0.05), 1.0 - exp(-0.05 * t));
