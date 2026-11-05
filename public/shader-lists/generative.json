@@ -1444,7 +1444,7 @@
       "mathematical",
       "pointcloud"
     ],
-    "description": "Iterated function system rendering a 3D Sierpinski tetrahedron using the chaos game algorithm. Thousands of point samples create intricate cloud-like renders of the fractal solid with depth-based coloring and perspective projection. Mouse rotates the 3D view in real-time.",
+    "description": "Chaos-game rendering of a 3D Sierpinski tetrahedron. Splat size follows perspective, and the last two vertex picks name the sub-tetrahedron so the self-similar nesting shows as coloured sub-copies, over attractor-biased chaos, corner flares and temporal accumulation. Mouse rotates the view.",
     "workgroup_size": [
       16,
       16,
@@ -1737,7 +1737,8 @@
     ],
     "workgroup_size": [
       16,
-      16
+      16,
+      1
     ],
     "params": [
       {
@@ -4228,6 +4229,59 @@
     "category": "generative"
   },
   {
+    "id": "gen-bioluminescent-mycelial-nexus",
+    "name": "Bioluminescent Mycelial Nexus",
+    "description": "A hyper-organic, pulsing network of luminous fungal threads that weave and branch through a dense, volumetric void, reacting dynamically to bass and treble frequencies.",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "bioluminescent",
+      "audio-reactive",
+      "network",
+      "sdf"
+    ],
+    "url": "shaders/gen-bioluminescent-mycelial-nexus.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "name": "Branching Density",
+        "default": 2,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "id": "branching-density"
+      },
+      {
+        "name": "Glow Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "id": "glow-intensity"
+      },
+      {
+        "name": "Network Mutation Speed",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1,
+        "id": "network-mutation-speed"
+      },
+      {
+        "name": "Subsurface Scattering",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05,
+        "id": "subsurface-scattering"
+      }
+    ]
+  },
+  {
     "id": "gen-bioluminescent-neural-coral-matrix",
     "name": "Bioluminescent Neural-Coral Matrix",
     "category": "generative",
@@ -4886,6 +4940,12 @@
         "step": 0.01,
         "mapping": "zoom_params.w"
       }
+    ],
+    "features": [
+      "raymarching",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -9777,6 +9837,9 @@
     "id": "gen-emergent-calligraphic-ecosystems",
     "url": "shaders/gen-emergent-calligraphic-ecosystems.wgsl",
     "features": [
+      "mouse-driven",
+      "temporal",
+      "audio-reactive",
       "upgraded-rgba"
     ]
   },
@@ -11558,7 +11621,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Blazing comet shells with brilliant heads and long luminous tails that streak across the night sky. Each shell launches upward then leaves a glowing path as sparks peel off the main trajectory. Bass makes bigger comet heads, treble adds sparkle along the trail. Mouse fires a comet from the cursor. The ion tail disconnects in a kink, and short jets leave the sunward side of the head.",
+    "description": "Blazing comet shells with brilliant heads and long luminous tails that streak across the night sky. Each shell launches upward then leaves a glowing path as sparks peel off the main trajectory. Bass makes bigger comet heads, treble adds sparkle along the trail. Mouse fires a comet from the cursor. The ion tail disconnects in a kink, and short jets leave the sunward side of the head. A bow shock sits ahead of the coma, and the dust tail sags below the ion tail.",
     "workgroup_size": [
       16,
       16,
@@ -11711,7 +11774,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor. Each parent star wears a comet sheath, and the four arms fork a few milliseconds apart.",
+    "description": "Crossette shells that split into four brilliant sub-bursts at the cardinal points. A primary flash blooms, then each arm detonates into its own mini-chrysanthemum. The iconic four-petal pattern creates geometric symmetry in the sky. Mids trigger the split timing, treble crackles each arm. Mouse fires a crossette at the cursor. Each parent star wears a comet sheath, and the four arms fork a few milliseconds apart. The parent goes dark at the split, and a thin axis ghost remains.",
     "workgroup_size": [
       16,
       16,
@@ -11943,7 +12006,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade. A swish wave now travels down each streamer, and a slow-fading gold dock knot marks where the tail hangs from.",
+    "description": "Classic horse tail and brocade shells rain long, straight golden streamers from a single burst point. Each spark traces a tight gravity arc with minimal spread, creating luminous waterfalls of light. Bass lengthens the tails, treble adds silver micro-dust along the streams. Mouse launches a personal brocade cascade. A swish wave now travels down each streamer, and a slow-fading gold dock knot marks where the tail hangs from. A sheen runs down each tail, and a red coal continues past the gold tip.",
     "workgroup_size": [
       16,
       16,
@@ -12021,7 +12084,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor. Upgraded with HDR white-gold burst cores, audio-reactive color temperature (bass deepens amber, treble shifts silver), golden atmospheric haze with depth fog, split-tone grading (cool shadows, warm highlights), and real generated depth from glitter heat. Twinkle peaks spit tiny dross satellites, and after the hang the glitter cools to dull charcoal red.",
+    "description": "Dense kamuro shells rain slow-falling gold and silver glitter like a luminous snowstorm. Thousands of tiny sparks hang in the air before drifting down, creating thick clouds of metallic shimmer. Perfect July 4th brocade feel. Bass thickens the cloud, treble adds micro-sparkle. Mouse releases a golden kamuro shower at the cursor. Upgraded with HDR white-gold burst cores, audio-reactive color temperature (bass deepens amber, treble shifts silver), golden atmospheric haze with depth fog, split-tone grading (cool shadows, warm highlights), and real generated depth from glitter heat. Twinkle peaks spit tiny dross satellites, and after the hang the glitter cools to dull charcoal red. The golden haze sags with the fall, and a longer hang is a finer mesh.",
     "workgroup_size": [
       16,
       16,
@@ -12255,7 +12318,7 @@
       "generative",
       "4th-of-july"
     ],
-    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth. Between star ejections each tube spits a short gold fountain, and late stars gutter and flicker before dying.",
+    "description": "Classic roman candles firing rapid star bursts from fixed launch tubes along the horizon. Bass enlarges launches, treble adds trail and burst detail, held mouse fire follows the normalized cursor, and each click launches a discrete personal candle. Bright shells produce luminance-derived depth. Between star ejections each tube spits a short gold fountain, and late stars gutter and flicker before dying. Each launcher is a dark tube with a bright lip, and the apex opens with a white report.",
     "workgroup_size": [
       16,
       16,
@@ -12409,7 +12472,7 @@
       "psychedelic",
       "4th-of-july"
     ],
-    "description": "Hypnotic strobe shells that flash multiple times before dissolving into falling sparks. Each burst pulses with rhythmic white-hot flashes synced to the beat, then blooms into color. Treble drives flash rate, bass amplifies each pulse. A psychedelic July 4th finale feel. Mouse triggers a strobe barrage at the cursor. Past flashes leave a faint dotted path, and each shell's pulse lights a wide veil of sky.",
+    "description": "Hypnotic strobe shells that flash multiple times before dissolving into falling sparks. Each burst pulses with rhythmic white-hot flashes synced to the beat, then blooms into color. Treble drives flash rate, bass amplifies each pulse. A psychedelic July 4th finale feel. Mouse triggers a strobe barrage at the cursor. Past flashes leave a faint dotted path, and each shell's pulse lights a wide veil of sky. The strobe has a finite blink budget, with a white core inside the colored fringe.",
     "workgroup_size": [
       16,
       16,
@@ -14235,7 +14298,7 @@
     "id": "gen-grok41-mandelbrot",
     "name": "Buddhabrot Nebula",
     "url": "shaders/gen_grok41_mandelbrot.wgsl",
-    "description": "Audio-reactive Buddhabrot orbit accumulation with bass-breathing sample count, mids hue shift, treble sparkle stars, mouse-driven panning, orbital rainbow trails, and ACES temporal accumulation. Long orbits leave warm comets, and the real-axis antenna tip anchors the silhouette.",
+    "description": "Audio-reactive Buddhabrot orbit accumulation: orbits are coloured by length into Nebulabrot red, green and blue, the Mandelbrot body carries smooth potential bands with binary-decomposition rays, and long orbits leave warm comets. The Center X/Y sliders glide the view, clicks pull it toward the click point, and stars dance with FFT bands.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -16611,7 +16674,7 @@
     "id": "gen-julia-set",
     "name": "Julia Set — Orbit Trap",
     "url": "shaders/gen_julia_set.wgsl",
-    "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth (continuous) iteration count μ=i−log₂(log₂|z|), multi-trap orbit colouring (circle, line, cross traps), and animated Julia parameter c orbiting a Mandelbrot cardioid boundary. Audio-driven trap scale.",
+    "description": "Generalised Julia set iteration z^n+c for n=2..6 with smooth iteration count, circle/line/cross orbit traps and a velocity trap, c orbiting a cardioid. A distance estimate lights a thin lace along the set's true boundary, and the interior bands around each attracting cycle. Audio-driven trap scale.",
     "features": [
       "audio-reactive",
       "procedural",
@@ -18903,7 +18966,7 @@
       "strange-attractor",
       "domain-warp"
     ],
-    "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices, and Clifford strange-attractor modulation.",
+    "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices and Clifford attractor modulation. Synchrotron emission is Doppler-beamed by gyration phase, and the image is combed along the field lines.",
     "workgroup_size": [
       16,
       16,
@@ -19111,7 +19174,7 @@
       "metallic",
       "futuristic"
     ],
-    "description": "2D cross-section of the 3D Mandelbox fractal with box folding, sphere folding, and orbit-trap coloring. Metallic surface with ambient occlusion, HDR specular highlights, and ACES tone mapping.",
+    "description": "2D cross-section of the 3D Mandelbox fractal with box folding, sphere folding and orbit traps (origin, diagonal and the fold walls). A polished-metal surface reflects a sky gradient with Schlick Fresnel, with distance-estimate lighting, HDR specular highlights and a glassy interior.",
     "workgroup_size": [
       16,
       16,
@@ -26758,7 +26821,7 @@
       "abstract",
       "atmospheric"
     ],
-    "description": "A stellar nursery in HII emission colours: curl-noise gas clouds, dark absorption pillars, and proto-star sparkle. Bass swells the pillars of creation, treble ignites new suns.",
+    "description": "A stellar nursery in HII emission colours: curl-noise gas clouds, dark absorption pillars, and proto-star sparkle. Bass swells the pillars of creation, treble ignites new suns. Thick pillars go dark by Beer-Lambert extinction, with a cyan rim where the gas meets the dust.",
     "workgroup_size": [
       16,
       16,
@@ -26769,7 +26832,49 @@
     "updated": true,
     "id": "gen-stardust-nebula",
     "url": "shaders/gen-stardust-nebula.wgsl",
-    "features": []
+    "params": [
+      {
+        "id": "cloud-density",
+        "name": "Cloud Density",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "emission",
+        "name": "Emission",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "star-field",
+        "name": "Star Field",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gas-drift",
+        "name": "Gas Drift",
+        "default": 0.3,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-stellar-acoustic-resonance-manifold",
@@ -26827,6 +26932,58 @@
       }
     ],
     "description": "A repeated stellar resonance manifold with coherent p/g-mode shells, compression-heated blackbody highlights, nodal dislocation seams, and coronal loop arc curtains driven by audio bands."
+  },
+  {
+    "id": "gen-stellar-cyber-lotus-forge",
+    "name": "Stellar Cyber-Lotus Forge",
+    "category": "generative",
+    "tags": [
+      "organic",
+      "cyberpunk",
+      "cosmic",
+      "audio-reactive",
+      "interactive"
+    ],
+    "url": "shaders/gen-stellar-cyber-lotus-forge.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "name": "Bloom Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "id": "p1"
+      },
+      {
+        "name": "Rotation Speed",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "id": "p2"
+      },
+      {
+        "name": "Petal Complexity",
+        "default": 3,
+        "min": 1,
+        "max": 6,
+        "step": 1,
+        "id": "p3"
+      },
+      {
+        "name": "Vein Glow",
+        "default": 0.8,
+        "min": 0,
+        "max": 2,
+        "step": 0.1,
+        "id": "p4"
+      }
+    ]
   },
   {
     "name": "Stellar Mycelium Overdrive",
@@ -27895,7 +28052,7 @@
     "id": "gen-trails",
     "name": "Boids Flocking",
     "url": "shaders/gen_trails.wgsl",
-    "description": "Audio-reactive Reynolds boids flocking with bass-driven panic, mids cohesion, treble flash bursts, mouse attraction, motion-blur streaks, and pheromone trails.",
+    "description": "Audio-reactive Reynolds boids that fly continuous paths in six flocks, with bass-driven panic, mids cohesion, treble flashes, mouse attraction, beating wings, motion-blur streaks and pheromone trails that evaporate over time.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -28763,7 +28920,7 @@
     "id": "gen_mandelbulb_3d",
     "name": "Mandelbulb 3D",
     "url": "shaders/gen_mandelbulb_3d.wgsl",
-    "description": "3D Mandelbulb fractal with ray marching, orbit trap coloring, soft shadows, and distance-based alpha for atmospheric depth",
+    "description": "3D Mandelbulb fractal with ray marching, orbit-trap colouring and soft shadows. Distance-field ambient occlusion darkens crevices, curvature wears the ridges bright and tarnishes the hollows, and distance-based alpha adds atmospheric depth.",
     "tags": [
       "mandelbulb",
       "fractal",
@@ -28776,7 +28933,9 @@
       "ray-marching",
       "sdf",
       "orbit-trap",
-      "3d-fractal"
+      "3d-fractal",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "params": [
       {
@@ -29100,7 +29259,7 @@
     "name": "Holographic Crystal",
     "url": "shaders/holographic-crystal.wgsl",
     "category": "generative",
-    "description": "Crystal facet interference patterns with rainbow holographic shifts. Mouse tilts the crystal lattice.",
+    "description": "Crystal facet interference with stepped diffraction orders and dark grooves. A lit bevel sits on the lit side of each groove, and a caustic runs the square's diagonal. Mouse tilt and click warps stay.",
     "tags": [
       "generative",
       "crystal",
@@ -29217,7 +29376,7 @@
     "name": "Holographic Interference",
     "category": "generative",
     "url": "shaders/holographic_interference.wgsl",
-    "description": "Laser interference pattern simulation with multiple coherent sources, object beam and reference beam phase accumulation, speckle pattern, chromatic dispersion on holographic fringes, HDR bloom, and ACES tone mapping. Bass drives reference beam angle, mouse moves the virtual object, depth controls holographic parallax.",
+    "description": "Three coherent sources: an object beam from the pointer and a planar reference, with speckle and a thin-film tint. Fringe visibility falls as the two paths diverge, and the speckle pitch follows the wave scale.",
     "tags": [
       "holographic",
       "interference",
@@ -29431,7 +29590,7 @@
     "id": "kimi-fractal-dreams",
     "name": "Kimi Fractal Dreams",
     "url": "shaders/kimi_fractal_dreams.wgsl",
-    "description": "Multi-layer fractal with orbit traps, burning ship variant, and smooth color cycling.",
+    "description": "Multi-layer Burning-Ship Julia fractal with orbit traps. Reflection parity tiles the escape region into mirrored colour regions, stripe-average colouring adds fine grain, and a spring-damped Julia constant follows the mouse.",
     "features": [
       "mouse-driven",
       "generative",
@@ -31346,7 +31505,7 @@
     "id": "spec-quaternion-julia",
     "name": "Quaternion Julia",
     "url": "shaders/spec-quaternion-julia.wgsl",
-    "description": "4D quaternion Julia set raymarched in real-time. The 4th dimension animates over time creating organic morphing fractal forms with orbit-trap coloring and physically-based lighting.",
+    "description": "4D quaternion Julia set raymarched in real time. The 3D cross-section slides through the 4th dimension so lobes grow and pinch, the lobes cast soft shadows on each other, and orbit-trap colouring is lit with specular and Fresnel terms.",
     "tags": [
       "quaternion",
       "julia",

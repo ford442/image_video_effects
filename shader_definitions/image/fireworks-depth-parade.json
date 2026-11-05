@@ -2,7 +2,7 @@
   "id": "fireworks-depth-parade",
   "name": "4th of July \u2014 Depth Parade",
   "url": "shaders/fireworks-depth-parade.wgsl",
-  "description": "Depth layers of your image launch fireworks in parade sequence \u2014 foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage.",
+  "description": "Depth layers of your image launch fireworks in parade sequence \u2014 foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage. Far layers climb as mortars before they break, and foreground smoke dims the shells behind them.",
   "tags": [
     "fireworks",
     "depth",

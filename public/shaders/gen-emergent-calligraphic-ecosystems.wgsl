@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: upgraded-rgba, temporal, audio-reactive, mouse-driven
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-10-31
 //  Ideas: brush pressure swell along the stroke; prey-predator ink chase along the flow; paper-fibre ink feathering; glyph death phase (dry, crack, rebirth);
-//         capillary backrun blooms; ligature bridge strokes between nearby glyph clusters
+//         capillary backrun blooms; ligature bridge strokes between nearby glyph clusters; flying-white (feibai) dry-brush tail and nib reservoir; palimpsest ghost under-script
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -57,8 +57,9 @@ fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
     let along = d.x * cos(orientation) + d.y * sin(orientation);
     let across = -d.x * sin(orientation) + d.y * cos(orientation);
 
+    let prog = clamp(along / max(strokeLen, 0.001), 0.0, 1.0);
     let inLength = smoothstep(0.0, 0.1, along) * smoothstep(strokeLen + 0.05, strokeLen, along);
-    let taper = sin(clamp(along / max(strokeLen, 0.001), 0.0, 1.0) * PI);
+    let taper = sin(prog * PI);
     // Idea 1 — brush pressure swell: real calligraphy width breathes along the stroke
     let pressure = 1.0 + 0.38 * sin(along * 16.0 + orientation + t * 0.7);
     let inWidth = smoothstep(inkWidth * pressure, 0.0, abs(across)) * taper;
@@ -68,7 +69,12 @@ fn stroke(uv: vec2<f32>, seed: vec2<f32>, t: f32, strokeLen: f32,
     let reach = inkWidth * pressure * (1.4 + fibre * 2.2);
     let feather = smoothstep(reach, inkWidth * pressure, abs(across)) * taper * (0.2 + fibre * 0.3);
 
-    return inLength * max(inWidth, feather * wick);
+    // ── Idea 7: flying-white (feibai) dry-brush tail & entry nib reservoir ──
+    let nibPool = 1.0 + 0.32 * smoothstep(0.24, 0.03, prog);
+    let bristleGroove = 0.5 + 0.5 * cos((across / max(inkWidth, 0.0005)) * 7.5 + fibre * 4.2);
+    let feibaiSplit = mix(1.0, smoothstep(0.22, 0.75, bristleGroove * fibre * 1.6), smoothstep(0.58, 0.96, prog));
+
+    return inLength * max(inWidth * feibaiSplit * nibPool, feather * wick);
 }
 
 // Calligraphic glyph cluster: N strokes around a seed, self-organizing into glyphs
@@ -252,18 +258,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let caStr = 0.003 * (1.0 + bass);
     color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
+    // ── Idea 8: palimpsest ghost under-script from exact dataTextureC history ──
+    let coord = vec2<i32>(global_id.xy);
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let ghostInk = clamp(prev.a - totalInk * 0.85, 0.0, 1.0);
+    let ironGallStain = mix(vec3<f32>(0.78, 0.67, 0.52), vec3<f32>(0.12, 0.38, 0.52), neonMode);
+    color = mix(color, color * ironGallStain + prev.rgb * 0.18 * neonMode, ghostInk * 0.32);
+
     // ACES tone mapping
-    color = acesToneMap(color * 1.1);
+    color = acesToneMap(max(color * 1.1, vec3<f32>(0.0)));
 
     // Semantic alpha
-    let alpha = clamp(totalInk * 0.72 + invasiveBoost * 0.15 + clickInk * 0.2 + length(color) * 0.12, 0.04, 0.96);
+    let alpha = clamp(totalInk * 0.72 + ghostInk * 0.18 + invasiveBoost * 0.15 + clickInk * 0.2 + length(color) * 0.12, 0.04, 0.96);
 
     // Temporal feedback: ecosystem succession
-    let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
     let feedback = mix(prev.rgb * 0.96, color, 0.25);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(feedback, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(feedback, alpha));
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(feedback, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(feedback, alpha));
     let depthOut = clamp(totalInk * 0.65 + invasiveBoost * 0.2 + clickInk * 0.15, 0.0, 1.0);
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
 }

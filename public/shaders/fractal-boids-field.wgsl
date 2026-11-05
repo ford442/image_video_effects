@@ -6,31 +6,15 @@
 //  Chunks From: boids.wgsl, gen_grid
 //  Created: 2026-03-22
 //  By: Agent 3B - Advanced Hybrid Creator
+//  Upgraded: 2026-11-01
+//  Ideas: true trail persistence (boid layer in A, read as C); flow-bent trails (one extra flow sample bends the 9 trail dots into an arc)
+//  A packing: boid layer - A.rgb = linear boid colour / trail memory, A.a = boid density (read as C .rgb); ACES display on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 //  Flocking behavior on a fractal vector field
 //  Swarms of particles flowing through organic fractal currents
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -74,6 +58,11 @@ fn domainWarpFBM(p: vec2<f32>, time: f32, audioReactivity: f32) -> vec2<f32> {
         fbm2(p + 4.0 * q + vec2<f32>(8.3 - time * 0.15 * audioReactivity, 2.8), 4)
     );
     return r;
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // ═══ FLOW FIELD SAMPLE ═══
@@ -147,8 +136,14 @@ fn simulateBoids(uv: vec2<f32>, time: f32, boidCount: f32, flowStrength: f32, se
     
     // Trail behind boid
     let trailDir = -velocity;
+    // Idea 2: flow-bent trails. The field one trail-length behind the head, minus the field
+    // at the head, is how much the current is turning along the wake; the 9 dots follow a
+    // quadratic arc of that turning instead of a straight line (bend <= ~0.03 uv at the tail).
+    let flowBehind = sampleFlowField(boidPos + trailDir * 0.09, time, flowStrength, audioReactivity);
+    let trailBend = (flowBehind - flow) * 0.015;
     for (var i = 1; i < 10; i++) {
-        let trailPos = boidPos + trailDir * f32(i) * 0.01;
+        let tTrail = f32(i) / 9.0;
+        let trailPos = boidPos + trailDir * f32(i) * 0.01 + trailBend * tTrail * tTrail;
         let distToTrail = length(uv - trailPos);
         let trailIntensity = 1.0 - f32(i) / 10.0;
         if (distToTrail < trailWidth * trailIntensity) {
@@ -173,14 +168,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
+    // HEAD read u.zoom_config.x here, which is engine TIME, not audio: the flow-field time
+    // term (time * audioReactivity) therefore ran away roughly as time^2. Audio now comes from
+    // plasmaBuffer and rides the flow strength (a multiplicative time scale would make the
+    // field jump whenever the level changed); audioReactivity stays 1.0, HEAD's value at t = 0.
+    let audioOverall = clamp((bass + mids + treble) * 0.3333333, 0.0, 2.0);
+    let audioReactivity = 1.0;
     let id = vec2<i32>(global_id.xy);
     
     // Parameters
     let boidCount = mix(10.0, 50.0, u.zoom_params.x);      // x: Boid count (simulated)
-    let flowStrength = mix(0.5, 3.0, u.zoom_params.y);      // y: Flow field strength
+    let flowStrength = mix(0.5, 3.0, u.zoom_params.y) * (1.0 + audioOverall * 0.2);      // y: Flow field strength
     let trailPersist = u.zoom_params.z;                      // z: Trail persistence
     let separation = mix(0.02, 0.1, u.zoom_params.w);       // w: Separation distance
     
@@ -190,8 +188,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Calculate boid field
     let boidColor = simulateBoids(uv, time, boidCount, flowStrength, separation, audioReactivity);
     
+    // Idea 1: true trail persistence. The boid layer is kept in A and read back as exact C;
+    // the Trail Persistence slider sets the evaporation rate (0.78 .. 0.96), so a moving boid
+    // leaves a lingering trail that also covers the cell-boundary clipping of the head.
+    let histSize = vec2<i32>(textureDimensions(dataTextureC));
+    let prevLayer = textureLoad(dataTextureC, clamp(id, vec2<i32>(0), histSize - vec2<i32>(1)), 0);
+    let evaporate = mix(0.78, 0.96, trailPersist);
+    let layerRgb = max(boidColor, prevLayer.rgb * evaporate);
+    let layerDensity = max(clamp(length(boidColor), 0.0, 1.0), prevLayer.a * evaporate);
+    textureStore(dataTextureA, id, vec4<f32>(layerRgb, layerDensity));
+
     // Blend with background
-    color = mix(color, boidColor, length(boidColor) * (0.5 + trailPersist * 0.5));
+    color = mix(color, layerRgb, length(layerRgb) * (0.5 + trailPersist * 0.5));
     
     // Add flow field visualization
     let flow = sampleFlowField(uv, time, flowStrength * 0.5, audioReactivity);
@@ -199,7 +207,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += vec3<f32>(flowMag * 0.1, flowMag * 0.05, flowMag * 0.15) * flowStrength;
     
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let alpha = mix(0.75, 1.0, length(boidColor));
+    let alpha = mix(0.75, 1.0, clamp(length(layerRgb), 0.0, 1.0));
     
     
     var clickFront = 0.0;
@@ -215,7 +223,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = vec4<f32>(color, alpha).rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, id, vec4<f32>(__finalRGB, vec4<f32>(color, alpha).a));
+    let finalRGB = vec4<f32>(color, alpha).rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, id, vec4<f32>(acesToneMap(max(finalRGB, vec3<f32>(0.0))), vec4<f32>(color, alpha).a));
     textureStore(writeDepthTexture, id, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

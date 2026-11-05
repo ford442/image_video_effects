@@ -3,8 +3,8 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: mechanical cam notch at hinge crossing 90°; back-face mirror sample
+//  Upgraded: 2026-09-11, 2026-11-01
+//  Ideas: mechanical cam notch at hinge crossing 90°; back-face mirror sample; hinge pin; gutter shadow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -113,7 +113,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let camNotch = pow(abs(sineAngle), 3.0) * hinge * 0.5;
     hdr *= (1.0 - camNotch);
 
+    // ── Idea 1: hinge pin ────────────────────────────────────────────
+    // A narrow metal line inside the hinge, visible when the flap is open.
+    // The cam notch still darkens the wider hinge.
+    let pin = exp(-abs(sourceLocalY - 0.5) * 240.0) * smoothstep(0.35, 0.9, abs(sineAngle));
+    hdr += vec3<f32>(0.78, 0.74, 0.66) * pin * 0.6;
+
     coverage = source.a * (0.45 + projectedHeight * 0.55) * smoothstep(0.0, 0.04, edgeDistance);
+  }
+
+  // ── Idea 2: gutter shadow ──────────────────────────────────────────
+  // The gap has a dim floor. An open flap puts that floor in shadow.
+  // Tile Gap still sets how wide the gap is.
+  let openShadow = smoothstep(0.2, 0.95, abs(sineAngle)) * (1.0 - smoothstep(0.2, 0.85, projectedHeight));
+  if (!inside) {
+    let floorLit = vec3<f32>(0.028, 0.03, 0.034);
+    hdr = mix(hdr + floorLit, hdr * 0.35, openShadow);
   }
 
   let history = historyAt(uv, resolution);

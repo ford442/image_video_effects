@@ -4,29 +4,14 @@
 //  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
 //            per-band-fft, cauchy-dispersion, fresnel, caustic-fronts,
 //            temporal-afterglow, depth-aware, upgraded-rgba, semantic-alpha, ACES
+//  Upgraded: 2026-11-01
+//  Ideas: caustic focusing from the refraction Jacobian (1/|det J|); total internal reflection flash beyond the critical angle
+//  A packing: display RGBA (unchanged)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Strength, y=Frequency, z=Speed, w=Aberration
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Strength, y=Frequency, z=Speed, w=Aberration
 
 const CAUCHY_A: f32 = 1.62;
 const CAUCHY_B: f32 = 0.0132;
@@ -36,6 +21,13 @@ const LAMBDA_B: f32 = 0.450;
 
 fn cauchyIndex(lambdaUm: f32) -> f32 {
   return CAUCHY_A + CAUCHY_B / (lambdaUm * lambdaUm);
+}
+
+// FFT band k (0..7): engine FFT bins live in extraBuffer[5 .. 132]. HEAD read plasmaBuffer[k + 1].x, but
+// only plasmaBuffer[0] is ever written, so the per-distance band was a constant zero.
+fn fftBand(k: u32) -> f32 {
+  let idx = 5u + (k % 8u) * 4u;
+  return select(0.0, extraBuffer[min(idx, arrayLength(&extraBuffer) - 1u)], arrayLength(&extraBuffer) > idx);
 }
 
 fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
@@ -112,7 +104,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let distVec = diff * vec2<f32>(aspect, 1.0);
   let dist = length(distVec);
   let bandIdx = u32(clamp(dist * 8.0, 0.0, 7.999));
-  let band = plasmaBuffer[bandIdx + 1u].x;
+  let band = fftBand(bandIdx);
 
   // Exact parameter contracts
   let strength = u.zoom_params.x * 0.1 * (1.0 + bass * 0.6 + held * 0.35);
@@ -127,6 +119,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let decay = 1.0 / (1.0 + dist * 5.0);
   let dir = normalize(diff + vec2<f32>(0.0001, 0.0001));
   var displace = dir * wave * strength * decay;
+
+  // 2026-11 Idea 1: caustic focusing. The pointer ripple refracts by the radial map r' = r + A(r) with
+  // A = strength * decay * sin(phase). Its Jacobian is (1 + A') radially and (1 + A / r) tangentially;
+  // light concentrates where the determinant goes to zero, which is what a caustic is. A' is analytic
+  // (decay' = -5 decay^2). Brightness x mix(1, clamp(1 / (|det| + 0.25), 0.6, 2.0), 0.6).
+  let rippleA = strength * decay * wave;
+  let rippleDA = strength * (decay * frequency * cos(wavePhase) - wave * 5.0 * decay * decay);
+  let jacDet = (1.0 + rippleDA) * (1.0 + rippleA / max(dist, 0.03));
+  let focusGain = clamp(1.0 / (abs(jacDet) + 0.25), 0.6, 2.0);
 
   // Bounded click caustic fronts
   var causticRidge = 0.0;
@@ -162,6 +163,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sB = textureSampleLevel(readTexture, u_sampler, bUV, 0.0);
   var color = vec3<f32>(sR.r, sG.g, sB.b);
 
+  color = color * mix(1.0, focusGain, 0.6);
+
   let highlight = smoothstep(0.8, 1.0, wave) * decay * strength * 10.0 * (1.0 + bass);
   color += vec3<f32>(0.15, 0.18, 0.2) * highlight;
   color += vec3<f32>(1.0, 0.92, 0.78) * causticRidge * 0.5;
@@ -172,6 +175,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let distortionMag = length(displace);
   let normal = normalize(vec3<f32>(-displace.x * 50.0, -displace.y * 50.0, 1.0));
   let viewDotNormal = normal.z;
+
+  // 2026-11 Idea 2: total internal reflection. On a steep ripple face the ray inside the glass exceeds the
+  // critical angle asin(1 / n) and is reflected instead of refracted: cos(critical) = sqrt(1 - 1/n^2).
+  // The sample is replaced by a mirrored tap (uv - n.xy * 0.05), lifted slightly, weighted by a soft step.
+  let critCos = sqrt(max(1.0 - 1.0 / (nG * nG), 0.0));
+  let tirWeight = 1.0 - smoothstep(critCos - 0.06, critCos + 0.06, normal.z);
+  let tirUV = clamp(uv - normal.xy * 0.05, vec2<f32>(0.0), vec2<f32>(1.0));
+  let tirColor = textureSampleLevel(readTexture, u_sampler, tirUV, 0.0).rgb * 1.15 + vec3<f32>(0.05);
+  color = mix(color, tirColor, tirWeight * 0.7);
 
   // Exact dataTextureC persistence
   let prev = textureLoad(dataTextureC, coord, 0);

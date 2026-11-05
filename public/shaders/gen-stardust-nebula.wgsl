@@ -4,32 +4,16 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-11-01
+//  Ideas: Beer-Lambert pillar (§12.2F); ionization rim
+//  A packing: ACES display RGBA
 //  Clouds of stellar nursery gas lit from within: emission nebula
 //  colours, dark absorption pillars, and nascent star sparkle.
 //  Bass swells the pillars, treble ignites proto-star flares.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Density, y=Emission, z=StarField, w=Drift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Density, y=Emission, z=StarField, w=Drift
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -140,8 +124,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     oiii * 0.9 + sii * 0.1        // blue (OIII / SII blend)
   ) * emission * (1.0 + mids * 0.2);
 
-  // Absorption pillars darken the gas
-  col *= 1.0 - pillar * 0.85;
+  // ── Idea 1: Beer-Lambert extinction through the pillar (§12.2F)
+  let tau = pillar * (1.35 + bass * 0.45);
+  col *= exp(-tau);
+  // ── Idea 2: ionization rim — OIII cyan on the dust boundary
+  let rim = clamp(pillar * (1.0 - pillar) * 4.0, 0.0, 1.0);
+  col += vec3<f32>(0.25, 0.78, 0.95) * rim * emission * (0.45 + mids * 0.3);
 
   // Proto-star sparkle on treble
   let stars = starField(uv, starDens, treble);

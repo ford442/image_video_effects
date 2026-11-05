@@ -5,7 +5,8 @@
 //            equipotential-surfaces, dielectric-polarization, corona-discharge,
 //            click-spark-charges, held-charge, fft-band-arcs, treble-sparkle
 //  Complexity: Very High
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-11-02
+//  Ideas: electrode discs; dielectric polarization
 //
 //  A packing CHOICE: field diagnostics (not display duplicate).
 //    R = potential (scaled), G = field magnitude, B = edge+spark mix,
@@ -146,7 +147,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edge_color = mix(color_a, color_b, mix_factor);
 
   let final_edge = smoothstep(edge_threshold_base, edge_threshold_base + 0.3, edge);
-  let field_contrib = (equipotential * 0.4 + fieldLine * 0.6) * fieldMag * 0.1 + bandArcs;
+  let field_contrib_raw = (equipotential * 0.4 + fieldLine * 0.6) * fieldMag * 0.1 + bandArcs;
+  // ── Idea 1: electrode discs ──
+  // The 1/r wells are point charges. A metal cap stops the zebra at the electrode.
+  let disc1 = smoothstep(0.018, 0.0, length(uv - vec2<f32>(0.35, 0.5)));
+  let disc2 = smoothstep(0.018, 0.0, length(uv - vec2<f32>(0.65, 0.5)));
+  let disc3 = smoothstep(0.016, 0.0, dist) * (0.4 + held * 0.6);
+  let electrode = max(disc1, max(disc2, disc3));
+  let field_contrib = field_contrib_raw * (1.0 - electrode);
 
   let plasma_glow = edge_color * glow_multiplier * (final_edge + field_contrib);
   // Corona bloom packets — soft anisotropic flares on high |E|.
@@ -158,7 +166,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let result = mix(base_color.rgb * 0.2, plasma_glow + corona, clamp(final_edge + field_contrib * 0.5, 0.0, 1.0));
   let dielectric_shift = dielectric * field_contrib * 0.3 * depth;
   let glow = mouse_influence * 0.3 * edge_color * glow_multiplier * select(1.0, 1.45, held > 0.5);
-  let final_rgb = result + glow + dielectric_shift + coronaBloom * 0.65 + bandArcs * edge_color;
+  // ── Idea 2: dielectric polarization ──
+  // The photo edge lights where its normal lines up with E. Same dielectric tint as the field.
+  let gradLen = max(length(vec2<f32>(sx, sy)), 1e-4);
+  let align = abs(dot(vec2<f32>(sx, sy), eField)) / max(gradLen * max(fieldMag, 1e-4), 1e-4);
+  let polar = align * final_edge * clamp(fieldMag * 0.12, 0.0, 1.0);
+  let final_rgb = result + glow + dielectric_shift + coronaBloom * 0.65 + bandArcs * edge_color * (1.0 - electrode)
+    + dielectric * polar * 0.55
+    + vec3<f32>(0.82, 0.9, 1.0) * electrode * (0.35 + glow_multiplier * 0.2);
 
   let bloom = corona * 0.5 + vec3<f32>(spark) * edge_color + sparkle * vec3<f32>(1.0, 0.95, 0.8);
   let tonemapped = acesToneMap(final_rgb + bloom);

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-10
-//  Ideas: per-spark flash phase; true dark interval (pulse can hit 0); stroboscopic dotted path of past flashes; sky strobe veil
+//  Upgraded: 2026-11-01
+//  Ideas: per-spark flash phase; true dark interval (pulse can hit 0); stroboscopic dotted path of past flashes; sky strobe veil; blink budget; white-core fringe
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -91,14 +91,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (bAge > 0.0 && bAge < 6.0) {
       let center = vec2<f32>(bx, by+1.22);
       let fade = smoothstep(5.5, 0.3, bAge);
-      let pulse = strobePulse(bAge, flashRate, bass, 0.0);
+      let strobeFreq = 4.0 + flashRate * 12.0 + bass * 4.0;
+      // ── Idea 1: blink budget — the live strobe cuts out; the path and embers stay
+      let blinkBudget = 5.0 + flashRate * 8.0;
+      let blinkAlive = 1.0 - smoothstep(blinkBudget, blinkBudget + 2.0, bAge * strobeFreq);
+      let pulse = strobePulse(bAge, flashRate, bass, 0.0) * blinkAlive;
       let flash = pulse * energy * (1.0 + treble * 0.5);
       col += flashColor(seed, colorFlash, flash) * hexBokeh(uv, center, 0.05 + pulse * 0.04, 2.0);
+      // ── Idea 2: white magnesium core inside the colored fringe
+      col += vec3<f32>(1.0, 0.98, 0.94) * hexBokeh(uv, center, 0.016, flash * 2.2);
       // Idea 4 — sky strobe: the shell pulse lights a wide veil of sky around it.
       let skyStrobe = pulse * fade * energy * exp(-length(uv - center) * 3.2) * 0.14;
       col += flashColor(seed, colorFlash * 0.5, 1.0) * skyStrobe;
 
-      let strobeFreq = 4.0 + flashRate * 12.0 + bass * 4.0;
       let n = i32(22.0 + energy * 28.0 + mids * 10.0);
       for (var j: i32 = 0; j < n; j = j + 1) {
         let jf = f32(j);
@@ -107,7 +112,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let spd = (0.35+js*0.45)*energy;
         let vel = vec2<f32>(cos(ang),sin(ang))*spd;
         let sp = sparkPos(center, vel, bAge, GRAVITY);
-        let sparkFlash = strobePulse(bAge, flashRate, bass, js * TAU);
+        let sparkFlash = strobePulse(bAge, flashRate, bass, js * TAU) * blinkAlive;
         col += flashColor(js+time*0.05, colorFlash, sparkFlash) * hexBokeh(uv, sp, 0.005+js*0.003, fade*energy);
 
         // Idea 3 — stroboscopic dotted path: faint dots where the last flashes fired.

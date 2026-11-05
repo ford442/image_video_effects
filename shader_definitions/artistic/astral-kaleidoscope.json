@@ -2,9 +2,12 @@
   "id": "astral-kaleidoscope",
   "name": "Astral Kaleidoscope",
   "url": "shaders/astral-kaleidoscope.wgsl",
-  "description": "Cosmic kaleidoscope with astral color schemes.",
+  "description": "Depth-parallax kaleidoscope with spiral twist and light trails. Each mirror reflection loses a little energy and picks up the silvering's tint, and an end-cap mirror reflects the field's outer ring back as a tunnel ghost.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

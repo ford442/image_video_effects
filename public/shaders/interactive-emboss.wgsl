@@ -3,32 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: relief self-shadow marched toward the cursor light; Blinn point-light glint on crests with distance falloff
+//  Upgraded: 2026-10-04, 2026-11-01
+//  Ideas: relief self-shadow marched toward the cursor light; Blinn point-light glint on crests with distance falloff; ink squeeze; tooled groove
 //  A packing: ACES display RGBA (C read back as colour for the light trail)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -105,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let c = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-  // Idea 1: self-shadow. Treat luma as height and march a few texels toward
+  // Self-shadow (kept). Treat luma as height and march a few texels toward
   // the cursor light; any ridge that rises above the light ray shades this
   // pixel. The light sits lower the farther away the cursor is, so distant
   // cursors rake the plate with long shadows.
@@ -130,7 +111,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let emboss_final = clamp(result_emboss / (1.0 + max(peak - 1.0, 0.0)), vec3<f32>(0.0), vec3<f32>(1.0));
   var final_color = mix(emboss_final, c, 1.0 - mix_amt);
 
-  // Idea 2: point-light glint. A Blinn half-vector highlight from a light
+  // ── Idea 1: ink squeeze — pigment leaves the crest ──
+  let crestAmt = smoothstep(0.015, 0.09, length(grad)) * mix_amt;
+  let plateGray = dot(final_color, vec3<f32>(0.299, 0.587, 0.114));
+  final_color = mix(final_color, vec3<f32>(plateGray * 0.86), crestAmt * 0.5);
+  // ── Idea 2: tooled groove — a dark line one texel downhill ──
+  let downhill = select(vec2<f32>(0.0), -normalize(grad), length(grad) > 0.0002);
+  let grooveUV = clamp(uv + downhill * texel * 1.6, vec2<f32>(0.0), vec2<f32>(1.0));
+  let drop = max(h0 - luma(textureSampleLevel(readTexture, u_sampler, grooveUV, 0.0).rgb), 0.0);
+  let groove = smoothstep(0.008, 0.04, drop) * (1.0 - smoothstep(0.04, 0.11, drop));
+  final_color = final_color * (1.0 - groove * 0.42 * mix_amt);
+
+  // Point-light glint (kept): a Blinn half-vector highlight from a light
   // hovering above the cursor, falling off with distance; strongest on crests
   // and in shadow-free texels. Gray mode reads as pewter, colour as foil.
   let N = normalize(vec3<f32>(grad * 8.0 * (0.4 + reliefContrast * 0.6), 1.0));
@@ -152,5 +144,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let outCol = vec4<f32>(final_color, mix(alpha, prev.a * 0.9, 0.16));
   textureStore(writeTexture, pixel, outCol);
   textureStore(dataTextureA, pixel, outCol);
-  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(depth + abs(diff) * 0.08 + stamp * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(depth + abs(diff) * 0.08 + stamp * 0.05 + groove * 0.03, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

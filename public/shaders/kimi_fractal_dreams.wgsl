@@ -3,32 +3,13 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: interior lake persisted from C; fold-crease highlights on the ship axes
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: interior lake persisted from C; fold-crease highlights on the ship axes; fold-parity checker (reflection count, 12.2E); stripe-average colouring
 //  A packing: ACES display RGBA
 //  Kept: 2026-07-26 spring c, click zoom pulses, IQ trap palette, treble filaments
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Kimi Fractal Dreams - Multi-layer fractal with orbit traps
 
@@ -39,6 +20,13 @@ fn hash(p: vec2<f32>) -> f32 {
 // Complex number operations
 fn cmul(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     return vec2<f32>(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+// Engine FFT bin (0..127) from extraBuffer[5 + bin]. HEAD read plasmaBuffer[1 + layer].x for the
+// per-layer treble bins, but only plasmaBuffer[0] is ever written, so those bins were always 0.
+fn fftBin(bin: u32) -> f32 {
+    let idx = 5u + min(bin, 127u);
+    return select(0.0, extraBuffer[min(idx, arrayLength(&extraBuffer) - 1u)], arrayLength(&extraBuffer) > idx);
 }
 
 fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
@@ -188,18 +176,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var minRadius = 1000.0;
         var crease = 0.0;
         var escaped = false;
+        var foldCount = 0.0;    // 2026-11 Idea 1: how many times the orbit was reflected
+        var stripeAcc = 0.0;    // 2026-11 Idea 2: stripe-average accumulator
 
         let layerIter = iterations + layer * 20;
         // Per-bin treble: each layer listens to its own high-frequency bin
-        let binGlow = plasmaBuffer[1u + u32(layer)].x;
+        let binGlow = fftBin(48u + u32(layer) * 16u);
 
         for (var i = 0; i < layerIter; i++) {
             // Fold creases: the ship reflects across both axes. Orbits that
             // pass those axes leave a bright seam.
             crease = max(crease, exp(-abs(z.x) * 36.0) + exp(-abs(z.y) * 36.0));
             // Burning Ship variant with Julia
+            foldCount += f32(z.x < 0.0) + f32(z.y < 0.0);
             z = vec2<f32>(abs(z.x), abs(z.y));
             z = cmul(z, z) + layerC;
+            stripeAcc += 0.5 + 0.5 * sin(5.0 * atan2(z.y, z.x));
 
             // Additional complexity (cdiv is epsilon-guarded against NaN)
             if (complexity > 1.5) {
@@ -238,6 +230,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                           * (0.25 + treble * 1.2 + binGlow * 2.0) * glowGain;
 
                 layerCol = layerCol + vec3<f32>(1.0, 0.92, 0.75) * crease * 0.22 * glowGain;
+
+                // 2026-11 Idea 1: fold-parity checker. Odd and even reflection counts swap the colour
+                // channels, tiling the escape region into mirrored-chirality regions.
+                let foldParity = step(0.25, fract(foldCount * 0.5));
+                layerCol = mix(layerCol, layerCol.bgr, foldParity * 0.5);
+                // 2026-11 Idea 2: stripe-average colouring. Mean of 0.5 + 0.5 sin(5 arg z) over the
+                // orbit modulates the light: the fine wood-grain of stripe-average Julia colouring.
+                let stripe = stripeAcc / f32(i + 1);
+                layerCol = layerCol * (0.7 + 0.6 * stripe);
 
                 let weight = 1.0 / (1.0 + fi);
                 col += layerCol * weight;

@@ -4,11 +4,9 @@
 //  Features: mouse-driven, audio-reactive, temporal-flicker,
 //            depth-rainbow, chromatic-ghosting, interference-fringes,
 //            scanline-jitter, temporal-rgb-offset, upgraded-rgba
-//  Ideas:    1. laser mode-hop — on flicker events the projector snaps between discrete
-//               laser lines; fringe and emblem spacing scale with the wavelength
-//            2. per-channel phosphor persistence — R/G/B trails decay at their own rates
-//               (replaces the additive ghost that washed the image out)
-//            3. vertical-hold slip — a band of rows slips and snaps back, with a tear line
+//  Upgraded: 2026-11-01
+//  Ideas: laser mode-hop; per-channel phosphor persistence; vertical-hold slip; wavelength speckle; red phosphor smear
+//  A packing: ACES display RGBA (phosphor compares C in display space)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -141,7 +139,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // are compared in display space: red phosphor lingers longest, blue fades
   // fastest. Ghost Amount sets how long they all last.
   let phosphorDecay = vec3<f32>(0.9, 0.8, 0.62) * (0.5 + ghostAmt * 0.45);
-  let ghostColor = vec3<f32>(rGhost, prevCenter.g, bGhost) * phosphorDecay;
+  // ── Idea 5: red phosphor smear ────────────────────────────────────
+  // Red is the slow channel. A few pixels back along the scan still glow.
+  let smearCoord = clamp(pixel - vec2<i32>(3, 0), vec2<i32>(0), maxCoord);
+  let redSmear = textureLoad(dataTextureC, smearCoord, 0).r;
+  let ghostColor = vec3<f32>(
+    max(rGhost, redSmear * (0.35 + ghostAmt * 0.45)),
+    prevCenter.g,
+    bGhost
+  ) * phosphorDecay;
 
   // Prismatic depth rainbow
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -165,6 +171,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var finalRGB = rgb * laserTint * (0.9 + 0.2 * fringe * hologramIntensity) + geoColor
                + (rainbow * (abs(rippleEffect) * 0.75))
                + laserCol * (hopFlash * 0.25 * hologramIntensity + tearLine * 0.8);
+
+  // ── Idea 4: wavelength speckle ────────────────────────────────────
+  // Grain cells scale with the hopped laser line (longer wavelength, coarser).
+  // Treble boils the field by crossfading two stable seeds.
+  let speckP = vec2<f32>(global_id.xy) * (532.0 / laserLambda) / 3.0;
+  let boil = time * (0.45 + treble * 1.1);
+  let seedA = hash21(floor(speckP) + floor(boil) * vec2<f32>(17.0, 3.0));
+  let seedB = hash21(floor(speckP) + (floor(boil) + 1.0) * vec2<f32>(17.0, 3.0));
+  let speckH = mix(seedA, seedB, fract(boil));
+  let speckI = -log(max(1.0 - speckH, 0.04));
+  finalRGB = mix(finalRGB, finalRGB * speckI, 0.22 * hologramIntensity);
+
   finalRGB = mix(finalRGB, vec3<f32>(0.02, 0.05, 0.1) * luma, blackout);
 
   // ACES Tonemapping, then phosphor persistence in display space.

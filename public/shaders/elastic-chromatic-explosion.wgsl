@@ -3,29 +3,13 @@
 //  Category: advanced-hybrid
 //  Features: chromatic-lag, prism-explosion, mouse-driven, temporal, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-23 (Batch 68: sprung prism focus, bounded shocks, semantic alpha)
+//  Upgraded: 2026-08-23, 2026-11-01
+//  Ideas: velocity smear along the spring; fringe spends the core
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=BaseLagR, y=BaseLagB, z=PrismStrength, w=SaturationBoost
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BaseLagR, y=BaseLagB, z=PrismStrength, w=SaturationBoost
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -129,9 +113,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // Prismatic dispersion coordinates
-  let uv_r = clamp(prism_displace(uv, mouse_pos, -1.2, prism_str, aspect_vec) + r_shock, vec2<f32>(0.001), vec2<f32>(0.999));
+  let uv_r0 = clamp(prism_displace(uv, mouse_pos, -1.2, prism_str, aspect_vec) + r_shock, vec2<f32>(0.001), vec2<f32>(0.999));
   let uv_g = clamp(prism_displace(uv, mouse_pos, 0.0, prism_str, aspect_vec) + g_shock, vec2<f32>(0.001), vec2<f32>(0.999));
-  let uv_b = clamp(prism_displace(uv, mouse_pos, 1.2, prism_str, aspect_vec) + b_shock, vec2<f32>(0.001), vec2<f32>(0.999));
+  let uv_b0 = clamp(prism_displace(uv, mouse_pos, 1.2, prism_str, aspect_vec) + b_shock, vec2<f32>(0.001), vec2<f32>(0.999));
+
+  // ── Idea 1: velocity smear. The sprung prism overshoots along spring_vel.
+  let smear = clamp(spring_vel, vec2<f32>(-0.45), vec2<f32>(0.45)) * 0.045;
+  let uv_r = clamp(uv_r0 + smear, vec2<f32>(0.001), vec2<f32>(0.999));
+  let uv_b = clamp(uv_b0 - smear * 0.65, vec2<f32>(0.001), vec2<f32>(0.999));
 
   let live_r = textureSampleLevel(readTexture, u_sampler, uv_r, 0.0).r;
   let live_g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
@@ -150,6 +139,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Prismatic caustic highlight
   let caustic = max(0.0, length(vec3<f32>(out_r - live_g, 0.0, out_b - live_g))) * 2.5;
+  // ── Idea 2: the fringe spends the core before the highlight is added.
+  let spentLuma = dot(col, vec3<f32>(0.2126, 0.7152, 0.0722));
+  col = mix(col, vec3<f32>(spentLuma), clamp(caustic * 0.22, 0.0, 0.4));
   col += vec3<f32>(1.0, 0.85, 0.95) * caustic * (0.3 + 0.7 * is_down) * (1.0 + mids * 0.4);
 
   col = acesToneMap(max(col, vec3<f32>(0.0)));

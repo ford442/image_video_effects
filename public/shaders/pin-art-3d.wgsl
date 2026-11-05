@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: 3D-pin-art, specular-lighting, audio-reactive, mouse-interactive, depth-aware, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-09-08
-//  Ideas: neighbor-pin occlusion; pin shaft under the cap
+//  Upgraded: 2026-09-08, 2026-11-01
+//  Ideas: neighbor-pin occlusion; pin shaft under the cap; friction steps; cap rim
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -69,12 +69,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Bass-driven pin vibration
     let vibration = bass * 0.08 * sin(u.config.x * 20.0 + f32(cell_id.x) * 3.7 + f32(cell_id.y) * 2.3);
-    let height = clamp(luma - push + vibration, 0.0, 1.0);
+    let heightRaw = clamp(luma - push + vibration, 0.0, 1.0);
+    // ── Idea 1: friction steps — pins sit on discrete shelves ──
+    let pinSteps = 7.0;
+    let height = floor(heightRaw * pinSteps + 0.001) / pinSteps;
 
     let westUv = clamp(sample_uv - vec2<f32>(1.0 / max(density * aspect, 0.001), 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let northUv = clamp(sample_uv + vec2<f32>(0.0, 1.0 / max(density, 0.001)), vec2<f32>(0.0), vec2<f32>(1.0));
-    let hWest = luminance(textureSampleLevel(readTexture, u_sampler, westUv, 0.0).rgb);
-    let hNorth = luminance(textureSampleLevel(readTexture, u_sampler, northUv, 0.0).rgb);
+    let hWest = floor(clamp(luminance(textureSampleLevel(readTexture, u_sampler, westUv, 0.0).rgb), 0.0, 1.0) * pinSteps + 0.001) / pinSteps;
+    let hNorth = floor(clamp(luminance(textureSampleLevel(readTexture, u_sampler, northUv, 0.0).rgb), 0.0, 1.0) * pinSteps + 0.001) / pinSteps;
     let occWest = max(hWest - height, 0.0) * step(cell_local.x, 0.0);
     let occNorth = max(hNorth - height, 0.0) * step(0.0, cell_local.y);
     let neighborOcc = clamp(occWest + occNorth, 0.0, 1.0);
@@ -137,6 +140,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     final_color = mix(final_color, ca_pin, pin_mask);
     final_color *= 1.0 - neighborOcc * 0.38;
+
+    // ── Idea 2: cap rim — machined equator of the pin head ──
+    let equator = length(normal.xy);
+    let capRim = pin_mask * smoothstep(0.28, 0.62, equator) * (1.0 - smoothstep(0.62, 0.92, equator));
+    final_color = mix(final_color, final_color * vec3<f32>(0.42, 0.44, 0.48), capRim * (0.35 + metallic * 0.4));
 
     let shaftR = pin_radius * 0.38;
     let shaftMask = (1.0 - smoothstep(shaftR - aa, shaftR + aa, abs(cell_local.x)))

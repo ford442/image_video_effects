@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: recursive hopper terraces; crystallographic oxide zoning
+//  Upgraded: 2026-11-01
+//  Ideas: face-local hopper ledges; twin-plane interference glints
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-    zoom_params: vec4<f32>,  // .x = Growth, .y = Audio React, .z = Twist, .w = Iridescence
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Growth, .y = Audio React, .z = Twist, .w = Iridescence
 
 const PI: f32 = 3.14159265359;
 const MAX_STEPS: i32 = 100;
@@ -48,6 +30,7 @@ fn smin(a: f32, b: f32, k: f32) -> f32 {
 
 var<private> g_hopper: f32 = 0.0;
 var<private> g_facet: f32 = 0.0;
+var<private> g_face_pos: vec3<f32> = vec3<f32>(0.0);
 
 fn sdBox(p: vec3<f32>, b: vec3<f32>) -> f32 {
     let q = abs(p) - b;
@@ -109,6 +92,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, mouse_pos: vec3<f32>) -> f32 {
     let aq = abs(q);
     let dominant = max(aq.x, max(aq.y, aq.z));
     g_facet = dominant;
+    g_face_pos = q / max(b.x, 0.001);
     var hopper = 0.0;
     for (var k = 0; k < 3; k++) {
         let band = 0.22 + f32(k) * 0.22;
@@ -236,13 +220,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Fresnel
         let fresnel = pow(1.0 - max(dot(n, v), 0.0), 5.0);
 
+        // Project the folded box onto its dominant face for square hopper ledges.
+        let face_abs = abs(g_face_pos);
+        var face = g_face_pos.xy;
+        if (face_abs.x >= face_abs.y && face_abs.x >= face_abs.z) {
+            face = g_face_pos.yz;
+        } else if (face_abs.y >= face_abs.z) {
+            face = g_face_pos.xz;
+        }
+        let terrace_phase = fract(max(abs(face.x), abs(face.y)) * 4.0);
+        let ledge = 1.0 - smoothstep(0.0, 0.12, min(terrace_phase, 1.0 - terrace_phase));
+        let tread = smoothstep(0.12, 0.88, terrace_phase);
+
         // Combine lighting and iridescence
-        col = irid_col * (diff + amb) + vec3<f32>(1.0) * fresnel * 0.5;
+        col = irid_col * (diff + amb) * mix(0.72, 1.0, tread) + vec3<f32>(1.0) * fresnel * 0.5;
+        col += mix(irid_col, vec3<f32>(0.9, 0.8, 0.65), 0.45) * ledge * (0.25 + 0.45 * diff);
 
         // Specular
         let r_dir = reflect(-light_dir, n);
         let spec = pow(max(dot(v, r_dir), 0.0), 32.0);
         col += vec3<f32>(1.0) * spec;
+
+        // Twin planes cross the folded face and catch view-dependent interference.
+        let twin_distance = abs(abs(face.x) - abs(face.y));
+        let twin = 1.0 - smoothstep(0.015, 0.065, twin_distance);
+        let twin_film = palette((film_thickness + 0.28) * iridescence_strength);
+        col += twin_film * twin * (0.18 + 0.45 * fresnel + 0.35 * spec);
 
         // Fake SSS or ambient occlusion based on step count
         let ao = 1.0 - f32(steps_taken) / f32(MAX_STEPS);
@@ -256,11 +259,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // TAA / Accumulation (simple temporal blend if previous frame exists)
     let base_uv = vec2<f32>(global_id.xy) / resolution; // Use original UV for texture fetch
-    let prev_color = textureSampleLevel(readTexture, non_filtering_sampler, base_uv, 0.0).rgb;
+    let prev_color = textureSampleLevel(readTexture, non_filtering_sampler, base_uv, 0.0);
 
     // Blend current frame with previous for TAA effect
-    let blend_factor = 0.8; // High blend for slow mutation feel
-    col = mix(col, prev_color, blend_factor);
+    let blend_factor = 0.8 * clamp(prev_color.a, 0.0, 1.0); // High blend for slow mutation feel
+    col = mix(col, prev_color.rgb, blend_factor);
 
     // Tonemapping
     col = acesToneMap(col);

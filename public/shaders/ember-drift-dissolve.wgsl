@@ -16,6 +16,8 @@
 //    - Held furnace: stronger rise + birth under cursor
 //    - Richer white-hot → amber → ash palette; deeper crackle / ash wisps
 //    - ACES on writeTexture only; A packing never tonemapped
+//  Upgraded: 2026-11-01
+//  Ideas: hot-band rise; scorch stain
 //  A packing (SACRED — do not tonemap):
 //    dataTextureA = (age, lateral, intensity, glow)
 //    dataTextureC is previous A (engine copy). Exact texel loads only.
@@ -80,6 +82,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     heatFlow.y *= 1.0 + mouseMask * 0.8 + furnaceMask * 1.4;
     heatFlow.x += mouseMask * sin(time * 3.1 + uv.y * 9.0) * 0.006;
     heatFlow.x += furnaceMask * sin(time * 7.0 + uv.y * 14.0) * 0.01;
+    // ── Idea 1: hot-band rise — white-hot parcels climb; ash stalls
+    let hotBand = smoothstep(0.06, 0.22, prev.r) * (1.0 - smoothstep(0.48, 0.88, prev.r));
+    heatFlow.y *= 1.0 + hotBand * (0.7 + heat * 0.45);
 
     // Sample previous location (advection) via exact texel load
     let prevUV = clamp(uv - heatFlow * 1.6, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -156,6 +161,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Band crackle flashes + cooler ash wisps
     col += emberCol * crackle * 0.4;
     col += coolAsh * ashWisp * 0.55;
+
+    // ── Idea 2: scorch stain — the photo stays burned where the ember was
+    let scorch = smoothstep(0.25, 0.8, prev.r) * (1.0 - smoothstep(0.05, 0.45, intensity));
+    col = mix(col, col * vec3<f32>(0.62, 0.40, 0.24), scorch * 0.4);
 
     // Heat haze on rising areas
     let haze = intensity * 0.12 * (1.0 - depth);

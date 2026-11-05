@@ -3,28 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: Cauchy dispersion (§12.2F); total-internal-reflection flash
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -45,6 +29,13 @@ fn snellRefract(incident: vec2<f32>, n: vec2<f32>, n1: f32, n2: f32) -> vec2<f32
   let sinT2 = eta * eta * (1.0 - cosI * cosI);
   let cosT = sqrt(max(0.0, 1.0 - sinT2));
   return incident * eta + n * (eta * cosI - cosT);
+}
+
+// n(λ) = 1 + B/λ², relative to green. λ in µm.
+fn cauchyRel(bCoeff: f32) -> vec3<f32> {
+  let lam2 = vec3<f32>(0.4225, 0.3025, 0.2025);
+  let n = vec3<f32>(1.0) + vec3<f32>(bCoeff) / lam2;
+  return n / max(n.y, 0.001);
 }
 
 fn wavelengthToRGB(wavelength: f32) -> vec3<f32> {
@@ -83,44 +74,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
   let time = u.config.x;
-  
-  if (gid.x == 0u && gid.y == 0u) {
-    let dt = 0.016;
-    let target = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    let is_held = u.zoom_config.w > 0.0;
-    
-    var pos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    
-    let k = 120.0;
-    let b = 10.0;
-    let force = (target - pos) * k - vel * b;
-    vel += force * dt;
-    pos += vel * dt;
-    
-    pos = clamp(pos, vec2<f32>(0.0), vec2<f32>(1.0));
-    
-    extraBuffer[133] = pos.x;
-    extraBuffer[134] = pos.y;
-    extraBuffer[135] = vel.x;
-    extraBuffer[136] = vel.y;
-    
-    var held_val = extraBuffer[137];
-    if (is_held) {
-      held_val += dt * 3.0;
-    } else {
-      held_val -= dt * 2.0;
-    }
-    extraBuffer[137] = clamp(held_val, 0.0, 1.0);
-  }
-
   let uv = vec2<f32>(gid.xy) / dims;
   let aspect = dims.x / dims.y;
   let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
   let bass = audio.x;
   let mids = audio.y;
   let treble = audio.z;
-  let bin1 = plasmaBuffer[1].x;
   
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let facets = max(3.0, floor(mix(3.0, 12.0, u.zoom_params.x)));
@@ -128,8 +87,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let rotationSpeed = u.zoom_params.z;
   let holoContrast = u.zoom_params.w;
 
-  let smooth_mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  let held_intensity = extraBuffer[137];
+  // Live pointer. The extraBuffer spring was cleared by the host every frame.
+  let smooth_mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+  let held_intensity = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
   let center = vec2<f32>(0.5, 0.5) + (smooth_mouse - 0.5) * 0.2 * (1.0 + depth * 0.5);
   let p = (uv - center) * vec2<f32>(aspect, 1.0);
@@ -147,6 +107,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prismNormal = vec2<f32>(cos(facet * 3.14159265 + 1.570796), sin(facet * 3.14159265 + 1.570796));
   let incident = normalize(p + vec2<f32>(0.001, 0.0));
   let refracted = snellRefract(incident, prismNormal, n1, n2);
+  // Exit refraction is glass into air. Past the critical angle the facet mirrors.
+  let etaOut = n2 / max(n1, 0.001);
+  let cosI = clamp(abs(dot(incident, prismNormal)), 0.0, 1.0);
+  let sinOut = etaOut * etaOut * (1.0 - cosI * cosI);
+  // ── Idea 2: TIR flash ─────────────────────────────────────────────
+  let tir = smoothstep(0.92, 1.08, sinOut);
 
   let facetWarp = vec2<f32>(refracted.x / aspect, refracted.y) * (0.025 + bass * 0.015 + held_intensity * 0.02) / (dist + 0.1);
   let holoSpeckle = hash12(floor(uv * 256.0 + fract(sin(time * 0.5) * 1000.0))) * 2.0 - 1.0;
@@ -159,8 +125,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let baseUV = clamp(uv + facetWarp + glitchJitter, vec2<f32>(0.001), vec2<f32>(0.999));
 
-  let rShift = refracted * dispersion * 0.8 / (dist + 0.1);
-  let bShift = refracted * dispersion * 1.2 / (dist + 0.1);
+  // ── Idea 1: Cauchy dispersion (§12.2F) ───────────────────────────
+  // Dispersion is B in n(λ) = 1 + B/λ². Green stays the reference.
+  let rel = cauchyRel(mix(0.04, 0.32, clamp(u.zoom_params.y, 0.0, 1.0)));
+  let rShift = refracted * dispersion * rel.x / (dist + 0.1);
+  let bShift = refracted * dispersion * rel.z / (dist + 0.1);
 
   let uvR = clamp(baseUV + vec2<f32>(rShift.x / aspect, rShift.y) * 0.03, vec2<f32>(0.001), vec2<f32>(0.999));
   let uvG = baseUV;
@@ -180,7 +149,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let holoFringe = caustic * interference * (0.5 + treble * 0.5) * speckleMask;
 
   let shardRing = smoothstep(0.08, 0.0, abs(dist - (0.18 + bass * 0.08))) + shapeEdge * 0.5;
-  let bloom = vec3<f32>(1.0, 0.92, 0.55) * shardRing * (0.2 + mids * 0.3) * (1.0 + bin1 * 2.0);
+  let bloom = vec3<f32>(1.0, 0.92, 0.55) * shardRing * (0.2 + mids * 0.3) * (1.0 + treble * 0.4);
 
   var clickFront = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
@@ -201,8 +170,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var finalColor = sampled * (0.75 + caustic.b * 0.15) + caustic * 0.7 + holoFringe + bloom + shapeGlow;
   finalColor += spectral * (abs(clockRings) * 0.1 + min(clickFront, 1.5) * 0.35);
+  let tirMask = tir * smoothstep(0.14, 0.0, abs(shapeDist));
+  finalColor = mix(finalColor, wavelengthColor * (0.85 + bass * 0.4), tirMask * 0.8);
   
-  finalColor = acesTonemap(finalColor * 1.25);
+  finalColor = acesTonemap(max(finalColor, vec3<f32>(0.0)) * 1.25);
 
   let dispersionAlpha = length(caustic) * 0.6 + shardRing * 0.3 + speckleMask * 0.15 + clickFront * 0.3 + shapeEdge * 0.5;
   let finalAlpha = clamp(dispersionAlpha * holoContrast + held_intensity * 0.2 + bass * 0.1, 0.0, 1.0);

@@ -38,6 +38,13 @@
       "failure_note": "Needs WebGPU to render"
     },
     {
+      "id": "gen-bioluminescent-mycelial-nexus",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-04",
+      "expires": "2026-12-04",
+      "reason": "other"
+    },
+    {
       "id": "gen-bioluminescent-neural-coral-matrix",
       "added_by": "Jules",
       "deferred_at": "2026-10-20",
@@ -177,6 +184,13 @@
       "renewals": 1,
       "renewed_at": "2026-09-26",
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-stellar-cyber-lotus-forge",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-02",
+      "expires": "2026-12-02",
+      "reason": "other"
     },
     {
       "id": "gen-stellar-mycelium-overdrive",

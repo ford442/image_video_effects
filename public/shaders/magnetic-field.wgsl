@@ -4,6 +4,9 @@
 //  Features: animated, physics, mouse-driven, audio-reactive, curl-noise, field-lines, upgraded-rgba, temporal
 //  Complexity: High
 //  Upgraded: 2026-08-16 (Batch 52: Multi-pole magnetic field, Lorentz particle conveyor, exact C load)
+//  Upgraded: 2026-11-01
+//  Ideas (2026-11): pole beacons (polarity-coloured glow pulsing with each pole's FFT bin); continuous mode (one-sided cross-fade between the four field modes)
+//  A packing: ACES display RGBA in A (C read as colour history), B = (b.x, b.y, line, |B|) - unchanged
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -40,26 +43,16 @@
 //       strong and stall in the weak regions.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=FieldStrength, y=Radius, z=FieldDensity, w=Mode
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=FieldStrength, y=Radius, z=FieldDensity, w=Mode
-  ripples: array<vec4<f32>, 50>,
-};
+// FFT band k (0..7): engine FFT bins live in extraBuffer[5 .. 132] (bin 0 at [5]). HEAD read
+// plasmaBuffer[k + 1].x for these, but only plasmaBuffer[0] is ever written, so every "per-band"
+// term was a constant zero. Bins 0, 4, 8 ... 28 spread the eight bands from bass to upper mids.
+fn fftBand(k: u32) -> f32 {
+  let idx = 5u + (k % 8u) * 4u;
+  return select(0.0, extraBuffer[min(idx, arrayLength(&extraBuffer) - 1u)], arrayLength(&extraBuffer) > idx);
+}
 
 fn aces_film(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -113,39 +106,71 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouse_corr = mouse_pos * aspect_vec;
 
   // Multi-pole configuration
-  var b_field = vec2<f32>(0.0);
   let pole_dist = 0.12 * (1.0 + mids * 0.3);
+
+  // 2026-11 Idea 2: continuous mode. HEAD hard-switched between four fields. Each mode now
+  // cross-fades into the next over the 0.1 just BELOW its threshold (0.25 / 0.5 / 0.75), so at
+  // and above a threshold the field is exactly HEAD's and only the hop itself became a blend.
+  let mode_s1 = smoothstep(0.15, 0.25, mode_val);
+  let mode_s2 = smoothstep(0.40, 0.50, mode_val);
+  let mode_s3 = smoothstep(0.65, 0.75, mode_val);
+  let mode_w0 = (1.0 - mode_s1) * (1.0 - mode_s2) * (1.0 - mode_s3);
+  let mode_w1 = mode_s1 * (1.0 - mode_s2) * (1.0 - mode_s3);
+  let mode_w2 = mode_s2 * (1.0 - mode_s3);
+
+  var f0 = vec2<f32>(0.0);
+  var f1 = vec2<f32>(0.0);
+  var f2 = vec2<f32>(0.0);
+  var f3 = vec2<f32>(0.0);
+
+  // 2026-11 Idea 1: pole beacons. The poles each mode already places (and, in the quadrupole,
+  // already gives an FFT bin) were invisible. Each gets a small glow, N warm / S cool, pulsing
+  // with its own FFT bin.
+  let pole_n_col = vec3<f32>(1.0, 0.55, 0.25);
+  let pole_s_col = vec3<f32>(0.3, 0.6, 1.0);
+  var pole_glow = vec3<f32>(0.0);
 
   if (mode_val < 0.25) {
     // Mode 0: Monopole radial field
     let r_v = p_corr - mouse_corr;
     let r_len = length(r_v);
-    b_field = select(vec2<f32>(0.0), r_v / max(r_len * r_len * r_len, 0.005), r_len > 0.001);
-  } else if (mode_val < 0.5) {
+    f0 = select(vec2<f32>(0.0), r_v / max(r_len * r_len * r_len, 0.005), r_len > 0.001);
+    pole_glow += pole_n_col * exp(-r_len * r_len / 0.0006) * (0.35 + fftBand(0u) * 1.0) * mode_w0;
+  }
+  if (mode_val >= 0.15 && mode_val < 0.5) {
     // Mode 1: Dipole (+ / - pair)
     let m1 = vec2<f32>(cos(t * 0.8), sin(t * 0.8));
     let pos_north = mouse_corr + vec2<f32>(-sin(t * 0.5), cos(t * 0.5)) * pole_dist;
     let pos_south = mouse_corr - vec2<f32>(-sin(t * 0.5), cos(t * 0.5)) * pole_dist;
-    b_field = dipole_b(p_corr, pos_north, m1) - dipole_b(p_corr, pos_south, m1);
-  } else if (mode_val < 0.75) {
+    f1 = dipole_b(p_corr, pos_north, m1) - dipole_b(p_corr, pos_south, m1);
+    let dn = length(p_corr - pos_north);
+    let ds = length(p_corr - pos_south);
+    pole_glow += (pole_n_col * exp(-dn * dn / 0.0006) * (0.35 + fftBand(0u) * 1.0)
+               + pole_s_col * exp(-ds * ds / 0.0006) * (0.35 + fftBand(1u) * 1.0)) * mode_w1;
+  }
+  if (mode_val >= 0.40 && mode_val < 0.75) {
     // Mode 2: Quadrupole (4 orbiting poles)
     for (var k = 0.0; k < 4.0; k += 1.0) {
       let angle = t * 0.6 + k * 1.5707963;
       let pos_k = mouse_corr + vec2<f32>(cos(angle), sin(angle)) * pole_dist * 1.2;
       let sign_k = select(-1.0, 1.0, k % 2.0 < 0.5);
       // Structure 1: pole k draws its moment strength from FFT bin k.
-      let pole_band = plasmaBuffer[(u32(k) % 8u) + 1u].x;
+      let pole_band = fftBand(u32(k));
       let m_k = vec2<f32>(-sin(angle), cos(angle)) * sign_k * (0.55 + pole_band * 1.6);
-      b_field += dipole_b(p_corr, pos_k, m_k);
+      f2 += dipole_b(p_corr, pos_k, m_k);
+      let dk = length(p_corr - pos_k);
+      pole_glow += select(pole_s_col, pole_n_col, sign_k > 0.0) * exp(-dk * dk / 0.0006) * (0.35 + pole_band * 1.0) * mode_w2;
     }
-  } else {
+  }
+  if (mode_val >= 0.65) {
     // Mode 3: Solenoid helical vortex field
     let r_v = p_corr - mouse_corr;
     let r_len = length(r_v);
     let rot_v = vec2<f32>(-r_v.y, r_v.x) / max(r_len * r_len, 0.005);
     let rad_v = r_v / max(r_len * r_len, 0.005) * sin(r_len * density - t * 3.0);
-    b_field = rot_v * 0.7 + rad_v * 0.3;
+    f3 = rot_v * 0.7 + rad_v * 0.3;
   }
+  let b_field = mix(mix(mix(f0, f1, mode_s1), f2, mode_s2), f3, mode_s3);
 
   // Click pulse fronts (capped at 50)
   var click_flux = 0.0;
@@ -203,11 +228,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Temporal history — now a real colour history (see header: this used to
   // blend the raw B-field vector into RGB).
   final_color = mix(final_color, prev_state.rgb, 0.1);
+  final_color += pole_glow;
 
   final_color = aces_film(final_color);
 
   // Semantic alpha: field lines and tracers are the content.
-  let substance = clamp(line_sharp * 0.8 + tracer * 0.7 + abs(click_flux) * 0.5, 0.0, 1.0);
+  let substance = clamp(line_sharp * 0.8 + tracer * 0.7 + abs(click_flux) * 0.5 + max(pole_glow.r, max(pole_glow.g, pole_glow.b)) * 0.6, 0.0, 1.0);
   let out_alpha = clamp(mix(src_alpha, 1.0, substance), 0.0, 1.0);
   let out_rgba = vec4<f32>(final_color, out_alpha);
   let out_depth = clamp(depth_tex + line_sharp * 0.25, 0.0, 1.0);

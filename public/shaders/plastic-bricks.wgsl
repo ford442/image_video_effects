@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: hollow underside tubes; injection knit-line
+//  Upgraded: 2026-09-08, 2026-11-01
+//  Ideas: hollow underside tubes; injection knit-line; stud pip; parting line
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -80,6 +80,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tubes = tubeRing * bodyMask * (1.0 - studMask);
   let knit = (1.0 - smoothstep(0.0, 0.016 + bevel * 0.12, abs(cell.y - 0.045 * sin(cell.x * 18.0))))
     * bodyMask * (1.0 - studMask);
+  // ── Idea 1: stud pip — injection gate recess on the stud crown ──
+  let pipR = studSize * 0.16;
+  let pip = (1.0 - smoothstep(pipR, pipR + max(bevel * 0.35, 0.004), studDist)) * studMask;
+  // ── Idea 2: parting line — vertical mold flash on the shell ──
+  let parting = (1.0 - smoothstep(0.0, 0.012 + bevel * 0.05, abs(cell.x))) * bodyMask * (1.0 - studMask);
 
   let centerUV = clamp((brickId + 0.5) / density, vec2<f32>(0.0), vec2<f32>(1.0));
   let baseColor = textureSampleLevel(readTexture, u_sampler, centerUV, 0.0).rgb;
@@ -112,11 +117,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor + sss;
 
   let reliefMask = clamp(bodyMask * relief + studMask * (relief + 0.3), 0.0, 1.0);
-  let ao = studCavityAO * (1.0 - cornerAO) * (1.0 - tubes * 0.45);
+  let ao = studCavityAO * (1.0 - cornerAO) * (1.0 - tubes * 0.45) * (1.0 - pip * 0.25);
   finalColor = finalColor * ao;
   finalColor = mix(finalColor, finalColor * vec3<f32>(0.55, 0.58, 0.62), tubes * 0.7);
   finalColor = mix(finalColor, finalColor * vec3<f32>(0.72, 0.74, 0.78), knit * 0.55);
   finalColor += vec3<f32>(0.18, 0.2, 0.22) * knit * plasticGloss * 0.25;
+  finalColor = mix(finalColor, finalColor * vec3<f32>(0.58, 0.6, 0.64), pip * 0.8);
+  finalColor = mix(finalColor, finalColor * vec3<f32>(0.68, 0.72, 0.78), parting * 0.62);
+  finalColor = finalColor + vec3<f32>(0.85, 0.92, 1.0) * parting * plasticGloss * 0.14;
 
   let depthOut = clamp(mix(depth, 0.18 + reliefMask * 0.78 + deconstruct * 0.05, 0.4), 0.0, 1.0);
 

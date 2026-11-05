@@ -41,7 +41,9 @@
     "multi-tap-temporal",
     "lens-distortion",
     "motion-trails",
-    "audio-reverb"
+    "audio-reverb",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",
@@ -51,5 +53,39 @@
     "reverb",
     "distortion",
     "audio-reactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "id": "sepStrength",
+          "name": "RGB Split",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "decay",
+          "name": "Trail Decay",
+          "default": 0.8,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "speed",
+          "name": "Shift Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "id": "mouseInf",
+          "name": "Mouse Influence",
+          "default": 0.8,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

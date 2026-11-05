@@ -9,29 +9,16 @@
 //               silhouettes (HEAD's "edge" glow lit flat regions)
 //            3. layer fade window — each layer fades in at zoom 1× and out at 5×, so the
 //               fract() wrap no longer pops
+//            4. facet specular glints — each tile has a hashed tilt normal; a sweeping light lights
+//               Blinn glints on the tiles whose normal meets the half-vector (2026-11)
+//            5. Cauchy-weighted tile split — R moves 0.57 of what B moves (HEAD: equal and opposite) (2026-11)
+//  A packing: ACES display RGBA (unchanged)
+//  Upgraded: 2026-10-04, 2026-11-01
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=MinSpeed, y=MaxSpeed, z=SaturationBoost, w=FogDensity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=MinSpeed, y=MaxSpeed, z=SaturationBoost, w=FogDensity
 
 fn pingPong(a: f32) -> f32 {
   return 1.0 - abs(fract(a * 0.5) * 2.0 - 1.0);
@@ -162,11 +149,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let tileLocal = fract(tileCoord) - 0.5;
     let prismAngle = hash21(tileId + f32(layer) * 11.0) * 6.2831853;
     let prismDir = vec2<f32>(cos(prismAngle) / aspect, sin(prismAngle)) * tileDisp * (0.5 + layerDepth) / layerZoom;
-    let tr = textureSampleLevel(readTexture, u_sampler, pingPongV2(transformed + prismDir), 0.0).r;
+    // Idea 5 (2026-11): Cauchy weighting. n(lambda) - n(550) is -0.28 (650 nm) vs +0.49 (450 nm), so red
+    // moves 0.57 of what blue moves along the tile axis.
+    let tr = textureSampleLevel(readTexture, u_sampler, pingPongV2(transformed + prismDir * 0.57), 0.0).r;
     let tg = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
     let tb = textureSampleLevel(readTexture, u_sampler, pingPongV2(transformed - prismDir), 0.0).b;
     let tileSeam = smoothstep(0.44, 0.5, max(abs(tileLocal.x), abs(tileLocal.y)));
-    let sampleColor = vec3<f32>(tr, tg, tb) * (1.0 - tileSeam * 0.5);
+    // Idea 4 (2026-11): facet specular glints. Each tile is a flat facet with its own hashed tilt; a light
+    // sweeping with time lights a Blinn highlight (pow 64) on the facets whose normal meets the
+    // half-vector, treble-gated, kept off the seam.
+    let facetN = normalize(vec3<f32>((hash21(tileId + 7.1) - 0.5) * 1.2, (hash21(tileId + 3.3) - 0.5) * 1.2, 1.0));
+    let facetLight = normalize(vec3<f32>(cos(time * 0.7 + f32(layer)), sin(time * 0.5), 0.8));
+    let facetHalf = normalize(facetLight + vec3<f32>(0.0, 0.0, 1.0));
+    let facetSpec = pow(max(dot(facetN, facetHalf), 0.0), 64.0) * (1.0 - tileSeam);
+    let sampleColor = vec3<f32>(tr, tg, tb) * (1.0 - tileSeam * 0.5)
+                    + vec3<f32>(1.0, 0.97, 0.9) * facetSpec * (0.25 + treble * 0.9);
     let sampleDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
 
     // Idea 3: layer fade window. A layer fades in as it is born at 1× zoom and

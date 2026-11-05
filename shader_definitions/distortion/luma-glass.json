@@ -7,9 +7,11 @@
     "audio-reactive",
     "depth-aware",
     "upgraded-rgba",
-    "temporal"
+    "temporal",
+    "fresnel-reflection",
+    "double-glint"
   ],
-  "description": "The image seen through glass embossed by its own luminance: luma-gradient normals refract seven wavelength taps whose Cauchy dispersion (scaled by Refraction Depth) is weighted through a per-channel-normalised wavelength-to-RGB response, so bright edges split into spectral fringes while flat grey stays grey. A Laplacian caustic network focuses the pointer light into bright filaments along convex luma crests, with pointer specular, Fresnel rim, subsurface tint and click waves. Depth thickens the glass, with a minimum slab so it works without a depth map.",
+  "description": "The image seen through glass embossed by its own luminance: luma-gradient normals refract seven wavelength taps with Cauchy dispersion scaled by Refraction Depth, so bright edges split into spectral fringes while flat grey stays grey. A Laplacian caustic network focuses the pointer light into filaments along convex luma crests; Schlick reflection mirrors the picture at grazing ridges and the slab shows a second back-face glint. Depth thickens the glass; click waves.",
   "params": [
     {
       "id": "refract-str",

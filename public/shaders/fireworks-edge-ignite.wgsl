@@ -1,7 +1,7 @@
 // Fireworks Edge Ignite — image contours launch pyrotechnics
-// Upgraded: 2026-10-27
-// Ideas: contour-tangent shell spread; traveling ignition
-// A packing: ACES display RGBA; B: dimmed display/previous-color echo
+// Upgraded: 2026-11-01
+//  Ideas: contour-tangent shell spread; traveling ignition; fuse bead; char lip
+//  A packing: ACES display RGBA; B: dimmed display/previous-color echo
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
@@ -68,6 +68,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += imgCol * smoothstep(edgeSens*0.5, edgeSens*1.2, edge) * bass * 0.35;
   let fuse = 0.5 + 0.5 * sin(dot(uv, tangent) * 28.0 - time * 2.5);
   col += imgCol * boost * smoothstep(edgeSens*0.3, edgeSens, edge) * fuse * 0.3;
+  // ── Idea 1: fuse bead rides the contour. Idea 2: char lip behind it.
+  let travel = fract(dot(uv, tangent) * 3.2 - time * 0.45);
+  let edgeMask = smoothstep(edgeSens * 0.3, edgeSens, edge);
+  let bead = exp(-travel * 22.0) * edgeMask;
+  let charLip = smoothstep(0.08, 0.28, travel) * smoothstep(0.72, 0.38, travel) * edgeMask;
+  col = mix(col, col * vec3<f32>(0.42, 0.22, 0.12), charLip * 0.55);
+  col += vec3<f32>(1.0, 0.82, 0.45) * bead * boost * (0.55 + bass * 0.25);
 
   for (var s = 0; s < 8; s = s + 1) {
     let si = f32(s); let seed = hash1(si*43.0+1.0);

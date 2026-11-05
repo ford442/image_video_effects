@@ -4,33 +4,32 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            fluid-simulation, chromatic-aberration, semantic-alpha, ACES
 //  Complexity: High
+//  Upgraded: 2026-11-01
+//  Ideas: vorticity confinement from the true curl of C.xy (12.2D); meniscus lens at the dye edge (density-gradient rim + refraction)
+//  A packing: RAW sim state in A = (vel.x, vel.y, vel.x - vel.y, density); C read as fields; ACES only on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Strength, y=Blur, z=FocusRad, w=Viscosity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Strength, y=Blur, z=FocusRad, w=Viscosity
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
+}
+
+// Idea 1 helpers: velocity from the exact C history (xy), clamped to the texture.
+fn velAt(c: vec2<i32>, hi: vec2<i32>) -> vec2<f32> {
+  return textureLoad(dataTextureC, clamp(c, vec2<i32>(0), hi), 0).xy;
+}
+
+// True curl: d(vy)/dx - d(vx)/dy by central differences (y grows downward).
+fn curlAt(c: vec2<i32>, hi: vec2<i32>) -> f32 {
+  let r = velAt(c + vec2<i32>(1, 0), hi).y;
+  let l = velAt(c + vec2<i32>(-1, 0), hi).y;
+  let t = velAt(c + vec2<i32>(0, -1), hi).x;
+  let b = velAt(c + vec2<i32>(0, 1), hi).x;
+  return 0.5 * ((r - l) - (b - t));
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -128,11 +127,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
+  // ── Idea 1: vorticity confinement (12.2D) ─────────────────────────────
+  // Viscosity damps the small swirls the grid solver makes. Confinement re-injects them:
+  // N = grad|w| / |grad|w||, force = eps * (N.y, -N.x) * w. eps = 2*(1 - viscosity) scales
+  // with exactly the energy viscosity removes, and clamp(dens) keeps it inside the dye, so
+  // an idle frame stays still. Curl comes from C (last frame), like the advection.
+  let hiC = vec2<i32>(resolution) - vec2<i32>(1);
+  let curlHere = curlAt(coord, hiC);
+  let curlGx = 0.5 * (abs(curlAt(coord + vec2<i32>(1, 0), hiC)) - abs(curlAt(coord - vec2<i32>(1, 0), hiC)));
+  let curlGy = 0.5 * (abs(curlAt(coord + vec2<i32>(0, 1), hiC)) - abs(curlAt(coord - vec2<i32>(0, 1), hiC)));
+  let curlN = vec2<f32>(curlGx, curlGy) / max(length(vec2<f32>(curlGx, curlGy)), 1e-5);
+  let confineEps = 2.0 * (1.0 - viscosity) * clamp(dens, 0.0, 1.0);
+  vel += vec2<f32>(curlN.y, -curlN.x) * curlHere * confineEps;
+
   let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
   vel = vel * smoothstep(0.02, 0.08, edgeDist);
   vel = clamp(vel, vec2<f32>(-0.5), vec2<f32>(0.5));
   dens = clamp(dens, 0.0, 2.0);
 
+  // Pseudo-vorticity kept as HEAD had it: it feeds `twist` and A.z (nothing reads C.z).
   let vorticity = vel.x - vel.y;
   textureStore(dataTextureA, coord, vec4<f32>(vel, vorticity, dens));
 
@@ -151,13 +164,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sinT = sin(twist);
   dir = vec2<f32>(dir.x * cosT - dir.y * sinT, dir.x * sinT + dir.y * cosT);
 
+  // ── Idea 2: meniscus lens ─────────────────────────────────────────────
+  // The dye boundary is where density changes: grad(dens) from the same C neighbours.
+  // It refracts the three channel taps a little along the gradient, and the lit side of
+  // the edge (light from the upper left) catches a thin highlight.
+  let denGrad = 0.5 * vec2<f32>(
+    textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), hiC), 0).a - textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), vec2<i32>(0), hiC), 0).a,
+    textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), hiC), 0).a - textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), hiC), 0).a
+  );
+  let denGradLen = length(denGrad);
+  let meniscusRefract = denGrad * 0.04;
+  let meniscusLit = max(dot(-denGrad / max(denGradLen, 1e-5), normalize(vec2<f32>(-0.6, -0.8))), 0.0);
+  let meniscusRim = smoothstep(0.01, 0.12, denGradLen) * meniscusLit * meniscusLit;
+
   let rOffset = dir * amount * strength * (1.0 + dens * 0.3);
   let bOffset = -dir * amount * strength * (1.0 + dens * 0.3);
   let blurVec = vel * dens * 0.01;
 
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset + blurVec, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + blurVec * 0.5, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset - blurVec, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + rOffset + blurVec + meniscusRefract, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).r;
+  let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + blurVec * 0.5 + meniscusRefract, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).g;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + bOffset - blurVec + meniscusRefract, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).b;
 
   var color = vec3<f32>(r, g, b);
   let vig = 1.0 - amount * 0.3;
@@ -176,6 +202,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let specNoise = hash12(uv * 300.0 + time * 2.0);
   let specular = pow(specNoise, 20.0) * influence * dens * 3.0;
   color += vec3<f32>(0.9, 0.95, 1.0) * specular;
+  color += vec3<f32>(0.9, 0.95, 1.0) * meniscusRim * 0.35;
 
   let blurThickness = amount * 5.0 + blurAmt * 2.0;
   let alphaR = exp(-blurThickness * 0.5625);

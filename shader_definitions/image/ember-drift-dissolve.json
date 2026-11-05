@@ -2,7 +2,7 @@
   "id": "ember-drift-dissolve",
   "name": "Ember Drift Dissolve",
   "url": "shaders/ember-drift-dissolve.wgsl",
-  "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow. Held press opens a furnace under the cursor \u2014 stronger rise, denser birth, white-hot cores cooling through amber into ash wisps. Click bursts ignite local fires that the heat field then advects. Exact textureLoad history, ACES on the display path only.",
+  "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow. Held press opens a furnace under the cursor \u2014 stronger rise, denser birth, white-hot cores cooling through amber into ash wisps. Click bursts ignite local fires that the heat field then advects. Exact textureLoad history, ACES on the display path only. White-hot embers outrun the ash, and a scorch stain stays in the photo after the glow fades.",
   "tags": [
     "ember",
     "fire",
@@ -22,7 +22,8 @@
     "aces-tone-mapping",
     "mouse-driven",
     "held-interaction",
-    "click-ignition"
+    "click-ignition",
+    "upgraded-rgba"
   ],
   "params": [
     {
