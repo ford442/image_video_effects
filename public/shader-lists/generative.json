@@ -4231,7 +4231,6 @@
   {
     "id": "gen-bioluminescent-mycelial-nexus",
     "name": "Bioluminescent Mycelial Nexus",
-    "description": "A hyper-organic, pulsing network of luminous fungal threads that weave and branch through a dense, volumetric void, reacting dynamically to bass and treble frequencies.",
     "category": "generative",
     "tags": [
       "organic",
@@ -4248,36 +4247,36 @@
     ],
     "params": [
       {
+        "id": "branching-density",
         "name": "Branching Density",
         "default": 2,
         "min": 0.1,
         "max": 5,
-        "step": 0.1,
-        "id": "branching-density"
+        "step": 0.1
       },
       {
+        "id": "glow-intensity",
         "name": "Glow Intensity",
         "default": 1,
         "min": 0,
         "max": 3,
-        "step": 0.1,
-        "id": "glow-intensity"
+        "step": 0.1
       },
       {
+        "id": "network-mutation-speed",
         "name": "Network Mutation Speed",
         "default": 1,
         "min": 0,
         "max": 3,
-        "step": 0.1,
-        "id": "network-mutation-speed"
+        "step": 0.1
       },
       {
+        "id": "subsurface-scattering",
         "name": "Subsurface Scattering",
         "default": 0.5,
         "min": 0,
         "max": 1,
-        "step": 0.05,
-        "id": "subsurface-scattering"
+        "step": 0.05
       }
     ]
   },
