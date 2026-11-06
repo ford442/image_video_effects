@@ -127,6 +127,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ao = clamp(map(p + n * 0.5) * 2.0, 0.0, 1.0);
         col *= ao;
 
+        // Subsurface scattering
+        let subsurface = vec3<f32>(0.8, 0.3, 0.1) * fresnel * u.zoom_params.w * ao;
+        col += subsurface;
+
         // Distance fog
         col = mix(col, vec3<f32>(0.05, 0.05, 0.08), 1.0 - exp(-0.02 * d0 * d0));
     }
