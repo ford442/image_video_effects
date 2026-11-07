@@ -3,31 +3,14 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
+//  Upgraded: 2026-09-14, 2026-11-01
+//  Ideas (2026-11): face-identity rim (argmax of the four half-spaces names the boundary face; 8 hues); neon tube profile (white-hot core + inverse-square halo, 12.2F)
 //  Ideas: tomographic section through the true solid compound (each tetra = 4 face half-spaces) sweeping triangle -> hexagram, with the shared regular-octahedron core (tetraA AND tetraB) lit apart from the 8 stellation spikes, click = local slice dent, mouse-held = lock slice at the central hexagram; Kepler cube hull: the 8 star tips are cube vertices, drawn as the cube's 12-edge frame with corner beacons in bipartite parity colors (tetra A warm / tetra B cool)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Star Scale, y=Spin Speed, z=Neon Power, w=Color Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Star Scale, y=Spin Speed, z=Neon Power, w=Color Shift
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -120,6 +103,22 @@ fn tetraSolid(p: vec3<f32>, s: f32, flip: f32) -> f32 {
   return max(max(d0, d1), max(d2, d3)) * k - s * k;
 }
 
+// 2026-11 Idea 1: which of the tetrahedron's four face half-spaces is the maximum, i.e. which face the
+// section boundary lies on (tetraSolid takes the max and discards the index).
+fn tetraFaceIdx(p: vec3<f32>, flip: f32) -> f32 {
+  let q = p * flip;
+  let d0 = dot(q, vec3<f32>(-1.0, -1.0, -1.0));
+  let d1 = dot(q, vec3<f32>(-1.0, 1.0, 1.0));
+  let d2 = dot(q, vec3<f32>(1.0, -1.0, 1.0));
+  let d3 = dot(q, vec3<f32>(1.0, 1.0, -1.0));
+  var idx = 0.0;
+  var m = d0;
+  if (d1 > m) { m = d1; idx = 1.0; }
+  if (d2 > m) { m = d2; idx = 2.0; }
+  if (d3 > m) { idx = 3.0; }
+  return idx;
+}
+
 // Hollow box frame (cube edges) — iq
 fn sdBoxFrame(p: vec3<f32>, b: vec3<f32>, e: f32) -> f32 {
   let p1 = abs(p) - b;
@@ -197,6 +196,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color += neon(hue2, neonPower * facet) * facet * (0.8 + treble * 0.4);
   color += neon(hue + 0.12, neonPower) * ridge * 0.85 * (0.7 + bass * 0.4);
 
+  // Idea 2 (2026-11): neon tube profile. A real tube has a white-hot core and a long 1/r^2 halo, not a
+  // Gaussian: soft inverse-square 0.0015 / (d^2 + 0.0006) (12.2F) plus a thin white core.
+  let tubeHalo = 0.0015 / (sd.x * sd.x + 0.0006);
+  let tubeCore = exp(-abs(sd.x) * 300.0);
+  color += neon(hue, neonPower * 0.5) * tubeHalo * 0.06 * (1.0 + bass * 0.4);
+  color += vec3<f32>(1.0, 0.97, 0.92) * tubeCore * 0.5 * neonPower;
+
   // Stellate spike glow at vertices
   let spike = exp(-length(p) * 2.5) * neon(hue + 0.33, 0.8) * 0.3;
   color += spike * (1.0 + treble * 0.5);
@@ -221,7 +227,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color += neon(hueA, neonPower * 0.4) * spikeA * (0.12 + thickA * 0.3) * (1.0 + bass * 0.4);
   color += neon(hueB, neonPower * 0.4) * spikeB * (0.12 + thickB * 0.3) * (1.0 + bass * 0.4);
   color += vec3<f32>(0.75, 0.7, 1.0) * coreFill * (0.1 + clamp(-core * 6.0, 0.0, 1.0) * 0.25) * (0.8 + mids * 0.5);
-  color += neon(hue + 0.25, neonPower * 0.6) * sectionRim * 0.35 * (1.0 + rippleGlow * 1.5);
+  // Idea 1 (2026-11): the rim takes the hue of the face it lies on (4 faces x 2 tetrahedra = 8 hues).
+  let faceId = select(tetraFaceIdx(p, -1.0) + 4.0, tetraFaceIdx(p, 1.0), tA < tB);
+  let faceHue = fract(colorShift + faceId * 0.125 + time * 0.03);
+  color += mix(neon(hue + 0.25, neonPower * 0.6), neon(faceHue, neonPower * 0.6), 0.7) * sectionRim * 0.35 * (1.0 + rippleGlow * 1.5);
   color += vec3<f32>(0.9, 0.85, 1.0) * coreRim * 0.5 * neonPower * (1.0 + treble * 0.4);
 
   // ═══ Idea 2: Kepler cube hull + bipartite corner beacons ═══

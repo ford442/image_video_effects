@@ -3,34 +3,21 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: phason strain field (pointer-pushed tile flips); Ammann bars (Fibonacci line grids)
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: phason strain field (pointer-pushed tile flips); Ammann bars (Fibonacci line grids); lattice-node pinpoints at the constructive-interference maxima; phason-strain energy glow
 //  A packing: rgb = display trail, a = bass envelope (B = pre-trail colour + bloom)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+// Calibrated on SwiftShader (128 px, default sliders): qc percentiles 2/50/90/98/99.9 = -0.32/0/0.21/0.33/0.49
+// (the three-layer sum never nears 1), strain Jacobian 2/50/90/98 = 0.6/1.7/2.7/3.1.
+const NODE_LO: f32 = 0.30;    // top ~2 % of qc: the constructive-interference peaks
+const NODE_HI: f32 = 0.45;
+const STRAIN_LO: f32 = 2.4;   // top ~15 % of the strain variation
+const STRAIN_HI: f32 = 3.1;
 
 // ── Core helpers ──────────────────────────────────────────────────
 fn luma(rgb: vec3<f32>) -> f32 { return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722)); }
@@ -212,6 +199,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let phason = (vec2<f32>(vnoise2(uv * 2.2 + time * 0.05), vnoise2(uv * 2.2 + vec2<f32>(5.2, 1.3) - time * 0.04)) - 0.5) * 2.5
                + toM / max(length(toM), 0.001) * mFall * 3.0 * held * (1.0 + bass * 0.6);
 
+    // 2026-11 Idea 2 (needs the strain noise's own Jacobian): finite differences of the slow strain noise,
+    // sampled at +dx / +dy (eps 0.01). Its magnitude is how fast the strain varies, i.e. how fast tiles flip.
+    let strainA = vec2<f32>(vnoise2(uv * 2.2 + time * 0.05), vnoise2(uv * 2.2 + vec2<f32>(5.2, 1.3) - time * 0.04));
+    let strainX = vec2<f32>(vnoise2((uv + vec2<f32>(0.01, 0.0)) * 2.2 + time * 0.05), vnoise2((uv + vec2<f32>(0.01, 0.0)) * 2.2 + vec2<f32>(5.2, 1.3) - time * 0.04));
+    let strainY = vec2<f32>(vnoise2((uv + vec2<f32>(0.0, 0.01)) * 2.2 + time * 0.05), vnoise2((uv + vec2<f32>(0.0, 0.01)) * 2.2 + vec2<f32>(5.2, 1.3) - time * 0.04));
+    let strainJac = length(vec4<f32>(strainX - strainA, strainY - strainA)) / 0.01;
+    let strainGlow = smoothstep(STRAIN_LO, STRAIN_HI, strainJac);
+
     // Primary + secondary quasicrystal layers
     let qc = quasicrystal2(p * beatPulse, symmetry, time * 0.2, projAngle, phason);
     let pattern = smoothstep(-0.2, 0.2, qc);
@@ -244,6 +239,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shimmer = sin(p.x * shimmerFreq * 2.0 + time) * sin(p.y * shimmerFreq * 2.0 + time * 1.3);
     let shimmerDetail = fbm_dw(p * 4.0 + time * 0.1, time);
     col += vec3<f32>(0.02, 0.015, 0.025) * shimmer * (1.0 + shimmerDetail);
+
+    // 2026-11 Idea 1: lattice-node pinpoints. The maxima of the plane-wave sum are the points where every
+    // wave is in phase: the vertices of the quasi-lattice, never drawn in HEAD.
+    let latticeNode = smoothstep(NODE_LO, NODE_HI, qc);
+    col += vec3<f32>(1.0, 0.97, 0.85) * latticeNode * (0.3 + treble * 0.5);
+    // 2026-11 Idea 2: warm glow where the phason strain varies fastest (tiles flipping).
+    col += vec3<f32>(1.0, 0.55, 0.2) * strainGlow * 0.22 * (1.0 + bass * 0.5);
 
     // Treble sparkle: high-frequency glints on crystal edges
     let sparkleMask = smoothstep(0.08, 0.0, abs(qc) + abs(qc2) * 0.5);
