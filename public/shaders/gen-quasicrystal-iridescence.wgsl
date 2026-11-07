@@ -4,34 +4,16 @@
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
 //  Created: 2026-04-18
-//  Upgraded: 2026-09-15
-//  Ideas: phason strain along k-perp; Ammann lattice lines from the n-fold sum
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: phason strain along k-perp; Ammann lattice lines from the n-fold sum; gravity drainage of the film (thin top, thick bottom); black-film fade below ~140 nm. REPAIR: the thin-film mix weight was <= 0.0017 at HEAD (film invisible); now a 25 % base layer rising to 85 % at the edge
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Penrose tiling-inspired patterns with 5-fold symmetry enhanced by
 //  thin-film iridescence. Quasicrystal depth drives film thickness,
 //  producing soap-bubble spectral colors across the aperiodic tiling.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Symmetry, y=Pattern Density, z=Color Cycle, w=Projection Angle
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Symmetry, y=Pattern Density, z=Color Cycle, w=Projection Angle
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -78,7 +60,9 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
   var sampleCount = 0.0;
   for (var lambda = 380.0; lambda <= 700.0; lambda = lambda + 20.0) {
     let phase = opd / lambda;
-    let interference = cos(phase * 6.28318530718) * 0.5 + 0.5;
+    // 2026-11 Idea 2: black film. Below ~lambda/4 the two reflections cancel, so a film thinner than ~140 nm
+    // goes dark (smoothstep 40 -> 140 nm) instead of staying bright as HEAD's cos^2 does at zero thickness.
+    let interference = (cos(phase * 6.28318530718) * 0.5 + 0.5) * smoothstep(40.0, 140.0, thicknessNm);
     color += wavelengthToRGB(lambda) * interference;
     sampleCount = sampleCount + 1.0;
   }
@@ -133,7 +117,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let noiseVal = hash12(uv * 12.0 + t * 0.1) * 0.5 + hash12(uv * 25.0 - t * 0.15) * 0.25;
 
   let depth = pattern * 0.5 + pattern2 * 0.3;
-  var thickness = filmThicknessBase * (0.7 + depth * 0.6 + noiseVal * turbulence);
+  // 2026-11 Idea 1: gravity drainage. A soap film drains, so it is thin at the top and thick at the bottom
+  // (uv.y = 0 is the top of the frame): thickness x mix(0.72, 1.28, uv.y).
+  var thickness = filmThicknessBase * (0.7 + depth * 0.6 + noiseVal * turbulence) * mix(0.72, 1.28, uv.y);
 
   let mousePos = u.zoom_config.yz;
   let isMouseDown = u.zoom_config.w > 0.5;
@@ -143,7 +129,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let iridescent = thinFilmColor(thickness, cosTheta, filmIOR) * intensity;
 
-  let fresnel = pow(1.0 - cosTheta, 3.0);
+  // Repair (floor): HEAD mixed the film in with weight fresnel * 0.7 where fresnel = (1 - cosTheta)^3 and cosTheta =
+  // sqrt(1 - dist^2 / 2) never drops below 0.87, so the weight was at most 0.0017 across the frame: the thin-film
+  // colour this shader is named for was invisible (and so would be the two ideas below). The viewing angle now
+  // reaches grazing at the frame edge (cos = sqrt(1 - 2 dist^2)), and the film is a 25 % base layer rising toward
+  // the edge (max 0.85). cosTheta for the film's optical path difference is unchanged.
+  let cosThetaWide = sqrt(max(1.0 - dist * dist * 2.0, 0.02));
+  let fresnel = pow(1.0 - cosThetaWide, 3.0);
+  let filmWeight = clamp(0.25 + 0.55 * fresnel, 0.0, 0.85);
 
   let m = fract(qc + qc2 + t * colorCycle * 0.05);
   let gold = vec3<f32>(1.0, 0.84, 0.0);
@@ -157,7 +150,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeMask = smoothstep(0.05, 0.0, edge);
   baseCol = baseCol + vec3<f32>(1.0, 0.95, 0.8) * edgeMask * 0.4;
 
-  var outColor = mix(baseCol, iridescent, fresnel * 0.7);
+  var outColor = mix(baseCol, iridescent, filmWeight);
 
   // Idea 2 — Ammann lattice lines perpendicular to each k.
   var ammann = 0.0;

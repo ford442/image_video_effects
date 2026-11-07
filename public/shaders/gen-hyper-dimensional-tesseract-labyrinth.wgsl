@@ -3,7 +3,8 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-17
+//  Upgraded: 2026-10-17, 2026-11-01
+//  Ideas (2026-11): hyper-edge struts (eight capsules joining each main-frame corner to its ghost-frame corner, material 4); w-coordinate colour (edge/ghost glow warm for +w, cool for -w)
 //  Ideas: W-slice ghost frame from the 4th coordinate; cell-face corridor glow on cube midplanes;
 //         4D perspective w-divide (each cube breathes inner<->outer like a real tesseract
 //         projection); checkerboard-parity labyrinth cells counter-rotate with their own glow hue
@@ -48,6 +49,13 @@ fn sdBoxFrame(p: vec3<f32>, b: vec3<f32>, e: f32) -> f32 {
     let c2 = length(max(vec3<f32>(q.x, p_abs.y, q.z), vec3<f32>(0.0))) + min(max(q.x, max(p_abs.y, q.z)), 0.0);
     let c3 = length(max(vec3<f32>(q.x, q.y, p_abs.z), vec3<f32>(0.0))) + min(max(q.x, max(q.y, p_abs.z)), 0.0);
     return min(min(c1, c2), c3);
+}
+
+fn sdCapsule3(p: vec3<f32>, a: vec3<f32>, b: vec3<f32>, r: f32) -> f32 {
+    let pa = p - a;
+    let ba = b - a;
+    let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-5), 0.0, 1.0);
+    return length(pa - ba * h) - r;
 }
 
 fn map(p: vec3<f32>, complexity: f32, warp: f32, audio: f32, time: f32, mousePos: vec3<f32>) -> vec4<f32> {
@@ -97,17 +105,31 @@ fn map(p: vec3<f32>, complexity: f32, warp: f32, audio: f32, time: f32, mousePos
     let wShift = vec3<f32>(q4.w, q4.w * 0.7, -q4.w * 0.4) * 0.35;
     let dGhost = sdBoxFrame(projected3D + wShift, boxSize * 0.85, frameThickness * 0.45) * wPersp;
 
+    // 2026-11 Idea 1: hyper-edge struts. A tesseract is two nested cubes joined by eight edges; the main frame and
+    // the w-shifted ghost frame existed but were unconnected. By the cube's symmetry the nearest corner is picked by
+    // the octant (sign of projected3D), so one capsule is evaluated: main corner -> the matching ghost corner
+    // (the ghost frame is centred at -wShift and has half-size 0.85 of the main one).
+    let octant = select(vec3<f32>(-1.0), vec3<f32>(1.0), projected3D >= vec3<f32>(0.0));
+    let dStrut = sdCapsule3(projected3D, octant * boxSize, octant * boxSize * 0.85 - wShift, frameThickness * 0.7) * wPersp;
+
     // Idea 2 — cell-face corridors on the three midplanes of the projected cube
     let corridor = 1.0 - smoothstep(0.0, 0.12, min(abs(projected3D.x), min(abs(projected3D.y), abs(projected3D.z))));
 
-    // Material 1.0 = Frame, 2.0 = Solid Face, 3.0 = W-ghost
+    // 2026-11 Idea 2: the cell's w coordinate rides in the fourth output with the parity:
+    // v = parity * 10 + clamp(w, -4, 4) + 4  (parity 0 -> [0, 8], parity 1 -> [10, 18]).
+    let packed = parity * 10.0 + clamp(q4.w, -4.0, 4.0) + 4.0;
+
+    // Material 1.0 = Frame, 2.0 = Solid Face, 3.0 = W-ghost, 4.0 = hyper-edge strut
+    if (dStrut < dGhost && dStrut < dFrame && dStrut < dSolid) {
+        return vec4<f32>(dStrut, 4.0, corridor, packed);
+    }
     if (dGhost < dFrame && dGhost < dSolid) {
-        return vec4<f32>(dGhost, 3.0, corridor, parity);
+        return vec4<f32>(dGhost, 3.0, corridor, packed);
     }
     if (dFrame < dSolid) {
-        return vec4<f32>(dFrame, 1.0, corridor, parity);
+        return vec4<f32>(dFrame, 1.0, corridor, packed);
     }
-    return vec4<f32>(dSolid, 2.0, corridor, parity);
+    return vec4<f32>(dSolid, 2.0, corridor, packed);
 }
 
 fn calcNormal(p: vec3<f32>, complexity: f32, warp: f32, audio: f32, time: f32, mousePos: vec3<f32>) -> vec3<f32> {
@@ -181,6 +203,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var matId = 0.0;
     var corridorGlow = 0.0;
     var cellParity = 0.0;
+    var cellW = 0.0;
     var p = ro;
 
     // Accumulate glow along the ray
@@ -192,14 +215,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         d = res_map.x;
         matId = res_map.y;
         corridorGlow = res_map.z;
-        cellParity = res_map.w;
+        // decode the packed parity / w (see map)
+        cellParity = step(9.0, res_map.w);
+        cellW = res_map.w - cellParity * 10.0 - 4.0;
 
         // Volumetric glow accumulation near edges
-        if (matId == 1.0 || matId == 3.0) {
+        if (matId == 1.0 || matId == 3.0 || matId == 4.0) {
             // Idea 4 — odd cells run the glow hue half a cycle out of phase
             let glowColorBase = 0.5 + 0.5 * cos(time * 2.0 + p.xyz * 0.5 + vec3<f32>(0.0, 2.0, 4.0) + cellParity * 3.14159);
-            let ghostAmt = select(1.0, 0.45, matId == 3.0);
-            glowCol += glowColorBase * (0.005 / (abs(d) + 0.01)) * edgeGlow * (1.0 + audio * 2.0 + mids * 0.7) * ghostAmt;
+            // 2026-11 Idea 2: w-coordinate colour: warm for +w, cool for -w (45 % toward the tint).
+            let wTint = mix(vec3<f32>(0.25, 0.55, 1.1), vec3<f32>(1.1, 0.55, 0.25), smoothstep(-1.5, 1.5, cellW));
+            let glowW = mix(glowColorBase, wTint, 0.45);
+            let ghostAmt = select(select(1.0, 0.7, matId == 4.0), 0.45, matId == 3.0);
+            glowCol += glowW * (0.005 / (abs(d) + 0.01)) * edgeGlow * (1.0 + audio * 2.0 + mids * 0.7) * ghostAmt;
         }
         glowCol += vec3<f32>(0.25, 0.85, 1.15) * corridorGlow * (0.0012 / (abs(d) + 0.02)) * edgeGlow;
 
@@ -214,10 +242,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let viewDir = -rd;
         let fresnel = pow(1.0 - max(dot(n, viewDir), 0.0), 3.0);
 
+        let wTintHit = mix(vec3<f32>(0.25, 0.55, 1.1), vec3<f32>(1.1, 0.55, 0.25), smoothstep(-1.5, 1.5, cellW));
         if (matId == 1.0) {
             // Solid emissive edges
             let edgeMix = abs(clamp(mids, 0.0, 1.0) - cellParity * 0.6);
             col = mix(vec3<f32>(1.0, 0.45, 0.85), vec3<f32>(0.25, 0.9, 1.25), edgeMix) * edgeGlow * (1.0 + audio + foldShock);
+            col = mix(col, wTintHit * edgeGlow * (1.0 + audio + foldShock), 0.35);
+        } else if (matId == 4.0) {
+            // 2026-11 Idea 1: hyper-edge struts glow in the w tint
+            col = wTintHit * edgeGlow * (0.8 + audio * 0.8 + foldShock);
         } else if (matId == 3.0) {
             // Idea 1 — W-slice ghost frame
             col = mix(vec3<f32>(0.35, 0.2, 1.05), vec3<f32>(0.85, 0.45, 1.15), clamp(treble, 0.0, 1.0)) * edgeGlow * (0.45 + audio * 0.4 + foldShock * 0.3);
