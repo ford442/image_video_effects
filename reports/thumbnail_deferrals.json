@@ -53,6 +53,13 @@
       "failure_note": "New shader requires GPU capture for thumbnail"
     },
     {
+      "id": "gen-harmonic-ferrofluid-kinetics",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-06",
+      "expires": "2026-12-06",
+      "reason": "other"
+    },
+    {
       "id": "gen-liquid-metal-chrono-flora",
       "added_by": "Jules",
       "deferred_at": "2026-10-11",
