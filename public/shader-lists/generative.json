@@ -407,7 +407,8 @@
       "feedback-loop",
       "mouse-spawn",
       "audio-reactive",
-      "continuous-ca"
+      "continuous-ca",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1012,7 +1013,8 @@
       "chromatic-dispersion",
       "fbm-veins",
       "mineral-growth",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -23738,7 +23740,8 @@
     "url": "shaders/gen-quantum-coral-reef.wgsl",
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -27123,12 +27126,13 @@
     ],
     "supportsDepth": false,
     "supportsDof": false,
-    "updated": false,
+    "updated": true,
     "id": "gen-stellar-mycelium-overdrive",
     "url": "shaders/gen-stellar-mycelium-overdrive.wgsl",
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
