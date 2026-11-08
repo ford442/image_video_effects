@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: Cauchy crest split; dispersive tide packets and Miche foam; capillary wrinkles; trough set-down
+//  Upgraded: 2026-11-08
+//  Ideas: Cauchy crest split; dispersive tide packets and Miche foam; capillary wrinkles; trough set-down; shoal refraction of the tide rings; 42-degree spray rainbow arc
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -205,7 +205,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let n = noise2(p * 3.0 + vec2<f32>(time * 0.1, -time * 0.14));
   let refractField = vec2<f32>(sin(p.y * 8.0 + time), cos(p.x * 7.0 - time)) * (refractAmt * (1.0 + lens * 2.5) + lens * 0.05) * (0.4 + n);
   let refracted = p + refractField;
-  let phase = length(refracted) * waveScale - time * (0.7 + bass * 0.8) + packetH * 1.6;
+  // ── Idea 5: shoal refraction. A slow seabed field sets local depth; by
+  // c = sqrt(g h) the tide rings slow (wavenumber rises) over shallows, so the
+  // concentric fronts bend and bunch over the bar instead of staying circles.
+  let shoal = smoothstep(0.35, 0.75, fbm(p * 0.9 + vec2<f32>(3.1, -1.7) + time * 0.01));
+  let shoalK = 1.0 / sqrt(mix(1.0, 0.45, shoal));
+  let phase = length(refracted) * waveScale * shoalK - time * (0.7 + bass * 0.8) + packetH * 1.6;
 
   // Native idea 1: Cauchy prism dispersion. Each channel refracts by n(lambda) = A + B/lambda^2,
   // so the refracted wavefront position splits per wavelength (violet bends most).
@@ -281,6 +286,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mie = mieScattering(cosTheta, 0.75) * 0.06 * (1.0 - crest * 0.5);
   let hazeColor = vec3<f32>(0.85, 0.82, 0.78);
   color = color + hazeColor * mie;
+  // ── Idea 6: spray rainbow. Foam and breaking spray are droplet prisms:
+  // seen 42 deg from the anti-solar point (same lightDir as the haze) they
+  // throw a primary bow, red outside, violet inside, only where spray exists.
+  let bowAng = acos(clamp(dot(viewDir, -lightDir), -1.0, 1.0));
+  let bowT = (bowAng - 0.733) / 0.06;
+  let bowBand = exp(-bowT * bowT * 0.5);
+  let bowCol = clamp(vec3<f32>(0.5 + bowT * 0.6, 1.0 - abs(bowT) * 0.5, 0.5 - bowT * 0.6), vec3<f32>(0.0), vec3<f32>(1.0));
+  color = color + bowCol * bowBand * (foam * 0.6 + breaking) * 0.35 * saturation;
 
   // ═══════════════════════════════════════════════════════════════
   //  VISUALIST: Split-tone

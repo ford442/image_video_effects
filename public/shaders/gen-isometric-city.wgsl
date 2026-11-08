@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: podium+tower setbacks; window occupancy flicker; neon rooftop signs; traffic light streams
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-11-08
+//  Ideas: podium+tower setbacks; window occupancy flicker; neon rooftop signs; traffic light streams; rooftop aviation masts with red obstruction blink; sidewalk neon spill pools from the lit facades
+//  A packing: pre-ACES HDR display RGBA (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -64,7 +64,11 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         vec3<f32>(local.x, p.y - (podiumH + towerH * 0.5), local.y),
         vec3<f32>(0.42, towerH * 0.5, 0.42)
     );
-    let dBox = select(min(dPodium, dTower), 1000.0, height < 0.05);
+    // ── Idea 5: aviation mast — the tallest towers carry a thin antenna above the roof
+    let mastOn = h_rnd > 0.78 && height > 0.05;
+    let mastY = clamp(p.y, height, height + 1.6);
+    let dMast = select(1000.0, length(vec3<f32>(local.x, p.y - mastY, local.y)) - 0.07, mastOn);
+    let dBox = select(min(min(dPodium, dTower), dMast), 1000.0, height < 0.05);
 
     if (dBox < d) {
         d = dBox;
@@ -112,6 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    uv.y = -uv.y; // Rescue: compute rows run top-down; flip so world-up is screen-up
     let time = u.config.x;
     // Audio reactivity
     let bass = plasmaBuffer[0].x;
@@ -141,7 +146,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ray Origin varies with UV
     // 'zoom' factor
     let zoom = 15.0;
-    var ro = target_pos + (right * uv.x + up * uv.y) * zoom - forward * camDist;
+    // Rescue: HEAD put the eye plane at -forward*50 (underground, inside the floor SDF)
+    var ro = target_pos + (right * uv.x + up * uv.y) * zoom + forward * camDist;
 
     // Apply panning
     ro.x += pan.x + pan.y; // Diagonal movement for isometric feel
@@ -230,6 +236,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 }
             }
 
+            // ── Idea 5 (shade): mast steel + red obstruction light blinking at the tip
+            let bHeight = pow(h_rnd, 2.0) * mix(2.0, 16.0, u.zoom_params.w) * mix(0.2, 1.5, u.zoom_params.x);
+            if (h_rnd > 0.78 && p.y > bHeight + 0.01) {
+                baseCol = vec3<f32>(0.12, 0.12, 0.14);
+                let tip = smoothstep(bHeight + 1.2, bHeight + 1.6, p.y);
+                let blink = step(0.55, fract(time * 0.8 + h_rnd * 7.0));
+                baseCol += vec3<f32>(1.0, 0.08, 0.04) * tip * blink * 6.0 * (1.0 + bass * 0.5);
+            }
             col = baseCol * (diff * 0.5 + 0.5); // ambient + diffuse
         } else {
             // Floor (shouldn't happen with current map logic as floor is mat 0, but if we add floor ID...)
@@ -270,6 +284,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
        // abs(fract - 0.5) -> center is 0.0, edge is 0.5.
        // So we want values close to 0.5.
 
+       // ── Idea 6: neon spill — lit facades pool their window colour onto the pavement
+       //    right at the building's foot, fading across the sidewalk into the street
+       let spillCell = floor(p_hit.xz / gridSize);
+       let spillHash = hash12(spillCell);
+       if (spillHash > 0.3) {
+           var spillCol = vec3<f32>(0.2, 0.2, 1.0);
+           if (spillHash < 0.33) { spillCol = vec3<f32>(0.0, 1.0, 1.0); }
+           else if (spillHash < 0.66) { spillCol = vec3<f32>(1.0, 0.0, 1.0); }
+           let footDist = max(max(gridUV.x, gridUV.y) - 0.72, 0.0);
+           let pool = exp(-footDist * 9.0) * (0.25 + 0.35 * mix(1.0, 5.0, u.zoom_params.z) * 0.2);
+           col += spillCol * pool * (1.0 + bass * 0.6);
+       }
        if (edgeDist > 0.4) { // Street area
            // Traffic pulse
            // Direction based on x or z
@@ -302,11 +328,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let pixel = vec2<i32>(global_id.xy);
     let prev = textureLoad(dataTextureC, pixel, 0);
-    col = mix(prev.rgb * 0.88, col, 0.42);
-    col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.08);
-    let alpha = clamp(0.08 + (1.0 - exp(-t * 0.02)) * 0.25 + length(col) * 0.55, 0.06, 0.98);
+    // C holds pre-ACES HDR (HEAD re-tonemapped ACES output every frame → iterated compression)
+    col = mix(prev.rgb * 0.88, max(col, vec3<f32>(0.0)), 0.42);
+    let disp = acesToneMap(col * 1.08);
+    let alpha = clamp(0.08 + (1.0 - exp(-t * 0.02)) * 0.25 + length(disp) * 0.55, 0.06, 0.98);
 
-    textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(disp, alpha));
     textureStore(dataTextureA, pixel, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(t / 100.0, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

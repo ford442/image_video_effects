@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Bragg-reflection structural color (lambda = 2 n d cos theta from lattice spacing); line-defect waveguide spikes (photon packets travelling along sparse firing rods); defect-cavity resonator blooms; synaptic junction avalanche flashes
+//  Upgraded: 2026-11-08
+//  Ideas: Bragg-reflection structural color (lambda = 2 n d cos theta from lattice spacing); line-defect waveguide spikes (photon packets travelling along sparse firing rods); defect-cavity resonator blooms; synaptic junction avalanche flashes; myelin sheath + nodes of Ranvier (rods banded into sheathed internodes, packets jump saltatorily gap to gap); opal grain domains (polycrystalline Bragg mosaic: each grain's lattice constant jittered so play-of-colour changes across grain boundaries)
 //  A packing: ACES display RGBA in A (C unused)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -152,9 +152,9 @@ fn spectralRGB(lambdaNm: f32) -> vec3<f32> {
     let vis = smoothstep(0.0, 0.05, x) * (1.0 - smoothstep(0.95, 1.0, x));
     return vec3<f32>(r, g, b) * vis;
 }
-fn braggStructuralColor(cosTheta: f32, spacing: f32, bass: f32) -> vec3<f32> {
+fn braggStructuralColor(cosTheta: f32, spacing: f32, bass: f32, grain: f32) -> vec3<f32> {
     let nEff = 1.45;
-    let dNm = 260.0 * clamp(spacing / 8.0, 0.35, 2.5) * (1.0 + bass * 0.04);
+    let dNm = 260.0 * clamp(spacing / 8.0, 0.35, 2.5) * (1.0 + bass * 0.04) * grain;
     let lam1 = 2.0 * nEff * dNm * cosTheta;       // first order
     let lam2 = lam1 * 0.5;                        // second order
     return spectralRGB(lam1) + spectralRGB(lam2) * 0.5;
@@ -176,9 +176,39 @@ fn waveguideSpike(p: vec3<f32>, t: f32, mids: f32) -> f32 {
     if (axis == 2) { along = q.z; radial = length(q.xy); }
     let a01 = along / spacing + 0.5;
     let phase = fract(t * (0.25 + mids * 0.5) * (0.6 + h.z) + h.x * 5.0);
+    // Idea 5: saltatory conduction - the packet dwells in a sheathed internode
+    // and leaps to the next node of Ranvier (5 internodes per rod).
+    let seg = phase * 5.0;
+    let saltPhase = (floor(seg) + smoothstep(0.65, 1.0, fract(seg))) / 5.0;
     let dir = select(a01, 1.0 - a01, h.z > 0.5);
-    let packet = exp(-pow((dir - phase) * 10.0, 2.0));
+    let phase2 = saltPhase;
+    let packet = exp(-pow((dir - phase2) * 10.0, 2.0));
     return packet * 0.004 / (radial * radial + 0.004);
+}
+
+// Idea 5: myelin sheath. Along whichever rod the point sits on, the rod is
+// divided into 5 internodes; returns x = node-of-Ranvier gap (1 at gap),
+// y = sheath shading factor.
+fn myelinBands(p: vec3<f32>) -> vec2<f32> {
+    let wp = crystalWarp(p);
+    let spacing = crystalSpacing();
+    let q = fract(wp / spacing) * spacing - spacing * 0.5;
+    let rx = length(q.yz); let ry = length(q.xz); let rz = length(q.xy);
+    var along = q.x;
+    if (ry < rx && ry < rz) { along = q.y; }
+    if (rz < rx && rz < ry) { along = q.z; }
+    let a = fract((along / spacing + 0.5) * 5.0);
+    let gap = exp(-pow((a - 0.5) * 9.0, 2.0)) * smoothstep(0.35, 0.6, length(q));
+    return vec2<f32>(gap, 0.85 + 0.15 * sin(a * 6.28318 * 3.0));
+}
+
+// Idea 6: opal grain domains. Grains are node-centred cells; each grain's
+// effective lattice constant is jittered by +-22% so the Bragg peak (and thus
+// the play-of-colour hue) jumps at grain boundaries.
+fn opalGrain(p: vec3<f32>) -> f32 {
+    let wp = crystalWarp(p);
+    let g = hash3(floor(wp / crystalSpacing() + 0.5) + vec3<f32>(3.1, 8.7, 2.9));
+    return 0.78 + 0.44 * g.y;
 }
 
 // Idea 3: sparse defect cavities trap standing modes; bass/mids lift the Q and
@@ -285,17 +315,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += fresnel * oklab_mix(rimPalette, vec3<f32>(0.5,0.8,1.0), 0.5) * 0.5;
         // Bragg stop-band structural color (idea 1)
         let cosTheta = clamp(abs(dot(rd, n)), 0.0, 1.0);
-        col += braggStructuralColor(cosTheta, crystalSpacing(), bass) * (0.22 + treble * 0.18) * (0.4 + 0.6 * diff);
+        let myelin = myelinBands(p);
+        col *= myelin.y;
+        col += braggStructuralColor(cosTheta, crystalSpacing(), bass, opalGrain(p)) * (0.34 + treble * 0.18) * (0.4 + 0.6 * diff);
         // Ambient occlusion approximation
-        let ao = exp(-t * 0.15);
+        let ao = exp(-t * 0.08); // was 0.15: lattice at default spacing (8) sat at t~8-15 and AO+fog crushed it to black
         col *= ao;
+        // Node-of-Ranvier gaps are emissive: added after AO so they read at depth.
+        col += vec3<f32>(0.5, 0.95, 1.0) * myelin.x * (1.2 + mids * 0.8) * exp(-t * 0.05);
         // Secondary bounce light from glow
         col += glow * 0.3 * (1.0 - ao);
         coverage = ao;
     }
     col += glow;
     // HDR fog with tone mapping
-    col = mix(col, vec3<f32>(0.0, 0.0, 0.05), 1.0 - exp(-t * 0.1));
+    col = mix(col, vec3<f32>(0.0, 0.0, 0.05), 1.0 - exp(-t * 0.06));
     // Mouse held: stimulated region brightens (synaptic excitation)
     let held = step(0.5, u.zoom_config.w);
     let mDist = length(screenUV - u.zoom_config.yz);
