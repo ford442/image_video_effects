@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarched, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: ergosphere shear bands wrapped around the singularity azimuth; photon-ring caustic shell riding the mass-scaled critical radius
+//  Upgraded: 2026-10-10, 2026-11-08
+//  Ideas: ergosphere shear bands wrapped around the singularity azimuth; photon-ring caustic shell riding the mass-scaled critical radius; relativistic Doppler beaming + gravitational redshift (hue-only tint, approaching limb beamed); chord-length emission profile on the threads (SDF-normal core/limb)
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read exactly, rotated/infalling around the singularity
 // ═══════════════════════════════════════════════════════════════════
 
@@ -173,6 +173,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         var chromatic_shift = params.w;
         if (chromatic_shift == 0.0) { chromatic_shift = 0.5; }
 
+        // ── Idea 6: relativistic Doppler beaming + gravitational redshift ──────────────
+        // The ergosphere shear bands rotate toward +azimuth, so the x<0 limb approaches the
+        // camera: it is beamed brighter and blue-shifted, the receding limb dimmer and
+        // red-shifted (D = 1/(1 + beta cos az), Keplerian beta ~ 1/sqrt(r)). Light climbing
+        // out of the well arrives redder: g = sqrt(1 - r_s/r). Both tints are hue-only
+        // (luma-normalised) so the existing tidal heating / bloom still own the brightness; the
+        // beaming itself is full D^2 on the additive orbiting emission (bloom, shear bands, photon
+        // ring) and half strength on the sphere face, which the tone curve already compresses.
+        let toHit = hit_p - center;
+        let rxz = max(length(toHit.xz), 1e-4);
+        let cosAz = toHit.x / rxz;
+        let beta = 0.5 * inverseSqrt(max(dist_center, 1.0));
+        let dop = 1.0 / (1.0 + beta * cosAz);
+        let dopS = clamp(log2(dop), -0.6, 0.6);
+        var dopTint = vec3<f32>(exp2(-0.5 * dopS), 1.0, exp2(0.5 * dopS));
+        dopTint = dopTint / dot(dopTint, vec3<f32>(0.3, 0.59, 0.11));
+        let dopplerLight = dop * dop * dopTint;                       // orbiting emission: full D^2
+        let dopplerBody = mix(1.0, dop * dop, 0.5) * dopTint;         // spinning sphere face: half strength
+        let gRs = sqrt(clamp(1.0 - 0.5 / max(dist_center, 0.51), 0.04, 1.0));
+        var redTint = exp(-(1.0 / gRs - 1.0) * vec3<f32>(0.0, 0.7, 1.7));
+        redTint = redTint / dot(redTint, vec3<f32>(0.3, 0.59, 0.11));
+
         // Chromatic gravitational lensing: R/B bend differently
         // Idea 2: the weft family (odd mirror parity) runs half a cycle out of phase -> complementary hue.
         let familyPhase = parity * PI;
@@ -180,7 +202,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let phaseB = hit_p.z * chromatic_shift * (1.0 - treble * 0.1) + time + familyPhase;
         let c_shiftR = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(phaseR, phaseR + 2.09, phaseR + 4.18));
         let c_shiftB = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(phaseB, phaseB + 2.09, phaseB + 4.18));
-        let c_shift = mix(c_shiftR, c_shiftB, 0.5);
+        let c_shift = mix(c_shiftR, c_shiftB, 0.5) * redTint;
 
         var accretion_glow = params.z;
         if (accretion_glow == 0.0) { accretion_glow = 1.0; }
@@ -199,31 +221,68 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             body = vec3<f32>((0.65 + 0.35 * stria) * (1.0 + 1.5 * strain));
             // Idea 2: warp family slightly brighter than weft so the two read as layered threads.
             body *= mix(1.0, 0.8, parity);
+
+            // ── Idea 7: chord-length emission profile ────────────────────────────────
+            // A thread is an optically thin emitter: its brightness follows the chord the
+            // view ray cuts through it, |n.v|, so each thread gets a bright core and soft
+            // limbs instead of a flat ribbon. n = tetrahedral gradient of the file's own
+            // map(), threads only, hit pixels only (4 extra map() calls per thread hit).
+            let ne = 0.004;
+            let k1 = vec3<f32>(1.0, -1.0, -1.0);
+            let k2 = vec3<f32>(-1.0, -1.0, 1.0);
+            let k3 = vec3<f32>(-1.0, 1.0, -1.0);
+            let k4 = vec3<f32>(1.0, 1.0, 1.0);
+            let nrm = normalize(
+                k1 * map(hit_p + k1 * ne, time, audio_intensity, params, center, bass).x +
+                k2 * map(hit_p + k2 * ne, time, audio_intensity, params, center, bass).x +
+                k3 * map(hit_p + k3 * ne, time, audio_intensity, params, center, bass).x +
+                k4 * map(hit_p + k4 * ne, time, audio_intensity, params, center, bass).x + vec3<f32>(1e-8));
+            let chord = clamp(dot(nrm, -rd), 0.0, 1.0);
+            body *= 0.35 + 0.65 * sqrt(chord);
+        } else {
+            // Idea 6: the singularity sphere spins with its ergosphere — beamed limb, redshifted limb.
+            body = dopplerBody;
         }
 
-        col = c_shift * body * (1.0 / (1.0 + dO * dO * 0.1)) + glowTint * bloom;
+        col = c_shift * body * (1.0 / (1.0 + dO * dO * 0.1)) + glowTint * bloom * dopplerLight;
 
         // Idea 4: azimuthal ergosphere shear bands around the projected center.
+        // (Idea 6: the bands are the orbiting emission, so they carry the Doppler beaming.)
         let az = atan2(hit_p.z - center.z, hit_p.x - center.x);
         let shear = 0.5 + 0.5 * sin(az * 12.0 - time * (1.2 + bass * 0.4));
-        col += vec3<f32>(0.2, 0.62, 1.0) * shear * exp(-dist_center * 1.1) * 0.32;
+        col += vec3<f32>(0.2, 0.62, 1.0) * shear * exp(-dist_center * 1.1) * 0.32 * dopplerLight;
 
-        // Idea 5: mass-scaled photon-ring caustic shell.
+        // Idea 5: mass-scaled photon-ring caustic shell (Idea 6: brighter on the approaching limb).
         let photonRadius = 1.1 + 0.18 * mass;
         let photon = exp(-abs(dist_center - photonRadius) * 18.0);
-        col += vec3<f32>(1.0, 0.78, 0.32) * photon * (0.3 + treble * 0.22);
+        col += vec3<f32>(1.0, 0.78, 0.32) * photon * (0.3 + treble * 0.22) * dopplerLight;
     }
 
     // Idea 3: orbital infall trail — exact C history read at a pixel rotated backwards around the
     // projected singularity and pushed outward, so last frame's light orbits and falls in.
     // Angular step is faster near the singularity. (Replaces HEAD's ~2.4% sampled memory on hits only.)
+    // RESCUE 2026-11-08: the step was 0.035/(rr+0.15) rad per frame read with ONE nearest pixel, i.e.
+    // 4-14 px per frame, which stamped a train of discrete rotated copies of the weave (sawtooth edges
+    // merging into filled polygons). Step is now 0.014/(rr+0.15) and the same exact loads are
+    // reconstructed bilinearly, so the trail is a smooth comet instead of stacked copies.
     let rel = uv - mouseUV;
     let rr = length(rel);
-    let orbit = 0.035 / (rr + 0.15);
-    let srcUV = mouseUV + (rot(orbit) * rel) * 1.012;
-    let srcPix = vec2<i32>(i32(floor(srcUV.x * res.y + 0.5 * res.x)), i32(floor(0.5 * res.y - srcUV.y * res.y)));
-    let srcC = clamp(srcPix, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
-    let prev = max(textureLoad(dataTextureC, srcC, 0).rgb, vec3<f32>(0.0));
+    let orbit = 0.014 / (rr + 0.15);
+    let srcUV0 = mouseUV + (rot(orbit) * rel) * 1.012;
+    // The step is angular, so its pixel length grows with resolution (11 px/frame at 1080p would
+    // bring the stacked copies back): cap the total history displacement at 3 px per frame.
+    let srcDisp = srcUV0 - uv;
+    let srcUV = uv + srcDisp * min(1.0, 3.0 / max(length(srcDisp) * res.y, 1e-3));
+    let srcF = vec2<f32>(srcUV.x * res.y + 0.5 * res.x - 0.5, 0.5 * res.y - srcUV.y * res.y - 0.5);
+    let srcF0 = floor(srcF);
+    let srcW = srcF - srcF0;
+    let srcI = vec2<i32>(srcF0);
+    let hiC = vec2<i32>(res) - vec2<i32>(1);
+    let h00 = max(textureLoad(dataTextureC, clamp(srcI, vec2<i32>(0), hiC), 0).rgb, vec3<f32>(0.0));
+    let h10 = max(textureLoad(dataTextureC, clamp(srcI + vec2<i32>(1, 0), vec2<i32>(0), hiC), 0).rgb, vec3<f32>(0.0));
+    let h01 = max(textureLoad(dataTextureC, clamp(srcI + vec2<i32>(0, 1), vec2<i32>(0), hiC), 0).rgb, vec3<f32>(0.0));
+    let h11 = max(textureLoad(dataTextureC, clamp(srcI + vec2<i32>(1, 1), vec2<i32>(0), hiC), 0).rgb, vec3<f32>(0.0));
+    let prev = mix(mix(h00, h10, srcW.x), mix(h01, h11, srcW.x), srcW.y);
     let decay = 0.8 + 0.12 * exp(-rr * 2.0) + bass * 0.02;
     let hdr = max(col, prev * min(decay, 0.95));
 

@@ -4764,7 +4764,7 @@
       ]
     },
     "gen-celestial-glass-tornado": {
-      "hash": "13075fcce29f59a7",
+      "hash": "f3ce46a584eb4610",
       "history": [
         {
           "event": "upgraded",
@@ -4773,6 +4773,14 @@
           "prev_hash": "9bcfd28c59fea70f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "f3ce46a584eb4610",
+          "prev_hash": "13075fcce29f59a7",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -4976,7 +4984,7 @@
       ]
     },
     "gen-chromatic-singularity-loom": {
-      "hash": "a7c071ac1a2a89ab",
+      "hash": "a3d898715e862df5",
       "history": [
         {
           "event": "upgraded",
@@ -4985,6 +4993,14 @@
           "prev_hash": "cff9439be811c775",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "a3d898715e862df5",
+          "prev_hash": "a7c071ac1a2a89ab",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -6053,7 +6069,7 @@
       ]
     },
     "gen-ethereal-quantum-glass-nautilus": {
-      "hash": "ec12c46902b4216e",
+      "hash": "f09c9a2e6b91d488",
       "history": [
         {
           "event": "upgraded",
@@ -6062,6 +6078,14 @@
           "prev_hash": "765e0ee65ac98eb9",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "f09c9a2e6b91d488",
+          "prev_hash": "ec12c46902b4216e",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -7486,8 +7510,17 @@
       "history": []
     },
     "gen-kryonic-quantum-aether-fractal-core": {
-      "hash": "8b5077be58879420",
-      "history": []
+      "hash": "bd683c26c7e6ef0f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "bd683c26c7e6ef0f",
+          "prev_hash": "8b5077be58879420",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
+        }
+      ]
     },
     "gen-langton-ant": {
       "hash": "e70103b3333c2a08",
@@ -9168,7 +9201,7 @@
       ]
     },
     "gen-radiant-chrono-glass-nautilus": {
-      "hash": "91720900e88a5be9",
+      "hash": "505b269a20611f68",
       "history": [
         {
           "event": "upgraded",
@@ -9177,6 +9210,14 @@
           "prev_hash": "bbefa72172b774d4",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "505b269a20611f68",
+          "prev_hash": "91720900e88a5be9",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -9211,8 +9252,17 @@
       "history": []
     },
     "gen-radiant-quantum-crystalline-forge": {
-      "hash": "2a20d4cb317ac03c",
-      "history": []
+      "hash": "8a31e2050a1a3310",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "8a31e2050a1a3310",
+          "prev_hash": "2a20d4cb317ac03c",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
+        }
+      ]
     },
     "gen-radiant-quantum-plasma-kraken-core": {
       "hash": "5b92652a1bc64230",
@@ -9318,8 +9368,17 @@
       ]
     },
     "gen-resonant-quantum-obsidian-scarab-engine": {
-      "hash": "a65870acad9cc4e6",
-      "history": []
+      "hash": "5e89fbe52359415a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "5e89fbe52359415a",
+          "prev_hash": "a65870acad9cc4e6",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
+        }
+      ]
     },
     "gen-resonant-quantum-plasma-dragon-eye": {
       "hash": "9f7f319d2600b419",
@@ -9426,7 +9485,7 @@
       ]
     },
     "gen-sentient-holographic-neuro-lace-matrix": {
-      "hash": "36fa4dbb9c364d26",
+      "hash": "caf2dfc3a1a8d3f4",
       "history": [
         {
           "event": "upgraded",
@@ -9435,6 +9494,14 @@
           "prev_hash": "4b01f71ea9bf2735",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "caf2dfc3a1a8d3f4",
+          "prev_hash": "36fa4dbb9c364d26",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -9766,8 +9833,17 @@
       ]
     },
     "gen-symbiotic-chrono-mycelium-engine": {
-      "hash": "67885e64a15fae69",
-      "history": []
+      "hash": "3711f1e90122213a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "3711f1e90122213a",
+          "prev_hash": "67885e64a15fae69",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
+        }
+      ]
     },
     "gen-symbiotic-cyber-fungal-core-reactor": {
       "hash": "a543d26830099f20",
@@ -9918,7 +9994,7 @@
       ]
     },
     "gen-vitreous-chrono-chandelier": {
-      "hash": "7215ffc90758e004",
+      "hash": "a9c375e3c91ddf0a",
       "history": [
         {
           "event": "upgraded",
@@ -9927,6 +10003,14 @@
           "prev_hash": "3b6f2154ede55274",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "a9c375e3c91ddf0a",
+          "prev_hash": "7215ffc90758e004",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
