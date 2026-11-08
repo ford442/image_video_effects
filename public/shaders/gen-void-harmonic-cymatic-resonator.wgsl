@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: nodal Chladni sheets; mode-split seams; antinode bellies; Helmholtz throat ring
+//  Upgraded: 2026-10-10, 2026-11-08
+//  Ideas: nodal Chladni sheets; mode-split seams; antinode bellies; Helmholtz throat ring; radial breathing mode (l=0 spherical Bessel, bass-excited, flexes the wall); knife-edge schlieren two-tone nodal sheets
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -83,8 +83,18 @@ fn resonatorField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
     let amp = u.zoom_params.y * (0.75 + audio.y * 0.25);
     let comp = clamp(u.zoom_params.w, 1.0, 10.0);
     let modes = splitModes(p, freq, comp, t);
-    let base_shape = modes.y * amp;
-    let d_sphere = length(p) - 3.0;
+
+    // ── Idea 5: radial breathing mode ─────────────────────────────────────────
+    // The lowest mode of a rigid *spherical* cavity is radial: p ∝ j0(kr) = sin(kr)/(kr),
+    // pressure antinode at the wall for kR = 4.493 (j0'(kR)=0). HEAD only has Cartesian
+    // product modes, so nothing ever breathed. Bass excites it; the wall flexes with the
+    // same phase and the nodal sheets bend radially instead of staying a rigid lattice.
+    let rr = length(p);
+    let kr = max(freq * 1.4977 * rr, 0.001);
+    let breath = (0.22 + 0.95 * audio.x) * (sin(kr) / kr) * cos(t * 3.0);
+    let pressure = modes.y + breath;
+    let base_shape = pressure * amp;
+    let d_sphere = rr - (3.0 + 0.06 * breath);
 
     var disp = 0.0;
     var f = 1.0;
@@ -104,7 +114,7 @@ fn resonatorField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
         (abs(combinedPressure) - (0.06 + 0.025 * amp))
         / max(freq, 1.0);
     let distance = max(d_sphere, membraneDistance);
-    return vec4<f32>(distance, modes.y, modes.z, length(p));
+    return vec4<f32>(distance, pressure, modes.z, rr);
 }
 
 fn getNormal(p: vec3<f32>, audio: vec3<f32>) -> vec3<f32> {
@@ -135,7 +145,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cw = normalize(ta - ro);
     let cu = normalize(cross(cw, vec3<f32>(0.0, 1.0, 0.0)));
     let cv = cross(cu, cw);
-    let rd = normalize(uv.x * cu + uv.y * cv + 1.5 * cw);
+    // HEAD built rd from (+uv.x, +uv.y) on this basis: cu = (-1,0,0) and texture-down = +uv.y put
+    // world-right on screen-left and world-up on screen-down (a 180° rotation), so the mouse warp
+    // (mouse_pos = (mx, -my)) landed at the point-mirror of the cursor and the key light came from
+    // below. Negating both makes screen-right = +x, screen-up = +y, as resonatorField() assumes.
+    let rd = normalize(-uv.x * cu - uv.y * cv + 1.5 * cw);
 
     var p = ro;
     var dO = 0.0;
@@ -161,6 +175,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // three-axis pressure field through the sphere, so the resonator reveals
     // thin luminous Chladni sheets rather than only a lit outer shell.
     var membraneGlow = 0.0;
+    var flankNum = 0.0;        // near-weighted rising-flank share of the nodal glow (Idea 6)
+    var flankDen = 0.0;
+    var prevPressure = 0.0;
     var seamGlow = 0.0;
     var antinodeGlow = 0.0;
     var throatGlow = 0.0;
@@ -171,8 +188,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let field = resonatorField(q, audio);
         let inside = 1.0 - smoothstep(2.7, 3.05, field.w);
         let nodal = exp(-abs(field.y) * 24.0 / amplitude);
-        membraneGlow = membraneGlow + nodal * inside * 0.075 * hitWeight;
-        seamGlow = seamGlow + field.z * inside * 0.045 * hitWeight;
+        // ── Idea 6: knife-edge schlieren ──
+        // The pressure slope between consecutive steps (already sampled; no new field
+        // evaluations) says which flank of the node the ray is on: compression→rarefaction
+        // vs the reverse, as in a schlieren photograph of a standing wave.
+        let slope = select(field.y - prevPressure, 0.0, j == 0);
+        prevPressure = field.y;
+        let flank = smoothstep(-0.3, 0.3, slope / (0.04 + 0.08 * u.zoom_params.x));
+        let membraneStep = nodal * inside * 0.105 * hitWeight;
+        membraneGlow = membraneGlow + membraneStep;
+        // The glow AMOUNT is HEAD's plain sum; only its COLOUR is near-weighted so the nearest
+        // sheet's flank decides the tint (a plain average of alternating flanks is just white).
+        let nearW = exp(-0.15 * f32(j));
+        flankNum = flankNum + membraneStep * nearW * flank;
+        flankDen = flankDen + membraneStep * nearW;
+        // Rescue: seam weight 0.045 → 0.018. `seam` stays near 1 wherever the two modes are close, so at
+        // 0.045 it was a flat magenta fill (meanL 0.38 vs 0.21 for the nodal sheets) that buried the sheets.
+        seamGlow = seamGlow + field.z * inside * 0.018 * hitWeight;
         // Idea: antinode bellies — pressure peaks, the complement of the nodal zeros.
         let anti = exp(-abs(abs(field.y) - 0.72) * 14.0);
         antinodeGlow = antinodeGlow + anti * inside * 0.04 * hitWeight;
@@ -190,7 +222,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let diff = max(dot(n, lightDir), 0.0);
         let ambient = 0.1;
         let base_col = 0.5 + 0.5 * cos(u.config.x + p.xyx + vec3<f32>(0.0, 2.0, 4.0));
-        hdr = base_col * (diff + ambient);
+        hdr = base_col * (diff + ambient) * 0.65;   // rescue: pastel shell shading ×0.65 so the nodal sheets read through it
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 4.0);
         hdr = hdr + fresnel * vec3<f32>(0.0, 0.8, 1.2) * (0.35 + audio.y * 0.65);
     }
@@ -199,7 +231,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                  + vec3<f32>(0.9, 0.1, 0.5) * (0.2 + audio.y * 0.8)
                  + vec3<f32>(0.1, 0.8, 0.9) * (0.2 + audio.z * 0.8);
     hdr = hdr + glow_col * surfaceGlow * 0.7 * glow_intensity;
-    hdr = hdr + vec3<f32>(0.12, 0.75, 1.4) * membraneGlow * glow_intensity;
+    // Idea 6 colours: cool cyan on the falling flank (HEAD's sheet colour), warm coral-gold on the rising one.
+    let flankMix = flankNum / max(flankDen, 1e-4);
+    hdr = hdr + mix(vec3<f32>(0.05, 0.70, 1.5), vec3<f32>(1.5, 0.45, 0.05), flankMix) * membraneGlow * glow_intensity;
     hdr = hdr + vec3<f32>(1.25, 0.18, 0.85) * seamGlow * glow_intensity;
     hdr = hdr + vec3<f32>(0.95, 0.72, 0.35) * antinodeGlow * glow_intensity * amplitude;
     hdr = hdr + vec3<f32>(0.55, 0.85, 1.0) * throatGlow * glow_intensity;

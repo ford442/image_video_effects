@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: iris crypts & stroma (radial streaks + crypt lacunae around the pupil, tinted by a KIFS orbit trap); blink (eyelid shell closing on a hashed timer, treble twitches the lids); pupil event-horizon lensing (rays bend toward the pupil axis by dilation, photon ring at the pupil rim)
+//  Upgraded: 2026-11-08
+//  Ideas: iris crypts & stroma (radial streaks + crypt lacunae around the pupil, tinted by a KIFS orbit trap); blink (eyelid shell closing on a hashed timer, treble twitches the lids); pupil event-horizon lensing (rays bend toward the pupil axis by dilation, photon ring at the pupil rim); limbal ring at the iris/sclera border that thickens with dilation; corneal four-pane window catchlight mirrored by a corneal dome
 //  A packing: raw HDR display history RGBA (C mixed back via exact textureLoad; ACES on display only)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -100,7 +100,13 @@ fn sdfEye(p: vec3<f32>, mouseRotX: mat2x2<f32>, mouseRotY: mat2x2<f32>, dilation
     }
     let fractalDist = length(z) / scale - 0.05;
 
-    let eyeD = max(sphereDist, min(fractalDist, pupilDist));
+    // Rescue: HEAD intersected the sphere with (fractal ∪ pupil cylinder), so only
+    // the pupil plug survived — the sclera, veins and iris were never hit and the
+    // frame showed a small tan disc. Keep the eyeball solid; the KIFS fractal now
+    // embosses bounded relief into it, and the pupil is a shallow front recess.
+    let relief = 0.05 * exp(-max(fractalDist, 0.0) * 12.0);
+    let pupilRecess = select(0.0, 0.06, pupilDist < 0.0 && p_rot.z < 0.0);
+    let eyeD = sphereDist - relief + pupilRecess;
 
     // Idea 2: eyelids — a thin shell over the eyeball, cut open by a band
     // |y| < lidOpen. Lids do not follow the gaze (world y, not p_rot).
@@ -157,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lidOpen = mix(2.25, -0.05, closure);
 
     // Raymarching setup
-    let ro = vec3<f32>(0.0, 0.0, -5.0);
+    let ro = vec3<f32>(0.0, 0.0, -8.0); // pulled back so eyeball + lids fit at defaults
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Idea 3: pupil event-horizon lensing. The pupil axis in world space is the
@@ -174,7 +180,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rd = normalize(rd - perp / max(impact, 1e-3) * bend * smoothstep(0.0, 0.15, impact));
 
     var t = 0.0;
-    let max_t = 15.0;
+    let max_t = 18.0;
     var steps = 0;
     var p = vec3<f32>(0.0);
     var hitInfo: EyeHit;
@@ -253,11 +259,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (rr < pupilR && p_rot.z < 0.0) {
                 col = vec3<f32>(1.0, 0.0, 0.5) * (1.0 - rr); // Neon magenta
             }
+            // Idea 4: limbal ring — the dark annulus where the iris meets the
+            // sclera; it thickens as the pupil dilates (iris compresses outward).
+            let limbusR = pupilR + 0.85;
+            let limbal = exp(-pow((rr - limbusR) * (14.0 - dilation * 4.0), 2.0)) * front;
+            col *= 1.0 - limbal * 0.75;
+
             // Idea 3: photon ring hugging the pupil rim, brighter with dilation
             col += vec3<f32>(1.0, 0.7, 1.0) * exp(-abs(rr - pupilR) * 40.0) * front * (0.4 + dilation * 1.2);
         }
 
         col *= (diff * ao + 0.2);
+
+        // Idea 5: corneal catchlight — a clear corneal dome bulges in front of
+        // the iris along the gaze axis; it mirrors a four-pane window light.
+        if (hitInfo.lid < 0.5) {
+            let pr = gazeRotate(p, rotX, rotY);
+            let cC = vec3<f32>(0.0, 0.0, -1.35);           // cornea centre, eye space
+            let cn = normalize(pr - cC);
+            let onCornea = smoothstep(pupilR + 0.95, pupilR + 0.7, length(pr.xy)) * step(pr.z, -1.8) * step(0.0, -cn.z); // front dome only (no sclera-edge mirror)
+            let rdE = gazeRotate(rd, rotX, rotY);
+            let refl = reflect(rdE, cn);
+            let win = vec2<f32>(refl.x + 0.35, refl.y - 0.45) * 5.0;
+            let pane = step(abs(win.x), 1.0) * step(abs(win.y), 0.8)
+                     * step(0.08, abs(win.x)) * step(0.08, abs(win.y));
+            col += vec3<f32>(1.0, 0.97, 0.9) * pane * onCornea * (1.6 + audioTreble);
+        }
 
         // Color shift
         col = mix(col, col.zxy, colorShift);
