@@ -4,7 +4,7 @@
     "name": "4D Projection Dream Weavers",
     "url": "shaders/4d-projection-dream-weavers.wgsl",
     "category": "generative",
-    "description": "A continuous slice through 4-dimensional fractal space. The mouse smoothly controls two extra dimensions, allowing genuine exploration of higher-dimensional forms. Audio modulates scale, speed, and detail.",
+    "description": "A hyper-rotating slice through 4-dimensional noise space, perspective-projected with colour dispersion along w. The mouse smoothly steers two extra dimensions. Audio modulates scale, speed, and detail.",
     "features": [
       "4d-fractal",
       "smooth-navigation",
@@ -6680,7 +6680,7 @@
     "type": "generative",
     "category": "generative",
     "url": "shaders/gen-chromodynamic-glass-labyrinth.wgsl",
-    "description": "A hyper-reflective, endlessly unfolding non-Euclidean maze of liquid glass that refracts a shifting spectrum of chromodynamic light.",
+    "description": "A hyper-reflective, endlessly unfolding non-Euclidean maze of liquid glass that refracts a shifting spectrum of chromodynamic light with real dispersion and Fresnel mirrors.",
     "workgroup_size": [
       16,
       16,
@@ -11745,7 +11745,7 @@
       "mouse-reactive",
       "shockwave"
     ],
-    "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending. Early reflections bounce off the frame, and comb-filter notches follow the echo spacing.",
+    "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending. Early and second-order reflections bounce off the frame, and comb-filter notches follow the echo spacing.",
     "workgroup_size": [
       16,
       16,
@@ -11804,7 +11804,7 @@
       "aces-tonemap",
       "semantic-alpha"
     ],
-    "feedbackPacking": "A/C = final ACES display RGBA; exact manually reconstructed echo history; extraBuffer[133] = smoothed bass envelope"
+    "feedbackPacking": "A.rgb = raw pre-ACES accumulated trail (exact manually reconstructed echo history), A.a = smoothed bass envelope; ACES only on writeTexture"
   },
   {
     "id": "gen-ferrofluid-monolith",
@@ -14050,7 +14050,7 @@
       "music",
       "reactive"
     ],
-    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into segmented pieces that pulse with an inner, ethereal light that climbs the seams and spills through the cracks onto the water below. Spall chips sit off the shard corners, and crack dust grays the seam light where the spread opens.",
+    "description": "A massive, ancient monolith floating above a dark liquid sea, fractured into shards that bob on their own phases and pulse with an inner light that climbs the seams and spills onto the water, which rings outward in a dispersive train. Chipped edges catch the light.",
     "workgroup_size": [
       16,
       16,
@@ -16102,7 +16102,7 @@
       "audio",
       "music"
     ],
-    "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure. Cul-de-sac chambers warm where the gyroid gradient vanishes, and world-up faces wear into floor treads.",
+    "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure. Walls swell and thin along the fourth dimension, cul-de-sac chambers warm where the gyroid gradient vanishes, and crevices darken.",
     "workgroup_size": [
       16,
       16,

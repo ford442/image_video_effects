@@ -40,6 +40,7 @@
     "shader_plans/README.md"
   ],
   "pending": {
+    "acoustic-string-theory": "eligible",
     "4d-projection-dream-weavers": "eligible",
     "aero-chromatics": "eligible",
     "aero-chromatics-prismatic": "eligible",
@@ -76,7 +77,6 @@
     "chroma-lens-iridescence": "eligible",
     "chroma-threads-gabor": "eligible",
     "chroma-vortex-coupled": "eligible",
-    "chromatic-ghost-tunnel": "eligible",
     "chromatic-reaction-diffusion-rgba": "eligible",
     "chromatic-swirl": "eligible",
     "chromatographic-diffuse": "eligible",
@@ -164,7 +164,6 @@
     "gen-prismatic-serpent-river": "eligible",
     "gen-prismatic-void-weaver-ouroboros": "eligible",
     "gen-protocell-division": "eligible",
-    "gen-psychedelic-layered-time-stamps": "eligible",
     "gen-psychedelic-time-warp-kaleidoscope": "eligible",
     "gen-quantum-chrome-serpent-ouroboros": "eligible",
     "gen-quantum-fluorescent-nebula-anemone": "eligible",
@@ -264,8 +263,6 @@
     "neural-resonance": "eligible",
     "optical-flow-estimate": "eligible",
     "optical-flow-tracer": "eligible",
-    "parallax-glow-compositor": "eligible",
-    "parallax_depth_layers": "eligible",
     "phase-memory-weave": "eligible",
     "phase-shift": "eligible",
     "phosphor-magnifier": "eligible",

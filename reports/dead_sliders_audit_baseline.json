@@ -501,21 +501,6 @@
       ]
     },
     {
-      "id": "parallax-glow-compositor",
-      "category": "interactive-mouse",
-      "dead_param_ids": [
-        "aberration"
-      ]
-    },
-    {
-      "id": "parallax_depth_layers",
-      "category": "artistic",
-      "dead_param_ids": [
-        "depth_of_field",
-        "param3"
-      ]
-    },
-    {
       "id": "particle_dreams_alpha",
       "category": "artistic",
       "dead_param_ids": [

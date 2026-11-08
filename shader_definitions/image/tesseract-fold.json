@@ -2,7 +2,7 @@
   "id": "tesseract-fold",
   "name": "Tesseract Fold",
   "url": "shaders/tesseract-fold.wgsl",
-  "description": "Neon stained-glass tesseract faces with spectral edge diffraction, inner-face interference, held projection-plane deformation, bounded click-pulsed fold shells, closed-form 4D-style rotation, and depth-aware alpha.",
+  "description": "Neon stained-glass tesseract faces with spectral edge diffraction, held projection-plane deformation, bounded click-pulsed fold shells, true 4D double rotation with perspective, lead cames on the mirror seams, fold-count glass thickness, and depth-aware alpha.",
   "updated": true,
   "params": [
     {

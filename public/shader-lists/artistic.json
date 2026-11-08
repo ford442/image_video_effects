@@ -3470,7 +3470,9 @@
       "depth-layers",
       "alpha-occlusion",
       "dof",
-      "atmospheric"
+      "atmospheric",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "params": [
       {
