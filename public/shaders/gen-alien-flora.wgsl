@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
-//  Ideas: gill ridges; spore motes
+//  Upgraded: 2026-11-08
+//  Ideas: gill ridges; spore motes; margin bioluminescence; mycelial veins
 //  A packing: linear history RGB + organic alpha (ACES on display)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -212,6 +212,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    // Rescue: gid.y grows downward, so the world rendered upside down (ground on top).
+    uv.y = -uv.y;
     let dimsC = vec2<i32>(textureDimensions(dataTextureC));
     let prev = textureLoad(dataTextureC, clamp(vec2<i32>(global_id.xy), vec2<i32>(0), dimsC - vec2<i32>(1)), 0);
 
@@ -272,6 +274,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Glow intensity affects emission, not alpha directly
             let glow = u.zoom_params.z;
             baseColor = baseColor * glow;
+
+            // ── Idea 3: margin bioluminescence — the light lives in the cap rim
+            // and pulses down the stem; the pulse front rides mids.
+            let cellSz = mix(16.0, 4.0, u.zoom_params.x);
+            let cid = floor(p.xz / cellSz);
+            let crand = hash(cid);
+            let cq = (fract(p.xz / cellSz) - 0.5) * cellSz;
+            let cc = (cid + 0.5) * cellSz;
+            let gy = sin(cc.x * 0.2) * sin(cc.y * 0.2) * 2.0 + sin(cc.x * 0.5 + cc.y * 0.3) * 0.5;
+            let stemH = 2.0 + crand * 3.0;
+            let capR = 1.0 + crand * 1.5;
+            let rimBand = smoothstep(0.65, 0.95, length(cq) / capR) * smoothstep(-0.4, 0.2, p.y - gy - stemH);
+            let hgt = clamp((p.y - gy) / stemH, 0.0, 1.0);
+            let pulse = smoothstep(0.85, 1.0, sin(hgt * 9.0 + u.config.x * (1.5 + plasmaBuffer[0].y * 2.5) + crand * 6.28) * 0.5 + 0.5);
+            let stemMask = 1.0 - smoothstep(0.85, 1.0, hgt);
+            baseColor += hueColor * glow * (rimBand * 1.4 + pulse * stemMask * 0.6);
         } else if (mat == 3.0) {
             let treble = plasmaBuffer[0].z;
             baseColor = vec3<f32>(0.72, 0.95, 1.0) * (0.7 + treble * 1.5);
@@ -281,6 +299,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (mat == 2.0) {
             let sss = subsurfaceScattering(n, lightDir, -rd, thickness, baseColor);
             baseColor += sss;
+        }
+
+        // ── Idea 4: mycelial veins — the plants share a glowing root net on the
+        // ground: branching radial veins around each plant's foot, fading outward.
+        if (mat == 1.0) {
+            let cellSzG = mix(16.0, 4.0, u.zoom_params.x);
+            let gid2 = floor(p.xz / cellSzG);
+            let gq = (fract(p.xz / cellSzG) - 0.5) * cellSzG;
+            let gr = length(gq);
+            let gang = atan2(gq.y, gq.x) + hash(gid2) * 6.28;
+            let vein = smoothstep(0.82, 1.0, abs(sin(gang * 4.0 + log(gr + 0.3) * 3.0)))
+                     + smoothstep(0.9, 1.0, abs(sin(gang * 9.0 - log(gr + 0.3) * 5.0))) * 0.5;
+            let reach = exp(-gr / (cellSzG * 0.22));
+            let veinCol = mix(vec3<f32>(0.2, 0.8, 0.9), vec3<f32>(0.6, 0.3, 1.0), fract(u.zoom_params.w));
+            baseColor += veinCol * vein * reach * u.zoom_params.z * 0.35 * (0.6 + plasmaBuffer[0].x * 0.8);
         }
 
         // Shading

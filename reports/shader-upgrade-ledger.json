@@ -3867,8 +3867,17 @@
       ]
     },
     "fractal-ice-palace": {
-      "hash": "f846c4f6585db3c6",
-      "history": []
+      "hash": "45da17666a3954a8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "45da17666a3954a8",
+          "prev_hash": "f846c4f6585db3c6",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
+        }
+      ]
     },
     "gen-3d-sierpinski-chaos": {
       "hash": "99cd34ce0a51d00f",
@@ -4051,8 +4060,17 @@
       ]
     },
     "gen-alien-flora": {
-      "hash": "ee3f38c2a8d47517",
-      "history": []
+      "hash": "bf3ba0fddb0a27e2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "bf3ba0fddb0a27e2",
+          "prev_hash": "ee3f38c2a8d47517",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
+        }
+      ]
     },
     "gen-alpha-aurora": {
       "hash": "44653a5b5cb17bc6",
@@ -4490,7 +4508,7 @@
       ]
     },
     "gen-brutalist-monument": {
-      "hash": "c0ed71d02b1dc37e",
+      "hash": "8cf78f29ae5f7bcb",
       "history": [
         {
           "event": "upgraded",
@@ -4499,6 +4517,14 @@
           "prev_hash": "da17f8b06f07590c",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "8cf78f29ae5f7bcb",
+          "prev_hash": "c0ed71d02b1dc37e",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -7115,7 +7141,7 @@
       ]
     },
     "gen-isometric-city": {
-      "hash": "8c8834d8fca87451",
+      "hash": "f826ef8116bf2e67",
       "history": [
         {
           "event": "upgraded",
@@ -7124,6 +7150,14 @@
           "prev_hash": "40e63fea7a97cc73",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "f826ef8116bf2e67",
+          "prev_hash": "8c8834d8fca87451",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -7969,8 +8003,17 @@
       ]
     },
     "gen-neon-snowfall": {
-      "hash": "a5404a2705ab5db0",
-      "history": []
+      "hash": "f885548b535c10f0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "f885548b535c10f0",
+          "prev_hash": "a5404a2705ab5db0",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
+        }
+      ]
     },
     "gen-neon-stellated-octahedron": {
       "hash": "41d261df6073e2af",
@@ -8176,7 +8219,7 @@
       "history": []
     },
     "gen-obsidian-echo-chamber": {
-      "hash": "87de278f6dc3cf5d",
+      "hash": "220330394cf41688",
       "history": [
         {
           "event": "upgraded",
@@ -8185,6 +8228,14 @@
           "prev_hash": "cd5982cc8dec73db",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "220330394cf41688",
+          "prev_hash": "87de278f6dc3cf5d",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -8345,7 +8396,7 @@
       ]
     },
     "gen-prism-tide": {
-      "hash": "e88eabca93c64d94",
+      "hash": "1de5741184675d94",
       "history": [
         {
           "event": "upgraded",
@@ -8354,6 +8405,14 @@
           "prev_hash": "75d69e7ef19b7ee1",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "1de5741184675d94",
+          "prev_hash": "e88eabca93c64d94",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -8515,7 +8574,7 @@
       ]
     },
     "gen-prismatic-fractal-dunes": {
-      "hash": "3508ec1c5cac759c",
+      "hash": "d2ff28ae5e77e2dc",
       "history": [
         {
           "event": "upgraded",
@@ -8524,6 +8583,14 @@
           "prev_hash": "a623126f12fc6606",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "d2ff28ae5e77e2dc",
+          "prev_hash": "3508ec1c5cac759c",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -8868,8 +8935,17 @@
       ]
     },
     "gen-resonant-crystal-canyons": {
-      "hash": "67fecd828f4c614a",
-      "history": []
+      "hash": "172ee7b10085f532",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "172ee7b10085f532",
+          "prev_hash": "67fecd828f4c614a",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
+        }
+      ]
     },
     "gen-resonant-quantum-obsidian-astro-manta": {
       "hash": "4e2f1704417861ac",

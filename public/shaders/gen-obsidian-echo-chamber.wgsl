@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: conchoidal fracture; reverberant echo taps; flutter echo between parallel faces; flow banding
+//  Upgraded: 2026-11-08
+//  Ideas: conchoidal fracture; reverberant echo taps; flutter echo between parallel faces; flow banding; snowflake-obsidian spherulites; standing-wave room modes
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -140,6 +140,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (f32(id.x) >= res.x || f32(id.y) >= res.y) { return; }
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     var uv = (fragCoord - 0.5 * res) / res.y;
+    uv.y = -uv.y; // canvas y grows downward; flip so the chamber is upright
 
     let intensity = clamp(u.zoom_params.x, 0.0, 1.0);
     let speed = clamp(u.zoom_params.y, 0.0, 1.0);
@@ -153,7 +154,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Wrapped fly-through keeps the corridor moving quickly without precision
     // loss at long run times.
     let cameraTravel = motionTime * (3.5 + speed * 5.5 + bass * 2.0);
-    var ro = vec3<f32>(0.0, 2.0, -6.0 + (cameraTravel - 7.5 * floor(cameraTravel / 7.5)));
+    // Rescue (2026-11-08): HEAD put the camera at x=0, the centre of a
+    // monolith column (box half-width 1), so every frame was the inside of one
+    // slab. Fly down the aisle between columns instead (half the 7.5 spacing).
+    var ro = vec3<f32>(3.75 * objectScale, 2.0, -6.0 + (cameraTravel - 7.5 * floor(cameraTravel / 7.5)));
     var rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
 
     // Mouse is already normalized canvas UV; do not divide it by resolution.
@@ -194,7 +198,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let n = fracture.xyz;
 
         // Base obsidian material
-        let albedo = vec3<f32>(0.005, 0.005, 0.01);
+        var albedo = vec3<f32>(0.005, 0.005, 0.01);
+
+        // ── Idea 5: snowflake-obsidian spherulites. Devitrified cristobalite
+        // grows as small radial white rosettes in the glass; a hashed lattice
+        // of rosettes on the face, spokes from angle, matte (diffuse only)
+        // and suppressed on fracture ribs where fresh glass is exposed.
+        let sq = p.xy * 1.7 + p.zz * 0.9;
+        let sc = floor(sq);
+        let sh = fract(sin(dot(sc, vec2<f32>(41.3, 289.1))) * 15731.7);
+        let so = sq - sc - 0.5 - (vec2<f32>(sh, fract(sh * 7.13)) - 0.5) * 0.5;
+        let sr = length(so);
+        let spokes = 0.6 + 0.4 * cos(atan2(so.y, so.x) * 9.0 + sh * 6.0);
+        let rosette = smoothstep(0.17 * spokes, 0.04, sr) * step(0.62, sh) * (1.0 - fracture.w);
+        albedo = mix(albedo, vec3<f32>(0.42, 0.44, 0.48), rosette);
 
         // Fast sonar wavefronts race down the chamber on real audio bands.
         let distFromCam = length(p - ro);
@@ -262,6 +279,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                      (0.45 + fresnel + treble * 0.35);
 
         // Fracture rib crests catch the passing sonar light and treble shimmer.
+        // ── Idea 6: standing-wave room modes. Unlike the travelling sonar
+        // fronts, the chamber's axial mode is pinned to world z: stationary
+        // nodal bands on the walls breathe with bass (cos(time) amplitude).
+        let modeZ = abs(cos(p.z * 0.84)) ;
+        let antinode = smoothstep(0.93, 1.0, modeZ) * abs(cos(motionTime * 3.0)) * (0.15 + bass * 0.85);
+        rippleEmission += vec3<f32>(0.25, 0.55, 0.9) * antinode * (0.6 + intensity) * 1.5;
+
         let ribGlint = vec3<f32>(0.55, 0.75, 1.0) * fracture.w *
                        (0.04 + baseIntensity * audioIntensity * 0.6 + treble * 0.05) * (0.4 + u.zoom_params.z);
         // Idea: flow banding — longitudinal streaks in the glass, cut by the fracture shells.

@@ -2,8 +2,8 @@
 //  Brutalist Monument - Generative Shader
 //  Category: Generative
 //  Description: Massive concrete architecture in an atmospheric void.
-//  Upgraded: 2026-10-10
-//  Ideas: board-form lines and tie holes on concrete; ledge drip stains; pour joints; aggregate pop-out
+//  Upgraded: 2026-11-08
+//  Ideas: board-form lines and tie holes on concrete; ledge drip stains; pour joints; aggregate pop-out; recessed floor-reveal slots carved into the pillars; step AO pooling at the massive bases
 //  A packing: pre-ACES display RGBA; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════
 
@@ -81,11 +81,16 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let center_dist = length(cellId);
     var pillar_d = 1000.0;
 
-    if (center_dist > 2.0) {
+    if (center_dist > 3.5) { // Rescue: was 2.0 — the r=20 orbit ran through pillars (camera inside SDF)
         let pillar_pos = vec3<f32>(local_xz.x, p.y - pillar_height * 0.5 + 5.0, local_xz.y); // Shift down so top is at varied heights
         // Make pillars blocky
         let width = 1.0 + noise(cellId * 0.5) * 2.0;
         pillar_d = sdBox(pillar_pos, vec3<f32>(width, pillar_height, width));
+        // ── Idea 5: floor-reveal slots — deep horizontal recesses every 3 m cut back
+        //    to an inner core, so each pillar reads as stacked cantilevered slabs
+        let band = (abs(fract(p.y / 3.0) - 0.5) * 3.0) - 0.28;   // < 0 inside the slot
+        let core = sdBox(pillar_pos, vec3<f32>(width - 0.45, pillar_height + 1.0, width - 0.45));
+        pillar_d = max(pillar_d, -max(band, -core));
     }
 
     // Ground plane
@@ -177,6 +182,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         return;
     }
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    uv.y = -uv.y; // Rescue: compute rows run top-down; the monument rendered upside-down
 
     // Parameters
     let sunAngle = u.zoom_params.x * 3.14159; // 0 to PI
@@ -280,10 +286,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Combine Light
         let light_color = vec3<f32>(1.0, 0.95, 0.9); // Warm Sun
 
-        let diffuse_light = albedo * diff * light_color * shadow;
+        // ── Idea 6: step AO — five taps along the normal; the slots, pillar feet and
+        //    the ground under the monolith go dark the way heavy poured mass does
+        var occ = 0.0;
+        var wAo = 1.0;
+        for (var k = 1; k <= 5; k = k + 1) {
+            let hk = 0.25 * f32(k);
+            occ += (hk - map(p + n * hk).x) * wAo;
+            wAo *= 0.6;
+        }
+        let ao = clamp(1.0 - occ * 0.9, 0.15, 1.0);
+        let diffuse_light = albedo * diff * light_color * shadow * (0.55 + 0.45 * ao);
         let specular_light = vec3<f32>(1.0) * spec * shadow * (1.0 - rough); // More spec for smooth
 
-        color = ambient + diffuse_light + specular_light;
+        color = ambient * ao + diffuse_light + specular_light;
 
         // Fog
         // Exponential fog

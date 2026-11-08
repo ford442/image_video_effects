@@ -6,8 +6,8 @@
 //            depth-aware, aces-tone-map, domain-warped
 //  Complexity: Very High
 //  Created: 2026-06-28
-//  Upgraded: 2026-09-27
-//  Ideas: chromatic bore; organ-pipe partials
+//  Upgraded: 2026-11-08
+//  Ideas: chromatic bore; organ-pipe partials; growth zoning; river underlight
 //  A packing: ACES display RGBA; C is a river reflection only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -109,6 +109,10 @@ fn thinFilmColor(cosTheta: f32, thickness: f32) -> vec3<f32> {
   );
 }
 
+fn canyonCenter(z: f32, time: f32) -> f32 {
+  return sin(z * 0.3 + time * 0.2) * 2.0;
+}
+
 // ─── Scene Map: Crystal Canyon Terrain ───
 struct MapResult {
   d: f32,
@@ -135,12 +139,15 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, crystalDensity: f32,
 
   // Canyon walls = sliced crystal prisms
   let wallY = wp.y * 3.0 + fbm(p * 0.5 + vec3<f32>(0.0, time * 0.1, 0.0)) * 1.5;
-  let wallOffset = sin(p.z * 0.3 + time * 0.2) * 2.0 + cos(p.x * 0.2) * 1.5;
-  let wallL = sdBox(p - vec3<f32>(wallOffset - 2.0, wallY * 0.5, 0.0), vec3<f32>(0.5, 4.0, 10.0));
-  let wallR = sdBox(p - vec3<f32>(wallOffset + 2.0, wallY * 0.5, 0.0), vec3<f32>(0.5, 4.0, 10.0));
+  let wallOffset = canyonCenter(p.z, time) + cos(p.x * 0.2) * 1.5;
+  // Rescue: walls were 20 units long around z=0 while the camera flies down +z
+  // (empty void after ~20 s); extend them along the canyon instead.
+  let wallL = sdBox(p - vec3<f32>(wallOffset - 2.0, wallY * 0.5, p.z), vec3<f32>(0.5, 4.0, 10.0));
+  let wallR = sdBox(p - vec3<f32>(wallOffset + 2.0, wallY * 0.5, p.z), vec3<f32>(0.5, 4.0, 10.0));
 
   // Crystal protrusions
-  let crystalP = p;
+  // Rescue: the three crystals repeat every 8 units down the canyon (were only at z≈0).
+  let crystalP = vec3<f32>(p.x, p.y, p.z - 8.0 * round(p.z / 8.0));
   let crystalPhase = time * 0.3 + audio * 2.0;
   // Organ-pipe partials: second harmonic on the three existing crystals.
   // Audio Reactivity (zoom_params.w, 0–1) is the gain. Do not add crystals.
@@ -234,12 +241,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
   let camSpeed = 0.5 + audioReactivity * audio * 0.3;
   let camZ = time * camSpeed;
-  let camX = sin(time * 0.2) * 2.0 + mousePos.x * 1.0;
+  // Rescue: camera was not following the winding canyon and started inside wallL
+  // (whole frame = one thin-film wall). Ride the river channel centre instead.
+  let camX = canyonCenter(camZ, time) + 1.5 + sin(time * 0.2) * 0.4 + mousePos.x * 0.6;
   let camY = 1.5 + sin(time * 0.15) * 0.5 - mousePos.y * 0.5;
   let ro = vec3<f32>(camX, camY, camZ);
 
   // Look ahead + slightly down into canyon
-  let lookAt = vec3<f32>(camX * 0.5, 0.0, camZ + 5.0);
+  let lookAt = vec3<f32>(canyonCenter(camZ + 5.0, time) + 1.5, 0.0, camZ + 5.0);
   let ww = normalize(lookAt - ro);
   let uu = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), ww));
   let vv = cross(ww, uu);
@@ -285,7 +294,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     if (hitMat < 0.5) {
       // Crystal wall - thin film iridescence
-      let film = thinFilmColor(nDotV, refractiveIndex * 2.0) * 0.8;
+      // ── Idea 1: growth zoning — crystal walls grew in layers; each stratum has its
+      // own film thickness, so the iridescence breaks into horizontal bands that
+      // follow the warped wall height rather than one smooth sheen.
+      let zone = floor(hitPos.y * 2.2 + fbm(hitPos * 0.7) * 1.6);
+      let zoneThick = refractiveIndex * 2.0 * (0.75 + 0.5 * hash21(vec2<f32>(zone, 7.3)));
+      let zoneSeam = smoothstep(0.08, 0.0, abs(fract(hitPos.y * 2.2 + fbm(hitPos * 0.7) * 1.6) - 0.5) - 0.42);
+      let film = thinFilmColor(nDotV, zoneThick) * 0.8 * (1.0 - 0.45 * zoneSeam);
       let crystalBase = vec3<f32>(0.8, 0.9, 1.0) * 0.3;
       let crystalCol = crystalBase + film * (0.5 + audioReactivity * audio * 0.3);
 
@@ -302,6 +317,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
       // Subsurface glow from nearby plasma
       col = col + vec3<f32>(0.2, 0.05, 0.4) * hitGlow * 0.2;
+
+      // ── Idea 2: river underlight — the plasma river lights the walls from below.
+      // Falls off with height above the bed and with distance from the channel,
+      // and only on faces that look down/inward toward the river.
+      let bedY = -1.5 + sin(hitPos.z * 0.2 + time * 0.1) * 0.3;
+      let toRiver = canyonCenter(hitPos.z, time) + cos(hitPos.x * 0.2) * 1.5 - hitPos.x;
+      let facing = sat(-n.y * 0.6 + sign(toRiver) * n.x * 0.8 + 0.2);
+      let under = exp(-max(hitPos.y - bedY, 0.0) * 0.7) * exp(-abs(toRiver) * 0.35) * facing;
+      col = col + vec3<f32>(0.45, 0.12, 0.85) * under * plasmaGlow * (0.6 + bass * 0.6);
     } else if (hitMat < 1.5) {
       // Plasma river - bioluminescent
       let plasmaCol = vec3<f32>(0.3, 0.0, 0.5) * (0.5 + hitGlow * 2.0);
