@@ -34,6 +34,41 @@ optional knobs (`WEBHOOK_ALLOWED_ORIGINS`, `WEBHOOK_RATE_LIMIT_REQUESTS`, `WEBHO
 4. Run more than one worker only with `REDIS_URL` set (single-use tokens are tracked there, in `WEBHOOK_REDIS_DB`,
    default `REDIS_DB + 1`: never the response cache's DB, which is flushed on every shader save).
 
+## Rate limiting and `TRUSTED_PROXIES`
+
+`/api/*` is limited to `RATE_LIMIT_REQUESTS` (120) per `RATE_LIMIT_WINDOW` (60 s) per client IP and method; the webhook
+routes have their own, stricter bucket (`WEBHOOK_RATE_LIMIT_REQUESTS`, 30). The client IP is only as trustworthy as
+the thing that reports it, and `X-Forwarded-For` is just a request header: anyone who can reach the app directly
+can send any value and get a fresh bucket per request.
+
+So the header (`RATE_LIMIT_IP_HEADER`, default `X-Forwarded-For`) is honoured **only when the TCP peer
+(`request.client.host`) is listed in `TRUSTED_PROXIES`**; from any other peer it is ignored and the bucket is the peer's own IP.
+
+| Setting | Default | Meaning |
+|---------|---------|---------|
+| `TRUSTED_PROXIES` | `127.0.0.1,::1` | Comma-separated IPs or CIDRs of reverse proxies you run (`10.0.0.0/8,192.0.2.7`). `""` trusts nobody. Invalid entries are logged and skipped. |
+| `RATE_LIMIT_IP_HEADER` | `X-Forwarded-For` | Header the proxy sets. Several header lines count as one chain. |
+
+When the peer is trusted, the chain is read **right to left, skipping addresses that are themselves trusted proxies, and the
+first untrusted address is the client**. Each proxy appends the address it received the connection from, so entries to the
+left of that were written by the client and are never used. Examples with `TRUSTED_PROXIES=10.0.0.0/8`:
+
+| Peer | `X-Forwarded-For` | Bucket |
+|------|-------------------|--------|
+| `203.0.113.9` (direct, untrusted) | `1.2.3.4` | `203.0.113.9` (header ignored) |
+| `10.0.0.9` | `198.51.100.4` | `198.51.100.4` |
+| `10.0.0.9` | `6.6.6.6, 198.51.100.4, 10.0.0.5` | `198.51.100.4` (`10.0.0.5` skipped, `6.6.6.6` ignored) |
+| `10.0.0.9` | `garbage` | `10.0.0.9` (an unparseable value is never used as a key) |
+
+Deployment notes:
+
+* **nginx/caddy on the same host** (the common case): nothing to set, loopback is trusted by default. Make sure the proxy
+  *appends* (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`) or overwrites (`$remote_addr`); both are safe here.
+* **Proxy in another container or host** (Docker bridge, load balancer): add its address or network, e.g.
+  `TRUSTED_PROXIES=127.0.0.1,::1,172.18.0.0/16`. Until you do, every request arrives from the proxy's IP and **all users share one bucket**.
+* **No proxy at all** (e.g. a Hugging Face Space or a bare `uvicorn --host 0.0.0.0`): set `TRUSTED_PROXIES=""`. Do not run `uvicorn --proxy-headers --forwarded-allow-ips '*'`, which would let any client rewrite the peer address before this check.
+* **Behind two proxies**: list both; the walk skips every trusted hop.
+
 ## Running Locally
 
 ```bash

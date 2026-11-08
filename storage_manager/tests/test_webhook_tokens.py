@@ -94,9 +94,19 @@ def bucket(webhook_env) -> FakeBucket:
 
 @pytest.fixture()
 def client() -> TestClient:
-    # Own client IP per test so the app-wide rate-limit counters never interfere.
-    c = TestClient(app)
-    c.headers.update({"Origin": ORIGIN, "X-Forwarded-For": f"10.{uuid.uuid4().int % 250}.{uuid.uuid4().int % 250}.1-{uuid.uuid4().hex}"})
+    # Own TCP peer per test so the app-wide rate-limit counters never interfere. (The peer,
+    # not X-Forwarded-For: that header is ignored unless the peer is a trusted proxy.)
+    return same_peer_client(unique_peer(), headers={"Origin": ORIGIN})
+
+
+def unique_peer() -> str:
+    n = uuid.uuid4().int
+    return f"198.51.{n % 250}.{(n >> 8) % 250 + 1}"
+
+
+def same_peer_client(peer: str, **kw) -> TestClient:
+    c = TestClient(app, client=(peer, 50000), **kw)
+    c.peer = peer  # type: ignore[attr-defined]
     return c
 
 
@@ -316,8 +326,7 @@ def test_disallowed_origin_is_403_on_both_routes(client, origin):
     token = token_for(client)
     headers = {"Origin": origin} if origin else {}
     # TestClient merges default headers; override or drop Origin explicitly.
-    fresh = TestClient(app)
-    fresh.headers.update({"X-Forwarded-For": client.headers["X-Forwarded-For"], **headers})
+    fresh = same_peer_client(client.peer, headers=headers)
     issued = mint(fresh)
     assert issued.status_code == 403 and issued.json()["error"] == "origin_not_allowed"
     assert write(fresh, token).status_code == 403
@@ -327,15 +336,13 @@ def test_disallowed_origin_is_403_on_both_routes(client, origin):
 
 def test_wildcard_cors_entry_does_not_open_the_token_routes(client):
     assert "*" in config.ALLOWED_ORIGINS  # CORS stays open; the token routes do not follow it
-    fresh = TestClient(app)
-    fresh.headers.update({"Origin": "https://anywhere.example", "X-Forwarded-For": client.headers["X-Forwarded-For"]})
+    fresh = same_peer_client(client.peer, headers={"Origin": "https://anywhere.example"})
     assert mint(fresh).status_code == 403
 
 
 def test_extra_origin_from_env_is_honoured(client, monkeypatch):
     monkeypatch.setattr(config, "WEBHOOK_EXTRA_ORIGINS", ["https://studio.example"])
-    fresh = TestClient(app)
-    fresh.headers.update({"Origin": "https://studio.example/", "X-Forwarded-For": client.headers["X-Forwarded-For"]})
+    fresh = same_peer_client(client.peer, headers={"Origin": "https://studio.example/"})
     assert mint(fresh).status_code == 200
 
 
@@ -441,7 +448,7 @@ def test_redis_nonces_survive_a_cache_flush(bucket, monkeypatch, redis_server):
 
     redis.Redis(port=redis_server, db=0).set("response-cache-entry", "1")
     # One event loop for the whole test, like uvicorn (a bare TestClient makes one per request).
-    with TestClient(app, headers={"Origin": ORIGIN, "X-Forwarded-For": f"flush-{uuid.uuid4().hex}"}) as c:
+    with same_peer_client(unique_peer(), headers={"Origin": ORIGIN}) as c:
         token = token_for(c)
         assert write(c, token).status_code == 200  # save_shader -> clear_cache_for_type -> FLUSHDB on db 0
         assert redis.Redis(port=redis_server, db=0).get("response-cache-entry") is None, "the flush really happened"

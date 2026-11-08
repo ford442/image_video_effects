@@ -44,6 +44,11 @@ RATE_LIMIT_REQUESTS = int(os.environ.get("RATE_LIMIT_REQUESTS", "120"))
 RATE_LIMIT_WINDOW = int(os.environ.get("RATE_LIMIT_WINDOW", "60"))
 RATE_LIMIT_PATHS = [path.strip() for path in os.environ.get("RATE_LIMIT_PATHS", "/api").split(",") if path.strip()]
 RATE_LIMIT_IP_HEADER = os.environ.get("RATE_LIMIT_IP_HEADER", "X-Forwarded-For")
+# Reverse proxies whose RATE_LIMIT_IP_HEADER we believe: comma-separated IPs or CIDRs
+# (e.g. "127.0.0.1,::1,10.0.0.0/8"). The header is read ONLY when the TCP peer
+# (request.client.host) is one of these; otherwise it is ignored, because any client can
+# send it. Default is loopback: the usual nginx/caddy on the same host. "" => never trust it.
+TRUSTED_PROXIES = os.environ.get("TRUSTED_PROXIES", "127.0.0.1,::1")
 
 # --- WEBHOOK WRITES (upload tokens) ---
 # Server-only HMAC key for POST /upload-token + POST /image-effects. Never
