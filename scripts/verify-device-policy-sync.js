@@ -8,7 +8,7 @@
  * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE
  * (names, and `exports` signatures ↔ generated wasm_exports.h / bridge/_generated.ts) /
  * build.sh (no hardcoded export lists; build.sh is the only build, CMakeLists.txt was removed);
- * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
+ * workgroup_dispatch.json + bind_group0.json shaderUsageFlags ↔ generated _contracts.ts / wasm_contracts.h ↔ wgslAnalysis.ts;
  * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
  * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal;
  * bind_group0.json ↔ pipeline.ts createComputeBindGroupLayout ↔ generated bind_group0.h ↔
@@ -897,40 +897,50 @@ function verifyWorkgroupDispatch() {
     path.join(ROOT, 'src/renderer/ShaderCompilation.ts'),
     'utf8',
   );
-  if (!tsShader.includes("from '../contracts/workgroup_dispatch.json'")) {
-    fail('ShaderCompilation.ts must import workgroup_dispatch.json');
+  // One analysis for both backends: ShaderCompilation.ts delegates to the bridge's
+  // wgslAnalysis.ts, which reads the fallback from the generated _contracts.ts;
+  // C++ takes the result through loadShader and reads the fallback from the
+  // generated wasm_contracts.h (scripts/gen-wasm-contracts.js).
+  if (!tsShader.includes("from '../wasm/bridge/wgslAnalysis'")) {
+    fail('ShaderCompilation.ts must take parseWorkgroupSize/analyzeShaderBindings from src/wasm/bridge/wgslAnalysis');
   }
-  if (!tsShader.includes('workgroupDispatchContract.unparsedFallback.x')) {
-    fail('ShaderCompilation.ts unparsed fallback must use workgroupDispatchContract.unparsedFallback.x');
+  if (/function usedBeyondDeclaration/.test(tsShader)) {
+    fail('ShaderCompilation.ts must not keep its own WGSL analysis — it lives in src/wasm/bridge/wgslAnalysis.ts');
   }
-  if (!tsShader.includes('workgroupDispatchContract.unparsedFallback.y')) {
-    fail('ShaderCompilation.ts unparsed fallback must use workgroupDispatchContract.unparsedFallback.y');
+  const analysis = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/wgslAnalysis.ts'), 'utf8');
+  if (!analysis.includes('WORKGROUP_UNPARSED_FALLBACK.x') || !analysis.includes('WORKGROUP_UNPARSED_FALLBACK.y')) {
+    fail('wgslAnalysis.ts unparsed fallback must use WORKGROUP_UNPARSED_FALLBACK from _contracts.ts');
   }
-  if (/\breturn\s*\{\s*x:\s*8\s*,\s*y:\s*8\s*\}/.test(tsShader)) {
-    fail('ShaderCompilation.ts must not return hardcoded 8x8 unparsed fallback');
+  if (/\breturn\s*\{\s*x:\s*\d+\s*,\s*y:\s*\d+/.test(analysis)) {
+    fail('wgslAnalysis.ts must not return a hardcoded workgroup fallback');
   }
 
-  const cppInternal = fs.readFileSync(
-    path.join(ROOT, wgContract.cppReferences.file),
-    'utf8',
-  );
-  const fnBlock = cppInternal.match(
-    /void ParseWorkgroupSize\([\s\S]*?\n\}/,
-  );
-  if (!fnBlock) {
-    fail('ParseWorkgroupSize not found in wasm_internal.cpp');
-    return;
+  const contractsGen = require('./gen-wasm-contracts.js');
+  let generated;
+  try {
+    generated = contractsGen.generate();
+  } catch (e) {
+    fail(e.message);
+    generated = {};
   }
-  const init = fnBlock[0].match(/x\s*=\s*(\d+);\s*\n\s*y\s*=\s*(\d+);/);
-  if (!init) {
-    fail('ParseWorkgroupSize default x/y assignment not found in wasm_internal.cpp');
-  } else {
-    const cppX = parseInt(init[1], 10);
-    const cppY = parseInt(init[2], 10);
-    if (cppX !== fallback.x || cppY !== fallback.y) {
-      fail(
-        `wasm_internal.cpp ParseWorkgroupSize default: expected ${fallback.x}x${fallback.y}, got ${cppX}x${cppY}`,
-      );
+  for (const [rel, text] of Object.entries(generated)) {
+    const abs = path.join(ROOT, rel);
+    const have = fs.existsSync(abs) ? fs.readFileSync(abs, 'utf8') : '';
+    if (have !== text) fail(`${rel} is stale or missing; run: npm run gen:wasm-contracts`);
+  }
+
+  const cppRef = path.join(ROOT, wgContract.cppReferences.file);
+  if (!fs.existsSync(cppRef)) fail(`workgroup_dispatch.json cppReferences.file ${wgContract.cppReferences.file} is missing`);
+  const pipelineCpp = fs.readFileSync(path.join(ROOT, 'wasm_renderer/pipeline.cpp'), 'utf8');
+  if (!/#include "wasm_contracts\.h"/.test(pipelineCpp)) fail('pipeline.cpp must #include "wasm_contracts.h"');
+  if (!pipelineCpp.includes('kWorkgroupFallbackX') || !pipelineCpp.includes('kWorkgroupFallbackY')) {
+    fail('pipeline.cpp must fall back to wasm_contracts::kWorkgroupFallbackX/Y for a zero workgroup size');
+  }
+  for (const name of fs.readdirSync(path.join(ROOT, 'wasm_renderer'))) {
+    if (!/\.(cpp|h)$/.test(name)) continue;
+    const src = fs.readFileSync(path.join(ROOT, 'wasm_renderer', name), 'utf8');
+    if (/\b(ParseWorkgroupSize|AnalyzeShaderBindings)\b/.test(src)) {
+      fail(`wasm_renderer/${name} parses WGSL for dispatch/usage — take it from loadShader (wgslAnalysis.ts)`);
     }
   }
 

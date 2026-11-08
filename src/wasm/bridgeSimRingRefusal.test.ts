@@ -94,6 +94,6 @@ describe('WASM bridge — group-1 refusal', () => {
     const module = wasmRef.module as ReturnType<typeof mockModule>;
     const wgsl = '// @group(1) is TS-only\n@compute @workgroup_size(16, 16, 1) fn main() {}';
     expect(await loadShader('plain', wgsl)).toBe(true);
-    expect(module.ccall).toHaveBeenCalledWith('loadShader', 'number', ['number', 'number'], expect.any(Array), expect.any(Object));
+    expect(module.ccall).toHaveBeenCalledWith('loadShader', 'number', ['number', 'number', 'number', 'number', 'number'], expect.any(Array), expect.any(Object));
   });
 });

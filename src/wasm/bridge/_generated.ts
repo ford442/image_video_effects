@@ -94,21 +94,21 @@ export function shutdownWasmRenderer(mod: EmscriptenModule): void {
 }
 
 /**
- * C: `int loadShader(const char* id, const char* wgslCode)`
+ * C: `int loadShader(const char* id, const char* wgslCode, int workgroupX, int workgroupY, int usageBits)`
  * async: can suspend in wgpuInstanceWaitAny; serialized per module.
- * Compute pipeline error-scope pop. The bridge keeps id/wgslCode allocated until the promise settles.
+ * Compute pipeline error-scope pop. workgroupX/Y and usageBits come from src/wasm/bridge/wgslAnalysis.ts (bits: wasm_contracts.h); C++ does not parse WGSL for them. The bridge keeps id/wgslCode allocated until the promise settles.
  */
-export function loadShader(mod: EmscriptenModule, id: WasmPtr, wgslCode: WasmPtr): Promise<number> {
-  return callAsync(mod, 'loadShader', 'number', ['number', 'number'], [id, wgslCode]).then((r) => Number(r ?? 0));
+export function loadShader(mod: EmscriptenModule, id: WasmPtr, wgslCode: WasmPtr, workgroupX: number, workgroupY: number, usageBits: number): Promise<number> {
+  return callAsync(mod, 'loadShader', 'number', ['number', 'number', 'number', 'number', 'number'], [id, wgslCode, workgroupX, workgroupY, usageBits]).then((r) => Number(r ?? 0));
 }
 
 /**
- * C: `int reloadShader(const char* id, const char* wgslCode)`
+ * C: `int reloadShader(const char* id, const char* wgslCode, int workgroupX, int workgroupY, int usageBits)`
  * async: can suspend in wgpuInstanceWaitAny; serialized per module.
  * Same as loadShader; the old pipeline stays live until the new one compiles.
  */
-export function reloadShader(mod: EmscriptenModule, id: WasmPtr, wgslCode: WasmPtr): Promise<number> {
-  return callAsync(mod, 'reloadShader', 'number', ['number', 'number'], [id, wgslCode]).then((r) => Number(r ?? 0));
+export function reloadShader(mod: EmscriptenModule, id: WasmPtr, wgslCode: WasmPtr, workgroupX: number, workgroupY: number, usageBits: number): Promise<number> {
+  return callAsync(mod, 'reloadShader', 'number', ['number', 'number', 'number', 'number', 'number'], [id, wgslCode, workgroupX, workgroupY, usageBits]).then((r) => Number(r ?? 0));
 }
 
 /**

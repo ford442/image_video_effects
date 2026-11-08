@@ -17,7 +17,6 @@ namespace pixelocity {
 using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
-using wasm_internal::ParseWorkgroupSize;
 
 static void CopyTex(WGPUCommandEncoder enc,
                     WGPUTexture src, WGPUTexture dst,

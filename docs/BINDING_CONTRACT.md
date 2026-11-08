@@ -140,7 +140,7 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 - **CPU:** `historyHead` written to `extraBuffer[4]` when any enabled shader uses binding 13
 - **GPU:** after each frame, copy presented color into `historyTexture[historyHead]`, then `historyHead = (historyHead + 1) % 8`
 - Shaders that sample `@binding(13) var historyTexture` must declare the binding; others omit it
-- Copy is gated by static analysis (`analyzeShaderBindings` / C++ `AnalyzeShaderBindings`) — skipped when no shader references binding 13
+- Copy is gated by static analysis (`analyzeShaderBindings` in `src/wasm/bridge/wgslAnalysis.ts`, shared by both backends; WASM receives it as `loadShader` usageBits from `bind_group0.json` `shaderUsageFlags`) — skipped when no shader references binding 13
 
 ## Sim ring (opt-in `@group(1)`, TS renderer only)
 
@@ -258,7 +258,7 @@ This is `minimumComputeLimits`, which the frozen C++ backend still checks (`Chec
 
 ### Canonical dispatch
 
-The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both TypeScript (`parseWorkgroupSize`) and C++ WASM (`ParseWorkgroupSize`) fall back to **16×16** — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
+The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both backends fall back to **16×16**: the one parser is `src/wasm/bridge/wgslAnalysis.ts` (TS renderer via `parseWorkgroupSize`, WASM via `loadShader` workgroupX/Y; C++ reads the fallback from generated `wasm_contracts.h`, `npm run gen:wasm-contracts`) — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
 
 Documented exceptions in that contract:
 
