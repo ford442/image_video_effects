@@ -1,6 +1,7 @@
 import * as cpp from './_generated.js';
 import { abandonSeam } from './call.js';
 import { formatCppInitFailure, readCppInitDiagnostics } from './diagnostics.js';
+import { finishRecordingForShutdown } from './recording.js';
 import { state, wasmRef } from './state.js';
 import type { EmscriptenModule, PixelocityWasmFactory, WasmArtifactKind } from './state.js';
 
@@ -299,6 +300,10 @@ export function shutdownWasmRenderer(): void {
   if (!state.initialized || !wasmRef.module) {
     return;
   }
+
+  // Settle an active take while the module is still live (finite clip, not a
+  // hung promise or a stale session that blocks the next take after re-init).
+  finishRecordingForShutdown();
 
   try {
     // queue: destroying the instance under a suspended WaitAny crashes the tab,

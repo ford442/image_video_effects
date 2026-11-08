@@ -66,6 +66,9 @@ function setRecording(active) {
   if (!state.initialized || !wasmRef.module) return;
   cpp.setRecording(wasmRef.module, active ? 1 : 0);
 }
+function clearRecordingFlag(owner) {
+  if (owner && wasmRef.module === owner) setRecording(false);
+}
 function isRecordingActive() {
   if (!state.initialized || !wasmRef.module) return false;
   return cpp.isRecording(wasmRef.module) !== 0;
@@ -114,6 +117,7 @@ async function startRecording(canvasElement, options = {}) {
   } else if (!options.gpuEncode) {
     logRecordingFallback("no WebCodecs starter injected");
   } else if (state.initialized && wasmRef.module) {
+    const owner = wasmRef.module;
     _encodeStarting = true;
     let session = null;
     try {
@@ -129,11 +133,16 @@ async function startRecording(canvasElement, options = {}) {
     } finally {
       _encodeStarting = false;
     }
-    if (session) return runEncodeSession(session, options.durationMs);
+    if (session && wasmRef.module !== owner) {
+      session.stop().catch(() => {
+      });
+      throw new Error("[WASM Recording] Renderer shut down while the take was starting");
+    }
+    if (session) return runEncodeSession(session, owner, options.durationMs);
   }
   return startMediaRecorder(canvasElement, options, fps, bitrate);
 }
-function runEncodeSession(session, durationMs) {
+function runEncodeSession(session, owner, durationMs) {
   _encodeSession = session;
   setRecording(true);
   console.log(`[WASM Recording] WebCodecs take started (source=${session.kind ?? "unknown"})`);
@@ -141,7 +150,7 @@ function runEncodeSession(session, durationMs) {
     _finishEncode = () => {
       _finishEncode = null;
       _encodeSession = null;
-      session.stop().then(resolve, reject).finally(() => setRecording(false));
+      session.stop().then(resolve, reject).finally(() => clearRecordingFlag(owner));
     };
     if (durationMs && durationMs > 0) {
       _recordAutoStopTimer = setTimeout(stopRecording, durationMs);
@@ -153,6 +162,7 @@ function startMediaRecorder(canvasElement, options, fps, bitrate) {
     const mimeType = options.mimeType || (MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : MediaRecorder.isTypeSupported("video/webm") ? "video/webm" : "video/mp4");
     _recordChunks = [];
     _recordResolve = resolve;
+    const owner = wasmRef.module;
     setRecording(true);
     try {
       let stream;
@@ -183,7 +193,7 @@ function startMediaRecorder(canvasElement, options, fps, bitrate) {
     };
     _recorder.onstop = () => {
       const blob = new Blob(_recordChunks, { type: mimeType });
-      setRecording(false);
+      clearRecordingFlag(owner);
       cleanupRecordingPump();
       if (_recordResolve) {
         _recordResolve(blob);
@@ -193,7 +203,7 @@ function startMediaRecorder(canvasElement, options, fps, bitrate) {
       _recordChunks = [];
     };
     _recorder.onerror = (e) => {
-      setRecording(false);
+      clearRecordingFlag(owner);
       cleanupRecordingPump();
       const error = e.error;
       reject(new Error(`[WASM Recording] MediaRecorder error: ${error}`));
@@ -220,6 +230,18 @@ function stopRecording() {
     _recorder.stop();
   }
 }
+function isTakeActive() {
+  return _encodeSession !== null || _encodeStarting || _recorder !== null && _recorder.state !== "inactive";
+}
+function finishRecordingForShutdown() {
+  if (!isTakeActive()) return;
+  console.warn("[WASM Recording] Renderer shutting down; finalizing the active take");
+  stopRecording();
+  if (_recordRafId !== null) {
+    cancelAnimationFrame(_recordRafId);
+    _recordRafId = null;
+  }
+}
 async function recordAndDownload(canvasElement, durationMs = 8e3, filename = "recording.webm", gpuEncode) {
   const blob = await startRecording(canvasElement, { durationMs, gpuEncode });
   const url = URL.createObjectURL(blob);
@@ -230,7 +252,9 @@ async function recordAndDownload(canvasElement, durationMs = 8e3, filename = "re
   URL.revokeObjectURL(url);
 }
 export {
+  finishRecordingForShutdown,
   isRecordingActive,
+  isTakeActive,
   recordAndDownload,
   setCanvasCopySrc,
   setRecording,

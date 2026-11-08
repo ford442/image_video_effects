@@ -3,6 +3,7 @@
 import * as cpp from "./_generated.js";
 import { abandonSeam } from "./call.js";
 import { formatCppInitFailure, readCppInitDiagnostics } from "./diagnostics.js";
+import { finishRecordingForShutdown } from "./recording.js";
 import { state, wasmRef } from "./state.js";
 const SOURCE_MAP = {
   none: 0,
@@ -221,6 +222,7 @@ function shutdownWasmRenderer() {
   if (!state.initialized || !wasmRef.module) {
     return;
   }
+  finishRecordingForShutdown();
   try {
     cpp.shutdownWasmRenderer(wasmRef.module);
   } catch (err) {
