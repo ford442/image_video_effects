@@ -215,6 +215,105 @@ describe('WASM bridge recording', () => {
     );
   });
 
+  describe('renderer shutdown during a take (destroy / device loss / backend switch)', () => {
+    /** Mimic shutdownWasmRenderer(): finalize the take, then drop the module. */
+    function shutdown(): void {
+      rec.finishRecordingForShutdown();
+      bridgeState.state.initialized = false;
+      bridgeState.wasmRef.module = null;
+    }
+
+    it('finalizes an open-ended WebCodecs take instead of hanging, and frees the slot', async () => {
+      installVideoEncoder();
+      const blob = new Blob(['partial'], { type: 'video/webm' });
+      const stop = vi.fn().mockResolvedValue(blob);
+      const promise = rec.startRecording(document.createElement('canvas'), { gpuEncode: vi.fn().mockResolvedValue({ stop }) });
+      await settle();
+      expect(rec.isTakeActive()).toBe(true);
+
+      const ownerCcall = ccall;
+      shutdown();
+      await expect(promise).resolves.toBe(blob);
+      expect(stop).toHaveBeenCalledTimes(1);
+      expect(rec.isTakeActive()).toBe(false);
+      expect(warn.mock.calls.some(([msg]) => /finalizing the active take/.test(String(msg)))).toBe(true);
+      // setRecording(false) was not sent to a module that no longer exists.
+      expect(ownerCcall).not.toHaveBeenLastCalledWith('setRecording', null, ['number'], [0]);
+
+      // After re-init the next take starts normally.
+      const fresh = vi.fn();
+      bridgeState.state.initialized = true;
+      bridgeState.wasmRef.module = { ccall: fresh } as never;
+      const next = rec.startRecording(document.createElement('canvas'), {
+        gpuEncode: vi.fn().mockResolvedValue({ stop: vi.fn().mockResolvedValue(new Blob()) }),
+      });
+      await settle();
+      rec.stopRecording();
+      await next;
+      expect(fresh).toHaveBeenCalledWith('setRecording', null, ['number'], [1]);
+    });
+
+    it('a stale take finishing after re-init does not clear the fresh module\'s recording flag', async () => {
+      installVideoEncoder();
+      let finishOld!: (b: Blob) => void;
+      const oldStop = vi.fn(() => new Promise<Blob>((r) => { finishOld = r; }));
+      const old = rec.startRecording(document.createElement('canvas'), { gpuEncode: vi.fn().mockResolvedValue({ stop: oldStop }) });
+      await settle();
+      shutdown();
+
+      const fresh = vi.fn();
+      bridgeState.state.initialized = true;
+      bridgeState.wasmRef.module = { ccall: fresh } as never;
+      const next = rec.startRecording(document.createElement('canvas'), {
+        gpuEncode: vi.fn().mockResolvedValue({ stop: vi.fn().mockResolvedValue(new Blob()) }),
+      });
+      await settle();
+
+      finishOld(new Blob(['old']));
+      await old;
+      await settle();
+      expect(fresh.mock.calls.filter(([n, , , a]) => n === 'setRecording' && (a as number[])[0] === 0)).toHaveLength(0);
+
+      rec.stopRecording();
+      await next;
+      expect(fresh).toHaveBeenLastCalledWith('setRecording', null, ['number'], [0]);
+    });
+
+    it('rejects (and stops the encoder) when shutdown lands while the encoder is starting', async () => {
+      installVideoEncoder();
+      let resolveStart!: (s: { stop: () => Promise<Blob> }) => void;
+      const stop = vi.fn().mockResolvedValue(new Blob());
+      const promise = rec.startRecording(document.createElement('canvas'), {
+        gpuEncode: () => new Promise((r) => { resolveStart = r; }),
+      });
+      await settle();
+      expect(rec.isTakeActive()).toBe(true);
+      shutdown();
+      resolveStart({ stop });
+      await expect(promise).rejects.toThrow(/shut down while the take was starting/);
+      expect(stop).toHaveBeenCalledTimes(1);
+      expect(rec.isTakeActive()).toBe(false);
+    });
+
+    it('stops the MediaRecorder fallback and its readback pump', async () => {
+      const promise = rec.startRecording(document.createElement('canvas'), {});
+      await settle();
+      expect(mediaRecorders).toHaveLength(1);
+      shutdown();
+      await expect(promise).resolves.toBeInstanceOf(Blob);
+      expect(mediaRecorders[0]!.state).toBe('inactive');
+      mockCaptureFrame.mockClear();
+      flushRaf();
+      expect(mockCaptureFrame).not.toHaveBeenCalled();
+      expect(rec.isTakeActive()).toBe(false);
+    });
+
+    it('is a no-op with no take', () => {
+      rec.finishRecordingForShutdown();
+      expect(warn).not.toHaveBeenCalled();
+    });
+  });
+
   describe('canvas COPY_SRC (canvas_configure optIn.copySrc)', () => {
     const COPY_SRC = 0x01;
     const RENDER_ATTACHMENT = 0x10;
