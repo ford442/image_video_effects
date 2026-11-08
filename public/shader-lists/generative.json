@@ -3178,6 +3178,292 @@
     ]
   },
   {
+    "id": "gen-audio-reactive-aurora-ribbons",
+    "name": "Audio-Reactive Aurora Ribbons",
+    "category": "generative",
+    "url": "shaders/gen-audio-reactive-aurora-ribbons.wgsl",
+    "tags": [
+      "generative",
+      "aurora",
+      "ribbons",
+      "northern-lights",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "atmospheric"
+    ],
+    "description": "Flowing aurora curtains ripple across a polar sky. Bass swells ribbon amplitude, mids shift spectral hue, and treble adds ionospheric sparkle. Mouse bends the curtain field; depth fades distant glow.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "aurora-curtains",
+      "aces-tone-map",
+      "ign-dither"
+    ],
+    "params": [
+      {
+        "id": "ribbon_intensity",
+        "name": "Ribbon Intensity",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "ribbon_count",
+        "name": "Ribbon Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "wave_frequency",
+        "name": "Wave Frequency",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "trail_persistence",
+        "name": "Trail Persistence",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "id": "gen-audio-reactive-mycelium-pulse",
+    "name": "Audio-Reactive Mycelium Pulse",
+    "category": "generative",
+    "url": "shaders/gen-audio-reactive-mycelium-pulse.wgsl",
+    "tags": [
+      "generative",
+      "mycelium",
+      "fungi",
+      "bioluminescence",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "network"
+    ],
+    "description": "Bioluminescent mycelial hyphae pulse across a dark substrate. Bass thickens the network, mids shift chlorophyll-to-violet hues, and treble scatters luminous spores. Mouse warps growth direction; depth fades distant filaments.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "voronoi-network",
+      "aces-tone-map",
+      "ign-dither"
+    ],
+    "params": [
+      {
+        "id": "network_scale",
+        "name": "Network Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "hyphae_glow",
+        "name": "Hyphae Glow",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "node_brightness",
+        "name": "Node Brightness",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "trail_persistence",
+        "name": "Trail Persistence",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "name": "Audio-Reactive Quantum Pollen",
+    "category": "generative",
+    "tags": [
+      "audio-reactive",
+      "particles",
+      "pollen",
+      "galaxy",
+      "spiral",
+      "generative",
+      "mouse-interactive",
+      "depth-aware"
+    ],
+    "description": "Hundreds of luminous pollen grains drifting in a dark field. Bass clusters them into log-spiral galaxy arms, mids drive harmonic orbital motion and hue shifts, treble fires scatter bursts. Hold the mouse to attract nearby grains. Depth fades background grains into a transmission haze.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-audio-reactive-quantum-pollen",
+    "url": "shaders/gen-audio-reactive-quantum-pollen.wgsl",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "particle-field",
+      "bass-env",
+      "aces-tone-map",
+      "ign-dither",
+      "premultiplied-alpha"
+    ],
+    "params": [
+      {
+        "id": "grain_density",
+        "name": "Grain Density",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "glow_size",
+        "name": "Glow Size",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "orbit_speed",
+        "name": "Orbit Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue_base",
+        "name": "Hue Base",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "id": "gen-audio-reactive-spiral-galaxy",
+    "name": "Audio-Reactive Spiral Galaxy",
+    "category": "generative",
+    "url": "shaders/gen-audio-reactive-spiral-galaxy.wgsl",
+    "tags": [
+      "generative",
+      "galaxy",
+      "spiral",
+      "stars",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "cosmic"
+    ],
+    "description": "A luminous spiral galaxy with a hot core and arm stars that tighten on bass, rotate with mids, and spark supernova bursts on treble. Mouse shifts the viewing center; depth fades distant dust into haze.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "log-spiral",
+      "aces-tone-map",
+      "ign-dither"
+    ],
+    "params": [
+      {
+        "id": "arm_tightness",
+        "name": "Arm Tightness",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "arm_count",
+        "name": "Arm Count",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "spin_rate",
+        "name": "Spin Rate",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "trail_persistence",
+        "name": "Trail Persistence",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Audio Spirograph",
     "category": "generative",
     "tags": [
@@ -8892,6 +9178,149 @@
     "feedbackPacking": "A/C = final ACES display RGBA; exact cycloid persistence history"
   },
   {
+    "id": "gen-cymatic-bloom-fronds",
+    "name": "Cymatic Bloom Fronds",
+    "category": "generative",
+    "url": "shaders/gen-cymatic-bloom-fronds.wgsl",
+    "tags": [
+      "generative",
+      "cymatic",
+      "fern",
+      "fractal",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "organic"
+    ],
+    "description": "Barnsley fern fronds bloom under bass-driven growth, shimmer with cymatic standing-wave rims on mids, and scatter treble jitter across the field. Mouse warps the coordinate space; depth softens background fronds.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "barnsley-ifs",
+      "domain-warp",
+      "aces-tone-map",
+      "ign-dither"
+    ],
+    "params": [
+      {
+        "id": "growth_rate",
+        "name": "Growth Rate",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "cymatic_frequency",
+        "name": "Cymatic Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "frond_scale",
+        "name": "Frond Scale",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "trail_decay",
+        "name": "Trail Decay",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
+    "id": "gen-cymatic-hex-mandala",
+    "name": "Cymatic Hex Mandala",
+    "category": "generative",
+    "url": "shaders/gen-cymatic-hex-mandala.wgsl",
+    "tags": [
+      "generative",
+      "cymatic",
+      "mandala",
+      "hex-grid",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "standing-wave"
+    ],
+    "description": "A hex-tiled cymatic mandala radiates standing-wave rings from center. Bass drives wave amplitude, mids shift frequency and hue, and treble sparks node intersections. Mouse offsets the mandala center; depth softens outer rings.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "hex-cymatics",
+      "aces-tone-map",
+      "ign-dither"
+    ],
+    "params": [
+      {
+        "id": "hex_scale",
+        "name": "Hex Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "wave_frequency",
+        "name": "Wave Frequency",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "ring_intensity",
+        "name": "Ring Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "trail_persistence",
+        "name": "Trail Persistence",
+        "default": 0.35,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Cymatic Plasma-Mandalas",
     "category": "generative",
     "tags": [
@@ -13409,6 +13838,77 @@
       "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = raw HDR display RGBA history"
+  },
+  {
+    "id": "gen-fractal-lightning-canvas",
+    "name": "Fractal Lightning Canvas",
+    "category": "generative",
+    "url": "shaders/gen-fractal-lightning-canvas.wgsl",
+    "tags": [
+      "generative",
+      "lightning",
+      "lichtenberg",
+      "fractal",
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "electric"
+    ],
+    "description": "Fractal Lichtenberg bolts crawl across a dark canvas. Bass seeds new discharge points, mids thicken branch filaments, and treble jitters the plasma edges. Mouse attracts a local strike; depth softens distant arcs.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "lichtenberg-branches",
+      "aces-tone-map",
+      "ign-dither"
+    ],
+    "params": [
+      {
+        "id": "branch_density",
+        "name": "Branch Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "glow_intensity",
+        "name": "Glow Intensity",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "strike_rate",
+        "name": "Strike Rate",
+        "default": 0.45,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "afterglow",
+        "name": "Afterglow",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
+      }
+    ]
   },
   {
     "id": "gen-fractal-neuro-mycelium-lattice",
@@ -19212,6 +19712,82 @@
         "min": 0,
         "max": 1,
         "step": 0.01
+      }
+    ]
+  },
+  {
+    "name": "Magnetic Liquid Glyphs",
+    "category": "generative",
+    "tags": [
+      "audio-reactive",
+      "ferrofluid",
+      "magnetic",
+      "glyphs",
+      "runes",
+      "sdf",
+      "generative",
+      "mouse-interactive",
+      "depth-aware"
+    ],
+    "description": "A dark ferrofluid surface that resolves almost-readable glyph runes under strong bass, then shatters into auroral breakup on treble spikes. Mouse drag rotates the external magnetic field sculpting the liquid. Depth drives transmission alpha so background glyphs fade and the slot chain shows through.",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "supportsDof": false,
+    "updated": true,
+    "id": "gen-magnetic-liquid-glyphs",
+    "url": "shaders/gen-magnetic-liquid-glyphs.wgsl",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "depth-aware",
+      "magnetic-liquid",
+      "sdf",
+      "smin-blend",
+      "bass-env",
+      "aces-tone-map",
+      "ign-dither",
+      "premultiplied-alpha"
+    ],
+    "params": [
+      {
+        "id": "glyph_scale",
+        "name": "Glyph Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "chaos",
+        "name": "Chaos",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "aurora_emission",
+        "name": "Aurora Emission",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "hue_base",
+        "name": "Hue Base",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w"
       }
     ]
   },
