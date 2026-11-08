@@ -85,8 +85,10 @@ export function graphEdges(graph: MultipassGraphDef): GraphEdge[] {
         }
         continue;
       }
-      const sourceRole: GraphRole = role === 'simIndex' ? 'simState' : role;
-      const via = role === 'simIndex' ? 'simState → simIndex' : undefined;
+      // simIndex is a snapshot of simState and simHash a hash built from it: both trace back to its writer.
+      const fromSim = role === 'simIndex' || role === 'simHash';
+      const sourceRole: GraphRole = fromSim ? 'simState' : role;
+      const via = fromSim ? `simState → ${role}` : undefined;
       const w = lastWriter.get(sourceRole);
       if (w !== undefined) add({ from: w, to, role, feedback: false, via });
       else {
