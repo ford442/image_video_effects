@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: hyphal wrapping around the gear; chrono lag vs gear rotation
+//  Upgraded: 2026-09-13, 2026-11-08
+//  Ideas: hyphal wrapping around the gear; chrono lag vs gear rotation; golden-angle fruiting primordia (§12.2E); cytoplasmic streaming pulses along the stalk; twisted three-strand rhizomorph cord (§12.2E)
 //  A packing: ACES display RGBA (C unused)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -12,6 +12,9 @@
 // zoom_params: x=Mycelial Density, y=Plasma Glow, z=Temporal Warp, w=Mouse Influence
 
 const PI: f32 = 3.14159265359;
+const GOLDEN_ANGLE: f32 = 2.39996323;
+const BUD_PITCH: f32 = 0.55;        // vertical spacing of the primordia along the stalk
+const CORD_TWIST: f32 = 4.5;        // radians of strand twist per unit of stalk height
 
 fn rotate3D(axis: vec3<f32>, angle: f32) -> mat3x3<f32> {
     let s = sin(angle);
@@ -55,12 +58,43 @@ fn sdf_mycelium(p: vec3<f32>) -> f32 {
     let mouseInf = clamp(u.zoom_params.w, 0.0, 1.0);
     // Idea 2 — chrono lag: living net trails the gear clock
     let lagTime = u.config.x - 0.55;
-    let mouse_offset = vec2<f32>((u.zoom_config.y - 0.5) * 2.0, (u.zoom_config.z - 0.5) * 2.0) * mouseInf;
+    let mouse_offset = vec2<f32>((u.zoom_config.y - 0.5) * 2.0, (0.5 - u.zoom_config.z) * 2.0) * mouseInf;   // y flipped: world +y is up
     pos.x += sin(pos.y * warp + lagTime) * mouse_offset.x;
     pos.y += sin(pos.x * warp + lagTime) * mouse_offset.y;
 
     let noise = fbm(pos * density + vec3<f32>(lagTime)) * (0.5 + audio_react);
-    return length(vec2<f32>(pos.x, pos.z)) - 0.1 - noise * 0.2;
+    // ── Idea 5: twisted three-strand rhizomorph cord (§12.2E additive domain twist) ──
+    // The cross-section angle is twisted by CORD_TWIST * y before the (unchanged) radius test, so the stalk
+    // reads as a braided cord whose strands wind up it and keep winding with the chrono lag. 3 lobes (integer)
+    // keep the atan2 seam invisible. The existing fbm radius noise is untouched.
+    var strands = 0.0;
+    if (length(pos.xz) < 0.5) {   // the cord is at most ~0.3 wide; skip the atan2/cos for rays far from the stalk
+        let cordAng = atan2(pos.z, pos.x) - pos.y * CORD_TWIST - lagTime * 0.35;
+        strands = 0.035 * cos(3.0 * cordAng);
+    }
+    return length(vec2<f32>(pos.x, pos.z)) - 0.1 - strands - noise * 0.2;
+}
+
+// ── Idea 3: golden-angle fruiting primordia (§12.2E golden-angle layout) ──────
+// Buds pin off the stalk in phyllotactic order: bud i sits at height i*BUD_PITCH and azimuth i*GOLDEN_ANGLE.
+// Domain repetition along y (the two nearest cells, no loop); the cell count is capped so the column ends.
+fn sdf_buds(p: vec3<f32>) -> f32 {
+    let rxz = length(p.xz);
+    if (rxz > 0.8) { return rxz - 0.31; }   // every bud lies within 0.16 + 0.135 of the stalk axis: cheap lower bound
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let cy = p.y / BUD_PITCH;
+    let i0 = round(cy);
+    let i1 = i0 + select(-1.0, 1.0, cy >= i0);
+    let rb = 0.1 + 0.035 * bass;
+    var best = 1e5;
+    for (var k = 0; k < 2; k = k + 1) {
+        let i = clamp(select(i0, i1, k == 1), -4.0, 4.0);
+        let az = i * GOLDEN_ANGLE;
+        let c = vec3<f32>(cos(az) * 0.16, i * BUD_PITCH, sin(az) * 0.16);
+        let q = (p - c) * vec3<f32>(1.0, 1.15, 1.0);
+        best = min(best, length(q) - rb);
+    }
+    return best;
 }
 
 // Idea 1 — hyphal wrapping: helical tube coiling around the gear spin axis
@@ -82,7 +116,7 @@ fn map(p: vec3<f32>) -> f32 {
     let d_gear = sdf_gear(p);
     let d_mycelium = sdf_mycelium(p);
     let d_wrap = sdf_wrap(p);
-    return smooth_min(smooth_min(d_gear, d_mycelium, 0.5), d_wrap, 0.22);
+    return smooth_min(smooth_min(smooth_min(d_gear, d_mycelium, 0.5), d_wrap, 0.22), sdf_buds(p), 0.1);
 }
 
 fn calc_normal(p: vec3<f32>) -> vec3<f32> {
@@ -113,10 +147,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let uv = (fragCoord - 0.5 * res) / res.y;
+    var uv = (fragCoord - 0.5 * res) / res.y;
+    uv.y = -uv.y;   // Rescue R1: texture row 0 is the TOP; world +y must point up the image
     var ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(uv, 1.0));
 
@@ -150,7 +186,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += vec3<f32>(0.8, 0.9, 1.0) * abs(glow) * treble * 0.15;
         wrapLit = 1.0 - smoothstep(0.0, 0.08, max(sdf_wrap(p), 0.0));
         col += vec3<f32>(0.45, 0.95, 0.7) * wrapLit * (0.35 + mids * 0.25);
-        lum = clamp(diff + abs(glow) * 0.5 + wrapLit * 0.3, 0.0, 1.0);
+
+        // Idea 3 (surface): primordia caps are pale and warm against the magenta net
+        let budLit = 1.0 - smoothstep(0.0, 0.05, max(sdf_buds(p), 0.0));
+        col = mix(col, vec3<f32>(1.0, 0.78, 0.55) * (0.3 + diff), budLit * 0.75);
+
+        // ── Idea 4: cytoplasmic streaming pulses ──────────────────────────
+        // Pulses leave the gear and travel outward along the stalk (|y|), phase taken from the chrono lag so they
+        // trail the gear's clock; masked to the stalk axis and kept out of the gear itself.
+        let stalkMask = 1.0 - smoothstep(0.18, 0.4, length(p.xz));
+        let flowPhase = abs(p.y) * 6.0 - (u.config.x - 0.55) * 2.4;
+        let streamPulse = pow(0.5 + 0.5 * sin(flowPhase), 6.0);
+        let stream = streamPulse * stalkMask * smoothstep(0.35, 0.9, abs(p.y)) * (0.45 + bass * 0.9);
+        col += vec3<f32>(0.5, 1.0, 0.9) * stream;
+
+        lum = clamp(diff + abs(glow) * 0.5 + wrapLit * 0.3 + stream * 0.3 + budLit * 0.2, 0.0, 1.0);
     }
 
     let alpha = clamp(select(0.0, 0.3, hit) + lum * 0.6, 0.0, 1.0);

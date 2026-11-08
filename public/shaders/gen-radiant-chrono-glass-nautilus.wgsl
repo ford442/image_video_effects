@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: logarithmic chamber septa; birefringent growth lamellae; siphuncle plasma conduit; chamber-sequential plasma tide; septal suture scallops; nacre growth striae; clockwork escapement ticking; chrono-glass shatter
+//  Upgraded: 2026-10-10, 2026-11-08
+//  Ideas: logarithmic chamber septa; birefringent growth lamellae; siphuncle plasma conduit; chamber-sequential plasma tide; septal suture scallops; nacre growth striae; clockwork escapement ticking; chrono-glass shatter; escapement recoil ring-down; ratchet-toothed septa advancing one tooth per tick; cameral liquid level with meniscus
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -45,6 +45,19 @@ fn chamberTide(chamber: f32) -> f32 {
     return 0.3 + 0.7 * w * w * w;
 }
 
+// ── Idea 9: cameral liquid level ───────────────────────────────────────────
+// Nautilus chambers are part liquid, part gas (buoyancy). Each chamber strip has its own flat, horizontal free
+// surface (world +y is up): the liquid glows with the plasma, the gas above it is dim glass, and a thin bright
+// meniscus sits on the interface. The level breathes slowly.
+fn cameralLevel(chId: f32) -> f32 {
+    let hsh = fract(sin(chId * 12.9898 + 4.1) * 43758.5453);
+    return mix(-1.6, 1.6, hsh) + 0.25 * sin(u.config.x * 0.35 + chId * 1.7);
+}
+fn cameralWet(chId: f32, y: f32) -> f32 {
+    let lv = cameralLevel(chId);
+    return smoothstep(lv + 0.06, lv - 0.06, y);
+}
+
 // Logarithmic spiral SDF
 fn map(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
@@ -54,7 +67,8 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     // Gravity well interaction
     let mouse = u.zoom_config.yz;
-    let mouseDist = length(p.xy - (mouse * 2.0 - 1.0) * 2.0);
+    // world +y is up (rescue R2), the pointer's y runs down the texture
+    let mouseDist = length(p.xy - vec2<f32>(mouse.x * 2.0 - 1.0, 1.0 - mouse.y * 2.0) * 2.0);
     p = rotate3D(vec3<f32>(0.0, 0.0, 1.0), mouseDist * 0.5) * p;
 
     // Spiral domain
@@ -64,8 +78,16 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     let tightness = u.zoom_params.x; // 0.1 to 1.0
     // Idea 1: clockwork escapement ticking
-    let ticking = floor(t * 4.0) * 0.25 + smoothstep(0.8, 1.0, fract(t * 4.0)) * 0.25;
-    let spiral_a = a * tightness + log(r) * 2.0 + ticking * 0.5;
+    let beatF = fract(t * 4.0);
+    var ticking = floor(t * 4.0) * 0.25 + smoothstep(0.8, 1.0, beatF) * 0.25;
+    // ── Idea 7: escapement recoil ring-down ────────────────────────────────
+    // A real anchor does not land cleanly: after the drop the wheel overshoots, recoils and rings down.
+    // beatF restarts at 0 on the beat, so the ring-down is measured from the landing.
+    ticking += 0.05 * exp(-9.0 * beatF) * sin(32.0 * beatF);
+    // Rescue R1: the winding term must be periodic in the atan2 angle or the spiral tears along the negative
+    // x axis. 1.5*tightness*TAU "arms" is rounded to a whole number (default 0.5 -> 5 arms).
+    let arms = max(round(tightness * 1.5 * 2.0 * PI), 1.0);
+    let spiral_a = a * arms / (1.5 * 2.0 * PI) + log(r) * 2.0 + ticking * 0.5;
 
     // Create nautilus chambers
     let chamberPhase = fract(spiral_a * 1.5);
@@ -74,7 +96,11 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     // Logarithmic chamber septa: walls at chamber-phase boundaries, thickening with radius
     let wallPhase = min(chamberPhase, 1.0 - chamberPhase);
-    let septumThick = 0.014 + clamp(r, 0.0, 4.0) * 0.010;
+    // ── Idea 8: ratchet-toothed septa ─────────────────────────────────────
+    // The septa carry escapement-wheel teeth: a saw tooth along the angle (36 per turn, seam-safe) that
+    // advances exactly one tooth per beat (ticking steps by 0.25 per beat) so the pallet "engages" on the tick.
+    let toothSaw = fract(a * 36.0 / (2.0 * PI) - ticking * 4.0);
+    let septumThick = (0.014 + clamp(r, 0.0, 4.0) * 0.010) * (1.0 + 3.5 * toothSaw);
     // Idea 5: septal suture scallops at chamber joins.
     let scallop = 0.008 * sin(spiral_a * 8.0 + z * 18.0 + t * 0.7);
     let septum = length(vec2<f32>(wallPhase * 1.8, z * 2.2)) - (septumThick + scallop);
@@ -122,6 +148,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
     let fragCoord = vec2<f32>(f32(global_id.x), f32(global_id.y));
     var uv = (fragCoord * 2.0 - resolution) / min(resolution.x, resolution.y);
+    uv.y = -uv.y;   // Rescue R2: texture row 0 is the TOP; world +y must point up the image
 
     // Audio reactivity: mids tint the glass shimmer, treble sparkles the bloom
     let mids = plasmaBuffer[0].y;
@@ -143,7 +170,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         if (d < 0.001 || t > 10.0) { break; }
         t += d;
         if (id == 2.0) {
-            glow += 0.01 / (0.01 + d * d) * u.zoom_params.y * chamberTide(g_chamber); // Plasma Bloom
+            glow += 0.01 / (0.01 + d * d) * u.zoom_params.y * chamberTide(g_chamber) * (0.25 + 0.75 * cameralWet(g_chamber, p.y)); // Plasma Bloom (liquid-filled part only: Idea 9)
         }
     }
 
@@ -168,6 +195,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let hitMap = map(p);
         if (id == 2.0) {
             col *= 0.55 + 0.45 * chamberTide(g_chamber);
+            // ── Idea 9 (surface): liquid / gas split + meniscus ─────────────
+            let wet = cameralWet(g_chamber, p.y);
+            let meniscus = exp(-abs(p.y - cameralLevel(g_chamber)) * 55.0);
+            col = col * (0.2 + 0.8 * wet) + vec3<f32>(0.6, 0.9, 1.0) * meniscus * 0.45;
         }
         if (hitMap.y == 4.0) {
             // Plasma pulses travel outward along log r through the siphuncle.

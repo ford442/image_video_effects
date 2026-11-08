@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, raymarched, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: frost-rime orbit trap; aether shatter veins along fold mirror planes
+//  Upgraded: 2026-09-13, 2026-11-08
+//  Ideas: frost-rime orbit trap; aether shatter veins along fold mirror planes; fold-count ice grade (§12.2E fold count); ridge translucency (§12.2E SDF curvature); meltwater sheen from the smin blend weight
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -18,6 +18,17 @@ fn fold(p: vec3<f32>) -> vec3<f32> {
     if (p_mut.x < p_mut.z) { p_mut = p_mut.zyx; }
     if (p_mut.y < p_mut.z) { p_mut = p_mut.xzy; }
     return p_mut;
+}
+
+// ── Idea 3 helper (§12.2E fold count as material): fold() with a reflection counter — mirror
+// flips (abs) plus the three axis-sorting swaps. Identical geometry to fold().
+fn foldCounted(p: vec3<f32>) -> vec4<f32> {
+    var q = abs(p);
+    var c = f32(p.x < 0.0) + f32(p.y < 0.0) + f32(p.z < 0.0);
+    if (q.x < q.y) { q = q.yxz; c += 1.0; }
+    if (q.x < q.z) { q = q.zyx; c += 1.0; }
+    if (q.y < q.z) { q = q.xzy; c += 1.0; }
+    return vec4<f32>(q, c);
 }
 
 fn rot2D(angle: f32) -> mat2x2<f32> {
@@ -47,7 +58,10 @@ fn map(p: vec3<f32>, time: f32, scale: f32, melt: f32, audio: f32, shatter: f32)
     q.y = qyz.x; q.z = qyz.y;
 
     var scale_factor = 1.0;
-    let s = scale * (1.0 + audio * 0.1);
+    // ── Rescue R1: the app feeds 0.5 (JSON has no top-level params), and s = 0.5 is a CONTRACTION —
+    // scale_factor = 0.5^5 inflates the DE 32x and the march steps through the fractal, leaving a
+    // smooth disc. Expansion factor = 1 + slider, so the fed 0.5 is the authored 1.5 fractal.
+    let s = (1.0 + scale) * (1.0 + audio * 0.1);
 
     for (var i = 0; i < 5; i++) {
         q = fold(q);
@@ -70,9 +84,10 @@ fn map(p: vec3<f32>, time: f32, scale: f32, melt: f32, audio: f32, shatter: f32)
     return d;
 }
 
-// Idea 1 + 2: replay map()'s fold loop once at the hit and keep its orbit data.
-// x = min orbit radius (rime trap), y = min distance to the sorted-abs mirror planes (shatter seams).
-fn foldTraps(p: vec3<f32>, time: f32, scale: f32, audio: f32) -> vec2<f32> {
+// Ideas 1–3: replay map()'s fold loop once at the hit and keep its orbit data.
+// x = min orbit radius (rime trap), y = min distance to the sorted-abs mirror planes (shatter seams),
+// z = total mirror flips + axis swaps along the orbit (Idea 3: ice grade).
+fn foldTraps(p: vec3<f32>, time: f32, scale: f32, audio: f32) -> vec3<f32> {
     var q = p;
     let t = time * 0.2;
     let qxy = rot2D(t) * vec2<f32>(q.x, q.y);
@@ -80,15 +95,21 @@ fn foldTraps(p: vec3<f32>, time: f32, scale: f32, audio: f32) -> vec2<f32> {
     let qyz = rot2D(t * 0.7) * vec2<f32>(q.y, q.z);
     q.y = qyz.x; q.z = qyz.y;
 
-    let s = scale * (1.0 + audio * 0.1);
+    // ── Rescue R1: the app feeds 0.5 (JSON has no top-level params), and s = 0.5 is a CONTRACTION —
+    // scale_factor = 0.5^5 inflates the DE 32x and the march steps through the fractal, leaving a
+    // smooth disc. Expansion factor = 1 + slider, so the fed 0.5 is the authored 1.5 fractal.
+    let s = (1.0 + scale) * (1.0 + audio * 0.1);
     var sf = 1.0;
     var orbit = 1e5;
     var seam = 1e5;
+    var folds = 0.0;
     for (var i = 0; i < 5; i++) {
         let a = abs(q);
         let plane = min(min(abs(a.x - a.y), abs(a.x - a.z)), abs(a.y - a.z)) * 0.7071;
         seam = min(seam, plane / sf);
-        q = fold(q);
+        let fc = foldCounted(q);
+        q = fc.xyz;
+        folds += fc.w;
         q = q * s - vec3<f32>(1.2, 1.2, 1.2);
         sf *= s;
         orbit = min(orbit, length(q) / sf);
@@ -96,7 +117,7 @@ fn foldTraps(p: vec3<f32>, time: f32, scale: f32, audio: f32) -> vec2<f32> {
         let qxz = rot * vec2<f32>(q.x, q.z);
         q.x = qxz.x; q.z = qxz.y;
     }
-    return vec2<f32>(orbit, seam);
+    return vec3<f32>(orbit, seam, folds);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -112,6 +133,17 @@ fn calcNormal(p: vec3<f32>, time: f32, scale: f32, melt: f32, audio: f32, shatte
         map(p + e.yyx, time, scale, melt, audio, shatter) - map(p - e.yyx, time, scale, melt, audio, shatter)
     );
     return normalize(n);
+}
+
+// ── Idea 4 helper (§12.2E SDF curvature): κ ≈ (Σ d(p±e·axis) − 6d)/e², probed at the hit only.
+// κ > 0 is a convex ridge/tip, κ < 0 a crease.
+fn mapCurv(p: vec3<f32>, time: f32, scale: f32, melt: f32, audio: f32, shatter: f32) -> f32 {
+    let e = 0.01;
+    let d0 = map(p, time, scale, melt, audio, shatter);
+    let sum = map(p + vec3<f32>(e, 0.0, 0.0), time, scale, melt, audio, shatter) + map(p - vec3<f32>(e, 0.0, 0.0), time, scale, melt, audio, shatter)
+            + map(p + vec3<f32>(0.0, e, 0.0), time, scale, melt, audio, shatter) + map(p - vec3<f32>(0.0, e, 0.0), time, scale, melt, audio, shatter)
+            + map(p + vec3<f32>(0.0, 0.0, e), time, scale, melt, audio, shatter) + map(p - vec3<f32>(0.0, 0.0, e), time, scale, melt, audio, shatter);
+    return (sum - 6.0 * d0) / (e * e);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -186,7 +218,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = base_col * dif + spec * vec3<f32>(0.8, 0.9, 1.0) + fresnel * vec3<f32>(0.2, 0.8, 1.0);
 
         // Chromatic edges
-        col += vec3<f32>(0.1, 0.5, 0.9) * (1.0 - n.z);
+        // ── Rescue R2: HEAD used (1 - n.z) as the rim term, but the camera looks down +z, so
+        // camera-FACING surfaces (n.z ≈ -1) got the maximum (x2) and the whole fractal washed
+        // cyan (meanL 0.75, stdL 0.07). Rim = grazing angle to the actual view ray.
+        col += vec3<f32>(0.1, 0.5, 0.9) * (1.0 - max(dot(n, -rd), 0.0));
 
         let traps = foldTraps(p, time, scale_param, audio);
 
@@ -200,6 +235,32 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let vein = (1.0 - smoothstep(0.0, veinWidth, traps.y)) * (1.0 - smoothstep(0.0, 0.6, active_melt));
         let veinCol = mix(vec3<f32>(0.2, 0.9, 1.0), vec3<f32>(0.95, 0.25, 1.0), clamp(mids + 0.5 * sin(time * 1.3 + traps.x * 60.0) + 0.5, 0.0, 1.0));
         col += veinCol * vein * shatter_param * (1.2 + audio * 1.5);
+
+        // ── Idea 3: fold-count ice grade. Frozen water's grade follows how often it was
+        // fractured: points mirrored few times are clear glacial ice (deep blue, tight
+        // glint), points mirrored many times are opaque snow-ice (matte white, broad).
+        let grade = smoothstep(17.5, 23.0, traps.z);   // measured: p10 18.8, median 21.8, p98 23.6
+        let clearIce = 1.0 - grade;
+        col = mix(col, col * 0.45 + vec3<f32>(0.01, 0.08, 0.30) * (0.5 + dif), clearIce * 0.8);
+        col += vec3<f32>(0.8, 0.92, 1.0) * pow(max(dot(reflectionDir, l), 0.0), 96.0) * clearIce * 2.5;
+        col = mix(col, col * 0.7 + vec3<f32>(0.55, 0.64, 0.76) * (0.25 + 0.75 * dif), grade * 0.35);
+
+        // ── Idea 4: ridge translucency. Thin convex ridges let the aether core light through;
+        // thick flanks stay opaque. Outward-facing ridges are back-lit by the core at the origin.
+        let kap = mapCurv(p, time, scale_param, active_melt, audio, shatter_param);
+        let ridge = smoothstep(40.0, 160.0, kap);
+        let backlit = clamp(dot(n, normalize(p + vec3<f32>(1e-4))), 0.0, 1.0);
+        col += vec3<f32>(0.55, 1.0, 1.0) * ridge * (0.4 + 0.6 * backlit) * (0.5 + glow_param) * (1.0 + 0.5 * audio);
+
+        // ── Idea 5: meltwater sheen. smin's blend weight h (how deep into the melt blend this
+        // point is) becomes a wet mask: water darkens the ice and carries a tight highlight.
+        let meltK = max(active_melt * 2.0, 0.0001);
+        let dPure = map(p, time, scale_param, 0.0, audio, shatter_param);
+        let meltSphere = length(p) - (1.0 + active_melt);
+        let hBlend = max(meltK - abs(dPure - meltSphere), 0.0) / meltK;
+        let wet = select(0.0, hBlend * hBlend, active_melt > 0.0);
+        col = mix(col, col * 0.5 + vec3<f32>(0.01, 0.05, 0.16), wet * 0.7);
+        col += vec3<f32>(0.9, 0.97, 1.0) * pow(max(dot(reflectionDir, l), 0.0), 128.0) * wet * 2.0;
     }
 
     col += glow;
