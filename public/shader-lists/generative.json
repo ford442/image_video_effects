@@ -198,7 +198,7 @@
     "id": "audio_geometric_pulse",
     "name": "Geometric Pulse",
     "url": "shaders/audio_geometric_pulse.wgsl",
-    "description": "Audio-reactive geometric patterns with kaleidoscope symmetry, shape morphing, neon glow, and frequency band visualization",
+    "description": "Audio-reactive neon kaleidoscope of morphing circles, hexagons and triangles with bevelled gem facets, white-hot lattice nodes, a receding echo tunnel and bass/mid/treble band rings.",
     "tags": [
       "geometric",
       "audio",
@@ -207,8 +207,9 @@
       "sacred-geometry"
     ],
     "features": [
+      "mouse-driven",
       "audio-reactive",
-      "mouse-control",
+      "upgraded-rgba",
       "kaleidoscope",
       "neon"
     ],
@@ -16870,7 +16871,12 @@
     "updated": true,
     "id": "gen-image-pixel-detonation",
     "url": "shaders/gen-image-pixel-detonation.wgsl",
-    "features": []
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "depth-aware"
+    ]
   },
   {
     "name": "4th of July — Image Pyro",

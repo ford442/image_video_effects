@@ -7454,7 +7454,7 @@
     "id": "neon-cursor-trace",
     "name": "Neon Cursor Trace",
     "url": "shaders/neon-cursor-trace.wgsl",
-    "description": "Spring-lagged electric bead chain trailing the cursor with forking arcs, white-hot cooling phosphor and overshoot sparks.",
+    "description": "Spring-lagged electric bead chain trailing the cursor with forking arcs, white-hot cooling phosphor, overshoot sparks, neon spill lighting the scene and tube flicker.",
     "params": [
       {
         "id": "intensity",
@@ -8964,7 +8964,7 @@
     "id": "pixel-stretch-cross",
     "name": "Pixel Stretch Cross",
     "url": "shaders/pixel-stretch-cross.wgsl",
-    "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and layered alpha compositing with depth fading, luminance keying, and accumulative feedback.",
+    "description": "Fibonacci-ray pixel stretch around the cursor: stepped pixel-run streaks with RGB-fringed tips, velocity-steered axes, bass pulse, cross glints on hot crossings and temporal trails.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -8978,28 +8978,28 @@
     "params": [
       {
         "id": "h_stretch",
-        "name": "H Stretch",
+        "name": "Stretch Amplitude",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "v_stretch",
-        "name": "V Stretch",
+        "name": "Axis Blend",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "depth_influence",
-        "name": "Depth Influence",
-        "default": 0.5,
+        "name": "Bloom Intensity",
+        "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
         "id": "turbulence",
-        "name": "Turbulence",
+        "name": "Bass Response",
         "default": 0.5,
         "min": 0,
         "max": 1

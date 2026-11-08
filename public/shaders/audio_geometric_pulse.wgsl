@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  audio_geometric_pulse
 //  Category: audio-reactive
-//  Features: upgraded-rgba, depth-aware, true-audio, click-ripples
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, click-ripples
 //  Upgraded: 2026-03-22
 //  Swarm upgrade: 2026-07-26 (Batch 17)
 //    * FIXED fake audio: audioPulse now driven by bass (plasmaBuffer[0].x)
@@ -15,6 +15,16 @@
 //      (pos.xy + vel.xy) — cursor glides instead of teleporting.
 //    * Click SDF rings: expanding geometric rings spawn from each
 //      recorded click (u.ripples) and fade with ripple age.
+//  Upgraded: 2026-11-08 (opus/batch-22)
+//  Ideas: receding echo tunnel (C fed back with an outward zoom, bass
+//         pushes it); white-hot lattice nodes where neighbouring shape
+//         edges cross; bevelled gem facets lit by a slowly orbiting light
+//  Rescues: spring centre lived in extraBuffer[133..136] (zeroed every
+//         frame, only invocation 0 read it) -> mouse was dead; band rings
+//         read plasmaBuffer[1..5] (never uploaded) -> now bass/mids/treble;
+//         neon edges were sub-pixel (0.003) -> pixel-scaled width; the
+//         neon glow ignored the SDF sign, so every shape rendered solid
+//  A packing: display RGBA (rgb = tone-mapped colour incl. echo; a = coverage)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -123,32 +133,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pulseSpeed = 1.0 + u.zoom_params.z * 4.0;        // 1-5
     let complexity = u.zoom_params.w;                    // 0-1
 
-    // ── Spring-damped mouse center offset ──────────────────────────
-    // extraBuffer[133..134] = damped center xy, [135..136] = velocity xy.
-    // Only invocation (0,0) integrates the spring to avoid write races.
-    let mouseTarget = (u.zoom_config.yz - 0.5) * 2.0;
-    var dampedPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var dampedVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (global_id.x == 0u && global_id.y == 0u) {
-        // Cold start: snap to the cursor so the pattern doesn't glide in
-        // from the origin on the very first frames.
-        if (dampedPos.x == 0.0 && dampedPos.y == 0.0 && dampedVel.x == 0.0 && dampedVel.y == 0.0) {
-            dampedPos = mouseTarget;
-        }
-        // Underdamped spring: snappy but with a soft trailing overshoot.
-        dampedVel = (dampedVel + (mouseTarget - dampedPos) * 0.18) * 0.82;
-        dampedPos = dampedPos + dampedVel;
-        extraBuffer[133] = dampedPos.x;
-        extraBuffer[134] = dampedPos.y;
-        extraBuffer[135] = dampedVel.x;
-        extraBuffer[136] = dampedVel.y;
-    }
+    // ── Mouse centre offset ────────────────────────────────────────
+    // RESCUE: the old extraBuffer[133..136] spring never persisted (the
+    // scratch buffer is re-uploaded zeroed each frame) and only invocation
+    // (0,0) saw the cursor. The echo tunnel below now supplies the glide.
+    let dampedPos = (u.zoom_config.yz - 0.5) * 2.0;
+    let px = 1.0 / resolution.y;                       // one pixel in uv units
 
     // Kaleidoscope UV (center glides with the spring-damped cursor)
     let kUV = kaleidoscope(uv - dampedPos * 0.3, symmetry);
 
     // Multiple concentric shapes
     var color = vec3<f32>(0.0);
+    var prevDist = 1e5;
+    var nodes = 0.0;
+    // Idea 3: light direction for bevelled facets, orbiting slowly.
+    let lightDir = normalize(vec2<f32>(cos(time * 0.37), sin(time * 0.37)));
     let numShapes = i32(3.0 + complexity * 5.0);
 
     for (var i: i32 = 0; i < numShapes; i = i + 1) {
@@ -174,9 +174,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         dist = mix(dist, d3, cos(shapeMorph * PI * 2.0 + fi * 0.3) * 0.5 + 0.5);
 
         // Neon glow
-        let thickness = 0.003 + audioPulse * 0.005;
+        let thickness = 1.6 * px + 0.003 + audioPulse * 0.005;
         let intensity = 1.0 + audioPulse * 2.0;
-        let glow = neonGlow(dist, thickness, intensity);
+        // RESCUE: smoothstep(t, 0, dist) is 1 for every dist < 0, so the
+        // "neon edge" filled each shape solid. Glow on |dist| (+ soft halo).
+        let glow = neonGlow(abs(dist), thickness, intensity) + neonGlow(abs(dist), thickness * 6.0, intensity * 0.25);
 
         // Color based on ring and audio
         let band = fi / f32(numShapes);
@@ -188,9 +190,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Inner fill for some shapes
         if (i % 2 == 0) {
             let fill = smoothstep(0.0, thickness * 3.0, -dist) * 0.2;
-            color += shapeColor * fill;
+            // Idea 3 — bevelled gem facet: the SDF gradient near the rim acts
+            // as a surface normal, lit by the orbiting light.
+            let e = 2.0 * px;
+            let gx = mix(mix(sdCircle(rotatedUV + vec2<f32>(e, 0.0), radius), sdHexagon(rotatedUV + vec2<f32>(e, 0.0), radius * 0.9), sin(shapeMorph * PI + fi * 0.5) * 0.5 + 0.5), sdTriangle(rotatedUV + vec2<f32>(e, 0.0), radius * 1.1), cos(shapeMorph * PI * 2.0 + fi * 0.3) * 0.5 + 0.5) - dist;
+            let gy = mix(mix(sdCircle(rotatedUV + vec2<f32>(0.0, e), radius), sdHexagon(rotatedUV + vec2<f32>(0.0, e), radius * 0.9), sin(shapeMorph * PI + fi * 0.5) * 0.5 + 0.5), sdTriangle(rotatedUV + vec2<f32>(0.0, e), radius * 1.1), cos(shapeMorph * PI * 2.0 + fi * 0.3) * 0.5 + 0.5) - dist;
+            let n = rotate(vec2<f32>(gx, gy) / max(length(vec2<f32>(gx, gy)), 1e-5), -rotAngle);
+            let bevel = smoothstep(-0.035, 0.0, dist) * step(dist, 0.0);
+            let lit = dot(n, lightDir);
+            color += shapeColor * fill * (1.0 + bevel * lit * 2.2) + vec3<f32>(1.0) * bevel * max(lit, 0.0) * 0.12;
         }
+
+        // Idea 2 — lattice nodes: where this edge crosses the previous
+        // shape's edge, a white-hot point flares (mids feed it).
+        let w = 3.0 * px;
+        nodes += smoothstep(w, 0.0, abs(dist)) * smoothstep(w, 0.0, abs(prevDist));
+        prevDist = dist;
     }
+    color += vec3<f32>(1.0, 0.95, 0.85) * min(nodes, 1.5) * (1.2 + mids * 2.0);
 
     // Central pulse burst (mids add a warm shimmer on top of bass drive)
     let centerPulse = pulseWave(uv, time, pulseSpeed * 2.0, 20.0 + audioPulse * 30.0);
@@ -226,16 +243,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bands = 5;
     for (var b: i32 = 0; b < bands; b = b + 1) {
         let fb = f32(b);
-        let binEnergy = plasmaBuffer[1 + b].x;
+        // RESCUE: plasmaBuffer[1..5] is never uploaded; spread the three
+        // live bands across the five rings (bass inner → treble outer).
+        let bt = fb / f32(bands - 1);
+        let binEnergy = select(mix(mids, treble, bt * 2.0 - 1.0), mix(audioPulse, mids, bt * 2.0), bt < 0.5);
         let bandRadius = 0.15 + fb * 0.06 + binEnergy * 0.04;
         let bandDist = abs(length(uv) - bandRadius);
-        let bandGlow = smoothstep(0.01 + binEnergy * 0.02, 0.0, bandDist);
+        let bandGlow = smoothstep(1.2 * px + 0.004 + binEnergy * 0.02, 0.0, bandDist);
         let bandColor = audioColor(fb / f32(bands), binEnergy * 0.5);
         color += bandColor * bandGlow * (0.3 + binEnergy);
     }
 
     // Tone mapping
-    color = color / (1.0 + color);
+    color = color / (1.0 + max(color, vec3<f32>(0.0)));
+
+    // Idea 1 — receding echo tunnel: last frame (C, display space) is
+    // re-sampled slightly zoomed toward the pattern centre, so every pulse
+    // leaves ghost shapes that shrink inward. Bass deepens the echo.
+    let centre = dampedPos * 0.3;
+    let zoom = 1.035 + audioPulse * 0.03;
+    let echoUV = (uv - centre) * zoom + centre;
+    let echoFull = vec2<f32>(echoUV.x * resolution.y / resolution.x, echoUV.y) + 0.5;
+    var echo = vec3<f32>(0.0);
+    if (all(echoFull >= vec2<f32>(0.0)) && all(echoFull <= vec2<f32>(1.0))) {
+        echo = textureSampleLevel(dataTextureC, u_sampler, echoFull, 0.0).rgb;
+    }
+    let echoKeep = 0.55 + audioPulse * 0.25;
+    color = max(color, echo * echoKeep * vec3<f32>(0.85, 0.9, 1.0));
 
     // Vignette
     let vignette = 1.0 - length(uvFull - 0.5) * 0.4;
@@ -250,7 +284,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalAlpha = mix(alpha * 0.8, alpha, depth);
 
     textureStore(writeTexture, coord_u, vec4<f32>(color, finalAlpha));
-    textureStore(writeDepthTexture, coord_u, vec4<f32>(length(color), 0.0, 0.0, finalAlpha));
+    textureStore(writeDepthTexture, coord_u, vec4<f32>(clamp(depth, 0.0, 1.0), 0.0, 0.0, 0.0));
 
     // Store for feedback
     textureStore(dataTextureA, coord_u, vec4<f32>(color, finalAlpha));

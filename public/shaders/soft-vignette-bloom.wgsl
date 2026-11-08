@@ -3,9 +3,12 @@
 //  Category: post-processing
 //  Features: bloom, cinematic, audio-reactive, depth-aware, lens-flare,
 //            chromatic-aberration, bokeh-dof, starburst-diffraction,
-//            anamorphic-streaks, enhanced-falloff
+//            anamorphic-streaks, enhanced-falloff, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-30, 2026-06-28
+//  Upgraded: 2026-05-30, 2026-06-28, 2026-11-08
+//  Ideas: cursor rack-focus (focal plane = depth under the cursor); film halation (red-orange
+//         wide-scale bloom fringe); lens dirt smudges lit only by bloom/flare energy
+//  A packing: rgb = graded display colour, a = max(source alpha, bloom energy × vignette)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -99,6 +102,23 @@ fn hexagonSDF(p: vec2<f32>, r: f32) -> f32 {
   return length(max(vec2<f32>(c, h.x), vec2<f32>(0.0))) * sign(c);
 }
 
+fn vnoiseSVB(p: vec2<f32>) -> f32 {
+  let i = floor(p); let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(i), hash12(i + vec2<f32>(1.0, 0.0)), w.x),
+             mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
+}
+
+// ═══ Lens dirt: fixed smudges + specks on the front element (static, screen-space) ═══
+fn lensDirt(uv: vec2<f32>) -> f32 {
+  let smudge = smoothstep(0.55, 0.85, vnoiseSVB(uv * 5.0 + 3.1) * 0.65 + vnoiseSVB(uv * 13.0) * 0.35);
+  let cell = floor(uv * 48.0);
+  let h = hash12(cell);
+  let sp = fract(uv * 48.0) - vec2<f32>(hash12(cell + 7.0), hash12(cell + 13.0));
+  let speck = step(0.93, h) * smoothstep(0.35, 0.0, length(sp));
+  return smudge * 0.6 + speck;
+}
+
 fn bokehDOF(uv: vec2<f32>, center: vec2<f32>, depth: f32, focusDepth: f32, blurAmount: f32) -> vec3<f32> {
   let coc = abs(depth - focusDepth) * blurAmount; // Circle of confusion
   if (coc < 0.001) {
@@ -118,10 +138,12 @@ fn bokehDOF(uv: vec2<f32>, center: vec2<f32>, depth: f32, focusDepth: f32, blurA
     let ringWeight = 1.0 / f32(ring + 1);
     for (var i = 0; i < 6; i = i + 1) {
       let sampleUV = uv + hexDirs[i] * texel * coc * r * 10.0;
-      let hexWeight = 1.0 - hexagonSDF(sampleUV - center, coc * r * 0.5);
+      // HEAD measured the hex SDF against the cursor, so every pixel away from the
+      // mouse got weight 0 and went black. Aperture shape belongs to the tap offset.
+      let hexWeight = 1.0 - hexagonSDF(hexDirs[i] * r, 0.95);
       let samp = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
       let luma = dot(samp, vec3<f32>(0.299, 0.587, 0.114));
-      let brightWeight = smoothstep(0.3, 0.8, luma);
+      let brightWeight = 0.25 + 3.0 * smoothstep(0.3, 0.8, luma);
       bokeh = bokeh + samp * ringWeight * max(hexWeight, 0.0) * brightWeight;
       weight = weight + ringWeight * max(hexWeight, 0.0) * brightWeight;
     }
@@ -153,7 +175,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloomIntensity = zp.w;
 
   // ═══ BOKEH DEPTH OF FIELD ═══
-  var col = bokehDOF(uv, mouse, depth, 0.5, bloomRadius * 0.5);
+  // Idea 1: rack focus — the focal plane is whatever depth sits under the cursor.
+  let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  var col = bokehDOF(uv, mouse, depth, focusDepth, bloomRadius * 0.5);
   let baseAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
 
   // Multi-scale Gaussian bloom pyramid (3 scales) with enhanced threshold
@@ -163,7 +187,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let weights = array<f32, 3>(0.5, 0.3, 0.2);
 
   for (var level: u32 = 0u; level < 3u; level = level + 1u) {
-    let r = max(bloomRadius * scales[level], 1.0);
+    // HEAD: max(bloomRadius*scale, 1) ≈ 1 px at default — slider did nothing.
+    let r = 1.0 + bloomRadius * 4.0 * scales[level];
     var lvlBloom = vec3<f32>(0.0);
     var lvlWeight = 0.0;
     for (var dy = -2; dy <= 2; dy = dy + 1) {
@@ -197,6 +222,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
   bloom = bloom + streak * 0.15 * bloomIntensity;
 
+  // Idea 2: halation — light scattering off the film base returns red-shifted and wider.
+  var halo = 0.0;
+  for (var k = 0; k < 8; k = k + 1) {
+    let a = f32(k) * PI * 0.25;
+    let off = vec2<f32>(cos(a), sin(a)) * texel * (6.0 + bloomRadius * 18.0);
+    let samp = textureSampleLevel(readTexture, u_sampler, clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    halo = halo + smoothstep(0.55, 0.95, max(samp.r, max(samp.g, samp.b)));
+  }
+  halo = halo / 8.0;
+  let selfHot = smoothstep(0.55, 0.95, max(col.r, max(col.g, col.b)));
+  let halation = vec3<f32>(1.0, 0.32, 0.1) * max(halo - selfHot * 0.7, 0.0) * bloomIntensity * (0.45 + bass * 0.3);
+
   col = col + bloom * bloomIntensity * 0.4;
 
   // ═══ LENS FLARE (ghost images from bright areas) ═══
@@ -205,6 +242,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let flareIntensity = bloomEnergy * 0.3 * (1.0 + bass * 0.5) * bloomIntensity;
   let flare = lensFlare(uv, flareCenter, flareIntensity);
   col = col + flare * 0.5;
+  col = col + halation;
+
+  // Idea 3: lens dirt — smudges only show where bloom / flare light passes through them.
+  let dirtLight = bloomEnergy * 0.9 + exp(-dot(uv - flareCenter, uv - flareCenter) * 6.0) * flareIntensity * 2.0;
+  col = col + vec3<f32>(1.0, 0.92, 0.8) * lensDirt(uv) * dirtLight * bloomIntensity * 0.35 * (1.0 + bass * 0.6);
 
   // ═══ STARBURST DIFFRACTION SPIKES ═══
   // 8-pointed star from the bright flare center
@@ -250,10 +292,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = col * vignette;
   col = aces_approx(max(col, vec3<f32>(0.0)));
 
-  // Alpha: bloom energy × vignette factor + light falloff
-  let alpha = clamp(bloomEnergy * vignette * 2.0 + baseAlpha * 0.3 + lightFalloff * 0.2, 0.0, 1.0);
-
-  // Premultiplied alpha writeback
-  textureStore(writeTexture, coord, vec4<f32>(col * alpha, alpha));
+  // Alpha: source coverage, raised where bloom spills past it. HEAD premultiplied
+  // col by an alpha that was ~0.3 on non-bloom pixels, dimming the frame to a third.
+  let alpha = clamp(max(baseAlpha, bloomEnergy * vignette * 2.0), 0.0, 1.0);
+  let outC = vec4<f32>(col, alpha);
+  textureStore(writeTexture, coord, outC);
+  textureStore(dataTextureA, coord, outC);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

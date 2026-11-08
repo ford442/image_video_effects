@@ -2,7 +2,7 @@
   "id": "hybrid-spectral-decomposed",
   "name": "Hybrid Spectral Decomposed",
   "url": "shaders/hybrid-spectral-decomposed.wgsl",
-  "description": "4-band spectral decomposition combined with audio-reactive pixel sorting. Image decomposed into low/mid-low/mid-high/high frequencies. Each band sorted independently with unique spectral color tints, then recomposed with per-band gains.",
+  "description": "Splits the image into four difference-of-Gaussian frequency bands, pixel-sorts each along its own angle in threshold-gated streak runs, tints them with spectral palettes and recombines them with bass/mids/treble as a live 4-band EQ.",
   "features": [
     "advanced-hybrid",
     "pixel-sorting",
@@ -10,7 +10,8 @@
     "audio-reactive",
     "mouse-driven",
     "randomization-safe",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {
