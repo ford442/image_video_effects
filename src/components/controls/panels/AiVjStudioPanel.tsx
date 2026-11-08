@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { RenderMode, SlotParams } from '../../../renderer/types';
-import type { AIStatus } from '../../../types/aiVj';
+import type { AIStatus, TriggerTransitionOptions } from '../../../types/aiVj';
 import { loadVJHistory, clearVJHistory, VJHistoryEntry } from '../../../services/vjHistory';
 import { VJPreset, loadPresets, deletePreset } from '../../../services/vjPresets';
 import { MyVjSet, loadMyVjSets, deleteMyVjSet } from '../../../services/myVjSets';
@@ -33,6 +33,8 @@ export interface AiVjStudioPanelProps {
     onShareVjSet?: () => void;
     onSaveVjSet?: (name: string) => void;
     onApplySharedChain?: (chain: SharedChain) => void;
+    /** Fires the next transition; the Auto Transition button asks it to dissolve shader changes. */
+    onTriggerNextTransition?: (options?: TriggerTransitionOptions) => Promise<void> | void;
     getCurrentChain?: () => SharedChain | null;
     onCopyChainShareLink?: () => void;
     autoTransitionOpen: boolean;
@@ -82,6 +84,7 @@ export const AiVjStudioPanel: React.FC<AiVjStudioPanelProps> = ({
     onShareVjSet,
     onSaveVjSet,
     onApplySharedChain,
+    onTriggerNextTransition,
     getCurrentChain,
     onCopyChainShareLink,
     autoTransitionOpen,
@@ -388,7 +391,7 @@ export const AiVjStudioPanel: React.FC<AiVjStudioPanelProps> = ({
                             Duration: {(autoTransitionDurationMs / 1000).toFixed(1)}s
                             <input
                                 type="range"
-                                min={200}
+                                min={0}
                                 max={10000}
                                 step={100}
                                 value={autoTransitionDurationMs}
@@ -407,6 +410,18 @@ export const AiVjStudioPanel: React.FC<AiVjStudioPanelProps> = ({
                                 <option value="cyclePresets">Cycle Presets</option>
                             </select>
                         </label>
+                        {onTriggerNextTransition && (
+                            <button
+                                type="button"
+                                className="gold-outline-btn"
+                                style={{ fontSize: '11px' }}
+                                disabled={!isAiVjMode || !autoTransitionEnabled}
+                                title="Fire the next transition now. A preset that swaps shaders dissolves over the duration (0 = cut)."
+                                onClick={() => { void onTriggerNextTransition({ crossfade: true }); }}
+                            >
+                                Next transition ▸
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

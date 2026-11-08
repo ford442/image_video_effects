@@ -14,6 +14,18 @@ export function easeInOutSine(x: number): number {
   return -(Math.cos(Math.PI * clamped) - 1) / 2;
 }
 
+/**
+ * Weight of the frozen outgoing picture for a cue at linear `progress` (0..1):
+ * 1 shows the hold, 0 shows the live frame. It is the orchestrator's own eased
+ * progress run backwards, so slider easing and picture dissolve share one curve.
+ * The render worker ramps with this same function (webgpu/presentHold.ts), and
+ * the offline export (#1401) is meant to feed it from its stepped clock.
+ */
+export function crossfadeMix(progress: number, easing: (x: number) => number = easeInOutSine): number {
+  if (!Number.isFinite(progress)) return 0;
+  return 1 - clamp(easing(clamp(progress, 0, 1)), 0, 1);
+}
+
 export function lerpParam(
   current: number,
   target: number,

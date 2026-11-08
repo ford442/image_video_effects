@@ -779,6 +779,17 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.pipeline.setHdrToneMap(this.device, this.hdrToneMap);
   }
 
+  /**
+   * Cue crossfade: dissolve over `durationMs` from the picture last presented into whatever
+   * the next frames render (the blit lives in webgpu/presentHold.ts). Call it with the
+   * shader-stack change it covers. False when the picture cuts instead: duration 0,
+   * nothing presented yet, or the hold could not be created.
+   */
+  startCrossfade(durationMs: number): boolean {
+    if (!this.frameState || !this.initialized) return false;
+    return this.frameRenderer.startCrossfade(this.frameState, durationMs);
+  }
+
   async captureChoresThumbnailPng(outSize: number): Promise<string | null> {
     // A direct-present frame never wrote the working texture: render one that does.
     if (this.directPresentState === null && this.frameState?.initialized) {
@@ -1589,6 +1600,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.warmup = null;
     this.islands.destroy();
     this.compositor.destroy();
+    this.frameRenderer.releasePresentHold();
     this.nodeScales.clear();
     this.videoIngest.detach();
     this.resolveFrameGrabs(null);

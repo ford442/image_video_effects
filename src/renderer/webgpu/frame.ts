@@ -128,6 +128,19 @@ export class WebGPUFrameRenderer {
     };
   }
 
+  /**
+   * Cue crossfade (webgpu/presentHold.ts): dissolve from the last presented picture into
+   * what the next frames render. False when the picture cuts instead.
+   */
+  startCrossfade(state: WebGPUFrameState, durationMs: number): boolean {
+    return this.presenter.startCrossfade(state, durationMs);
+  }
+
+  /** Free the cue hold (renderer teardown). */
+  releasePresentHold(): void {
+    this.presenter.releaseHold();
+  }
+
   /** Submits / bind groups per frame, read from the instrumented device. */
   getFrameStats(): FrameStats {
     return { ...this.statsTracker.stats };
@@ -158,6 +171,9 @@ export class WebGPUFrameRenderer {
     state.timestampRuntime.frame.reset();
 
     const encoder = device.createCommandEncoder({ label: 'frame' });
+    // A cue's hold copies the picture the last frame presented; this frame's compute
+    // and input copy overwrite it, so this comes first.
+    this.presenter.encodeHoldCapture(state, encoder);
     this.encodeVideoIngest(state, encoder);
 
     const slotPlan = buildFrameSlotDispatchPlan(state);
