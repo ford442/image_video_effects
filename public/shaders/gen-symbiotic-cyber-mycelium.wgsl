@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: axis-aligned data packets along nearest cylinder; infection quarantine rim
+//  Upgraded: 2026-09-13, 2026-10-25
+//  Ideas: axis-aligned data packets along nearest cylinder; infection quarantine rim; refractory node firing (tactic 3: promoted cell id + material); in-scatter fibre halo (tactic 2: bioluminescent medium)
 //  A packing: ACES display RGBA (C unused)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Data Speed, .y = Network Density, .z = Growth Twist, .w = Infection Bloom
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Data Speed, .y = Network Density, .z = Growth Twist, .w = Infection Bloom
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -147,7 +129,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let resolution = vec2<f32>(f32(dimensions.x), f32(dimensions.y));
-    let uv = (vec2<f32>(coord) - 0.5 * resolution) / resolution.y;
+    // HEAD fix: flip y so the y-up scene, light and mouse mapping agree
+    let uv0 = (vec2<f32>(coord) - 0.5 * resolution) / resolution.y;
+    let uv = vec2<f32>(uv0.x, -uv0.y);
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -156,17 +140,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let time = u.config.x;
     let dataSpeed = u.zoom_params.x * (1.0 + treble * 0.6);
 
-    let ro = vec3<f32>(0.0, 0.0, time * 2.0);
+    // HEAD fix: the old origin sat exactly on the z-axis cylinder (q.xy = 0), so every ray
+    // started inside the SDF and the frame was one pale wash. Park the eye inside a lattice cell.
+    let cellSpaceEye = 4.0 / max(u.zoom_params.y, 0.001);
+    let ro = vec3<f32>(cellSpaceEye * 0.27, cellSpaceEye * 0.21, time * 2.0);
     let rd = normalize(vec3<f32>(uv, 1.0));
 
     var t = 0.0;
     var hitMap = vec4<f32>(-1.0);
     var d = 0.0;
+    // Idea 2: in-scatter fibre halo — the SDF distance each march step already computes
+    // is integrated into a glow: bioluminescent fibres light the spore haze around them.
+    var halo = 0.0;
 
     for (var i = 0; i < 100; i++) {
         let p = ro + rd * t;
         hitMap = map(p);
         d = hitMap.x;
+        halo += 0.014 * exp(-max(d, 0.0) * 7.0) / (1.0 + t * 0.15);
         if (d < 0.001 || t > 20.0) { break; }
         t += d * 0.7;
     }
@@ -214,11 +205,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col += glowColor * emissionStr;
         col += vec3<f32>(0.2, 1.0, 0.55) * rim * (2.2 + mids);
 
+        // ── Idea 1: refractory node firing — the packet-carrying nodes flash when their
+        // cell is excited, then dip below resting glow before recharging (action-potential
+        // shape). Cell id is the twisted-lattice round() the SDF already used.
+        let twr = rot(p.z * u.zoom_params.z * 0.1);
+        let pxy = twr * p.xy;
+        let cellSz = 4.0 / max(u.zoom_params.y * (1.0 + bass * 0.5), 0.001);
+        let cellId = round(vec3<f32>(pxy.x, pxy.y, p.z) / cellSz);
+        let nodeHash = hash3(cellId).x;
+        let cyc = fract(time * dataSpeed * 0.2 + nodeHash);
+        let fire = exp(-cyc * 7.0) - 0.15 * smoothstep(0.15, 0.4, cyc) * (1.0 - smoothstep(0.4, 0.8, cyc));
+        let isNode = select(0.0, 1.0, hitMap.y > 1.5);
+        col += vec3<f32>(0.55, 1.0, 0.8) * max(fire, -0.15) * 2.5 * isNode;
+
         col = mix(col, vec3<f32>(0.0, 0.02, 0.05), 1.0 - exp(-0.05 * t));
     }
 
-    let display = acesToneMap(col);
-    let alpha = clamp(select(0.08, 0.4, hit) + packet * 0.35 + rim * 0.4, 0.04, 1.0);
+    // Idea 2 (cont.): halo colour drifts along the existing palette; fades with fog so deep rays stay dark
+    col += mix(vec3<f32>(0.0, 0.55, 0.3), palette(time * 0.05 + halo * 0.4), 0.35) * halo * (0.6 + mids * 0.5);
+
+    let display = acesToneMap(max(col, vec3<f32>(0.0)));
+    let alpha = clamp(select(0.08, 0.4, hit) + packet * 0.35 + rim * 0.4 + halo * 0.15, 0.04, 1.0);
     let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
     let outColor = vec4<f32>(display, alpha);
     textureStore(writeTexture, coord, outColor);

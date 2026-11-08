@@ -13,7 +13,8 @@
     "raymarching",
     "fluid-coupling",
     "mouse-driven",
-    "bioluminescent"
+    "bioluminescent",
+    "upgraded-rgba"
   ],
   "params": [
     {

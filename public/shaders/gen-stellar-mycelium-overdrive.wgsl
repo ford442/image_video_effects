@@ -1,3 +1,15 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Stellar Mycelium Overdrive
+//  Category: generative
+//  Features: generative, audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-10-31
+//  Ideas: over-relaxed sphere tracing (§12.2E); gravity-well star as soft inverse-square
+//         emitter, light + in-scatter (§12.2F); march-step occlusion (promoted loop counter);
+//         two-faced sheet material (gyroid sign, fold-count analog §12.2E)
+//  A packing: ACES display RGBA (new: HEAD wrote nothing to A)
+// ═══════════════════════════════════════════════════════════════════
+
 #include "_prelude.wgsl"
 
 // SDF functions
@@ -38,8 +50,9 @@ fn fbm(p: vec3<f32>) -> f32 {
     return f;
 }
 
-// Map function
-fn map(pos: vec3<f32>, mouse_grav: vec3<f32>, gravity_strength: f32) -> f32 {
+// Warp applied to the lattice (gravity well + fBm). Shared by map() and the shading
+// code so the material side-test below sees the same surface the marcher hit.
+fn warpP(pos: vec3<f32>, mouse_grav: vec3<f32>, gravity_strength: f32) -> vec3<f32> {
     var p = pos;
 
     // Add distortion based on mouse gravity well
@@ -54,12 +67,18 @@ fn map(pos: vec3<f32>, mouse_grav: vec3<f32>, gravity_strength: f32) -> f32 {
 
     // Add fBm noise distortion
     p += fbm(p * 2.0 + u.config.x * 0.5) * 0.2;
+    return p;
+}
+
+// Map function
+fn map(pos: vec3<f32>, mouse_grav: vec3<f32>, gravity_strength: f32) -> f32 {
+    let p = warpP(pos, mouse_grav, gravity_strength);
 
     // Density parameter mapping
     let density = u.zoom_params.x; // mapped to Density slider (1.0 - 5.0)
 
     // Basic structure
-    var d = sdGyroid(p, density, 0.05, 0.0);
+    let d = sdGyroid(p, density, 0.05, 0.0);
 
     return d;
 }
@@ -71,6 +90,11 @@ fn calcNormal(p: vec3<f32>, mouse_grav: vec3<f32>, grav_strength: f32) -> vec3<f
         map(p + e.yxy, mouse_grav, grav_strength) - map(p - e.yxy, mouse_grav, grav_strength),
         map(p + e.yyx, mouse_grav, grav_strength) - map(p - e.yyx, mouse_grav, grav_strength)
     ));
+}
+
+fn aces_tonemap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -103,17 +127,42 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let rd = normalize(vec3<f32>(uv, 1.0));
 
     // Raymarching
+    // ── Idea 1: over-relaxed sphere tracing (§12.2E) ────────────────────
+    // Step omega*d; if consecutive spheres no longer overlap, retreat to the last safe
+    // radius. Same picture as plain `t += d`; omega 1.2 keeps the 100-step cap from
+    // clipping grazing rays into sky (omega 1.4 / 64 steps did).
+    let omega = 1.2;
+    let MAX_STEPS = 100;
+    let star_on = f32(grav_strength > 0.0);
     var p = ro;
     var t = 0.0;
     var bloom = 0.0;
+    var star_scatter = 0.0;      // Idea 2: in-scatter of the well's light along the ray
     var hit = false;
+    var prev_d = 0.0;
+    var step_len = 0.0;
+    var iters = 0;
 
-    for(var i = 0; i < 100; i++) {
+    for(var i = 0; i < MAX_STEPS; i++) {
+        iters = i;
         p = ro + rd * t;
         let d = map(p, mouse_grav, grav_strength);
 
-        // Volumetric bloom accumulation
-        bloom += exp(-d * (5.0 - u.zoom_params.z)) * 0.05; // u.zoom_params.z = Glow Intensity
+        if (step_len > 0.0 && (prev_d + d) < step_len) {
+            // overstepped: go back to the previous position and advance by its safe radius
+            t = t - step_len + prev_d;
+            step_len = 0.0;
+            prev_d = 0.0;
+            continue;
+        }
+
+        // Volumetric bloom accumulation (HEAD per-step sum, weighted by omega so the
+        // longer steps do not thin it out)
+        bloom += exp(-d * (5.0 - u.zoom_params.z)) * 0.05 * omega; // u.zoom_params.z = Glow Intensity
+
+        // ── Idea 2: soft inverse-square in-scatter from the gravity-well star ──
+        let rs = p - mouse_grav;
+        star_scatter += star_on * d / (dot(rs, rs) + 0.15);
 
         if (d < 0.001) {
             hit = true;
@@ -122,7 +171,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (t > 10.0) {
             break;
         }
-        t += d;
+        step_len = d * omega;
+        prev_d = d;
+        t += step_len;
     }
 
     // Parameters
@@ -131,29 +182,57 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Shading
     var col = vec3<f32>(0.05, 0.0, 0.1); // Base space color
+    var depth = 0.0;
+    let star_col = vec3<f32>(1.0, 0.2, 0.8);
 
     if (hit) {
         let n = calcNormal(p, mouse_grav, grav_strength);
         let lightDir = normalize(vec3<f32>(sin(u.config.x), 1.0, -1.0));
         let diff = max(dot(n, lightDir), 0.0);
 
-        let baseCol = vec3<f32>(0.2, 0.1, 0.5) + vec3<f32>(0.0, 0.5, 0.5) * color_shift;
+        var baseCol = vec3<f32>(0.2, 0.1, 0.5) + vec3<f32>(0.0, 0.5, 0.5) * color_shift;
 
-        // Energy pulses
-        let pulse = sin(p.z * 10.0 - u.config.x * pulse_speed * 5.0) * 0.5 + 0.5;
+        // ── Idea 4: two-faced sheet material (§12.2E fold-count analog) ──
+        // The gyroid shell has two faces, told apart by the sign of the field.
+        // The far face leans toward the (existing) magenta of the gravity well.
+        let pw = warpP(p, mouse_grav, grav_strength) * u.zoom_params.x;
+        let side = dot(sin(pw), cos(pw.zxy));
+        baseCol = mix(baseCol, baseCol.zxy * 0.85, smoothstep(-0.15, 0.15, side) * 0.7);
+
+        // ── Idea 3: march-step occlusion (§12.1 t3) ──
+        // Rays that needed many steps grazed neighbouring sheets: crevices darken.
+        let ao = mix(1.0, 0.5, smoothstep(0.25, 0.9, f32(iters) / f32(MAX_STEPS)));
+
+        // Energy pulses — Idea 2 (direction): radiate from the well while it is held,
+        // run along z otherwise (HEAD)
+        let phase_src = select(p.z, length(p - mouse_grav), grav_strength > 0.0);
+        let pulse = sin(phase_src * 10.0 - u.config.x * pulse_speed * 5.0) * 0.5 + 0.5;
         let pulse_color = vec3<f32>(0.1, 0.8, 0.9) * pulse * (1.0 + bass);
 
-        // Mouse highlight
-        let dist_mouse = length(p - mouse_grav);
-        let mouse_glow = smoothstep(1.5, 0.0, dist_mouse) * vec3<f32>(1.0, 0.2, 0.8) * grav_strength;
+        // ── Idea 2: the well is a star — soft inverse-square point light + glow ──
+        let to_star = mouse_grav - p;
+        let s2 = dot(to_star, to_star);
+        let star_att = 1.0 / (s2 + 0.15);
+        let star_diff = max(dot(n, to_star * inverseSqrt(max(s2, 1e-6))), 0.0);
+        let star_lit = star_on * star_att * (0.12 + 0.2 * star_diff);
+        let mouse_glow = star_col * star_lit * grav_strength * 1.2;
 
-        col = baseCol * diff + pulse_color + mouse_glow;
+        col = baseCol * (diff + star_on * star_att * 0.06 * star_diff) * ao + pulse_color * ao + mouse_glow;
+        depth = clamp(1.0 - t / 10.0, 0.0, 1.0);
     }
 
     // Add bloom
     let bloom_col = vec3<f32>(0.2, 0.5, 0.8) * bloom * (1.0 + mids * 0.5);
     col += bloom_col;
+    col += star_col * star_scatter * 0.06;
 
-    // Output
-    textureStore(writeTexture, coords, vec4<f32>(col, 1.0));
+    // Output: ACES on display RGB (clamped first), alpha = coverage / glow
+    let glow_luma = dot(bloom_col + star_col * star_scatter * 0.06, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(select(0.4 + 0.6 * clamp(glow_luma * 2.0, 0.0, 1.0), 1.0, hit), 0.0, 1.0);
+    col = aces_tonemap(max(col, vec3<f32>(0.0)));
+    let outRGBA = vec4<f32>(col, alpha);
+
+    textureStore(writeTexture, coords, outRGBA);
+    textureStore(dataTextureA, coords, outRGBA);
+    textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

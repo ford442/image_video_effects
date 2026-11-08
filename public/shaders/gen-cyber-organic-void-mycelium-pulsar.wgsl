@@ -3,8 +3,12 @@
 //  Category: generative
 //  Features: raymarching, bioluminescent, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: rhizomorphic root-fan branches sprouting from each node; electroplaque ring discharges around pulsing spores
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: rhizomorphic root-fan branches sprouting from each node; electroplaque ring discharges around pulsing spores;
+//         Fresnel-Schlick obsidian sheen (§12.2F); Rayleigh-weighted subspace fog (§12.2F)
+//  HEAD fixes: y-down uv (upside-down camera), held-mouse rd rotation read updated components and
+//         dropped the lookAt basis; obsidian ambient so the lattice is visible; camera was on a
+//         domain-repetition seam (1px glitch line along the centre row)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -135,29 +139,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fog_dens = u.zoom_params.w;
 
     // Camera setup
-    var ro = vec3<f32>(time, 0.0, -time * 2.0); // Moving through the void
+    // HEAD fix: y=0 is exactly a domain-repetition cell boundary, so the centre-row rays (rd.y=0)
+    // skated the seam and drew a 1px glitch line; ride half a unit off the seam.
+    var ro = vec3<f32>(time, 0.5, -time * 2.0); // Moving through the void
     let lookAtTarget = ro + vec3<f32>(-1.0, 0.0, 2.0);
 
-    // Mouse Interaction
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // HEAD fix: uv is y-down, so the default camera was upside-down; the held-mouse branch
+    // rotated rd with already-updated components and dropped the lookAt basis. Build the
+    // basis once (y-up), then yaw/pitch the forward vector when the pointer is held.
+    var f = normalize(lookAtTarget - ro);
     if (u.zoom_config.w > 0.0) {
-        let mouse_uv = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x/res.y, 1.0);
-        let m = vec2<f32>(mouse_uv.x * 3.14, mouse_uv.y * 3.14);
-
-        let rotM = rot(m.y);
-        rd.y = rd.y * rotM[0][0] + rd.z * rotM[0][1];
-        rd.z = rd.y * rotM[1][0] + rd.z * rotM[1][1];
-
-        let rotM2 = rot(m.x);
-        rd.x = rd.x * rotM2[0][0] + rd.z * rotM2[0][1];
-        rd.z = rd.x * rotM2[1][0] + rd.z * rotM2[1][1];
-    } else {
-        // Default camera orientation
-        let f = normalize(lookAtTarget - ro);
-        let r = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), f));
-        let u_vec = cross(f, r);
-        rd = normalize(r * uv.x + u_vec * uv.y + f * 1.0);
+        let mouse_uv = (u.zoom_config.yz - 0.5) * vec2<f32>(res.x / res.y, 1.0);
+        let yaw = rot(mouse_uv.x * 3.14);
+        let fxz = yaw * vec2<f32>(f.x, f.z);
+        let pitch = -mouse_uv.y * 1.4;
+        f = normalize(vec3<f32>(fxz.x, f.y + pitch, fxz.y));
     }
+    let r = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), f));
+    let u_vec = cross(f, r);
+    let rd = normalize(r * uv.x - u_vec * uv.y + f * 1.0);
 
     // Raymarching
     var dO: f32 = 0.0;
@@ -198,13 +198,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let diff = max(dot(n, lightDir), 0.0);
         let ao = 1.0 - f32(steps) / f32(MAX_STEPS);
 
-        // Obsidian material
-        col = vec3<f32>(0.05, 0.05, 0.06) * diff * ao;
+        // Obsidian material (HEAD fix: a faint violet ambient so the lattice reads; it was
+        // 0.05*diff only and the tubes vanished into the void)
+        col = vec3<f32>(0.05, 0.05, 0.06) * (diff + 0.35) * ao;
 
         // Specular
         let refl = reflect(-lightDir, n);
         let spec = pow(max(dot(refl, -rd), 0.0), 32.0);
         col += vec3<f32>(0.2) * spec;
+
+        // ── Idea 1 (§12.2F Fresnel–Schlick): obsidian is a glassy dielectric (F0≈0.04), so
+        // grazing edges of every tube glint with the abyssal violet and the lattice shows up.
+        let cosV = clamp(dot(n, -rd), 0.0, 1.0);
+        let omc = 1.0 - cosV;
+        let schlick = 0.04 + 0.96 * omc * omc * omc * omc * omc;
+        col += vec3<f32>(0.34, 0.20, 0.62) * schlick * (0.6 + 0.4 * diff) * ao;
 
         // Node Bioluminescence (Cyan, Magenta, Green)
         if (mat == 2.0) {
@@ -226,9 +234,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Subspace fog (dark abyssal purple/blue)
+    // ── Idea 2 (§12.2F Rayleigh): extinction ∝ λ⁻⁴ per channel (R:G:B ≈ 0.46:0.8:1.35 relative
+    // to green at 650/550/450 nm). Blue scatters out of the view ray first, so far tubes and
+    // spores redden and the scattered blue becomes the haze. Fog slider keeps its role.
     let fogColor = vec3<f32>(0.02, 0.0, 0.05);
-    let fogFactor = 1.0 - exp(-dO * 0.05 * fog_dens);
-    col = mix(col, fogColor, fogFactor);
+    let tau = dO * 0.05 * fog_dens * vec3<f32>(0.62, 1.0, 1.55);
+    let trans = exp(-tau);
+    col = col * trans + fogColor * (1.0 - trans) + vec3<f32>(0.05, 0.09, 0.30) * (1.0 - trans.b) * 0.35;
 
     // Volumetric Spore Bloom
     let bloomCol = vec3<f32>(0.0, 1.0, 0.5); // Toxic green
