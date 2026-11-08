@@ -1,0 +1,4 @@
+# gen-prismatic-void-weaver-ouroboros (fork A, 2nd pass, prelude migrated by parent)
+Rescue: camera in ring plane at r=6 -> torus edge-on slab filling frame, loop never read. Now lifted look-at camera (0,6,-8.6), uv.y negated. Dead extraBuffer[133..138] spring (zeroed every frame + racy writes) replaced by raw cursor. Header gained Features line; JSON features gained mouse-driven/audio-reactive, dropped sprung-pointer-void-gravity.
+New ideas: jaw-swallow seam (head swell + tail pinch at angle=±PI, white-gold bass-pulsed jaw glow); keel-grating diffraction ridge (raised keel on twisted cross-section, view-angle grating colour, mids/treble).
+Before (0.5x4): meanL 0.177 / meanA 0.456. After: 0.127 / 0.522 (0.5x4), 0.196 / 0.541 (x-meta defaults). Note JSON has only x-meta params -> app runs 0.5x4.

@@ -842,8 +842,17 @@
       ]
     },
     "gen-art-deco-sky-prismatic": {
-      "hash": "b12080ad3ee929a0",
-      "history": []
+      "hash": "bf8930483bdacaad",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "bf8930483bdacaad",
+          "prev_hash": "b12080ad3ee929a0",
+          "commit": "a73847ae",
+          "note": null
+        }
+      ]
     },
     "gen-astro-orrery-blackbody": {
       "hash": "94a4d2a77311522a",
@@ -4987,7 +4996,7 @@
       ]
     },
     "gen-chrono-kinetic-fractal-engine": {
-      "hash": "01c86642fd5a01e7",
+      "hash": "a4c3d5f3765d709a",
       "history": [
         {
           "event": "upgraded",
@@ -4996,6 +5005,14 @@
           "prev_hash": "a57e8595da4112fb",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "a4c3d5f3765d709a",
+          "prev_hash": "01c86642fd5a01e7",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -6604,7 +6621,7 @@
       ]
     },
     "gen-fractal-ember-lattice": {
-      "hash": "5cf236a9ed262a6b",
+      "hash": "5507dfdbf41363c9",
       "history": [
         {
           "event": "upgraded",
@@ -6613,6 +6630,14 @@
           "prev_hash": "ac467ea29cf9618b",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "5507dfdbf41363c9",
+          "prev_hash": "5cf236a9ed262a6b",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -7658,7 +7683,7 @@
       ]
     },
     "gen-luminescent-chrono-prism-astro-stag": {
-      "hash": "4624a040c000b609",
+      "hash": "714dc1cd7a029cb9",
       "history": [
         {
           "event": "upgraded",
@@ -7667,6 +7692,14 @@
           "prev_hash": "f39ac44426b1b508",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "714dc1cd7a029cb9",
+          "prev_hash": "4624a040c000b609",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -8629,7 +8662,7 @@
       ]
     },
     "gen-prismatic-aether-loom": {
-      "hash": "b34c760d1362b1eb",
+      "hash": "75831d629d986431",
       "history": [
         {
           "event": "upgraded",
@@ -8638,11 +8671,19 @@
           "prev_hash": "cbc218b5368e897f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "75831d629d986431",
+          "prev_hash": "b34c760d1362b1eb",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
     "gen-prismatic-bismuth-lattice": {
-      "hash": "304a6dc8d23806b6",
+      "hash": "b5bf350188212631",
       "history": [
         {
           "event": "upgraded",
@@ -8651,6 +8692,14 @@
           "prev_hash": "0890dc7636bbabcb",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "b5bf350188212631",
+          "prev_hash": "304a6dc8d23806b6",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -8781,7 +8830,7 @@
       ]
     },
     "gen-prismatic-cyber-chrono-void-tortoise": {
-      "hash": "baebe06d2f1602b3",
+      "hash": "f61bb894b340aa9f",
       "history": [
         {
           "event": "upgraded",
@@ -8790,6 +8839,14 @@
           "prev_hash": "5304e5f4362050e9",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "f61bb894b340aa9f",
+          "prev_hash": "baebe06d2f1602b3",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -8836,16 +8893,34 @@
       ]
     },
     "gen-prismatic-quantum-glass-chrysalis-engine": {
-      "hash": "6e196defdcb0e71b",
-      "history": []
+      "hash": "3f1b3be954551bd4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "3f1b3be954551bd4",
+          "prev_hash": "6e196defdcb0e71b",
+          "commit": "a73847ae",
+          "note": null
+        }
+      ]
     },
     "gen-prismatic-serpent-river": {
       "hash": "317f029830bf11d5",
       "history": []
     },
     "gen-prismatic-void-weaver-ouroboros": {
-      "hash": "7632a9231804fa17",
-      "history": []
+      "hash": "6b55bb2d5f85df72",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "6b55bb2d5f85df72",
+          "prev_hash": "7632a9231804fa17",
+          "commit": "a73847ae",
+          "note": null
+        }
+      ]
     },
     "gen-protocell-division": {
       "hash": "3c7afb8076974b08",
@@ -9376,8 +9451,17 @@
       ]
     },
     "gen-showcase-crystalline-pulse": {
-      "hash": "2591730920d729c5",
-      "history": []
+      "hash": "54eef20352114237",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "54eef20352114237",
+          "prev_hash": "2591730920d729c5",
+          "commit": "a73847ae",
+          "note": null
+        }
+      ]
     },
     "gen-showcase-kinetic-bloom": {
       "hash": "b44426bdc1513854",

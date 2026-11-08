@@ -9,9 +9,10 @@
 //  release to watch them drift back and reform over ~1.5s.
 //  Audio drives glow pulse, lattice breathing, and spark frequency.
 //  Created: 2026-06-06
-//  Upgraded: 2026-10-11
+//  Upgraded: 2026-11-08
 //  Ideas: triple-junction glow; cell-core heat; heat crawl along lattice lines;
-//         shard cooling and re-ignition; oxide scale; pop-off sparks
+//         shard cooling and re-ignition; oxide scale; pop-off sparks;
+//         bellows gust front; rising ash flecks
 //  A packing: raw shard state — A.rg displacement, A.b seed, A.a reform (C via textureLoad)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -69,6 +70,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var disp = prev.rg;
   var seed = prev.b;
   var reform = prev.a;
+  // Fresh C (all zero) means "never shattered": start solid, not mid-reform.
+  reform = select(reform, 1.0, reform == 0.0 && seed == 0.0 && all(disp == vec2<f32>(0.0)));
 
   // ── Shard assignment (rigid grid) ──
   let cellPx = shardSize;
@@ -179,6 +182,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let crawl = dot(beadsSharp, lineMask) * (0.35 + sparkDensity * 0.9) * (1.0 - cool * 0.7);
   col = col + EMBER_HOT * crawl * glowIntensity * 0.7 + EMBER_CORE * crawl * crawl * 0.35;
 
+  // Idea 7 — bellows gust front: a slow diagonal draught sweeps the bed,
+  // driving the lattice lines toward white heat as it passes.
+  let gustPhase = fract(dot(uv, vec2<f32>(0.62, -0.78)) * 0.8 - time * 0.07 * (1.0 + bass * 0.8));
+  let gust = exp(-pow((gustPhase - 0.5) * 7.0, 2.0)) * (1.0 - cool * 0.8);
+  col = col + (EMBER_HOT * edge * 0.9 + EMBER_CORE * (edge * edge + junc) * 0.6) * gust * glowIntensity;
+  col = col + EMBER_DEEP * coreHeat * gust * 0.25;
+
   // Idea 4: cooled shards shift toward deep red; rejoining shards re-ignite
   col = vec3<f32>(col.r, col.g * (1.0 - cool * 0.35), col.b * (1.0 - cool * 0.5));
   col = col + EMBER_CORE * (edge * 0.8 + junc) * reignite * glowIntensity * (0.9 + bass * 0.4);
@@ -194,11 +204,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pop = (1.0 - smoothstep(0.0, 0.018, popD)) * shatterAmt * smoothstep(0.15, 0.55, cool) * sparkDensity;
   col = col + EMBER_HOT * pop * glowIntensity * (0.45 + treble * 0.35);
 
+  // Idea 8 — rising ash flecks: grey flakes lifted off the bed by the heat,
+  // drifting upward with a lateral sway (screen space, not shard space).
+  var ashUV = uv * vec2<f32>(resolution.x / resolution.y, 1.0) * 14.0;
+  ashUV.y = ashUV.y + time * (0.9 + mids * 0.6);
+  let ashCell = floor(ashUV);
+  let ashH = hash12(ashCell + 3.1);
+  let ashSway = sin(time * 1.3 + ashH * 6.283185) * 0.25;
+  let ashOff = fract(ashUV) - vec2<f32>(0.5 + ashSway, 0.5);
+  let ashD = length(ashOff * vec2<f32>(1.0, 1.8));
+  let ashOn = step(0.82 - sparkDensity * 0.15, ashH);
+  let ash = ashOn * (1.0 - smoothstep(0.06, 0.13, ashD));
+  let ashGlow = smoothstep(0.93, 1.0, ashH) * (0.6 + bass);
+  col = mix(col, vec3<f32>(0.42, 0.40, 0.37), ash * 0.75);
+  col = col + EMBER_HOT * ash * ashGlow * 0.8;
+
   // ── Shatter visual flair ──
-  // Shard boundary glow
+  // Shard boundary glow (rim only — was inverted, washing whole shards white)
   let localCoord = fract(vec2<f32>(gid.xy) / cellPx) - 0.5;
-  let nearEdgeX = 1.0 - smoothstep(0.42, 0.5, abs(localCoord.x));
-  let nearEdgeY = 1.0 - smoothstep(0.42, 0.5, abs(localCoord.y));
+  let nearEdgeX = smoothstep(0.42, 0.5, abs(localCoord.x));
+  let nearEdgeY = smoothstep(0.42, 0.5, abs(localCoord.y));
   let boundaryGlow = max(nearEdgeX, nearEdgeY) * shatterAmt * 0.5;
   col = col + vec3<f32>(0.95, 0.9, 1.0) * boundaryGlow;
 

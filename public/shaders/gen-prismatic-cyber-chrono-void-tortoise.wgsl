@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: scute growth annuli (chrono-drifting concentric keratin rings per hex scute); hawksbill tortoiseshell mottling with backlit amber keratin translucency gating the pocket glow; triradiate osteoderm sutures; magnetotactic plankton lanes
+//  Upgraded: 2026-11-08
+//  Ideas: scute growth annuli (chrono-drifting concentric keratin rings per hex scute); hawksbill tortoiseshell mottling with backlit amber keratin translucency gating the pocket glow; triradiate osteoderm sutures; magnetotactic plankton lanes; breath-bubble column rising from the nostrils; carapace clock-hand sweep with hour pips on the marginal rim
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -98,12 +98,15 @@ fn kifs(p: vec3<f32>, time: f32, iters: i32) -> f32 {
 // Main SDF map: returns vec2(distance, materialID)
 fn map(p: vec3<f32>, time: f32, audioWobble: f32, kIters: i32) -> vec2<f32> {
     // Gravitational drag from mouse (branchless; mouse pre-centered, y=0 top kept)
-    let mouse = (u.zoom_config.yz - 0.5) * 2.0;
+    // Rescue: mouse y is screen-down; flip into world-up. The old 2/(d+0.5)
+    // drag twisted the whole body ~4 rad at the idle (centred) cursor and
+    // shredded the anatomy; now a gentle Gaussian twist that grows on press.
+    let mouse = (u.zoom_config.yz - 0.5) * vec2<f32>(2.0, -2.0);
     let mouse_pos = vec3<f32>(mouse, 0.0);
     let dist_to_mouse = length(p - mouse_pos);
-    let twist_angle = 2.0 / (dist_to_mouse + 0.5);
+    let twist_angle = 0.35 * exp(-dist_to_mouse * dist_to_mouse * 0.35);
     let dragAxis = normalize(mouse_pos + vec3<f32>(0.0, 0.0, 1.0));
-    let pd = p * rot3D(dragAxis, twist_angle * (1.0 + u.zoom_config.w));
+    let pd = p * rot3D(dragAxis, twist_angle * (1.0 + u.zoom_config.w * 2.0));
 
     // Tortoise body base (audio-pulsing breath)
     let breathe = 1.0 + audioWobble * 0.04;
@@ -127,8 +130,20 @@ fn map(p: vec3<f32>, time: f32, audioWobble: f32, kIters: i32) -> vec2<f32> {
     // Smooth-union the anatomy, branchless material pick
     let flesh = smin(body, limbs, SMIN_LIMB);
     let tortoise = smin(flesh, shell, SMIN_BODY);
-    let mat = select(MAT_BODY, MAT_SHELL, shell < flesh);
-    return vec2<f32>(tortoise, mat);
+    var mat = select(MAT_BODY, MAT_SHELL, shell < flesh);
+
+    // Idea 5: breath-bubble column. Three bubbles leave the nostrils on a
+    // looping breath and wobble upward, swelling as they rise; bass puffs
+    // them larger. Material 3 shades them as thin glass shells.
+    var bubbles = 1000.0;
+    for (var bi = 0; bi < 3; bi++) {
+        let ph = fract(time * 0.35 + f32(bi) * 0.333);
+        let bc = vec3<f32>(sin(ph * 9.0 + f32(bi)) * 0.12, 0.45 + ph * 2.6, 2.2 + ph * 0.3);
+        bubbles = min(bubbles, length(pd - bc) - (0.05 + ph * 0.13) * (1.0 + audioWobble * 0.4));
+    }
+    let withBubbles = min(tortoise, bubbles);
+    mat = select(mat, 3.0, bubbles < tortoise);
+    return vec2<f32>(withBubbles, mat);
 }
 
 fn calcNormal(p: vec3<f32>, time: f32, audioWobble: f32, kIters: i32) -> vec3<f32> {
@@ -167,10 +182,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Camera: slow orbit + mouse parallax, rebuilt in-code
     let camA = time * 0.08 + (u.zoom_config.y - 0.5) * 0.9;
-    let camR = 5.0 - u.zoom_config.w * 1.2; // mouse-down leans in
+    let camR = 6.4 - u.zoom_config.w * 1.2; // mouse-down leans in
     let cr = rot3D(vec3<f32>(0.0, 1.0, 0.0), camA);
-    let ro = cr * vec3<f32>(0.0, 0.6 + (u.zoom_config.z - 0.5) * 1.2, camR);
-    let rd = cr * normalize(vec3<f32>(uv, -1.5));
+    let ro = cr * vec3<f32>(0.0, 1.3 - (u.zoom_config.z - 0.5) * 1.2, camR);
+    // Rescue: pixel y grows downward, so negate uv.y (the scene rendered
+    // upside down); tilt the gaze down toward the shell.
+    let rd = cr * normalize(vec3<f32>(uv.x, -uv.y - 0.1, -1.5));
 
     // Raymarch: growing epsilon, KIFS distance-LOD, early exits
     var t = 0.0;
@@ -250,7 +267,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                      + pocketHue.brg * seam * 1.2
                      + vec3<f32>(1.0) * spec * 0.8;
 
-        col = select(fleshCol, shellCol, mat > 1.5);
+        // Idea 6: carapace clock-hand sweep. A luminous hand rotates about
+        // the shell's crown once per chrono minute, leaving a fading arc of
+        // re-lit scutes behind it; twelve hour pips sit on the marginal rim.
+        let shellAng = atan2(p.z, p.x);
+        let lag = fract((shellAng - time * 0.6) / TAU);
+        let sweep = exp(-lag * 9.0) * smoothstep(0.0, 0.02, lag) + exp(-(1.0 - lag) * 120.0);
+        let pipAng = abs(fract(shellAng / TAU * 12.0) - 0.5);
+        let rimBand = exp(-pow((p.y - 0.15) * 7.0, 2.0));
+        let pips = smoothstep(0.08, 0.02, pipAng) * rimBand;
+        let shellLit = shellCol + vec3<f32>(1.0, 0.82, 0.45) * (sweep * (0.45 + mids * audioReact * 0.4) * (1.0 - annuli * 0.3) + pips * 0.5);
+
+        // Bubble glass: fresnel rim + spec, mostly clear.
+        let bubbleCol = vec3<f32>(0.5, 0.95, 1.0) * (0.08 + fre * 1.4) + vec3<f32>(1.0) * spec * 1.2;
+
+        col = select(fleshCol, shellLit, mat > 1.5);
+        col = select(col, bubbleCol, mat > 2.5);
     }
 
     // Abyssal quantum sea: depth gradient + drifting motes + plankton glow
@@ -281,7 +313,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Semantic alpha: solid anatomy coverage when hit, glow density (motes/rings) in the sea
     let seaDensity = clamp(0.12 + motes * 0.6 + rippleGlow * 0.5 + planktonGlow * 0.45, 0.0, 1.0);
     let bodyCoverage = clamp(0.8 + 0.2 * (1.0 - t / MAX_DIST), 0.0, 1.0);
-    let alpha = select(seaDensity, bodyCoverage, hit);
+    // Bubble glass is mostly clear: coverage tracks its fresnel rim.
+    let alpha = select(seaDensity, select(bodyCoverage, clamp(0.25 + dot(col, vec3<f32>(0.33)) * 0.6, 0.0, 0.9), mat > 2.5), hit);
     let depth = select(0.0, clamp(1.0 - t / MAX_DIST, 0.0, 1.0), hit);
 
     textureStore(writeTexture, pixel, vec4<f32>(col, alpha));
