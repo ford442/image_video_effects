@@ -43,6 +43,19 @@ describe('graphEdges', () => {
     expect(brief(g)).toContain('0>1:simIndex(simState → simIndex)');
   });
 
+  it('routes simHash reads through the simState writer (the planner builds the hash from it)', () => {
+    const g: MultipassGraphDef = {
+      maxPassesPerFrame: 8,
+      nodes: [
+        { id: 'march', entry: 'm', reads: [], writes: ['simState'], dispatch: 'simState' },
+        { id: 'splat', entry: 's', reads: ['simHash', 'simIndex'], writes: ['color'] },
+      ],
+    };
+    expect(brief(g)).toEqual(
+      expect.arrayContaining(['0>1:simHash(simState → simHash)', '0>1:simIndex(simState → simIndex)']),
+    );
+  });
+
   it('derives edges for the shipped wave-tank graph without throwing', () => {
     const edges = graphEdges(createWaveTankGraph());
     expect(edges.some((e) => e.to === OUTPUT_NODE)).toBe(true);

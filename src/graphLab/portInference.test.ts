@@ -22,6 +22,28 @@ describe('portsFromReflection (real naga)', () => {
     expect(ports.workgroupSize).toEqual([64, 1, 1]);
   });
 
+  it('reads binding 3 as the simHash role (real naga, atomic array)', async () => {
+    const naga = await loadRealNaga();
+    const flock = portsFromReflection('murmuration-flock', naga.reflect(await expanded('murmuration-flock')));
+    expect(flock.status).toBe('ok');
+    expect(flock.declaresSimRing).toBe(true);
+    expect(flock.reads).toEqual(expect.arrayContaining(['simHash', 'simIndex', 'simState']));
+    expect(flock.writes).toEqual(expect.arrayContaining(['simState', 'dataA']));
+    expect(flock.workgroupSize).toEqual([64, 1, 1]);
+    const splat = portsFromReflection('photon-bins-splat', naga.reflect(await expanded('photon-bins-splat')));
+    expect(splat.status).toBe('ok');
+    expect(splat.reads).toEqual(expect.arrayContaining(['simHash', 'simIndex', 'dataC']));
+    expect(splat.writes).toEqual(['dataA']);
+    // The scatter pass is the planner's: no entry ever writes the role.
+    expect(flock.writes).not.toContain('simHash');
+    expect(splat.writes).not.toContain('simHash');
+    // The photon march only needs the base ring: it neither reads nor declares simHash.
+    const march = portsFromReflection('photon-bins-march', naga.reflect(await expanded('photon-bins-march')));
+    expect(march.reads).not.toContain('simHash');
+    expect(march.writes).toEqual(['simState']);
+    expect(march.reads).toContain('read');
+  });
+
   it('counts a group-1 declaration even when only simParams is bound', async () => {
     const naga = await loadRealNaga();
     const ports = portsFromReflection('dla-render', naga.reflect(await expanded('dla-render')));

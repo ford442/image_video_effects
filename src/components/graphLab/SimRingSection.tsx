@@ -7,6 +7,11 @@ export interface SimRingSectionProps {
   request: RuntimeSimRingRequest | null;
   /** A node still uses a sim role or a simState dispatch, so the ring cannot be turned off. */
   locked: boolean;
+  /** The draft asks for the spatial hash (simRing.spatialHash). */
+  hash?: boolean;
+  /** A node still reads simHash, so the hash cannot be turned off. */
+  hashLocked?: boolean;
+  onHash?: (enabled: boolean) => void;
   /** Draft entries whose WGSL declares @group(1) (naga reflection). */
   simEntries?: readonly string[];
   onToggle: (enabled: boolean) => void;
@@ -20,7 +25,16 @@ const mib = (elements: number) => ((elements * SIM_STATE_ELEMENT_BYTES) / 104857
  * `simRing` request. It adds no binding: the renderer arms the ring only when an
  * entry that declares @group(1) compiles, and binds it only to those entries.
  */
-export function SimRingSection({ request, locked, simEntries = [], onToggle, onStateCount }: SimRingSectionProps) {
+export function SimRingSection({
+  request,
+  locked,
+  hash = false,
+  hashLocked = false,
+  onHash,
+  simEntries = [],
+  onToggle,
+  onStateCount,
+}: SimRingSectionProps) {
   const on = request !== null;
   return (
     <div className="graph-lab__simring" data-testid="graph-lab-simring">
@@ -64,7 +78,27 @@ export function SimRingSection({ request, locked, simEntries = [], onToggle, onS
               )}
             </select>
           </label>
+          {onHash && (
+            <label className="graph-lab__field graph-lab__field--inline">
+              <input
+                type="checkbox"
+                checked={hash}
+                disabled={hash && hashLocked}
+                title={hash && hashLocked ? 'A node still reads simHash' : undefined}
+                data-testid="sim-ring-hash"
+                onChange={(e) => onHash(e.target.checked)}
+              />{' '}
+              Spatial hash (neighbour lookups)
+            </label>
+          )}
           <ul className="graph-lab__notes">
+            {hash && (
+              <li data-testid="sim-ring-hash-note">
+                A 128×128 cell hash over <code>simState</code> (<code>@group(1) @binding(3) simHash</code>), rebuilt by one
+                counted scatter pass before the first node that reads the <code>simHash</code> role. Walk a cell with a visit
+                cap of 8–16.
+              </li>
+            )}
             <li>
               <code>simState</code> (vec4&lt;f32&gt; per element) + its <code>simIndex</code> snapshot, {mib(request.stateCount)} MiB
               each. The ring takes the largest out-of-memory ladder rung that fits; an OOM caps it for the session.

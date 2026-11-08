@@ -101,6 +101,12 @@ export type RenderCommand =
   | { type: 'setDirectPresentEnabled'; enabled: boolean }
   | { type: 'applyTestRenderState'; state: TestRenderState }
   | { type: 'setCanvasCopySrc'; enabled: boolean }
+  /**
+   * Cue crossfade: freeze the last presented picture and dissolve it into the frames that
+   * follow over `durationMs` (the hold and the mix both live on the worker's device). The
+   * page sends the duration and the start; nothing is read back. 0 is a hard cut.
+   */
+  | { type: 'startCrossfade'; durationMs: number }
   | { type: 'warmShaders'; entries: Array<{ id: string; url: string }> }
   /** Test hook (?testMode=1): destroy the device but report it as a runtime loss. */
   | { type: 'simulateDeviceLoss' }
@@ -254,6 +260,7 @@ export const RENDER_COMMAND_TYPES = [
   'setDirectPresentEnabled',
   'applyTestRenderState',
   'setCanvasCopySrc',
+  'startCrossfade',
   'warmShaders',
   'simulateDeviceLoss',
   'simulateWorkerCrash',

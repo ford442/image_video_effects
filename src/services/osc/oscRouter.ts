@@ -4,13 +4,17 @@
 //
 //    /pixelocity/slot/{0-5}/param/{x|y|z|w}   f   slider value 0..1
 //    /pixelocity/slot/{0-5}/shader            s   shader id ("none" clears)
-//    /pixelocity/transition                   s?  fire the next transition
+//    /pixelocity/transition                   s?  fire the next transition; "crossfade"
+//                                                 dissolves a shader change from the
+//                                                 picture on screen (bare = hard cut)
 //    /pixelocity/audio/amount                 f   host audio amount 0..1
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import slotLimitsContract from '../../contracts/slot_limits.json';
 import type { LiveActionsHandle } from '../controlBindings';
 import type { OscArg, OscMessage } from './oscPacket';
+
+export { OSC_CROSSFADE_CUE, transitionOptionsForCue } from './oscCues';
 
 export const OSC_ADDRESS_PREFIX = '/pixelocity';
 const MAX_SLOT_INDEX = slotLimitsContract.maxPhysicalSlots - 1;
@@ -28,9 +32,11 @@ export type OscAction =
   | { type: 'triggerTransition'; name?: string }
   | { type: 'setAudioAmount'; value: number };
 
-/** What the router drives; setSlotParam/triggerTransition reuse the MIDI handle. */
-export interface OscActionsHandle extends Pick<LiveActionsHandle, 'setSlotParam' | 'triggerTransition'> {
+/** What the router drives; setSlotParam reuses the MIDI handle. */
+export interface OscActionsHandle extends Pick<LiveActionsHandle, 'setSlotParam'> {
   setSlotShader: (slot: number, shaderId: string) => void;
+  /** Called with the cue name only when the message carried one; a bare trigger passes nothing. */
+  triggerTransition: (name?: string) => void;
   setAudioAmount: (value: number) => void;
 }
 
@@ -95,7 +101,11 @@ export function dispatchOscMessage(msg: OscMessage, handle: OscActionsHandle): O
   switch (action.type) {
     case 'setSlotParam': handle.setSlotParam(action.slot, action.param, action.value); break;
     case 'setSlotShader': handle.setSlotShader(action.slot, action.shaderId); break;
-    case 'triggerTransition': handle.triggerTransition(); break;
+    case 'triggerTransition':
+      // A bare message keeps today's call exactly (existing bindings must not start fading).
+      if (action.name) handle.triggerTransition(action.name);
+      else handle.triggerTransition();
+      break;
     case 'setAudioAmount': handle.setAudioAmount(action.value); break;
   }
   return action;
