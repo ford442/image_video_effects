@@ -5,8 +5,8 @@
 //            luma-spawn, depth-aware, temporal-feedback, chromatic-aberration,
 //            aces-tone-map, emergent-trails
 //  Complexity: Medium
-//  Upgraded: 2026-10-11
-//  Ideas: origin-crossing beads; glow waist when freqX≈freqY; cusp dwell; 2:1 lobe split; pen head; beat envelope
+//  Upgraded: 2026-10-11, 2026-11-08
+//  Ideas: origin-crossing beads; glow waist when freqX≈freqY; cusp dwell; 2:1 lobe split; pen head; beat envelope; continuous neon tube (point-to-chord distance + foot refinement); phosphor comet (beam-age tail, length from Trail Persistence)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Lissajous figures drawn as glowing neon tubes with acid-trip color
@@ -20,7 +20,7 @@
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const STRANDS: i32 = 5;
-const SAMPLES: i32 = 96;
+const SAMPLES: i32 = 64;
 
 // ── Hash & noise ────────────────────────────────────────────────
 fn hashf(n: f32) -> f32 {
@@ -170,17 +170,52 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var minDistSq = 1e9;
     var bestT = 0.0;
     var bestCy = 0.0;
-    for (var ti: i32 = 0; ti < SAMPLES; ti = ti + 1) {
-      let t  = f32(ti) / f32(SAMPLES - 1) * TAU;
-      let cx = sin(freqX * t + phase) * ampX;
-      let cy = sin(freqY * t) * ampY;
-      let diff = p - vec2<f32>(cx, cy);
+    // ── Idea 7: continuous neon tube — distance to the CHORD between samples ─
+    // (was: nearest of 96 vertices, which drew a freqX≈5 strand as separate
+    // beads 20× further apart than the tube is wide). The foot parameter and
+    // cy are interpolated along the chord, then a 12-chord refinement around
+    // the best chord removes the polygon sagitta, so bestT / bestCy / the cusp
+    // velocity below are all evaluated at the true foot point.
+    let dT = TAU / f32(SAMPLES - 1);
+    var prevPt = vec2<f32>(sin(phase) * ampX, 0.0);
+    for (var ti: i32 = 1; ti < SAMPLES; ti = ti + 1) {
+      let t  = f32(ti) * dT;
+      let cur = vec2<f32>(sin(freqX * t + phase) * ampX, sin(freqY * t) * ampY);
+      let ba = cur - prevPt;
+      let pa = p - prevPt;
+      let h  = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);
+      let diff = pa - ba * h;
       let d2 = dot(diff, diff);
       let closer = d2 < minDistSq;
       minDistSq = min(minDistSq, d2);
-      bestT = select(bestT, t, closer);
-      bestCy = select(bestCy, cy, closer);
+      bestT = select(bestT, t - dT + h * dT, closer);
+      bestCy = select(bestCy, mix(prevPt.y, cur.y, h), closer);
+      prevPt = cur;
     }
+    // refinement: 12 sub-chords over [bestT − dT, bestT + dT] (the curve is closed, so t outside [0, TAU] is fine)
+    let tLo = bestT - dT;
+    let dTf = dT * (2.0 / 12.0);
+    var rPrev = vec2<f32>(sin(freqX * tLo + phase) * ampX, sin(freqY * tLo) * ampY);
+    var fineD2 = 1e9;
+    var fineT = bestT;
+    var fineCy = bestCy;
+    for (var fi: i32 = 1; fi <= 12; fi = fi + 1) {
+      let t  = tLo + f32(fi) * dTf;
+      let cur = vec2<f32>(sin(freqX * t + phase) * ampX, sin(freqY * t) * ampY);
+      let ba = cur - rPrev;
+      let pa = p - rPrev;
+      let h  = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-8), 0.0, 1.0);
+      let diff = pa - ba * h;
+      let d2 = dot(diff, diff);
+      let closer = d2 < fineD2;
+      fineD2 = min(fineD2, d2);
+      fineT = select(fineT, t - dTf + h * dTf, closer);
+      fineCy = select(fineCy, mix(rPrev.y, cur.y, h), closer);
+      rPrev = cur;
+    }
+    minDistSq = fineD2;
+    bestT = fineT;
+    bestCy = fineCy;
     let minDist = sqrt(minDistSq);
 
     let gw = glowWidth * (1.0 + bass * 0.6);
@@ -197,14 +232,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vy = freqY * cos(freqY * bestT) * ampY;
     let dwell = exp(-length(vec2<f32>(vx, vy)) * 0.45) * smoothstep(gwUse * 3.0, 0.0, minDist);
     let sat = clamp(0.8 + treble * 0.2, 0.0, 1.0);
-    let val = glow * (1.5 + mids * 0.8) + node * 1.4 + dwell * 0.9;
+    // ── Idea 8: phosphor comet — brightness follows the beam's age ──────────
+    // An X-Y scope trace is brightest just behind the spot and decays with the
+    // time since the beam passed that point, so the figure shows which way it
+    // is being drawn. age = fraction of the loop between the foot point and the
+    // pen; the Trail Persistence slider (feedback) also sets how long the tail is.
+    let nowT = fract(time * speed * 0.17 + sf * 0.13) * TAU;
+    let beamAge = fract((nowT - bestT) / TAU);
+    let tailK = mix(5.0, 1.5, feedback);
+    let comet = mix(0.45, 1.7, exp(-beamAge * tailK));
+    let val = glow * (1.5 + mids * 0.8) * comet + node * 1.4 + dwell * 0.9 * comet;
     var rgb = hsv2rgb(vec3<f32>(hueBase, sat, 1.0)) * val;
     // Idea 4 — 2:1 lobe split (distinct from the 1:1 waist)
     let twoToOne = 1.0 - smoothstep(0.0, 0.55, abs(abs(freqX - freqY) - 1.0));
     let lobeTint = mix(vec3<f32>(0.25, 0.9, 1.0), vec3<f32>(1.0, 0.4, 0.85), step(0.0, bestCy));
     rgb = mix(rgb, rgb * lobeTint, twoToOne * smoothstep(gwUse * 5.0, 0.0, minDist));
     // Pen head — the point currently being traced.
-    let nowT = fract(time * speed * 0.17 + sf * 0.13) * TAU;
     let head = vec2<f32>(sin(freqX * nowT + phase) * ampX, sin(freqY * nowT) * ampY);
     let headGlow = exp(-dot(p - head, p - head) / max(gwUse * gwUse * 0.35, 1e-6));
     rgb = rgb + hsv2rgb(vec3<f32>(hueBase, sat, 1.0)) * headGlow * (1.4 + treble * 0.6);

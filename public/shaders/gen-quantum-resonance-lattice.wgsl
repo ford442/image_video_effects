@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: resonant band-splitting halos around octahedral nodes; nodal-plane standing-wave sheets; probability wave interference; Planck-scale lattice dislocation
+//  Upgraded: 2026-10-10, 2026-11-08
+//  Ideas: resonant band-splitting halos around octahedral nodes; nodal-plane standing-wave sheets; probability wave interference; Planck-scale lattice dislocation; node probability cloud (step-weighted distance-field glow, closest-approach tint); lattice phonon (simple-cubic dispersion ω²=4ω₀²Σsin²(κ/2) breathing the node radii)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -31,6 +31,17 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 fn sdOctahedron(p: vec3<f32>, s: f32) -> f32 {
     let p_abs = abs(p);
     return (p_abs.x + p_abs.y + p_abs.z - s) * 0.57735027;
+}
+
+// Idea 6: a phonon travelling through the lattice. The nodes are coupled
+// resonators, and a plane lattice wave of phase advance κ (rad per cell) in a
+// simple-cubic lattice obeys  ω² = 4ω₀² Σᵢ sin²(κᵢ/2)  — so the crest speed is
+// set by that dispersion relation, not by an arbitrary constant. ω₀ = 2.4.
+// κ = (1.15, 0.8, 1.6): Σ sin²(κᵢ/2) = 0.9621  →  ω = 2·2.4·√0.9621 = 4.708.
+const PHONON_K: vec3<f32> = vec3<f32>(1.15, 0.8, 1.6);
+const PHONON_OMEGA: f32 = 4.708;
+fn phononAt(cell: vec3<f32>, T: f32) -> f32 {
+    return cos(dot(PHONON_K, cell) - PHONON_OMEGA * T);
 }
 
 // Map function returning distance and material id
@@ -69,7 +80,7 @@ fn map(p: vec3<f32>, audioReactive: f32) -> vec2<f32> {
         let camZ = u.config.x * u.zoom_params.z * 5.0;
         // Map mouse (0..1) to (-10..10)
         let mx = (u.zoom_config.y - 0.5) * 20.0;
-        let my = (0.5 - u.zoom_config.z) * 20.0;
+        let my = (u.zoom_config.z - 0.5) * 20.0;   // uv.y is top-down and rd.y = uv.y, so +y is screen-down: no flip
 
         let mouse_pos = vec3<f32>(mx, my, camZ + 15.0); // well is ahead of camera
         let dist = length(p - mouse_pos);
@@ -81,7 +92,9 @@ fn map(p: vec3<f32>, audioReactive: f32) -> vec2<f32> {
         q -= dir * pull;
     }
 
-    let d = sdOctahedron(q, 0.5 + audioReactive * 0.5);
+    // Idea 6: the phonon breathes each node's radius (compression crest = larger node)
+    let phonon = phononAt(cell, u.config.x);
+    let d = sdOctahedron(q, 0.5 + audioReactive * 0.5 + 0.12 * phonon);
     return vec2<f32>(d, 1.0);
 }
 
@@ -91,8 +104,11 @@ fn resonanceHalo(p: vec3<f32>, t: f32, spacing: f32, bass: f32, mids: f32) -> f3
     let cell = floor(p / spacing + 0.5);
     let q = p - cell * spacing;
     let r = length(q);
-    let bandA = exp(-pow((r - 0.58) * 8.5, 2.0));
-    let bandB = exp(-pow((r - 0.74) * 8.0, 2.0));
+    // x*x, not pow(x, 2.0): the base is negative for every r < 0.58 / 0.74 (undefined → NaN on strict GPUs)
+    let xa = (r - 0.58) * 8.5;
+    let xb = (r - 0.74) * 8.0;
+    let bandA = exp(-xa * xa);
+    let bandB = exp(-xb * xb);
     let beat = 0.5 + 0.5 * sin(t * (3.0 + bass * 4.0) + dot(cell, vec3<f32>(1.1, 0.9, 1.3)));
     let split = 0.5 + 0.5 * sin(t * (3.35 + mids * 3.4) + dot(cell, vec3<f32>(1.7, 0.7, 1.5)));
     return (bandA * beat + bandB * split) * (0.25 + bass * 0.45);
@@ -134,7 +150,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Ray setup
     // Moving camera
     let camSpeed = u.zoom_params.z * 5.0;
-    let ro = vec3<f32>(0.0, 0.0, u.config.x * camSpeed);
+    // Offset off the node column: flying exactly down the x=y=0 axis put the camera inside a node
+    // whenever z crossed a node centre (flat slab at ~1 in 18 times, e.g. t = 2.1 s and 6.3 s at defaults).
+    let ro = vec3<f32>(0.37, 0.29, u.config.x * camSpeed);
 
     // Camera shake from bass
     let shake = vec3<f32>(sin(u.config.x*10.0), cos(u.config.x*12.0), 0.0) * bass * 0.1;
@@ -153,6 +171,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         var steps = 0;
         var hit = false;
         var p = vec3<f32>(0.0);
+        var cloud = 0.0;
+        var minD = 1e9;
+        var pNear = vec3<f32>(0.0);
 
         let rd_off = normalize(rd + vec3<f32>(f32(c)*dispersion - dispersion, 0.0, 0.0));
 
@@ -161,6 +182,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let res2 = map(p, bass);
             d = res2.x;
             sheetGlow += nodalSheets(p, u.config.x, amp, treble) * exp(-t * 0.03);
+            // ── Idea 5: node probability cloud. `d` is thrown away by the hit test, so the
+            // voids were black. Integrating exp(−k·d)·Δt (Δt = the step actually taken)
+            // gives each node an uncertainty halo; pNear remembers the closest-approach point.
+            let dPos = max(d, 0.0);
+            let stepLen = dPos * 0.8;
+            cloud += exp(-dPos * 5.0) * stepLen * exp(-t * 0.04);
+            pNear = select(pNear, p, dPos < minD);
+            minD = min(minD, dPos);
             if (d < 0.001) {
                 hit = true;
                 break;
@@ -195,11 +224,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             // Idea 1: Probability wave interference
             let probInterference = 0.5 + 0.5 * sin(dot(p, vec3<f32>(1.0, 2.0, 3.0)) * 5.0 - u.config.x * 10.0);
             
-            channelCol = (finalL * ambientCol[c] + sss + halo) * ao * (0.8 + 0.4 * probInterference);
+            // Idea 6: compression crests of the phonon wave shade brighter
+            let crest = 0.5 + 0.5 * phononAt(cell, u.config.x);
+            channelCol = (finalL * ambientCol[c] + sss + halo) * ao * (0.8 + 0.4 * probInterference) * (0.8 + 0.4 * crest);
 
             // Distance fog
             channelCol = mix(channelCol, 0.0, smoothstep(20.0, 60.0, t));
         }
+
+        // Idea 5: tint the cloud with the closest-approach node's own ambient colour
+        let cellN = floor(pNear / spacing + 0.5);
+        let ambN = vec3<f32>(sin(cellN.x) * 0.5 + 0.5, cos(cellN.y) * 0.5 + 0.5, sin(cellN.z + u.config.x) * 0.5 + 0.5);
+        channelCol += cloud * ambN[c] * (0.28 + 0.35 * bass);
 
         if (c == 0) { col.x = channelCol; }
         if (c == 1) { col.y = channelCol; }
@@ -207,6 +243,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     col += vec3<f32>(0.35, 0.75, 1.0) * sheetGlow * 0.015;
+
     col = acesToneMap(col * (1.05 + bass * 0.15));
     let alpha = clamp(0.15 + dot(col, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.8 + sheetGlow * 0.01, 0.0, 0.98);
 

@@ -3714,8 +3714,17 @@
       "history": []
     },
     "acoustic-string-theory": {
-      "hash": "bcc713b0b4775e86",
-      "history": []
+      "hash": "f03c23c27d1ca103",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "f03c23c27d1ca103",
+          "prev_hash": "bcc713b0b4775e86",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "atmos_volumetric_fog": {
       "hash": "0347e19b53a7133a",
@@ -4004,7 +4013,7 @@
       ]
     },
     "gen-acid-lissajous": {
-      "hash": "3a9a5432a58bad2f",
+      "hash": "6d7f106827423777",
       "history": [
         {
           "event": "upgraded",
@@ -4013,6 +4022,14 @@
           "prev_hash": "b3d74149edf61208",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "6d7f106827423777",
+          "prev_hash": "3a9a5432a58bad2f",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
@@ -4209,8 +4226,17 @@
       ]
     },
     "gen-audio-spirograph": {
-      "hash": "b4c502269011f10c",
-      "history": []
+      "hash": "f92ee29ec8521791",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "f92ee29ec8521791",
+          "prev_hash": "b4c502269011f10c",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "gen-audiovisual-mandelbulb-raymarcher": {
       "hash": "8f2ca25103d48325",
@@ -8868,8 +8894,17 @@
       ]
     },
     "gen-quantum-superposition": {
-      "hash": "26906587b32ac895",
-      "history": []
+      "hash": "06c185b2cfd7227a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "06c185b2cfd7227a",
+          "prev_hash": "26906587b32ac895",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "gen-quasicrystal": {
       "hash": "413d30b96845f8d2",
@@ -9329,7 +9364,7 @@
       ]
     },
     "gen-stellar-acoustic-resonance-manifold": {
-      "hash": "6abf4e1cebf94b86",
+      "hash": "7778b2e71a383fa2",
       "history": [
         {
           "event": "upgraded",
@@ -9338,6 +9373,14 @@
           "prev_hash": "1cb7cfd251644f3f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "7778b2e71a383fa2",
+          "prev_hash": "6abf4e1cebf94b86",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
@@ -9388,8 +9431,17 @@
       "history": []
     },
     "gen-string-theory": {
-      "hash": "2770dea98c2c8678",
-      "history": []
+      "hash": "7b5d756b0fca2ff1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "7b5d756b0fca2ff1",
+          "prev_hash": "2770dea98c2c8678",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "gen-superfluid-quantum-foam": {
       "hash": "c05abda9b3399df9",
@@ -9625,7 +9677,7 @@
       ]
     },
     "gen-void-harmonic-cymatic-resonator": {
-      "hash": "4fa7a7207914291f",
+      "hash": "e61009f0e3455f53",
       "history": [
         {
           "event": "upgraded",
@@ -9634,6 +9686,14 @@
           "prev_hash": "dc94690f161c01c8",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "e61009f0e3455f53",
+          "prev_hash": "4fa7a7207914291f",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
@@ -9897,7 +9957,7 @@
       ]
     },
     "gen-grokcf-interference": {
-      "hash": "28f93d088aadfa05",
+      "hash": "91c472e2ad3c9abf",
       "history": [
         {
           "event": "upgraded",
@@ -9906,6 +9966,14 @@
           "prev_hash": "b318d4c636e114e4",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "91c472e2ad3c9abf",
+          "prev_hash": "28f93d088aadfa05",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
@@ -10510,8 +10578,17 @@
       ]
     },
     "topological-acoustic-knots": {
-      "hash": "d61ded7e8da02fa7",
-      "history": []
+      "hash": "ef5c7c57d00a55ff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "ef5c7c57d00a55ff",
+          "prev_hash": "d61ded7e8da02fa7",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "tornado-vortex": {
       "hash": "4457875168311d3f",
@@ -18638,7 +18715,7 @@
       ]
     },
     "gen-quantum-resonance-lattice": {
-      "hash": "980942bea701ebbe",
+      "hash": "ec3c72538e3b9613",
       "history": [
         {
           "event": "added",
@@ -18646,6 +18723,14 @@
           "hash": "980942bea701ebbe",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "ec3c72538e3b9613",
+          "prev_hash": "980942bea701ebbe",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
