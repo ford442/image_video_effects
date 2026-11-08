@@ -1,9 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
 //  Infinite Zoom with Möbius Transformations
 //  Category: distortion
-//  Features: mathematical, mouse-driven, upgraded-rgba
-//  Upgraded: 2026-09-08
-//  Ideas: mouse as Möbius pole; log-polar seam wrap
+//  Features: mathematical, mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-08
+//  Ideas: mouse as Möbius pole; log-polar seam wrap; conformal lattice etching (hex lattice lines carried through the Möbius map); pole-proximity chromatic stretch; zoom-level aerial recession
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════
 
@@ -178,8 +178,10 @@ fn apply_mobius_zoom_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
     var z = z0;
     var accumulated_scale = 1.0;
     var totalDistortion = 0.0;
+    var minDenom = 1e3;
     
     for (var i: i32 = 0; i < max_iterations; i = i + 1) {
+        minDenom = min(minDenom, complex_abs(complex_mul(c, z) + d));
         z = mobius_transform(z, a, b, c, d);
         
         let hyper_t = 0.3 * sin(t + f32(i));
@@ -202,18 +204,46 @@ fn apply_mobius_zoom_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
     let za = atan2(z.y, z.x);
     let logSpan = log(4.0);
     let logR = log(zr);
-    let wrappedR = exp(logR - floor(logR / logSpan) * logSpan);
+    let level = floor(logR / logSpan);
+    let wrappedR = exp(logR - level * logSpan);
     z = vec2<f32>(cos(za), sin(za)) * wrappedR;
     var result = clamp(z / 4.0 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let tex_color = textureSampleLevel(readTexture, u_sampler, result, 0.0);
+    var tex_color = textureSampleLevel(readTexture, u_sampler, result, 0.0);
+
+    // Idea 3 — pole-proximity chromatic stretch: where the orbit passed near
+    // the Möbius pole (c·z + d → 0) the map is most violently conformal; split
+    // R/B radially there, wider on treble.
+    let poleNear = exp(-minDenom * 3.0);
+    let split = poleNear * (0.02 + treble_g * 0.03);
+    let dirR = normalize(z + vec2<f32>(1e-4, 0.0));
+    let rS = clamp((z + dirR * split * 4.0) / 4.0 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+    let bS = clamp((z - dirR * split * 4.0) / 4.0 + 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+    tex_color = vec4<f32>(textureSampleLevel(readTexture, u_sampler, rS, 0.0).r, tex_color.g,
+                          textureSampleLevel(readTexture, u_sampler, bS, 0.0).b, tex_color.a);
     
     // Calculate modular coloring
     let omega1 = vec2<f32>(1.0, 0.0);
     let omega2 = vec2<f32>(0.5, 0.866025);
     let lattice_coord = lattice_modular_value(z, omega1, omega2);
     let j_val = modular_j_invariant_approx(z * 0.5);
-    
+
+    // Idea 1 — conformal lattice etching: thin silver lines on the hex lattice
+    // of the pulled-back coordinate, so the Möbius warp is visible as a bent
+    // grid that keeps right angles (mids brighten the engraving).
+    let ld = min(min(lattice_coord.x, 1.0 - lattice_coord.x), min(lattice_coord.y, 1.0 - lattice_coord.y));
+    let etch = (1.0 - smoothstep(0.0, 0.035, ld)) * (0.10 + mids_g * 0.25);
+    var rgb = tex_color.rgb + vec3<f32>(0.85, 0.9, 1.0) * etch;
+
+    // Idea 2 — zoom-level aerial recession: each log-polar wrap level is a
+    // deeper copy of the picture; deeper levels fade toward a cool haze and
+    // lose contrast, bass pulls the haze back.
+    let depthLv = clamp(-level, 0.0, 6.0);
+    let haze = clamp(depthLv * 0.12 * (1.0 - bass_g * 0.5), 0.0, 0.6);
+    let lum = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
+    rgb = mix(rgb, mix(vec3<f32>(lum), vec3<f32>(0.55, 0.62, 0.75), 0.5), haze);
+    tex_color = vec4<f32>(rgb, tex_color.a);
+
     // Calculate alpha with physics
     let iterationAlpha = calculateIterationAlpha(tex_color.a, max_iterations, max_iterations, accumulated_scale);
     let finalAlpha = calculateModularAlpha(iterationAlpha, lattice_coord, j_val);
@@ -221,50 +251,11 @@ fn apply_mobius_zoom_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
     return vec4<f32>(tex_color.rgb, finalAlpha);
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Color with Alpha Calculation
-// ═══════════════════════════════════════════════════════════════
-
-fn calculate_mobius_color_alpha(uv: vec2<f32>, zoom_time: f32) -> vec4<f32> {
-    let zoom_speed = u.zoom_params.x;
-    let param_a = u.zoom_params.y;
-    let color_cycling = u.zoom_params.z;
-    
-    let t = zoom_time * zoom_speed;
-    
-    // Transform UV through Möbius iteration
-    let zoomedResult = apply_mobius_zoom_alpha(uv, zoom_time);
-    let transformed_uv = fract((uv - 0.5) * 4.0 / (1.0 + cycle * 3.0) / 4.0 + 0.5);
-    
-    // Sample for color calculation
-    let tex_color = textureSampleLevel(readTexture, non_filtering_sampler, transformed_uv, 0.0);
-    
-    // Modular form coloring
-    let z = (transformed_uv - 0.5) * 4.0;
-    
-    let omega1 = vec2<f32>(1.0, 0.0);
-    let omega2 = vec2<f32>(0.5, 0.866025);
-    let lattice_coord = lattice_modular_value(z, omega1, omega2);
-    
-    let j_val = modular_j_invariant_approx(z * 0.5);
-    let hue = fract(abs(j_val) * 0.001 + t * color_cycling + length(lattice_coord));
-    
-    let dist_from_lattice = length(lattice_coord - 0.5);
-    let sat = 0.5 + 0.5 * (1.0 - dist_from_lattice);
-    
-    let luminance = dot(tex_color.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    let brightness = mix(0.3, 1.0, luminance);
-    
-    let hsb_color = hsb_to_rgb(hue, sat * 0.8, brightness);
-    
-    let blend_factor = ping_pong(param_a + 0.3);
-    let final_rgb = mix(tex_color.rgb, hsb_color, blend_factor);
-    
-    // Preserve alpha from zoom calculation
-    return vec4<f32>(final_rgb, zoomedResult.a);
-}
-
 var<private> cycle: f32;
+var<private> bass_g: f32;
+var<private> mids_g: f32;
+var<private> treble_g: f32;
+
 
 // ═══════════════════════════════════════════════════════════════
 // Main Shader Entry
@@ -280,6 +271,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let zoom_time = u.zoom_config.x;
 
     cycle = fract(zoom_time * u.zoom_params.x);
+    bass_g = plasmaBuffer[0].x;
+    mids_g = plasmaBuffer[0].y;
+    treble_g = plasmaBuffer[0].z;
 
     let color = apply_mobius_zoom_alpha(uv, zoom_time);
 

@@ -10148,7 +10148,7 @@
       "storm",
       "generative"
     ],
-    "description": "Electric lightning bolts radiating from the center in a kaleidoscope symmetry pattern with 6, 8, or 12-fold symmetry. Neon cyan, magenta, and yellow bolts crack and flicker on a deep dark background. Bolts rebranch and reseed each frame for constant motion. Sparks fly randomly. Mouse rotates the kaleidoscope and changes symmetry count.",
+    "description": "Lightning bolts radiating in kaleidoscope symmetry; return strokes flash the cloud deck and afterimages cool to violet. Mouse rotates and sets symmetry.",
     "workgroup_size": [
       16,
       16,
@@ -14683,7 +14683,7 @@
     "id": "gen-grid",
     "name": "Domain-Warped FBM Grid",
     "url": "shaders/gen_grid.wgsl",
-    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur. Lattice cells hold a stable interior wash, and Jacobian creases brighten where the warp folds.",
+    "description": "Audio-reactive domain-warped FBM grid with a mouse gravity well, moiré sub-grids and chromatic edges. Overstretched lines break into dashes, a raster beam sweeps the lattice, and warp slopes emboss the cells.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -20759,7 +20759,7 @@
       "ph-science",
       "chemistry"
     ],
-    "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Upgraded with universal-indicator pH color science: geometry edges glow with realistic acid/base transitions driven by bass oscillation. Critical-angle refraction distortion, temporal feedback trails, chromatic aberration, and ACES tone mapping.",
+    "description": "Neon triangles, hexagons and circles melting through universal-indicator pH colours, with striated tube glow, click titration fronts, salt precipitate where acid meets base, and acid drips running off the tubes.",
     "workgroup_size": [
       16,
       16,

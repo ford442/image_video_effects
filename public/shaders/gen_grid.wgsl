@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, temporal,
 //            domain-warping, FBM-noise, mouse-driven
-//  Upgraded: 2026-10-17
-//  Ideas: anisotropic H/V lattice; intersection phosphor; cell-field wash; Jacobian crease
+//  Upgraded: 2026-11-08
+//  Ideas: anisotropic H/V lattice; intersection phosphor; cell-field wash; Jacobian crease; overstretch dash fatigue; beam-sweep excitation; warp-slope emboss
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -100,15 +100,6 @@ fn colorPalette(t: f32, shift: f32) -> vec3<f32> {
     return color;
 }
 
-// Critically-damped spring step toward the cursor aim point.
-// State lives in extraBuffer[133..136] (pos.xy, vel.xy); single-writer guarded.
-fn springStep(pos: vec2<f32>, vel: vec2<f32>, aim: vec2<f32>, omega: f32, dt: f32) -> vec4<f32> {
-    let accel = omega * omega * (aim - pos) - 2.0 * omega * vel;
-    let newVel = vel + accel * dt;
-    let newPos = pos + newVel * dt;
-    return vec4<f32>(newPos, newVel);
-}
-
 // Pick an FFT band (plasmaBuffer[1..8]) per grid cell so each cell's
 // moiré sub-grid shimmers on its own frequency band.
 fn cellBin(cell: vec2<f32>) -> f32 {
@@ -160,28 +151,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var p = uv;
     p.x = p.x * aspect;
 
-    // Mouse attractor (gravity well) — spring-damped so the well glides
-    // toward the cursor with visible lag instead of teleporting.
+    // Mouse attractor (gravity well). The old extraBuffer[133..136] spring
+    // never persisted (scratch is re-uploaded each frame), pinning the well
+    // near the (0,0) corner — the well now sits on the cursor directly.
     var mouseUV = u.zoom_config.yz;
     mouseUV.x = mouseUV.x * aspect;
     let mouseDown = step(0.5, u.zoom_config.w);
     let attractorStrength = mix(0.05, 0.5, mouseDown);
-
-    var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (time < 0.1) {
-        // First frames: snap the spring onto the cursor, zero velocity.
-        springPos = mouseUV;
-        springVel = vec2<f32>(0.0, 0.0);
-    }
-    let springState = springStep(springPos, springVel, mouseUV, 5.0, 0.016);
-    let attractor = springState.xy;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = springState.x;
-        extraBuffer[134] = springState.y;
-        extraBuffer[135] = springState.z;
-        extraBuffer[136] = springState.w;
-    }
+    let attractor = mouseUV;
 
     // ─── Click ripples: decaying warp pulses radiating through the grid ───
     var rippleWarp = vec2<f32>(0.0, 0.0);
@@ -189,7 +166,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rippleCount = min(u32(u.config.y), 50u);
     for (var ri: u32 = 0u; ri < rippleCount; ri = ri + 1u) {
         let ripple = u.ripples[ri];
-        let age = time - ripple.z;
+        // ripple.z is a real-seconds timestamp; `time` is x5 (ripples were dead).
+        let age = u.config.x - ripple.z;
         if (age > 0.0 && age < 3.0) {
             // Click position in aspect-corrected space.
             let center = ripple.xy * vec2<f32>(aspect, 1.0);
@@ -220,7 +198,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let gridSize = 8.0 * gridDensity;
     let gr = gridLine(warpedP, gridSize, thickness, stretch);
-    let lineIntensity = gr.x;
+    // Idea 5 — overstretch dash fatigue: where the warp stretches a line
+    // family past ~2x, that family breaks into dashes like fatigued wire.
+    let gpF = warpedP * gridSize;
+    let cellF = floor(gpF - 0.5);
+    let fatigueV = smoothstep(1.7, 2.3, stretch.y);
+    let fatigueH = smoothstep(1.7, 2.3, stretch.x);
+    let dashV = mix(1.0, smoothstep(0.25, 0.35, fract(gpF.y * 3.0 + hash12(vec2<f32>(cellF.x, 1.3)))), fatigueV);
+    let dashH = mix(1.0, smoothstep(0.25, 0.35, fract(gpF.x * 3.0 + hash12(vec2<f32>(4.7, cellF.y)))), fatigueH);
+    let lfV = abs(fract(gpF.x - 0.5) - 0.5);
+    let lfH = abs(fract(gpF.y - 0.5) - 0.5);
+    let isV = step(lfV, lfH);
+    let dashMask = mix(dashH, dashV, isV);
+    let lineIntensity = gr.x * dashMask;
     let lineGlow = gr.y;
 
     // Chromatic dispersion — sample the grid 3 times slightly offset
@@ -278,6 +268,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let stretchRatio = max(stretch.x, stretch.y) / max(min(stretch.x, stretch.y), 0.2);
     let crease = smoothstep(1.45, 2.15, stretchRatio);
     generatedColor = generatedColor + accentColor * crease * (0.12 + lineGlow * 0.45);
+
+    // Idea 6 — beam-sweep excitation: a raster beam crosses the screen
+    // top→bottom; lattice lines it has just passed glow and decay behind it.
+    let beamY = fract(u.config.x * 0.12);
+    let behind = beamY - uv.y;
+    let wake = select(0.0, exp(-behind * 9.0), behind >= 0.0) + exp(-abs(behind) * 220.0) * 0.6;
+    generatedColor = generatedColor + lineColor * (lineIntensity + lineGlow * 0.6) * wake * (0.55 + bass * 0.6);
+
+    // Idea 7 — warp-slope emboss: displacement magnitude treated as a height
+    // field, lit from the upper-left; cell interiors read as raised tiles.
+    let dispH = length(warpedP - pulsedP);
+    let slopeX = (length(warpDx - pulsedP - vec2<f32>(jacEps, 0.0)) - dispH) / jacEps;
+    let slopeY = (length(warpDy - pulsedP - vec2<f32>(0.0, jacEps)) - dispH) / jacEps;
+    let emboss = clamp(dot(vec2<f32>(slopeX, slopeY), vec2<f32>(-0.7, -0.7)) * 0.6, -1.0, 1.0);
+    generatedColor = generatedColor + mix(baseColor, vec3<f32>(1.0), 0.3) * interior * max(emboss, 0.0) * 0.14;
+    generatedColor = generatedColor * (1.0 - interior * max(-emboss, 0.0) * 0.35);
 
     // Vignette
     let vignetteUV = uv * (1.0 - uv);

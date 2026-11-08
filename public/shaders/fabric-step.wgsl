@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: warp/weft weave from strain axes; exact integer C load
+//  Upgraded: 2026-11-08
+//  Ideas: warp/weft weave from strain axes; exact integer C load; compression wrinkle ridges; Kajiya thread sheen; torn-edge fray tufts
 //  A packing: raw sim (pos.xy, prevPos.xy)
 // ═══════════════════════════════════════════════════════════════
 
@@ -114,6 +114,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tearThreshold = mix(1.5, 4.0, u.zoom_params.y);
   let gravity = mix(0.0, 0.02, u.zoom_params.z);
   let damping = mix(0.95, 0.999, u.zoom_params.w);
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+  let mouseDown = clamp(u.zoom_config.w, 0.0, 1.0);
   
   // Read previous state from dataTextureC
   let prevState = textureLoad(dataTextureC, vec2<i32>(coord), 0);
@@ -136,7 +139,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseInfluenceRadius = 0.15;
   
   if (mouseDist < mouseInfluenceRadius && mouseDist > 0.001) {
-    var force = (1.0 - mouseDist / mouseInfluenceRadius) * 0.02;
+    // Hover only brushes the cloth; a held button pushes. (The idle cursor
+    // parks at centre, which punched a permanent hole at HEAD.)
+    var force = (1.0 - mouseDist / mouseInfluenceRadius) * 0.02 * mix(0.15, 1.0, mouseDown);
     vel = vel + normalize(toMouse) * force;
   }
   
@@ -159,7 +164,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Wind force
   let windX = fbm(pos * 4.0 + vec2<f32>(time * 0.5, 0.0), time) - 0.5;
   let windY = fbm(pos * 4.0 + vec2<f32>(0.0, time * 0.5), time) - 0.5;
-  vel = vel + vec2<f32>(windX, windY) * 0.001;
+  vel = vel + vec2<f32>(windX, windY) * 0.001 * (1.0 + bass * 2.0);
   
   // Update position
   let newPrevPos = pos;
@@ -168,6 +173,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Constraint solving
   let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
   let restLen = texelSize.x * REST_LENGTH;
+  let restLenY = texelSize.y * REST_LENGTH;
   
   let leftCoord = vec2<i32>(max(i32(coord.x) - 1, 0), i32(coord.y));
   let rightCoord = vec2<i32>(min(i32(coord.x) + 1, i32(size.x) - 1), i32(coord.y));
@@ -221,10 +227,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (coord.y > 0u) {
       var delta = pos - upPos;
       var dist = length(delta);
-      if (dist > restLen && dist < tearThreshold * restLen) {
-        var correction = (dist - restLen) / dist * 0.5 * stiffness;
+      if (dist > restLenY && dist < tearThreshold * restLenY) {
+        var correction = (dist - restLenY) / dist * 0.5 * stiffness;
         pos = pos - delta * correction;
-      } else if (dist >= tearThreshold * restLen) {
+      } else if (dist >= tearThreshold * restLenY) {
         isTorn = true;
       }
     }
@@ -232,10 +238,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (coord.y < size.y - 1u) {
       var delta = pos - downPos;
       var dist = length(delta);
-      if (dist > restLen && dist < tearThreshold * restLen) {
-        var correction = (dist - restLen) / dist * 0.5 * stiffness;
+      if (dist > restLenY && dist < tearThreshold * restLenY) {
+        var correction = (dist - restLenY) / dist * 0.5 * stiffness;
         pos = pos - delta * correction;
-      } else if (dist >= tearThreshold * restLen) {
+      } else if (dist >= tearThreshold * restLenY) {
         isTorn = true;
       }
     }
@@ -259,7 +265,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   if (coord.y > 0u) {
     var d = length(pos - upPos);
-    totalStrain = totalStrain + abs(d - restLen) / restLen;
+    totalStrain = totalStrain + abs(d - restLenY) / restLenY;
   }
   totalStrain = clamp(totalStrain * 2.0, 0.0, 1.0);
   
@@ -278,6 +284,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let weave = max(warp, weft * 0.85);
   var woven = fabricColor * (0.82 + 0.18 * weave);
   woven = mix(woven, woven * vec3<f32>(0.78, 0.76, 0.72), (1.0 - weave) * 0.35 * (1.0 - totalStrain));
+
+  // Idea: compression wrinkle ridges — the solver only resists stretch, so
+  // squeezed cloth buckles into fine ridges running across the squeeze axis.
+  let compX = clamp(1.0 - length(rightPos - leftPos) / (2.0 * restLen), 0.0, 1.0);
+  let compY = clamp(1.0 - length(downPos - upPos) / (2.0 * restLenY), 0.0, 1.0);
+  let pix = uv * vec2<f32>(f32(size.x), f32(size.y));
+  let ridgeX = 0.5 + 0.5 * sin(pix.x * 0.9 + compX * 30.0);
+  let ridgeY = 0.5 + 0.5 * sin(pix.y * 0.9 + compY * 30.0);
+  let wrinkle = smoothstep(0.02, 0.25, compX) * (ridgeX - 0.5) + smoothstep(0.02, 0.25, compY) * (ridgeY - 0.5);
+  woven = woven * (1.0 + wrinkle * 0.55);
+
+  // Idea: Kajiya thread sheen — anisotropic highlight where the deformed
+  // warp threads turn perpendicular to the key light; flat cloth stays matte.
+  let keyL = normalize(vec2<f32>(0.6, -0.8));
+  let tl = dot(warpDir, keyL);
+  let sheen = pow(sqrt(max(1.0 - tl * tl, 0.0)), 48.0) * (0.4 + 0.6 * weave) * (1.0 + mids * 0.6);
+  woven = woven + vec3<f32>(1.0, 0.97, 0.9) * sheen * 0.35;
+
+  // Idea: torn-edge fray tufts — snapped constraints show loose thread ends
+  // as short bright strands crossing the tear, hashed per thread.
+  if (isTorn) {
+    let across = vec2<f32>(-weftDir.y, weftDir.x);
+    let thread = floor(dot(pix, across) * 0.5);
+    let strand = step(0.55, hash21(vec2<f32>(thread, 7.0))) * smoothstep(0.6, 1.0, abs(sin(dot(pix, weftDir) * 0.35 + thread)));
+    woven = mix(woven * 0.35, fabricColor * 1.2 + 0.1, strand);
+  }
 
   let strainColor = mix(
     vec3<f32>(0.2, 0.4, 0.8),
