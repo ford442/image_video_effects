@@ -22,7 +22,7 @@ export type SimBufferRole = 'simState' | 'simIndex' | 'simHash';
 
 export const SIM_BUFFER_ROLES: readonly SimBufferRole[] = ['simState', 'simIndex', 'simHash'] as const;
 
-/** Planner-inserted dispatch that rebuilds simHash (not a graph node; see expandGraph). */
+/** Planner-inserted dispatch that rebuilds simHash (not a graph node; see expandGraph and GraphNodeDef.keepsHash). */
 export const SIM_HASH_BUILD_ENTRY = '__simHashBuild';
 export const SIM_HASH_BUILD_NODE_ID = '__simHashBuild';
 
@@ -56,6 +56,15 @@ export interface GraphNodeDef {
   scalable?: boolean;
   /** Lowest scale adaptive demotion may pick (one of NODE_SCALE_LEVELS; default 0.5). */
   minScale?: number;
+  /**
+   * The node's `simState` writes never move a hashed element: it only writes records that stay
+   * parked (`xy < 0`), like sph-fluid's density pass writing its stride-2 aux records. The hash it
+   * read stays valid for the next reader, so the planner does not rebuild it (one counted pass
+   * saved). The `simIndex` snapshot still goes stale, so a later `simIndex` reader still gets its
+   * copy barrier. An author promise: a keepsHash node that moves an agent leaves later readers
+   * walking stale cells (visit-capped, so wrong neighbours, never a hang).
+   */
+  keepsHash?: boolean;
 }
 
 export interface MultipassGraphDef {
@@ -124,10 +133,10 @@ function simCopiesBeforeRead(reads: GraphRole[], sim: SimIndexState): CopyBarrie
   return [{ from: 'simState', to: 'simIndex', reason: 'simState → simIndex snapshot' }];
 }
 
-function applySimWrites(writes: GraphRole[], sim: SimIndexState): void {
+function applySimWrites(writes: GraphRole[], sim: SimIndexState, keepsHash = false): void {
   if (writes.includes('simState')) {
     sim.fresh = false;
-    sim.hashFresh = false;
+    if (!keepsHash) sim.hashFresh = false;
   }
 }
 
@@ -162,7 +171,7 @@ function simHashBuildCount(nodes: GraphNodeDef[]): number {
         builds++;
         hashFresh = true;
       }
-      if ((node.writes ?? []).includes('simState')) hashFresh = false;
+      if ((node.writes ?? []).includes('simState') && !node.keepsHash) hashFresh = false;
     }
   }
   return builds;
@@ -266,6 +275,7 @@ export type GraphDiagnosticCode =
   | 'duplicate-node-id'
   | 'non-integer-repeat'
   | 'ineffective-role'
+  | 'ineffective-keeps-hash'
   | 'unbounded-max-passes';
 
 export interface GraphDiagnostic {
@@ -482,6 +492,13 @@ function collectDiagnostics(
         );
       }
     }
+    if (node.keepsHash && !(node.writes ?? []).includes('simState')) {
+      warn(
+        'ineffective-keeps-hash',
+        `node ${node.id}: keepsHash has no effect (the node does not write simState, so it never invalidates the hash)`,
+        at,
+      );
+    }
   }
 
   return out;
@@ -537,7 +554,7 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
       });
 
       applyWrites(state, writes);
-      applySimWrites(writes, sim);
+      applySimWrites(writes, sim, node.keepsHash === true);
     }
   }
 
