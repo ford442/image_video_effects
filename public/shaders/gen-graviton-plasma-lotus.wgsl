@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: generative, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-17
-//  Ideas: petal-fold veins along KIFS abs planes; nectary corona at the core/petal smin; wavelength-separated chromatic gravity streaks; treble-driven core-to-fold plasma filaments; volumetric plasma sheath from near-miss march steps; gravitational blueshift tint following the well potential
+//  Upgraded: 2026-10-17, 2026-10-25
+//  Ideas: petal-fold veins along KIFS abs planes; nectary corona at the core/petal smin; wavelength-separated chromatic gravity streaks; treble-driven core-to-fold plasma filaments; volumetric plasma sheath from near-miss march steps; gravitational blueshift tint following the well potential; thin-film interference petal rim (§12.2F); Einstein-ring critical curve of the well (§12.1 physics)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -20,6 +20,14 @@ fn rot(a: f32) -> mat2x2<f32> {
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x*(a*x+b))/(x*(c*x+d)+e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Thin-film reflectance cos²(δ/2) per R/G/B, δ = 4π n t cosθ / λ (thickness in nm).
+fn thinFilm(cosT: f32, thicknessNm: f32, n: f32) -> vec3<f32> {
+    let lam = vec3<f32>(650.0, 550.0, 450.0);
+    let delta = (4.0 * 3.14159265 * n * thicknessNm * max(cosT, 0.05)) / lam;
+    let c = cos(delta * 0.5);
+    return c * c;
 }
 
 // KIFS Fold
@@ -176,9 +184,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col = vec3<f32>(1.0, 0.3, 0.8) * (1.0 + bass * 1.5) * diff + vec3<f32>(0.8, 0.1, 0.4) * rim;
         } else if (mat == 2.0) {
             // Petals: Iridescent subsurface
-            col = baseColor * diff * (1.0 + mids * 0.3) + vec3<f32>(0.2, 0.6, 1.0) * smoothstep(0.6, 1.0, rim) * (1.0 + treble * 0.4);
-            // Idea 1 — petal-fold veins along the KIFS abs-fold planes
+            // ── Idea 7: thin-film petal rim (§12.2F) ───────────────────────
+            // The grazing rim was a constant blue. A film's colour depends on view angle
+            // and thickness: the film drains thin along the KIFS fold planes (veins) and
+            // pools thicker between them, so the rim shifts hue across each petal.
             let foldedHit = fold(p, foldTime);
+            let hitPlane = min(abs(foldedHit.x), min(abs(foldedHit.y), abs(foldedHit.z)));
+            let filmNm = 260.0 + 620.0 * smoothstep(0.0, 0.4, hitPlane);
+            let filmRim = thinFilm(1.0 - rim, filmNm, 1.33);
+            col = baseColor * diff * (1.0 + mids * 0.3) + (vec3<f32>(0.04, 0.12, 0.25) + filmRim * vec3<f32>(0.75, 1.0, 1.25)) * smoothstep(0.45, 1.0, rim) * (1.0 + treble * 0.4);
+            // Idea 1 — petal-fold veins along the KIFS abs-fold planes
             let vein = 1.0 - smoothstep(0.0, 0.08, min(abs(foldedHit.x), min(abs(foldedHit.y), abs(foldedHit.z))));
             col += vec3<f32>(0.95, 0.4, 1.05) * vein * (0.22 + treble * 0.28);
         }
@@ -220,6 +235,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let wellPotential = gravity_strength / (dist_to_mouse * 10.0 + 1.0);
     let blueshift = clamp(wellPotential * 1.2, 0.0, 0.6) * 0.6;
     col *= mix(vec3<f32>(1.0), vec3<f32>(0.8, 0.97, 1.28), blueshift);
+
+    // ── Idea 8: Einstein-ring critical curve (§12.1 physics) ─────────────
+    // The pull above maps an image point at distance d to source distance
+    // r_src = d − g/(10d+1). Where r_src = 0 the lens focuses the source at the well
+    // centre into a ring; the lens always had this curve, now it glows. Zero strength
+    // (g=0) leaves the picture untouched through the same envelope as the streaks.
+    let rSrc = dist_to_mouse - gravity_strength / (dist_to_mouse * 10.0 + 1.0);
+    let einstein = 0.03 / (abs(rSrc) + 0.03);
+    let einsteinTint = mix(vec3<f32>(1.0, 0.45, 0.55), vec3<f32>(0.35, 0.65, 1.3), clamp(rSrc * 8.0 + 0.5, 0.0, 1.0));
+    col += einsteinTint * einstein * einstein * gravityEnvelope * (0.55 + treble * 0.3);
 
     col += gravityStreakRGB * (0.8 + treble * 0.35);
     col += vec3<f32>(0.4, 0.7, 1.3) * clickGravity * (0.45 + treble * 0.25);
