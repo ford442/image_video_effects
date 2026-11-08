@@ -967,7 +967,8 @@
       "mouse-driven",
       "temporal",
       "rgba-state-machine",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2496,7 +2497,8 @@
       "raymarching",
       "fluid-coupling",
       "mouse-driven",
-      "bioluminescent"
+      "bioluminescent",
+      "upgraded-rgba"
     ],
     "params": [
       {

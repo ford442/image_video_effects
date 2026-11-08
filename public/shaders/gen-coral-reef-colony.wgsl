@@ -6,8 +6,8 @@
 //  Created: 2026-05-30
 //  Updated: 2026-06-01
 //  By: Kimi Agent (4-Agent Swarm Upgrade)
-//  Upgraded: 2026-10-11
-//  Ideas: coherent forking branches (value-noise fix); C.a skeleton accretion + bleaching memory; star-lobed polyp mouths that retract at the pointer; apical pallor; zooxanthellae speckles
+//  Upgraded: 2026-10-11, 2026-10-25
+//  Ideas: coherent forking branches (value-noise fix); C.a skeleton accretion + bleaching memory; star-lobed polyp mouths that retract at the pointer; apical pallor; zooxanthellae speckles; golden-angle corallite field (§12.2E); Beer-Lambert water column (§12.2F); capsule-normal limb roundness + crotch occlusion
 //  A packing: A.rgb = ACES display colour (temporal history); A.a = skeleton memory stored as skel*0.9 (NOT display alpha); writeTexture.a = semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 
@@ -50,11 +50,13 @@ fn rot2(v: vec2<f32>, a: f32) -> vec2<f32> {
 }
 
 // IDEA 1 helper: distance to a segment, .y = 0..1 position along it (for tip taper).
-fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+// .zw = perpendicular offset from the axis (the limb's cross-section normal, Idea 3).
+fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> vec4<f32> {
   let pa = p - a;
   let ba = b - a;
   let h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
-  return vec2<f32>(length(pa - ba * h), h);
+  let q = pa - ba * h;
+  return vec4<f32>(length(q), h, q);
 }
 
 fn limb(d: f32, w: f32) -> f32 {
@@ -69,10 +71,11 @@ fn skelAt(c: vec2<i32>, dim: vec2<i32>) -> f32 {
   return select(clamp(a, 0.0, 0.9) / 0.9, 0.0, !(a <= 0.9001));
 }
 
-fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = x * (x * 0.15 + 0.05) + 0.004;
-  let b = x * (x * 0.15 + 0.50) + 0.06;
-  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+// Narkowicz ACES fit. The old Hable-shaped curve had no exposure bias (0.27 -> 0.14),
+// which left the default frame at ~0.08 mean luminance.
+fn acesToneMap(v: vec3<f32>) -> vec3<f32> {
+  let x = max(v, vec3<f32>(0.0));
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn aragoniteColor(density: f32) -> vec3<f32> {
@@ -127,7 +130,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
   clickFront = min(clickFront, 2.0);
 
-  let nutrient = growth * (0.6 + bass * 0.8);
+  // HEAD floor of 0.6 left the reef near-black when no audio plays (coralDensity ~0.27).
+  let nutrient = growth * (0.95 + bass * 0.8);
   let current = vec2<f32>(sin(time * 0.2 + mids * 2.0), cos(time * 0.15 - mids * 1.5)) * 0.3;
   let spawnPulse = step(0.82, treble);
 
@@ -153,11 +157,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sT = segDist(nodePos, rootP, forkP);
   let sA = segDist(nodePos, forkP, tipA);
   let sB = segDist(nodePos, forkP, tipB);
-  let branch = max(
-    limb(sT.x, mix(0.085, 0.06, sT.y) * girth),
-    max(limb(sA.x, mix(0.06, 0.012, sA.y) * girth), limb(sB.x, mix(0.06, 0.012, sB.y) * girth))
-  );
-  let dla = fbm(uv * 12.0 + hash21(floor(colonyUV)) * 3.0, time * 0.5);
+  let wT = mix(0.085, 0.06, sT.y) * girth;
+  let wA = mix(0.06, 0.012, sA.y) * girth;
+  let wB = mix(0.06, 0.012, sB.y) * girth;
+  let lT = limb(sT.x, wT);
+  let lA = limb(sA.x, wA);
+  let lB = limb(sB.x, wB);
+  let branch = max(lT, max(lA, lB));
+
+  // ── Idea 3: capsule-normal limb roundness + crotch occlusion ─────────
+  // The winning limb's perpendicular offset (discarded by HEAD) is the cross-section
+  // normal of a round stem: lambert from the upper left makes the flat ribbons round.
+  // Where both fork arms are close (the crotch) the light is occluded.
+  let useA = lA > lT;
+  let qA = select(sT.zw, sA.zw, useA);
+  let wQ = select(wT, wA, useA);
+  let lQ = select(lT, lA, useA);
+  let useB = lB > lQ;
+  let qLimb = select(qA, sB.zw, useB) / max(select(wQ, wB, useB) * 1.4, 1e-4);
+  let r2 = min(dot(qLimb, qLimb), 1.0);
+  let lam = clamp(dot(vec3<f32>(qLimb, sqrt(1.0 - r2)), vec3<f32>(-0.5, -0.55, 0.65) * 1.2), 0.0, 1.0);
+  let crotchAO = 1.0 - 0.35 * exp(-(sA.x + sB.x) * 8.0);
+  let limbShade = mix(1.0, mix(0.62, 1.22, lam) * crotchAO, smoothstep(0.35, 0.95, branch));
+  // HEAD offset the DLA noise by a per-cell hash, which cut every colony tile along a hard
+  // square edge; a continuous offset keeps the same scale without the seams.
+  let dla = fbm(uv * 12.0 + current * 0.6, time * 0.5);
   let dlaBranch = smoothstep(0.35, 0.7, dla) * nutrient;
 
   let mousePull = (1.0 - smoothstep(0.0, 0.55, length((uv - mouse) * vec2<f32>(aspect, 1.0)))) * mouseAttraction * (0.35 + held * 0.9);
@@ -169,13 +193,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bleach = skelNew * (1.0 - smoothstep(0.05, 0.3, coralDensity));
   let body = max(coralDensity, skelNew * 0.5);
 
-  // IDEA 3: star-lobed polyp mouths. 8 lobes with per-cell phase and sway, a dark mouth pit;
+  // IDEA 3 (HEAD): star-lobed polyp mouths. 8 lobes with per-cell phase and sway, a dark mouth pit;
   // lobes retract near the pointer (stronger when held) and extend with treble.
+  // ── Idea 1: golden-angle corallite field (§12.2E) ────────────────────
+  // HEAD tiled polyps on a square screen lattice (a visible dot grid). Corallites of a
+  // real head sit on a Vogel spiral: p_k = R*sqrt((k+.5)/N) at k*137.5 deg, so each colony
+  // cell grows its own phyllotactic cluster (and drifts with the colony). The nearest seed
+  // supplies polyp-local coordinates in spacing units, so the lobe/mouth maths is unchanged.
   let polypScale = 18.0 + polypSize * 14.0;
-  let polypUV = uv * polypScale;
-  let polypGrid = fract(polypUV) - 0.5;
+  let nSeeds = clamp(floor(polypScale * polypScale / 36.0), 8.0, 28.0);
+  let vogelR = 0.40;
+  let seedSpacing = vogelR * sqrt(3.14159 / nSeeds);
+  let vogelRot = hash21(cellId + vec2<f32>(9.1, 2.7)) * 6.2831;
+  var bestD2 = 1e9;
+  var bestK = 0.0;
+  var bestP = vec2<f32>(0.0);
+  // Seeds step by a constant 137.5 deg turn, so rotate (cos, sin) by a recurrence instead of
+  // calling cos/sin 28 times per pixel.
+  let ga = vec2<f32>(cos(2.39996), sin(2.39996));
+  var dirK = vec2<f32>(cos(vogelRot), sin(vogelRot));
+  for (var k = 0; k < 28; k = k + 1) {
+    let kf = f32(k);
+    let sp = vogelR * sqrt((kf + 0.5) / nSeeds) * dirK;
+    dirK = vec2<f32>(dirK.x * ga.x - dirK.y * ga.y, dirK.x * ga.y + dirK.y * ga.x);
+    let dv = nodePos - sp;
+    let d2 = select(1e9, dot(dv, dv), kf < nSeeds);
+    let better = d2 < bestD2;
+    bestD2 = select(bestD2, d2, better);
+    bestK = select(bestK, kf, better);
+    bestP = select(bestP, sp, better);
+  }
+  let polypGrid = (nodePos - bestP) / seedSpacing;
   let polypDist = length(polypGrid);
-  let polypPh = hash21(floor(polypUV)) * 6.2831;
+  let polypPh = hash21(vec2<f32>(bestK, cellId.x * 1.7 + cellId.y * 3.1)) * 6.2831;
   let polypAng = atan2(polypGrid.y, polypGrid.x);
   let nearPtr = 1.0 - smoothstep(0.0, 0.3, length((uv - mouse) * vec2<f32>(aspect, 1.0)));
   let retract = nearPtr * clamp(mouseAttraction, 0.0, 1.0) * (0.45 + held * 0.4);
@@ -204,7 +254,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   coral = mix(coral, vec3<f32>(0.12, 0.52, 0.1), zoo * 0.7);
 
   let sss = smoothstep(0.0, 0.4, body) * 0.35;
-  var color = coral * (body * 0.8 + polyp * 1.4 * (1.0 - 0.45 * mouthPit) + sss);
+  var color = coral * (body * 0.8 * limbShade + polyp * 1.4 * (1.0 - 0.45 * mouthPit) + sss);
 
   let bloom = polyp * vec3<f32>(0.6, 1.0, 0.8) * (0.5 + bass * 0.6);
   color += bloom * 0.6;
@@ -216,7 +266,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let waterTint = vec3<f32>(0.02, 0.08, 0.14);
   let depthAtten = mix(0.25, 0.85, depth);
-  color = mix(waterTint * depthAtten, color, clamp(body + polyp * 0.5, 0.0, 1.0));
+  // ── Idea 2: Beer-Lambert water column (§12.2F) ───────────────────────
+  // HEAD only greyed the colour toward waterTint. Water absorbs red first: T = exp(-sigma*z)
+  // per channel, z from the same depth that already dims the reef (top of frame = deep), and
+  // the absorbed light returns as a blue-green in-scatter veil (energy moved, not lost).
+  let column = 0.1 + 1.2 * (1.0 - depth);
+  let trans = exp(-vec3<f32>(0.75, 0.26, 0.10) * column);
+  color = color * trans;
+  let veil = vec3<f32>(0.02, 0.10, 0.16) * (1.0 - trans) * 0.6;
+  color = mix(waterTint * depthAtten + veil, color, clamp(body + polyp * 0.5, 0.0, 1.0));
 
   let biolum = polyp * (0.4 + bass * 0.5);
   let semantic_alpha = clamp(body * (0.25 + biolum) * depthAtten + clickFront * 0.2, 0.05, 0.98);

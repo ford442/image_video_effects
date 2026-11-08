@@ -21,7 +21,8 @@
   "url": "shaders/gen-quantum-coral-reef.wgsl",
   "features": [
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {

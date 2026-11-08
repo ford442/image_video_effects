@@ -16,12 +16,13 @@
   ],
   "supportsDepth": false,
   "supportsDof": false,
-  "updated": false,
+  "updated": true,
   "id": "gen-stellar-mycelium-overdrive",
   "url": "shaders/gen-stellar-mycelium-overdrive.wgsl",
   "features": [
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {

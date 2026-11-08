@@ -3,9 +3,10 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: myelin beading (sheath segments with dark node-of-Ranvier gaps banded along the lattice); refractory tail (teal after-glow trailing each runner, then a dim hyperpolarised gap); kept: action-potential runners along Voronoi edges; synapse flash at nodes
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: synaptic bouton halo — soft inverse-square scatter integrated along the march from the node distance map() already returns (§12.2F); helical nerve-bundle twist of the lattice along the flight axis (§12.2E additive domain twist); myelin beading (sheath segments with dark node-of-Ranvier gaps banded along the lattice); refractory tail (teal after-glow trailing each runner, then a dim hyperpolarised gap); kept: action-potential runners along Voronoi edges; synapse flash at nodes
 //  A packing: ACES display RGBA (C unused)
+//  HEAD fixes: camera flew along an integer-lattice line through the node spheres (inside a sphere ~30% of the time -> flat frame); y-down uv.y (upside-down); mouse pull-zone y sign mirrored vs world y
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -98,11 +99,20 @@ fn map(p: vec3<f32>, audio: f32) -> vec3<f32> {
 
     var pos = p;
 
-    let mouse_pos = (u.zoom_config.yz - 0.5) * 2.0;
+    // world y is up, mouse y runs down
+    let mouse_pos = vec2<f32>(u.zoom_config.y - 0.5, 0.5 - u.zoom_config.z) * 2.0;
     let m_dist = length(pos.xy - mouse_pos * 5.0);
     let pull = smoothstep(3.0, 0.0, m_dist);
     pos.x -= mouse_pos.x * pull * 2.0;
     pos.y -= mouse_pos.y * pull * 2.0;
+
+    // ── Idea 2: helical nerve-bundle twist (§12.2E additive domain twist).
+    // The lattice spirals about the flight axis before the existing map, so the
+    // fibres corkscrew toward the viewer instead of running dead straight.
+    let twistA = p.z * 0.11;
+    let twistC = cos(twistA);
+    let twistS = sin(twistA);
+    pos = vec3<f32>(twistC * pos.x - twistS * pos.y, twistS * pos.x + twistC * pos.y, pos.z);
 
     pos *= density;
 
@@ -139,7 +149,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     let fragCoord = vec2<f32>(f32(id.x) + 0.5, f32(id.y) + 0.5);
-    let uv = (fragCoord - 0.5 * resolution) / resolution.y;
+    var uv = (fragCoord - 0.5 * resolution) / resolution.y;
+    uv.y = -uv.y; // pixel y runs down; world up is +y
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -148,7 +159,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audio = (bass * 0.55 + mids * 0.35 + treble * 0.10) * audioReact;
 
     let time = u.config.x * u.zoom_params.y;
-    var ro = vec3<f32>(0.0, 0.0, -time * 2.0);
+    // Nodes sit on the integer lattice of p*density, so a camera on x=y=0 flies
+    // straight through their centres. Offset off every lattice line.
+    let lat = max(u.zoom_params.x, 0.1);
+    var ro = vec3<f32>(0.37 / lat, 0.29 / lat, -time * 2.0);
     var ta = vec3<f32>(0.0, 0.0, ro.z - 1.0);
 
     let mouse = (u.zoom_config.yz - 0.5) * 2.0;
@@ -163,27 +177,37 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var dO = 0.0;
     var dS = 0.0;
     var accum = 0.0;
+    var halo = 0.0;
     var p = ro;
 
+    // The flight path must cross cell walls, so clip geometry nearer than the
+    // wall spacing allows: HEAD sat inside a wall (flat frame) whenever it did.
+    let nearClip = 0.22 / lat;
     for (var i = 0; i < MAX_STEPS; i++) {
         p = ro + rd * dO;
         let map_res = map(p, audio);
         dS = map_res.x;
         accum += smoothstep(0.1, 0.0, map_res.y) * 0.05;
+        // ── Idea 1: synaptic bouton halo (§12.2F soft inverse-square). map_res.z is
+        // the distance to the nearest node in lattice units; integrate
+        // r0²/(z²+r0²) weighted by the step so the halo is step-size independent.
+        let nodeZ = map_res.z / lat;
+        let boutonR = 0.3 / lat;
+        halo += min(dS, 0.5) * (boutonR * boutonR / (nodeZ * nodeZ + boutonR * boutonR)) * smoothstep(nearClip, nearClip * 2.0, dO);
 
-        if (dS < SURF_DIST) {
+        if (dS < SURF_DIST && dO > nearClip) {
             break;
         }
         if (dO > MAX_DIST) {
             break;
         }
-        dO += dS;
+        dO += select(dS, max(abs(dS), 0.03), dO < nearClip);
     }
 
     var col = vec3<f32>(0.0);
     var runner = 0.0;
     var synapse = 0.0;
-    let hit = dO < MAX_DIST;
+    let hit = dO < MAX_DIST && dS < SURF_DIST * 1.5; // step-exhausted rays are misses, not hits
 
     if (hit) {
         let n = get_normal(p, audio);
@@ -225,6 +249,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     col += vec3<f32>(0.1, 0.4, 0.9) * accum * u.zoom_params.z * 0.5;
+    col += vec3<f32>(1.0, 0.8, 0.45) * halo * u.zoom_params.z * 0.12 * (1.0 + bass * audioReact * 0.5);
 
     let display = acesToneMap(col);
     let alpha = clamp(
