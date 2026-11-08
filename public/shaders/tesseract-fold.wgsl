@@ -4,6 +4,9 @@
 //  Features: mouse-driven, upgraded-rgba, audio-reactive, depth-aware
 //  Upgrade: distance-based LOD, precomputed 4D/fold constants,
 //           early-exit culling, branchless safe divisors
+//  Upgraded: 2026-11-08
+//  Ideas: true 4D XW/YW double rotation with perspective divide; crease-trap lead came (orbit trap, §12.2E); fold-count as glass thickness (§12.2E)
+//  A packing: display RGBA (post-ACES, gamma-encoded); no history is read
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -117,6 +120,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (d0 * invScale > 2.6 && p4 < 0.02 && p3 < 0.02 && held < 0.5 && clickShell < 0.01) {
     let base = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
     textureStore(writeTexture, pixel, vec4<f32>(base.rgb, base.a * (1.0 - p4)));
+    textureStore(dataTextureA, pixel, vec4<f32>(base.rgb, base.a * (1.0 - p4)));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
     return;
   }
@@ -130,6 +134,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let planeShear = held * (mouse - 0.5) * vec2<f32>(aspect, 1.0);
   p += vec2<f32>(planeShear.x * p.y, planeShear.y * p.x) * 0.7;
   p += normalize(p + vec2<f32>(0.0001)) * clickShell * 0.08;
+
+  // ── Idea 1: true 4-D double rotation + perspective divide ──────────────
+  // `R` above is two rotations about the SAME axis (a single 2-D spin). Lift p to
+  // (p.x, p.y, 0, 0), rotate in the XW then YW planes (bounded rocking so the plane never goes
+  // edge-on), and divide by (D - w'): cells swung toward the viewer in w swell, far ones shrink,
+  // the way a hypercube's cell-in-cell structure breathes. Amplitude rides 4D Rotation Speed.
+  let tilt = p1 * (1.0 + bass * 0.3);
+  let aXW = 0.8 * tilt * sin(time * 0.6);
+  let aYW = 0.65 * tilt * sin(time * 0.43 + 1.3);
+  let cXW = cos(aXW); let sXW = sin(aXW);
+  let cYW = cos(aYW); let sYW = sin(aYW);
+  let wA = p.x * sXW;                              // w after the XW plane
+  let wB = p.y * sYW + wA * cYW;                   // w after the YW plane
+  let pTilt = vec2<f32>(p.x * cXW, p.y * cYW - wA * sYW);
+  // sampling coordinate = screen coordinate / magnification, magnification = 1/(1 - 0.9 w')
+  p = pTilt * clamp(1.0 - 0.9 * wB, 0.45, 1.8);
 
   // Distance-based LOD: fewer noise octaves far from fold center
   let lod = i32(clamp(5.0 - d0 * invScale * 2.0, 1.0, 5.0));
@@ -150,7 +170,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Iterated branchless fold with precomputed base angle
   let folds = 4.0 + p1 * 6.0;
   let baseAngle = TAU / select(1.0, folds, folds > 1.0);
+  // ── Idea 2 / 3 accumulators (read inside the existing fold loop) ──────
+  var creaseTrap = 1000.0;   // orbit trap: closest approach to a mirror crease
+  var foldCount = 0.0;       // reflections this pixel went through
   for (var i: i32 = 0; i < 3; i = i + 1) {
+    creaseTrap = min(creaseTrap, min(abs(p.x), abs(p.y)));
+    foldCount += f32(p.x < 0.0) + f32(p.y < 0.0);
     p = abs(p);
     p = p - vec2<f32>(0.12 + p3 * 0.12);
     let ang = baseAngle * (1.0 + 0.2 * sin(time + f32(i) * 1.7));
@@ -188,6 +213,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += glass * (innerWave * 0.14 + clickShell * 0.32);
   color *= 1.0 - lead * 0.42;
 
+  // ── Idea 2: crease-trap lead came (orbit trap to the fold axis, §12.2E) ─
+  // The kaleidoscope's own mirror seams get a lead came with a bevel glint on the lit side, so
+  // the cames follow where the glass was really folded, not only the fixed square grid.
+  let cameW = 0.006 + 0.010 * p3;
+  let came = 1.0 - smoothstep(cameW * 0.6, cameW * 1.4, creaseTrap);
+  let bevel = smoothstep(cameW * 1.2, cameW * 2.0, creaseTrap) * (1.0 - smoothstep(cameW * 2.0, cameW * 3.4, creaseTrap));
+  color *= 1.0 - came * 0.5;
+  color += glass * bevel * 0.10;
+
+  // ── Idea 3: fold count as glass thickness (§12.2E) ─────────────────────
+  // Panes reflected more often read as thicker glass: Beer-Lambert absorption toward the
+  // pane's own colour, with a touch of density darkening.
+  let thickness = foldCount * (1.0 / 6.0);
+  let absorb = 1.0 - exp(-foldCount * (0.22 + p4 * 0.2));
+  color = mix(color, color * glass * 1.7, absorb * 0.5) * exp(-foldCount * 0.04);
+
   // Atmospheric vignette around the mouse
   let vignette = exp(-radius * radius * (2.5 + p3 * 2.0));
   color = mix(color * 0.15, color, vignette);
@@ -205,8 +246,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Semantic alpha: bloom weight modulated by opacity, edge, and depth
   let lum = luma(color);
   let bloom = pow(max(0.0, lum - 0.5), 2.0) * 3.0 * (1.0 + treble);
-  let alpha = mix(p4 * (0.4 + bloom), 1.0, edgeGlow * 0.45);
-  textureStore(writeTexture, pixel, vec4<f32>(color, clamp(alpha, 0.0, 1.0)));
+  let alpha = clamp(mix(p4 * (0.4 + bloom) * (0.8 + 0.4 * thickness), 1.0, max(edgeGlow, came) * 0.45), 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
 
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

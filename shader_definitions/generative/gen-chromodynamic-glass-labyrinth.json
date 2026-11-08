@@ -4,7 +4,7 @@
   "type": "generative",
   "category": "generative",
   "url": "shaders/gen-chromodynamic-glass-labyrinth.wgsl",
-  "description": "A hyper-reflective, endlessly unfolding non-Euclidean maze of liquid glass that refracts a shifting spectrum of chromodynamic light.",
+  "description": "A hyper-reflective, endlessly unfolding non-Euclidean maze of liquid glass that refracts a shifting spectrum of chromodynamic light with real dispersion and Fresnel mirrors.",
   "workgroup_size": [
     16,
     16,

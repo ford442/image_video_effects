@@ -1,9 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Parallax Layers RGBA
 //  Category: artistic
-//  Features: rgba, parallax, depth-layers, alpha-occlusion, dof, atmospheric
-//  Upgraded: 2026-06-28
+//  Features: rgba, parallax, depth-layers, alpha-occlusion, dof, atmospheric, audio-reactive, mouse-driven
+//  Upgraded: 2026-06-28, 2026-11-08
 //  By: Codex
+//  Ideas: slab occlusion with disocclusion fill (front-to-back over); seamless dolly crossfade (two zoom phases); rack-focus slice defocus (focus plane under the cursor); Beer-Lambert aerial perspective (§12.2F)
+//  A packing: display RGBA (A = writeTexture colour + volumetric alpha; C is not read)
+//  Rescue: the layer stack never reached the output at HEAD (baseColor unused); chroma was bass-as-uv-offset; edge glow polarity was inverted.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -113,137 +116,170 @@ fn calculateVolumetricAlpha(layerDepth: f32, fogDensity: f32, viewDotNormal: f32
     return clamp(alpha, 0.0, 1.0);
 }
 
-@compute @workgroup_size(16, 16, 1) 
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-    var resolution: vec2<f32>;
-    var uv: vec2<f32>;
-    var mousePos: vec2<f32>;
-    var clickIntensity: f32;
-    var accumulatedColor: vec3<f32> = vec3(0.0);
-    var accumulatedDepth: f32 = 0.0;
-    var totalWeight: f32 = 0.0;
-    var i: i32 = 0;
-    var chroma: f32;
+// Idea 3 helper: one slice sample with a depth-scaled R/B split (HEAD's chromatic
+// split, now applied to the slice itself) and a 3-tap rotated defocus gather.
+// coc is a uv-space radius (0 = pinhole sharp). Colour only; depth is read separately.
+fn sliceColor(uv: vec2<f32>, coc: f32, off: vec2<f32>, rot: f32) -> vec3<f32> {
+    let c0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let r = textureSampleLevel(readTexture, u_sampler, ping_pong_v2_(uv + off), 0.0).r;
+    let b = textureSampleLevel(readTexture, u_sampler, ping_pong_v2_(uv - off), 0.0).b;
+    let split = vec3<f32>(r, c0.g, b);
+    // 3 taps 120 deg apart, rotated per slice so the slices do not stack the same footprint
+    let asp = vec2<f32>(u.config.w / u.config.z, 1.0);
+    let d0 = vec2<f32>(cos(rot), sin(rot)) * coc * asp;
+    let d1 = vec2<f32>(cos(rot + 2.0943951), sin(rot + 2.0943951)) * coc * asp;
+    let d2 = vec2<f32>(cos(rot + 4.1887902), sin(rot + 4.1887902)) * coc * asp;
+    let t0 = textureSampleLevel(readTexture, u_sampler, ping_pong_v2_(uv + d0), 0.0).rgb;
+    let t1 = textureSampleLevel(readTexture, u_sampler, ping_pong_v2_(uv + d1), 0.0).rgb;
+    let t2 = textureSampleLevel(readTexture, u_sampler, ping_pong_v2_(uv + d2), 0.0).rgb;
+    let blur = (split + t0 + t1 + t2) * 0.25;
+    // blend toward the gathered disc as the circle of confusion opens (~1.5 px = fully soft)
+    let k = clamp(coc * u.config.z * 0.6, 0.0, 1.0);
+    return mix(split, blur, k);
+}
 
-    let _e4 = u.config.z;
-    let _e8 = u.config.w;
-    resolution = vec2<f32>(_e4, _e8);
+@compute @workgroup_size(16, 16, 1)
+fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+    let resolution = vec2<f32>(u.config.z, u.config.w);
     if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) {
         return;
     }
-    let _e13 = resolution;
-    uv = (vec2<f32>(gid.xy) / _e13);
+    let uv = vec2<f32>(gid.xy) / resolution;
     let time = u.config.x;
     let zoom_time = u.zoom_config.x;
-    let _e26 = u.zoom_config;
-    let zoom_center = _e26.yz;
-    let _e31 = u.zoom_config.y;
-    let _e33 = resolution.x;
-    let _e38 = u.zoom_config.z;
-    let _e40 = resolution.y;
-    mousePos = vec2<f32>((_e31 / _e33), (_e38 / _e40));
-    if (arrayLength((&extraBuffer)) > 10u) {
-        let _e52 = extraBuffer[10];
-        clickIntensity = _e52;
-    } else {
-        clickIntensity = 0.0;
-    }
-    loop {
-        let _e64 = i;
-        if (_e64 < 5) {
-        } else {
-            break;
-        }
-        {
-            let _e66 = i;
-            let layerDepth_1 = (f32(_e66) / f32((5 - 1)));
-            let _e75 = u.zoom_params.x;
-            let _e79 = u.zoom_params.y;
-            let layerSpeed = mix(_e75, _e79, layerDepth_1);
-            let dof = u.zoom_params.z; // Consume dead slider
-            let layerZoom = (1.0 + (fract((zoom_time * layerSpeed)) * 4.0));
-            let _e87 = uv;
-            let toCenter = (_e87 - zoom_center);
-            let angle = atan2(toCenter.y, toCenter.x);
-            let dist = length(toCenter);
-            let _e93 = clickIntensity;
-            let vortexStrength = ((_e93 * 0.3) / (dist + 0.1));
-            let spinAngle = ((vortexStrength * layerDepth_1) * (1.0 - layerDepth_1));
-            let rotatedUV = (vec2<f32>(((cos(spinAngle) * toCenter.x) - (sin(spinAngle) * toCenter.y)), ((sin(spinAngle) * toCenter.x) + (cos(spinAngle) * toCenter.y))) + zoom_center);
-            let _e126 = noise(((rotatedUV * 6.0) + vec2<f32>((time * 0.15), 0.0)));
-            let _e132 = noise(((rotatedUV * 6.0) + vec2<f32>(0.0, (time * 0.15))));
-            let flowUV = (rotatedUV + ((vec2<f32>(_e126, _e132) * 0.015) * layerDepth_1));
-            let transformed = (((flowUV - zoom_center) / vec2(layerZoom)) + zoom_center);
-            let _e142 = ping_pong_v2_(transformed);
-            let _e146 = textureSampleLevel(readTexture, u_sampler, _e142, 0.0);
-            let sampleColor = _e146.xyz;
-            let _e151 = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0);
-            let sampleDepth = _e151.x;
-            let density = exp((-(layerDepth_1) * 1.5)) * (1.0 + u.zoom_params.z * 0.0);
-            let weight = (density * (1.0 + (sampleDepth * 0.5)));
-            let _e162 = accumulatedColor;
-            accumulatedColor = (_e162 + (sampleColor * weight));
-            let _e165 = accumulatedDepth;
-            accumulatedDepth = (_e165 + (sampleDepth * weight));
-            let _e168 = totalWeight;
-            totalWeight = (_e168 + weight);
-        }
-        continuing {
-            let _e170 = i;
-            i = (_e170 + 1);
-        }
-    }
-    let _e173 = accumulatedColor;
-    let _e174 = totalWeight;
-    let baseColor = (_e173 / vec3(max(_e174, 0.0001)));
-    let _e179 = accumulatedDepth;
-    let _e180 = totalWeight;
-    let baseDepth = (_e179 / max(_e180, 0.0001));
-    if (arrayLength((&extraBuffer)) > 0u) {
-        let _e192 = extraBuffer[0];
-        chroma = _e192;
-    } else {
-        chroma = 0.02;
-    }
-    let _e196 = uv;
-    let _e197 = chroma;
-    let _e203 = textureSampleLevel(readTexture, u_sampler, (_e196 + vec2<f32>((_e197 * baseDepth), 0.0)), 0.0);
-    let r = _e203.x;
-    let _e207 = uv;
-    let _e209 = textureSampleLevel(readTexture, u_sampler, _e207, 0.0);
-    let g = _e209.y;
-    let _e213 = uv;
-    let _e214 = chroma;
-    let _e220 = textureSampleLevel(readTexture, u_sampler, (_e213 - vec2<f32>((_e214 * baseDepth), 0.0)), 0.0);
-    let b = _e220.z;
-    let chromaticColor = vec3<f32>(r, g, b);
-    let _e225 = resolution.x;
-    let _e229 = resolution.y;
-    let ps = vec2<f32>((1.0 / _e225), (1.0 / _e229));
-    let _e234 = uv;
-    let _e240 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (_e234 + vec2<f32>(ps.x, 0.0)), 0.0);
-    let depthX = _e240.x;
-    let _e244 = uv;
-    let _e250 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (_e244 + vec2<f32>(0.0, ps.y)), 0.0);
-    let depthY = _e250.x;
-    let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
-    let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
-    let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
+    let zoom_center = u.zoom_config.yz;
+    let mouseDown = u.zoom_config.w;
 
-    // Evaluate Depth of Field parameter
-    let dof_eval = u.zoom_params.z;
-    let fogDensity_1 = u.zoom_params.w;
-    let _e273 = uv;
-    let _e274 = reconstruct_normal(_e273, baseDepth);
-    let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-    let viewDotNormal_1 = dot(viewDir, _e274);
-    let _e281 = totalWeight;
-    let normalizedWeight = (_e281 / f32(5));
-    let _e284 = calculateVolumetricAlpha(0.5, fogDensity_1, viewDotNormal_1, normalizedWeight);
-    let fog = exp(((-(baseDepth) * fogDensity_1) * 3.0));
+    // Audio from plasmaBuffer[0] (extraBuffer[0] is bass at 0..1 — not a uv offset).
+    let bass = plasmaBuffer[0].x;
+
+    // clickIntensity: HEAD fed FFT bin 5 (extraBuffer[10]) into the vortex; keep that drive and let
+    // a held pointer spin the slices too (the name always meant click).
+    var fftSpin = 0.0;
+    if (arrayLength(&extraBuffer) > 10u) {
+        fftSpin = extraBuffer[10];
+    }
+    let clickIntensity = max(fftSpin, 0.6 * mouseDown);
+
+    // Saved slider roles (unchanged): x Parallax = near speed, y Layer Density = far speed,
+    // z Depth of Field = aperture (was dead), w Fog = density.
+    let dofAmt = u.zoom_params.z;
+    let fogDensity = u.zoom_params.w;
+
+    // Idea 3: the focal plane sits at the depth under the cursor (zoom_center, idle 0.5,0.5).
+    let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler,
+                                        clamp(zoom_center, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).x;
+
+    // Small, bass-pulsed fringe (HEAD: raw bass 0..1 as a uv offset). Depth-scaled per slice below.
+    let chroma = 0.004 + bass * 0.012;
+
+    var accumulatedColor = vec3<f32>(0.0);
+    var accumulatedDepth = 0.0;
+    var accumulatedGrad = 0.0;
+    var transmittance = 1.0; // Idea 1: light not yet blocked by nearer slices
+    let ps = 1.0 / resolution;
+
+    for (var i: i32 = 0; i < 5; i = i + 1) {
+        let layerDepth_1 = f32(i) / 4.0;
+        let layerSpeed = mix(u.zoom_params.x, u.zoom_params.y, layerDepth_1);
+
+        // (HEAD) vortex spin + noise flow jitter, per slice
+        let toCenter = uv - zoom_center;
+        let dist = length(toCenter);
+        let vortexStrength = (clickIntensity * 0.3) / (dist + 0.1);
+        let spinAngle = vortexStrength * layerDepth_1 * (1.0 - layerDepth_1);
+        let rotatedUV = vec2<f32>(cos(spinAngle) * toCenter.x - sin(spinAngle) * toCenter.y,
+                                  sin(spinAngle) * toCenter.x + cos(spinAngle) * toCenter.y) + zoom_center;
+        let n1 = noise(rotatedUV * 6.0 + vec2<f32>(time * 0.15, 0.0));
+        let n2 = noise(rotatedUV * 6.0 + vec2<f32>(0.0, time * 0.15));
+        let flowUV = rotatedUV + vec2<f32>(n1, n2) * 0.015 * layerDepth_1;
+
+        // ── Idea 2: seamless dolly crossfade ───────────────────────────
+        // HEAD zoomed each slice 1x -> 5x with fract() and snapped back to 1x (a visible pop per
+        // slice per period). Two phases half a period apart, weighted sin^2 / cos^2 (they sum to
+        // exactly 1), are each at weight 0 at their own reset, so the loop has no seam.
+        let ph = zoom_time * layerSpeed;
+        let f0 = fract(ph);
+        let f1 = fract(ph + 0.5);
+        let s0 = sin(3.14159265 * f0);
+        let w0 = s0 * s0;
+        let w1 = 1.0 - w0;
+        let uvA = ping_pong_v2_((flowUV - zoom_center) / vec2<f32>(1.0 + f0 * 4.0) + zoom_center);
+        let uvB = ping_pong_v2_((flowUV - zoom_center) / vec2<f32>(1.0 + f1 * 4.0) + zoom_center);
+
+        // ── Idea 3: rack-focus slice defocus ───────────────────────────
+        // Circle of confusion grows with the slice's distance from the focal plane; the Depth of
+        // Field slider is the aperture. dof = 0 -> pinhole sharp (every slice), as before.
+        let coc = dofAmt * abs(layerDepth_1 - focusDepth) * 0.05;
+        let off = vec2<f32>(chroma * (0.25 + 0.75 * layerDepth_1), 0.0);
+        let rot = f32(i) * 2.39996323;
+
+        // Phases whose weight is ~0 are skipped (the condition is uniform across the dispatch).
+        var sliceCol = vec3<f32>(0.0);
+        var sampleDepth = 0.0;
+        var wSum = 0.0;
+        if (w0 > 0.02) {
+            sliceCol += sliceColor(uvA, coc, off, rot) * w0;
+            sampleDepth += textureSampleLevel(readDepthTexture, non_filtering_sampler, uvA, 0.0).x * w0;
+            wSum += w0;
+        }
+        if (w1 > 0.02) {
+            sliceCol += sliceColor(uvB, coc, off, rot + 1.0) * w1;
+            sampleDepth += textureSampleLevel(readDepthTexture, non_filtering_sampler, uvB, 0.0).x * w1;
+            wSum += w1;
+        }
+        sliceCol = sliceCol / max(wSum, 0.0001);
+        sampleDepth = sampleDepth / max(wSum, 0.0001);
+
+        // (HEAD) depth-gradient edge, now measured on the slice's OWN zoomed sample (HEAD read
+        // it at the unzoomed uv, which would draw rings at the original silhouettes on top of
+        // the zoomed picture). One screen pixel in zoomed space = ps / zoom in source space.
+        let useA = w0 >= 0.5;
+        let uvD = select(uvB, uvA, useA);
+        let zf = select(1.0 + f1 * 4.0, 1.0 + f0 * 4.0, useA);
+        let gC = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvD, 0.0).x;
+        let gX = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvD + vec2<f32>(ps.x / zf, 0.0), 0.0).x;
+        let gY = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvD + vec2<f32>(0.0, ps.y / zf), 0.0).x;
+        let sliceGrad = length(vec2<f32>(gX - gC, gY - gC));
+
+        // ── Idea 1: slab occlusion with disocclusion fill ──────────────
+        // A slice covers a pixel strongly where the sampled scene depth belongs to its plane and
+        // weakly elsewhere (floor 0.35 so a flat or missing depth map still shows every slice).
+        // Front-to-back: nearer slices occlude, and where a nearer slice's sample belongs to a
+        // different depth the farther slice shows through (the disocclusion fill).
+        let density = exp(-layerDepth_1 * 1.5);
+        let slab = 1.0 - smoothstep(0.0, 0.25, abs(sampleDepth - layerDepth_1));
+        let cover = clamp(density * (1.0 + sampleDepth * 0.5) * mix(0.35, 1.0, slab), 0.0, 0.95);
+        let wgt = transmittance * cover;
+        accumulatedColor += sliceCol * wgt;
+        accumulatedDepth += sampleDepth * wgt;
+        accumulatedGrad += sliceGrad * wgt;
+        transmittance = transmittance * (1.0 - cover);
+    }
+    let coverage = 1.0 - transmittance;
+    let baseColor = accumulatedColor / max(coverage, 0.0001);
+    let baseDepth = accumulatedDepth / max(coverage, 0.0001);
+
+    // (HEAD) depth-gradient edge glow — polarity fixed: HEAD's exp(-k*grad) was brightest on FLAT
+    // depth; the glow belongs on the discontinuity (gradient gathered per slice above).
+    let depthGrad = accumulatedGrad / max(coverage, 0.0001);
+    let edgeGlow = (1.0 - exp(-depthGrad * 30.0)) * (0.15 + 0.35 * baseDepth);
+    let finalColor = baseColor + vec3<f32>(edgeGlow, edgeGlow * 0.8, edgeGlow * 0.6);
+
+    // ── Idea 4: Beer-Lambert aerial perspective (§12.2F) ────────────────
+    // T_c = exp(-sigma_c * d). The green channel keeps HEAD's scalar exactly (sigma = fog*3);
+    // red is eaten faster and blue slower, so distance drifts into the existing navy haze.
+    let sigma = fogDensity * 3.0 * vec3<f32>(1.25, 1.0, 0.75);
+    let trans = exp(-baseDepth * sigma);
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
-    let outColor = mix(finalColor, fogColor, (1.0 - fog));
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, _e284));
-    textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
-    return;
+    let outColor = max(finalColor * trans + fogColor * (vec3<f32>(1.0) - trans), vec3<f32>(0.0));
+
+    let viewDotNormal_1 = dot(vec3<f32>(0.0, 0.0, 1.0), reconstruct_normal(uv, baseDepth));
+    // Alpha is semantic: slice coverage + atmosphere (HEAD passed a constant 0.5 as the depth).
+    let alpha = calculateVolumetricAlpha(baseDepth, fogDensity, viewDotNormal_1, coverage);
+
+    let px = vec2<i32>(gid.xy);
+    textureStore(writeTexture, px, vec4<f32>(outColor, alpha));
+    textureStore(writeDepthTexture, px, vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, px, vec4<f32>(outColor, alpha));
 }

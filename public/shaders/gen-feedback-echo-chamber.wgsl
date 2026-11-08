@@ -3,9 +3,10 @@
 //  Category: feedback/temporal
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-11
-//  Ideas: harmonic echo ladder at integer 2x spacing taps; standing-wave nodal interference from echo-count phase field; early wall reflections; comb-filter notches
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-11, 2026-11-08
+//  Ideas: harmonic echo ladder at integer 2x spacing taps; standing-wave nodal interference from echo-count phase field; early wall reflections; comb-filter notches; frequency-dependent echo decay (highs die first, red carries the tail); second-order image-source corner reflections
+//  Rescues 2026-11-08 (not ideas): ACES-on-ACES feedback compounding (A now raw) + double decay removed; bass envelope moved from dead extraBuffer[133] to A.a; treble sparkle was a uniform veil, now sparse
+//  A packing: A.rgb = raw pre-ACES accumulated trail (convex mix, unity gain), A.a = smoothed bass envelope; ACES only on writeTexture (was ACES display RGBA)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -55,6 +56,9 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// ── Idea 5: per-echo absorption (R, G, B) — highs die first in a real room, so the n-th echo keeps exp(-n*k) per channel (k = 0 / 0.5 / 1.2 for R / G / B).
+const ECHO_ABSORB: vec3<f32> = vec3<f32>(0.0, 0.5, 1.2);
+
 fn luma(rgb: vec3<f32>) -> f32 {
     return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
@@ -103,9 +107,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bassRaw = audio.x;
     let mids = audio.y;
     let treble = audio.z;
-    let hasEnvelope = arrayLength(&extraBuffer) >= 134u;
-    var prevEnv = bassRaw;
-    if (hasEnvelope) { prevEnv = extraBuffer[133]; }
+    // RESCUE 2026-11-08: the envelope used to live in extraBuffer[133], which the app re-zeroes every frame (so bass was
+    // always 0.8*raw). Every pixel now replays the same recurrence from its own C.a.
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    let prevEnv = clamp(prev.a, 0.0, 2.0);
     let bass = bass_env(prevEnv, bassRaw, 0.8, 0.15);
 
     let echoCount = i32(round(mix(2.0, 8.0, clamp(u.zoom_params.x, 0.0, 1.0))));
@@ -141,16 +146,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         sin(time * 0.5 * (1.0 + mids * 0.3) + warpedUV.y * 6.0) * echoSpacing * (1.0 + bass * 0.3),
         cos(time * 0.35 * (1.0 + mids * 0.3) + warpedUV.x * 6.0) * echoSpacing * (1.0 + bass * 0.2)
     );
-    var echoAccum = vec4<f32>(0.0);
-    var totalWeight = 0.0;
+    var echoAccum = vec3<f32>(0.0);
+    var totalWeight = vec3<f32>(0.0);
     var echoWeight = 1.0;
     for (var echoIndex = 1; echoIndex <= 8; echoIndex++) {
         if (echoIndex > echoCount) { break; }
         echoWeight *= decayRate;
         let fi = f32(echoIndex);
         let echoUV = fract(warpedUV + wobble * fi + vec2<f32>(driftB - 0.5, driftA - 0.5) * echoSpacing * fi);
-        echoAccum += loadHistoryExact(echoUV) * echoWeight;
-        totalWeight += echoWeight;
+        // ── Idea 5: frequency-dependent decay — per-channel weight and per-channel normalisation (energy-neutral):
+        // blue is carried by the near echoes only, red by the whole tail, so trails go warm and blue fringes the lead.
+        let echoW3 = echoWeight * exp(-fi * ECHO_ABSORB);
+        echoAccum += loadHistoryExact(echoUV).rgb * echoW3;
+        totalWeight += echoW3;
     }
 
     // Harmonic echo ladder at integer 2x spacing taps (musical delay)
@@ -160,10 +168,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ladderSpacing = echoSpacing * hi * 2.0;
         let ladderUV = fract(warpedUV + wobble * hi * 2.0 + vec2<f32>(ladderSpacing, ladderSpacing * 0.5));
         let hw = decayRate * pow(0.62, hi);
-        echoAccum += loadHistoryExact(ladderUV) * hw;
+        echoAccum += loadHistoryExact(ladderUV).rgb * hw;
         harmonicWeight += hw;
     }
-    totalWeight += harmonicWeight;
+    totalWeight += vec3<f32>(harmonicWeight);
 
     // Early wall reflections — one mirror tap off each frame edge, dimmer than the delay ladder.
     let wallGain = decayRate * 0.28 * (0.7 + bass * 0.4);
@@ -171,13 +179,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mirrorR = fract(vec2<f32>(2.0 - warpedUV.x, warpedUV.y) - vec2<f32>(echoSpacing, 0.0) + wobble);
     let mirrorT = fract(vec2<f32>(warpedUV.x, -warpedUV.y) + vec2<f32>(0.0, echoSpacing) + wobble);
     let mirrorB = fract(vec2<f32>(warpedUV.x, 2.0 - warpedUV.y) - vec2<f32>(0.0, echoSpacing) + wobble);
-    echoAccum += loadHistoryExact(mirrorL) * wallGain;
-    echoAccum += loadHistoryExact(mirrorR) * wallGain;
-    echoAccum += loadHistoryExact(mirrorT) * wallGain * 0.85;
-    echoAccum += loadHistoryExact(mirrorB) * wallGain * 0.85;
-    totalWeight += wallGain * 3.7;
+    echoAccum += loadHistoryExact(mirrorL).rgb * wallGain;
+    echoAccum += loadHistoryExact(mirrorR).rgb * wallGain;
+    echoAccum += loadHistoryExact(mirrorT).rgb * wallGain * 0.85;
+    echoAccum += loadHistoryExact(mirrorB).rgb * wallGain * 0.85;
+    totalWeight += vec3<f32>(wallGain * 3.7);
 
-    let echo = echoAccum / max(totalWeight, 0.0001);
+    // ── Idea 6: second-order image sources — the corner images (both axes mirrored), one more bounce off the walls
+    // above. Each corner image is seen off two walls at once, so it is weighted 2x one (deliberately quiet) wall tap.
+    let cornerGain = wallGain * 2.0;
+    let sp = vec2<f32>(echoSpacing);
+    let cornerLT = fract(vec2<f32>(-warpedUV.x, -warpedUV.y) + sp + wobble);
+    let cornerRT = fract(vec2<f32>(2.0 - warpedUV.x, -warpedUV.y) + vec2<f32>(-echoSpacing, echoSpacing) + wobble);
+    let cornerLB = fract(vec2<f32>(-warpedUV.x, 2.0 - warpedUV.y) + vec2<f32>(echoSpacing, -echoSpacing) + wobble);
+    let cornerRB = fract(vec2<f32>(2.0 - warpedUV.x, 2.0 - warpedUV.y) - sp + wobble);
+    echoAccum += (loadHistoryExact(cornerLT).rgb + loadHistoryExact(cornerRT).rgb
+                + loadHistoryExact(cornerLB).rgb + loadHistoryExact(cornerRB).rgb) * cornerGain;
+    totalWeight += vec3<f32>(cornerGain * 4.0);
+
+    let echo = echoAccum / max(totalWeight, vec3<f32>(0.0001));
 
     // Psychedelic generative color (reuses cached drift noise)
     let paletteT = time * 0.08 + driftA * 0.7 + driftB * 0.3 + bass * 0.5 + colorShift;
@@ -190,8 +210,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Depth-aware blend: effect breathes in background, foreground stays crisp
     let fog = 1.0 - exp(-depth * (2.0 + decayRate * 3.0));
-    var blended = mix(echo.rgb, genColor, 0.25 + spawnMask * 0.4 + bass * 0.15);
-    blended = mix(blended, echo.rgb * (1.0 - nodalMask * 0.35), nodalMask * 0.28);
+    var blended = mix(echo, genColor, 0.25 + spawnMask * 0.4 + bass * 0.15);
+    blended = mix(blended, echo * (1.0 - nodalMask * 0.35), nodalMask * 0.28);
     var color = mix(blended, video.rgb, 0.15 + fog * 0.35);
     color += genColor * nodalMask * 0.1 * (1.0 + bass * 0.25);
 
@@ -217,13 +237,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // Treble sparkle
-    color += hash21(uv01 * 200.0 + time * 3.0) * treble * 1.5;
+    // RESCUE 2026-11-08: was `hash * treble * 1.5` on every pixel — a uniform white veil that whitened the whole frame as
+    // treble rose (meanL 0.49 -> 0.86 from silence to loud). Now sparse points, like the name says.
+    color += smoothstep(0.93, 1.0, hash21(uv01 * 200.0 + time * 3.0)) * treble * 3.0;
 
     // Temporal accumulation with stable branchless feedback
-    let prev = textureLoad(dataTextureC, pixel, 0);
-    let trailFade = decayRate;
+    // RESCUE 2026-11-08: A is now the raw trail. HEAD stored the ACES result, re-ACES'd it every frame and also multiplied
+    // by decayRate on top of the mix (steady-state gain 0.13-0.28 of the input, pumped back up by the compounding) —
+    // a flat grey wash. Plain convex mix: unity gain, stable because `color` is itself a convex blend of echo/palette/video.
     let accMix = 0.08 + (1.0 - decayRate) * 0.2;
-    let accColor = mix(prev.rgb, color, accMix) * trailFade;
+    let accColor = clamp(mix(prev.rgb, color, accMix), vec3<f32>(0.0), vec3<f32>(8.0));
 
     // Chromatic aberration + tone map
     let delta = uv01 - vec2<f32>(0.5);
@@ -231,18 +254,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dir = delta * (1.0 / sqrt(lenSq));
     let caStr = 0.0025 * (1.0 + bass) + depth * 0.0015;
     let shift = dir * caStr;
-    color = vec3<f32>(accColor.r + shift.x, accColor.g, accColor.b - shift.y * 0.5);
+    color = max(vec3<f32>(accColor.r + shift.x, accColor.g, accColor.b - shift.y * 0.5), vec3<f32>(0.0));
     color = acesToneMap(color * (1.1 + bass * 0.25));
 
     // Semantic alpha: interaction intensity + trail density
     let alpha = clamp(luma(color) + spawnMask * 0.35 + abs(shockwave) * 0.5, 0.1, 0.95);
     let output = vec4<f32>(color, alpha);
 
-    textureStore(dataTextureA, pixel, output);
+    textureStore(dataTextureA, pixel, vec4<f32>(accColor, bass));
     textureStore(writeTexture, pixel, output);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-
-    if (global_id.x == 0u && global_id.y == 0u && hasEnvelope) {
-        extraBuffer[133] = bass;
-    }
 }

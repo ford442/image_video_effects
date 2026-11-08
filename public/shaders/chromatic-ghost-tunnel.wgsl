@@ -15,6 +15,15 @@
 //    • Inertial flight: critically damped spring-damper on the mouse tunnel
 //      offset (persistent state in extraBuffer[133..136]) so steering has
 //      momentum.
+//  Upgraded: 2026-11-08 (sonnet/batch-21)
+//    Ideas: per-channel ghost lag (chroma delay line, §12.2B); perspective-correct ring
+//           thickness (mildly thinner toward the vanishing point); vanishing-point glow,
+//           soft inverse-square core (§12.2F)
+//    Rescues (not ideas): double tone-map + coverage premultiply removed (palette was dim
+//           grey); dead extraBuffer spring -> A-texel state; dead plasmaBuffer[1..8] ring voices
+//           -> ring i listens to band i%3; negative colour clamped before ACES
+//    A packing: raw pre-ACES hue-clamped RGB in A.rgb, coverage alpha in A.a; texels (0,0)
+//           and (1,0) carry the flight-spring state (C reads masked there)
 //  Signature chain (preserved verbatim): OkLab mix + blackbody temperature
 //  palette -> hue_preserve_clamp(5.0) -> ACES -> IGN dither -> gamma out.
 // ═══════════════════════════════════════════════════════════════════
@@ -80,24 +89,16 @@ fn ign(p: vec2<f32>) -> f32 {
   return fract(52.9829189 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715))));
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ACES Tone Mapping
-// ─────────────────────────────────────────────────────────────────────────────
-fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
-    let m1 = mat3x3<f32>(
-        0.59719, 0.07600, 0.02840,
-        0.35458, 0.90834, 0.13383,
-        0.04823, 0.01566, 0.83777
-    );
-    let m2 = mat3x3<f32>(
-        1.60475, -0.10208, -0.00327,
-        -0.53108,  1.10813, -0.07276,
-        -0.07367, -0.00605,  1.07602
-    );
-    let v = m1 * color;
-    let a = v * (v + 0.0245786) - 0.000090537;
-    let b = v * (0.983729 * v + 0.4329510) + 0.238081;
-    return clamp(m2 * (a / b), vec3<f32>(0.0), vec3<f32>(1.0));
+// Spring state lives in A texels (0,0) and (1,0): the app re-zeroes extraBuffer every frame, so the HEAD spring in
+// extraBuffer[133..136] never moved. (1,0).w carries a sentinel; (1,0).x stores fract(time) so dt survives rgba16float.
+const STATE_SENTINEL: f32 = 0.7371;
+
+// C tap that ignores the two state texels and never reads out of range.
+fn trailTap(uv: vec2<f32>) -> vec3<f32> {
+  let dimsI = vec2<i32>(textureDimensions(dataTextureC));
+  let p = clamp(vec2<i32>(uv * vec2<f32>(dimsI)), vec2<i32>(0), dimsI - vec2<i32>(1));
+  let isState = select(0.0, 1.0, p.y == 0 && p.x <= 1);
+  return textureLoad(dataTextureC, p, 0).rgb * (1.0 - isState);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -113,22 +114,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── Inertial flight ─────────────────────────────────────────────
   // Critically damped spring-damper on the mouse tunnel offset so
   // steering carries momentum instead of snapping to the cursor.
-  // Persistent state lives in extraBuffer[133..136] (safe zone).
+  // RESCUE 2026-11-08: state is read from / written to A texels (0,0) and (1,0).
   let mouse = u.zoom_config.yz * 2.0 - 1.0;
   let mouseGoal = vec2<f32>(mouse.x * aspect, mouse.y) * 0.4;
-  let springDT = 0.016;
   let springOmega = 7.0; // natural frequency; damping ratio = 1 (critical)
-  var springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  let st0 = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let st1 = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+  let haveState = select(0.0, 1.0, abs(st1.w - STATE_SENTINEL) < 0.001);
+  let springDT = clamp(fract(time - st1.x), 0.001, 0.05);
+  var springPos = st0.xy * haveState;
+  var springVel = st0.zw * haveState;
   springVel = springVel + ((mouseGoal - springPos) * springOmega * springOmega
                          - springVel * 2.0 * springOmega) * springDT;
   springPos = springPos + springVel * springDT;
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-  }
   let mouseOffset = springPos;
 
   let bass = plasmaBuffer[0].x;
@@ -186,12 +184,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fi = f32(i);
     // Per-bin ring voice: ring i listens to its own FFT bin so individual
     // ghost echoes flare to individual frequency bins.
-    let binVoice = plasmaBuffer[1 + (i % 8)].x;
+    // RESCUE 2026-11-08: plasmaBuffer[1..8] is never uploaded (always 0); ring i listens to band i%3 instead.
+    let bandSel = i % 3;
+    let binVoice = select(select(treble, mids, bandSel == 1), bass, bandSel == 0);
     let voiceBoost = 1.0 + binVoice * 1.2;
 
     let ringPhase = fract(z * 2.0 - fi * 0.15 + moveZ * 0.3);
     let ringRadius = ringPhase * 0.6;
-    let ringWidth = (0.02 + ringPhase * 0.01) * (1.0 + binVoice * 0.6);
+    // ── Idea 2: perspective-correct thickness — rings are constant-z slabs, so projected width follows the radius:
+    // mildly thinner toward the vanishing point, up to 1.2x HEAD toward the viewer (HEAD's fine ghost lines still read).
+    let perspW = clamp(0.55 + 1.6 * dist, 0.6, 1.2);
+    let ringWidth = (0.02 + ringPhase * 0.01) * (1.0 + binVoice * 0.6) * perspW;
     let ringDist = abs(dist - ringRadius);
     let ringMask = exp(-ringDist * ringDist / (ringWidth * ringWidth));
 
@@ -199,10 +202,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rOffset = (bass * 0.03 + binVoice * 0.02) * ringPhase;
     let gOffset = (mids * 0.04 + binVoice * 0.02) * ringPhase;
     let bOffset = (treble * 0.02 + binVoice * 0.02) * ringPhase;
+    // ── Idea 1: per-channel ghost lag (chroma delay line, §12.2B) — R is the lead (HEAD's phase exactly), G and B read the
+    // ring phase at their own delayed tunnel-time (moveZ - lag*speed), so G then B trail the lead ring like a ghost.
+    // Exists at silence; the audio offsets above ride on top.
+    let ghostLag = vec3<f32>(0.0, 0.12, 0.25) * tunnelSpeed;
+    let radG = fract(z * 2.0 - fi * 0.15 + (moveZ - ghostLag.y) * 0.3) * 0.6;
+    let radB = fract(z * 2.0 - fi * 0.15 + (moveZ - ghostLag.z) * 0.3) * 0.6;
 
     let ringR = exp(-abs(dist - (ringRadius + rOffset)) * abs(dist - (ringRadius + rOffset)) / (ringWidth * ringWidth));
-    let ringG = exp(-abs(dist - (ringRadius + gOffset)) * abs(dist - (ringRadius + gOffset)) / (ringWidth * ringWidth));
-    let ringB = exp(-abs(dist - (ringRadius + bOffset)) * abs(dist - (ringRadius + bOffset)) / (ringWidth * ringWidth));
+    let ringG = exp(-abs(dist - (radG + gOffset)) * abs(dist - (radG + gOffset)) / (ringWidth * ringWidth));
+    let ringB = exp(-abs(dist - (radB + bOffset)) * abs(dist - (radB + bOffset)) / (ringWidth * ringWidth));
 
     let flash = step(0.85, hash11(fi + time * 10.0 * treble)) * treble * flashIntensity;
     let flashMask = ringMask * (1.0 + flash * 3.0);
@@ -234,11 +243,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col += mixOkLab(vec3<f32>(0.4,0.6,1.0), warmCol, 0.3) * streak * streakMask * bass * 1.5;
   alpha += streakMask * bass * 0.5;
 
+  // ── Idea 3: vanishing-point glow — the light at the end of the tunnel, soft inverse-square r0^2/(d^2 + r0^2) so the
+  // core has no singularity; warm blackbody, radius and heat ride bass.
+  let coreR0 = 0.045 + bass * 0.04;
+  let core = coreR0 * coreR0 / (dist * dist + coreR0 * coreR0);
+  col += mixOkLab(warmCol, coolCol, 0.25 + 0.5 * treble) * core * (0.35 + bass * 0.5);
+  alpha += core * 0.3;
+
   let cStr = 0.005 + bass * 0.008;
   let cDir = normalize(uv01 - vec2<f32>(0.5) + vec2<f32>(0.001));
-  let prevR = textureLoad(dataTextureC, vec2<i32>((uv01 + cDir * cStr * (1.0 + mids)) * vec2<f32>(textureDimensions(dataTextureC))), 0).r;
-  let prevG = textureLoad(dataTextureC, vec2<i32>((uv01 + cDir * cStr * (0.5 + treble)) * vec2<f32>(textureDimensions(dataTextureC))), 0).g;
-  let prevB = textureLoad(dataTextureC, vec2<i32>((uv01 - cDir * cStr * (0.8 + bass * 0.5)) * vec2<f32>(textureDimensions(dataTextureC))), 0).b;
+  let prevR = trailTap(uv01 + cDir * cStr * (1.0 + mids)).r;
+  let prevG = trailTap(uv01 + cDir * cStr * (0.5 + treble)).g;
+  let prevB = trailTap(uv01 - cDir * cStr * (0.8 + bass * 0.5)).b;
   col = mix(col, vec3<f32>(prevR, prevG, prevB) * 0.9, 0.25 + bass * 0.05);
 
   let dispersed = vec3<f32>(
@@ -255,7 +271,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = mix(col, col * coolCol * 1.2, (1.0 - smoothstep(0.0, 0.3, lum)) * 0.25);
   col = mix(col, col * warmCol * 1.3, smoothstep(0.5, 1.0, lum) * 0.3);
 
+  // clamp before ACES: the catalog ACES fit maps negative input to bright output
+  col = max(col, vec3<f32>(0.0));
   col = hue_preserve_clamp(col, 5.0);
+  let colRaw = col;   // raw pre-ACES colour is what goes to A (C is read in the same domain)
   col = aces(col);
   let dither = (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
   col = col + vec3<f32>(dither);
@@ -266,8 +285,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloomWeight = pow(max(0.0, luma - 0.5), 2.0) * 3.0;
   let a = max(alpha, bloomWeight * 0.5);
 
-  let outRGB = pow(col, vec3<f32>(1.0/2.2));
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(aces_tonemap(outRGB * a), a));
+  // RESCUE 2026-11-08: HEAD ran a second ACES (aces_tonemap) on gamma colour premultiplied by coverage, which dimmed
+  // every ring to grey (meanL 0.05). The header's own chain ends at gamma; straight alpha like the other generative files.
+  let outRGB = pow(max(col, vec3<f32>(0.0)), vec3<f32>(1.0/2.2));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(outRGB, a));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthVal, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(col, a));
+  var aOut = vec4<f32>(colRaw, a);
+  if (global_id.x == 0u && global_id.y == 0u) { aOut = vec4<f32>(springPos, springVel); }
+  if (global_id.x == 1u && global_id.y == 0u) { aOut = vec4<f32>(fract(time), 0.0, 0.0, STATE_SENTINEL); }
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), aOut);
 }

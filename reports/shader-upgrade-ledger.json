@@ -2457,8 +2457,17 @@
       "history": []
     },
     "parallax_depth_layers": {
-      "hash": "55275d9861d759dc",
-      "history": []
+      "hash": "922f3e87cefc87ee",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "922f3e87cefc87ee",
+          "prev_hash": "55275d9861d759dc",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "particle_dreams_alpha": {
       "hash": "e3a8ee120112dd24",
@@ -3702,8 +3711,17 @@
       ]
     },
     "4d-projection-dream-weavers": {
-      "hash": "5df9937fc9ed448b",
-      "history": []
+      "hash": "7df2e7d64d4fa518",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "7df2e7d64d4fa518",
+          "prev_hash": "5df9937fc9ed448b",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "acoustic-string-theory": {
       "hash": "bcc713b0b4775e86",
@@ -3778,8 +3796,17 @@
       ]
     },
     "chromatic-ghost-tunnel": {
-      "hash": "05655c0f939d1df6",
-      "history": []
+      "hash": "3a7b2b4be0e3d57c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "3a7b2b4be0e3d57c",
+          "prev_hash": "05655c0f939d1df6",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "chrono-voronoi-mycelium": {
       "hash": "62908608cc736c36",
@@ -5948,7 +5975,7 @@
       ]
     },
     "gen-feedback-echo-chamber": {
-      "hash": "997d7e20980b440d",
+      "hash": "000724109fd236b9",
       "history": [
         {
           "event": "upgraded",
@@ -5957,6 +5984,14 @@
           "prev_hash": "93ef230d04260893",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "000724109fd236b9",
+          "prev_hash": "997d7e20980b440d",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -6493,7 +6528,7 @@
       ]
     },
     "gen-fractured-monolith": {
-      "hash": "da91f0608ab57fc0",
+      "hash": "eca0a4cf336b5401",
       "history": [
         {
           "event": "upgraded",
@@ -6502,6 +6537,14 @@
           "prev_hash": "1d49d72bf7a5ee3e",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "eca0a4cf336b5401",
+          "prev_hash": "da91f0608ab57fc0",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -6878,7 +6921,7 @@
       ]
     },
     "gen-hyper-labyrinth": {
-      "hash": "7fcb70b338148bd6",
+      "hash": "8e1bb84b7a5902ca",
       "history": [
         {
           "event": "upgraded",
@@ -6887,6 +6930,14 @@
           "prev_hash": "a5c0e2d402bcc72d",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "8e1bb84b7a5902ca",
+          "prev_hash": "7fcb70b338148bd6",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -8632,8 +8683,17 @@
       "history": []
     },
     "gen-psychedelic-layered-time-stamps": {
-      "hash": "22585d0f983621b2",
-      "history": []
+      "hash": "28f9993c6d048a12",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "28f9993c6d048a12",
+          "prev_hash": "22585d0f983621b2",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "gen-psychedelic-moire-flower": {
       "hash": "ace9bd662940ab3d",
@@ -12421,7 +12481,7 @@
       ]
     },
     "tesseract-fold": {
-      "hash": "5dd4aec79faa02f6",
+      "hash": "c1049df41ee1eb35",
       "history": [
         {
           "event": "upgraded",
@@ -12430,6 +12490,14 @@
           "prev_hash": "620ceb95291ab10f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "c1049df41ee1eb35",
+          "prev_hash": "5dd4aec79faa02f6",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -14492,8 +14560,17 @@
       ]
     },
     "parallax-glow-compositor": {
-      "hash": "c46d82e9f5406fa4",
-      "history": []
+      "hash": "81847ac0222ad12f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "81847ac0222ad12f",
+          "prev_hash": "c46d82e9f5406fa4",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "particle-disperse": {
       "hash": "62997beacb5ccdd2",
@@ -18541,7 +18618,7 @@
       ]
     },
     "gen-chromodynamic-glass-labyrinth": {
-      "hash": "8d56e14ec497948a",
+      "hash": "c195bd3db637b43c",
       "history": [
         {
           "event": "added",
@@ -18549,6 +18626,14 @@
           "hash": "8d56e14ec497948a",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "c195bd3db637b43c",
+          "prev_hash": "8d56e14ec497948a",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },

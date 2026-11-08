@@ -2,8 +2,9 @@
 // Hyper Labyrinth - 4D Maze Visualization
 // Category: generative
 // Features: 4D geometry, raymarching, neon aesthetics
-// Upgraded: 2026-10-17
-// Ideas: maze midline; W-slice tint; cul-de-sac chambers; floor treads
+// Upgraded: 2026-10-17, 2026-11-08
+// Ideas: maze midline; W-slice tint; cul-de-sac chambers; floor treads; W-modulated wall thickness; corridor step-count AO (§12.2E)
+// Rescue 2026-11-08: noclip start (camera sat inside a wall for much of the orbit); right-side-up, un-mirrored camera basis
 // A packing: persisted neon RGB + alpha
 // ═══════════════════════════════════════════════════════════════
 
@@ -60,7 +61,11 @@ fn map(pos3: vec3<f32>) -> vec2<f32> {
     let val = sin(q.x) * cos(q.y) + sin(q.y) * cos(q.z) + sin(q.z) * cos(q.w) + sin(q.w) * cos(q.x);
 
     // Wall thickness
-    let thickness = mix(0.1, 1.2, u.zoom_params.w);
+    // ── Idea 5: W-modulated wall thickness — the slider sets the mean, the 4th
+    // coordinate swells and thins the walls as the XW rotation sweeps through,
+    // so the maze reads as a 4D slice, not a static 3D gyroid.
+    let wSwell = 1.0 + 0.3 * sin(q.w * 0.5 + 1.3);
+    let thickness = mix(0.1, 1.2, u.zoom_params.w) * wSwell;
     let d = (abs(val) - thickness * 0.5) / scale; // proper scale-corrected distance
 
     return vec2<f32>(d * 0.5, 1.0); // material ID = 1.0 for walls
@@ -77,11 +82,25 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
     ));
 }
 
+// ── Idea 6: corridor step-count AO (§12.2E) ─────────────────────
+// 5 taps along the normal; wall mass converging on a crevice eats the
+// ambient/rim light there. map() returns d*0.5, so x2 restores world distance.
+fn corridorAO(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 5; i = i + 1) {
+        let h = 0.04 + 0.26 * f32(i) / 5.0;
+        occ += max(h - map(p + n * h).x * 2.0, 0.0) * sca;
+        sca *= 0.6;
+    }
+    return clamp(1.0 - 2.2 * occ, 0.0, 1.0);
+}
+
 // Raymarch with material support + bounded volumetric proximity glow.
 // Returns (t, material, glowAccum). Glow accumulates near walls along the
 // whole ray, approximating volumetric neon haze / god-ray bleed.
-fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
-    var t = 0.0;
+fn raymarch(ro: vec3<f32>, rd: vec3<f32>, tStart: f32) -> vec3<f32> {
+    var t = tStart;
     var m = 0.0; // 0 = miss
     var glow = 0.0;
     for (var i = 0; i < 100; i++) {
@@ -133,9 +152,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let target_pos = vec3<f32>(0.0);
     let fwd = normalize(target_pos - ro);
-    let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
-    let up = cross(fwd, right);
-    var rd = normalize(fwd + right * uv.x + up * uv.y);
+    // Rescue: true right-handed basis (+x right, +y up for the camera on +z) and
+    // pixel-space uv.y runs DOWN, so it is subtracted from the up vector.
+    let right = normalize(cross(fwd, vec3<f32>(0.0, 1.0, 0.0)));
+    let up = cross(right, fwd);
+    var rd = normalize(fwd + right * uv.x - up * uv.y);
 
     // Hover aims the orbit; held input twists rays around the pointer.
     let mouseP = (mouse - 0.5) * vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
@@ -144,7 +165,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (u.zoom_config.w > 0.5) {
         let swirl = vec2<f32>(-pointerDelta.y, pointerDelta.x) / max(pointerDist, 1e-4);
         let heldWarp = exp(-pointerDist * pointerDist * 4.5) * 0.28;
-        rd = normalize(rd + right * swirl.x * heldWarp + up * swirl.y * heldWarp);
+        rd = normalize(rd + right * swirl.x * heldWarp - up * swirl.y * heldWarp);
     }
 
     // Clicks emit finite wall fronts with angular vein pulses.
@@ -163,8 +184,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         veinPulse += front * (0.5 + 0.5 * cos(atan2(delta.y, delta.x) * mix(6.0, 18.0, u.zoom_params.x)));
     }
 
+    // Rescue: noclip start. Gyroid walls fill space and the corridors are only
+    // ~0.5 wide, so the orbiting camera sits inside a wall ~20% of the loop and
+    // within 0.15 of one ~50% of it; a ray that starts in solid hits at t~0 and
+    // paints one flat dark-metal colour. (1) a soft near plane that only opens
+    // when the camera is cramped, (2) march out through any wall the ray starts
+    // in (|d| steps), so the picture is always the maze beyond.
+    let clearance = map(ro).x * 2.0;
+    var tStart = 0.9 * (1.0 - smoothstep(0.1, 0.6, clearance));
+    for (var k = 0; k < 24; k = k + 1) {
+        let dIn = map(ro + rd * tStart).x;
+        if (dIn > 0.01) { break; }
+        tStart += max(-dIn, 0.02);
+    }
+
     // Raymarch (+ volumetric proximity glow)
-    let res = raymarch(ro, rd);
+    let res = raymarch(ro, rd, tStart);
     let t = res.x;
     let mat = res.y;
     let volGlow = res.z;
@@ -257,7 +292,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
         let rim = vec3<f32>(0.35, 0.60, 1.30) * fresnel * (2.2 + treble * 1.5);
 
-        color = surfCol + rim;
+        // ── Idea 6: crevice AO on the lit base + rim (neon stays emissive)
+        let corridorOcc = corridorAO(p, n);
+        color = (surfCol + rim) * mix(0.35, 1.0, corridorOcc);
         alpha = clamp(0.68 + patternFactor * 0.22 + wallPulse * 0.2 + fresnel * 0.08, 0.0, 0.98);
     } else {
         // Deep void background, tinted by nearby neon haze
