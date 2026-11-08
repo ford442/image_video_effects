@@ -751,11 +751,6 @@
       "filename": "2026-11-06_ethereal-neon-bismuth-origami.md",
       "title": "Ethereal Neon-Bismuth Origami",
       "added": "2026-11-06T16:35:45.248463"
-    },
-    {
-      "filename": "2026-11-07_prismatic-quantum-loom.md",
-      "title": "Prismatic Quantum Loom",
-      "added": "2026-11-07T16:15:11.820728"
     }
   ],
   "current": null,
@@ -1015,6 +1010,14 @@
       "id": "ethereal-neon-bismuth-origami",
       "status": "completed",
       "completed_at": "2026-11-07T09:12:46.653397+00:00"
+    },
+    {
+      "filename": "2026-11-07_prismatic-quantum-loom.md",
+      "title": "Prismatic Quantum Loom",
+      "added": "2026-11-07T16:15:11.820728",
+      "id": "prismatic-quantum-loom",
+      "status": "completed",
+      "completed_at": "2026-11-08T09:09:44.900351+00:00"
     }
   ],
   "completed": [

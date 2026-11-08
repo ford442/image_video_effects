@@ -23874,6 +23874,64 @@
     "updated": true
   },
   {
+    "name": "Prismatic Quantum Loom",
+    "description": "A hyper-dimensional weaving of chromatic threads that respond to cosmic gravity, creating an ethereal, glowing lattice of pure light and quantum entanglement.",
+    "type": "generative",
+    "category": "generative",
+    "tags": [
+      "cosmic",
+      "quantum",
+      "neon",
+      "geometry",
+      "lattice"
+    ],
+    "url": "shaders/gen-prismatic-quantum-loom.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "thread-density",
+        "name": "Thread Density",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "chromatic-shift",
+        "name": "Chromatic Shift",
+        "default": 0,
+        "min": 0,
+        "max": 6.28,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "gravity-well-strength",
+        "name": "Gravity Well Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "quantum-fluctuation-speed",
+        "name": "Quantum Fluctuation Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "id": "gen-prismatic-quantum-loom"
+  },
+  {
     "id": "gen-prismatic-serpent-river",
     "name": "Prismatic Serpent River",
     "category": "generative",
