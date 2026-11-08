@@ -174,13 +174,29 @@ Params: Feed, Kill, Diffusion, Seed Strength.
 
 Params: Flow Scale, Decay, Chroma Smear, Dream Mix.
 
+### Physarum Agents (`physarum-agents`, 3 passes, sim ring)
+
+- 65k slime-mould agents weave a glowing transport network that feeds on the image's **red** channel
+- **Click** drops a pheromone bloom the network reroutes toward; **hold** lures the agents
+- Bass pulses the deposit (veins flare), treble speeds the agents; battery-friendly
+
+Params: Sense Angle, Sense Distance, Move Speed, Trail Persistence.
+
+### SPH Fluid (`sph-fluid`, 4 passes, sim ring + hash)
+
+- Zero-g droplets of SPH liquid refract the image; **bright areas** of the image are obstacles
+- **Hold** parts the fluid, **click** splashes, bass bursts the droplets outward; a slow tide gathers them
+- One hash scatter feeds both solver passes (`keepsHash`), so it fits battery's 4 passes
+
+Params: Viscosity, Rest Density, Pointer Force, Obstacle Strength.
+
 ### Pass budget in the HUD
 
 **Controls → Render Quality** shows `≤N passes/frame`. That is `performancePolicy.maxPassesPerFrame` (battery 4 / balanced 8 / ultra 16). Over budget, Jacobi/diffuse repeats shrink first so the color pass still runs. Prefer **balanced+** for the 6–7-pass stacks.
 
 ### Preset pack
 
-Open **Preset Packs** in VJ Studio for **Physics Lab** solos (Ripple / Fabric / Photonic / Chroma / Gray-Scott / Dream) and the original Triptych, or load [`public/presets/physics-lab.json`](../public/presets/physics-lab.json).
+Open **Preset Packs** in VJ Studio for **Physics Lab** solos (Ripple / Fabric / Photonic / Chroma / Gray-Scott / Dream / Physarum / SPH) and the original Triptych, or load [`public/presets/physics-lab.json`](../public/presets/physics-lab.json).
 
 ## Troubleshooting
 

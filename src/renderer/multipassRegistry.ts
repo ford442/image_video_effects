@@ -544,6 +544,46 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       }
     ]
   },
+  "physarum-agents": {
+    "maxPassesPerFrame": 4,
+    "nodes": [
+      {
+        "id": "diffuse",
+        "entry": "physarum-agents-diffuse",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "agents",
+        "entry": "physarum-agents-step",
+        "dispatch": "simState",
+        "reads": [
+          "dataC",
+          "read",
+          "simState"
+        ],
+        "writes": [
+          "simState",
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "physarum-agents-render",
+        "reads": [
+          "dataC",
+          "read"
+        ],
+        "writes": [
+          "color"
+        ]
+      }
+    ]
+  },
   "poincare-tiling": {
     "maxPassesPerFrame": 8,
     "nodes": [
@@ -676,6 +716,50 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       }
     ]
   },
+  "sph-fluid": {
+    "maxPassesPerFrame": 4,
+    "nodes": [
+      {
+        "id": "density",
+        "entry": "sph-fluid-density",
+        "dispatch": "simState",
+        "reads": [
+          "simIndex",
+          "simHash"
+        ],
+        "writes": [
+          "simState"
+        ],
+        "keepsHash": true
+      },
+      {
+        "id": "force",
+        "entry": "sph-fluid-force",
+        "dispatch": "simState",
+        "reads": [
+          "simIndex",
+          "simHash",
+          "read"
+        ],
+        "writes": [
+          "simState",
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "sph-fluid-render",
+        "reads": [
+          "dataC",
+          "read"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
   "wave-tank": {
     "maxPassesPerFrame": 8,
     "nodes": [
@@ -725,6 +809,13 @@ export const SIM_RING_REGISTRY: Record<string, { stateCount: number; spatialHash
     "spatialHash": true
   },
   "photon-bins": {
+    "stateCount": 65536,
+    "spatialHash": true
+  },
+  "physarum-agents": {
+    "stateCount": 65536
+  },
+  "sph-fluid": {
     "stateCount": 65536,
     "spatialHash": true
   }

@@ -1266,6 +1266,17 @@ function verifyBindGroup1() {
         fail(`${rel} sets simRing.spatialHash but never reads the binding`);
       }
     }
+    // keepsHash promises the node's simState writes leave every hashed position where it was, so it
+    // only means something on a simState writer in a graph that has a hash to keep.
+    for (const n of graphNodes.filter((node) => node.keepsHash !== undefined)) {
+      if (typeof n.keepsHash !== 'boolean') fail(`${rel} node ${n.id} keepsHash must be a boolean`);
+      if (n.keepsHash === true && !(n.writes || []).includes('simState')) {
+        fail(`${rel} node ${n.id} sets keepsHash but does not write simState`);
+      }
+      if (n.keepsHash === true && def.simRing.spatialHash !== true) {
+        fail(`${rel} node ${n.id} sets keepsHash but simRing.spatialHash is not set`);
+      }
+    }
     const nodes = graphNodes;
     if (!nodes.some((n) => n.dispatch === 'simState')) {
       fail(`${path.relative(ROOT, file)} declares simRing but no graph node dispatches simState`);

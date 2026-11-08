@@ -146,6 +146,10 @@ export interface ShaderDefinitionGraph {
     dispatch?: 'pixels' | 'simState';
     scalable?: boolean;
     minScale?: 0.25 | 0.5 | 0.75 | 1;
+    /**
+     * The node's simState writes only touch parked records (xy < 0), so the spatial hash stays valid after it and the planner skips the rebuild before the next simHash reader (multipassGraph.ts GraphNodeDef.keepsHash). The simIndex snapshot still goes stale.
+     */
+    keepsHash?: boolean;
   }[];
 }
 /**

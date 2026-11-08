@@ -161,7 +161,7 @@ Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storag
 - **WASM:** feature freeze — `pipeline.cpp` keeps `bindGroupLayoutCount = 1` and `src/wasm/bridge/shader.ts` refuses group-1 WGSL before `LoadShader` (logged skip).
 - **Never** park persistent agents in `extraBuffer[0..]` or steal group-0 bindings.
 
-Flagship: `dla-crystals` (`dla-walkers` over simState → `dla-render` over pixels).
+Flagships: `dla-crystals` (`dla-walkers` over simState → `dla-render` over pixels) and `physarum-agents` (diffuse over pixels → agents over simState → render; the agents' deposit writes the same value per texel, so its last-writer race has one outcome).
 
 ### Spatial hash (`simHash`, optional binding 3)
 
@@ -199,7 +199,22 @@ for (var dy = -1; dy <= 1; dy = dy + 1) {
 - **Gates:** a definition that sets `spatialHash` must have a graph node that reads `simHash` in an entry that declares binding 3, and a graph that reads or declares it without the flag fails `npm run verify:device-policy`.
 - **WASM:** unchanged. The bridge refuses `@group(1)` WGSL before `LoadShader`; `pipeline.cpp` is not touched.
 
-Flagships: `murmuration` (steering through the hash) and `photon-bins` (wavelength-binned photons gathered per pixel).
+Flagships: `murmuration` (steering through the hash), `photon-bins` (wavelength-binned photons gathered per pixel) and `sph-fluid` (SPH neighbour sums with stride-2 records).
+
+#### Stride-2 records and the parked sentinel
+
+An agent that needs more than one `vec4` can own consecutive elements, as long as only one of them is ever hashed. `sph-fluid` (stride 2) is the reference:
+
+| Element | Contents | Hashed? |
+|--------:|----------|---------|
+| `2p` | `(pos.xy px, vel.xy px / frame)` | yes: a live agent |
+| `2p + 1` | `(-1, -1, density, vorticity)` | no: parked |
+
+- The `(-1, -1)` sentinel *is* the existing alive rule (`xy` outside `[0, resolution)`), so the scatter skips aux records with no contract change and no `simParams` field. Write **both** components negative, every time: a reader or tool that checks only one axis still sees a parked record.
+- A hash neighbour `j` is therefore always an even element; its aux record is `j + 1` (read it from `simIndex` like the position).
+- `stateCount` counts elements, so a 65,536-element ring holds 32,768 stride-2 agents, and each OOM rung halves that. Dispatch over `simState` and return early for `gid.x >= stateCount / 2` (agent `p` = `gid.x`).
+- A pass that writes only aux records moves no hashed position, so its graph node may set `keepsHash` ([`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md#sim-roles-and-the-spatial-hash)): the planner then reuses the hash for the next reader and only refreshes the `simIndex` snapshot. Frame 0 is the exception, because the seed moves every agent: the reader after a seeding `keepsHash` pass must skip `simParams.frame == 0u` (the hash is rebuilt next frame).
+- Document the layout in the definition's `simRing.packing`.
 
 ### Runtime format tiers (#1008)
 
