@@ -128,4 +128,7 @@ sys.modules[__name__] = _new_mod
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    # uvicorn's own --proxy-headers (on by default) rewrites the client address from
+    # X-Forwarded-For before RateLimitMiddleware runs, which would bypass TRUSTED_PROXIES
+    # whenever FORWARDED_ALLOW_IPS is widened. Leave the header to TRUSTED_PROXIES.
+    uvicorn.run(app, host="0.0.0.0", port=7860, proxy_headers=False)

@@ -60,13 +60,25 @@ left of that were written by the client and are never used. Examples with `TRUST
 | `10.0.0.9` | `6.6.6.6, 198.51.100.4, 10.0.0.5` | `198.51.100.4` (`10.0.0.5` skipped, `6.6.6.6` ignored) |
 | `10.0.0.9` | `garbage` | `10.0.0.9` (an unparseable value is never used as a key) |
 
+**uvicorn has its own forwarded-header handling, and it runs first.** `uvicorn` (CLI default `--proxy-headers`) rewrites
+`request.client` from `X-Forwarded-For` whenever the peer is in `--forwarded-allow-ips` / `FORWARDED_ALLOW_IPS` (default
+`127.0.0.1`), *before* any middleware here sees the request. Verified live: with uvicorn's default and `TRUSTED_PROXIES=""`, a
+loopback client sending a fresh forged header each time was never limited (35 × 200); with `--no-proxy-headers` it got 30 × 200
+then 429s. With the default `127.0.0.1` the two layers agree, so a loopback nginx is fine either way, but `FORWARDED_ALLOW_IPS='*'`
+(common in Docker and Spaces recipes) lets any client choose its bucket and `TRUSTED_PROXIES` can no longer stop it.
+**Start uvicorn with `--no-proxy-headers`** so `TRUSTED_PROXIES` is the single place that decides. `python -m storage_manager.app` already does:
+
+```bash
+uvicorn storage_manager.app:app --host 0.0.0.0 --port 7860 --no-proxy-headers
+```
+
 Deployment notes:
 
 * **nginx/caddy on the same host** (the common case): nothing to set, loopback is trusted by default. Make sure the proxy
   *appends* (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`) or overwrites (`$remote_addr`); both are safe here.
 * **Proxy in another container or host** (Docker bridge, load balancer): add its address or network, e.g.
   `TRUSTED_PROXIES=127.0.0.1,::1,172.18.0.0/16`. Until you do, every request arrives from the proxy's IP and **all users share one bucket**.
-* **No proxy at all** (e.g. a Hugging Face Space or a bare `uvicorn --host 0.0.0.0`): set `TRUSTED_PROXIES=""`. Do not run `uvicorn --proxy-headers --forwarded-allow-ips '*'`, which would let any client rewrite the peer address before this check.
+* **No proxy at all** (e.g. a bare `uvicorn --host 0.0.0.0`): set `TRUSTED_PROXIES=""` and run with `--no-proxy-headers`.
 * **Behind two proxies**: list both; the walk skips every trusted hop.
 
 ## Running Locally
@@ -74,7 +86,7 @@ Deployment notes:
 ```bash
 pip install -r requirements.txt
 # from the repository root (the package imports itself as `storage_manager`)
-uvicorn storage_manager.app:app --host 0.0.0.0 --port 7860 --reload
+uvicorn storage_manager.app:app --host 0.0.0.0 --port 7860 --no-proxy-headers --reload
 # tests (either directory works)
 cd storage_manager && python -m pytest -q
 ```
