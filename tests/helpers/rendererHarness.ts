@@ -291,6 +291,21 @@ export async function isGpuProbeOk(page: Page): Promise<boolean> {
   });
 }
 
+/**
+ * The app's boot effect (useShaderBoot) puts its default shader, Liquid, in slot 0 once the
+ * shader lists have loaded. A slot-0 shader a spec sets before that is overwritten, and Liquid
+ * (an image effect) reads back near-black under generative input. Call this after boot and
+ * before setting slot 0. Tolerant: a build or URL without the default never lands one.
+ */
+export async function waitForBootDefaultShader(page: Page, timeoutMs = 60_000): Promise<void> {
+  await page
+    .waitForFunction(() => (window as any).__pixelocity__?.getSlotState?.(0)?.shaderId === 'liquid', null, {
+      timeout: timeoutMs,
+      polling: 250,
+    })
+    .catch(() => undefined);
+}
+
 export async function waitForTestApi(page: Page, timeoutMs = 30000): Promise<void> {
   await waitForWebGpuProbe(page, timeoutMs);
   const probeOk = await isGpuProbeOk(page);
