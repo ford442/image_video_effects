@@ -16,7 +16,13 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import { PARITY_MATRIX } from './fixtures/parityMatrix';
-import { loadShaderOnSlot, startStaticServer, stopStaticServer, waitForTestApi } from './helpers/rendererHarness';
+import {
+  loadShaderOnSlot,
+  startStaticServer,
+  stopStaticServer,
+  waitForBootDefaultShader,
+  waitForTestApi,
+} from './helpers/rendererHarness';
 
 const PORT = 3464;
 // SwiftShader renders a few frames per second at the default working size.
@@ -77,6 +83,7 @@ test.describe('#1080 bench metric on SwiftShader WebGPU', () => {
       await page.goto(appUrl(renderer), { waitUntil: 'load' });
       await waitForTestApi(page, 60_000);
       expect(await page.evaluate(() => self.crossOriginIsolated)).toBe(true);
+      await waitForBootDefaultShader(page); // or Liquid replaces plasma in slot 0
       expect(await loadShaderOnSlot(page, PLASMA)).toBe(true);
 
       const thread = renderer === 'webgpu' ? 'worker' : 'main';

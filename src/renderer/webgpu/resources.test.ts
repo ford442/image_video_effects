@@ -98,6 +98,22 @@ describe('WebGPUResourcePool', () => {
     expect(device.createTexture).toHaveBeenCalled();
   });
 
+  it('recreateScaleTextures keeps a canvas-sized depth map (and its texels) across a rescale', () => {
+    const device = makeMockDevice();
+    const pool = new WebGPUResourcePool();
+    pool.setup(device, 1920, 1080, 960, 540);
+    const depth = Object.assign(pool.depthRead, { width: 1920, height: 1080 });
+
+    pool.recreateScaleTextures(device, 1920, 1080, 480, 270, 'rgba16float');
+    expect(pool.depthRead).toBe(depth);
+    expect(depth.destroy).not.toHaveBeenCalled();
+
+    // A canvas resize changes its size: a fresh (empty) one replaces it.
+    pool.recreateScaleTextures(device, 1280, 720, 640, 360);
+    expect(pool.depthRead).not.toBe(depth);
+    expect(depth.destroy).toHaveBeenCalled();
+  });
+
   it('createTextures uses scaled dimensions for working textures', () => {
     const device = makeMockDevice();
     const set = createTextures(device, 1920, 1080, 960, 544);
