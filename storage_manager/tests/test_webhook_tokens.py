@@ -2,8 +2,8 @@
 
 Covers the happy path, expiry, replay, wrong action/name, tampering, an unset
 secret (503), disallowed origins, rate limiting, the body cap, payload
-dispatch, and the Redis-backed single-use store (real redis-server when the
-binary exists, otherwise skipped).
+dispatch, and the Redis-backed single-use store (real redis-server via the
+`redis_server` fixture in conftest.py).
 """
 
 from __future__ import annotations
@@ -403,35 +403,6 @@ def _free_port() -> int:
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
         return s.getsockname()[1]
-
-
-@pytest.fixture()
-def redis_server():
-    binary = shutil.which("redis-server")
-    if not binary:
-        pytest.skip("redis-server is not installed")
-    port = _free_port()
-    proc = subprocess.Popen(
-        [binary, "--port", str(port), "--bind", "127.0.0.1", "--save", "", "--appendonly", "no"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    try:
-        import redis
-
-        probe = redis.Redis(port=port)
-        for _ in range(50):
-            try:
-                probe.ping()
-                break
-            except redis.ConnectionError:
-                time.sleep(0.1)
-        else:
-            pytest.fail("redis-server did not start")
-        yield port
-    finally:
-        proc.terminate()
-        proc.wait(timeout=5)
 
 
 def test_redis_backed_single_use_across_workers(client, bucket, monkeypatch, redis_server):
