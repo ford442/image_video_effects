@@ -40,15 +40,21 @@ void shutdownWasmRenderer() {
 // ─── Shader management ────────────────────────────────────────────────────────
 
 EMSCRIPTEN_KEEPALIVE
-int loadShader(const char* id, const char* wgslCode) {
+int loadShader(const char* id, const char* wgslCode, int workgroupX, int workgroupY, int usageBits) {
     if (!g_renderer || !id || !wgslCode) return 0;
-    return g_renderer->LoadShader(id, wgslCode) ? 1 : 0;
+    return g_renderer->LoadShader(id, wgslCode,
+                              static_cast<uint32_t>(workgroupX > 0 ? workgroupX : 0),
+                              static_cast<uint32_t>(workgroupY > 0 ? workgroupY : 0),
+                              static_cast<uint32_t>(usageBits)) ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE
-int reloadShader(const char* id, const char* wgslCode) {
+int reloadShader(const char* id, const char* wgslCode, int workgroupX, int workgroupY, int usageBits) {
     if (!g_renderer || !id || !wgslCode) return 0;
-    return g_renderer->ReloadShader(id, wgslCode) ? 1 : 0;
+    return g_renderer->ReloadShader(id, wgslCode,
+                              static_cast<uint32_t>(workgroupX > 0 ? workgroupX : 0),
+                              static_cast<uint32_t>(workgroupY > 0 ? workgroupY : 0),
+                              static_cast<uint32_t>(usageBits)) ? 1 : 0;
 }
 
 EMSCRIPTEN_KEEPALIVE

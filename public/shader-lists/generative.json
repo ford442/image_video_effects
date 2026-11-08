@@ -29186,7 +29186,12 @@
     "updated": true,
     "id": "gen-vitreous-chrono-chandelier",
     "url": "shaders/gen-vitreous-chrono-chandelier.wgsl",
-    "features": []
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-vitreous-quantum-lotus-singularity",

@@ -1,6 +1,7 @@
 import * as cpp from './_generated.js';
 import { isBusy, runWhenIdle } from './call.js';
 import { state, utf8ByteLength, wasmRef } from './state.js';
+import { analyzeShaderBindings, packUsageBits, resolveWorkgroupSize } from './wgslAnalysis.js';
 import { rewriteWgslStorageFormats } from './wgslFormat.js';
 import { expandWgslIncludes, hasWgslInclude } from './wgslInclude.js';
 import { withBundledLibraries } from './wgslLibraries.js';
@@ -71,6 +72,18 @@ function refuseBindGroup1(id: string, op: 'loadShader' | 'reloadShader'): false 
   return false;
 }
 
+/**
+ * loadShader's analysis arguments: the dispatch size of `main` (0 = contract
+ * fallback in C++) and the usage bits that gate per-frame feedback copies.
+ * Same analysis the TS renderer runs (ShaderCompilation.ts), so both backends
+ * dispatch and skip copies identically.
+ */
+export function shaderAnalysisArgs(wgslCode: string): { workgroupX: number; workgroupY: number; usageBits: number } {
+  const wg = resolveWorkgroupSize(wgslCode);
+  if (!wg.parsed) console.warn(`[WASM] Could not parse workgroup_size, defaulting to ${wg.x}x${wg.y}`);
+  return { workgroupX: wg.x, workgroupY: wg.y, usageBits: packUsageBits(analyzeShaderBindings(wgslCode)) };
+}
+
 export async function loadShader(id: string, wgslCode: string): Promise<boolean> {
   if (!state.initialized || !wasmRef.module) {
     console.error('[WASM] Renderer not initialized');
@@ -90,6 +103,7 @@ export async function loadShader(id: string, wgslCode: string): Promise<boolean>
   if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, 'loadShader');
 
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
+  const a = shaderAnalysisArgs(rewritten);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
   if (!idBuf || !codeBuf) return false;
@@ -97,7 +111,7 @@ export async function loadShader(id: string, wgslCode: string): Promise<boolean>
   let result = 0;
   try {
     // Suspends in the pipeline error-scope pop; id/code stay allocated until it settles.
-    result = await cpp.loadShader(wasmRef.module, idBuf.ptr, codeBuf.ptr);
+    result = await cpp.loadShader(wasmRef.module, idBuf.ptr, codeBuf.ptr, a.workgroupX, a.workgroupY, a.usageBits);
   } finally {
     idBuf.free();
     codeBuf.free();
@@ -131,13 +145,14 @@ export async function reloadShader(id: string, wgslCode: string): Promise<boolea
   if (declaresBindGroup1(wgslCode)) return refuseBindGroup1(id, 'reloadShader');
 
   const rewritten = rewriteWgslStorageFormats(wgslCode, state.colorFormat);
+  const a = shaderAnalysisArgs(rewritten);
   const idBuf = writeUtf8(id);
   const codeBuf = writeUtf8(rewritten);
   if (!idBuf || !codeBuf) return false;
 
   let result = 0;
   try {
-    result = await cpp.reloadShader(wasmRef.module, idBuf.ptr, codeBuf.ptr);
+    result = await cpp.reloadShader(wasmRef.module, idBuf.ptr, codeBuf.ptr, a.workgroupX, a.workgroupY, a.usageBits);
   } finally {
     idBuf.free();
     codeBuf.free();

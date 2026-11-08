@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarching, audio-reactive, mouse-driven, held-drag, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: breathing lace wave (bass-driven thickness swell travelling down the flight axis); bioluminescent depth fog (step-count-lit haze); held-mouse neuron bloom (camera-borne pull node with glow); re-entrant synaptic vortex loops; myelin-like conduction bead trains; cybernetic grid scanning line; data corruption block glitches
+//  Upgraded: 2026-10-10, 2026-11-08
+//  Ideas: breathing lace wave (bass-driven thickness swell travelling down the flight axis); bioluminescent depth fog (step-count-lit haze); held-mouse neuron bloom (camera-borne pull node with glow); re-entrant synaptic vortex loops; myelin-like conduction bead trains; cybernetic grid scanning line; data corruption block glitches; scan-lit lace with trailing wake (the grid scan line lights the strands it sweeps); saltatory conduction with refractory tail (beads hop between myelin internodes)
 //  A packing: ACES display RGBA (alpha = fogged lace coverage raised by node glow); C is not read
 // ═══════════════════════════════════════════════════════════════════
 
@@ -129,6 +129,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let nodeCol = mix(baseColor, vec3<f32>(0.85, 1.0, 1.0), 0.6);
 
     var col = vec3<f32>(0.0);
+    var laceLit = 0.0;   // lit-lace term (diffuse * step-AO + spec) reused by the scan-lit lace
 
     if (hit) {
         let n = getNormal(p, pull);
@@ -140,6 +141,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ao = 1.0 - f32(steps) / f32(MAX_STEPS);
 
         col = baseColor * diff * ao + spec;
+        laceLit = clamp(diff * ao + 0.5 * spec, 0.0, 1.0);
 
         // Idea 3 — the gathered lace around the held node is lit by it
         let toNode = pullC - p;
@@ -148,11 +150,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Idea 4 — re-entrant synaptic vortex loops around the active node.
         let rel = p - pullC;
         let loopRing = exp(-pow((length(rel.xy) - 0.42) * 5.5, 2.0)) * exp(-rel.z * rel.z * 4.5);
-        let loopSpin = 0.5 + 0.5 * sin(atan2(rel.y, rel.x) * 9.0 + u.config.x * (5.0 + bass * 3.0));
+        // RESCUE 2026-11-08: HEAD multiplied TIME by (5 + 3*bass), so every bass change jumped the
+        // phase by tens of radians. Constant rate now; bass keeps its amplitude role below.
+        let loopSpin = 0.5 + 0.5 * sin(atan2(rel.y, rel.x) * 9.0 + u.config.x * 5.0);
         col += nodeCol.brg * held * loopRing * loopSpin * (0.2 + 0.35 * bass);
         // Idea 5 — myelin-like conduction bead trains flowing down lace channels.
-        let beads = pow(0.5 + 0.5 * sin(p.z * 16.0 - u.config.x * (4.0 + bass * 2.5)), 6.0);
+        // ── Idea 9: saltatory conduction with a refractory tail ───────────────────
+        // A spike in a myelinated axon does not glide: it dwells under each internode and
+        // hops to the next node of Ranvier, leaving a sharp front, an exponential tail and a
+        // refractory (hyperpolarised) dip behind it. Same internode length (2pi/16 along z),
+        // same mean speed (0.25 u/s) as HEAD's sinusoid; time quantised through a smoothstep.
+        // (RESCUE: HEAD's phase was time * (4 + 2.5*bass) -> audio jumped it; rate is constant now.)
+        let beadTau = u.config.x * 0.6366198;                 // 4 rad/s in cycles
+        let beadHop = floor(beadTau) + smoothstep(0.55, 1.0, fract(beadTau));
+        let beadLag = fract(beadHop - p.z * 2.5464791);       // cycles behind the front (16 / 2pi)
+        let beads = 1.4 * smoothstep(0.0, 0.05, beadLag) * exp(-beadLag * 7.0);
+        let refractory = smoothstep(0.25, 0.5, beadLag) * (1.0 - smoothstep(0.7, 0.95, beadLag));
         let strand = exp(-abs(map(p, pull)) * 60.0);
+        col *= 1.0 - 0.15 * refractory * strand;
         col += vec3<f32>(1.0, 0.9, 0.55) * beads * strand * (0.1 + mids * 0.2);
     } else {
         // Background glow
@@ -177,8 +192,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col *= 0.9 + 0.1 * sin(uv.y * 100.0 + u.config.x * 5.0);
     
     // Idea 1: cybernetic grid scanning line
-    let scanline = smoothstep(0.95, 1.0, fract(uv.y * 2.0 - u.config.x * 1.5)) * 0.5;
-    col += vec3<f32>(0.2, 0.8, 1.0) * scanline * (1.0 + bass);
+    let scanPhase = fract(uv.y * 2.0 - u.config.x * 1.5);
+    let scanline = smoothstep(0.95, 1.0, scanPhase) * 0.5;
+    // ── Idea 8: scan-lit lace with a trailing wake ────────────────────────────
+    // A projector's scan line lights the volume it sweeps. Over the void the bar stays the flat
+    // HEAD bar; over the lace its light is modulated by the lit-lace term (diffuse*AO + spec), so
+    // it reveals strands instead of painting over them, and an exponential afterglow trails
+    // behind the sweep (the bar moves down-screen, the wake is the soft side above it).
+    let scanWake = exp(-(0.95 - scanPhase) * 9.0) * step(scanPhase, 0.95);
+    let onLace = select(0.0, 1.0 - fog, hit);
+    let laceStruct = clamp(0.25 + 1.1 * laceLit, 0.0, 1.4);
+    let scanLight = scanline * mix(1.0, laceStruct, onLace) + 0.22 * scanWake * laceStruct * onLace;
+    col += vec3<f32>(0.2, 0.8, 1.0) * scanLight * (1.0 + bass);
 
     let outCol = acesFilm(max(col, vec3<f32>(0.0)));
     let coverage = select(0.0, 1.0 - fog, hit);

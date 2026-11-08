@@ -44,7 +44,6 @@ EM_JS(int, JS_CopyExternalImageToTexture,
 using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
-using wasm_internal::ParseWorkgroupSize;
 
 void WebGPURenderer::SetInputSource(InputSource source) {
     inputSource_ = source;

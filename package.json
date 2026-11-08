@@ -43,6 +43,7 @@
     "gen:webgpu-limits": "node scripts/gen-webgpu-limits-header.js",
     "gen:bind-group0": "node scripts/gen-bind-group0-header.js",
     "gen:wasm-exports": "node scripts/gen-wasm-exports-header.js",
+    "gen:wasm-contracts": "node scripts/gen-wasm-contracts.js",
     "wasm:validate": "node scripts/validate_wasm_artifacts.js",
     "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
     "test:wasm:unit": "vitest run WASM",

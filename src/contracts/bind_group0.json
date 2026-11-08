@@ -35,5 +35,13 @@
     { "binding": 11, "name": "comparison_sampler",    "kind": "comparison-sampler",       "resource": "comparisonSampler" },
     { "binding": 12, "name": "plasmaBuffer",          "kind": "read-only-storage-buffer", "resource": "plasma" },
     { "binding": 13, "name": "historyTexture",        "kind": "sampled-rgba-array",       "resource": "history" }
-  ]
+  ],
+  "shaderUsageFlagsNote": "loadShader/reloadShader usageBits: the bridge (src/wasm/bridge/wgslAnalysis.ts, also used by the TS renderer) sets a bit when a shader references that binding beyond its declaration, and C++ skips the matching per-frame copy when it is clear. Generated into src/wasm/bridge/_contracts.ts and wasm_renderer/wasm_contracts.h by npm run gen:wasm-contracts.",
+  "shaderUsageFlags": {
+    "writesDataA": { "bit": 1,  "binding": 7 },
+    "writesDataB": { "bit": 2,  "binding": 8 },
+    "readsDataC":  { "bit": 4,  "binding": 9 },
+    "usesHistory": { "bit": 8,  "binding": 13 },
+    "writesDepth": { "bit": 16, "binding": 6 }
+  }
 }
