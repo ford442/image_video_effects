@@ -16,7 +16,8 @@
 //  By: Grok (creative technical artist)
 //  Upgraded: 2026-06-07
 //  Upgraded: 2026-09-13
-//  Ideas: clampellate septa along hyphae; neighbor-site cords to second-nearest seed
+//  Upgraded: 2026-11-08
+//  Ideas: clampellate septa along hyphae; neighbor-site cords to second-nearest seed; rhizomorph thickening of aged hyphae; fairy-ring necrotic colony cores
 //  A packing: raw (layer1, layer2, layer3, 0) — ACES display only
 //    * Evicted generic applyGenerativePrimaryControls boilerplate;
 //      sliders now drive real mycelium constants:
@@ -30,26 +31,7 @@
 //    * Spring-damped inoculation point in extraBuffer[133..134].
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const GOLDEN: f32 = 1.6180339887;
 
@@ -96,7 +78,9 @@ fn voronoi(p: vec2<f32>, time: f32, seed: f32, nutrient: f32) -> VoronoiHit {
             let g = vec2<f32>(f32(i), f32(j));
             let h = hash12(n + g + seed);
             let cellId = u32(h * 4096.0);
-            let spectral = plasmaBuffer[(cellId % 8u) + 1u].x;
+            // Rescue: plasmaBuffer[1..] is never uploaded; pick a band of [0] per cell.
+            let bands = plasmaBuffer[0].xyz;
+            let spectral = select(select(bands.z, bands.y, (cellId % 3u) == 1u), bands.x, (cellId % 3u) == 0u);
             let shimmer = vec2<f32>(cos(spectral * 6.2831 + h * 12.0),
                                     sin(spectral * 6.2831 + h * 12.0)) * spectral * 0.08;
             let o = vec2<f32>(h, fract(h * GOLDEN)) * (1.0 + nutrient * 0.4)
@@ -227,9 +211,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Combine layers with decay — Decay Influence sets the base rate;
     // the per-layer offsets (-0.01 / -0.02) and harsh-season term are kept.
     let decay = mix(0.970, 0.995, decayInfluence) - seasonHarsh * 0.02;
-    var layer1 = prevLayers.r * decay + growth1 * 0.7;
-    var layer2 = prevLayers.g * (decay - 0.01) + growth2 * 0.65;
-    var layer3 = prevLayers.b * (decay - 0.02) + growth3 * 0.55;
+    // Rescue: growth was added at full weight every frame, so the layers hit the
+    // 1.6–1.9 caps within ~1 s and the picture washed to pale yellow. Scale the
+    // injection by (1 - decay) so steady state ≈ growth * gain instead of growth/(1-decay).
+    let inj = (1.0 - decay) * 1.6;
+    var layer1 = prevLayers.r * decay + growth1 * 0.7 * inj;
+    var layer2 = prevLayers.g * (decay - 0.01) + growth2 * 0.65 * inj * 1.4;
+    var layer3 = prevLayers.b * (decay - 0.02) + growth3 * 0.55 * inj * 1.8;
 
     // Bass triggers spore bursts (new seed points appear)
     let sporeBurst = smoothstep(0.55, 0.85, bass) * (0.5 + 0.5 * sin(time * 10.0));
@@ -273,6 +261,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col += vec3<f32>(0.55, 0.85, 0.45) * (cord1 * 0.35 + cord2 * 0.22);
     col *= 1.0 - septa * 0.42;
 
+    // Idea 3 — rhizomorph thickening: old hyphae (high accumulated L3 in C)
+    // bundle into thicker ochre cords; edge width grows with that age.
+    let oldAge = clamp(prevLayers.b, 0.0, 1.5);
+    let rhizoW = 0.03 * (1.0 + oldAge * 1.6);
+    let rhizo = smoothstep(rhizoW, 0.0, hyphae1) * smoothstep(0.25, 1.0, oldAge);
+    col = mix(col, vec3<f32>(0.78, 0.62, 0.32), rhizo * 0.55);
+
+    // Idea 4 — fairy-ring necrosis: mature colonies exhaust their centre and
+    // die back to a brown necrotic core, leaving the live front at the rim.
+    let maturity = smoothstep(0.55, 1.3, layer3);
+    let core = smoothstep(0.22, 0.0, sqrt(v1.minDist)) * maturity;
+    col = mix(col, vec3<f32>(0.16, 0.09, 0.05), core * 0.7);
+
     // Temporal feedback blend — exact C, not a filtered sample
     col = mix(col, prevLayers.rgb * 0.9, 0.03 + bass * 0.01);
 
@@ -291,7 +292,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let screenUV = vec2<f32>(gid.xy) / vec2<f32>(u.config.z, u.config.w);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
+        let age = max(u.config.x - event.z, 0.0); // rescue: was scaled layer clock vs real-time stamp
         clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
     }
     color += clickFront * vec3<f32>(0.35, 0.55, 0.28);
@@ -300,7 +301,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color = acesToneMap(color * 1.1);
 
     // Semantic alpha
-    let alpha = clamp(length(color) * 1.2 + septa * 0.15 + (cord1 + cord2) * 0.1, 0.2, 0.95);
+    let alpha = clamp(length(color) * 1.2 + septa * 0.15 + (cord1 + cord2) * 0.1 + rhizo * 0.2 - core * 0.3, 0.2, 0.95);
 
     textureStore(writeTexture, gid.xy, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
