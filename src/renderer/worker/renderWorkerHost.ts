@@ -71,6 +71,7 @@ export type HostedRenderer = Pick<
   | 'getDirectPresentStatus'
   | 'applyTestRenderState'
   | 'setCanvasCopySrc'
+  | 'startCrossfade'
   | 'setDisplayP3'
   | 'getCanvasColorState'
   | 'warmShaders'
@@ -279,6 +280,9 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     applyTestRenderState: ({ state }) => withRenderer((r) => r.applyTestRenderState(state)),
     setCanvasCopySrc: ({ enabled }) => withRenderer((r) => {
       r.setCanvasCopySrc(enabled);
+    }),
+    startCrossfade: ({ durationMs }) => withRenderer((r) => {
+      r.startCrossfade(durationMs);
     }),
     warmShaders: ({ entries }) => withRenderer((r) => r.warmShaders(entries)),
     simulateDeviceLoss: () => withRenderer((r) => {

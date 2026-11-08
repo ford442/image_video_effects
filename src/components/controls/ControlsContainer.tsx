@@ -28,6 +28,7 @@ import { SidebarGroup } from './SidebarGroup';
 import { SidebarSearch } from './SidebarSearch';
 import { findEffects, matchesQuery } from './sidebarFilter';
 import { usePersistedToggle } from '../../hooks/usePersistedToggle';
+import type { SharedChain } from '../../services/layerChainShare';
 import type { RenderMode } from '../../renderer/types';
 import type { ControlsProps } from './types';
 import { defaultSlotParams } from '../../app/constants/defaultSlotParams';
@@ -120,6 +121,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onApplySharedChain,
     getCurrentChain,
     onTriggerNextTransition,
+    onArmCrossfade,
     onRandomizeSlot,
     onSetSlotParam,
     renderQualityMode = 'auto',
@@ -142,6 +144,15 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     canvasColor,
 }) => {
     const autoTransition = useAiVjAutoTransition();
+    // Recalling a saved VJ set dissolves from the picture on screen over the transition
+    // duration (0 keeps the hard cut). Param edits and project loads do not go through here.
+    const recallDurationMs = autoTransition.autoTransitionDurationMs;
+    const recallSharedChain = onApplySharedChain
+        ? (chain: SharedChain) => {
+            onArmCrossfade?.(recallDurationMs);
+            onApplySharedChain(chain);
+        }
+        : undefined;
     const [studioOpen, setStudioOpen] = usePersistedToggle('vj.studio', true);
     const [filterQuery, setFilterQuery] = useState('');
 
@@ -485,7 +496,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     onCopyChainShareLink={onCopyChainShareLink}
                     onShareVjSet={onShareVjSet}
                     onSaveVjSet={onSaveVjSet}
-                    onApplySharedChain={onApplySharedChain}
+                    onApplySharedChain={recallSharedChain}
                     getCurrentChain={getCurrentChain}
                     onUpdateStack={onUpdateStack}
                     onUpdateParams={onUpdateParams}
@@ -519,9 +530,10 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     onSavePreset={onSavePreset}
                     onShareVjSet={onShareVjSet}
                     onSaveVjSet={onSaveVjSet}
-                    onApplySharedChain={onApplySharedChain}
+                    onApplySharedChain={recallSharedChain}
                     getCurrentChain={getCurrentChain}
                     onCopyChainShareLink={onCopyChainShareLink}
+                    onTriggerNextTransition={onTriggerNextTransition}
                     {...autoTransition}
                 />
             ) : null,
