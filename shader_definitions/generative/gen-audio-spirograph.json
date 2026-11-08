@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "Audio-reactive sampled epitrochoid and hypotrochoid trails with musical ratios, sprung mouse lensing, click chimes, bounded temporal persistence, and generated curve depth.",
+  "description": "Audio-reactive sampled epitrochoid and hypotrochoid trails with musical ratios, the rolling gear, its teeth and the pen arm drawn as the mechanism, ink that pools where the pen is slow, sprung mouse lensing, click chimes, bounded temporal persistence, and generated curve depth.",
   "workgroup_size": [
     16,
     16,
@@ -29,7 +29,8 @@
     "sprung-mouse-lens",
     "click-chime-shells",
     "bounded-temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "gear-mechanism"
   ],
   "params": [
     {

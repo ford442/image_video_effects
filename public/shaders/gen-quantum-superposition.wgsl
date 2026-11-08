@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: coherent interference term (|Σψ|² − Σ|ψ|², phase-hued); detector-screen hit buildup
+//  Upgraded: 2026-09-27, 2026-11-08
+//  Ideas: coherent interference term (|Σψ|² − Σ|ψ|², phase-hued); detector-screen hit buildup; de Broglie carrier wave (k from the orbit velocity → real fringes, cross term now a visibility V); breathing packets (width s(t), amplitude 1/s, expansion-flow chirp)
 //  A packing: rgb = ACES display, a = detector hit accumulator (read back from C)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -50,10 +50,19 @@ fn lissajousPos(t: f32, a: f32, b: f32, delta: f32, scale: f32, offset: vec2<f32
     return offset + vec2<f32>(cos(a * t + delta), sin(b * t)) * scale;
 }
 
-fn quantumGaussian(p: vec2<f32>, center: vec2<f32>, sigma: f32, phase: f32) -> vec2<f32> {
-    let d2  = dot(p - center, p - center);
-    let amp = exp(-d2 / (2.0 * sigma * sigma));
-    return vec2<f32>(amp * cos(phase), amp * sin(phase));
+// A moving, breathing Gaussian packet (was: stationary, constant phase).
+//   k     — de Broglie carrier wave-vector: e^{i k·(p−c)}              (Idea 3)
+//   s,sdot — width scale s(t) and its rate; amplitude ∝ 1/s keeps ∫|ψ|² fixed
+//            in 2-D, and the expansion-flow phase (ṡ/s)·r²/σ² is the chirp that
+//            a Gaussian acquires while its width changes                  (Idea 4)
+fn quantumGaussian(p: vec2<f32>, center: vec2<f32>, sigma: f32, phase: f32,
+                   k: vec2<f32>, s: f32, sdot: f32) -> vec2<f32> {
+    let dp  = p - center;
+    let d2  = dot(dp, dp);
+    let sig = sigma * s;
+    let amp = exp(-d2 / (2.0 * sig * sig)) / s;
+    let ph  = phase + dot(k, dp) + 3.0 * (sdot / s) * d2 / (sigma * sigma);
+    return vec2<f32>(amp * cos(ph), amp * sin(ph));
 }
 
 fn standingWave(p: vec2<f32>, t: f32, freq: f32, speed: f32) -> f32 {
@@ -161,7 +170,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let ghostPh  = t * audioModSpeed + f32(i) * 2.094 + f32(g) * 1.257;
             let sigma    = ghostSpread * (1.0 + hash1(seed + f32(g) * 7.7) * 0.5);
 
-            let psi  = quantumGaussian(p, ghostPos, sigma, ghostPh);
+            // ── Idea 3: de Broglie carrier. The packet moves along its Lissajous orbit,
+            // so its momentum is the analytic orbit velocity d(lissajousPos)/dghostT.
+            // Overlapping packets with different momenta now interfere in fringes.
+            let orbitVel = vec2<f32>(-a * sin(a * ghostT + dlt), b * cos(b * ghostT)) * scl;
+            let kVec     = orbitVel * 42.0;
+            // ── Idea 4: breathing packet. Width scale s(t) inhales/exhales (±30%) with
+            // its own phase per ghost; the chirp inside quantumGaussian is ∝ ṡ/s.
+            let breathW  = audioModSpeed * 0.9;
+            let breathPh = breathW * t + hash1(seed + f32(g) * 3.1 + 11.0) * 6.28318;
+            let wScale   = 1.0 + 0.3 * sin(breathPh);
+            let wRate    = 0.3 * breathW * cos(breathPh);
+
+            let psi  = quantumGaussian(p, ghostPos, sigma, ghostPh, kVec, wScale, wRate);
             totalRe += psi.x;
             totalIm += psi.y;
 
@@ -225,12 +246,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1: the coherent sum. |Σψ|² − Σ|ψ|² is the cross (interference)
     // term the ghosts share; bright where in phase, dark where cancelling.
     // Decoherence washes it out toward the incoherent picture.
+    // With the Idea 3/4 carrier + chirp the raw cross term is large and signed
+    // (many packets in phase), so it is expressed as fringe visibility
+    // V = (|Σψ|² − Σ|ψ|²) / Σ|ψ|² ∈ [−1, ∞), faded out where there is no probability.
     let coherentProb = totalRe * totalRe + totalIm * totalIm;
-    let crossTerm = (coherentProb - totalProb) * collapse * rippleCollapse;
+    let fringeVis = (coherentProb - totalProb) / max(totalProb, 0.02)
+                  * clamp(totalProb * 3.0, 0.0, 1.0) * collapse * rippleCollapse;
     let coherence = 1.0 - u.zoom_params.y * 0.85;
     let phaseHue = atan2(totalIm, totalRe) / TAU + 0.5;
-    col += hsv2rgb(fract(phaseHue + t * 0.02), 0.85, clamp(crossTerm * 2.5, 0.0, 0.9)) * coherence;
-    col *= 1.0 - clamp(-crossTerm * 2.0, 0.0, 0.55) * coherence;
+    // constructive fringes pull the (near-clipped) pastel toward the phase colour instead of
+    // adding white on top of it; destructive fringes (V → −1) darken to a null.
+    let fringeCol = hsv2rgb(fract(phaseHue + t * 0.02), 0.85, 0.95);
+    col = mix(col, fringeCol, clamp(fringeVis * 0.5, 0.0, 0.85) * coherence);
+    col *= 1.0 - clamp(-fringeVis * 1.0, 0.0, 0.8) * coherence;
 
     // Idea 2: detector screen. Each frame a pixel registers a hit with
     // probability ∝ |ψ|²; hits persist in A.a (exact C load) and slowly fade,

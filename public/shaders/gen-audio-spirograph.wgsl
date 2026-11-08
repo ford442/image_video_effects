@@ -3,12 +3,16 @@
 //  Category: generative
 //  Features: audio-reactive, procedural, epitrochoid curves
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
-//  Ideas: additive gear glow (all curves); rolling-center hubs; stator ghost; cusp flash
-//  A packing: history RGB + coverage
+//  Upgraded: 2026-09-27, 2026-11-08
+//  Ideas: additive gear glow (all curves); rolling-center hubs; stator ghost; cusp flash; rolling gear + pen arm (the mechanism); no-slip gear teeth locked to the arm; ink pooling by pen speed
+//  A packing: history RGB + coverage; texels (0,0) = sprung lens (pos.xy, vel.xy) and (1,0) = (fract(lastTime), -, -, 0.7371 sentinel) are STATE, not pixels (top-left corner; only their trail read is zeroed, invisible)
+//  2026-11-08 rescue: the sprung mouse lens lived in extraBuffer[133..138], which the host zeroes every
+//    frame, so the lens followed the raw pointer; it now persists in two A texels.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
+
+const SENT: f32 = 0.7371;
 
 // Hash function
 fn hash12(p: vec2<f32>) -> f32 {
@@ -90,29 +94,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioMod = 1.0 + audio * audioReactivity * 2.0;
 
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouseUv = rawMouse;
-    var mouseVelocity = vec2<f32>(0.0);
-    let hasSpring = arrayLength(&extraBuffer) >= 139u;
-    if (hasSpring && extraBuffer[137] > 0.5) {
-        mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    }
-    let springDt = select(0.016, clamp(t - extraBuffer[138], 0.001, 0.05), hasSpring && extraBuffer[137] > 0.5);
+    // Sprung lens state lives in two A texels (see header); the sentinel guards the first frame / inherited C.
+    let st0 = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let st1 = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+    let stateOk = abs(st1.w - SENT) < 0.001;
+    let rawT = u.config.x;
+    var mouseUv = select(rawMouse, st0.xy, stateOk);
+    var mouseVelocity = select(vec2<f32>(0.0), st0.zw, stateOk);
+    let springDt = select(0.016, clamp(fract(rawT - st1.x), 0.001, 0.05), stateOk);
     let springOmega = 8.0;
     mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
     mouseUv += mouseVelocity * springDt;
-    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
-        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = t;
-    }
     let mouse = (mouseUv - vec2<f32>(0.5)) * vec2<f32>(resolution.x / resolution.y, 1.0);
     let mouseDelta = uv - mouse;
     let mouseLens = exp(-dot(mouseDelta, mouseDelta) * 18.0) * mix(0.04, 0.18, select(0.0, 1.0, u.zoom_config.w > 0.5));
     uv -= mouseDelta * mouseLens;
     
     // Background accumulation for trails
-    let prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
+    var prevCol = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
+    prevCol = select(prevCol, vec3<f32>(0.0), (global_id.y == 0u) && (global_id.x < 2u));   // state texels carry no trail
     
     // Multiple harmonics - musical ratios
     let ratios = array<f32, 5>(1.0, 3.0/2.0, 4.0/3.0, 5.0/4.0, 5.0/3.0);
@@ -124,6 +124,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hubGlow = 0.0;
     var stator = 0.0;
     var cuspFlash = 0.0;
+    var mech = vec3<f32>(0.0);
     
     // Generate multiple spirograph curves
     for (var i: i32 = 0; i < 5; i++) {
@@ -138,15 +139,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let time = t * speed;
         let sweep = 6.28318 * mix(0.2, 1.0, trailLength);
         let gearRot = rot(t * 0.08 + f32(i) * 0.16);
-        var prevPos = gearRot * epitrochoid(time, R, r, d);
+        let penNow = gearRot * epitrochoid(time, R, r, d);
+        var prevPos = penNow;
         var prevTan = vec2<f32>(0.0);
         var dist = 1000.0;
         var segmentFade = 1.0;
+        var nearLen = 1.0;
+        var lenSum = 0.0;
         for (var j: i32 = 1; j <= 12; j = j + 1) {
             let jf = f32(j) / 12.0;
             let pos = gearRot * epitrochoid(time - sweep * jf, R, r, d);
             let segDist = distToSegment(uv, prevPos, pos);
-            if (segDist < dist) { dist = segDist; segmentFade = 1.0 - jf * 0.65; }
+            let segLen = length(pos - prevPos);
+            lenSum += segLen;
+            if (segDist < dist) { dist = segDist; segmentFade = 1.0 - jf * 0.65; nearLen = segLen; }
             let tan = pos - prevPos;
             let prevLen = length(prevTan);
             let rev = dot(tan, prevTan) / max(length(tan) * prevLen, 1e-6);
@@ -155,8 +161,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             prevTan = tan;
             prevPos = pos;
         }
+        // ── Idea 7: ink pooling by pen speed ────────────────────────────
+        // Equal-time samples: segment length = pen speed. Ink pools where the pen
+        // is slow (cusps, turning arcs) and goes thin on fast sweeps.
+        let pool = clamp((lenSum / 12.0) / max(nearLen, 1e-5), 0.6, 2.2);
+        // ── Idea 6: no-slip gear teeth on the fixed ring ────────────────
+        // Teeth counts are in the ratio of the radii (N_stator = N_gear * R / r).
+        let minRes = min(resolution.x, resolution.y);
+        // teeth capped at ~4 px pitch so they never alias into a dither at low working sizes
+        let nGear = clamp(round(6.28318 * r / 0.016), 6.0, max(6.0, min(48.0, floor(6.28318 * r * minRes / 4.0))));
+        let nStator = clamp(round(nGear * R / r), 6.0, max(6.0, min(360.0, floor(6.28318 * R * minRes / 4.0))));
+        let statorAng = atan2(uv.y, uv.x) - (t * 0.08 + f32(i) * 0.16);
+        let statorTeeth = 0.72 + 0.28 * cos(nStator * statorAng);
         // Idea 3 — stator ghost of the fixed circle
-        stator += exp(-abs(length(uv) - R) * 78.0) * 0.42;
+        stator += exp(-abs(length(uv) - R) * 78.0) * 0.42 * statorTeeth;
         
         let hue = fract(f32(i) * 0.2 + t * 0.14 + treble * 0.2);
         let sat = 0.7 + audio * 0.3;
@@ -165,13 +183,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         
         let intensity = 1.0 / (1.0 + f32(i) * 0.5) * segmentFade;
         // Idea 1 — additive gears
-        let add = exp(-dist * dist / max(lineThickness * lineThickness * 36.0, 1e-8)) * intensity;
+        let add = exp(-dist * dist / max(lineThickness * lineThickness * 36.0, 1e-8)) * intensity * pool;
         curveColor += col * add;
         totalIntensity += add;
         minDist = min(minDist, dist);
         // Idea 2 — rolling-center hub
         let hub = rot(t * 0.08 + f32(i) * 0.16) * vec2<f32>((R + r) * cos(time), (R + r) * sin(time));
         hubGlow += exp(-dot(uv - hub, uv - hub) / 0.0009) * 0.45;
+        // ── Idea 5: rolling gear + pen arm ──────────────────────────────
+        // The mechanism that draws the curve: the rolling gear (radius r about
+        // the hub) with its teeth, and the arm from the hub to the pen (length
+        // d, breathing with the audio). Teeth are phase-locked to the arm, so
+        // they rotate with the gear.
+        let toHub = uv - hub;
+        let ringD = abs(length(toHub) - r);
+        let armAng = atan2(penNow.y - hub.y, penNow.x - hub.x);
+        let gearTeeth = 0.55 + 0.45 * cos(nGear * (atan2(toHub.y, toHub.x) - armAng) + 3.14159);
+        let ringLine = smoothstep(lineThickness * 2.2, 0.0, ringD) * gearTeeth;
+        let armLine = smoothstep(lineThickness * 1.6, 0.0, distToSegment(uv, hub, penNow));
+        let penDot = exp(-dot(uv - penNow, uv - penNow) / max(lineThickness * lineThickness * 14.0, 1e-8));
+        mech += col * (ringLine * 0.95 + armLine * 1.0 + penDot * 1.0) * (1.0 / (1.0 + f32(i) * 0.2));
     }
     
     // Add secondary harmonics (hypotrochoids)
@@ -188,11 +219,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         var prevTan = vec2<f32>(0.0);
         var dist = 1000.0;
         var segmentFade = 1.0;
+        var nearLen = 1.0;
+        var lenSum = 0.0;
         for (var j: i32 = 1; j <= 10; j = j + 1) {
             let jf = f32(j) / 10.0;
             let pos = gearRot * hypotrochoid(time - sweep * jf, R, r, d);
             let segDist = distToSegment(uv, prevPos, pos);
-            if (segDist < dist) { dist = segDist; segmentFade = 1.0 - jf * 0.6; }
+            let segLen = length(pos - prevPos);
+            lenSum += segLen;
+            if (segDist < dist) { dist = segDist; segmentFade = 1.0 - jf * 0.6; nearLen = segLen; }
             let tan = pos - prevPos;
             let prevLen = length(prevTan);
             let rev = dot(tan, prevTan) / max(length(tan) * prevLen, 1e-6);
@@ -204,7 +239,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         stator += exp(-abs(length(uv) - R) * 78.0) * 0.28;
         let hue = fract(0.5 + f32(i) * 0.15 - t * 0.03);
         let col = hsl2rgb(hue, 0.8, 0.6);
-        let add = exp(-dist * dist / max(lineThickness * lineThickness * 36.0, 1e-8)) * 0.7 * segmentFade;
+        // Idea 7 (pen-speed ink pooling) on the hypotrochoids too
+        let pool = clamp((lenSum / 10.0) / max(nearLen, 1e-5), 0.6, 2.2);
+        let add = exp(-dist * dist / max(lineThickness * lineThickness * 36.0, 1e-8)) * 0.7 * segmentFade * pool;
         curveColor += col * add;
         totalIntensity += add;
         minDist = min(minDist, dist);
@@ -219,6 +256,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += vec3<f32>(1.0, 0.92, 0.75) * clamp(hubGlow, 0.0, 1.2);
     col += vec3<f32>(0.55, 0.78, 1.0) * clamp(stator, 0.0, 0.85);
     col += vec3<f32>(1.0, 0.96, 0.72) * clamp(cuspFlash, 0.0, 1.4) * 0.75;
+    col += clamp(mech, vec3<f32>(0.0), vec3<f32>(1.1));
 
     let uv01 = (vec2<f32>(global_id.xy) + vec2<f32>(0.5)) / resolution;
     var clickChime = 0.0;
@@ -246,7 +284,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let coord = vec2<i32>(global_id.xy);
     let history = clamp(max(col, vec3<f32>(0.0)) * 0.94, vec3<f32>(0.0), vec3<f32>(1.25));
     let coverage = clamp(glow * totalIntensity + core * 0.55 + clickChime * 0.2, 0.0, 1.0);
-    textureStore(dataTextureA, coord, vec4<f32>(history, coverage));
+    var aOut = vec4<f32>(history, coverage);
+    if (global_id.y == 0u && global_id.x == 0u) { aOut = vec4<f32>(mouseUv, mouseVelocity); }
+    if (global_id.y == 0u && global_id.x == 1u) { aOut = vec4<f32>(fract(rawT), 0.0, 0.0, SENT); }
+    textureStore(dataTextureA, coord, aOut);
     let display = acesToneMap(history * 1.08);
     let alpha = clamp(coverage, 0.0, 0.96);
     textureStore(writeTexture, coord, vec4<f32>(display, alpha));

@@ -11,7 +11,7 @@
     "music",
     "reactive"
   ],
-  "description": "A stylized standing-wave string ensemble with harmonic modes, sprung mouse plucking, click resonance shells, audio excitation, temporal trails, and generated relief depth.",
+  "description": "A stylized standing-wave string ensemble with harmonic modes, sprung mouse plucking, a held-pointer fretting finger, a long-exposure envelope that shows each string's swing, click resonance shells, audio excitation, temporal trails, and generated relief depth.",
   "workgroup_size": [
     16,
     16,
@@ -28,7 +28,52 @@
     "sprung-mouse-plucking",
     "click-resonance-shells",
     "temporal-feedback",
-    "depth-output"
+    "depth-output",
+    "long-exposure-envelope",
+    "fretting-finger",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "fundamental",
+      "name": "Fundamental Frequency",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Base pitch of the strings (spatial and temporal frequency)"
+    },
+    {
+      "id": "harmonicRichness",
+      "name": "Harmonic Richness",
+      "default": 0.6,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "How many partials each string carries"
+    },
+    {
+      "id": "damping",
+      "name": "Damping",
+      "default": 0.85,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How quickly the upper partials die away"
+    },
+    {
+      "id": "pluckStrength",
+      "name": "Pluck Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Excitation of the strings by bass and by the pointer"
+    }
   ],
   "x-meta": {
     "upgrade": {
