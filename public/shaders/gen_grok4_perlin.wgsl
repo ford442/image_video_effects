@@ -4,8 +4,8 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, procedural, mouse-driven, temporal
 //  Complexity: Very High
 //  Scientific: Sediment-transport terrain with hydraulic incision, wind abrasion, layered hardness, seismic uplift, and reflective water-table basins
-//  Upgraded: 2026-10-17
-//  Ideas: bedding terraces; shoreline foam; talus apron; drainage rills
+//  Upgraded: 2026-11-08
+//  Ideas: bedding terraces; shoreline foam; talus apron; drainage rills; aeolian sand ripples; capillary fringe
 //  A packing: raw erosion, sediment, water, uplift
 // ═══════════════════════════════════════════════════════════════════
 
@@ -234,8 +234,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rillDist = min(rillPhase, 1.0 - rillPhase);
   let rill = (1.0 - smoothstep(0.0, 0.045, rillDist)) * smoothstep(0.05, 0.16, slope) * (1.0 - waterMask);
   landColor = landColor * (1.0 - rill * 0.42);
+  // New idea — aeolian sand ripples: on flat, sediment-laden ground the same gust that
+  // abrades ridges lays down ripple crests transverse to the wind (+x), slightly sinuous.
+  let rippleCoord = uv.x * mix(70.0, 140.0, terrainScale) + fbm(uv * vec2<f32>(3.0, 9.0), 2) * 2.5 - u.config.x * gust * 6.0;
+  let rippleProfile = pow(0.5 + 0.5 * sin(rippleCoord * 6.28318), 3.0);
+  let sandFlat = (1.0 - smoothstep(0.02, 0.09, slope)) * smoothstep(0.08, 0.35, newSediment + windControl * 0.25) * (1.0 - waterMask);
+  landColor *= 1.0 + (rippleProfile - 0.35) * sandFlat * (0.25 + windControl * 0.35);
   landColor += vec3<f32>(0.20, 0.14, 0.09) * windAbrasion * 1.8;
   landColor += vec3<f32>(0.12, 0.09, 0.05) * newSediment * (0.5 + mids * 0.8);
+
+  // New idea — capillary fringe: soil just above the water table wicks water up and
+  // darkens/saturates in a band whose height grows with the water present (mids swell it).
+  let fringeH = 0.035 + newWater * 0.05 + mids * 0.02;
+  let fringe = smoothstep(fringeH, 0.0, heightLook - waterTable) * step(waterTable, heightLook) * (1.0 - waterMask);
+  landColor = mix(landColor, landColor * vec3<f32>(0.55, 0.52, 0.5), fringe * 0.7);
 
   let skyReflection = mix(vec3<f32>(0.08, 0.16, 0.28), vec3<f32>(0.65, 0.78, 0.92), 1.0 - uv.y);
   let waterColor = mix(vec3<f32>(0.04, 0.11, 0.20), skyReflection, smoothstep(0.0, 0.35, waterMask));
@@ -250,7 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let foam = waterMask * (1.0 - waterMask) * (0.25 + slope * 3.2) * (0.7 + treble * 0.5);
   generatedColor += vec3<f32>(0.88, 0.93, 0.98) * clamp(foam, 0.0, 0.55);
 
-  let valleyFog = smoothstep(0.0, 0.4, 1.0 - height + waterMask * 0.25);
+  let valleyFog = smoothstep(0.45, 0.9, 1.0 - height + waterMask * 0.25); // was (0.0,0.4): fogged everything below h=0.6
   let fogColor = mix(vec3<f32>(0.62, 0.72, 0.82), vec3<f32>(0.92, 0.95, 0.98), uv.y);
   generatedColor = mix(generatedColor, fogColor, valleyFog * 0.42);
 
@@ -258,7 +270,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let finalAlpha = max(inputColor.a, 0.88 + waterMask * 0.08);
   let finalDepth = mix(inputDepth, height, 0.96);
 
-  textureStore(writeTexture, coord, vec4<f32>(acesToneMap((finalColor) * 1.1), finalAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(acesToneMap(max(finalColor, vec3<f32>(0.0)) * 1.1), finalAlpha));
   textureStore(dataTextureA, coord, vec4<f32>(newErosion, newSediment, newWater, newUplift));
   textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

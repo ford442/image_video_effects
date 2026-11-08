@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: Nakaya crystal habit per snow column (hexagonal plates <-> stellar dendrites with 60-degree side branches, mids = supersaturation pushes toward dendrites); habit-dependent fall dynamics (plates sink fast and flutter-tilt with a specular basal-face glint as they swing level, dendrites drift slowly), click = radial wind gust, mouse-held = eddy; riming to graupel toward the bottom (wet-growth lumps); snowbank from C history with gust lean
+//  Upgraded: 2026-11-08
+//  Ideas: Nakaya crystal habit per snow column (hexagonal plates <-> stellar dendrites with 60-degree side branches, mids = supersaturation pushes toward dendrites); habit-dependent fall dynamics (plates sink fast and flutter-tilt with a specular basal-face glint as they swing level, dendrites drift slowly), click = radial wind gust, mouse-held = eddy; riming to graupel toward the bottom (wet-growth lumps); snowbank from C history with gust lean; near-layer defocus bokeh discs; prismatic basal-face glint (ice dispersion)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Flake Density, y=Fall Speed, z=Chroma, w=Streak
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Flake Density, y=Fall Speed, z=Chroma, w=Streak
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -159,7 +141,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let flakeDensity = mix(20.0, 180.0, zp.x);
+  // Rescue (2026-11-08): HEAD used 20..180 cells across, i.e. ~1-2 px cells
+  // with a flake in every cell -> per-pixel speckle. Density now sets how
+  // many cells are occupied, over a resolvable cell count.
+  let flakeDensity = mix(7.0, 22.0, zp.x);
+  let occupancy = mix(0.3, 0.85, zp.x);
   let fallSpeed = mix(0.08, 2.0, zp.y);
   let chroma = mix(0.2, 2.0, zp.z);
   let blurAmt = mix(0.0, 1.0, zp.w);
@@ -227,7 +213,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let offset = local - flakePos * 0.9 - vec2<f32>(flutterX, 0.0);
     let d = length(offset);
 
-    let core = exp(-d * d * (40.0 + smoothBass * 30.0));
+    let present = step(hash21(cell + vec2<f32>(5.3, layerSeed + 2.0)), occupancy);
+    let core = exp(-d * d * (40.0 + smoothBass * 30.0)) * present;
 
     // Crystal silhouette once a cell is big enough on screen to resolve it.
     let cellPx = f32(dims.x) / density;
@@ -241,7 +228,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var flake = core;
     if (detail > 0.0) {
       let crystal = snowCrystal(q, R, habit, pix);
-      flake = mix(core, max(crystal, core * 0.35), detail);
+      flake = mix(core, max(crystal * present, core * 0.35), detail);
+    }
+
+    // ── Idea 5: near-layer defocus bokeh. The nearest flakes (layer 0) sit
+    // in front of the focal plane: their crystal blurs into a soft hexagonal
+    // aperture disc with a brighter rim, stronger with Streak (focus pull).
+    if (layer == 0) {
+      let hq = abs(q0);
+      let hexD = max(hq.x * 0.8660254 + hq.y * 0.5, hq.y) - R * 0.95;
+      let bokehBody = smoothstep(0.02, -0.02, hexD);
+      let bokehRim = exp(-abs(hexD) * 45.0) * 0.6;
+      let bokeh = (bokehBody * 0.28 + bokehRim) * present;
+      flake = mix(flake, bokeh, 0.35 + blurAmt * 0.5);
     }
 
     // Idea 1 — riming → graupel: dendrites plump into lumpy spheres toward
@@ -256,6 +255,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // them through horizontal (tilt ~ lateral velocity crossing zero).
     let tilt = latVel / max(flutterA * flutterW, 1e-4);
     let glint = exp(-tilt * tilt * 18.0) * (1.0 - habit) * core * (0.7 + treble * 0.6);
+    // ── Idea 6: prismatic glint. Ice disperses the flash: the swing direction
+    // (sign of tilt) sweeps the glint from red through to violet.
+    let spec = clamp(tilt * 2.5 + 0.5, 0.0, 1.0);
+    let glintTint = clamp(vec3<f32>(1.5 - spec * 2.0, 1.0 - abs(spec - 0.5) * 2.0, spec * 2.0 - 0.5), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // ═══ Per-flake motion blur trail ═══
     let vel = vec2<f32>((rnd.x - 0.5) * 0.06 + latVel * 0.04, -0.08 - depth * 0.05) * blurAmt;
@@ -266,7 +269,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let blurPos = offset - vel * t;
       trail = trail + exp(-dot(blurPos, blurPos) * 35.0) * (1.0 - t);
     }
-    trail = trail / f32(steps);
+    trail = trail / f32(steps) * present;
 
     let twinkle = 0.5 + 0.5 * sin(time * (8.0 + treble * 26.0) + rnd.x * 20.0);
     let hue = rnd.x + time * 0.03 + mids * 0.15 + depth * 0.2;
@@ -280,7 +283,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthFade = 1.0 - depth * 0.35;
     color = color + flakeCol * flake * chroma * (0.4 + twinkle * 0.6) * depthFade;
     color = color + flakeCol * trail * chroma * 0.5 * depthFade;
-    color = color + mix(flakeCol, vec3<f32>(1.0), 0.7) * glint * 1.6 * depthFade;
+    color = color + mix(glintTint, vec3<f32>(1.0), 0.35) * glint * 1.6 * depthFade;
     totalFlake = totalFlake + flake;
     totalTrail = totalTrail + trail;
     totalGlint = totalGlint + glint;

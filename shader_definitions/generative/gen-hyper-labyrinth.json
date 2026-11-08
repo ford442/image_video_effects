@@ -13,7 +13,7 @@
     "audio",
     "music"
   ],
-  "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure. Cul-de-sac chambers warm where the gyroid gradient vanishes, and world-up faces wear into floor treads.",
+  "description": "A 4D maze visualization with neon aesthetics and evolving geometry. Use mouse to orbit the hyper-structure. Walls swell and thin along the fourth dimension, cul-de-sac chambers warm where the gyroid gradient vanishes, and crevices darken.",
   "workgroup_size": [
     16,
     16,

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarched, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: orb-web spoke lattice with capture-spiral highlights; dewdrop caustic beads along the sagging dragline
+//  Upgraded: 2026-11-08
+//  Ideas: orb-web spoke lattice with capture-spiral highlights; dewdrop caustic beads along the sagging dragline; plucked-dragline standing waves (harmonic modes, nodes pinned at spinneret + anchor, treble excites higher modes); crystalline dorsal folium (chevron facets etched into the abdomen, glowing in nebula colour)
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back exactly as HDR history
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -137,12 +137,19 @@ fn sdSpider(p: vec3<f32>, audioReact: f32, time: f32) -> f32 {
 fn sdDragline(p: vec3<f32>, r: f32) -> f32 {
     let sag = u.zoom_params.y * 1.6;
     let S = vec3<f32>(0.0, 0.3, -0.95);     // spinnerets at the rear of the abdomen
-    let A = vec3<f32>(-3.2, 7.5, 1.5);      // anchor off-frame, upper left
+    // Anchor brought into the upper-left of frame so the plucked line (Idea 6) reads at defaults.
+    let A = vec3<f32>(-3.0, 3.4, 0.5);
     var d = 1e5;
     var prev = S;
     for (var k = 1; k <= 4; k++) {
         let s = f32(k) * 0.25;
-        let cur = mix(S, A, s) - vec3<f32>(0.0, 4.0 * sag * s * (1.0 - s), 0.0);
+        // Idea 6: plucked standing wave. Fundamental + 3rd harmonic, pinned at both ends
+        // (sin(n*pi*s) = 0 at s = 0, 1); bass sets amplitude, treble feeds the 3rd mode.
+        let au = plasmaBuffer[0];
+        let ph = u.config.x * 9.0;
+        let wob = sin(3.14159 * s) * sin(ph) * (0.06 + au.x * 0.18)
+                + sin(9.42478 * s) * sin(ph * 3.0 + 1.3) * au.z * 0.09;
+        let cur = mix(S, A, s) - vec3<f32>(0.0, 4.0 * sag * s * (1.0 - s), 0.0) + vec3<f32>(wob * 0.8, 0.0, wob * 0.6);
         d = min(d, sdCapsule(p, prev, cur, r));
         prev = cur;
     }
@@ -196,15 +203,17 @@ fn displace(p: vec3<f32>, time: f32, mouse: vec2<f32>) -> vec3<f32> {
     return distortedP - vec3<f32>(mouse.x * 2.0, mouse.y * 2.0, 0.0);
 }
 
-// x = scene distance, y = condensed-node distance (for the node glow accumulator)
-fn mapParts(p: vec3<f32>, time: f32, audioReact: f32, mouse: vec2<f32>) -> vec2<f32> {
+// x = scene distance, y = condensed-node distance (for the node glow accumulator),
+// z = dragline distance (for the silk glow accumulator, Idea 6)
+fn mapParts(p: vec3<f32>, time: f32, audioReact: f32, mouse: vec2<f32>) -> vec3<f32> {
     let displacedP = displace(p, time, mouse);
     let web_complexity = max(u.zoom_params.x, 0.1);
 
     let spider = sdSpider(displacedP, audioReact, time);
     let nodes = sdNodes(displacedP, time, mouse);
-    let web = min(sdDragline(displacedP, 0.02 / web_complexity), nodes) + fbm(p) * 0.1;
-    return vec2<f32>(min(spider, web), nodes);
+    let silk = sdDragline(displacedP, 0.02 / web_complexity);
+    let web = min(silk, nodes) + fbm(p) * 0.1;
+    return vec3<f32>(min(spider, web), nodes, silk);
 }
 
 fn map(p: vec3<f32>, time: f32, audioReact: f32, mouse: vec2<f32>) -> f32 {
@@ -269,6 +278,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var d = 0.0;
     var glow = 0.0;
     var nodeGlow = 0.0;
+    var silkGlow = 0.0;
     var hit = false;
     let max_dist = 20.0 * void_depth;
     for (var i = 0; i < 100; i++) {
@@ -278,6 +288,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         glow += exp(-max(d, 0.0) * 6.0) * 0.02;
         // Idea 1: condensed nodes gather their own glow as the ray grazes them
         nodeGlow += exp(-max(md.y, 0.0) * 30.0) * 0.03;
+        // Idea 6: the thread is sub-pixel, so the vibrating silk is shown by the glow
+        // the ray gathers as it grazes it.
+        silkGlow += exp(-max(md.z, 0.0) * 14.0) * 0.12;
         if (d < 0.001) { hit = true; break; }
         if (t > max_dist) { break; }
         t += d;
@@ -325,6 +338,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dew = exp(-abs(silkD) * 34.0) * pow(max(sin(displaced.y * 18.0 + time * 2.6), 0.0), 8.0);
         surf += vec3<f32>(0.95, 1.0, 1.0) * dew * (0.22 + audioBass * 0.18);
 
+        // Idea 7: dorsal folium — the abdomen carries chevron bands pointing to the head,
+        // cut as crystal facets (sharp edge lines) that glow with the nebula hue.
+        let ab = displaced * vec3<f32>(1.0, 1.5, 1.0);
+        let onAbdomen = (1.0 - smoothstep(1.0, 1.25, length(ab))) * (1.0 - smoothstep(0.6, 1.0, displaced.z));
+        // Seen from the rear (camera at -z), so chevrons run up the abdomen in y toward the head.
+        let chev = fract(displaced.y * 2.6 + displaced.z * 0.8 - abs(displaced.x) * 1.6 + 0.1);
+        let facet = 1.0 - smoothstep(0.0, 0.08, abs(chev - 0.5) - 0.36);
+        let midStripe = exp(-abs(displaced.x) * 14.0);
+        let folium = onAbdomen * max(facet, midStripe * 0.6);
+        surf = mix(surf, surf * 0.35, onAbdomen * 0.3 * (1.0 - facet));
+        surf += palette(hueT + 0.6) * folium * (1.1 + audioMids * 0.6);
+
         col += surf * plasma_intensity;
     }
 
@@ -334,6 +359,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1: condensed nodes shine in the colour of the gas they condensed from
     // (the node projects onto this pixel, so nebDens here is its gating density).
     col += palette(nebDens + 0.25) * nodeGlow * (0.8 + audioTreble * 0.6) * (0.5 + plasma_intensity);
+
+    // Idea 6: plucked dragline glow — silver-blue, brighter with bass (the pluck).
+    col += vec3<f32>(0.7, 0.85, 1.0) * min(silkGlow, 1.5) * (1.4 + audioBass * 1.2);
 
     // Expanding click fronts pluck the crystalline web.
     var rippleGlow = 0.0;
@@ -357,7 +385,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = aces(hueClamp(hdrColor, 2.0));
 
     let hitMask = select(0.0, smoothstep(0.0, 0.18, depthNear), hit);
-    let alpha = clamp(hitMask * 0.75 + glow * 0.18 + nodeGlow * 0.2 + nebDens * 0.12 + rippleGlow * 0.16, 0.02, 1.0);
+    let alpha = clamp(hitMask * 0.75 + glow * 0.18 + nodeGlow * 0.2 + min(silkGlow, 1.0) * 0.3 + nebDens * 0.12 + rippleGlow * 0.16, 0.02, 1.0);
     textureStore(writeTexture, coord, vec4<f32>(col, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depthNear, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, vec4<f32>(hdrColor, alpha));

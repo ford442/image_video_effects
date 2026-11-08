@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: chrysalis chamber ribs; internal TIR caustics
+//  Upgraded: 2026-11-08
+//  Ideas: chrysalis chamber ribs; internal TIR caustics; helical emergence fissure; dichroic aurora backdrop; crack-junction sparks
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // Refraction Index, Plasma Intensity, Core Rotation Speed, Chromatic Dispersion
-  ripples: array<vec4<f32>, 50>, // .xy = ripple uv, .z = start time, .w = padding
-};
+#include "_prelude.wgsl"
+// zoom_params: Refraction Index, Plasma Intensity, Core Rotation Speed, Chromatic Dispersion
 
 fn rot(a: f32) -> mat2x2<f32> {
   let s = sin(a);
@@ -151,7 +133,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dims = vec2<f32>(u.config.zw);
     if (coord.x >= i32(dims.x) || coord.y >= i32(dims.y)) { return; }
 
-    let uv = (vec2<f32>(coord) - 0.5 * dims) / min(dims.x, dims.y);
+    // Rescue: screen y grows downward; flip so the scene is upright.
+    var uv = (vec2<f32>(coord) - 0.5 * dims) / min(dims.x, dims.y);
+    uv.y = -uv.y;
     let mouse = u.zoom_config.yz;
     let time = u.config.x;
     let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
@@ -164,10 +148,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Camera
     var ro = vec3<f32>(0.0, 0.0, -5.0);
-    let orbitXZ = rot(mouse.x * 6.2831853) * ro.xz;
-    ro = vec3<f32>(orbitXZ.x, ro.y, orbitXZ.y);
-    let orbitYZ = rot(mouse.y * 3.1415927) * ro.yz;
+    // Rescue: the old pitch was mouse.y * PI, so the idle cursor (0.5) parked
+    // the camera on the pole where cross(cw, up) = 0 and every ray was NaN
+    // (fully black). Centre both axes on 0.5 and keep pitch off the pole;
+    // mouse y is flipped to match the upright uv.
+    let orbitYZ = rot((0.5 - mouse.y) * 1.3) * ro.yz;
     ro = vec3<f32>(ro.x, orbitYZ);
+    let orbitXZ = rot((mouse.x - 0.5) * 6.2831853) * ro.xz;
+    ro = vec3<f32>(orbitXZ.x, ro.y, orbitXZ.y);
     let ta = vec3<f32>(0.0, 0.0, 0.0);
 
     let cw = normalize(ta - ro);
@@ -187,9 +175,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var col = vec3<f32>(0.0);
-    let bgCol = vec3<f32>(0.02, 0.0, 0.08) - length(uv)*0.1;
+    // Idea 4: dichroic aurora backdrop - slow curtains whose hue splits by
+    // Chromatic Dispersion, so the "void of refracted auroral light" exists.
+    let curtainX = rd.x * 3.0 + sin(rd.y * 4.0 + time * 0.2) * 0.6;
+    let curtain = pow(0.5 + 0.5 * sin(curtainX * 2.5 + time * 0.15), 4.0)
+      * smoothstep(-0.4, 0.5, rd.y) * (0.6 + audio.y * 0.3);
+    let auroraHue = vec3<f32>(
+      0.5 + 0.5 * sin(curtainX + chromDisp * 3.0),
+      0.5 + 0.5 * sin(curtainX + 2.1),
+      0.5 + 0.5 * sin(curtainX + 4.2 - chromDisp * 3.0));
+    let bgCol = max(vec3<f32>(0.02, 0.0, 0.08) - length(uv) * 0.05, vec3<f32>(0.0))
+      + auroraHue * vec3<f32>(0.25, 0.55, 0.6) * curtain;
     col = bgCol;
-    var surfaceAlpha = 0.0;
+    var surfaceAlphaBg = 0.18 * curtain;
+    var surfaceAlpha = clamp(surfaceAlphaBg, 0.0, 1.0);
     var sceneDepth = 1.0;
 
     if (hit) {
@@ -204,9 +203,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let plasmaDist = map(internalP);
         let plasmaGain = plasmaIntensity * (1.0 + audio.x * 0.25);
         let plasmaCol = vec3<f32>(1.0, 0.2, 0.8)
-          * exp(-abs(plasmaDist) * 5.0) * plasmaGain;
+          * exp(-abs(plasmaDist) * 5.0) * plasmaGain * 0.45;
+        // (0.45 / 0.6 trims: both glows saturate just under the shell and
+        // the ACES output washed to white once the camera rescue made it visible.)
         let cyanCore = vec3<f32>(0.0, 0.8, 1.0)
-          * exp(-abs(plasmaDist) * 10.0) * plasmaGain * 2.0;
+          * exp(-abs(plasmaDist) * 10.0) * plasmaGain * 0.6;
 
         // Refraction / thin film
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
@@ -244,9 +245,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
           pow(0.5 + 0.5 * sin(causticPhase - spectralOffset), 6.0)
         ) * cutLip * tirFocus * (1.0 + audio.z * 0.4);
 
-        col = glass + plasmaCol + cyanCore + ribLight + causticThreads;
+        // Idea 3: helical emergence fissure - a bright seam spiralling round the
+        // chrysalis axis; bass widens it as if the shell were about to split.
+        let helixAngle = atan2(localP.y, localP.x);
+        let helixPhase = helixAngle - localP.z * 2.4 - time * 0.3;
+        let helixDist = abs(sin(helixPhase * 0.5)) * length(localP.xy);
+        let fissureWidth = 0.03 + audio.x * 0.03;
+        let fissure = exp(-helixDist / fissureWidth) * smoothstep(1.9, 0.6, abs(localP.z));
+        let fissureCol = vec3<f32>(1.0, 0.75, 0.35) * fissure * (2.0 + audio.x * 1.5);
+
+        // Idea 5: crack-junction sparks - where three Voronoi cells meet on the
+        // surface (F2-F1 tiny), hashed cells blink white on treble.
+        let surfCells = voronoi3(localP * 2.0);
+        let junction = exp(-(surfCells.y - surfCells.x) * 40.0);
+        let blink = step(0.82, fract(hash3(floor(localP * 2.0)).x + time * 0.35));
+        let sparks = vec3<f32>(0.9, 0.95, 1.0) * junction * blink * (0.6 + audio.z * 1.2);
+
+        col = glass + plasmaCol + cyanCore + ribLight + causticThreads + fissureCol + sparks;
         surfaceAlpha = clamp(
-          0.32 + fresnel * 0.38 + ribMask * 0.18 + cutLip * tirFocus * 0.22,
+          0.32 + fresnel * 0.38 + ribMask * 0.18 + cutLip * tirFocus * 0.22 + fissure * 0.25,
           0.0,
           1.0
         );

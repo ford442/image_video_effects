@@ -3,7 +3,7 @@
   "name": "Acoustic String Theory",
   "url": "shaders/acoustic-string-theory.wgsl",
   "category": "generative",
-  "description": "Vibrating string harmonics visualized as oscillating sine waves in perspective, with audio-driven pluck and resonance.",
+  "description": "Vibrating string harmonics visualized as oscillating sine waves in perspective, with audio-driven pluck and resonance. Clicks pluck the nearest string (pitch glides down as it rings), sympathetic strings ring in simple ratios, and nodal pins mark each wavelength.",
   "tags": [
     "generative",
     "strings",

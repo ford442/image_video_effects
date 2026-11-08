@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: real interior march with per-channel Beer-Lambert replacing the fake dot(r_rd,1) colour; checkerboard-parity counter-rotating cells with per-cell ior and hollow radius; audio bands as wavelength (bass widens red eta, treble blue eta, mids nudge ior)
+//  Upgraded: 2026-10-10, 2026-11-08
+//  Ideas: real interior march with per-channel Beer-Lambert replacing the fake dot(r_rd,1) colour; checkerboard-parity counter-rotating cells with per-cell ior and hollow radius; audio bands as wavelength (bass widens red eta, treble blue eta, mids nudge ior); Cauchy dispersion (§12.2F); Fresnel-Schlick from per-cell ior + exit-face transmittance (§12.2F); one-bounce reflection march into the neighbouring glass cell
+//  Rescue 2026-11-08: camera-in-glass (on-axis ride crossed cell corners at every integer second) -> start ray marched out through the glass, Beer-Lambert tinted
 //  A packing: ACES display RGBA (alpha = glass transmission coverage)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -98,11 +99,38 @@ fn palette(t: f32) -> vec3<f32> {
     return a + b * cos(6.28318 * (c * t + d));
 }
 
+// ── Idea 5: Fresnel-Schlick base reflectance from the (per-cell) ior ──
+fn schlickF0(eta: f32) -> f32 {
+    let r = (eta - 1.0) / (eta + 1.0);
+    return r * r;
+}
+
+// ── Idea 6: one-bounce reflection march ──────────────────────────
+// `refl` used to feed only a white spec dot. March it ≤14 steps through the
+// same lattice; a hit returns the neighbouring cell's own glass tint (its
+// palette colour at that spot, attenuated with distance), a miss the sky.
+fn reflectLattice(p: vec3<f32>, refl: vec3<f32>, n: vec3<f32>) -> vec3<f32> {
+    let o = p + n * 0.01;
+    var t = 0.04;
+    var hit = false;
+    for (var i = 0; i < 14; i++) {
+        let d = map(o + refl * t);
+        if (d < 0.003) { hit = true; break; }
+        t += d;
+        if (t > 6.0) { break; }
+    }
+    let q = o + refl * t;
+    let neighbour = palette(length(q) * 0.1 + u.config.x * 0.5) * 0.6 * exp(-t * 0.25);
+    let sky = palette(refl.y + u.config.x * 0.1) * 0.1;
+    return select(sky, neighbour, hit);
+}
+
 // Idea 1: march INSIDE the glass for one wavelength. Returns (exit-direction
 // phase for the palette lookup, interior path length). Inside, -map() is the
 // distance to the nearest wall; rays that hit total internal reflection leave
 // along the mirror direction.
-fn interior(p: vec3<f32>, rd: vec3<f32>, n: vec3<f32>, eta: f32) -> vec2<f32> {
+// Returns (exit-direction phase, interior path length, exit-face transmittance).
+fn interior(p: vec3<f32>, rd: vec3<f32>, n: vec3<f32>, eta: f32) -> vec3<f32> {
     var r = refract(rd, n, 1.0 / eta);
     if (dot(r, r) < 0.5) { r = reflect(rd, n); }
     var t = 0.03;
@@ -114,8 +142,15 @@ fn interior(p: vec3<f32>, rd: vec3<f32>, n: vec3<f32>, eta: f32) -> vec2<f32> {
     let q = p + r * t;
     let n_out = get_normal(q);
     var e = refract(r, -n_out, eta);
-    if (dot(e, e) < 0.5) { e = reflect(r, -n_out); }
-    return vec2<f32>(dot(e, vec3<f32>(1.0)), t);
+    let tir = dot(e, e) < 0.5;
+    if (tir) { e = reflect(r, -n_out); }
+    // ── Idea 5b: exit-face transmittance — glass->air Schlick (angle in glass,
+    // same F0 as the entry face); total internal reflection passes only a
+    // fraction of the light on.
+    let cosIn = clamp(dot(r, n_out), 0.0, 1.0);
+    let f0 = schlickF0(eta);
+    let fExit = f0 + (1.0 - f0) * pow(1.0 - cosIn, 5.0);
+    return vec3<f32>(dot(e, vec3<f32>(1.0)), t, select(1.0 - fExit, 0.4, tir));
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -150,7 +185,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         rd = vec3<f32>(rd.x, rd_yz.x, rd_yz.y);
     }
 
-    var t = 0.0;
+    // Rescue: camera-in-glass. The on-axis ride crosses a cell boundary at every
+    // integer second (ro.z odd) where rotating cube corners (reach r=1.21) hold
+    // the camera point (r=1): map(ro)<0 and every ray hit at t~0 -> one flat
+    // colour. March out through the glass first and tint by the path (same
+    // Beer-Lambert form as the interior march).
+    // The ride also passes within ~0.2 of a corner at every boundary (a smooth
+    // wall-in-face frame): a soft near plane opens only when the camera is that
+    // close, so the lattice beyond is visible instead.
+    let camClear = map(ro);
+    var t = 0.8 * (1.0 - smoothstep(0.05, 0.5, camClear));
+    var camPath = 0.0;
+    for (var k = 0; k < 20; k++) {
+        let dIn = map(ro + rd * t);
+        if (dIn > 0.01) { break; }
+        let stepIn = max(-dIn, 0.02);
+        t += stepIn;
+        camPath += stepIn;
+    }
+    let camSigma = (vec3<f32>(1.0) - palette(length(ro) * 0.1 + u.config.x * 0.5)) * 0.9 + vec3<f32>(0.08);
+    let camTrans = exp(-camSigma * camPath);
     var d = 0.0;
     var hit = false;
     var steps_taken: i32 = 0;
@@ -184,11 +238,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // eta spread, treble widens the blue spread.
         let ior = u.zoom_params.y * (1.0 + 0.10 * (cell_h - 0.5)) + mids * 0.12;
         let dispersion = u.zoom_params.z;
-        let eta_r = max(ior - dispersion * (1.0 + bass * 1.5), 1.01);
+        // ── Idea 4: Cauchy dispersion (§12.2F). n(λ) = A + B/λ² at 650/550/450 nm:
+        // (1/λ² − 1/λg²) = −0.94 (R), +1.63 (B); /1.286 keeps the mean spread equal
+        // to the old symmetric ±dispersion, so the slider keeps its role but blue
+        // now separates 1.7x further than red, like real glass.
+        let eta_r = max(ior - dispersion * 0.73 * (1.0 + bass * 1.5), 1.01);
         let eta_g = max(ior, 1.01);
-        let eta_b = max(ior + dispersion * (1.0 + treble * 1.5), 1.01);
+        let eta_b = max(ior + dispersion * 1.27 * (1.0 + treble * 1.5), 1.01);
 
-        let fresnel = pow(clamp(1.0 - max(dot(n, v), 0.0), 0.0, 1.0), 3.0);
+        // ── Idea 5: Fresnel-Schlick (§12.2F), F0 = ((n-1)/(n+1))^2 from this cell's ior —
+        // denser glass is a stronger mirror; replaces the F0=0 (1-cos)^3 stand-in.
+        let f0 = schlickF0(max(ior, 1.0));
+        let fresnel = f0 + (1.0 - f0) * pow(clamp(1.0 - max(dot(n, v), 0.0), 0.0, 1.0), 5.0);
 
         let refl = reflect(rd, n);
 
@@ -206,10 +267,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ig = interior(p, rd, n, eta_g);
         let ib = interior(p, rd, n, eta_b);
         let sigma = (vec3<f32>(1.0) - mat_color) * 0.9 + vec3<f32>(0.08);
-        let trans = vec3<f32>(exp(-sigma.x * ir.y), exp(-sigma.y * ig.y), exp(-sigma.z * ib.y));
+        let trans = vec3<f32>(exp(-sigma.x * ir.y) * ir.z, exp(-sigma.y * ig.y) * ig.z, exp(-sigma.z * ib.y) * ib.z);
         let refr_color = vec3<f32>(palette(ir.x).r, palette(ig.x).g, palette(ib.x).b) * trans;
 
-        color = mix(refr_color * mat_color, vec3<f32>(1.0) * spec + audio_bump, fresnel);
+        let reflCol = reflectLattice(p, refl, n);
+        color = mix(refr_color * mat_color, reflCol + vec3<f32>(1.0) * spec + audio_bump, fresnel);
         transmission = clamp((trans.x + trans.y + trans.z) / 3.0, 0.0, 1.0) * (1.0 - fresnel);
 
         // AO
@@ -224,7 +286,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // ACES on display RGB; alpha = coverage (opaque at grazing/dense glass,
     // clearer where light transmits, faint for open sky).
     let alpha = select(0.3, clamp(1.0 - 0.45 * transmission, 0.55, 1.0), hit);
-    let final_color = vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), alpha);
+    let final_color = vec4<f32>(acesToneMap(max(color * camTrans, vec3<f32>(0.0))), alpha);
 
     textureStore(writeTexture, id.xy, final_color);
     textureStore(dataTextureA, id.xy, final_color);

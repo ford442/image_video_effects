@@ -2,13 +2,17 @@
 //  hybrid-spectral-decomposed
 //  Category: advanced-hybrid
 //  Features: pixel-sorting, spectral-decomposition, 4-band-equalizer,
-//            audio-reactive, mouse-driven
+//            audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: hybrid-spectral-sorting (pixel sorting, spectral
 //               color, hue shift), alpha-spectral-decompose (4-band
 //               frequency decomposition, multi-scale Gaussian)
 //  Created: 2026-04-18
 //  By: Agent CB-7 — Flow & Multi-Pass Enhancer
+//  Upgraded: 2026-11-08
+//  Ideas: audio-spectrum band EQ (bass→low … treble→high); band-rotated
+//         sort axes; threshold-gated streak runs
+//  A packing: rgba = signed DoG band lumas (low, midLow, midHigh, high)
 // ═══════════════════════════════════════════════════════════════════
 //  4-band spectral decomposition meets audio-reactive pixel sorting.
 //  Image decomposed into low/mid-low/mid-high/high frequency bands.
@@ -18,26 +22,7 @@
 //  band energy and sort intensity.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -60,23 +45,36 @@ fn rgb2luma(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
 }
 
-// Sample and sort a single band
+// Sample and sort a single band.
+// Idea: threshold-gated streak runs — instead of one neighbour swap, walk
+// up to 6 steps along the band's sort axis while the luma step stays above
+// threshold, dragging the brighter run end down the streak (pixel-sort run).
 fn sortBand(uv: vec2<f32>, bandEnergy: f32, sortThreshold: f32, sortDir: vec2<f32>, pixel: vec2<f32>) -> vec3<f32> {
-  let neighborDist = (2.0 + bandEnergy * 8.0) / 2048.0;
-  let neighborUV = uv + sortDir * neighborDist;
+  let stepLen = (2.0 + abs(bandEnergy) * 8.0) * max(pixel.x, pixel.y) * 1.5;
   let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-  let neighbor = textureSampleLevel(readTexture, u_sampler, clamp(neighborUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-  let currentLuma = rgb2luma(current);
-  let neighborLuma = rgb2luma(neighbor);
-  let lumaDiff = abs(currentLuma - neighborLuma);
-  if (lumaDiff > sortThreshold) {
-    if (currentLuma > neighborLuma) {
-      return mix(current, neighbor, 0.7);
-    } else {
-      return mix(neighbor, current, 0.7);
-    }
+  var runCol = current;
+  var runMax = current;
+  var prevLuma = rgb2luma(current);
+  var runLen = 0.0;
+  for (var k = 1; k <= 6; k = k + 1) {
+    let suv = clamp(uv - sortDir * stepLen * f32(k), vec2<f32>(0.0), vec2<f32>(1.0));
+    let c = textureSampleLevel(readTexture, u_sampler, suv, 0.0).rgb;
+    let l = rgb2luma(c);
+    if (abs(l - prevLuma) < sortThreshold * 0.35 && k > 1) { break; }
+    runCol += c;
+    if (l > rgb2luma(runMax)) { runMax = c; }
+    prevLuma = l;
+    runLen += 1.0;
   }
-  return current;
+  if (runLen < 1.0) { return current; }
+  let runMean = runCol / (runLen + 1.0);
+  // Brighter pixels sink along the run (sorted order), mean fills the body.
+  return mix(current, mix(runMean, runMax, 0.55), clamp(runLen / 6.0, 0.0, 1.0) * 0.8);
+}
+
+fn acesFit(x: vec3<f32>) -> vec3<f32> {
+  let c = max(x, vec3<f32>(0.0)); // negative input maps bright under the fit
+  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -89,8 +87,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let id = vec2<i32>(global_id.xy);
   let ps = 1.0 / resolution;
 
-  // Audio input
-  let audio = u.zoom_config.x;
+  // Audio input (was u.zoom_config.x — not audio; plasmaBuffer[0] is)
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  let treble = plasmaBuffer[0].z;
+  let audio = bass;
   let bassPulse = 1.0 + audio * 0.5;
 
   // Parameters
@@ -112,6 +113,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var bandMidHigh = vec3<f32>(0.0);
   var bandHigh = vec3<f32>(0.0);
 
+  var wsL = 0.0; var wsML = 0.0; var wsMH = 0.0; var wsH = 0.0;
   let sampleCount = 8;
   for (var i = 0; i < sampleCount; i = i + 1) {
     let angle = f32(i) * 6.283185307 / f32(sampleCount);
@@ -129,36 +131,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       bandMidLow += sampleColor * wMidLow;
       bandMidHigh += sampleColor * wMidHigh;
       bandHigh += sampleColor * wHigh;
+      wsL += wLow; wsML += wMidLow; wsMH += wMidHigh; wsH += wHigh;
     }
   }
 
-  let norm = f32(sampleCount * 3);
-  bandLow /= norm;
-  bandMidLow /= norm;
-  bandMidHigh /= norm;
-  bandHigh /= norm;
-
-  // Difference-of-Gaussians style bands
+  // Normalize each Gaussian (old /24 left bandHigh ≈ 0.036·L — dead band)
+  // and include the centre tap so the narrow kernels converge to source.
   let sourceColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  bandLow = (bandLow + sourceColor) / (wsL + 1.0);
+  bandMidLow = (bandMidLow + sourceColor) / (wsML + 1.0);
+  bandMidHigh = (bandMidHigh + sourceColor) / (wsMH + 1.0);
+  bandHigh = (bandHigh + sourceColor) / (wsH + 1.0);
+
+  // Difference-of-Gaussians bands (sum exactly reconstructs source luma)
   let lowLuma = rgb2luma(bandLow);
   let midLowLuma = rgb2luma(bandMidLow);
   let midHighLuma = rgb2luma(bandMidHigh);
   let highLuma = rgb2luma(bandHigh);
 
+  let srcLuma = rgb2luma(sourceColor);
   let bandR = lowLuma;
-  let bandG = midLowLuma - lowLuma * 0.5;
-  let bandB = midHighLuma - midLowLuma * 0.5;
-  let bandA = highLuma - midHighLuma * 0.5;
+  let bandG = midLowLuma - lowLuma;
+  let bandB = midHighLuma - midLowLuma;
+  let bandA = (highLuma - midHighLuma) + (srcLuma - highLuma);
 
   // Store decomposition
   textureStore(dataTextureA, id, vec4<f32>(bandR, bandG, bandB, bandA));
 
   // ═══ PER-BAND PIXEL SORTING ═══
-  let sortDir = vec2<f32>(0.0, 1.0);
-  let sortedLow = sortBand(uv, bandR, sortThresholdBase * 0.5, sortDir, ps);
-  let sortedMidLow = sortBand(uv, bandG, sortThresholdBase * 0.8, sortDir, ps);
-  let sortedMidHigh = sortBand(uv, bandB, sortThresholdBase * 1.2, sortDir, ps);
-  let sortedHigh = sortBand(uv, bandA, sortThresholdBase * 1.8, sortDir, ps);
+  // Idea: band-rotated sort axes — each frequency band sorts along its own
+  // angle (low ↓, midLow ↘, midHigh →, high ↗) so streaks cross-hatch by
+  // frequency; mids slowly precess the fan.
+  let fan = mids * 0.4 + sin(time * 0.15) * 0.1;
+  let dLow = vec2<f32>(sin(fan), cos(fan));
+  let dMidLow = vec2<f32>(sin(0.785 + fan), cos(0.785 + fan));
+  let dMidHigh = vec2<f32>(sin(1.571 + fan), cos(1.571 + fan));
+  let dHigh = vec2<f32>(sin(2.356 + fan), cos(2.356 + fan));
+  let sortedLow = sortBand(uv, bandR, sortThresholdBase * 0.5, dLow, ps);
+  let sortedMidLow = sortBand(uv, bandG * 4.0, sortThresholdBase * 0.8, dMidLow, ps);
+  let sortedMidHigh = sortBand(uv, bandB * 4.0, sortThresholdBase * 1.2, dMidHigh, ps);
+  let sortedHigh = sortBand(uv, bandA * 4.0, sortThresholdBase * 1.8, dHigh, ps);
 
   // Spectral band index for coloring
   let band = floor(uv.y * spectralBands);
@@ -181,7 +193,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   );
 
   // Apply color tints to sorted bands
-  var tintedLow = mix(sortedLow, sortedLow * colorLow, bandEnergy * 0.5);
+  var tintedLow = mix(sortedLow, sortedLow * colorLow * 1.6, bandEnergy * 0.8);
   var tintedMidLow = mix(sortedMidLow, sortedMidLow * colorMidLow, bandEnergy * 0.5);
   var tintedMidHigh = mix(sortedMidHigh, sortedMidHigh * colorMidHigh, bandEnergy * 0.5);
   var tintedHigh = mix(sortedHigh, sortedHigh * colorHigh, bandEnergy * 0.5);
@@ -202,17 +214,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let displaced = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
 
   // ═══ RECOMPOSITION WITH PARAM GAINS ═══
-  // zoom_params acts as per-band gain when mapped
-  let gainLow = u.zoom_params.x * 2.0 + 0.5;
-  let gainMidLow = u.zoom_params.y * 2.0 + 0.5;
-  let gainMidHigh = u.zoom_params.z * 2.0 + 0.5;
-  let gainHigh = u.zoom_params.w * 2.0 + 0.5;
+  // Idea: audio-spectrum band EQ — the 4 image bands ride the matching
+  // audio bands (bass→low, mids→mid bands, treble→high detail), so a kick
+  // swells the soft base and hats crisp up edges. (Old gains re-used the
+  // four sliders a second time and summed to ~5× luma → white wash.)
+  let gainLow = 1.0 + bass * 0.35;
+  let gainMidLow = 1.2 + mids * 0.8;
+  let gainMidHigh = 1.4 + mids * 0.5 + treble * 0.5;
+  let gainHigh = 1.6 + treble * 1.4;
 
+  // Low band carries colour (sorted + tinted); the three DoG detail bands
+  // are re-added as tinted signed luma so recomposition ≈ source at gain 1.
+  let lowCol = tintedLow * (lowLuma / max(rgb2luma(sortedLow), 1e-3));
   var recomposed = vec3<f32>(0.0);
-  recomposed += vec3<f32>(1.0, 0.8, 0.6) * rgb2luma(tintedLow) * gainLow;
-  recomposed += vec3<f32>(0.6, 1.0, 0.7) * rgb2luma(tintedMidLow) * gainMidLow;
-  recomposed += vec3<f32>(0.5, 0.7, 1.0) * rgb2luma(tintedMidHigh) * gainMidHigh;
-  recomposed += vec3<f32>(1.0, 1.0, 1.0) * rgb2luma(tintedHigh) * gainHigh;
+  recomposed += mix(sourceColor, lowCol, 0.85) * (srcLuma - bandG - bandB - bandA) / max(srcLuma, 1e-3) * gainLow;
+  recomposed += vec3<f32>(0.6, 1.0, 0.7) * normalize(tintedMidLow + 1e-3) * 1.732 * bandG * gainMidLow;
+  recomposed += vec3<f32>(0.5, 0.7, 1.0) * normalize(tintedMidHigh + 1e-3) * 1.732 * bandB * gainMidHigh;
+  recomposed += normalize(tintedHigh + 1e-3) * 1.732 * bandA * gainHigh;
+  // Sorted streaks of the detail bands show through as their own layer.
+  let sortedDetail = (sortedMidLow + sortedMidHigh + sortedHigh) / 3.0 - sourceColor;
+  recomposed += sortedDetail * 0.8;
+  recomposed = max(recomposed, vec3<f32>(0.0));
 
   // Add back some original and displaced for recognizability
   recomposed = mix(recomposed, displaced, 0.25);
@@ -240,7 +262,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Audio-reactive glow
   let glow = bandEnergy * audio * 0.4;
   recomposed += colorMidHigh * glow;
-  recomposed += colorHigh * mouseGravity * 0.3;
+  recomposed += colorHigh * mouseGravity * 0.3 * select(0.35, 1.0, isMouseDown);
 
   // Glitch on beat
   let beat = step(0.7, audio);
@@ -257,6 +279,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  textureStore(writeTexture, id, vec4<f32>(recomposed, alpha));
+  textureStore(writeTexture, id, vec4<f32>(acesFit(recomposed * 1.15), alpha));
   textureStore(writeDepthTexture, id, vec4<f32>(depth * (1.0 - bandEnergy * 0.2), 0.0, 0.0, 0.0));
 }

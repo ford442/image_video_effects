@@ -842,8 +842,17 @@
       ]
     },
     "gen-art-deco-sky-prismatic": {
-      "hash": "b12080ad3ee929a0",
-      "history": []
+      "hash": "bf8930483bdacaad",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "bf8930483bdacaad",
+          "prev_hash": "b12080ad3ee929a0",
+          "commit": "a73847ae",
+          "note": null
+        }
+      ]
     },
     "gen-astro-orrery-blackbody": {
       "hash": "94a4d2a77311522a",
@@ -1089,8 +1098,17 @@
       ]
     },
     "hybrid-spectral-decomposed": {
-      "hash": "7acf16dcbcc219da",
-      "history": []
+      "hash": "ef87a6b8c09734c8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "ef87a6b8c09734c8",
+          "prev_hash": "7acf16dcbcc219da",
+          "commit": "a7662f8d",
+          "note": null
+        }
+      ]
     },
     "hyper-space-jump-blackbody": {
       "hash": "cba0a149ca423248",
@@ -1571,8 +1589,17 @@
       ]
     },
     "tensor-flow-morphological": {
-      "hash": "83b454b3743f8a79",
-      "history": []
+      "hash": "e529f29b7a7a1e7d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "e529f29b7a7a1e7d",
+          "prev_hash": "83b454b3743f8a79",
+          "commit": "a7662f8d",
+          "note": null
+        }
+      ]
     },
     "thermal-touch-blackbody": {
       "hash": "916c252b303ce596",
@@ -1843,8 +1870,17 @@
       ]
     },
     "boids": {
-      "hash": "0b9faab4cf1cbdad",
-      "history": []
+      "hash": "f847a77d56906f71",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "f847a77d56906f71",
+          "prev_hash": "0b9faab4cf1cbdad",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "chromatic-crawler": {
       "hash": "9b6d810e019494b6",
@@ -1952,7 +1988,7 @@
       ]
     },
     "chromatic-infection": {
-      "hash": "7d7bc7150871cd3e",
+      "hash": "02b254aebaa12317",
       "history": [
         {
           "event": "upgraded",
@@ -1961,6 +1997,14 @@
           "prev_hash": "5d370706de159e4c",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "02b254aebaa12317",
+          "prev_hash": "7d7bc7150871cd3e",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
         }
       ]
     },
@@ -2015,7 +2059,7 @@
       ]
     },
     "chromatic-phase-inversion": {
-      "hash": "e54413627d196886",
+      "hash": "dfc7ef53df8c7cf7",
       "history": [
         {
           "event": "upgraded",
@@ -2024,6 +2068,14 @@
           "prev_hash": "9139d6ff94f912c7",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "dfc7ef53df8c7cf7",
+          "prev_hash": "e54413627d196886",
+          "commit": "121dc739",
+          "note": null
         }
       ]
     },
@@ -2077,8 +2129,17 @@
       ]
     },
     "fabric-step": {
-      "hash": "d4bbb7a4205ccab6",
-      "history": []
+      "hash": "c93a60ea78f8d23f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "c93a60ea78f8d23f",
+          "prev_hash": "d4bbb7a4205ccab6",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "film-cross-process": {
       "hash": "e6703d9428e08eaa",
@@ -2457,8 +2518,17 @@
       "history": []
     },
     "parallax_depth_layers": {
-      "hash": "55275d9861d759dc",
-      "history": []
+      "hash": "922f3e87cefc87ee",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "922f3e87cefc87ee",
+          "prev_hash": "55275d9861d759dc",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "particle_dreams_alpha": {
       "hash": "e3a8ee120112dd24",
@@ -2799,8 +2869,17 @@
       "history": []
     },
     "stella-orbit": {
-      "hash": "9c659a4e01144d81",
-      "history": []
+      "hash": "b64cb64c446c953c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "b64cb64c446c953c",
+          "prev_hash": "9c659a4e01144d81",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "stipple-render": {
       "hash": "79c640fe2b2658b1",
@@ -3073,8 +3152,17 @@
       ]
     },
     "gemstone-fractures": {
-      "hash": "17277ea0cd5d1515",
-      "history": []
+      "hash": "8fdb2414dd1a3840",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "8fdb2414dd1a3840",
+          "prev_hash": "17277ea0cd5d1515",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "gen-chromatic-vortex": {
       "hash": "22fbf638182711b1",
@@ -3180,8 +3268,17 @@
       ]
     },
     "infinite-zoom": {
-      "hash": "d8f5d861f620ee09",
-      "history": []
+      "hash": "1de677da20996b7e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "1de677da20996b7e",
+          "prev_hash": "d8f5d861f620ee09",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "interactive-rgb-split": {
       "hash": "c6a0473195dd8b5f",
@@ -3702,12 +3799,30 @@
       ]
     },
     "4d-projection-dream-weavers": {
-      "hash": "5df9937fc9ed448b",
-      "history": []
+      "hash": "7df2e7d64d4fa518",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "7df2e7d64d4fa518",
+          "prev_hash": "5df9937fc9ed448b",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "acoustic-string-theory": {
-      "hash": "bcc713b0b4775e86",
-      "history": []
+      "hash": "f03c23c27d1ca103",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "f03c23c27d1ca103",
+          "prev_hash": "bcc713b0b4775e86",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "atmos_volumetric_fog": {
       "hash": "0347e19b53a7133a",
@@ -3723,8 +3838,17 @@
       ]
     },
     "audio_geometric_pulse": {
-      "hash": "2514ff7f2297393e",
-      "history": []
+      "hash": "946d11ad5eba7c2a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "946d11ad5eba7c2a",
+          "prev_hash": "2514ff7f2297393e",
+          "commit": "a7662f8d",
+          "note": null
+        }
+      ]
     },
     "aurora-borealis-loom": {
       "hash": "6337ac00f3fa8611",
@@ -3778,12 +3902,30 @@
       ]
     },
     "chromatic-ghost-tunnel": {
-      "hash": "05655c0f939d1df6",
-      "history": []
+      "hash": "3a7b2b4be0e3d57c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "3a7b2b4be0e3d57c",
+          "prev_hash": "05655c0f939d1df6",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "chrono-voronoi-mycelium": {
-      "hash": "62908608cc736c36",
-      "history": []
+      "hash": "13eade15a4589877",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "13eade15a4589877",
+          "prev_hash": "62908608cc736c36",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
+        }
+      ]
     },
     "coral-growth": {
       "hash": "8e0b2bb8f333d109",
@@ -3867,8 +4009,17 @@
       ]
     },
     "fractal-ice-palace": {
-      "hash": "f846c4f6585db3c6",
-      "history": []
+      "hash": "45da17666a3954a8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "45da17666a3954a8",
+          "prev_hash": "f846c4f6585db3c6",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
+        }
+      ]
     },
     "gen-3d-sierpinski-chaos": {
       "hash": "99cd34ce0a51d00f",
@@ -3978,7 +4129,7 @@
       ]
     },
     "gen-acid-lissajous": {
-      "hash": "3a9a5432a58bad2f",
+      "hash": "6d7f106827423777",
       "history": [
         {
           "event": "upgraded",
@@ -3987,6 +4138,14 @@
           "prev_hash": "b3d74149edf61208",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "6d7f106827423777",
+          "prev_hash": "3a9a5432a58bad2f",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
@@ -4051,8 +4210,17 @@
       ]
     },
     "gen-alien-flora": {
-      "hash": "ee3f38c2a8d47517",
-      "history": []
+      "hash": "bf3ba0fddb0a27e2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "bf3ba0fddb0a27e2",
+          "prev_hash": "ee3f38c2a8d47517",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
+        }
+      ]
     },
     "gen-alpha-aurora": {
       "hash": "44653a5b5cb17bc6",
@@ -4174,8 +4342,17 @@
       ]
     },
     "gen-audio-spirograph": {
-      "hash": "b4c502269011f10c",
-      "history": []
+      "hash": "f92ee29ec8521791",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "f92ee29ec8521791",
+          "prev_hash": "b4c502269011f10c",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "gen-audiovisual-mandelbulb-raymarcher": {
       "hash": "8f2ca25103d48325",
@@ -4490,7 +4667,7 @@
       ]
     },
     "gen-brutalist-monument": {
-      "hash": "c0ed71d02b1dc37e",
+      "hash": "8cf78f29ae5f7bcb",
       "history": [
         {
           "event": "upgraded",
@@ -4499,6 +4676,14 @@
           "prev_hash": "da17f8b06f07590c",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "8cf78f29ae5f7bcb",
+          "prev_hash": "c0ed71d02b1dc37e",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -4579,7 +4764,7 @@
       ]
     },
     "gen-celestial-glass-tornado": {
-      "hash": "13075fcce29f59a7",
+      "hash": "f3ce46a584eb4610",
       "history": [
         {
           "event": "upgraded",
@@ -4588,6 +4773,14 @@
           "prev_hash": "9bcfd28c59fea70f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "f3ce46a584eb4610",
+          "prev_hash": "13075fcce29f59a7",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -4757,7 +4950,7 @@
       ]
     },
     "gen-chromatic-metamorphosis": {
-      "hash": "04960e866a3d9efe",
+      "hash": "f5a529f1459b44ef",
       "history": [
         {
           "event": "upgraded",
@@ -4766,6 +4959,14 @@
           "prev_hash": "64703557e58d5a64",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "f5a529f1459b44ef",
+          "prev_hash": "04960e866a3d9efe",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
         }
       ]
     },
@@ -4783,7 +4984,7 @@
       ]
     },
     "gen-chromatic-singularity-loom": {
-      "hash": "a7c071ac1a2a89ab",
+      "hash": "a3d898715e862df5",
       "history": [
         {
           "event": "upgraded",
@@ -4792,6 +4993,14 @@
           "prev_hash": "cff9439be811c775",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "a3d898715e862df5",
+          "prev_hash": "a7c071ac1a2a89ab",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -4830,7 +5039,7 @@
       ]
     },
     "gen-chrono-kinetic-fractal-engine": {
-      "hash": "01c86642fd5a01e7",
+      "hash": "a4c3d5f3765d709a",
       "history": [
         {
           "event": "upgraded",
@@ -4839,6 +5048,14 @@
           "prev_hash": "a57e8595da4112fb",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "a4c3d5f3765d709a",
+          "prev_hash": "01c86642fd5a01e7",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -5190,7 +5407,7 @@
       ]
     },
     "gen-crystalline-nebula-weaver-void-spider": {
-      "hash": "193f71a54eef2c7e",
+      "hash": "bc82a0097019635d",
       "history": [
         {
           "event": "upgraded",
@@ -5199,6 +5416,14 @@
           "prev_hash": "c34772a104adedb7",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "bc82a0097019635d",
+          "prev_hash": "193f71a54eef2c7e",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
         }
       ]
     },
@@ -5530,7 +5755,7 @@
       ]
     },
     "gen-eldritch-quantum-fractal-eye": {
-      "hash": "2f13fa144ce71a74",
+      "hash": "5129d1966a5269bf",
       "history": [
         {
           "event": "upgraded",
@@ -5539,6 +5764,14 @@
           "prev_hash": "056894bfd79e0c98",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "5129d1966a5269bf",
+          "prev_hash": "2f13fa144ce71a74",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
         }
       ]
     },
@@ -5556,7 +5789,7 @@
       ]
     },
     "gen-electric-kaleidoscope-storm": {
-      "hash": "88aec2664fa62144",
+      "hash": "f7d48ad8a6fd265b",
       "history": [
         {
           "event": "upgraded",
@@ -5565,6 +5798,14 @@
           "prev_hash": "5588f2aae3a3fd3e",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "f7d48ad8a6fd265b",
+          "prev_hash": "88aec2664fa62144",
+          "commit": "121dc739",
+          "note": null
         }
       ]
     },
@@ -5828,7 +6069,7 @@
       ]
     },
     "gen-ethereal-quantum-glass-nautilus": {
-      "hash": "ec12c46902b4216e",
+      "hash": "f09c9a2e6b91d488",
       "history": [
         {
           "event": "upgraded",
@@ -5837,6 +6078,14 @@
           "prev_hash": "765e0ee65ac98eb9",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "f09c9a2e6b91d488",
+          "prev_hash": "ec12c46902b4216e",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -5909,7 +6158,7 @@
       ]
     },
     "gen-evolutionary-cellular-gardens": {
-      "hash": "7b50c8b74b5ac2ef",
+      "hash": "2c6415a2d911664d",
       "history": [
         {
           "event": "upgraded",
@@ -5918,11 +6167,19 @@
           "prev_hash": "41099d66ecbfdcbc",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "2c6415a2d911664d",
+          "prev_hash": "7b50c8b74b5ac2ef",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
         }
       ]
     },
     "gen-feedback-echo-chamber": {
-      "hash": "997d7e20980b440d",
+      "hash": "000724109fd236b9",
       "history": [
         {
           "event": "upgraded",
@@ -5931,6 +6188,14 @@
           "prev_hash": "93ef230d04260893",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "000724109fd236b9",
+          "prev_hash": "997d7e20980b440d",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -6407,7 +6672,7 @@
       ]
     },
     "gen-fractal-ember-lattice": {
-      "hash": "5cf236a9ed262a6b",
+      "hash": "5507dfdbf41363c9",
       "history": [
         {
           "event": "upgraded",
@@ -6416,6 +6681,14 @@
           "prev_hash": "ac467ea29cf9618b",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "5507dfdbf41363c9",
+          "prev_hash": "5cf236a9ed262a6b",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -6467,7 +6740,7 @@
       ]
     },
     "gen-fractured-monolith": {
-      "hash": "da91f0608ab57fc0",
+      "hash": "eca0a4cf336b5401",
       "history": [
         {
           "event": "upgraded",
@@ -6476,6 +6749,14 @@
           "prev_hash": "1d49d72bf7a5ee3e",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "eca0a4cf336b5401",
+          "prev_hash": "da91f0608ab57fc0",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -6852,7 +7133,7 @@
       ]
     },
     "gen-hyper-labyrinth": {
-      "hash": "7fcb70b338148bd6",
+      "hash": "8e1bb84b7a5902ca",
       "history": [
         {
           "event": "upgraded",
@@ -6861,6 +7142,14 @@
           "prev_hash": "a5c0e2d402bcc72d",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "8e1bb84b7a5902ca",
+          "prev_hash": "7fcb70b338148bd6",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -7017,7 +7306,7 @@
       ]
     },
     "gen-image-pixel-detonation": {
-      "hash": "6c9eb2578ae4e25f",
+      "hash": "7663feef49e0734f",
       "history": [
         {
           "event": "upgraded",
@@ -7026,6 +7315,14 @@
           "prev_hash": "a16e5963af0c66f9",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "7663feef49e0734f",
+          "prev_hash": "6c9eb2578ae4e25f",
+          "commit": "a7662f8d",
+          "note": null
         }
       ]
     },
@@ -7115,7 +7412,7 @@
       ]
     },
     "gen-isometric-city": {
-      "hash": "8c8834d8fca87451",
+      "hash": "f826ef8116bf2e67",
       "history": [
         {
           "event": "upgraded",
@@ -7124,6 +7421,14 @@
           "prev_hash": "40e63fea7a97cc73",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "f826ef8116bf2e67",
+          "prev_hash": "8c8834d8fca87451",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -7205,12 +7510,30 @@
       "history": []
     },
     "gen-kryonic-quantum-aether-fractal-core": {
-      "hash": "8b5077be58879420",
-      "history": []
+      "hash": "bd683c26c7e6ef0f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "bd683c26c7e6ef0f",
+          "prev_hash": "8b5077be58879420",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
+        }
+      ]
     },
     "gen-langton-ant": {
-      "hash": "c78003b25bc321dc",
-      "history": []
+      "hash": "e70103b3333c2a08",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "e70103b3333c2a08",
+          "prev_hash": "c78003b25bc321dc",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "gen-lenia-2": {
       "hash": "56eee3e5055a7a7d",
@@ -7428,7 +7751,7 @@
       ]
     },
     "gen-luminescent-chrono-prism-astro-stag": {
-      "hash": "4624a040c000b609",
+      "hash": "714dc1cd7a029cb9",
       "history": [
         {
           "event": "upgraded",
@@ -7437,6 +7760,14 @@
           "prev_hash": "f39ac44426b1b508",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "714dc1cd7a029cb9",
+          "prev_hash": "4624a040c000b609",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -7892,7 +8223,7 @@
       ]
     },
     "gen-neon-acid-geometry": {
-      "hash": "a928b154039ce431",
+      "hash": "8b72abf9d30bf31d",
       "history": [
         {
           "event": "upgraded",
@@ -7901,6 +8232,14 @@
           "prev_hash": "7cfbfe1d904cdaad",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "8b72abf9d30bf31d",
+          "prev_hash": "a928b154039ce431",
+          "commit": "121dc739",
+          "note": null
         }
       ]
     },
@@ -7969,8 +8308,17 @@
       ]
     },
     "gen-neon-snowfall": {
-      "hash": "a5404a2705ab5db0",
-      "history": []
+      "hash": "f885548b535c10f0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "f885548b535c10f0",
+          "prev_hash": "a5404a2705ab5db0",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
+        }
+      ]
     },
     "gen-neon-stellated-octahedron": {
       "hash": "41d261df6073e2af",
@@ -8176,7 +8524,7 @@
       "history": []
     },
     "gen-obsidian-echo-chamber": {
-      "hash": "87de278f6dc3cf5d",
+      "hash": "220330394cf41688",
       "history": [
         {
           "event": "upgraded",
@@ -8185,6 +8533,14 @@
           "prev_hash": "cd5982cc8dec73db",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "220330394cf41688",
+          "prev_hash": "87de278f6dc3cf5d",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -8227,7 +8583,7 @@
       ]
     },
     "gen-photonic-crystal-brain": {
-      "hash": "b1584dff44374310",
+      "hash": "11c57fdbb814370e",
       "history": [
         {
           "event": "upgraded",
@@ -8236,6 +8592,14 @@
           "prev_hash": "b1ee8066ae3c4122",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "11c57fdbb814370e",
+          "prev_hash": "b1584dff44374310",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
         }
       ]
     },
@@ -8345,7 +8709,7 @@
       ]
     },
     "gen-prism-tide": {
-      "hash": "e88eabca93c64d94",
+      "hash": "1de5741184675d94",
       "history": [
         {
           "event": "upgraded",
@@ -8354,11 +8718,19 @@
           "prev_hash": "75d69e7ef19b7ee1",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "1de5741184675d94",
+          "prev_hash": "e88eabca93c64d94",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
     "gen-prismatic-aether-loom": {
-      "hash": "b34c760d1362b1eb",
+      "hash": "75831d629d986431",
       "history": [
         {
           "event": "upgraded",
@@ -8367,11 +8739,19 @@
           "prev_hash": "cbc218b5368e897f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "75831d629d986431",
+          "prev_hash": "b34c760d1362b1eb",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
     "gen-prismatic-bismuth-lattice": {
-      "hash": "304a6dc8d23806b6",
+      "hash": "b5bf350188212631",
       "history": [
         {
           "event": "upgraded",
@@ -8380,6 +8760,14 @@
           "prev_hash": "0890dc7636bbabcb",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "b5bf350188212631",
+          "prev_hash": "304a6dc8d23806b6",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
@@ -8426,7 +8814,7 @@
       ]
     },
     "gen-prismatic-cyber-aurora-astral-dragonfly": {
-      "hash": "5dcce45572fc5843",
+      "hash": "4850a0c5c7289f4c",
       "history": [
         {
           "event": "upgraded",
@@ -8435,6 +8823,14 @@
           "prev_hash": "778d910567fa4969",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "4850a0c5c7289f4c",
+          "prev_hash": "5dcce45572fc5843",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
         }
       ]
     },
@@ -8502,7 +8898,7 @@
       ]
     },
     "gen-prismatic-cyber-chrono-void-tortoise": {
-      "hash": "baebe06d2f1602b3",
+      "hash": "f61bb894b340aa9f",
       "history": [
         {
           "event": "upgraded",
@@ -8511,11 +8907,19 @@
           "prev_hash": "5304e5f4362050e9",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "f61bb894b340aa9f",
+          "prev_hash": "baebe06d2f1602b3",
+          "commit": "a73847ae",
+          "note": null
         }
       ]
     },
     "gen-prismatic-fractal-dunes": {
-      "hash": "3508ec1c5cac759c",
+      "hash": "d2ff28ae5e77e2dc",
       "history": [
         {
           "event": "upgraded",
@@ -8524,6 +8928,14 @@
           "prev_hash": "a623126f12fc6606",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "d2ff28ae5e77e2dc",
+          "prev_hash": "3508ec1c5cac759c",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
         }
       ]
     },
@@ -8549,24 +8961,51 @@
       ]
     },
     "gen-prismatic-quantum-glass-chrysalis-engine": {
-      "hash": "6e196defdcb0e71b",
-      "history": []
+      "hash": "3f1b3be954551bd4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "3f1b3be954551bd4",
+          "prev_hash": "6e196defdcb0e71b",
+          "commit": "a73847ae",
+          "note": null
+        }
+      ]
     },
     "gen-prismatic-serpent-river": {
       "hash": "317f029830bf11d5",
       "history": []
     },
     "gen-prismatic-void-weaver-ouroboros": {
-      "hash": "7632a9231804fa17",
-      "history": []
+      "hash": "6b55bb2d5f85df72",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "6b55bb2d5f85df72",
+          "prev_hash": "7632a9231804fa17",
+          "commit": "a73847ae",
+          "note": null
+        }
+      ]
     },
     "gen-protocell-division": {
       "hash": "3c7afb8076974b08",
       "history": []
     },
     "gen-psychedelic-layered-time-stamps": {
-      "hash": "22585d0f983621b2",
-      "history": []
+      "hash": "28f9993c6d048a12",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "28f9993c6d048a12",
+          "prev_hash": "22585d0f983621b2",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "gen-psychedelic-moire-flower": {
       "hash": "ace9bd662940ab3d",
@@ -8736,8 +9175,17 @@
       ]
     },
     "gen-quantum-superposition": {
-      "hash": "26906587b32ac895",
-      "history": []
+      "hash": "06c185b2cfd7227a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "06c185b2cfd7227a",
+          "prev_hash": "26906587b32ac895",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "gen-quasicrystal": {
       "hash": "413d30b96845f8d2",
@@ -8753,7 +9201,7 @@
       ]
     },
     "gen-radiant-chrono-glass-nautilus": {
-      "hash": "91720900e88a5be9",
+      "hash": "505b269a20611f68",
       "history": [
         {
           "event": "upgraded",
@@ -8762,6 +9210,14 @@
           "prev_hash": "bbefa72172b774d4",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "505b269a20611f68",
+          "prev_hash": "91720900e88a5be9",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -8796,8 +9252,17 @@
       "history": []
     },
     "gen-radiant-quantum-crystalline-forge": {
-      "hash": "2a20d4cb317ac03c",
-      "history": []
+      "hash": "8a31e2050a1a3310",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "8a31e2050a1a3310",
+          "prev_hash": "2a20d4cb317ac03c",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
+        }
+      ]
     },
     "gen-radiant-quantum-plasma-kraken-core": {
       "hash": "5b92652a1bc64230",
@@ -8847,8 +9312,17 @@
       ]
     },
     "gen-raptor-mini": {
-      "hash": "93894f926f6e6456",
-      "history": []
+      "hash": "851c3a0c007f278e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "851c3a0c007f278e",
+          "prev_hash": "93894f926f6e6456",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "gen-recursive-ancestral-terrains": {
       "hash": "6af7031168924a66",
@@ -8868,8 +9342,17 @@
       ]
     },
     "gen-resonant-crystal-canyons": {
-      "hash": "67fecd828f4c614a",
-      "history": []
+      "hash": "172ee7b10085f532",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T08:46:26.400Z",
+          "hash": "172ee7b10085f532",
+          "prev_hash": "67fecd828f4c614a",
+          "commit": "fdec3889",
+          "note": "2026-11-08 opus/batch-17 procedural worlds nine (Claude Opus) — agents/swarm-outputs/claude-2026-11-08-opus-batch-17"
+        }
+      ]
     },
     "gen-resonant-quantum-obsidian-astro-manta": {
       "hash": "4e2f1704417861ac",
@@ -8885,8 +9368,17 @@
       ]
     },
     "gen-resonant-quantum-obsidian-scarab-engine": {
-      "hash": "a65870acad9cc4e6",
-      "history": []
+      "hash": "5e89fbe52359415a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "5e89fbe52359415a",
+          "prev_hash": "a65870acad9cc4e6",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
+        }
+      ]
     },
     "gen-resonant-quantum-plasma-dragon-eye": {
       "hash": "9f7f319d2600b419",
@@ -8993,7 +9485,7 @@
       ]
     },
     "gen-sentient-holographic-neuro-lace-matrix": {
-      "hash": "36fa4dbb9c364d26",
+      "hash": "caf2dfc3a1a8d3f4",
       "history": [
         {
           "event": "upgraded",
@@ -9002,6 +9494,14 @@
           "prev_hash": "4b01f71ea9bf2735",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "caf2dfc3a1a8d3f4",
+          "prev_hash": "36fa4dbb9c364d26",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
@@ -9053,8 +9553,17 @@
       ]
     },
     "gen-showcase-crystalline-pulse": {
-      "hash": "2591730920d729c5",
-      "history": []
+      "hash": "54eef20352114237",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:50:42.626Z",
+          "hash": "54eef20352114237",
+          "prev_hash": "2591730920d729c5",
+          "commit": "a73847ae",
+          "note": null
+        }
+      ]
     },
     "gen-showcase-kinetic-bloom": {
       "hash": "b44426bdc1513854",
@@ -9065,8 +9574,17 @@
       "history": []
     },
     "gen-sierpinski-tetrahedron": {
-      "hash": "665c4b6ac4ccb5a7",
-      "history": []
+      "hash": "b84234ba34f27b10",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "b84234ba34f27b10",
+          "prev_hash": "665c4b6ac4ccb5a7",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "gen-silica-tsunami": {
       "hash": "dca36aa875f3010f",
@@ -9188,7 +9706,7 @@
       ]
     },
     "gen-stellar-acoustic-resonance-manifold": {
-      "hash": "6abf4e1cebf94b86",
+      "hash": "7778b2e71a383fa2",
       "history": [
         {
           "event": "upgraded",
@@ -9197,6 +9715,14 @@
           "prev_hash": "1cb7cfd251644f3f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "7778b2e71a383fa2",
+          "prev_hash": "6abf4e1cebf94b86",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
@@ -9247,8 +9773,17 @@
       "history": []
     },
     "gen-string-theory": {
-      "hash": "2770dea98c2c8678",
-      "history": []
+      "hash": "7b5d756b0fca2ff1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "7b5d756b0fca2ff1",
+          "prev_hash": "2770dea98c2c8678",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "gen-superfluid-quantum-foam": {
       "hash": "c05abda9b3399df9",
@@ -9298,8 +9833,17 @@
       ]
     },
     "gen-symbiotic-chrono-mycelium-engine": {
-      "hash": "67885e64a15fae69",
-      "history": []
+      "hash": "3711f1e90122213a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "3711f1e90122213a",
+          "prev_hash": "67885e64a15fae69",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
+        }
+      ]
     },
     "gen-symbiotic-cyber-fungal-core-reactor": {
       "hash": "a543d26830099f20",
@@ -9450,7 +9994,7 @@
       ]
     },
     "gen-vitreous-chrono-chandelier": {
-      "hash": "7215ffc90758e004",
+      "hash": "a9c375e3c91ddf0a",
       "history": [
         {
           "event": "upgraded",
@@ -9459,11 +10003,19 @@
           "prev_hash": "3b6f2154ede55274",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:25:19.609Z",
+          "hash": "a9c375e3c91ddf0a",
+          "prev_hash": "7215ffc90758e004",
+          "commit": "01eef824",
+          "note": "2026-11-08 sonnet/batch-22 glass creature & relic ten (Claude Sonnet) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-22"
         }
       ]
     },
     "gen-vitreous-quantum-lotus-singularity": {
-      "hash": "370f4ae091c7bd0e",
+      "hash": "adde42c227fda44f",
       "history": [
         {
           "event": "upgraded",
@@ -9472,11 +10024,19 @@
           "prev_hash": "16a346dcc3ffa78d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:14:48.757Z",
+          "hash": "adde42c227fda44f",
+          "prev_hash": "370f4ae091c7bd0e",
+          "commit": "586d036b",
+          "note": "2026-11-08 opus/batch-18 living-organism nine (second/third pass + rescues)"
         }
       ]
     },
     "gen-void-harmonic-cymatic-resonator": {
-      "hash": "4fa7a7207914291f",
+      "hash": "e61009f0e3455f53",
       "history": [
         {
           "event": "upgraded",
@@ -9485,6 +10045,14 @@
           "prev_hash": "dc94690f161c01c8",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "e61009f0e3455f53",
+          "prev_hash": "4fa7a7207914291f",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
@@ -9722,7 +10290,7 @@
       ]
     },
     "gen-grok4-life": {
-      "hash": "bbfe5c70e172d3ba",
+      "hash": "288220bc6451d961",
       "history": [
         {
           "event": "upgraded",
@@ -9731,11 +10299,19 @@
           "prev_hash": "f16093d6c1910123",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "288220bc6451d961",
+          "prev_hash": "bbfe5c70e172d3ba",
+          "commit": "355fb48c",
+          "note": null
         }
       ]
     },
     "gen-grok4-perlin": {
-      "hash": "b2820793f6725b88",
+      "hash": "7291f2e04ff9f8e9",
       "history": [
         {
           "event": "upgraded",
@@ -9744,11 +10320,19 @@
           "prev_hash": "d2db9d22dd8b7292",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "7291f2e04ff9f8e9",
+          "prev_hash": "b2820793f6725b88",
+          "commit": "355fb48c",
+          "note": null
         }
       ]
     },
     "gen-grokcf-interference": {
-      "hash": "28f93d088aadfa05",
+      "hash": "91c472e2ad3c9abf",
       "history": [
         {
           "event": "upgraded",
@@ -9757,11 +10341,19 @@
           "prev_hash": "b318d4c636e114e4",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "91c472e2ad3c9abf",
+          "prev_hash": "28f93d088aadfa05",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
     "gen-grokcf-voronoi": {
-      "hash": "4a0207dfd8604ca7",
+      "hash": "e0d211b41c66f14d",
       "history": [
         {
           "event": "upgraded",
@@ -9770,6 +10362,14 @@
           "prev_hash": "9bb0db0d1145c06a",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "e0d211b41c66f14d",
+          "prev_hash": "4a0207dfd8604ca7",
+          "commit": "355fb48c",
+          "note": null
         }
       ]
     },
@@ -9830,8 +10430,17 @@
       ]
     },
     "gen-orb": {
-      "hash": "09e8c257abd49c4d",
-      "history": []
+      "hash": "03b248b96f558648",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "03b248b96f558648",
+          "prev_hash": "09e8c257abd49c4d",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "gen-psychedelic-spiral": {
       "hash": "c0a95d3352dd461f",
@@ -10010,8 +10619,17 @@
       "history": []
     },
     "kimi-quantum-field": {
-      "hash": "ccdfda5843cf9f23",
-      "history": []
+      "hash": "fc197ffc3b95557d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "fc197ffc3b95557d",
+          "prev_hash": "ccdfda5843cf9f23",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "lava-lamp-blobs": {
       "hash": "e31cf0a1c56a9a23",
@@ -10279,8 +10897,17 @@
       ]
     },
     "spec-distance-field-text": {
-      "hash": "6021502c6d5fc31a",
-      "history": []
+      "hash": "2ff8ab64e862bf76",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "2ff8ab64e862bf76",
+          "prev_hash": "6021502c6d5fc31a",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "spec-quaternion-julia": {
       "hash": "a6d030ea5ab30796",
@@ -10361,8 +10988,17 @@
       ]
     },
     "topological-acoustic-knots": {
-      "hash": "d61ded7e8da02fa7",
-      "history": []
+      "hash": "ef5c7c57d00a55ff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "ef5c7c57d00a55ff",
+          "prev_hash": "d61ded7e8da02fa7",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
+        }
+      ]
     },
     "tornado-vortex": {
       "hash": "4457875168311d3f",
@@ -10404,8 +11040,17 @@
       ]
     },
     "wolfram-data-demo": {
-      "hash": "e8a1f8c434a0e390",
-      "history": []
+      "hash": "f3838c26958c0aa6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "f3838c26958c0aa6",
+          "prev_hash": "e8a1f8c434a0e390",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "adaptive-mosaic": {
       "hash": "3076cb5e3cb7a58d",
@@ -12345,7 +12990,7 @@
       ]
     },
     "tesseract-fold": {
-      "hash": "5dd4aec79faa02f6",
+      "hash": "c1049df41ee1eb35",
       "history": [
         {
           "event": "upgraded",
@@ -12354,6 +12999,14 @@
           "prev_hash": "620ceb95291ab10f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "c1049df41ee1eb35",
+          "prev_hash": "5dd4aec79faa02f6",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -14186,7 +14839,7 @@
       ]
     },
     "neon-cursor-trace": {
-      "hash": "37e688f36ab5e6f0",
+      "hash": "696743c34db283cc",
       "history": [
         {
           "event": "upgraded",
@@ -14195,6 +14848,14 @@
           "prev_hash": "2d8ad0c6e4ebc77e",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "696743c34db283cc",
+          "prev_hash": "37e688f36ab5e6f0",
+          "commit": "a7662f8d",
+          "note": null
         }
       ]
     },
@@ -14416,8 +15077,17 @@
       ]
     },
     "parallax-glow-compositor": {
-      "hash": "c46d82e9f5406fa4",
-      "history": []
+      "hash": "81847ac0222ad12f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "81847ac0222ad12f",
+          "prev_hash": "c46d82e9f5406fa4",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        }
+      ]
     },
     "particle-disperse": {
       "hash": "62997beacb5ccdd2",
@@ -14597,8 +15267,17 @@
       ]
     },
     "pixel-stretch-cross": {
-      "hash": "ad24ac848b367bcb",
-      "history": []
+      "hash": "652e426ebde4784a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "652e426ebde4784a",
+          "prev_hash": "ad24ac848b367bcb",
+          "commit": "a7662f8d",
+          "note": null
+        }
+      ]
     },
     "pixel-wind-chimes": {
       "hash": "cb0499bac2023c66",
@@ -16221,11 +16900,20 @@
       "history": []
     },
     "radial-blur": {
-      "hash": "a45eb4012dd21e8e",
-      "history": []
+      "hash": "f910334f518045ca",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "f910334f518045ca",
+          "prev_hash": "a45eb4012dd21e8e",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "soft-vignette-bloom": {
-      "hash": "13014dc7b063273f",
+      "hash": "5832b8692589ef23",
       "history": [
         {
           "event": "upgraded",
@@ -16234,6 +16922,14 @@
           "prev_hash": "48f21b8100f62d1c",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "5832b8692589ef23",
+          "prev_hash": "13014dc7b063273f",
+          "commit": "a7662f8d",
+          "note": null
         }
       ]
     },
@@ -16428,7 +17124,7 @@
       ]
     },
     "crt-magnet": {
-      "hash": "ddd1fec7eedff697",
+      "hash": "b6e4082d19d3a0be",
       "history": [
         {
           "event": "upgraded",
@@ -16437,6 +17133,14 @@
           "prev_hash": "393c5f8076682d24",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "b6e4082d19d3a0be",
+          "prev_hash": "ddd1fec7eedff697",
+          "commit": "a7662f8d",
+          "note": null
         }
       ]
     },
@@ -17872,7 +18576,7 @@
       ]
     },
     "elastic-chromatic": {
-      "hash": "553ba8b7246795e1",
+      "hash": "497dbed6f8784779",
       "history": [
         {
           "event": "upgraded",
@@ -17881,6 +18585,14 @@
           "prev_hash": "68cf7cd085e5bd54",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "497dbed6f8784779",
+          "prev_hash": "553ba8b7246795e1",
+          "commit": "a7662f8d",
+          "note": null
         }
       ]
     },
@@ -18368,7 +19080,7 @@
       ]
     },
     "temporal-rgb-smear": {
-      "hash": "68c9457cf923d6de",
+      "hash": "e794f3a5cc4eb914",
       "history": [
         {
           "event": "upgraded",
@@ -18377,6 +19089,14 @@
           "prev_hash": "d72c2c67df3c0f96",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T12:12:31.605Z",
+          "hash": "e794f3a5cc4eb914",
+          "prev_hash": "68c9457cf923d6de",
+          "commit": "a7662f8d",
+          "note": null
         }
       ]
     },
@@ -18465,7 +19185,7 @@
       ]
     },
     "gen-chromodynamic-glass-labyrinth": {
-      "hash": "8d56e14ec497948a",
+      "hash": "c195bd3db637b43c",
       "history": [
         {
           "event": "added",
@@ -18473,6 +19193,14 @@
           "hash": "8d56e14ec497948a",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:26:36.333Z",
+          "hash": "c195bd3db637b43c",
+          "prev_hash": "8d56e14ec497948a",
+          "commit": "06f35ebe",
+          "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
         }
       ]
     },
@@ -18489,7 +19217,7 @@
       ]
     },
     "gen-quantum-resonance-lattice": {
-      "hash": "980942bea701ebbe",
+      "hash": "ec3c72538e3b9613",
       "history": [
         {
           "event": "added",
@@ -18497,6 +19225,14 @@
           "hash": "980942bea701ebbe",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T09:52:55.120Z",
+          "hash": "ec3c72538e3b9613",
+          "prev_hash": "980942bea701ebbe",
+          "commit": "99d40279",
+          "note": "2026-11-08 sonnet/batch-20 (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-20"
         }
       ]
     },
@@ -18713,6 +19449,18 @@
           "hash": "ac887b9f3aed3791",
           "commit": "00db5f72",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen_grid": {
+      "hash": "d695014cbf739df9",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "d695014cbf739df9",
+          "commit": "121dc739",
+          "note": null
         }
       ]
     }

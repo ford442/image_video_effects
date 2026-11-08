@@ -14,7 +14,10 @@
     "diffraction"
   ],
   "features": [
-    "procedural"
+    "procedural",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

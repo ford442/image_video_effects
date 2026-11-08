@@ -18,8 +18,9 @@
 //                the Lotka-Volterra coupling (bass zone / mid zone / treble zone)
 //              - Age-based prey ramp: young colonies cyan-white → old deep green
 //              - Extinction bloom pulse when smoothed global population crashes
-//  Upgraded: 2026-10-17
-//  Ideas: hunt fronts; prey-edge flash; carrying dimple; phase-portrait tint
+//  Upgraded: 2026-11-08
+//  Ideas: hunt fronts; prey-edge flash; carrying dimple; phase-portrait tint; spore
+//         drops (hash-slotted colony seeds); birth-band membrane; predator scent halo
 //  A packing: raw prey/predator/age/activity (never ACES)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -130,7 +131,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let nbA = sampleNeighbourhood(px, resolution, 0);
     let nbB = sampleNeighbourhood(px, resolution, 1);
     let nA  = nbA.x; let mA = nbA.y;   // inner/outer averages for A
-    let nB  = nbB.x;                    // inner average for B (predator density)
+    let nB  = nbB.x; let mB = nbB.y;                     // inner average for B (predator density)
 
     // Idea 1 — hunt fronts: extra Lotka–Volterra at the spatial gradient of B
     let sizeI = vec2<i32>(i32(resolution.x), i32(resolution.y));
@@ -142,7 +143,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Zoned coupling: local FFT biome modulates interaction strength ───
     let zoneE    = zoneEnergy(uv.x);
-    let coupling = mix(0.0, 0.6, mids) * mix(0.6, 1.5, clamp(zoneE, 0.0, 1.0));
+    let coupling = mix(0.15, 0.6, mids) * mix(0.6, 1.5, clamp(zoneE, 0.0, 1.0));
 
     // ─── SmoothLife update for Species A (prey) ───
     // Standard SmoothLife with audio bass modulating birth range
@@ -194,6 +195,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         newA = max(newA, seedCore);
         newB = max(newB, seedRing * 0.55);
         clickActivity = max(clickActivity, max(seedCore, seedRing));
+    }
+
+    // Idea 5 — spore drops (rescue): HEAD's per-pixel seeding needed a pixel to land in a
+    // blob centred on its OWN hash, so almost nothing was ever planted and the canvas
+    // stayed dead. Every pixel now agrees on a hashed drop per time slot: a few spores
+    // fall each slot (more during the first second so the field bootstraps), Init
+    // Density sets the rate and radius.
+    let slot = floor(time * (0.6 + initDens * 1.4));
+    let drops = select(2, 7, time < 1.0);
+    for (var k = 0; k < drops; k++) {
+        let h = fract(sin(vec2<f32>(slot * 1.37 + f32(k) * 7.13, slot * 2.91 + f32(k) * 3.7)) * vec2<f32>(43758.5453, 22578.1459));
+        let sd = length((uv - h) * vec2<f32>(aspect, 1.0));
+        let sr = 0.03 + initDens * 0.04;
+        newA = max(newA, (1.0 - smoothstep(sr * 0.4, sr, sd)) * 0.95);
     }
 
     // ─── Random seeding (Init Density drives rate + blob radius) ───
@@ -270,6 +285,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         0.28 + 0.4 * cos(phase + 4.188)
     );
     color = mix(color, phaseTint, coExist * 0.42);
+    // Idea 6 — birth-band membrane: the contour where the inner average sits inside the
+    // birth interval is where new prey forms; light it as a thin colony membrane.
+    let membrane = smooth_interval(nA, b1, b2, 0.02) * (1.0 - newA) * smoothstep(0.02, 0.2, mA);
+    color += vec3<f32>(0.45, 1.0, 0.85) * membrane * (0.35 + bass * 0.25);
+    // Idea 7 — predator scent halo: the outer-annulus predator average (mB) glows as a
+    // warm haze around hunting packs, reaching into prey that is about to be eaten.
+    let scent = smoothstep(0.03, 0.3, mB) * (1.0 - smoothstep(0.1, 0.5, newB));
+    color = mix(color, color + vec3<f32>(0.55, 0.16, 0.05), scent * 0.6);
     color += actColor;
     color += vec3<f32>(1.0, 0.95, 0.55) * smoothstep(0.04, 0.18, edgeFlash) * 0.28;
     // Extinction bloom: brief global warm flash when population crashes

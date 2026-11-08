@@ -4,8 +4,13 @@
 //  Features: mouse-driven, audio-reactive, temporal, depth-aware,
 //            curl-noise, domain-warp, aces-tone-map, semantic-alpha,
 //            alpha-layered, luminance-key, edge-preserve, accumulative,
-//            mouse-velocity-spring, treble-sparkle-grain, feedback-clamp
+//            mouse-velocity-spring, treble-sparkle-grain, upgraded-rgba
 //  Complexity: Medium
+//  Upgraded: 2026-11-08
+//  Ideas: highlight-led comet streaks; curved streamline smear taps;
+//         bass ghost-hold (decay surges on kicks)
+//  A packing: rgb = clamped pre-ACES history, a = layered alpha;
+//             texel (0,0) = spring pos.xy/vel.xy, texel (1,0) = (time, init)
 //
 //  Interactivist upgrade notes:
 //   - Mouse velocity tracked with a spring-damper in extraBuffer; the
@@ -14,25 +19,14 @@
 //     the temporal loop can never blow up (luma-echo-warp lesson).
 //   - Treble-reactive sparkle grain (plasmaBuffer[0].z) adds fine
 //     animated film grain over the whole frame.
-//  extraBuffer layout:
-//   [0..1] smoothed mouse uv   [2..3] mouse velocity
-//   [4..5] previous raw mouse  [6]    init flag (0 = first frame)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
-// zoom_params: x=SmearLen, y=MouseSpring, z=Sparkle, w=FeedbackClamp
+// zoom_params: x=SmearLength, y=SmearDecay, z=ChromaticSplit, w=Turbulence
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 
-// extraBuffer slots for the persistent mouse spring state
-const SM_X: u32 = 0u;
-const SM_Y: u32 = 1u;
-const VEL_X: u32 = 2u;
-const VEL_Y: u32 = 3u;
-const PM_X: u32 = 4u;
-const PM_Y: u32 = 5u;
-const INIT_FLAG: u32 = 6u;
 
 // ── Hash & noise ──────────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
@@ -153,14 +147,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let time = u.config.x;
-    let dt = clamp(u.config.y, 0.0, 0.1);
     let mouse = u.zoom_config.yz;
+    // config.y is the ripple COUNT, not dt (old dt was 0 → frozen spring).
+    let clock = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+    let initialized = clock.y > 0.5;
+    let dt = select(0.016, clamp(time - clock.x, 0.001, 0.1), initialized);
 
-    // ── Slider params ───────────────────────────────────────────
-    let p1 = u.zoom_params.x;                    // Smear Length
-    let springCtl = clamp(u.zoom_params.y, 0.0, 1.0);   // Mouse Spring
-    let sparkleAmt = clamp(u.zoom_params.z, 0.0, 1.0);  // Sparkle Grain
-    let clampMax = clamp(u.zoom_params.w, 1.0, 2.0);    // Feedback Clamp
+    // ── Slider params (match the JSON params[] ids) ─────────────
+    let p1 = u.zoom_params.x;                              // smear_length
+    let decayCtl = clamp(u.zoom_params.y, 0.0, 1.0);       // smear_decay
+    let splitCtl = clamp(u.zoom_params.z, 0.0, 1.0);       // chromatic_split
+    let turbulence = clamp(u.zoom_params.w, 0.0, 1.0);     // turbulence
+    // Former sliders, pinned at the values the JSON defaults produced.
+    let springCtl = 0.7;
+    let sparkleAmt = 0.5;
+    let clampMax = 1.0;
 
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
@@ -169,9 +170,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Mouse-velocity spring-damper (persistent state) ─────────
     // Spring stiffness/damping scale with the Mouse Spring slider:
     // low = loose & floaty, high = tight & snappy.
-    var smoothMouse = vec2<f32>(extraBuffer[SM_X], extraBuffer[SM_Y]);
-    var mouseVel = vec2<f32>(extraBuffer[VEL_X], extraBuffer[VEL_Y]);
-    let initialized = extraBuffer[INIT_FLAG] > 0.5;
+    // State lives in A texel (0,0): extraBuffer is re-uploaded by the host
+    // every frame and every thread wrote it (dead + racy spring).
+    let springTexel = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    var smoothMouse = springTexel.xy;
+    var mouseVel = springTexel.zw;
     if (!initialized) {
         smoothMouse = mouse;
         mouseVel = vec2<f32>(0.0);
@@ -182,13 +185,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     mouseVel = mouseVel + accel * dt;
     smoothMouse = smoothMouse + mouseVel * dt;
 
-    extraBuffer[SM_X] = smoothMouse.x;
-    extraBuffer[SM_Y] = smoothMouse.y;
-    extraBuffer[VEL_X] = mouseVel.x;
-    extraBuffer[VEL_Y] = mouseVel.y;
-    extraBuffer[PM_X] = mouse.x;
-    extraBuffer[PM_Y] = mouse.y;
-    extraBuffer[INIT_FLAG] = 1.0;
+    mouseVel = clamp(mouseVel, vec2<f32>(-8.0), vec2<f32>(8.0));
+    smoothMouse = clamp(smoothMouse, vec2<f32>(-0.5), vec2<f32>(1.5));
 
     // Velocity of the spring head drives an interactive smear lean
     let velMag = length(mouseVel);
@@ -201,7 +199,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Previous frame history + motion estimate from luminance gradient
     let texel = vec2<f32>(1.0) / res;
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv01, 0.0);
+    let isState = global_id.y == 0u && global_id.x < 2u;
+    let prev = select(textureSampleLevel(dataTextureC, non_filtering_sampler, uv01, 0.0),
+                      vec4<f32>(0.4, 0.4, 0.4, 0.5), isState);
     let hR = luma(textureSampleLevel(dataTextureC, non_filtering_sampler,
                                     uv01 + vec2<f32>(texel.x, 0.0), 0.0).rgb);
     let hL = luma(textureSampleLevel(dataTextureC, non_filtering_sampler,
@@ -216,7 +216,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Base time direction blended with curl-noise swirl (turbulence fixed
     // at the legacy default 0.3; interactivity moved to the mouse spring)
-    let turbulence = 0.3;
     let timeAngle = time * 0.5 + turbulence * TAU;
     let timeDir = vec2<f32>(cos(timeAngle), sin(timeAngle));
     let curl = curl2D(uv * (2.0 + turbulence * 6.0) + time * 0.1, time * 0.2);
@@ -228,8 +227,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Smear length + chromatic split, audio/depth modulated.
     // Mouse speed also stretches the smear a little for gestural feel.
     let smearLength = mix(0.01, 0.25, p1) * (1.0 + velLean * 0.35);
-    let chromaticSplit = 0.025 * (1.0 + mids * 0.5);
-    let len = smearLength * (1.0 + bass * 0.3) * depthFactor;
+    let chromaticSplit = mix(0.0, 0.05, splitCtl) * (1.0 + mids * 0.5);
+    // Idea: highlight-led comet streaks — bright source pixels throw
+    // longer smears (long-exposure light trails); shadows stay short.
+    let srcLuma = luma(textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb);
+    let comet = mix(0.65, 1.6, smoothstep(0.25, 0.85, srcLuma));
+    let len = smearLength * (1.0 + bass * 0.3) * depthFactor * comet;
 
     // Domain-warped drift + Halton jitter for sample dithering
     let drift = warpedDrift(uv * 3.0, time, turbulence * 0.04);
@@ -241,18 +244,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let offG = clamp(baseOff + smearDir * len, vec2<f32>(0.0), vec2<f32>(1.0));
     let offB = clamp(baseOff + smearDir * len * (1.0 - chromaticSplit), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    let colR = textureSampleLevel(readTexture, u_sampler, offR, 0.0).r;
-    let colG = textureSampleLevel(readTexture, u_sampler, offG, 0.0).g;
-    let colB = textureSampleLevel(readTexture, u_sampler, offB, 0.0).b;
-    let sampleRGB = vec3<f32>(colR, colG, colB);
+    var colR = textureSampleLevel(readTexture, u_sampler, offR, 0.0).r;
+    var colG = textureSampleLevel(readTexture, u_sampler, offG, 0.0).g;
+    var colB = textureSampleLevel(readTexture, u_sampler, offB, 0.0).b;
+    // Idea: curved streamline taps — two extra taps march further along
+    // the curl field (re-evaluated at each tap), so streaks bend with the
+    // turbulence instead of being straight offsets. Turbulence 0 = straight.
+    var tapPos = offG;
+    var tapDir = smearDir;
+    var accum = vec3<f32>(colR, colG, colB);
+    var wsum = 1.0;
+    for (var k = 1; k <= 2; k++) {
+        let c = curl2D(tapPos * 3.0 * (2.0 + turbulence * 6.0) + time * 0.1, time * 0.2);
+        tapDir = normalize(mix(tapDir, normalize(c + vec2<f32>(0.0001)), turbulence * 0.6));
+        tapPos = clamp(tapPos + tapDir * len * 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
+        let w = 0.55 / f32(k);
+        let tr = textureSampleLevel(readTexture, u_sampler, clamp(tapPos + tapDir * len * chromaticSplit, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+        let tg = textureSampleLevel(readTexture, u_sampler, tapPos, 0.0).g;
+        let tb = textureSampleLevel(readTexture, u_sampler, clamp(tapPos - tapDir * len * chromaticSplit, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+        accum += vec3<f32>(tr, tg, tb) * w;
+        wsum += w;
+    }
+    let sampleRGB = accum / wsum;
 
     // Effect displacement magnitude drives intensity alpha
     let displ = length(offG - uv01);
 
     // Temporal feedback with per-channel decay variation (decay fixed at
     // the legacy default 0.7; stability is handled by the clamp below)
-    let smearDecay = 0.776; // = mix(0.3, 0.98, 0.7), legacy slider default
-    let fb = clamp(smearDecay * (1.0 + bass * 0.08), 0.0, 0.995);
+    let smearDecay = mix(0.3, 0.98, decayCtl); // default 0.7 → 0.776 (legacy)
+    // Idea: bass ghost-hold — kicks surge the feedback toward a near-freeze
+    // so the frame leaves a held ghost that bleeds out after the hit.
+    let ghost = smoothstep(0.45, 0.9, bass);
+    let fb = clamp(mix(smearDecay * (1.0 + bass * 0.08), 1.75, ghost), 0.0, 1.9);
     let channelDecay = vec3<f32>(fb * 0.52, fb * 0.45, fb * 0.5);
     var history = mix(sampleRGB, prev.rgb, channelDecay);
 
@@ -271,7 +295,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = compositeAlpha(color, depth, motionStrength, displ, chromaticSplit, prev.a, smearDecay);
 
     // Store history ping for next frame, carrying the layered alpha for accumulation
-    textureStore(dataTextureA, pixel, vec4<f32>(history, alpha));
+    var stateOut = vec4<f32>(history, alpha);
+    if (global_id.x == 0u && global_id.y == 0u) { stateOut = vec4<f32>(smoothMouse, mouseVel); }
+    if (global_id.x == 1u && global_id.y == 0u) { stateOut = vec4<f32>(time, 1.0, 0.0, 0.0); }
+    textureStore(dataTextureA, pixel, stateOut);
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));

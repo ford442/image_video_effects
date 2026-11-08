@@ -2,14 +2,16 @@
   "id": "tensor-flow-morphological",
   "name": "Tensor Flow Morphological",
   "url": "shaders/tensor-flow-morphological.wgsl",
-  "description": "Depth-aware tensor eigenwarp with morphological post-processing. Erosion darkens compressed tensor regions, dilation brightens tensile regions. Gradient highlights edges created by tensor warping.",
+  "description": "Depth-aware tensor eigenwarp with morphological post-processing. Compressed regions erode and tensile regions dilate per pixel; the morphological gradient glows with photoelastic fringe colours, and bass widens the structuring element.",
   "features": [
     "advanced-hybrid",
     "tensor-warp",
     "morphological",
     "depth-aware",
     "mouse-driven",
-    "randomization-safe"
+    "randomization-safe",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -71,7 +73,7 @@
           "max": 1,
           "step": 0.01,
           "mapping": "zoom_config.x",
-          "description": "Morphological structuring element radius"
+          "description": "Morphological structuring element radius (inactive: pinned at default; zoom_config.yz is the mouse)"
         },
         {
           "id": "erosion_dilation_blend",
@@ -81,7 +83,7 @@
           "max": 1,
           "step": 0.01,
           "mapping": "zoom_config.y",
-          "description": "0=erosion, 1=dilation"
+          "description": "0=erosion, 1=dilation (inactive: pinned at default; zoom_config.yz is the mouse)"
         },
         {
           "id": "gradient_boost",
@@ -91,7 +93,7 @@
           "max": 1,
           "step": 0.01,
           "mapping": "zoom_config.z",
-          "description": "Morphological gradient amplification"
+          "description": "Morphological gradient amplification (inactive: pinned at default; zoom_config.yz is the mouse)"
         },
         {
           "id": "morph_blend",
@@ -101,7 +103,7 @@
           "max": 1,
           "step": 0.01,
           "mapping": "zoom_config.w",
-          "description": "Blend between sculpted and morphological result"
+          "description": "Blend between sculpted and morphological result (inactive: pinned at default; zoom_config.yz is the mouse)"
         }
       ]
     },
@@ -115,7 +117,7 @@
       "morphological operators (conv-morphological-erosion-dilation.wgsl)"
     ],
     "performance_target": "25-35 FPS (GTX 1060)",
-    "created_by": "Agent CB-3 — Convolution Post-Processor",
+    "created_by": "Agent CB-3 \u2014 Convolution Post-Processor",
     "created_date": "2026-04-18"
   }
 }

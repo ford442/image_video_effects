@@ -2,7 +2,7 @@
   "id": "stella-orbit",
   "name": "Stellar Orbit",
   "url": "shaders/stella-orbit.wgsl",
-  "description": "Orbital motion patterns with stellar particle systems.",
+  "description": "Raymarched field of twinkling stella octangulae around an icosahedral spoke structure whose charge pulses outward, with beaded orbit trails.",
   "tags": [
     "filter",
     "image-processing",
@@ -11,9 +11,9 @@
     "reactive"
   ],
   "features": [
+    "mouse-driven",
     "audio-reactive",
-    "audio-driven",
-    "mouse-driven"
+    "upgraded-rgba"
   ],
   "params": [
     {

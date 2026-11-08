@@ -15,7 +15,7 @@
     "mouse-reactive",
     "shockwave"
   ],
-  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending. Early reflections bounce off the frame, and comb-filter notches follow the echo spacing.",
+  "description": "Temporal feedback echo chamber with mouse gravity wells, click shockwaves, fBM domain warp, depth-aware compositing, and psychedelic palette blending. Early and second-order reflections bounce off the frame, and comb-filter notches follow the echo spacing.",
   "workgroup_size": [
     16,
     16,
@@ -74,7 +74,7 @@
     "aces-tonemap",
     "semantic-alpha"
   ],
-  "feedbackPacking": "A/C = final ACES display RGBA; exact manually reconstructed echo history; extraBuffer[133] = smoothed bass envelope",
+  "feedbackPacking": "A.rgb = raw pre-ACES accumulated trail (exact manually reconstructed echo history), A.a = smoothed bass envelope; ACES only on writeTexture",
   "x-meta": {
     "upgrade": {
       "params": [

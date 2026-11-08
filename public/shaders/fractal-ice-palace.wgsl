@@ -5,7 +5,9 @@
 //            chromatic-dispersion, fractal-branching, depth-aware
 //  Complexity: Very High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-11-08
+//  Ideas: 60-degree frost-fern dendrites on every branch; Beer-Lambert ice absorption (thick trunks deep blue, thin tips white)
+//  A packing: ACES display RGBA (rgb = display colour, a = ice presence)
 // ═══════════════════════════════════════════════════════════════════
 //  Recursive ice crystal palace with fractal branching architecture.
 //  Chromatic ice refractions: blue core, cyan edges, white sparkle.
@@ -13,26 +15,7 @@
 //  frost glitter. Mouse melts local ice.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash2(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -118,9 +101,27 @@ fn iceBranch(p: vec2<f32>, origin: vec2<f32>, angle: f32, len: f32,
       let r = edge * 0.4 + tip * 0.8;
       let g = core * 0.6 + edge * 0.9 + tip * 0.95;
       let b = core * 1.0 + edge * 0.8 + tip * 0.9;
-      let nodeColor = vec4<f32>(r, g, b, branchStr) * (0.7 + f32(maxDepth - depth) * 0.1);
+      // ── Idea 2: Beer-Lambert absorption — optical path ∝ local ice thickness
+      //    (half-width minus distance), red absorbed first, so trunks go deep blue
+      let thick = max(node.width - d, 0.0) / max(node.width, 1e-4) * node.width * 40.0;
+      let transmit = exp(-vec3<f32>(1.6, 0.55, 0.12) * thick);
+      let nodeColor = vec4<f32>(vec3<f32>(r, g, b) * transmit, branchStr) * (0.7 + f32(maxDepth - depth) * 0.1);
       result = max(result, nodeColor);
     }
+
+    // ── Idea 1: frost-fern dendrites — hexagonal ice grows short side twigs at
+    //    ±60° from each branch, two pairs per segment, ending in leaf needles
+    let dir = vec2<f32>(cos(node.angle), sin(node.angle));
+    var fern = 0.0;
+    for (var k = 1; k <= 2; k = k + 1) {
+      let base = node.origin + dir * node.len * (f32(k) / 3.0);
+      let tw = node.len * 0.28 * (1.0 + mids * 0.3);
+      let a1 = base + vec2<f32>(cos(node.angle + 1.0472), sin(node.angle + 1.0472)) * tw;
+      let a2 = base + vec2<f32>(cos(node.angle - 1.0472), sin(node.angle - 1.0472)) * tw;
+      let dt = min(sdSegment(p, base, a1), sdSegment(p, base, a2));
+      fern = max(fern, smoothstepf32(node.width * 0.35, 0.0, dt));
+    }
+    result = max(result, vec4<f32>(0.75, 0.92, 1.0, fern * 0.8) * fern * 0.8);
 
     // Push child branches
     if (depth < maxDepth - 1 && node.len > 0.02) {
@@ -162,7 +163,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let mouse = u.zoom_config.yz * 2.0 - 1.0;
 
   let palaceScale = mix(0.4, 1.2, u.zoom_params.x);
   let recursionDepth = mix(2.0, 7.0, u.zoom_params.y);
@@ -170,8 +170,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let refraction = mix(0.3, 1.5, u.zoom_params.w);
 
   let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
-  var p = uv * 2.0 - 1.0;
+  // Rescue: compute uv.y grows downward, which hung the palace upside-down
+  var p = vec2<f32>(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
   p.x = p.x * aspect;
+  let mouse = vec2<f32>((u.zoom_config.y * 2.0 - 1.0) * aspect, 1.0 - u.zoom_config.z * 2.0);
 
   // Mouse melting: local distortion around mouse
   let mouseDist = length(p - mouse);
@@ -269,7 +271,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color += vec3<f32>(0.5, 0.7, 0.9) * fog;
 
   // ═══ Temporal Feedback ═══
-  let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prev = textureLoad(dataTextureC, coord, 0);
   let feedbackAmount = 0.03 + mids * 0.01;
   color = mix(color, prev.rgb * 0.94, feedbackAmount);
 
@@ -281,23 +283,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let centerDist = length(p);
   let depth = clamp(0.3 + centerDist * 0.5 + palaceColor.a * 0.2, 0.0, 1.0);
 
-  color = acesToneMap(color * 1.1);
+  color = acesToneMap(max(color, vec3<f32>(0.0)) * 1.1);
   
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(coord) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
-
-    let __finalRGB = color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, coord, vec4<f32>(__finalRGB, alpha));
-  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
+  // Removed a stamped clock-ring/click-front overlay (generic costume; it also
+  // redeclared `aspect`, which kept this file from compiling).
+    textureStore(writeTexture, coord, vec4<f32>(color, alpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, vec4<f32>(color, presence));
 }

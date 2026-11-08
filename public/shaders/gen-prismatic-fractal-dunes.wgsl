@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: impact ripples; saltation glints; slip-face avalanche tongue; grainfall bedding
+//  Upgraded: 2026-11-08
+//  Ideas: impact ripples; saltation glints; slip-face avalanche tongue; grainfall bedding; geyser caustic halos; Cauchy prism fire
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -175,7 +175,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let fragCoord = vec2<f32>(f32(id.x), f32(id.y));
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
 
-    let uv = (fragCoord * 2.0 - res) / res.y;
+    // Rescue: gid.y grows downward, so HEAD rendered sky at the bottom and dunes on top.
+    let uv = vec2<f32>(fragCoord.x * 2.0 - res.x, res.y - fragCoord.y * 2.0) / res.y;
     let time = u.config.x;
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
@@ -193,7 +194,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var rd = normalize(vec3<f32>(uv, 1.0));
 
     // Gentle downward look
-    let camRot = rotate2D(0.35);
+    let camRot = rotate2D(-0.35); // rescue: +0.35 tilted the view up once uv is upright
     let temp_rd_yz = camRot * rd.yz;
     rd.y = temp_rd_yz.x;
     rd.z = temp_rd_yz.y;
@@ -268,11 +269,28 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Idea: grainfall bedding — fine layers on the same lee face.
             let bedding = leeShade * (0.5 + 0.5 * sin(p.y * 46.0 + dot(p.xz, windN) * 3.0));
             col = mix(col, col * vec3<f32>(0.78, 0.68, 0.52), bedding * 0.45);
+            // ── Idea 5: geyser caustic halos — each active prism geyser throws a
+            // dispersed rainbow ring onto the sand around its vent (Prism Dispersion
+            // spreads the bands), breathing with its ballistic launch.
+            let gLocal = p.xz - round(p.xz / 4.0) * 4.0;
+            let gActive = step(0.75, hash21(floor(p.xz / 4.0)));
+            let gR = length(gLocal);
+            let gLaunch = fract(time * (0.32 + windSpeed * 0.12) + hash21(floor(p.xz / 4.0) + vec2<f32>(4.7, 9.1)));
+            let ringR = 0.6 + geyserHeight * 0.35 * (1.0 - gLaunch);
+            let causticBand = exp(-abs(gR - ringR) * (9.0 - clamp(dispersion, 0.0, 3.0) * 2.0));
+            let causticHue = fract((gR - ringR) * (0.8 + dispersion * 0.6) + 0.5);
+            col += spectrum(causticHue) * causticBand * gActive * (0.35 + bass * 0.4) * (1.0 - leeShade * 0.6);
         } else {
             // Prismatic crystal geyser
             let base = vec3<f32>(0.15, 0.75, 1.0) * (1.0 + bass * 0.5 + audio * 0.4);
             let fre = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
             col = base * (diff1 * 1.6 + diff2) + vec3<f32>(1.0, 0.3, 0.9) * fre * dispersion * 2.0;
+            // ── Idea 6: Cauchy prism fire — per-channel Fresnel with the IOR rising
+            // toward blue, so crystal rims fringe red-outside / blue-inside.
+            let cosV = max(dot(n, -rd), 0.0);
+            let fireExp = vec3<f32>(2.2, 3.0, 4.2) - vec3<f32>(-0.4, 0.0, 0.4) * clamp(dispersion, 0.0, 3.0);
+            let fire = pow(vec3<f32>(1.0 - cosV), max(fireExp, vec3<f32>(1.0)));
+            col += fire * vec3<f32>(1.0, 0.85, 1.1) * (0.6 + treble * 0.8);
         }
 
         // Volumetric fog

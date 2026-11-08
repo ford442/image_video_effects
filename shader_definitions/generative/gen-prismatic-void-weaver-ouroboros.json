@@ -21,10 +21,11 @@
   "id": "gen-prismatic-void-weaver-ouroboros",
   "url": "shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
   "features": [
+    "audio-reactive",
+    "mouse-driven",
     "raymarched-twisted-ouroboros",
     "coarse-refined-fbm-culling",
     "bounding-sphere-early-out",
-    "sprung-pointer-void-gravity",
     "click-gravity-surge",
     "fft-plasma-shimmer",
     "temporal-history-smoothing",
