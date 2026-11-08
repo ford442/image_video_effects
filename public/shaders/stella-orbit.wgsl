@@ -1,33 +1,31 @@
-// ---------------------------------------------------------------
-//  Stellar Orbit - Compute Shader Version
-// ---------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Stellar Orbit
+//  Category: artistic
+//  Features: raymarched, stella-octangula, orbit-trails, audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-08
+//  Ideas: spoke charge pulses; stella lattice glints; orbit-line pulse beads
+//  A packing: display RGB (post-gamma) in A; alpha = surface/line coverage
+// ═══════════════════════════════════════════════════════════════════
+//  Rescues (HEAD did not compile / rendered garbage):
+//   * stray `u_zoom_dummy` assignment -> unresolved identifier, shader never compiled
+//   * sign(0) zeroed the icosa-structure up vector -> NaN for every pixel
+//   * Rodrigues rotation fed non-unit axes -> stellas inflated ~10x into slabs
+//   * Shadertoy y-up port was upside-down in compute rows
+//   * "audio" read u.zoom_config.x (mouse x) into unused locals; real audio now
+//     comes from plasmaBuffer[0]
 
 // 1. UNIFORMS & BINDINGS
-@group(0) @binding(0) var u_sampler : sampler;
-@group(0) @binding(1) var readTexture : texture_2d<f32>;
-@group(0) @binding(2) var writeTexture : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u : Uniforms;
-@group(0) @binding(4) var readDepthTexture : texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler : sampler;
-@group(0) @binding(6) var writeDepthTexture : texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB : texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC : texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer : array<f32>;
-@group(0) @binding(11) var comparison_sampler : sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer : array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-    zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Global private variables for the accumulation logic
 var<private> g1 : f32;
 var<private> g2 : f32;
 var<private> g3 : f32;
+var<private> gBass : f32;
+var<private> gMids : f32;
+var<private> gDepth : f32;
+var<private> gGlint : f32;
 
 // Constants
 const x_379 = vec3<f32>(0.57735025882720947266, 0.57735025882720947266, -0.57735025882720947266);
@@ -75,7 +73,9 @@ fn stellas_vf3_(p_5 : ptr<function, vec3<f32>>) -> f32 {
     *(p_5) = (*(p_5) - c * floor(*(p_5) / c)) - c * 0.5;
     
     var param_6 = *(p_5);
-    var param_7 = fract(sin(e + 2060303.5)) - 0.5;
+    // Rodrigues needs a unit axis; the raw hash axis (|a|~0.3) shrank p ~10x,
+    // inflating each tiny stella into a screen-filling slab.
+    var param_7 = normalize(fract(sin(e + 2060303.5)) - 0.5 + vec3<f32>(1e-4));
     var param_8 = u.config.x * 1.5;
     rot_vf3_vf3_f1_(&param_6, &param_7, &param_8);
     *(p_5) = param_6;
@@ -118,13 +118,21 @@ fn structure_vf3_(p_6 : ptr<function, vec3<f32>>) -> f32 {
         
         var param_11 = q;
         var param_12 = w_1;
-        var param_13 = sign(w_1.z) * -sign(w_1.x + w_1.y + w_1.z) * w_1.zxy;
+        // sign(0) == 0 zeroed the up vector for every i%3==0 arm -> normalize(0) = NaN
+        // poisoned q, d and g2 for the whole frame. Use a never-zero sign.
+        let sgnZ = select(1.0, -1.0, w_1.z < 0.0);
+        let sgnS = select(1.0, -1.0, (w_1.x + w_1.y + w_1.z) < 0.0);
+        var param_13 = sgnZ * -sgnS * w_1.zxy;
         pointAt_vf3_vf3_vf3_(&param_11, &param_12, &param_13);
         q = param_11;
         
         var d0 = length(q - vec3<f32>(0.0, 0.0, clamp(q.z, 2.0, 8.0))) - 0.4 + q.z * 0.05;
         d = min(d, d0);
-        g2 += 0.1 / (0.1 + d0 * d0);
+        // Idea 1 — spoke charge pulses: bright bands run outward along each
+        // of the 12 icosahedral spokes (q.z is distance along the spoke);
+        // bass fattens and speeds them.
+        let spokePulse = pow(0.5 + 0.5 * sin(q.z * 2.4 - u.config.x * (3.0 + gBass * 4.0) + f32(i_2) * 0.9), 6.0);
+        g2 += 0.1 / (0.1 + d0 * d0) * (0.55 + spokePulse * (1.1 + gBass * 0.8));
         
         let c_1 = 0.8;
         let e_1 = floor(q.z / c_1 - c_1 * 0.5);
@@ -174,7 +182,7 @@ fn rabbit_vf3_(p_7 : ptr<function, vec3<f32>>) -> f32 {
     *p_7 = *p_7 - offset;
     
     var param_18 = *p_7;
-    var param_19 = vec3<f32>(1.0);
+    var param_19 = vec3<f32>(0.57735027);
     var param_20 = u.config.x;
     rot_vf3_vf3_f1_(&param_18, &param_19, &param_20);
     *p_7 = param_18;
@@ -186,7 +194,7 @@ fn rabbit_vf3_(p_7 : ptr<function, vec3<f32>>) -> f32 {
     return d_1;
 }
 
-fn map_vf3_(p_8 : ptr<function, vec3<f32>>) -> f32 { let dummy = u.zoom_params.x + u.zoom_params.y + u.zoom_params.z + u.zoom_params.w; u_zoom_dummy = u.zoom_params;
+fn map_vf3_(p_8 : ptr<function, vec3<f32>>) -> f32 {
     var param_23 = *p_8;
     var d1 = stellas_vf3_(&param_23);
     var param_24 = *p_8;
@@ -209,6 +217,15 @@ fn calcNormal_vf3_(p_9 : ptr<function, vec3<f32>>) -> vec3<f32> {
 fn doColor_vf3_(p_10 : ptr<function, vec3<f32>>) -> vec3<f32> {
     var param_27 = *p_10;
     if (stellas_vf3_(&param_27) < 0.001) {
+        // Idea 2 — stella lattice glints: each lattice cell's star catches the
+        // light on its own hashed beat, so the field twinkles instead of
+        // sitting as flat lilac chips. Bass raises the glint rate.
+        let cp = *p_10 + vec3<f32>(0.0, u.config.x, 0.0);
+        let cell = floor(cp / 2.0);
+        let h = fract(sin(dot(cell, vec3<f32>(12.9898, 78.233, 37.719))) * 43758.5453);
+        let beat = fract(u.config.x * (0.35 + gBass * 0.8) + h * 7.0);
+        let glint = pow(max(1.0 - beat * 6.0, 0.0), 3.0) * step(0.55, h);
+        gGlint = glint;
         return vec3<f32>(0.7, 0.7, 1.0);
     }
     return vec3<f32>(1.0);
@@ -222,10 +239,6 @@ fn orbit_f1_f1_(t_2 : ptr<function, f32>, n_2 : ptr<function, f32>) -> vec3<f32>
     var param_3 = *n_2;
     let off = randVec_f1_(&param_3) * (*t_2 + 0.05) * 0.6;
     let time = u.config.x * (0.1 + u.zoom_params.x * 0.9) + fract(sin(*n_2 * 12345.5)) * 5.0;
-    // ═══ AUDIO REACTIVITY ═══
-    let audioOverall = u.zoom_config.x;
-    let audioBass = audioOverall * 1.5;
-    let audioReactivity = 1.0 + audioOverall * 0.3;
     return p_12 + off * sin(time + 0.5 * sin(0.5 * time));
 }
 
@@ -253,6 +266,8 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
     // Re-mapped coordinate calculation for Compute
     // u.config.z = width, u.config.w = height
     var p = (fragCoord * 2.0 - u.config.zw) / u.config.w;
+    let mouse = u.zoom_config.yz;
+    p.y = -p.y; // compute rows run top-down; the Shadertoy port was upside-down
     
     var col = vec3<f32>(0.0, 0.0, 0.05);
     
@@ -262,12 +277,13 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
     var ro = vec3<f32>(1.0, 0.0, f32(idx));
     
     var param_28 = ro;
-    var param_29 = vec3<f32>(1.0);
+    var param_29 = vec3<f32>(0.57735027);
     var param_30 = u.config.x * 0.2 + (u.zoom_params.w * 3.14);
     rot_vf3_vf3_f1_(&param_28, &param_29, &param_30);
     ro = param_28;
     
-    var ta = vec3<f32>(2.0, 1.0, 2.0);
+    // Mouse nudges the look-at target (idle 0.5,0.5 = original framing).
+    var ta = vec3<f32>(2.0, 1.0, 2.0) + vec3<f32>((mouse.x - 0.5) * 4.0, (0.5 - mouse.y) * 3.0, 0.0);
     var rd = normalize(vec3<f32>(p.x, p.y, 2.0));
     
     var param_31 = rd;
@@ -302,6 +318,8 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
         col = col + vec3<f32>(0.8, 0.1, 0.0) * pow(clamp(dot(reflect(normalize(p_pos - ro), nor), vec3<f32>(-0.57)), 0.0, 1.0), 30.0);
         col = col + vec3<f32>(0.1, 0.2, 0.5) * pow(clamp(dot(reflect(normalize(p_pos - ro), nor), x_379), 0.0, 1.0), 30.0);
         
+        // glint is added after the step-count darkening so it actually reads
+        col = col + vec3<f32>(1.6, 1.4, 1.0) * gGlint * clamp(dot(nor, x_379) * 0.5 + 0.7, 0.0, 1.0);
         let fog = exp(-z * z * 0.00001);
         col = mix(vec3<f32>(0.0), col, vec3<f32>(fog));
     }
@@ -309,7 +327,9 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
     // Add glow
     col += vec3<f32>(0.9, 0.1, 0.0) * g1 * 0.05;
     col += vec3<f32>(0.0, 0.3, 0.7) * g2 * 0.08;
-    col += vec3<f32>(0.5, 0.3, 0.1) * g3 * 0.15;
+    col += vec3<f32>(0.5, 0.3, 0.1) * g3 * 0.15 * (1.0 + gBass * 0.5);
+
+    var cover = 0.0;
     
     // Orbit lines loop
     var de = vec3<f32>(10000000.0);
@@ -340,15 +360,23 @@ fn mainImage(fragColor : ptr<function, vec4<f32>>, fragCoord : vec2<f32>) {
        if (cond) {
            var param_46 = i_5;
            let hcol = hue_f1_(&param_46);
-           col += mix(vec3<f32>(1.0), hcol, vec3<f32>(0.8)) * (1.0 - de.z * 0.9) * smoothstep(s_2 + 0.17, s_2, de.x) * (0.7 + u.zoom_params.z);
+           let lineK = 1.0 - smoothstep(s_2, s_2 + 0.17, de.x);
+           // Idea 3 — orbit-line pulse heads: a bright bead runs down each
+           // orbit trail from its head; mids speed the pulse.
+           let pulse = exp(-pow(fract(de.z * 2.0 - u.config.x * (0.6 + gMids * 1.2) + off_1) - 0.5, 2.0) * 120.0);
+           col += mix(vec3<f32>(1.0), hcol, vec3<f32>(0.8)) * (1.0 - de.z * 0.9) * lineK * (0.7 + u.zoom_params.z) * (1.0 + pulse * 1.6);
+           cover = max(cover, lineK * (1.0 - de.z * 0.9));
        }
     }
     
     // Gamma / Tone mapping
     let gamma = 0.8 + 0.3 * sin(u.config.x * 0.5 + 3.0 * sin(u.config.x * 0.3));
-    col = pow(col, vec3<f32>(gamma));
-    
-    *fragColor = vec4<f32>(col, 1.0);
+    col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(gamma));
+
+    let surf = select(0.0, 1.0, d < 0.001);
+    let alpha = clamp(0.25 + surf * 0.6 + cover * 0.5 + (g2 * 0.004), 0.0, 1.0);
+    *fragColor = vec4<f32>(col, alpha);
+    gDepth = select(0.0, clamp(1.0 - z / 30.0, 0.0, 1.0), d < 0.001);
 }
 
 
@@ -364,7 +392,9 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     // Ensure we don't access garbage.
 
     // 2. Initialize globals
-    g1 = 0.0; g2 = 0.0; g3 = 0.0;
+    g1 = 0.0; g2 = 0.0; g3 = 0.0; gDepth = 0.0; gGlint = 0.0;
+    gBass = plasmaBuffer[0].x;
+    gMids = plasmaBuffer[0].y;
     
     // 3. Prepare Logic inputs
     var outColor : vec4<f32>;
@@ -377,6 +407,7 @@ fn main(@builtin(global_invocation_id) gid : vec3<u32>) {
     // Check output bounds to be safe
     if (gid.x < u32(u.config.z) && gid.y < u32(u.config.w)) {
         textureStore(writeTexture, vec2<i32>(gid.xy), outColor);
+        textureStore(dataTextureA, vec2<i32>(gid.xy), outColor);
+        textureStore(writeDepthTexture, gid.xy, vec4<f32>(gDepth, 0.0, 0.0, 0.0));
     }
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(0.0, 0.0, 0.0, 0.0));
 }

@@ -2023,7 +2023,7 @@
       ]
     },
     "chromatic-phase-inversion": {
-      "hash": "e54413627d196886",
+      "hash": "dfc7ef53df8c7cf7",
       "history": [
         {
           "event": "upgraded",
@@ -2032,6 +2032,14 @@
           "prev_hash": "9139d6ff94f912c7",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "dfc7ef53df8c7cf7",
+          "prev_hash": "e54413627d196886",
+          "commit": "121dc739",
+          "note": null
         }
       ]
     },
@@ -2085,8 +2093,17 @@
       ]
     },
     "fabric-step": {
-      "hash": "d4bbb7a4205ccab6",
-      "history": []
+      "hash": "c93a60ea78f8d23f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "c93a60ea78f8d23f",
+          "prev_hash": "d4bbb7a4205ccab6",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "film-cross-process": {
       "hash": "e6703d9428e08eaa",
@@ -2807,8 +2824,17 @@
       "history": []
     },
     "stella-orbit": {
-      "hash": "9c659a4e01144d81",
-      "history": []
+      "hash": "b64cb64c446c953c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "b64cb64c446c953c",
+          "prev_hash": "9c659a4e01144d81",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "stipple-render": {
       "hash": "79c640fe2b2658b1",
@@ -3081,8 +3107,17 @@
       ]
     },
     "gemstone-fractures": {
-      "hash": "17277ea0cd5d1515",
-      "history": []
+      "hash": "8fdb2414dd1a3840",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "8fdb2414dd1a3840",
+          "prev_hash": "17277ea0cd5d1515",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "gen-chromatic-vortex": {
       "hash": "22fbf638182711b1",
@@ -3188,8 +3223,17 @@
       ]
     },
     "infinite-zoom": {
-      "hash": "d8f5d861f620ee09",
-      "history": []
+      "hash": "1de677da20996b7e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "1de677da20996b7e",
+          "prev_hash": "d8f5d861f620ee09",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "interactive-rgb-split": {
       "hash": "c6a0473195dd8b5f",
@@ -5649,7 +5693,7 @@
       ]
     },
     "gen-electric-kaleidoscope-storm": {
-      "hash": "88aec2664fa62144",
+      "hash": "f7d48ad8a6fd265b",
       "history": [
         {
           "event": "upgraded",
@@ -5658,6 +5702,14 @@
           "prev_hash": "5588f2aae3a3fd3e",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "f7d48ad8a6fd265b",
+          "prev_hash": "88aec2664fa62144",
+          "commit": "121dc739",
+          "note": null
         }
       ]
     },
@@ -8001,7 +8053,7 @@
       ]
     },
     "gen-neon-acid-geometry": {
-      "hash": "a928b154039ce431",
+      "hash": "8b72abf9d30bf31d",
       "history": [
         {
           "event": "upgraded",
@@ -8010,6 +8062,14 @@
           "prev_hash": "7cfbfe1d904cdaad",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "8b72abf9d30bf31d",
+          "prev_hash": "a928b154039ce431",
+          "commit": "121dc739",
+          "note": null
         }
       ]
     },
@@ -9241,8 +9301,17 @@
       "history": []
     },
     "gen-sierpinski-tetrahedron": {
-      "hash": "665c4b6ac4ccb5a7",
-      "history": []
+      "hash": "b84234ba34f27b10",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "b84234ba34f27b10",
+          "prev_hash": "665c4b6ac4ccb5a7",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "gen-silica-tsunami": {
       "hash": "dca36aa875f3010f",
@@ -16447,8 +16516,17 @@
       "history": []
     },
     "radial-blur": {
-      "hash": "a45eb4012dd21e8e",
-      "history": []
+      "hash": "f910334f518045ca",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "f910334f518045ca",
+          "prev_hash": "a45eb4012dd21e8e",
+          "commit": "121dc739",
+          "note": null
+        }
+      ]
     },
     "soft-vignette-bloom": {
       "hash": "13014dc7b063273f",
@@ -18947,6 +19025,18 @@
           "hash": "ac887b9f3aed3791",
           "commit": "00db5f72",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen_grid": {
+      "hash": "d695014cbf739df9",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-08T10:52:39.368Z",
+          "hash": "d695014cbf739df9",
+          "commit": "121dc739",
+          "note": null
         }
       ]
     }

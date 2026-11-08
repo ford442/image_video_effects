@@ -2,7 +2,7 @@
   "id": "fabric-step",
   "name": "Fabric of Reality",
   "url": "shaders/fabric-step.wgsl",
-  "description": "Mass-spring cloth simulation with Verlet integration, constraint solving, and interactive tearing mechanics.",
+  "description": "Mass-spring cloth over the image with Verlet integration and tearing. Squeezed cloth wrinkles, deformed threads catch an anisotropic sheen, and tears show frayed thread ends.",
   "params": [
     {
       "id": "stiffness",
@@ -39,7 +39,8 @@
     "interactive",
     "physics",
     "mouse-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "tags": [
     "simulation",
