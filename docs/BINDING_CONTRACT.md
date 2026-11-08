@@ -9,7 +9,7 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 - C++ layout: [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) (`CreateBindGroupLayout`)
 - Device limits: [`src/contracts/webgpu_limits.json`](../src/contracts/webgpu_limits.json) ↔ [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
 - Optional features: [`src/contracts/webgpu_optional_features.json`](../src/contracts/webgpu_optional_features.json) ↔ [`collectOptionalDeviceFeatures`](../src/renderer/webgpu/device.ts) ↔ `device.cpp` `requiredFeatures[3]`
-- WASM exports: [`src/contracts/wasm_exports.json`](../src/contracts/wasm_exports.json) (build.sh + CMake)
+- WASM exports: [`src/contracts/wasm_exports.json`](../src/contracts/wasm_exports.json) — export lists for build.sh, plus per-export signatures and suspension policy (`exports`) that generate [`wasm_renderer/wasm_exports.h`](../wasm_renderer/wasm_exports.h) and the typed bridge wrappers [`src/wasm/bridge/_generated.ts`](../src/wasm/bridge/_generated.ts) (`npm run gen:wasm-exports`; see [wasm_renderer/README.md](../wasm_renderer/README.md#export-contract-wasm_exportsjson--wasm_exportsh--bridge_generatedts))
 - WGSL authoring: [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md)
 - Shader **upgrades** (ideas, not hygiene): [`docs/SHADER_UPGRADE_BATCH.md`](SHADER_UPGRADE_BATCH.md)
 - Uniforms layout: [`src/contracts/uniforms_layout.json`](../src/contracts/uniforms_layout.json) ↔ [`src/renderer/UniformBuffer.ts`](../src/renderer/UniformBuffer.ts) ↔ [`wasm_renderer/renderer.h`](../wasm_renderer/renderer.h)

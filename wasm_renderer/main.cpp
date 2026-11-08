@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "wasm_exports.h"  // generated: the contract every export below must match
 #include <emscripten/emscripten.h>
 #include <cstdlib>
 #include <cstdio>

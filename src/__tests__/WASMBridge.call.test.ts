@@ -75,10 +75,10 @@ async function flush() {
   for (let i = 0; i < 5; i++) await Promise.resolve();
 }
 
-describe('SUSPENDING_EXPORTS contract', () => {
+describe('ASYNC_EXPORTS contract', () => {
   it('equals wasm_compile_flags.json jspi.jspiExports', async () => {
-    const { SUSPENDING_EXPORTS } = await import('../wasm/bridge/call');
-    expect([...SUSPENDING_EXPORTS].sort()).toEqual([...compileFlags.jspi.jspiExports].sort());
+    const { ASYNC_EXPORTS } = await import('../wasm/bridge/_generated');
+    expect([...ASYNC_EXPORTS].sort()).toEqual([...compileFlags.jspi.jspiExports].sort());
   });
 
   it('artifact file names match the contract graphs', async () => {

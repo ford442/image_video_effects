@@ -1,6 +1,7 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-import { callSuspending, isSuspended, whenIdle } from "./call.js";
+import * as cpp from "./_generated.js";
+import { isBusy, isSuspended, runWhenIdle } from "./call.js";
 import { state, wasmRef } from "./state.js";
 const CAPTURE_READY = 2;
 const CAPTURE_ERROR = 3;
@@ -8,40 +9,35 @@ let _captureInFlight = null;
 function captureFrame() {
   if (_captureInFlight) return _captureInFlight;
   const pending = new Promise((resolve, reject) => {
-    if (!state.initialized || !wasmRef.module) {
+    const module = wasmRef.module;
+    if (!state.initialized || !module) {
       reject(new Error("[WASM] Renderer not initialized"));
       return;
     }
-    wasmRef.module.ccall("beginFrameCapture", null, [], []);
     const pollState = () => {
       const mod = wasmRef.module;
       if (!mod) {
         reject(new Error("[WASM] Module invalidated during capture"));
         return;
       }
-      const captureState = Number(mod.ccall("getFrameCaptureState", "number", [], []));
+      const captureState = cpp.getFrameCaptureState(mod);
       if (captureState === CAPTURE_READY) {
-        const width = Number(mod.ccall("getCanvasWidth", "number", [], []));
-        const height = Number(mod.ccall("getCanvasHeight", "number", [], []));
+        const width = cpp.getCanvasWidth(mod);
+        const height = cpp.getCanvasHeight(mod);
         const byteLength = width * height * 4;
         const ptr = byteLength > 0 ? mod._malloc(byteLength) : 0;
         let written = 0;
         let rgba8 = null;
         try {
           if (ptr) {
-            written = Number(mod.ccall(
-              "readCapturedFrame",
-              "number",
-              ["number", "number"],
-              [ptr, byteLength]
-            ));
+            written = cpp.readCapturedFrame(mod, ptr, byteLength);
             if (written === byteLength) {
               rgba8 = new Uint8ClampedArray(mod.HEAPU8.slice(ptr, ptr + byteLength).buffer);
             }
           }
         } finally {
           if (ptr) mod._free(ptr);
-          mod.ccall("endFrameCapture", null, [], []);
+          cpp.endFrameCapture(mod);
         }
         if (!rgba8) {
           reject(new Error(`[WASM] readCapturedFrame wrote ${written} of ${byteLength} bytes (${width}x${height})`));
@@ -49,13 +45,17 @@ function captureFrame() {
         }
         resolve(new ImageData(rgba8, width, height));
       } else if (captureState === CAPTURE_ERROR) {
-        mod.ccall("endFrameCapture", null, [], []);
+        cpp.endFrameCapture(mod);
         reject(new Error("[WASM] GPU frame capture failed on C++ side"));
       } else {
         requestAnimationFrame(pollState);
       }
     };
-    requestAnimationFrame(pollState);
+    runWhenIdle(module, () => {
+      if (wasmRef.module !== module) throw new Error("[WASM] Module invalidated during capture");
+      cpp.beginFrameCapture(module);
+      requestAnimationFrame(pollState);
+    }).catch(reject);
   });
   _captureInFlight = pending;
   const clear = () => {
@@ -87,14 +87,10 @@ function asU8(pixels) {
 function uploadImageSource(source, width, height) {
   const mod = wasmRef.module;
   if (!state.initialized || !mod || !width || !height) return false;
+  if (isSuspended(mod)) return false;
   mod.pixelocityPendingImage = source;
   try {
-    return Number(mod.ccall(
-      "loadImageExternal",
-      "number",
-      ["number", "number"],
-      [width, height]
-    )) === 1;
+    return cpp.loadImageExternal(mod, width, height) === 1;
   } catch (err) {
     console.warn("[WASM] loadImageExternal failed:", err);
     return false;
@@ -131,35 +127,33 @@ function uploadImageData(image, width, height) {
   }
   if (!imgWidth || !imgHeight || !pixels || pixels.length === 0) return;
   const numBytes = imgWidth * imgHeight * 4;
-  const src = isSuspended() ? asU8(pixels).slice(0, numBytes) : asU8(pixels).subarray(0, numBytes);
+  const module = wasmRef.module;
+  const busy = isBusy(module);
+  const src = busy ? asU8(pixels).slice(0, numBytes) : asU8(pixels).subarray(0, numBytes);
   const w = imgWidth;
   const h = imgHeight;
-  whenIdle(() => {
-    const module = wasmRef.module;
-    if (!state.initialized || !module) return;
+  const upload = () => {
+    if (!state.initialized || wasmRef.module !== module) return;
     const ptr = module._malloc(numBytes);
     module.HEAPU8.set(src, ptr);
     try {
-      module.ccall("loadImageData", null, ["number", "number", "number"], [ptr, w, h]);
+      cpp.loadImageData(module, ptr, w, h);
     } finally {
       module._free(ptr);
     }
-  });
+  };
+  if (!busy) upload();
+  else runWhenIdle(module, upload).catch((err) => console.error("[WASM] deferred image upload failed:", err));
 }
 function uploadVideoFrame(videoOrPixels, width, height) {
   if (!state.initialized || !wasmRef.module) return;
-  if (isSuspended()) return;
+  if (isSuspended(wasmRef.module)) return;
   if (videoOrPixels instanceof Uint8Array || videoOrPixels instanceof Uint8ClampedArray) {
     if (!width || !height || videoOrPixels.length === 0) return;
     const numBytes2 = width * height * 4;
     const ptr2 = wasmRef.module._malloc(numBytes2);
     wasmRef.module.HEAPU8.set(asU8(videoOrPixels).subarray(0, numBytes2), ptr2);
-    wasmRef.module.ccall(
-      "uploadVideoFrame",
-      null,
-      ["number", "number", "number"],
-      [ptr2, width, height]
-    );
+    cpp.uploadVideoFrame(wasmRef.module, ptr2, width, height);
     wasmRef.module._free(ptr2);
     return;
   }
@@ -178,19 +172,14 @@ function uploadVideoFrame(videoOrPixels, width, height) {
   const numBytes = w * h * 4;
   const ptr = wasmRef.module._malloc(numBytes);
   wasmRef.module.HEAPU8.set(asU8(imageData.data).subarray(0, numBytes), ptr);
-  wasmRef.module.ccall(
-    "uploadVideoFrame",
-    null,
-    ["number", "number", "number"],
-    [ptr, w, h]
-  );
+  cpp.uploadVideoFrame(wasmRef.module, ptr, w, h);
   wasmRef.module._free(ptr);
 }
 async function resizeCanvas(width, height) {
   if (!state.initialized || !wasmRef.module) return;
   state.canvasWidth = width;
   state.canvasHeight = height;
-  await callSuspending(wasmRef.module, "resizeCanvas", null, ["number", "number"], [width, height]);
+  await cpp.resizeCanvas(wasmRef.module, width, height);
 }
 export {
   captureFrame,

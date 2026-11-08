@@ -1,6 +1,7 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-import { callSuspending } from "./call.js";
+import * as cpp from "./_generated.js";
+import { abandonSeam } from "./call.js";
 import { formatCppInitFailure, readCppInitDiagnostics } from "./diagnostics.js";
 import { state, wasmRef } from "./state.js";
 const SOURCE_MAP = {
@@ -17,8 +18,8 @@ const REAP_POLL_MS = 500;
 const REAP_MAX_MS = 5 * 6e4;
 function readCppInitOutcome(mod) {
   try {
-    if (Number(mod.ccall("isRendererInitialized", "number", [], [])) === 1) return "ready";
-    const stage = Number(mod.ccall("getLastInitErrorStage", "number", [], []) ?? 0);
+    if (cpp.isRendererInitialized(mod) === 1) return "ready";
+    const stage = cpp.getLastInitErrorStage(mod);
     return stage > 0 && stage < 8 ? "failed" : "pending";
   } catch {
     return "pending";
@@ -41,7 +42,8 @@ function reapAbandonedInit(mod) {
   const poll = () => {
     if (readCppInitOutcome(mod) !== "pending") {
       try {
-        mod.ccall("shutdownWasmRenderer", null, [], []);
+        abandonSeam(mod);
+        cpp.shutdownWasmRenderer(mod);
         console.log("[WASM] Abandoned init settled; C++ renderer shut down");
       } catch (err) {
         console.error("[WASM] Abandoned init shutdown error:", err);
@@ -89,13 +91,7 @@ async function initWasmRenderer(canvasElement) {
   let ok = 0;
   try {
     const raced = await Promise.race([
-      callSuspending(
-        mod,
-        "initWasmRenderer",
-        "number",
-        ["number", "number", "string"],
-        [state.canvasWidth, state.canvasHeight, selector]
-      ).then((value) => ({ tag: "call", value })),
+      cpp.initWasmRenderer(mod, state.canvasWidth, state.canvasHeight, selector).then((value) => ({ tag: "call", value })),
       waitForCppInit(mod).then((outcome) => ({ tag: "poll", outcome }))
     ]);
     if (raced.tag === "poll" && raced.outcome === "timeout") {
@@ -112,7 +108,7 @@ async function initWasmRenderer(canvasElement) {
     if (raced.tag === "poll") {
       ok = raced.outcome === "ready" ? 1 : 0;
     } else {
-      ok = Number(raced.value);
+      ok = raced.value;
       const settled = readCppInitOutcome(mod);
       if (settled === "failed") ok = 0;
       else if (settled === "ready") ok = 1;
@@ -143,15 +139,14 @@ async function initWasmRenderer(canvasElement) {
   state.initEndTime = performance.now();
   const elapsed = state.initEndTime - state.initStartTime;
   console.log(`[WASM] \u2705 Initialization complete in ${elapsed} ms (${state.wasmArtifact ?? "preloaded"} build)`);
-  state.maxShaderSlots = typeof mod._getMaxShaderSlots === "function" ? mod._getMaxShaderSlots() : null;
+  state.maxShaderSlots = cpp.getMaxShaderSlots(mod);
   console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? "unknown (artifact predates export)"}`);
-  const cppFmt = Number(mod.ccall("getColorFormat", "number", [], []) ?? 0);
+  const cppFmt = cpp.getColorFormat(mod);
   const pending = state.colorFormat;
   if (pending !== 0 && pending !== cppFmt) {
-    await callSuspending(mod, "setColorFormat", null, ["number"], [pending]);
+    await cpp.setColorFormat(mod, pending);
   }
-  const applied = Number(mod.ccall("getColorFormat", "number", [], []) ?? cppFmt);
-  state.colorFormat = applied === 1 ? 1 : 0;
+  state.colorFormat = cpp.getColorFormat(mod) === 1 ? 1 : 0;
   console.log(
     `[WASM] colorFormat=${state.colorFormat === 1 ? "rgba16float" : "rgba32float"}`
   );
@@ -160,7 +155,7 @@ async function initWasmRenderer(canvasElement) {
     const src = state.pendingInputSource;
     state.pendingInputSource = null;
     const sourceInt = typeof src === "string" ? SOURCE_MAP[src] ?? 0 : src;
-    mod.ccall("setInputSource", null, ["number"], [sourceInt]);
+    cpp.setInputSource(mod, sourceInt);
     state.inputSource = sourceInt;
   }
   return true;
@@ -227,7 +222,7 @@ function shutdownWasmRenderer() {
     return;
   }
   try {
-    wasmRef.module.ccall("shutdownWasmRenderer", null, [], []);
+    cpp.shutdownWasmRenderer(wasmRef.module);
   } catch (err) {
     console.error("[WASM] Shutdown error:", err);
   }
