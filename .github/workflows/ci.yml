@@ -190,6 +190,15 @@ jobs:
     - name: Audit dead sliders (blocking)
       run: python3 scripts/audit_dead_sliders.py
 
+    # CPU specs of the sim-ring Physics Lab solvers (#1619): each prints its stats and exits
+    # non-zero outside its stated tolerance. They validate the numpy spec, not the WGSL
+    # (tests/physics-lab-set2.swiftshader.spec.ts covers that on SwiftShader).
+    - name: Sim-ring solver models (numpy CPU specs)
+      run: |
+        python3 -m pip install --quiet numpy
+        python3 scripts/sim_models/physarum_agents.py
+        python3 scripts/sim_models/sph_fluid.py
+
     - name: Workgroup gate unit tests
       run: |
         python3 scripts/test_workgroup_gate.py

@@ -214,6 +214,28 @@
       }
     },
     {
+      "id": "physics-lab-physarum",
+      "name": "Physics Lab · Physarum Agents",
+      "description": "Slime-mould agents on the sim ring weave a network over the image's red. graph · 3 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "physarum-agents", "params": { "zoomParam1": 0.5, "zoomParam2": 0.5, "zoomParam3": 0.5, "zoomParam4": 0.55 } }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-sph",
+      "name": "Physics Lab · SPH Fluid",
+      "description": "Zero-g SPH droplets refract the image and flow around its bright areas. graph · 4 passes.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          { "shaderId": "sph-fluid", "params": { "zoomParam1": 0.4, "zoomParam2": 0.5, "zoomParam3": 0.5, "zoomParam4": 0.5 } }
+        ]
+      }
+    },
+    {
       "id": "physics-lab-triptych",
       "name": "Physics Lab Triptych",
       "description": "Ripple → fabric → photonic stacked. Use balanced+ quality for full pass budgets.",

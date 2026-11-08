@@ -40,6 +40,8 @@ export const ATTRACT_PHYSICS_LAB_IDS: string[] = [
   'chromatographic-fluid',
   'gray-scott-tank',
   'optical-flow-dream',
+  'physarum-agents',
+  'sph-fluid',
 ];
 
 /** Default attract dwell (seconds) for generative single-pass demos. */

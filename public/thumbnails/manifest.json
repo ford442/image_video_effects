@@ -15078,5 +15078,29 @@
     ],
     "source_hash": "4d3a8c8aa4581b6d",
     "capture_host": "swiftshader"
+  },
+  "physarum-agents": {
+    "thumbnail_url": "thumbnails/physarum-agents.png",
+    "generated_at": "2026-11-08T06:18:19.824Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "38befc20cdbebb2d",
+    "capture_host": "swiftshader"
+  },
+  "sph-fluid": {
+    "thumbnail_url": "thumbnails/sph-fluid.png",
+    "generated_at": "2026-11-08T06:18:45.435Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "bc433b4600f07837",
+    "capture_host": "swiftshader"
   }
 }
