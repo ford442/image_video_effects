@@ -74,6 +74,14 @@ async function boot(page: Page, mode: Mode): Promise<void> {
   );
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
+  // The app's boot puts its default shader (Liquid) in slot 0 once the shader lists load. Let that land
+  // first: arriving mid-test it replaces the flagship, and the (cached) graph report would not notice.
+  await page
+    .waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
+      timeout: 60_000,
+      polling: 250,
+    })
+    .catch(() => undefined);
   // The fixture image, not the generative source: that one starts the attract showcase, which swaps
   // the slot's shader while a slow software device is still drawing.
   await page.evaluate(async () => {
@@ -178,6 +186,8 @@ for (const mode of MODES) {
 
         const px = await capture(page, `${c.id}-${mode}`);
         expect(px.max, `output looks blank: ${JSON.stringify(px)}`).toBeGreaterThan(24);
+        // What was captured is the flagship, not a shader the app's boot swapped in.
+        expect(await page.evaluate(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId)).toBe(c.id);
         expect(compileProblems.get(page) ?? [], 'a shader fell back to the pass-through').toEqual([]);
         expect(await gpuErrors(page, mode)).toEqual([]);
       });
