@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, procedural,
 //            organic-cellular, animated
-//  Upgraded: 2026-10-17
-//  Ideas: cell nucleus; F2−F1 crack; site comet; triple junctions
+//  Upgraded: 2026-11-08
+//  Ideas: cell nucleus; F2−F1 crack; site comet; triple junctions; Delaunay dual spokes; nucleation growth fronts
 //  A packing: cell id xy, edge mask, F1 (telemetry)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -226,6 +226,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 4 — triple junction: three sites nearly equidistant, brighter than the wall
     let triple = smoothstep(0.09, 0.0, primary.f2 - primary.f1) * smoothstep(0.14, 0.015, primary.f3 - primary.f1);
     final_color = final_color + vec3<f32>(1.0, 0.92, 0.78) * triple * (0.45 + edgeGlowP * 0.35);
+
+    // New idea — Delaunay dual spokes: the dual graph of the diagram links each site to
+    // its neighbours' sites; each cell draws its half of every spoke (segment site→site,
+    // clipped by the cell), so neighbouring halves meet at the shared wall.
+    let selfSite = neighbor + cell_hash + siteDrift; // own site, in fract(st)-relative cell space
+    let fst = fract(st);
+    var spoke = 0.0;
+    for (var sy: i32 = -1; sy <= 1; sy = sy + 1) {
+        for (var sx: i32 = -1; sx <= 1; sx = sx + 1) {
+            let nOff = neighbor + vec2<f32>(f32(sx), f32(sy));
+            let nIdx = cell_index + vec2<f32>(f32(sx), f32(sy));
+            let nh = hash2(nIdx);
+            let nSite = nOff + nh + vec2<f32>(sin(time * 0.05 + nh.x * 6.28318), cos(time * 0.05 + nh.y * 6.28318)) * 0.3;
+            let seg = nSite - selfSite;
+            let isSelf = select(1.0, 0.0, sx == 0 && sy == 0);
+            let segLen2 = max(dot(seg, seg), 1e-6);
+            let ts = clamp(dot(fst - selfSite, seg) / segLen2, 0.0, 1.0);
+            let dSeg = length(fst - selfSite - seg * ts);
+            // only true neighbours (spokes shorter than ~1.6 cells) get drawn
+            spoke = max(spoke, isSelf * smoothstep(0.035, 0.0, dSeg) * smoothstep(2.6, 1.2, segLen2));
+        }
+    }
+    final_color = mix(final_color, vec3<f32>(0.95, 0.97, 1.0), spoke * (0.3 + mids * 0.25) * (1.0 - crack));
+
+    // New idea — nucleation growth fronts: a Voronoi diagram is what isotropic grains
+    // growing at equal speed from their sites freeze into. A front expands from each site
+    // and dies at the wall (F1 → (F1+F2)/2), restarting on a per-cell phase. Bass speeds it.
+    let wallR = 0.5 * (primary.f1 + primary.f2);
+    let frontR = fract(u.config.x * (0.12 + bass * 0.15) + cell_hash.x) * 0.75;
+    let front = exp(-abs(primary.f1 - frontR) * 60.0) * smoothstep(wallR, wallR - 0.08, frontR);
+    final_color = final_color + (edge_color + 0.4) * front * 0.7;
 
     // ─── Creative: micro-cosmic starfield inside each cell ───
     // Independent rotation per cell, hashed offset

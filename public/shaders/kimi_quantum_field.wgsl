@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: nodal lines at amplitude zero; click wave packet; decoherence haze from C
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-11-08
+//  Ideas: nodal lines at amplitude zero; click wave packet; decoherence haze from C; isophase contours; eigen-shell rungs; detector shot noise
+//  A packing: ACES display RGB, alpha = visible field coverage (probability + field luminance)
 //  Kept: 2026-07-26 spectrum interferometer and honest slider wiring
 // ═══════════════════════════════════════════════════════════════════
 
@@ -208,6 +208,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let phaseHue = iqPalette(hueT) - vec3<f32>(0.5, 0.5, 0.5);
     col += phaseHue * phaseColor * (0.4 + mids * 0.6);
 
+    // Isophase contours: thin lines where the displayed phase wraps through
+    // a whole cycle, so the phase field reads as a topographic interferogram.
+    let phaseArg = amplitude * 10.0 + time;
+    let phaseWrap = abs(fract(phaseArg / 6.28318 + 0.5) - 0.5);
+    let isophase = exp(-phaseWrap * 60.0) * smoothstep(0.0, 0.05, probability + 0.02);
+    col += vec3<f32>(0.55, 0.85, 1.0) * isophase * (0.25 + mids * 0.4);
+
+    // Eigen-shell rungs: quantized radii r_n = r0*sqrt(n) around the source,
+    // lobed by the same angular order as the field; bass lights the rungs.
+    let srcD = length(fp - fMouse);
+    let rung = sqrt(srcD / 0.06);
+    let rungLine = exp(-abs(rung - floor(rung + 0.5)) * 18.0);
+    let lobe = 0.6 + 0.4 * cos(atan2(fp.y - fMouse.y, fp.x - fMouse.x) * angularFreq);
+    let shellFade = exp(-srcD * 1.6);
+    col += vec3<f32>(0.7, 0.35, 1.0) * rungLine * lobe * shellFade * (0.12 + bass * 0.5);
+
+    // Detector shot noise: sparse photon counts whose rate follows |psi|^2,
+    // re-rolled at a treble-driven frame rate (no click needed).
+    let shotCell = floor(uv * resolution * 0.5);
+    let shotRoll = hash(shotCell + vec2<f32>(floor(time * (12.0 + treble * 30.0)) * 1.37, 0.0));
+    let shot = select(0.0, 1.0, shotRoll < probability * 0.06);
+    col += vec3<f32>(0.9, 0.95, 1.0) * shot * 0.6;
+
     // Uncertainty visualization (blur at edges)
     let edgeDist = 1.0 - length(p);
     let uncertaintyGlow = smoothstep(0.0, 0.3, edgeDist) * uncertainty;
@@ -239,7 +262,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = mix(col, prev, 0.07);
 
     // Alpha encodes probability density (|ψ|²) + collapse flashes, never flat 1.0
-    let alpha = clamp(probability + nodes * 0.3 + collapsed * mouseDown, 0.0, 1.0);
+    // (previously probability only: ~0.001 mean, so the visible purple field
+    // composited as transparent; coverage now includes field luminance)
+    let fieldCov = smoothstep(0.0, 0.08, dot(col, vec3<f32>(0.299, 0.587, 0.114)));
+    let alpha = clamp(max(fieldCov, probability) + nodes * 0.3 + collapsed * mouseDown + shot * 0.3, 0.0, 1.0);
 
     // Single tone map: ACES only (the old Reinhard+pow stack was removed —
     // the stacked curves over-darkened the mids of the probability field).

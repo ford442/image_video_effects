@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: three-ant colony territories — each ant stains the cells it flips with its colony hue and contested borders glow as seams; oriented ant glyphs (head/thorax/abdomen + antennae) drawn along each turmite's heading, with the L/R turn rule now read from the cell the ant stands on
+//  Upgraded: 2026-11-08
+//  Ideas: three-ant colony territories — each ant stains the cells it flips with its colony hue and contested borders glow as seams; oriented ant glyphs (head/thorax/abdomen + antennae) drawn along each turmite's heading, with the L/R turn rule now read from the cell the ant stands on; two-tone board (the flip state itself shows as raised light / sunken dark tiles); turn sparks (a spark flares on the side each ant is about to turn, so L/R chirality reads)
 //  A packing: raw CA state (flip state, heat, colony id/4, 1.0) per pixel; ant trackers at (k*cellSize, 0) hold (x/128, y/128, dir/4, 1.0 moved | 0.75 idle); ACES display RGBA on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -139,6 +139,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var isAntHere = 0.0;
   var glyph = 0.0;
   var glyphTint = vec3<f32>(0.0);
+  var spark = 0.0;
   // ═══ CHUNK: multi-pass state packing — ant position/direction lives in dataTextureA, not writeTexture ═══
   var antEncoded = vec4<f32>(0.0);
   var isAntPixel = false;
@@ -175,6 +176,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       isAntHere += 1.0;
       glyph = max(glyph, antGlyph(cellF, vec2<f32>(dvec), treble));
       glyphTint = colonyHue(a + 1);
+      // Idea — turn spark: the cell under the ant decides its next turn (light → +1,
+      // dark → +3). Flare a spark at that edge so the L/R chirality is visible.
+      let turnDir = dirVec(adir + select(3, 1, prev.r > 0.5));
+      let sp = cellF - vec2<f32>(turnDir) * 0.42;
+      spark = max(spark, exp(-dot(sp, sp) * 90.0) * (0.8 + bass * 0.8));
     }
 
     if pixel.x == apx && pixel.y == 0 {
@@ -232,19 +238,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   var color = heatColor(heat);
+  // Idea — two-tone board: HEAD never displayed the binary flip state. Light cells sit
+  // raised with a top-left bevel, dark cells sunken, so the classic black/white board
+  // (and the highway's woven pattern) reads beneath the heat colour.
+  let bevel = clamp((-cellF.x - cellF.y) * 1.6, -0.5, 0.5);
+  let raised = select(-1.0, 1.0, state > 0.5);
+  color *= select(0.62, 1.12, state > 0.5) * (1.0 + raised * bevel * 0.22 * f32(cellSize > 2));
   let tint = colonyHue(colony);
   let territory = select(0.0, 0.25 + 0.35 * clamp(heat * 0.3, 0.0, 1.0), colony > 0);
   color = mix(color, color * tint * 1.6 + tint * 0.05, territory);
   color += tint * seam * (0.35 + mids * 0.6);
   color += vec3<f32>(0.9, 0.9, 0.85) * isAntHere * 0.25;
   color = mix(color, glyphTint * (1.6 + treble * 1.2), glyph);
+  color += vec3<f32>(1.0, 0.85, 0.5) * spark;
   color += vec3<f32>(0.4, 0.8, 1.0) * clickGlow * (0.6 + bass * 0.4);
 
   let caStr = 0.003 * (1.0 + bass) * depthScale + abs(heat - 3.0) * 0.0015;
   color = vec3<f32>(color.r * (1.0 + caStr), color.g, color.b * (1.0 - caStr * 0.5));
   let display = acesToneMap(applyGenerativePrimaryControls(color * 1.2));
 
-  let alpha = clamp(heat * 0.08 + isAntHere * 0.3 + glyph * 0.5 + territory * 0.3 + seam * 0.3 + clickGlow * 0.3, 0.0, 1.0)
+  let alpha = clamp(heat * 0.08 + isAntHere * 0.3 + glyph * 0.5 + spark * 0.4 + territory * 0.3 + seam * 0.3 + clickGlow * 0.3, 0.0, 1.0)
     * mix(0.6, 1.0, depth);
   textureStore(writeTexture, pixel, vec4<f32>(display, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(heat * 0.08, 0.0, 0.0, 0.0));

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: claw-rake triad; tail counterphase
+//  Upgraded: 2026-11-08
+//  Ideas: claw-rake triad; tail counterphase; head eye glint; alpha-leader crest; footfall stipple
 //  A packing: pre-ACES display/scent history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -113,20 +113,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     let rage = bass * 3.0;
 
-    // --- Spring-smoothed pack leader (persistent state in extraBuffer[133..138]) ---
-    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var smMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var smVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { smMouse = rawMouse; smVel = vec2<f32>(0.0); }
-    let sdt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
-    let omega = 10.0 + mids * 4.0; // mids stiffen the spring: sharper follow
-    smVel += ((rawMouse - smMouse) * omega * omega - smVel * 2.0 * omega) * sdt;
-    smMouse += smVel * sdt;
-    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = smMouse.x; extraBuffer[134] = smMouse.y;
-        extraBuffer[135] = smVel.x; extraBuffer[136] = smVel.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = time;
-    }
+    // Pack leader follows the raw pointer. (The old extraBuffer[133..138]
+    // spring never persisted — that range is re-uploaded as zeros every frame
+    // — and its thread-0 write raced every other invocation.)
+    let smMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let smVel = vec2<f32>(0.0);
     let mouse = (smMouse * 2.0 - 1.0) * vec2<f32>(aspect, 1.0);
     let velMag = clamp(length(smVel) * 0.4, 0.0, 1.5);
 
@@ -232,6 +223,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     col += vec3<f32>(1.0, 0.32, 0.12) * rake * clamp(strike, 0.0, 1.0) * (0.45 + treble * 0.35);
     col = mix(col, col * vec3<f32>(0.75, 0.55, 0.4), select(0.0, 0.45, tailDist < 0.0 && capsuleDist >= 0.0));
+
+    // Head eye glint: a hot dot at the head end of each body, facing the
+    // pursuit direction; blinks per raptor, treble sharpens it.
+    let headP = dirToMouse * 0.13;
+    let blink = step(0.08, fract(time * 0.7 + rng.y * 5.0));
+    let eye = exp(-length(f - headP) * (70.0 + treble * 60.0)) * blink;
+    col += vec3<f32>(1.0, 0.85, 0.25) * eye * 1.4;
+
+    // Alpha-leader crest: roughly one raptor in eight is a pack leader, drawn
+    // with a rim of hot red around its body that flares with rage.
+    let isLeader = step(0.88, rng.x);
+    let rim = exp(-abs(capsuleDist) * 60.0);
+    col += vec3<f32>(1.0, 0.18, 0.08) * rim * isLeader * (0.6 + rage * 0.5);
+
+    // Footfall stipple: paired prints stamped behind each body on alternating
+    // feet, stepping at a pace set by Max Speed; bass stamps them harder.
+    let side = vec2<f32>(-dirToMouse.y, dirToMouse.x);
+    var prints = 0.0;
+    for (var s = 1; s <= 3; s = s + 1) {
+        let fs = f32(s);
+        let lr = select(-1.0, 1.0, (s + i32(floor(time * maxSpeed))) % 2 == 0);
+        let pp = -dirToMouse * (0.18 + fs * 0.09) + side * lr * 0.05;
+        prints = max(prints, exp(-length(f - pp) * 55.0) * (1.0 - fs * 0.25));
+    }
+    col += vec3<f32>(0.55, 0.42, 0.2) * prints * select(1.0, 0.0, onBody) * (0.5 + bass * 0.6);
 
     // --- Emergent scent-memory: history-dependent feedback trails ---
     // Fast pointer + rage lengthen persistence; a strike wipes the local memory.

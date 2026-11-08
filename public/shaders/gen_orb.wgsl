@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: lobe-switch sparks where trajectories cross between the two wings; unstable fixed-point eyes C± = (±√(β(ρ−1)), ±√(β(ρ−1)), ρ−1); Lyapunov stretch sheen (high |Δpos|/dt filaments thin and bright); Poincaré z=ρ−1 flashes
+//  Upgraded: 2026-11-08
+//  Ideas: lobe-switch sparks where trajectories cross between the two wings; unstable fixed-point eyes C± = (±√(β(ρ−1)), ±√(β(ρ−1)), ρ−1); Lyapunov stretch sheen (high |Δpos|/dt filaments thin and bright); Poincaré z=ρ−1 flashes; Lorenz-map peak beads at successive z maxima; convection temperature tint (z = temperature deviation, hot crests / cool troughs)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -36,12 +36,14 @@ fn rk4Step(pos: vec3<f32>, dt: f32, sigma: f32, rho: f32, beta: f32) -> vec3<f32
 }
 
 // Shared camera projection (Y rotation then X tilt) into screen space.
-fn projectLorenz(q: vec3<f32>, cosY: f32, sinY: f32, cosX: f32, sinX: f32, camDist: f32) -> vec3<f32> {
+fn projectLorenz(q0: vec3<f32>, cosY: f32, sinY: f32, cosX: f32, sinX: f32, camDist: f32) -> vec3<f32> {
+    // centre on the fixed-point plane and stand z upright so the attractor sits mid-frame, not edge-on 26 units deep
+    let q = vec3<f32>(q0.x, q0.z - 25.0, q0.y); // z (temperature) up: classic butterfly view
     var rotated = vec3<f32>(q.x * cosY - q.z * sinY, q.y, q.x * sinY + q.z * cosY);
     rotated = vec3<f32>(rotated.x, rotated.y * cosX - rotated.z * sinX, rotated.y * sinX + rotated.z * cosX);
     let z = rotated.z + camDist;
     let scale = 15.0 / max(z, 0.1);
-    return vec3<f32>(rotated.x * scale * 0.0015, rotated.y * scale * 0.0015, z);
+    return vec3<f32>(rotated.x * scale * 0.06, -rotated.y * scale * 0.06, z);
 }
 
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
@@ -125,6 +127,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var sparks = 0.0;
     var poincare = 0.0;
+    var zPeaks = 0.0;
 
     for (var s = 0; s < 14; s = s + 1) {
         if (s >= streamCount) { break; }
@@ -147,6 +150,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         var prevScreenPos = vec2<f32>(-1000.0);
         var prevVel = 0.0;
+        var prevZ = pos.z;
 
         for (var i = 0; i < stepsPerStream; i = i + 1) {
             let currentPos = pos;
@@ -174,7 +178,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 // Idea 1 — Lyapunov stretch sheen: mixing stretches glow thin and bright.
                 let stretch = clamp(avgVel * 80.0, 0.0, 1.0);
                 let particleSize = mix(0.0046, 0.0011, stretch) * (0.5 + depth * 0.5);
-                let glow = particleSize / (dist * dist + 0.0001);
+                let glow = particleSize * particleSize / (dist * dist + particleSize * particleSize);
                 let lyapGain = mix(0.82, 1.65, stretch);
 
                 let speedNorm = clamp(avgVel * 50.0, 0.0, 1.0);
@@ -193,17 +197,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
                 let trailFade = 1.0 - f32(i) / f32(stepsPerStream);
 
+                // New idea — convection temperature tint: in Lorenz's roll model z is the
+                // vertical temperature deviation; crests run ember, troughs run cold.
+                let tempDev = clamp((currentPos.z - (rho - 1.0)) / max(rho * 0.5, 1.0), -1.0, 1.0);
+                let tempTint = mix(vec3<f32>(0.35, 0.6, 1.0), vec3<f32>(1.0, 0.55, 0.25), tempDev * 0.5 + 0.5);
+                rgb = mix(rgb, rgb * tempTint * 1.4, 0.35);
+
                 // ─── Bioluminescent bloom: near particles get a soft halo ───
                 let depthHalo = smoothstep(0.5, 1.0, depth);
-                let halo = (particleSize * 4.0) / (dist * dist * 4.0 + 0.001) * depthHalo;
+                let haloR = particleSize * 3.0;
+                let halo = haloR * haloR / (dist * dist + haloR * haloR) * depthHalo;
 
-                accumColor = accumColor + rgb * glow * trailFade * depth * 0.3 * glowBoost * lyapGain;
+                accumColor = accumColor + rgb * glow * trailFade * depth * 0.9 * glowBoost * lyapGain;
                 accumColor = accumColor + rgb * halo * trailFade * 0.06;
 
                 if (prevScreenPos.x > -100.0) {
-                    let lineDist = abs(dist - length(p - prevScreenPos));
-                    let lineGlow = 0.0005 / (lineDist * lineDist + 0.00001);
-                    accumColor = accumColor + rgb * lineGlow * trailFade * depth * 0.1 * glowBoost;
+                    // true point-to-segment distance (old |d0−d1| lit whole hyperbola bands)
+                    let seg = screenPos - prevScreenPos;
+                    let tseg = clamp(dot(p - prevScreenPos, seg) / max(dot(seg, seg), 1e-10), 0.0, 1.0);
+                    let lineDist = length(p - prevScreenPos - seg * tseg);
+                    let lw = 0.0012;
+                    let lineGlow = lw * lw / (lineDist * lineDist + lw * lw);
+                    accumColor = accumColor + rgb * lineGlow * trailFade * depth * 0.35 * glowBoost;
                 }
 
                 // ─── Idea 1 (09-14): lobe-switch sparks — the chaotic hop between wings (x changes sign) ───
@@ -217,8 +232,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     poincare = poincare + 0.000005 / (dist * dist + 0.000004) * trailFade * depth;
                 }
 
+                // New idea — Lorenz-map peak beads: dz/dt flips + → − at each z maximum,
+                // the sequence Lorenz himself plotted (z_n → z_{n+1}). Bass brightens.
+                let dzPrev = currentPos.z - prevZ;
+                let dzNow = pos.z - currentPos.z;
+                if (i > 0 && dzPrev > 0.0 && dzNow <= 0.0) {
+                    zPeaks = zPeaks + 0.000006 / (dist * dist + 0.000006) * trailFade * depth;
+                }
+
                 prevScreenPos = screenPos;
             }
+            prevZ = currentPos.z;
         }
     }
 
@@ -232,16 +256,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fpR = sqrt(max(beta * (rho - 1.0), 0.0));
     let cPlus = projectLorenz(vec3<f32>(fpR, fpR, rho - 1.0), cosY, sinY, cosX, sinX, camDist);
     let cMinus = projectLorenz(vec3<f32>(-fpR, -fpR, rho - 1.0), cosY, sinY, cosX, sinX, camDist);
-    let eyeRadius = fpR * 0.0003 * (1.0 + bass * 0.4);
+    let eyeRadius = fpR * 0.006 * (1.0 + bass * 0.4);
     let dPlus = length(p - cPlus.xy);
     let dMinus = length(p - cMinus.xy);
     let eyeCore = 0.000002 / (dPlus * dPlus + 0.000002) + 0.000002 / (dMinus * dMinus + 0.000002);
-    let eyeRing = exp(-abs(dPlus - eyeRadius) * 800.0) + exp(-abs(dMinus - eyeRadius) * 800.0);
+    let eyeRing = exp(-abs(dPlus - eyeRadius) * 300.0) + exp(-abs(dMinus - eyeRadius) * 300.0);
     accumColor = accumColor + vec3<f32>(1.0, 0.85, 0.55) * eyeCore * 2.0;
     accumColor = accumColor + vec3<f32>(0.4, 0.9, 1.0) * eyeRing * (0.6 + mids * 0.4);
 
     accumColor = accumColor + vec3<f32>(1.0, 0.95, 0.9) * sparks * (1.5 + treble * 1.5);
     accumColor = accumColor + vec3<f32>(1.0, 0.88, 0.45) * poincare * (1.4 + treble * 1.2);
+    accumColor = accumColor + vec3<f32>(1.0, 0.7, 0.95) * zPeaks * (1.2 + bass * 1.5);
     accumColor = accumColor + vec3<f32>(0.6, 0.8, 1.0) * rippleRing * 0.5;
 
     generatedColor = generatedColor + accumColor;

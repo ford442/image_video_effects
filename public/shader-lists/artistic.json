@@ -761,7 +761,10 @@
     "url": "shaders/boids.wgsl",
     "description": "Flocking boids with reveal masking and simple attraction mechanics.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "simulation",

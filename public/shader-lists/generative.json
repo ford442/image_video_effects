@@ -25868,14 +25868,10 @@
     "id": "gen-raptor-mini",
     "url": "shaders/gen-raptor-mini.wgsl",
     "features": [
-      "sprung-mouse-pack-leader",
-      "velocity-aware-pursuit",
-      "click-strike-shockwaves",
-      "audio-rage-bands-fft",
-      "scent-memory-feedback-trails",
-      "generated-relief-depth",
-      "audio-reactive",
       "mouse-driven",
+      "audio-reactive",
+      "temporal",
+      "depth-aware",
       "upgraded-rgba",
       "aces-tone-map"
     ]
@@ -32159,7 +32155,8 @@
       "depth-aware",
       "temporal-feedback",
       "ACES-tone-map",
-      "chromatic-aberration"
+      "chromatic-aberration",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -32886,7 +32883,10 @@
       "diffraction"
     ],
     "features": [
-      "procedural"
+      "procedural",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
