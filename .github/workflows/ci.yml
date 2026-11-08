@@ -320,6 +320,41 @@ jobs:
         retention-days: 30
         if-no-files-found: warn
 
+  # storage_manager (FastAPI) had no CI at all. Redis-backed tests spawn a real
+  # `redis-server`; it is installed here and STORAGE_REQUIRE_REDIS=1 turns "binary
+  # missing" from a silent skip into a failure, so those tests cannot rot unnoticed.
+  storage-manager-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Setup Python
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+        cache-dependency-path: storage_manager/requirements.txt
+
+    - name: Install redis-server (for the Redis-backed tests)
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq redis-server
+        # The tests start their own instance on a free port; the packaged service is not needed.
+        sudo systemctl stop redis-server || true
+        redis-server --version
+
+    - name: Install storage_manager requirements
+      run: python -m pip install -r storage_manager/requirements.txt
+
+    - name: Run storage_manager tests
+      working-directory: storage_manager
+      env:
+        STORAGE_REQUIRE_REDIS: "1"
+      run: python -m pytest -q
+
   lint:
     runs-on: ubuntu-latest
     permissions:
