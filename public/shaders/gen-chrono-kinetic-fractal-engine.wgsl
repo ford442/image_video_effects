@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: torsion-shaft filaments threading the stacked gear volumes; flyball-governor flare spokes pulsing at high kinetic speed
+//  Upgraded: 2026-11-08
+//  Ideas: torsion-shaft filaments threading the stacked gear volumes; flyball-governor flare spokes pulsing at high kinetic speed; amber-past temporal depth haze; time-dilation lens ring
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -70,7 +70,8 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     let audio_burst = audio.x * 0.18;
 
     // Mouse Interaction (Gravity Well / Time-dilation)
-    let mouse = u.zoom_config.yz * 2.0 - vec2<f32>(1.0);
+    // Mouse y flipped to match the upright uv below.
+    let mouse = vec2<f32>(u.zoom_config.y * 2.0 - 1.0, 1.0 - u.zoom_config.z * 2.0);
     // Remap mouse to same space as pos
     let aspect = u.config.z / u.config.w;
     let m_pos = vec3<f32>(mouse.x * aspect, mouse.y, 0.0) * 5.0; // Scale to scene
@@ -94,7 +95,9 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     var orbit_trap = 100.0;
     var escapement_trap = 0.0;
 
-    let complexity = i32(u.zoom_params.x * 5.0) + 2;
+    // Rescue: the JSON slider spans 0.1..5 (default 1) but the code assumed
+    // 0..1, so the default already hit the 7-layer clamp (flat grey).
+    let complexity = i32(round(u.zoom_params.x)) + 2;
     let max_i = clamp(complexity, 2, 7);
 
     var d = 100.0;
@@ -117,8 +120,11 @@ fn map(p: vec3<f32>) -> vec3<f32> {
         let tooth_count = 10.0 + fi * 2.0;
         let tooth_phase = abs(fract(gear_angle / (2.0 * PI) * tooth_count) - 0.5);
         let tooth = 1.0 - smoothstep(0.22, 0.46, tooth_phase);
-        let t_d = sdTorus(pos, vec2<f32>(1.0 + sin(t + fi) * 0.2, 0.075 + tooth * 0.035));
-        let o_d = sdOctahedron(pos, 0.8);
+        // Rescue: deeper layers shrink so high Complexity no longer fills the
+        // whole repeat cell (camera ended up inside the SDF = flat grey).
+        let layer_scale = pow(0.72, fi);
+        let t_d = sdTorus(pos, vec2<f32>((1.0 + sin(t + fi) * 0.2) * layer_scale, 0.075 + tooth * 0.035));
+        let o_d = sdOctahedron(pos, 0.8 * layer_scale);
         let pallet_phase = abs(sin(gear_angle - gear_phase * 1.6));
         let pallet_contact = (1.0 - smoothstep(0.02, 0.12, pallet_phase)) *
             exp(-abs(t_d) * 35.0);
@@ -158,6 +164,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     var uv = (vec2<f32>(coords) - 0.5 * dimensions) / dimensions.y;
+    uv.y = -uv.y; // Rescue: screen y grows downward; render upright.
 
     // Jitter for AA / Chromatic Aberration
     let t = u.config.x;
@@ -219,7 +226,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             let base_col = palette(m * 2.0 + t, pal_a, pal_b, pal_c, pal_d);
 
-            let final_val = base_col * diff + fresnel * iridescence;
+            // Wash trim: rim and orbit-trap glow were added at full weight (meanL 0.8).
+            let final_val = base_col * diff + fresnel * iridescence * 0.45;
             channel_col = final_val[i];
 
             // Idea 3: torsion-shaft filaments wrap through the stacked mechanisms.
@@ -232,8 +240,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             channel_col += governor * (0.14 + audio.x * 0.12);
 
             // Add a neon bloom mask
-            channel_col += exp(-m * 5.0) * 0.5; // Glow based on orbit trap
+            channel_col += exp(-m * 5.0) * 0.25; // Glow based on orbit trap
             channel_col += escapement * (0.35 + audio.z * 0.15);
+            // Idea 5: amber-past temporal depth haze - far gear layers recede
+            // into a warm sepia past, near ones stay cool; mids thicken it.
+            let hazeAmt = 1.0 - exp(-dO * (0.09 + audio.y * 0.03));
+            let hazeCol = vec3<f32>(0.55, 0.32, 0.12);
+            channel_col = mix(channel_col, hazeCol[i], hazeAmt * 0.85);
             nearest_depth = min(nearest_depth, dO);
             hit_coverage = max(hit_coverage, clamp(diff * 0.65 + fresnel * 0.5, 0.0, 1.0));
             escapement_glow = max(escapement_glow, escapement);
@@ -246,6 +259,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     col += vec3<f32>(1.0, 0.42 + audio.y * 0.08, 0.08) * escapement_glow * 0.25;
+
+    // Idea 6: time-dilation lens ring - a thin chromatic halo around the
+    // cursor's gravity well; radius follows Warp Strength, bass pulses it.
+    let aspectR = dimensions.x / dimensions.y;
+    let mouseUv = vec2<f32>((u.zoom_config.y - 0.5) * aspectR, 0.5 - u.zoom_config.z);
+    let ringR = 0.08 + u.zoom_params.y * 0.08 + audio.x * 0.03;
+    let rDist = length(uv - mouseUv);
+    let ringSplit = 0.006 * (0.5 + iridescence);
+    col += vec3<f32>(
+        exp(-abs(rDist - ringR - ringSplit) * 160.0),
+        exp(-abs(rDist - ringR) * 160.0),
+        exp(-abs(rDist - ringR + ringSplit) * 160.0)) * 0.6;
     let display_rgb = acesToneMap(max(col, vec3<f32>(0.0)));
     let alpha = clamp(0.04 + hit_coverage * 0.72 + escapement_glow * 0.3, 0.0, 1.0);
     let outColor = vec4<f32>(display_rgb, alpha);

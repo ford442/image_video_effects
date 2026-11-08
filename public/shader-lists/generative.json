@@ -13705,7 +13705,7 @@
       "mouse-driven",
       "temporal"
     ],
-    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, spark frequency, and ember beads that crawl along the lattice lines; flying shards cool to deep red and flare as they re-ignite on reform. Cooled faces grow oxide scale, and pop-off sparks leave along the shatter.",
+    "description": "Hexagonal crystal lattice glowing like hot embers. Mouse click shatters the lattice into rigid shards that fly outward; release to watch them drift back and reform over ~1.5s. Audio drives glow pulse, lattice breathing, spark frequency, and ember beads that crawl along the lattice lines; flying shards cool to deep red and flare as they re-ignite on reform. Cooled faces grow oxide scale, and pop-off sparks leave along the shatter. A slow bellows gust sweeps white heat across the bed, and grey ash flecks rise off it.",
     "workgroup_size": [
       16,
       16,
@@ -24077,10 +24077,11 @@
     "id": "gen-prismatic-void-weaver-ouroboros",
     "url": "shaders/gen-prismatic-void-weaver-ouroboros.wgsl",
     "features": [
+      "audio-reactive",
+      "mouse-driven",
       "raymarched-twisted-ouroboros",
       "coarse-refined-fbm-culling",
       "bounding-sphere-early-out",
-      "sprung-pointer-void-gravity",
       "click-gravity-surge",
       "fft-plasma-shimmer",
       "temporal-history-smoothing",
@@ -27034,7 +27035,7 @@
       "phonon",
       "bravais"
     ],
-    "description": "Geometric crystal formations based on diamond cubic Bravais lattice structure with phonon pulse propagation. FCC lattice positions, acoustic phonon frequency ω = 2√(k/m)|sin(ka/2)|, bass-driven vibration, temporal feedback trails, chromatic aberration, and mouse lattice defect injection create a scientifically-grounded crystallographic visualization.",
+    "description": "Geometric crystal formations based on diamond cubic Bravais lattice structure with phonon pulse propagation. FCC lattice positions, acoustic phonon frequency ω = 2√(k/m)|sin(ka/2)|, bass-driven vibration, temporal feedback trails, chromatic aberration, and mouse lattice defect injection create a scientifically-grounded crystallographic visualization. Each crystal is shaded as a lit pyramidal gem, a phonon compression front sweeps the lattice, and crystals it crosses flash Laue diffraction-spot stars.",
     "workgroup_size": [
       16,
       16,
@@ -27045,7 +27046,11 @@
     "updated": true,
     "id": "gen-showcase-crystalline-pulse",
     "url": "shaders/gen-showcase-crystalline-pulse.wgsl",
-    "features": [],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "params": [
       {
         "id": "crystal_density",

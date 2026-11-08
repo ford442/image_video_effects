@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: hopper terrace ledges (concentric square step grooves on each skeletal box face); oxide tarnish-order thin film (Bi2O3 thickness grows toward outer terraces, RGB wavelengths, clicks launch oxidation fronts); screw-dislocation terrace spirals; Kikuchi-like diffraction bands
+//  Upgraded: 2026-11-08
+//  Ideas: hopper terrace ledges (concentric square step grooves on each skeletal box face); oxide tarnish-order thin film (Bi2O3 thickness grows toward outer terraces, RGB wavelengths, clicks launch oxidation fronts); screw-dislocation terrace spirals; Kikuchi-like diffraction bands; hollow hopper pit (face centres recess into dark cavities with a thicker inner oxide); spectral rim glint (box edges split the specular into three wavelength-offset lobes)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -118,7 +118,7 @@ fn hopperTerrace(local: vec3<f32>) -> vec2<f32> {
 // Thin-film interference iridescence
 fn iridescence(thickness: f32, normal: vec3<f32>, viewDir: vec3<f32>) -> vec3<f32> {
     let cosTheta = abs(dot(normal, viewDir));
-    let pathLength = thickness / max(cosTheta, 0.1);
+    let pathLength = thickness / max(cosTheta, 0.3); // 0.1 aliased into moire at grazing faces
 
     // Phase shift colors
     return vec3<f32>(
@@ -175,7 +175,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mouse = u.zoom_config.yz;
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
-    let zoom = (3.0 + irid * 2.0) * (1.0 - held * 0.15);
+    let zoom = (8.5 + irid * 2.0) * (1.0 - held * 0.15);
     let theta = time * 0.2 + held * (mouse.x - 0.5) * PI * 1.5;
     let phi = sin(time * 0.1) * 0.5 + held * (mouse.y - 0.5) * 1.2;
     let camPos = vec3<f32>(cos(theta) * cos(phi) * zoom, sin(phi) * zoom, sin(theta) * cos(phi) * zoom);
@@ -190,7 +190,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hit = false;
     var id = 0.0;
 
-    for (var i: i32 = 0; i < 80; i = i + 1) {
+    for (var i: i32 = 0; i < 110; i = i + 1) {
         let pos = camPos + rd * t;
         let de = bismuthDE(pos, time, bass);
 
@@ -200,8 +200,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             break;
         }
 
-        t += de.x;
-        if (t > 10.0) { break; }
+        t += de.x * 0.8;
+        if (t > 16.0) { break; }
     }
 
     // Click ripples: oxidation fronts sweeping outward across the screen.
@@ -256,14 +256,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dislocationTint = vec3<f32>(0.85, 0.55, 1.0) * screw * (0.25 + mids * 0.25);
         let kikuchiTint = vec3<f32>(0.75, 0.92, 1.0) * kikuchi * (0.2 + treble * 0.2);
         let growthMod = 1.0 + screw * 0.22;
-        let crystalColor = shadedColor * growthMod + dislocationTint + kikuchiTint;
+        var crystalColor = shadedColor * growthMod + dislocationTint + kikuchiTint;
+
+        // Idea 5: hollow hopper pit. Real hopper crystals grow edges faster than
+        // centres, so each face centre is a recessed cavity: darken toward the
+        // centre and let a thicker, cooler oxide glow from inside the pit.
+        let pit = 1.0 - smoothstep(0.0, 0.45, terrace.y);
+        let pitOxide = oxideFilm(320.0 + mids * 60.0 + id * 30.0, normal, -rd);
+        crystalColor = mix(crystalColor, pitOxide * 0.35 * (0.6 + 0.4 * diffuse), pit * 0.7);
+
+        // Idea 6: spectral rim glint. Where two local box coordinates sit on the
+        // 0.4 boundary (a box edge) the specular splits into R/G/B lobes with
+        // slightly offset half vectors, a prism fringe running along each edge.
+        let la = abs(local);
+        let ex = smoothstep(0.34, 0.4, la.x);
+        let ey = smoothstep(0.34, 0.4, la.y);
+        let ez = smoothstep(0.34, 0.4, la.z);
+        let edgeMask = max(ex * ey, max(ey * ez, ex * ez));
+        let hBase = normalize(lightDir - rd);
+        var rim = vec3<f32>(0.0);
+        for (var c = 0; c < 3; c = c + 1) {
+            let off = (f32(c) - 1.0) * 0.09 * (0.5 + irid);
+            let hc = normalize(hBase + vec3<f32>(off, -off * 0.5, off * 0.7));
+            rim[c] = pow(max(dot(normal, hc), 0.0), 24.0);
+        }
+        crystalColor += rim * edgeMask * (1.2 + treble * 1.0);
 
         let fogStart = clamp(7.0 - fogDensity * 10.0, 0.5, 9.0); // default 0.2 -> 5.0
-        let hitAlpha = 1.0 - smoothstep(fogStart, 10.0, t);
+        let hitAlpha = 1.0 - smoothstep(fogStart + 4.0, 16.0, t);
 
         finalRGB = mix(inputColor.rgb, crystalColor, hitAlpha);
         coverage = hitAlpha;
-        depth = clamp(1.0 - t / 10.0, 0.0, 1.0);
+        depth = clamp(1.0 - t / 16.0, 0.0, 1.0);
     }
 
     // Temporal Trails (exact load, display-space history decoded back to linear)

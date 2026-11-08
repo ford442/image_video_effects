@@ -5,30 +5,14 @@
 //  Complexity: Medium-High
 //  Created: 2026-05-31
 //  Updated: 2026-06-07
+//  Upgraded: 2026-11-08
+//  Ideas: pyramidal facet shading; phonon wavefront sweep; Laue diffraction glints
+//  A packing: display RGBA (ACES), alpha = crystal presence
 //  Wolfram Data: Bravais lattice (FCC), diamond structure, phonon ω = 2√(k/m)|sin(ka/2)|
 //  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -73,11 +57,12 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
 }
 
 // Voronoi cell helper (returns cell center + distance)
-fn voronoi(p: vec2<f32>) -> vec2<f32> {
+fn voronoi(p: vec2<f32>) -> vec4<f32> {
     let n = floor(p);
     let f = fract(p);
     var minDist = 1.0;
     var cellId = vec2<f32>(0.0);
+    var toC = vec2<f32>(0.0);
     for (var y: i32 = -1; y <= 1; y = y + 1) {
         for (var x: i32 = -1; x <= 1; x = x + 1) {
             let g = vec2<f32>(f32(x), f32(y));
@@ -87,10 +72,11 @@ fn voronoi(p: vec2<f32>) -> vec2<f32> {
             if (d < minDist) {
                 minDist = d;
                 cellId = n + g + o;
+                toC = r;
             }
         }
     }
-    return vec2<f32>(sqrt(minDist), hash12(cellId));
+    return vec4<f32>(sqrt(minDist), hash12(cellId), toC);
 }
 
 // ═══ CHUNK: Bravais lattice / diamond cubic (Wolfram Alpha crystallography) ═══
@@ -200,12 +186,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let growth = sin(cellHash * TAU + t * 0.5 + bass * 3.0) * 0.5 + 0.5;
     let crystalSize = crystalInterior * (0.5 + growth * 0.5);
 
+    // Idea 1 — pyramidal facet shading: each crystal is a 5–7 sided pyramid;
+    // the facet is the angular sector of the offset to its site, lit from upper-left.
+    let rv = -voro.zw;
+    let nFacets = 5.0 + floor(cellHash * 3.0);
+    let sectorF = (atan2(rv.y, rv.x) + PI) / TAU * nFacets + cellHash * 7.0;
+    let sector = floor(sectorF);
+    let ridge = smoothstep(0.82, 1.0, abs(fract(sectorF) - 0.5) * 2.0);
+    let facetAng = (sector + 0.5) / nFacets * TAU + cellHash * 2.0;
+    let facetN = normalize(vec3<f32>(cos(facetAng) * 0.6, sin(facetAng) * 0.6, 1.0));
+    let lightDir = normalize(vec3<f32>(-0.5, -0.6, 0.65));
+    let facetLit = 0.12 + 1.15 * pow(max(dot(facetN, lightDir), 0.0), 3.0);
+
+    // Idea 2 — phonon wavefront sweep: the acoustic wave along k is drawn as a
+    // travelling compression front that lights crystals as it passes (idle-visible).
+    let kDir = normalize(vec2<f32>(1.0, 0.7));
+    let frontPhase = fract(dot(p, kDir) * 0.35 - t * 0.08 * (1.0 + bass * 1.5));
+    let front = exp(-pow((frontPhase - 0.5) * 18.0, 2.0)) * (0.6 + mids * 0.6);
+
     // Color per cell with hue rotation from mids
     let colorT = cellHash + t * 0.02 + mids * 0.3;
     var col = palette(colorT);
 
     // Interior depth gradient
     col *= 0.6 + crystalSize * 0.4;
+    let facetMask = smoothstep(0.05, 0.4, crystalInterior);
+    col *= mix(1.0, facetLit, facetMask);
+    col += vec3<f32>(0.7, 0.9, 1.0) * ridge * facetMask * 0.35 * (0.5 + glow);
+    col += vec3<f32>(0.2, 0.5, 1.0) * front * (crystalInterior * 0.8 + 0.06);
 
     // Edge glow
     let edge = edgeGlow(cellDist - 0.15, 0.03 + glow * 0.05);
@@ -215,6 +223,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let sparkle = hash12(floor(p * 120.0 + t * 0.01));
     let sparkleGlow = smoothstep(0.98, 1.0, sparkle) * treble * 3.0 * edge;
     col += vec3<f32>(0.8, 0.9, 1.0) * sparkleGlow;
+
+    // Idea 3 — Laue diffraction glints: when the wavefront crosses a crystal,
+    // its site flashes a 6-spot reciprocal-lattice star (hex Bragg spots).
+    let rr = length(rv);
+    let ang6 = atan2(rv.y, rv.x) * 3.0 + cellHash * TAU;
+    let spokes = pow(abs(cos(ang6)), 24.0);
+    let spotR = 0.18 + shardSize * 0.08;
+    let spots = spokes * exp(-pow((rr - spotR) * 22.0, 2.0));
+    let core = exp(-rr * rr * 260.0);
+    let laue = (spots + core) * (0.25 + front * 1.6 + treble * 0.8) * step(0.55, cellHash + front * 0.4);
+    col += vec3<f32>(0.85, 0.95, 1.0) * laue * (0.6 + glow * 0.8);
 
     // Diamond lattice phonon overlay
     col += vec3<f32>(0.3, 0.6, 0.9) * diamondPattern * bass * 0.5;
@@ -230,7 +249,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Background: dark space between crystals
     let bg = 0.05 + 0.02 * fbm(p * 2.0 + t * 0.01, 3);
-    col = mix(vec3<f32>(bg, bg, bg * 1.2), col, crystalSize + edge * 0.3);
+    col = mix(vec3<f32>(bg, bg, bg * 1.2), col, clamp(crystalSize + edge * 0.3 + laue * 0.5, 0.0, 1.0));
 
     // Vignette
     let vig = 1.0 - smoothstep(0.5, 1.5, length(p));

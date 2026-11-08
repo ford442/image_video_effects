@@ -1,36 +1,19 @@
 // ----------------------------------------------------------------
 // Prismatic Void-Weaver Ouroboros
 // Category: generative
+// Features: audio-reactive, mouse-driven, upgraded-rgba
 // Batch 36 (Optimizer): canonical uniform truth, coarse->refined SDF
 // (fbm scales culled when far), bounding-sphere early out, tetrahedron
-// normals (4 taps vs 6), spring-smoothed void well + bounded click
+// normals (4 taps vs 6), cursor-tracked void well + bounded click
 // surge, real audio + FFT reactivity, HDR + ACES, semantic alpha,
 // generated hit depth, temporal history smoothing.
-// Upgraded: 2026-09-27
-// Ideas: void tether energy beams; subsurface iridescent dark-matter scales
+// Upgraded: 2026-11-08
+// Ideas: void tether energy beams; subsurface iridescent dark-matter scales; jaw-swallow seam (head swell + tail pinch where the ring closes); keel-grating diffraction ridge
 // A packing: ACES display RGBA
 // ----------------------------------------------------------------
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active), .zw = resolution (width, height)
-    zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-    zoom_params: vec4<f32>,  // .x = Twist Density, .y = Plasma Glow, .z = Void Gravity, .w = Audio Reactivity
-    ripples: array<vec4<f32>, 50>, // .xy = ripple uv, .z = startTime (seconds), .w = padding
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Twist Density, .y = Plasma Glow, .z = Void Gravity, .w = Audio Reactivity
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -123,7 +106,15 @@ fn sdfOuroboros(p_in: vec3<f32>, ctx: SceneCtx, useDetail: bool) -> f32 {
 
     // Fractal scales, evaluated in twisted space so the twist is visible
     let scaleDisp = fbm(vec3<f32>(q * 3.0, angle * 2.0) + vec3<f32>(ctx.time * 0.2)) * SCALE_AMP;
-    return baseSdf - scaleDisp * (1.0 + ctx.audioEnergy);
+    // Idea 3: jaw-swallow seam. The body swells into a head where the ring
+    // closes (angle = +-PI) and pinches just past it where the tail vanishes
+    // into the jaw, so the loop finally reads as a serpent eating itself.
+    let seam = PI - abs(angle);
+    let headSwell = 0.28 * exp(-seam * seam * 6.0) - 0.22 * exp(-(seam - 0.35) * (seam - 0.35) * 60.0);
+    // Idea 4: keel grating. A raised ridge rides the twisted top of the cross
+    // section, corrugated finely like a diffraction grating (shaded below).
+    let keel = 0.1 * exp(-q.x * q.x * 30.0) * smoothstep(0.0, 0.5, q.y);
+    return baseSdf - scaleDisp * (1.0 + ctx.audioEnergy) - headSwell - keel;
 }
 
 // Coarse cull: only pay for the fbm scales when the ray is close enough.
@@ -156,20 +147,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let time = u.config.x;
 
-    // ---- Spring-smoothed mouse (persistent state: extraBuffer[133..138]) --
-    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
-    let springOmega = 8.0;
-    mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
-    mouseUv += mouseVelocity * springDt;
-    if (gid.x == 0u && gid.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
-        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = time;
-    }
+    // ---- Mouse. The old extraBuffer[133..138] spring never persisted (the
+    // scratch array is re-uploaded zeroed each frame) and its writes raced;
+    // the void well follows the raw cursor.
+    let mouseUv = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // ---- Audio: plasma bands * Audio Reactivity + guarded FFT bins 1-8 ----
     let bass = plasmaBuffer[0].x;
@@ -195,8 +176,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ---- Camera (slow orbit) ----------------------------------------------
     let uv = (vec2<f32>(gid.xy) - 0.5 * res) / res.y;
-    var ro = vec3<f32>(0.0, 0.0, -6.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    // Rescue: the camera sat in the ring plane at r=6, so the torus filled the
+    // frame edge-on as a slab and the loop never read. Lift it ~35 degrees and
+    // pull back; build a look-at basis toward the origin.
+    var ro = vec3<f32>(0.0, 6.0, -8.6);
+    let fwd = normalize(-ro);
+    let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
+    let up = cross(fwd, right);
+    // pixel y grows downward, so negate uv.y to keep the ring upright
+    var rd = normalize(uv.x * right - uv.y * up + 1.6 * fwd);
 
     let camRot = rotate2D(time * 0.1);
     let roXz = camRot * vec2<f32>(ro.x, ro.z);
@@ -207,7 +195,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     rd.z = rdXz.y;
 
     // ---- Early out: analytic bounding sphere around the serpent -----------
-    let boundR = TORUS_MAJOR + TORUS_MINOR + 1.4;
+    let boundR = TORUS_MAJOR + TORUS_MINOR + 1.4;  // covers head swell + keel
     let tCa = -dot(ro, rd);
     let rayMiss = (tCa < 0.0) || (dot(ro, ro) - tCa * tCa > boundR * boundR);
 
@@ -268,6 +256,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let emission = clamp(fbm(p * 5.0 - vec3<f32>(time)), 0.0, 1.0)
                        * u.zoom_params.y * (1.0 + ctx.audioEnergy + ctx.fftShimmer * 0.5);
         col += matCol * emission * vec3<f32>(1.5, 0.5, 2.0);
+
+        // Idea 3 shading: the jaw seam burns white-gold, pulsing on bass.
+        let angP = atan2(p.z, p.x);
+        let seamP = PI - abs(angP);
+        let jawGlow = exp(-(seamP - 0.3) * (seamP - 0.3) * 40.0) * (0.6 + bass * 1.2);
+        col += vec3<f32>(1.6, 1.1, 0.45) * jawGlow * u.zoom_params.y * 1.5;
+
+        // Idea 4 shading: keel grating. Groove spacing along the ring plus the
+        // view angle picks a first-order diffraction colour (d sin = m lambda).
+        let tXyP = vec2<f32>(length(p.xz) - TORUS_MAJOR, p.y);
+        let qP = rotate2D(angP * ctx.twist + time * 0.5) * tXyP;
+        let keelMask = exp(-qP.x * qP.x * 30.0) * smoothstep(0.0, 0.5, qP.y);
+        let sinTheta = clamp(1.0 - abs(dot(viewDir, n)), 0.0, 1.0);
+        let lambdaPick = fract(sinTheta * 1.6 + angP * 3.0 + treble * 0.3);
+        let grating = 0.5 + 0.5 * cos(TAU * (lambdaPick + vec3<f32>(0.0, 0.33, 0.67)));
+        col += grating * keelMask * (0.5 + mids * 0.8) * 1.4;
 
         // Distance fog
         col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.02 * dO * dO));
