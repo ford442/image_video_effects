@@ -130,6 +130,13 @@
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
     },
     {
+      "id": "gen-prismatic-quantum-loom",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-08",
+      "expires": "2026-12-08",
+      "reason": "other"
+    },
+    {
       "id": "gen-psychedelic-time-warp-kaleidoscope",
       "added_by": "thumbnail-campaign",
       "deferred_at": "2026-09-26",

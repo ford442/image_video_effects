@@ -5,32 +5,17 @@
 //    chromatic-aberration, audio-reactive, temporal-feedback, depth-aware, upgraded-rgba
 //  Created: 2026-03-22
 //  Updated: 2026-08-03 (Batch 34)
-//  Upgraded: 2026-09-27
-//  Ideas: stiff-string inharmonicity on the partials; bridge reflection of the pluck
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-27, 2026-11-08
+//  Ideas: stiff-string inharmonicity on the partials; bridge reflection of the pluck; Melde long-exposure envelope with arcsine dwell (sum of standing-partial amplitudes); fretting finger (held pointer pins a node, each side rings as a shorter string)
+//  A packing: ACES display RGBA; texels (0,0) = sprung cursor (pos.xy, vel.xy) and (1,0) = (fract(lastTime), -, -, 0.7371 sentinel) are STATE, not pixels
+//  2026-11-08 rescue: the sprung cursor lived in extraBuffer[133..138], which the host zeroes every
+//    frame, so the "sprung" pluck was the raw pointer; it now persists in two A texels.
 //  By: Agent 4A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+const SENT: f32 = 0.7371;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -59,7 +44,20 @@ fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, da
     let inStr = step(abs(sX), 1.5);
     let x = (sX + 1.5) / 3.0;
     var y = 0.0;
+    var env = 0.0;
     var sCol = vec3<f32>(0.0);
+    // ── Idea 4: fretting finger ──────────────────────────────────────
+    // A held pointer on the string stops it: a node is pinned at the finger and
+    // each side rings as its own, shorter string (spatial pattern re-fitted to
+    // the segment, so its spatial pitch rises by the length ratio; the time phase is
+    // left alone - scaling absolute time by a pointer-dependent factor re-phases
+    // every partial as the finger drags).
+    let fretW = pressed * exp(-abs(mouseY) * 10.0) * step(abs(mouseX), 1.5);
+    let xf = clamp((mouseX + 1.5) / 3.0, 0.1, 0.9);
+    let rightSide = x > xf;
+    let xSeg = select(x / xf, (x - xf) / (1.0 - xf), rightSide);
+    let xS = mix(x, xSeg, fretW);
+    let pinFret = mix(1.0, sqrt(smoothstep(0.0, 0.03, abs(x - xf))), fretW);
     for (var h: i32 = 1; h <= harmonicRichness; h++) {
       let n = f32(h);
       let amp = 0.1 * (1.0 + bass * excitement) / n;
@@ -69,7 +67,10 @@ fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, da
       let inharm = sqrt(1.0 + stiffB * n * n);
       let k = fundamental * n * inharm * 6.28318;
       let w = fundamental * n * inharm * 3.14159;
-      y += 2.0 * amp * damp * sin(k * x) * cos(w * t);
+      y += 2.0 * amp * damp * sin(k * xS) * cos(w * t) * pinFret;
+      // ── Idea 3: Melde envelope — power of this standing partial at x (root-sum-square below)
+      let partialAmp = 2.0 * amp * damp * sin(k * xS) * pinFret;
+      env += partialAmp * partialAmp;
       let hue = fract(n * 0.15 + t * 0.05);
       let c = 0.48;
       let hx = c * (1.0 - abs(fract(hue * 6.0) * 2.0 - 1.0));
@@ -91,13 +92,24 @@ fn evalStrings(p: vec2<f32>, t: f32, fundamental: f32, harmonicRichness: i32, da
     let travel = fract(t * max(fundamental, 0.001) * 0.35);
     let bounceX = mix(mouseX, mirrored, travel);
     y += exp(-abs(sX - bounceX) * 8.0) * clamp(mouseY, -0.3, 0.3) * excitement * mix(0.12, 0.4, pressed) * (1.0 - travel);
+    env += travelAmp * travelAmp;
     let dist = abs(sY - y);
     let thick = (0.003 + 0.002 * excitement) * (0.6 + 0.4 * depth);
     let intensity = smoothstep(thick * 3.0, 0.0, dist);
     let core = smoothstep(thick, 0.0, dist);
     let glowFalloff = 50.0 * (0.4 + 0.6 * depth);
     let glow = exp(-dist * glowFalloff) * 0.3;
-    col += (sCol * (intensity + glow) + vec3<f32>(1.0) * core * 0.5) * inStr;
+    // ── Idea 3: Melde long-exposure envelope with arcsine dwell ─────────
+    // A long exposure of a vibrating string is a lens-shaped ghost whose edges
+    // are brightest (a sinusoid dwells at its turning points: density ~ 1/sqrt(E^2 - y^2)).
+    // E(x) is the root-sum-square of the standing-partial amplitudes already computed above
+    // (independent partials swing ~sqrt(sum a^2), not the sum of peaks).
+    let envE = max(sqrt(env) * 1.15, 0.004);
+    let qy = sY / envE;
+    let inside = 1.0 - smoothstep(0.9, 1.0, abs(qy));
+    let dwell = inverseSqrt(max(1.0 - qy * qy, 0.12));
+    let ghost = inside * dwell * 0.022 * smoothstep(0.0, 0.03, envE);
+    col += (sCol * (intensity + glow) + vec3<f32>(1.0) * core * 0.5 + sCol * ghost) * inStr;
     totalIntensity += intensity * inStr;
     col += sCol * (sin(dist * 200.0 + t * 2.0) * 0.5 + 0.5) * intensity * 0.2 * inStr;
   }
@@ -118,22 +130,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let excitement = u.zoom_params.w;
   let bass = plasmaBuffer[0].x;
   let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;
-  let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+  var prev = textureLoad(dataTextureC, pixel, 0).rgb;
+  prev = select(prev, vec3<f32>(0.0), (global_id.y == 0u) && (global_id.x < 2u));   // state texels carry no trail
   let aspect = resolution.x / resolution.y;
 
   let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-  var mouseUv = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  if (extraBuffer[137] < 0.5) { mouseUv = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-  let springDt = select(0.016, clamp(t - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
+  // Sprung cursor state lives in two A texels (see header); sentinel guards the first frame / inherited C.
+  let st0 = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let st1 = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+  let stateOk = abs(st1.w - SENT) < 0.001;
+  var mouseUv = select(rawMouse, st0.xy, stateOk);
+  var mouseVelocity = select(vec2<f32>(0.0), st0.zw, stateOk);
+  // lastTime is stored as fract(t): A is rgba16float on the balanced / battery tiers (absolute time would
+  // lose its 0.017 s resolution after ~1 minute).
+  let springDt = select(0.016, clamp(fract(t - st1.x), 0.001, 0.05), stateOk);
   let springOmega = 8.0;
   mouseVelocity += ((rawMouse - mouseUv) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
   mouseUv += mouseVelocity * springDt;
-  if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-    extraBuffer[133] = mouseUv.x; extraBuffer[134] = mouseUv.y;
-    extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-    extraBuffer[137] = 1.0; extraBuffer[138] = t;
-  }
   let mouse = vec2<f32>(mouseUv.x * aspect, mouseUv.y);
   let pressed = select(0.0, 1.0, u.zoom_config.w > 0.5);
   let reliefContext = 0.6 + 0.4 * clamp(sourceDepth, 0.0, 1.0);
@@ -222,5 +235,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let outColor = vec4<f32>(col, alpha);
   textureStore(writeTexture, pixel, outColor);
   textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, pixel, outColor);
+  var aOut = outColor;
+  if (global_id.y == 0u && global_id.x == 0u) { aOut = vec4<f32>(mouseUv, mouseVelocity); }
+  if (global_id.y == 0u && global_id.x == 1u) { aOut = vec4<f32>(fract(t), 0.0, 0.0, SENT); }
+  textureStore(dataTextureA, pixel, aOut);
 }

@@ -14,12 +14,13 @@
 //              mouse genuinely re-centres the drum via the polar mapping
 //  Sliders:  x=ModeScale  y=ColourMode (hue rotation of base colour)
 //            z=NodeSharpness  w=ModeCount
-//  State:    dataTextureA = (u_total, r, phi/2π, blendAlpha) — raw sim state,
-//            never tone-mapped; extraBuffer is declared but never written
-//            (all persistent data lives in the uniform ripple ring buffer).
-//  Upgraded: 2026-10-17
-//  Ideas: radial vs azimuthal tint; displacement Lambert; antinode disks; radial beat
-//  A packing: raw u_total, r, phi/2π, blendAlpha
+//  State:    dataTextureA = (u_total, leaky |u| sand energy, phi/2π, blendAlpha) —
+//            raw sim state, never tone-mapped; extraBuffer is only READ (the real
+//            FFT bins live at extraBuffer[5..132]); persistent data lives in A
+//            and the uniform ripple ring buffer.
+//  Upgraded: 2026-10-17, 2026-11-08
+//  Ideas: radial vs azimuthal tint; displacement Lambert; antinode disks; radial beat; sand on the plate (leaky |u| history in A.g); modal strike response (S_k(hit)·S_k(p) ring-down)
+//  A packing: raw u_total, leaky |u| (sand), phi/2π, blendAlpha
 // ═══════════════════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -83,10 +84,43 @@ fn drumMode(r: f32, phi: f32, t: f32, m: i32, alpha_mn: f32, omega: f32, phi0: f
     return bessel * cos(f32(m) * phi + phi0) * cos(omega * t);
 }
 
-// Cymatic weight: each mode family is driven by its matching FFT bin.
-// plasmaBuffer[0] holds bass/mids/treble bands; bins live in [1..8] here.
+// Cymatic weight: each mode family is driven by its own slice of the REAL FFT.
+// (HEAD read plasmaBuffer[1..8], which the engine never uploads — every weight was a
+// constant 0.6.)  Bins are extraBuffer[5 + i], i = 0..127, normalised 0..1.
+// Slices: (0,1) bins 0-1 · (0,2) 2-3 · (1,1) 4-6 · (2,1) 7-10 · (1,2) 11-18 · (3,1) 19-40.
+fn fftBand(lo: u32, n: u32) -> f32 {
+    var s = 0.0;
+    for (var i: u32 = 0u; i < n; i = i + 1u) {
+        s = s + extraBuffer[5u + lo + i];
+    }
+    return clamp(s / f32(n), 0.0, 1.0);
+}
 fn fftModeWeight(mode: u32) -> f32 {
-    return 0.6 + 0.9 * clamp(plasmaBuffer[1u + (mode % 8u)].x, 0.0, 1.0);
+    let lo = select(select(select(select(select(0u, 2u, mode >= 1u), 4u, mode >= 2u), 7u, mode >= 3u), 11u, mode >= 4u), 19u, mode >= 5u);
+    let n  = select(select(select(select(select(2u, 2u, mode >= 1u), 3u, mode >= 2u), 4u, mode >= 3u), 8u, mode >= 4u), 22u, mode >= 5u);
+    return 0.85 + 0.9 * fftBand(lo, n);
+}
+
+// Pure mode shape S_k (no time factor) for the six-mode table used in main():
+// k: 0=(0,1) 1=(0,2) 2=(1,1) 3=(2,1) 4=(1,2) 5=(3,1)  — same m, α_mn, φ0 as main().
+fn modeAlpha(k: u32) -> f32 {
+    return select(select(select(select(select(2.4048, 5.5201, k == 1u), 3.8317, k == 2u), 5.1356, k == 3u), 7.0156, k == 4u), 6.3802, k == 5u);
+}
+fn modeShape(k: u32, r: f32, phi: f32) -> f32 {
+    let m    = select(select(select(select(0, 1, k >= 2u), 2, k >= 3u), 1, k >= 4u), 3, k >= 5u);
+    let phi0 = select(select(select(select(0.0, 0.7, k >= 2u), 1.2, k >= 3u), 0.3, k >= 4u), 2.1, k >= 5u);
+    return drumMode(r, phi, 0.0, m, modeAlpha(k), 0.0, phi0);
+}
+// Same activation gates as main(): (0,1),(1,1) always; (0,2)≥3; (2,1)≥4; (1,2)≥5; (3,1)≥6.
+fn modeActive(k: u32, modeCount: f32) -> f32 {
+    let need = select(select(select(select(2.0, 3.0, k == 1u), 4.0, k == 3u), 5.0, k == 4u), 6.0, k == 5u);
+    return select(0.0, 1.0, modeCount >= need);
+}
+
+fn hash21(q: vec2<f32>) -> f32 {
+    let h = fract(q * vec2<f32>(123.34, 456.21));
+    let g = h + dot(h, h + 45.32);
+    return fract(g.x * g.y);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -139,7 +173,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ─── Polar coords centred on the drum — mouse genuinely re-centres it ───
     let mouse      = u.zoom_config.yz;                    // [mouseX, mouseY] in uv space
     let drumCenter = vec2<f32>(0.5) + (mouse - vec2<f32>(0.5)) * 0.45;
-    let p          = (uv - drumCenter) * 2.0;
+    // HEAD used the raw uv, so the "circular" membrane was an ellipse on any non-square canvas.
+    let aspect     = resolution.x / max(resolution.y, 1.0);
+    let frameScale = vec2<f32>(max(aspect, 1.0), max(1.0 / aspect, 1.0));
+    let p          = (uv - drumCenter) * 2.0 * frameScale;
     let r          = length(p) * modeScale;
     let phi        = atan2(p.y, p.x);
 
@@ -200,18 +237,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let strikeCount = min(u32(u.config.y), 50u);
     var strikeGlow  = 0.0;
     var strikeDisplacement = 0.0;
+    // Pixel-side mode shapes, needed only while a strike is ringing.
+    var shapeP = array<f32, 6>(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    if (strikeCount > 0u) {
+        for (var k: u32 = 0u; k < 6u; k = k + 1u) { shapeP[k] = modeShape(k, r, phi); }
+    }
+    var activeStrikes = 0u;
     for (var i: u32 = 0u; i < strikeCount; i = i + 1u) {
         let rp  = u.ripples[i];
         let age = time - rp.z;
-        if (rp.w > 0.001 && age >= 0.0 && age < 2.5) {
-            // Click point mapped into the same drum-centred polar frame
-            let hitP    = (rp.xy - drumCenter) * 2.0;
+        // ripples[i].w is padding (always 0) — HEAD's `rp.w > 0.001` gate meant no click ever struck the drum.
+        if (age >= 0.0 && age < 2.5 && activeStrikes < 8u) {
+            activeStrikes = activeStrikes + 1u;
+            // Click point mapped into the same drum-centred, aspect-correct polar frame
+            let hitP    = (rp.xy - drumCenter) * 2.0 * frameScale;
             let d       = distance(p, hitP);
-            // Localized decaying impulse + outward-travelling wave packet
+            // Contact transient: localized decaying impulse + outward-travelling wave packet
             let impulse = exp(-d * d * 10.0) * cos(d * 22.0 - age * 14.0);
-            strikeDisplacement += rp.w * 0.8 * exp(-age * 3.0) * impulse;
+            strikeDisplacement += 0.8 * exp(-age * 3.0) * impulse;
             // Impact flash: bright contact point that fades with the ring-down
-            strikeGlow += rp.w * exp(-d * d * 24.0) * exp(-age * 4.5);
+            strikeGlow += exp(-d * d * 24.0) * exp(-age * 4.5);
+
+            // ── Idea 6: modal strike response ──
+            // A mallet hit excites eigenmode k in proportion to that mode's shape at the
+            // strike point; each mode then rings at its own ω_k and dies at its own rate
+            // (higher α → faster).  Centre hit: only the radial (0,n) modes ring.
+            let hitR   = length(hitP) * modeScale;
+            let hitPhi = atan2(hitP.y, hitP.x);
+            var modal  = 0.0;
+            for (var k: u32 = 0u; k < 6u; k = k + 1u) {
+                let a_k   = modeAlpha(k);
+                let ring  = exp(-age * (0.55 + 0.22 * a_k)) * cos(a_k * 1.8 * age);
+                modal += modeActive(k, modeCount) * modeShape(k, hitR, hitPhi) * shapeP[k] * ring;
+            }
+            strikeDisplacement += 0.55 * modal;
         }
     }
 
@@ -228,6 +287,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ─── Chladni node-line colouring ───
     // Nodes are zero-crossings: glow proportional to |u_total|
+    // ── Idea 5: sand on the plate ──
+    // Grains migrate to where the plate moves least. A leaky average of |u| lives in A.g
+    // (the old write-only `r` channel). Instantaneous zero crossings (gold line below) keep
+    // sweeping with the modes; the sand only stays where the figure is stationary.
+    // Inherited C from another shader is clamped and converges within ~1.5 s.
+    let magnitude = abs(u_total);
+    let sandPrev  = clamp(previousState.g, 0.0, 2.0);
+    let sandE     = select(magnitude, mix(sandPrev, magnitude, 0.03), previousValid > 0.5);
+    let sandK     = 8.0 + nodeSharp * 1.2;                         // node-sharpness slider sets the band width
+    let sandDust  = exp(-sandE * sandK) * inside;
+    let sandGrain = 0.55 + 0.45 * hash21(floor(vec2<f32>(coord) * 0.5));
+
     let nodeEdge = abs(u_total);
     let nodeGlow = smoothstep(0.0, 0.5 / nodeSharp, nodeEdge) *
                    smoothstep(1.5 / nodeSharp, 0.5 / nodeSharp, nodeEdge);
@@ -235,7 +306,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Displacement → hue, then COLOUR MODE rotates the base hue
     let hue = fract(u_total * 0.15 + time * 0.04 + bass * 0.08 + colourMode);
     let sat = 0.85;
-    let val = clamp(abs(u_total) * 1.5, 0.0, 1.0) * inside;
+    // Perceptual transfer: HEAD's linear |u|·1.5 left a silent drum at ~0.2 coverage on a photo.
+    let val = clamp(sqrt(abs(u_total) * 2.2), 0.0, 1.0) * inside;
     let baseColor = hsv2rgb(hue, sat, val);
 
     // Nodes → white/gold Chladni lines; Idea 1 — radial vs azimuthal tint
@@ -254,6 +326,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radialShare = abs(u_radial) / (abs(u_total) + 0.08);
     chladniColor = chladniColor * (0.78 + 0.22 * radialBeat * smoothstep(0.2, 0.7, radialShare));
 
+    // Sand: warm static grains over the stationary nodal figure
+    chladniColor = mix(chladniColor, vec3<f32>(0.86, 0.72, 0.48) * sandGrain, sandDust * 0.55);
+
     // Strike flash tints the impact zone hot white while the hit rings down
     chladniColor = mix(chladniColor, vec3<f32>(1.0, 0.98, 0.92), clamp(strikeGlow, 0.0, 1.0) * 0.6);
 
@@ -266,7 +341,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // wherever displacement or node glow is strong.
     let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let blendAlpha = clamp(val * 0.85 + nodeGlow * 0.3 + bass * 0.05 + strikeGlow * 0.25, 0.0, 1.0);
+    let blendAlpha = clamp(val * 0.85 + nodeGlow * 0.3 + sandDust * 0.3 + bass * 0.05 + strikeGlow * 0.25, 0.0, 1.0);
     let finalColor = mix(inputColor.rgb, chladniColor, blendAlpha);
     let finalAlpha = max(inputColor.a, blendAlpha);
     let membraneDepth = clamp(0.5 - u_total * 0.16, 0.05, 0.95);
@@ -274,6 +349,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Output (tone-mapped display), sim state (raw, never clamped), generated membrane depth.
     textureStore(writeTexture, coord, vec4<f32>(acesToneMap(finalColor * 1.1), finalAlpha));
-    textureStore(dataTextureA, coord, vec4<f32>(u_total, r, phi / 6.28318, blendAlpha));
+    textureStore(dataTextureA, coord, vec4<f32>(u_total, sandE, phi / 6.28318, blendAlpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(finalDepth, 0.0, 0.0, 0.0));
 }

@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: Mackie lines (Sabattier); pointer phase-lock; depth parallax ghosts
+//  Upgraded: 2026-11-08
+//  Ideas: Mackie lines (Sabattier); pointer phase-lock; depth parallax ghosts; solarization fold; depth-sweep inversion front; phase-front isolines
 //  A packing: (phR, phG, phB, pointer lock weight) phase state — no reader (diagnostic only)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -93,6 +93,11 @@ fn lensDistort(uv: vec2<f32>, k1: f32) -> vec2<f32> {
 fn temporalEcho(uv: vec2<f32>, off: vec2<f32>, t: f32, echoDelay: f32) -> vec2<f32> {
     let prevOff = off * cos(t * 0.5 - echoDelay);
     return mix(uv + off, uv + prevOff, 0.4);
+}
+
+// Sabattier solarization fold: w=0 → v, w=1 → 1−v, w=0.5 → |2v−1| (never flat grey).
+fn solarFold(v: f32, w: f32) -> f32 {
+    return clamp(abs(v - w) / max(max(w, 1.0 - w), 1e-3), 0.0, 1.0);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -199,9 +204,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let lockPh   = select(0.0, 1.0, held);
     let heldW    = select(0.0, lockFall, held);
 
-    let phR = mix(invPhase(t, freqR, depthPhase, spatialPh * coherence), lockPh, lockW);
-    let phG = mix(invPhase(t, freqG, depthPhase, spatialPh * coherence), lockPh, lockW);
-    let phB = mix(invPhase(t, freqB, depthPhase, spatialPh * coherence), lockPh, lockW);
+    let phR0 = invPhase(t, freqR, depthPhase, spatialPh * coherence);
+    let phG0 = invPhase(t, freqG, depthPhase, spatialPh * coherence);
+    let phB0 = invPhase(t, freqB, depthPhase, spatialPh * coherence);
+
+    // Idea 5: Depth-sweep inversion front — a thin shell sweeps through the depth
+    // buffer from near to far (~8 s per pass, bass speeds it up). Inside the shell
+    // every channel's phase is flipped (ph → 1 − ph), so a negative "slice"
+    // travels through the scene's depth like a scanning plane.
+    let frontPos  = fract(t * 0.12 * (1.0 + audioBass * 0.6));
+    let frontDist = (1.0 - depth) - frontPos;
+    let frontW    = exp(-frontDist * frontDist / 0.0025) * (1.0 - lockW);
+    let phR = mix(mix(phR0, 1.0 - phR0, frontW), lockPh, lockW);
+    let phG = mix(mix(phG0, 1.0 - phG0, frontW), lockPh, lockW);
+    let phB = mix(mix(phB0, 1.0 - phB0, frontW), lockPh, lockW);
     let ghostAmt = ghostOff * parallax * (1.0 - lockW);
 
     // ── Per-channel spatial offsets (ghost displacement) ─────────────────
@@ -227,9 +243,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Phase inversion ───────────────────────────────────────────────────
     // (Idea 2: a held lock drives every channel to a full negative.)
-    let r = mix(sampR.r, 1.0 - sampR.r, phR * mix(0.7, 1.0, heldW));
-    let g = mix(sampG.g, 1.0 - sampG.g, phG * mix(0.5, 1.0, heldW));
-    let b = mix(sampB.b, 1.0 - sampB.b, phB * mix(0.9, 1.0, heldW));
+    // Idea 4 (HEAD rescue): Solarization fold. HEAD cross-faded v → 1 − v linearly,
+    // which flattens a channel to flat 0.5 grey whenever its weight passes 0.5 (green
+    // was capped at exactly 0.5, so at its phase peak it was pure grey and the whole
+    // frame washed out). The Sabattier fold |v − w| / max(w, 1 − w) reaches the same
+    // endpoints (w=0 positive, w=1 negative) but passes through a V-shaped solarized
+    // curve instead of grey, so tone reversal keeps its contrast mid-cycle.
+    let r = solarFold(sampR.r, phR * mix(0.7, 1.0, heldW));
+    let g = solarFold(sampG.g, phG * mix(0.5, 1.0, heldW));
+    let b = solarFold(sampB.b, phB * mix(0.9, 1.0, heldW));
 
     // ── Idea 1: Mackie lines (Sabattier) ──────────────────────────────────
     // Where tone reversal is half done, photographic phase inversion leaves bright
@@ -298,6 +320,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     outR += mackie.r * 0.55 * scanline;
     outG += mackie.g * 0.55 * scanline;
     outB += mackie.b * 0.55 * scanline;
+
+    // Idea 6: Phase-front isolines — hairline contours where each channel's phase
+    // crosses its half-way point (the moment that channel is mid-reversal). The
+    // spatial noise field makes them drift across the frame as coloured wavefronts;
+    // coherence (zoom_params.w) folds more of the field in, so more fronts appear.
+    let iso = vec3<f32>(
+        smoothstep(0.03, 0.0, abs(phR - 0.5)),
+        smoothstep(0.03, 0.0, abs(phG - 0.5)),
+        smoothstep(0.03, 0.0, abs(phB - 0.5))) * (1.0 - lockW);
+    outR += iso.r * 0.35 * scanline;
+    outG += iso.g * 0.35 * scanline;
+    outB += iso.b * 0.35 * scanline;
 
     // Beat flash on strong beats
     let isBeat = step(0.7, audioBass);

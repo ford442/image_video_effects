@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: chitin wing-membrane thin-film interference (2*n*d*cos theta at 650/532/450 nm); longitudinal costa/radius/media vein spars with nodus and dark pterostigma cell; leading-edge vortex sheets; abdominal bioluminescent segment pulses
+//  Upgraded: 2026-11-08
+//  Ideas: chitin wing-membrane thin-film interference (2*n*d*cos theta at 650/532/450 nm); longitudinal costa/radius/media vein spars with nodus and dark pterostigma cell; leading-edge vortex sheets; abdominal bioluminescent segment pulses; compound-eye ommatidia (twin hex-faceted eye domes with a facet-quantised pseudopupil glint); wing-beat sweep ghosts (stroke-envelope afterimages of the fore/hind wings at the stroke extremes, tinted by the thin film)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -181,6 +181,28 @@ fn wingVenation(s: f32, c: f32, wingspan: f32) -> vec2<f32> {
     return vec2<f32>(spar * smoothstep(1.02, 0.9, sc), stigma);
 }
 
+// Idea 5: compound eyes. Two domes flanking the head, tiled with a hex lattice
+// of ommatidia; each facet catches light when its normal faces the viewer, so
+// a facet glint slides across the dome as the body turns and the wings beat.
+// Returns (eye coverage, facet rim, glint).
+fn compoundEye(p: vec2<f32>, tilt: f32) -> vec3<f32> {
+    let q = vec2<f32>(abs(p.x) - 0.085, p.y - 0.66);
+    let r = length(q) / 0.085;
+    let cover = smoothstep(1.05, 0.9, r);
+    // hex lattice (axial) in dome space, facets shrink toward the limb
+    let hp = q * 70.0 / (1.0 + 0.6 * r * r);
+    let a = vec2<f32>(hp.x + hp.y * 0.57735, hp.y * 1.1547);
+    let cell = floor(a);
+    let f = fract(a);
+    let hexd = max(abs(f.x - 0.5), max(abs(f.y - 0.5), abs(f.x + f.y - 1.0)));
+    let rim = smoothstep(0.38, 0.5, hexd);
+    let facetN = (cell + vec2<f32>(0.5)) / 70.0; // facet centre in dome space
+    let look = vec2<f32>(sin(tilt) * 0.5, 0.25);
+    let fd = facetN * 12.0 - look;
+    let glint = exp(-dot(fd, fd) * 1.2) * (1.0 - rim);
+    return vec3<f32>(cover, rim * cover, glint * cover);
+}
+
 // Strange-attractor crystal particles
 fn attractorParticles(p: vec2<f32>, t: f32, audio: f32) -> f32 {
     var z = p * 3.0;
@@ -256,7 +278,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let strokeGain = 1.0 + bass * 0.4;
     let flap1 = sin(flapSpeed) * 0.35 * strokeGain + 0.45;
     let flap2 = sin(flapSpeed + 1.8) * 0.3 * strokeGain + 0.35;
-    var p = uv;
+    // Rescue: uv.y ran downward so the head pointed at the floor, and the 1.9-unit
+    // insect overflowed a 1.0-unit view (head and tail cropped). Flip + fit.
+    var p = vec2<f32>(uv.x, -uv.y) * 1.8 + vec2<f32>(0.0, -0.2);
     p = rot(mouse.x * 1.5) * p;
     let d = sdDragonfly(p, wingspan, flap1, flap2);
     let edge = abs(d);
@@ -290,6 +314,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let lev = wingOnly * levBand * levPulse * (0.35 + plasma * 0.4);
     bodyColor += vec3<f32>(0.35, 0.95, 1.0) * lev;
 
+    // Idea 6: wing-beat sweep ghosts at the stroke extremes (beat envelope).
+    var ghost = 0.0;
+    for (var gi = 0; gi < 4; gi = gi + 1) {
+        let sgn = select(-1.0, 1.0, (gi & 1) == 1);
+        let lag = f32(gi >> 1u) * 0.5 + 0.5;
+        let gf1 = sgn * 0.35 * strokeGain + 0.45;
+        let gf2 = sgn * 0.3 * strokeGain + 0.35;
+        let gw = wingFrame(p, wingspan, mix(flap1, gf1, lag), mix(flap2, gf2, lag)).z;
+        ghost += smoothstep(0.04, 0.0, gw) * (0.3 / lag) * 0.45;
+    }
+    ghost = clamp(ghost, 0.0, 0.6) * (1.0 - wingOnly) * smoothstep(0.03, 0.1, abs(p.x)) * (0.6 + flapRate);
+    let ghostTint = wingThinFilm(0.5, 0.0, 0.5, flap1, bass);
+
     // Plasma core glow
     let core = smoothstep(0.15, 0.0, length(p - vec2<f32>(0.0, 0.2))) * plasma * 4.0;
     bodyColor += vec3<f32>(0.2, 0.9, 0.6) * core * (1.0 + bass * 0.5);
@@ -299,6 +336,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let segment = pow(max(0.5 + 0.5 * sin(segCoord - time * (4.0 + mids * 2.0)), 0.0), 3.0);
     let abdomenGlow = tailMask * segment * (0.25 + treble * 0.45);
     bodyColor += vec3<f32>(0.95, 0.75, 0.2) * abdomenGlow;
+
+    // Compound eyes (idea 5)
+    let eye = compoundEye(p, flap1 + mouse.x * 1.5);
+    bodyColor = mix(bodyColor, vec3<f32>(0.03, 0.12, 0.1) + irid * 0.25, eye.x * 0.85);
+    bodyColor = mix(bodyColor, vec3<f32>(0.02, 0.03, 0.03), eye.y * 0.4);
+    bodyColor += vec3<f32>(0.8, 1.0, 0.9) * eye.z * (0.9 + treble * 0.8);
 
     // Strange-attractor crystal particles
     let particles = attractorParticles(uv, time, treble);
@@ -311,6 +354,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Composite with temporal feedback from dataTextureC (exact load)
     var color = mix(video.rgb, bodyColor, clamp(density + shell * 0.6, 0.0, 1.0));
     color = mix(color, bgColor, 0.45 * (1.0 - density));
+    color = mix(color, ghostTint * 0.9 + vec3<f32>(0.1, 0.2, 0.25), ghost * (1.0 - density));
     color += particleGlow;
     color += vec3<f32>(0.4, 0.8, 1.0) * mouseGlow;
     color += vec3<f32>(0.5, 0.9, 1.0) * gust * 0.25;
@@ -321,7 +365,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     color = acesToneMap(color * (1.0 + bass * 0.15));
 
     // Alpha: dragonfly coverage, SDF shell proximity, thin-film membrane and particle emission
-    let alpha = clamp(density + shell * 0.35 + wingOnly * 0.15 + particles * 0.3 + gust * 0.2 + lev * 0.2 + abdomenGlow * 0.25, 0.0, 1.0);
+    let alpha = clamp(density + ghost * 0.5 + eye.x * 0.3 + shell * 0.35 + wingOnly * 0.15 + particles * 0.3 + gust * 0.2 + lev * 0.2 + abdomenGlow * 0.25, 0.0, 1.0);
     let depth = mix(inDepth, 0.15 + density * 0.65, clamp(density + shell * 0.6, 0.0, 1.0));
 
     let finalColor = vec4<f32>(color, alpha);

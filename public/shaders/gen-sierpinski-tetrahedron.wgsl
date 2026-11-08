@@ -7,31 +7,12 @@
 //            lod-noise, branchless-argmin, squared-sdf, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-15
-//  Ideas: iteration-depth shelving bands on settled faces; audio-paced edge-current pulses along tetra edges
+//  Upgraded: 2026-11-08
+//  Ideas: iteration-depth shelving bands on settled faces; audio-paced edge-current pulses along tetra edges; sweeping section plane through the solid; punched-hole hierarchy (voids darker the shallower the level that removed them); polished cut-face glints
 //  A packing: raw trap state (minTrap, trapIdx, density, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -151,27 +132,12 @@ let pixel = vec2<i32>(global_id.xy);
   let trebleRaw = plasmaBuffer[0].z;
   let mouse = u.zoom_config.yz;
 
-  var bassVel = 0.0;
-  var midsVel = 0.0;
-  var trebleVel = 0.0;
-  // Persistent smoothing state lives in the safe zone [133..138]: indices
-  // [0..5] are engine-reserved / FFT bins and get stomped every frame audio
-  // is active. Single writer at (0,0) below.
-  let bass = spring_damper(extraBuffer[133], bassRaw, &bassVel, 0.12, 0.08);
-  let mids = spring_damper(extraBuffer[134], midsRaw, &midsVel, 0.1, 0.09);
-  let treble = spring_damper(extraBuffer[135], trebleRaw, &trebleVel, 0.14, 0.07);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[133] = bass;
-    extraBuffer[134] = mids;
-    extraBuffer[135] = treble;
-  }
-
+  // extraBuffer[133..138] is re-uploaded (zeroed) every frame, so the old
+  // spring smoothing never persisted — read audio directly.
+  let bass = bassRaw;
+  let mids = midsRaw;
+  let treble = trebleRaw;
   let clickPulse = select(0.0, 1.0, u.zoom_config.w > 0.5);
-  if (global_id.x == 0u && global_id.y == 0u) {
-    extraBuffer[136] = mix(extraBuffer[136], mouse.x, 0.15);
-    extraBuffer[137] = mix(extraBuffer[137], mouse.y, 0.15);
-  }
-  extraBuffer[138] = mix(extraBuffer[138], clickPulse, 0.2);
 
   // Distance-based LOD: lower quality at the screen edges.
   let centerDist = length(uv01 - 0.5);
@@ -197,7 +163,7 @@ let pixel = vec2<i32>(global_id.xy);
   var p = (uv01 - 0.5) * vec2<f32>(aspect, 1.0) * 2.0;
   p += (warpField - 0.5) * (0.04 + bass * 0.04);
   p += curlField * (0.03 + mids * 0.02);
-  p += (mouse - vec2<f32>(0.5)) * extraBuffer[138] * 0.08;
+  p += (mouse - vec2<f32>(0.5)) * clickPulse * 0.08;
 
   let yaw = (mouse.x - 0.5) * TAU + time * rotSpeed;
   let pitch = (mouse.y - 0.5) * PI * 0.8 + sin(time * 0.3) * 0.2;
@@ -216,7 +182,12 @@ let pixel = vec2<i32>(global_id.xy);
   // Inline rotation to keep matrix math out of the fractal loop.
   let cx = cos(pitch); let sx = sin(pitch);
   let cy = cos(yaw);   let sy = sin(yaw);
-  var rp = vec3<f32>(p.x * persp * depthFactor, p.y * persp * depthFactor, 2.5);
+  // Idea 1 — sweeping section plane: the view is a planar cut through the
+  // solid. HEAD placed the plane at z=2.5, entirely outside the unit tetra, so
+  // only the shell trap showed (a flat disc). The plane now drifts through the
+  // body; bass shoves it deeper so triangles bloom and collapse on hits.
+  let sliceZ = 0.55 * sin(time * 0.17) + bass * 0.18;
+  var rp = vec3<f32>(p.x * persp * 0.5 * depthFactor, p.y * persp * 0.5 * depthFactor, sliceZ);
   rp = vec3<f32>(rp.x, cx * rp.y - sx * rp.z, sx * rp.y + cx * rp.z);
   rp = vec3<f32>(cy * rp.x + sy * rp.z, rp.y, -sy * rp.x + cy * rp.z);
 
@@ -224,6 +195,7 @@ let pixel = vec2<i32>(global_id.xy);
   var minTrapSq = 1e9;
   var trapIdx = 0.0;
   var settleIters = 0;
+  var holeLevel = -1;
 
   for (var i = 0; i < recursion; i = i + 1) {
     let d0 = dot(point - V[0], point - V[0]);
@@ -245,7 +217,7 @@ let pixel = vec2<i32>(global_id.xy);
 
     let lenP = length(point);
     let shellD = abs(lenP - 0.9);
-    let trapSq = min(min(nearest, edgeTrapSq * 0.49), shellD * shellD * 0.25);
+    let trapSq = min(min(nearest, edgeTrapSq * 0.49), shellD * shellD * 4.0);
 
     // Branchless update of best orbit trap.
     let better = trapSq < minTrapSq;
@@ -255,18 +227,26 @@ let pixel = vec2<i32>(global_id.xy);
     // Early exit once we are already extremely close to the structure.
     if (minTrapSq < 1e-6) { break; }
 
-    point = (point + V[vi]) * 0.5;
+    // Inverse IFS (zoom toward the nearest corner): points in the gasket stay
+    // bounded, points in a punched hole escape — recording at which level.
+    point = point * 2.0 - V[vi];
     settleIters = i + 1;
+    if (holeLevel < 0 && dot(point, point) > 2.2) { holeLevel = i; break; }
   }
 
   let prev = textureLoad(dataTextureC, pixel, 0);
   var minTrap = sqrt(minTrapSq);
   minTrap = mix(minTrap, prev.r, 0.03 + mids * 0.02);
 
-  let density = exp(-minTrap * 12.0);
+  let inSolid = select(0.0, 1.0, holeLevel < 0);
+  // Idea 2 — punched-hole hierarchy: shallow holes (the big central voids)
+  // read as deep black, holes removed at deeper levels are lighter dust.
+  let holeT = select(1.0, f32(holeLevel) / max(f32(recursion), 1.0), holeLevel >= 0);
+  let density = exp(-minTrap * 12.0) * mix(holeT * 0.6, 1.0, inSolid);
   let edge = exp(-abs(minTrap - 0.05) * 30.0);
 
   var color = jewelColor(trapIdx * 0.25 + mids * 0.1 + treble * 0.05, 0.7 + density * 0.6);
+  color = color * mix(0.08 + holeT * 0.55, 1.0, inSolid);
   let spec = pow(edge, 4.0) * (0.8 + bass * 0.5);
   color = color + vec3<f32>(0.9, 0.85, 0.8) * spec;
 
@@ -290,6 +270,13 @@ let pixel = vec2<i32>(global_id.xy);
   let fresnel = schlickFresnel(clamp(dot(viewDir, vec3<f32>(0.0, 0.0, 1.0)), 0.0, 1.0), 0.04);
   color = color + vec3<f32>(0.85, 0.92, 1.0) * fresnel * density * (0.35 + treble * 0.2);
 
+  // Idea 3 — polished cut-face glints: where the section plane slices solid
+  // material it is a mirror cut; a moving specular streak (mids) sweeps the
+  // flat faces along the slice direction.
+  let glintPhase = fract(dot(p, vec2<f32>(0.7, 0.7)) * 1.3 - time * 0.12 - sliceZ);
+  let glint = smoothstep(0.0, 0.05, glintPhase) * smoothstep(0.12, 0.05, glintPhase);
+  color = color + vec3<f32>(1.0, 0.95, 0.85) * glint * inSolid * (0.25 + mids * 0.5);
+
   let bgGlow = vec3<f32>(0.05, 0.08, 0.12) * warpField * (1.0 - density);
   color = color + bgGlow;
   color = color + vec3<f32>(0.12, 0.18, 0.28) * (1.0 - cellAccent) * 0.15 * (1.0 - density);
@@ -298,7 +285,7 @@ let pixel = vec2<i32>(global_id.xy);
   color = acesToneMap(color * (1.2 + treble * 0.1));
   color = color + vec3<f32>(ignDither(pixel));
 
-  let alpha = clamp(density * (f32(recursion) / 10.0) * depthFactor * (0.85 + extraBuffer[138] * 0.15), 0.0, 1.0);
+  let alpha = clamp(density * (f32(recursion) / 10.0) * depthFactor * (0.85 + clickPulse * 0.15), 0.0, 1.0);
   let depthOut = clamp(0.3 + density * 0.7, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));

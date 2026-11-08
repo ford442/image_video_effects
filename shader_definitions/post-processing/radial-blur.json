@@ -2,7 +2,7 @@
   "id": "radial-blur",
   "name": "Radial Blur",
   "url": "shaders/radial-blur.wgsl",
-  "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
+  "description": "Depth-aware radial zoom blur with a clear focus eye, spoked burst streaks, highlight light-trails, bokeh shapes and chromatic fringing.",
   "params": [
     {
       "id": "sigma",

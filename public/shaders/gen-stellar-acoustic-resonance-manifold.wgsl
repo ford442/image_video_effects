@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: coherent stellar p/g-mode shells; compression-antinode blackbody heating with traveling highlights; nodal dislocation seams; coronal loop arc curtains
+//  Upgraded: 2026-09-15, 2026-11-08
+//  Ideas: coherent stellar p/g-mode shells; compression-antinode blackbody heating with traveling highlights; nodal dislocation seams; coronal loop arc curtains; limb darkening (blue darkens most); p/g-mode Dopplergram (exact d/dt of the pressure); stochastic per-star excitation envelope
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -68,7 +68,7 @@ fn blackbody(temp_in: f32) -> vec3<f32> {
     return vec3<f32>(r, g, b);
 }
 
-// Returns distance, repeated-cell phase, acoustic pressure, and local radius.
+// Returns distance, repeated-cell phase, acoustic pressure, and surface velocity (exact d/dt of the pressure).
 fn stellarField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
     var p = p_in;
     let time = u.config.x * u.zoom_params.z;
@@ -96,11 +96,25 @@ fn stellarField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
     // Idea 1 — stellar p/g-mode shells. Radial pressure nodes emboss nested
     // shells while angular gravity-mode sectors corrugate each repeated sphere.
     let radialOrder = 2.0 + floor(clamp(u.zoom_params.y, 0.1, 1.0) * 4.0);
-    let pMode = cos((radialDistance / safeRadius) * PI * radialOrder
-                  - time * (0.8 + audio.x * 0.8) + cellPhase);
-    let gMode = cos(azimuth * 4.0 + cellPhase - time * 0.37)
-              * sin(polar * 3.0 + time * 0.21);
-    let acousticPressure = pMode * 0.62 + gMode * 0.38;
+    let pOmega = 0.8 + audio.x * 0.8;
+    let pPhase = (radialDistance / safeRadius) * PI * radialOrder - time * pOmega + cellPhase;
+    let gPhaseA = azimuth * 4.0 + cellPhase - time * 0.37;
+    let gPhaseP = polar * 3.0 + time * 0.21;
+    let pMode = cos(pPhase);
+    let gMode = cos(gPhaseA) * sin(gPhaseP);
+
+    // ── Idea 7: stochastic excitation envelope ──
+    // Solar-like oscillations are driven by convection, so each star rings up and decays
+    // on its own clock. HEAD drove every repeated star with one global amplitude. The
+    // envelope scales pressure (emboss + heating) and velocity together; mean gain ≈ 0.9.
+    let excite = 0.5 + 0.5 * sin(time * 0.45 + 7.0 * cellPhase);
+    let envelope = 0.45 + 1.2 * excite * excite;
+    let acousticPressure = (pMode * 0.62 + gMode * 0.38) * envelope;
+    // ── Idea 6: Dopplergram source ──
+    // Exact time derivative of the pressure above (quadrature to it): surface velocity.
+    let pVel = pOmega * sin(pPhase);
+    let gVel = 0.37 * sin(gPhaseA) * sin(gPhaseP) + 0.21 * cos(gPhaseA) * cos(gPhaseP);
+    let surfaceVelocity = (pVel * 0.62 + gVel * 0.38) * envelope;
     // Idea 3: nodal dislocation seams where phase slips cut across shell modes.
     let phaseSlip = smoothstep(0.78, 1.0, abs(sin(azimuth * 2.0 - polar * 1.3 + time * 0.6 + cellPhase)));
     let bandEnergy = dot(audio, vec3<f32>(0.5, 0.3, 0.2));
@@ -108,7 +122,7 @@ fn stellarField(p_in: vec3<f32>, audio: vec3<f32>) -> vec4<f32> {
     let surfaceEmboss = acousticPressure * modeStrength + phaseSlip * (0.014 + audio.z * 0.02);
 
     let d = radialDistance - radius + n * 0.28 - surfaceEmboss;
-    return vec4<f32>(d * 0.55, cellPhase, acousticPressure, radialDistance);
+    return vec4<f32>(d * 0.55, cellPhase, acousticPressure, surfaceVelocity);
 }
 
 fn getNormal(p: vec3<f32>, audio: vec3<f32>) -> vec3<f32> {
@@ -169,6 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let surface = stellarField(p, audio);
     let pressure = surface.z;
+    let velocity = clamp(surface.w, -1.0, 1.0);
     let glow = exp(-minDistance * 2.0);
     let base_temp = u.zoom_params.w;
 
@@ -188,7 +203,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let diff = max(dot(n, l), 0.0);
         let sss = fbm(p * 5.0, 1.0, 2.0) * 0.5 + 0.5;
         let compressionHighlight = smoothstep(0.15, 0.85, pressure);
-        hdr = hdr + em_col * (diff * 0.2 + sss * 0.8) * 1.5;
+        // ── Idea 5: limb darkening ──
+        // A stellar disc is darker toward its limb, and blue darkens more than red:
+        // I(μ)/I(1) = 1 − u_c (1 − μ), μ = n·(−rd). The limb goes warm and dim.
+        let mu = clamp(dot(n, -rd), 0.0, 1.0);
+        let limb = vec3<f32>(1.0) - vec3<f32>(0.35, 0.55, 0.80) * (1.0 - mu);
+        // ── Idea 6: p/g-mode Dopplergram ──
+        // Approaching surface (v>0) shifts blue, receding (v<0) red — in quadrature with
+        // the pressure-driven heating above, as a helioseismic velocity map is with intensity.
+        // Only the line-of-sight part of the motion Doppler-shifts: radial motion projects by μ,
+        // so the disc centre carries the tint and the limb stays warm.
+        let vLos = velocity * (0.35 + 0.65 * mu);
+        let doppler = max(vec3<f32>(1.0 - 0.9 * vLos, 1.0 - 0.3 * abs(vLos), 1.0 + 1.8 * vLos), vec3<f32>(0.15));
+        hdr = hdr + em_col * (diff * 0.2 + sss * 0.8) * 1.5 * limb * doppler;
         hdr = hdr + blackbody(min(em_temp + 1200.0, 10000.0))
             * compressionHighlight * (0.35 + audio.y * 0.3);
         // Idea 4: coronal loop arc curtains tracing field-line canopies above the surface.

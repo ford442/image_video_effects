@@ -29,7 +29,7 @@
       "params": [
         {
           "index": 0,
-          "name": "Intensity",
+          "name": "Layer Count",
           "default": 0.5,
           "min": 0,
           "max": 1,
@@ -37,7 +37,7 @@
         },
         {
           "index": 1,
-          "name": "Speed",
+          "name": "Delay Spread",
           "default": 0.5,
           "min": 0,
           "max": 1,
@@ -45,7 +45,7 @@
         },
         {
           "index": 2,
-          "name": "Scale",
+          "name": "Distortion",
           "default": 0.5,
           "min": 0,
           "max": 1,
@@ -53,7 +53,7 @@
         },
         {
           "index": 3,
-          "name": "Mouse Influence",
+          "name": "Chromatic Shift",
           "default": 0.5,
           "min": 0,
           "max": 1,

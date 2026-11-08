@@ -100,5 +100,10 @@
       ]
     },
     "complexity": "High"
-  }
+  },
+  "features": [
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
+  ]
 }

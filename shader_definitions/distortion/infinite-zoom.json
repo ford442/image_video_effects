@@ -4,6 +4,7 @@
   "url": "shaders/infinite-zoom.wgsl",
   "features": [
     "mouse-driven",
+    "audio-reactive",
     "upgraded-rgba"
   ],
   "tags": [

@@ -8436,7 +8436,9 @@
       "multi-pass",
       "volumetric",
       "depth",
-      "composite"
+      "composite",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "tags": [
       "filter",
