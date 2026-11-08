@@ -15,8 +15,8 @@ extern "C" {
 
 int initWasmRenderer(int width, int height, const char* canvasSelector);  // async
 void shutdownWasmRenderer();  // queue
-int loadShader(const char* id, const char* wgslCode);  // async
-int reloadShader(const char* id, const char* wgslCode);  // async
+int loadShader(const char* id, const char* wgslCode, int workgroupX, int workgroupY, int usageBits);  // async
+int reloadShader(const char* id, const char* wgslCode, int workgroupX, int workgroupY, int usageBits);  // async
 void setActiveShader(const char* id);  // queue
 void setSlotShader(int slotIndex, const char* id);  // queue
 void setSlotParams(int slotIndex, float p1, float p2, float p3, float p4);  // call

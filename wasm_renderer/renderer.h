@@ -248,11 +248,15 @@ public:
 
     // Compile and load a WGSL shader into memory.
     // Retrieves and logs compilation messages via wgpuShaderModuleGetCompilationInfo.
-    // @workgroup_size is parsed from wgslCode for correct dispatch.
-    bool LoadShader(const char* id, const char* wgslCode);
+    // Dispatch size and usage bits (wasm_contracts.h kUsage_*) come from the
+    // bridge's WGSL analysis (src/wasm/bridge/wgslAnalysis.ts); C++ does not
+    // parse WGSL for them. A zero workgroup dimension means the contract fallback.
+    bool LoadShader(const char* id, const char* wgslCode,
+                    uint32_t workgroupX, uint32_t workgroupY, uint32_t usageBits);
 
     // Recompile an existing shader (or load if new). Used for dev hot-reload.
-    bool ReloadShader(const char* id, const char* wgslCode);
+    bool ReloadShader(const char* id, const char* wgslCode,
+                      uint32_t workgroupX, uint32_t workgroupY, uint32_t usageBits);
 
     // Set the active shader for single-shader (legacy) rendering.
     // Also enables slot 0 with this shader for backwards compatibility.
