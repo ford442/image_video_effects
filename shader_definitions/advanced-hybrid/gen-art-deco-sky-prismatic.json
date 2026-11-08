@@ -13,7 +13,9 @@
     "raymarching",
     "spectral-dispersion",
     "physical-refraction",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

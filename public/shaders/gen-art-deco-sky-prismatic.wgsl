@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Art Deco Sky Prismatic
 //  Category: advanced-hybrid
-//  Features: raymarching, spectral-dispersion, physical-refraction, mouse-driven
+//  Features: raymarching, spectral-dispersion, physical-refraction, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
+//  Upgraded: 2026-11-08
+//  Ideas: Cauchy-shifted interior lattice fringes behind the glass; dispersed searchlight fans (per-wavelength beam tilt); split-spectrum gold sheen lobes
+//  A packing: display RGBA (alpha = 1 on geometry, beam/sky glow coverage on open sky)
 //  Chunks From: gen-art-deco-sky.wgsl, spec-prismatic-dispersion.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-20 — Generative Nature Enhancer
@@ -135,14 +138,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     var uv = (vec2<f32>(global_id.xy) - 0.5 * resolution) / resolution.y;
+    uv.y = -uv.y; // HEAD rendered upside-down (image rows grow downward)
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
     let goldGlow = u.zoom_params.z;
     let fogDensity = u.zoom_params.w;
     var time = u.config.x;
-    var mouse = u.zoom_config.yz;
-    let cam_radius = 20.0 + (mouse.y - 0.5) * 10.0;
+    var mouse = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z);
+    // Radius kept inside the home cell (neighbour towers start ~32 out) so the camera never sits in a tower.
+    let cam_radius = 22.0 + (mouse.y - 0.5) * 6.0;
     let cam_angle = (mouse.x - 0.5) * 6.28 + time * 0.05;
     let ro = vec3<f32>(sin(cam_angle) * cam_radius, -5.0, cos(cam_angle) * cam_radius);
-    let ta = vec3<f32>(0.0, 5.0, 0.0);
+    let ta = vec3<f32>(0.0, 9.0, 0.0);
     let ww = normalize(ta - ro);
     let uu = normalize(cross(ww, vec3<f32>(0.0, 1.0, 0.0)));
     let vv = normalize(cross(uu, ww));
@@ -226,28 +233,72 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let ior = cauchyIOR(WAVELENGTHS[i], 1.5, cauchyB);
                 let refractOffset = toCenter * (1.0 - 1.0 / ior) * glassCurvature * 0.4;
                 let bandIntensity = 1.0 - glassThickness * (4.0 - f32(i)) * 0.15;
-                prismaticColor += wavelengthToRGB(WAVELENGTHS[i]) * bandIntensity * spectralSat;
+                // Idea 1: Cauchy-shifted interior lattice — each wavelength sees the interior
+                // grid displaced by its own refraction offset, so the lines split into fringes.
+                let wq = vec2<f32>(world_p.x + world_p.z, world_p.y) * 0.9
+                       + vec2<f32>(refractOffset.x + refractOffset.z, refractOffset.y) * 70.0;
+                let gq = abs(fract(wq) - 0.5);
+                let gline = 1.0 - smoothstep(0.0, 0.06, min(gq.x, gq.y));
+                prismaticColor += wavelengthToRGB(WAVELENGTHS[i]) * bandIntensity * spectralSat
+                                * (0.12 + gline * 0.9 * (1.0 + mids * 0.5));
             }
-            color = mix(color, prismaticColor * (diff1 + 0.3), 0.6);
+            color = mix(color, prismaticColor * 0.5 * (diff1 + 0.3), 0.6);
         }
 
         if (mat == 2.0) {
              color += albedo * goldGlow * 0.3 * ao;
+             // Idea 3: split-spectrum gold sheen — the highlight breaks into four
+             // wavelength lobes, each with its own Cauchy-tilted half vector.
+             let WL = array<f32, 4>(450.0, 520.0, 600.0, 680.0);
+             let lg = normalize(vec3<f32>(1.0, 1.0, 1.0));
+             for (var k: i32 = 0; k < 4; k = k + 1) {
+                 let tilt = (cauchyIOR(WL[k], 1.5, cauchyB) - 1.5) * 6.0;
+                 let hk = normalize(lg + v + vec3<f32>(tilt, -tilt, 0.0));
+                 let lobe = pow(max(dot(n, hk), 0.0), 60.0);
+                 color += wavelengthToRGB(WL[k]) * lobe * (0.35 + mids * 0.4) * ao;
+             }
         }
         let fog_amount = 1.0 - exp(-t * (0.01 + fogDensity * 0.05));
         color = mix(color, fogColor, fog_amount);
-        let height_fog = exp(-p.y * 0.1) * 0.5;
+        // HEAD used exp(-p.y*0.1)*0.5 from a camera at y=-5, which washed the frame grey.
+        let height_fog = exp(-max(p.y + 5.0, 0.0) * 0.1) * 0.12;
         color += lightColor1 * height_fog * fogDensity;
     } else {
         let sky_glow = exp(-rd.y * 4.0) * 0.5;
         color += lightColor1 * sky_glow * fogDensity;
     }
 
+    // Idea 2: dispersed searchlight fans — three sweeping deco searchlights, each
+    // split into four wavelength sub-beams whose tilt follows Cauchy's equation.
+    var beams = vec3<f32>(0.0);
+    let WLb = array<f32, 4>(450.0, 520.0, 600.0, 680.0);
+    for (var b: i32 = 0; b < 3; b = b + 1) {
+        let fb = f32(b);
+        let az = time * 0.25 + fb * 2.094;
+        let el = 0.9 + 0.25 * sin(time * 0.4 + fb * 1.7);
+        for (var k: i32 = 0; k < 4; k = k + 1) {
+            let spread = (cauchyIOR(WLb[k], 1.5, cauchyB) - 1.5) * 1.2;
+            let e2 = el + spread;
+            let bd = normalize(vec3<f32>(cos(az) * cos(e2), sin(e2), sin(az) * cos(e2)));
+            let ang = acos(clamp(dot(rd, bd), -1.0, 1.0));
+            let core = exp(-ang * ang / 0.004);
+            beams += wavelengthToRGB(WLb[k]) * core * 0.35 * (1.0 + bass * 0.8);
+        }
+    }
+    let beamVis = select(1.0, 0.25, t < 200.0);
+    color += beams * beamVis * (0.4 + goldGlow);
+
     let vign = 1.0 - length(uv) * 0.5;
     color = color * vign;
-    color = color / (color + vec3<f32>(1.0));
+    // ACES fit (clamped input: ACES maps negatives bright) replaces HEAD's Reinhard
+    let cx = max(color, vec3<f32>(0.0));
+    color = clamp((cx * (2.51 * cx + 0.03)) / (cx * (2.43 * cx + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
     color = pow(color, vec3<f32>(1.0 / 2.2));
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(color, 1.0));
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(t / 200.0, 0.0, 0.0, 0.0));
+    let skyA = clamp(max(color.r, max(color.g, color.b)) * 1.5, 0.0, 1.0);
+    let alpha = select(skyA, 1.0, t < 200.0);
+    let outC = vec4<f32>(color, alpha);
+    textureStore(writeTexture, global_id.xy, outC);
+    textureStore(dataTextureA, global_id.xy, outC);
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(clamp(t / 200.0, 0.0, 1.0), 0.0, 0.0, 0.0));
 }
