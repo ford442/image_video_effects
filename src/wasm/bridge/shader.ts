@@ -1,4 +1,5 @@
-import { callSuspending } from './call.js';
+import * as cpp from './_generated.js';
+import { isBusy, runWhenIdle } from './call.js';
 import { state, utf8ByteLength, wasmRef } from './state.js';
 import { rewriteWgslStorageFormats } from './wgslFormat.js';
 import { expandWgslIncludes, hasWgslInclude } from './wgslInclude.js';
@@ -95,9 +96,8 @@ export async function loadShader(id: string, wgslCode: string): Promise<boolean>
 
   let result = 0;
   try {
-    result = Number(
-      await callSuspending(wasmRef.module, 'loadShader', 'number', ['number', 'number'], [idBuf.ptr, codeBuf.ptr]),
-    );
+    // Suspends in the pipeline error-scope pop; id/code stay allocated until it settles.
+    result = await cpp.loadShader(wasmRef.module, idBuf.ptr, codeBuf.ptr);
   } finally {
     idBuf.free();
     codeBuf.free();
@@ -137,9 +137,7 @@ export async function reloadShader(id: string, wgslCode: string): Promise<boolea
 
   let result = 0;
   try {
-    result = Number(
-      await callSuspending(wasmRef.module, 'reloadShader', 'number', ['number', 'number'], [idBuf.ptr, codeBuf.ptr]),
-    );
+    result = await cpp.reloadShader(wasmRef.module, idBuf.ptr, codeBuf.ptr);
   } finally {
     idBuf.free();
     codeBuf.free();
@@ -179,37 +177,52 @@ export async function reloadShaderFromURL(id: string, url: string): Promise<bool
   }
 }
 
+/**
+ * C++ setActiveShader is void and skips an id with no pipeline, so slot 0 is
+ * read back to see whether it took. While a loadShader is suspended (or queued)
+ * it runs after it, in call order, so the id it names exists by then.
+ */
 export function setActiveShader(id: string): void {
-  if (!state.initialized || !wasmRef.module) {
-    return;
-  }
-
-  const result = Number(wasmRef.module.ccall('setActiveShader', 'number', ['string'], [id]));
-  if (result) {
-    state.activeShader = id;
-  }
+  const module = wasmRef.module;
+  if (!state.initialized || !module) return;
+  const apply = (): void => {
+    if (wasmRef.module !== module) return;
+    cpp.setActiveShader(module, id);
+    if (!id || cpp.getSlotShaderId(module, 0) === id) state.activeShader = id || null;
+  };
+  if (isBusy(module)) void runWhenIdle(module, apply);
+  else apply();
 }
 
 /**
  * Assign a shader to a slot, then read the slot back. The C++ side drops an
  * out-of-range index or a shader with no pipeline; an artifact built before
  * slot_limits.json only has 3 slots. Any drop is warned and recorded in
- * state.droppedSlots so share links never lose a layer silently.
+ * state.droppedSlots so share links never lose a layer silently. While a
+ * loadShader is suspended the assignment runs after it (in call order) and this
+ * returns true; a drop found then still lands in droppedSlots.
  */
 export function setSlotShader(slotIndex: number, shaderId: string): boolean {
-  if (!state.initialized || !wasmRef.module) return false;
-  wasmRef.module.ccall('setSlotShader', null, ['number', 'string'], [slotIndex, shaderId]);
-  const accepted = !shaderId || getSlotShaderId(slotIndex) === shaderId;
-  if (accepted) {
-    state.droppedSlots.delete(slotIndex);
-  } else {
-    state.droppedSlots.add(slotIndex);
-    console.warn(
-      `[WASM] setSlotShader(${slotIndex}, "${shaderId}") dropped by the module ` +
-        '(no valid pipeline, or the artifact has fewer slots than slot_limits.json)',
-    );
-  }
-  return accepted;
+  const module = wasmRef.module;
+  if (!state.initialized || !module) return false;
+  const apply = (): boolean => {
+    if (wasmRef.module !== module) return false;
+    cpp.setSlotShader(module, slotIndex, shaderId);
+    const accepted = !shaderId || cpp.getSlotShaderId(module, slotIndex) === shaderId;
+    if (accepted) {
+      state.droppedSlots.delete(slotIndex);
+    } else {
+      state.droppedSlots.add(slotIndex);
+      console.warn(
+        `[WASM] setSlotShader(${slotIndex}, "${shaderId}") dropped by the module ` +
+          '(no valid pipeline, or the artifact has fewer slots than slot_limits.json)',
+      );
+    }
+    return accepted;
+  };
+  if (!isBusy(module)) return apply();
+  void runWhenIdle(module, apply);
+  return true;
 }
 
 /** Slot indexes whose last setSlotShader the module did not accept. */
@@ -219,23 +232,22 @@ export function getDroppedSlots(): ReadonlySet<number> {
 
 export function setSlotMode(slotIndex: number, mode: 0 | 1 | 'chained' | 'parallel'): void {
   if (!state.initialized || !wasmRef.module) return;
-  const modeInt = mode === 'parallel' || mode === 1 ? 1 : 0;
-  wasmRef.module.ccall('setSlotMode', null, ['number', 'number'], [slotIndex, modeInt]);
+  cpp.setSlotMode(wasmRef.module, slotIndex, mode === 'parallel' || mode === 1 ? 1 : 0);
 }
 
 export function getSlotShaderId(slotIndex: number): string {
   if (!state.initialized || !wasmRef.module) return '';
-  return String(wasmRef.module.ccall('getSlotShaderId', 'string', ['number'], [slotIndex]) ?? '');
+  return cpp.getSlotShaderId(wasmRef.module, slotIndex);
 }
 
 export function getSlotEnabled(slotIndex: number): boolean {
   if (!state.initialized || !wasmRef.module) return false;
-  return Boolean(wasmRef.module.ccall('getSlotEnabled', 'number', ['number'], [slotIndex]));
+  return cpp.getSlotEnabled(wasmRef.module, slotIndex) !== 0;
 }
 
 export function getSlotMode(slotIndex: number): number {
   if (!state.initialized || !wasmRef.module) return 0;
-  return Number(wasmRef.module.ccall('getSlotMode', 'number', ['number'], [slotIndex]) ?? 0);
+  return cpp.getSlotMode(wasmRef.module, slotIndex);
 }
 
 export function getSlotState(slotIndex: number): SlotState {

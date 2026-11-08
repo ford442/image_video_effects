@@ -1,6 +1,7 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-import { callSuspending } from "./call.js";
+import * as cpp from "./_generated.js";
+import { isBusy, runWhenIdle } from "./call.js";
 import { state, utf8ByteLength, wasmRef } from "./state.js";
 import { rewriteWgslStorageFormats } from "./wgslFormat.js";
 import { expandWgslIncludes, hasWgslInclude } from "./wgslInclude.js";
@@ -60,9 +61,7 @@ async function loadShader(id, wgslCode) {
   if (!idBuf || !codeBuf) return false;
   let result = 0;
   try {
-    result = Number(
-      await callSuspending(wasmRef.module, "loadShader", "number", ["number", "number"], [idBuf.ptr, codeBuf.ptr])
-    );
+    result = await cpp.loadShader(wasmRef.module, idBuf.ptr, codeBuf.ptr);
   } finally {
     idBuf.free();
     codeBuf.free();
@@ -96,9 +95,7 @@ async function reloadShader(id, wgslCode) {
   if (!idBuf || !codeBuf) return false;
   let result = 0;
   try {
-    result = Number(
-      await callSuspending(wasmRef.module, "reloadShader", "number", ["number", "number"], [idBuf.ptr, codeBuf.ptr])
-    );
+    result = await cpp.reloadShader(wasmRef.module, idBuf.ptr, codeBuf.ptr);
   } finally {
     idBuf.free();
     codeBuf.free();
@@ -135,47 +132,55 @@ async function reloadShaderFromURL(id, url) {
   }
 }
 function setActiveShader(id) {
-  if (!state.initialized || !wasmRef.module) {
-    return;
-  }
-  const result = Number(wasmRef.module.ccall("setActiveShader", "number", ["string"], [id]));
-  if (result) {
-    state.activeShader = id;
-  }
+  const module = wasmRef.module;
+  if (!state.initialized || !module) return;
+  const apply = () => {
+    if (wasmRef.module !== module) return;
+    cpp.setActiveShader(module, id);
+    if (!id || cpp.getSlotShaderId(module, 0) === id) state.activeShader = id || null;
+  };
+  if (isBusy(module)) void runWhenIdle(module, apply);
+  else apply();
 }
 function setSlotShader(slotIndex, shaderId) {
-  if (!state.initialized || !wasmRef.module) return false;
-  wasmRef.module.ccall("setSlotShader", null, ["number", "string"], [slotIndex, shaderId]);
-  const accepted = !shaderId || getSlotShaderId(slotIndex) === shaderId;
-  if (accepted) {
-    state.droppedSlots.delete(slotIndex);
-  } else {
-    state.droppedSlots.add(slotIndex);
-    console.warn(
-      `[WASM] setSlotShader(${slotIndex}, "${shaderId}") dropped by the module (no valid pipeline, or the artifact has fewer slots than slot_limits.json)`
-    );
-  }
-  return accepted;
+  const module = wasmRef.module;
+  if (!state.initialized || !module) return false;
+  const apply = () => {
+    if (wasmRef.module !== module) return false;
+    cpp.setSlotShader(module, slotIndex, shaderId);
+    const accepted = !shaderId || cpp.getSlotShaderId(module, slotIndex) === shaderId;
+    if (accepted) {
+      state.droppedSlots.delete(slotIndex);
+    } else {
+      state.droppedSlots.add(slotIndex);
+      console.warn(
+        `[WASM] setSlotShader(${slotIndex}, "${shaderId}") dropped by the module (no valid pipeline, or the artifact has fewer slots than slot_limits.json)`
+      );
+    }
+    return accepted;
+  };
+  if (!isBusy(module)) return apply();
+  void runWhenIdle(module, apply);
+  return true;
 }
 function getDroppedSlots() {
   return state.droppedSlots;
 }
 function setSlotMode(slotIndex, mode) {
   if (!state.initialized || !wasmRef.module) return;
-  const modeInt = mode === "parallel" || mode === 1 ? 1 : 0;
-  wasmRef.module.ccall("setSlotMode", null, ["number", "number"], [slotIndex, modeInt]);
+  cpp.setSlotMode(wasmRef.module, slotIndex, mode === "parallel" || mode === 1 ? 1 : 0);
 }
 function getSlotShaderId(slotIndex) {
   if (!state.initialized || !wasmRef.module) return "";
-  return String(wasmRef.module.ccall("getSlotShaderId", "string", ["number"], [slotIndex]) ?? "");
+  return cpp.getSlotShaderId(wasmRef.module, slotIndex);
 }
 function getSlotEnabled(slotIndex) {
   if (!state.initialized || !wasmRef.module) return false;
-  return Boolean(wasmRef.module.ccall("getSlotEnabled", "number", ["number"], [slotIndex]));
+  return cpp.getSlotEnabled(wasmRef.module, slotIndex) !== 0;
 }
 function getSlotMode(slotIndex) {
   if (!state.initialized || !wasmRef.module) return 0;
-  return Number(wasmRef.module.ccall("getSlotMode", "number", ["number"], [slotIndex]) ?? 0);
+  return cpp.getSlotMode(wasmRef.module, slotIndex);
 }
 function getSlotState(slotIndex) {
   const shaderId = getSlotShaderId(slotIndex);

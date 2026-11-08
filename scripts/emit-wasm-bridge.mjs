@@ -14,6 +14,7 @@ const srcWasm = path.join(repoRoot, 'src', 'wasm');
 const bridgeDir = path.join(srcWasm, 'bridge');
 
 export const BRIDGE_MODULES = [
+  '_generated.js',
   'api.js',
   'call.js',
   'capture.js',

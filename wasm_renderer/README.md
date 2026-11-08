@@ -36,6 +36,7 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
 | `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
 | `canvas_configure.h` | **Generated** canvas configure constants (usage, alphaMode, presentMode) from `canvas_configure.json` |
+| `wasm_exports.h` | **Generated** `extern "C"` prototypes of every export, from `wasm_exports.json` `exports`; `main.cpp` includes it |
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |
 | `wasm_bridge.js` (generated) | ESM copies in `wasm_renderer/` + `public/wasm/` — do not edit |
 | `build.sh` | **The only build** — single-pass `emcc` + emdawnwebgpu. Flags from `src/contracts/wasm_compile_flags.json`, exports from `wasm_exports.json`. A release build writes both `pixelocity_wasm` (ASYNCIFY) and `pixelocity_wasm_jspi`. |
@@ -49,6 +50,39 @@ include dir). For clangd/IDE indexing, run `npm run wasm:compdb`. It writes the 
 `npm run gen:canvas-configure`, the same capabilities object the TS renderer reads. Don't
 edit it by hand: `build.sh` and `verify:device-policy` fail when it is stale. See
 [DEVICE_FEATURES.md](../docs/DEVICE_FEATURES.md#canvas-configure-contract).
+
+### Export contract (`wasm_exports.json` → `wasm_exports.h` + `bridge/_generated.ts`)
+
+`src/contracts/wasm_exports.json` `exports` holds one entry per C export: its C signature
+(`returns`, `args` as `name:type`) and how the bridge treats it while another call is
+suspended in `wgpuInstanceWaitAny`. `npm run gen:wasm-exports`
+(`scripts/gen-wasm-exports-header.js`) turns that one entry into both sides:
+
+- `wasm_renderer/wasm_exports.h`: the `extern "C"` prototypes. `main.cpp` includes it
+  before it defines the exports, so a definition whose types drift is a compile error
+  (conflicting declaration of a C function).
+- `src/wasm/bridge/_generated.ts`: one typed wrapper per export (`cpp.loadShader(mod, idPtr,
+  codePtr): Promise<number>`, `cpp.getFPS(mod): number`, …). No other bridge file calls
+  `ccall`; the wrappers go through the call seam in `src/wasm/bridge/call.ts`.
+
+Each export is either `async: true` (its call graph reaches WaitAny; the set must equal
+`wasm_compile_flags.json` `jspi.jspiExports`) or has a `whileSuspended` policy:
+
+| policy | while an async export of the same module is in flight |
+|--------|--------------------------------------------------------|
+| `async` | awaited with `{ async: true }` under both builds; async calls run one at a time |
+| `call` | runs now (plain CPU state) |
+| `queue` | runs after the in-flight work, in call order, before that call's awaiting caller resumes (must return `void`, no pointer args) |
+| `skip` | dropped (per-frame work the next frame redoes) |
+
+`optional: true` marks exports older artifacts lack; the wrapper feature-tests and returns
+`null`. One-shot uploads whose export is `skip` (still image, depth map, frame capture) use
+`runWhenIdle` on a copy of the data instead of being dropped. The seam is per module, so an
+init abandoned while still suspended never blocks its replacement.
+
+`npm run gen:wasm-exports -- --check` (also run by `build.sh` and `verify:device-policy`)
+fails when either output is stale or when a `main.cpp` `EMSCRIPTEN_KEEPALIVE` signature
+differs from the contract; it parses the C++ types itself, so the drift is caught without emcc.
 
 Cross-reference: TypeScript device policy lives in `src/renderer/webgpuDevicePolicy.ts`
 (must stay in sync with `device.cpp` `CreateDevice()` limits table).

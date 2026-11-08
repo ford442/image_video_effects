@@ -5,7 +5,8 @@
  * CI check: webgpu_limits.json ↔ TS policy ↔ device.cpp CheckLimit/requiredLimits;
  * optional feature order ↔ device.ts / device.cpp;
  * slot_limits.json ↔ PHYSICAL_SLOT_LIMIT / MAX_SHADER_SLOTS;
- * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
+ * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE
+ * (names, and `exports` signatures ↔ generated wasm_exports.h / bridge/_generated.ts) /
  * build.sh (no hardcoded export lists; build.sh is the only build, CMakeLists.txt was removed);
  * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
  * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
@@ -793,7 +794,8 @@ function verifyWasmCompileSources(flags, buildSh) {
  * Two build graphs from one contract: the top-level ASYNCIFY fallback and the
  * `jspi` primary. Checks they differ only in the async mode, that jspiExports
  * covers every WaitAny site, and that the bridge ccalls exactly those exports
- * with { async: true } (src/wasm/bridge/call.ts SUSPENDING_EXPORTS).
+ * with { async: true } (src/wasm/bridge/_generated.ts ASYNC_EXPORTS, emitted from
+ * wasm_exports.json `exports`; only call.ts / _generated.ts may call ccall).
  */
 function verifyWasmBuildVariants(flags) {
   if (flags.asyncifyFallback !== true) {
@@ -854,27 +856,30 @@ function verifyWasmBuildVariants(flags) {
     }
   }
 
-  const callTs = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/call.ts'), 'utf8');
-  const listMatch = callTs.match(/SUSPENDING_EXPORTS\s*=\s*\[([^\]]*)\]/);
+  // wasm_exports.json `exports` marks the async set; the generator refuses a
+  // contract whose async set differs from jspiExports, and _generated.ts must be
+  // what it emits (verifyWasmExportSignatures). Re-read the emitted list here so
+  // a hand edit of _generated.ts cannot slip past.
+  const generatedTs = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/_generated.ts'), 'utf8');
+  const listMatch = generatedTs.match(/ASYNC_EXPORTS\s*=\s*\[([^\]]*)\]/);
   if (!listMatch) {
-    fail('src/wasm/bridge/call.ts must declare SUSPENDING_EXPORTS = [...]');
+    fail('src/wasm/bridge/_generated.ts must declare ASYNC_EXPORTS = [...] (npm run gen:wasm-exports)');
   } else {
     const bridgeList = [...listMatch[1].matchAll(/['"](\w+)['"]/g)].map((m) => m[1]);
     if (JSON.stringify([...bridgeList].sort()) !== JSON.stringify([...j.jspiExports].sort())) {
       fail(
-        `call.ts SUSPENDING_EXPORTS ${JSON.stringify(bridgeList)} must equal jspi.jspiExports ${JSON.stringify(j.jspiExports)}`,
+        `_generated.ts ASYNC_EXPORTS ${JSON.stringify(bridgeList)} must equal jspi.jspiExports ${JSON.stringify(j.jspiExports)}`,
       );
     }
   }
-  // No bridge module may ccall a suspending export directly (sync shape).
+  // Only the call seam calls into the module: every other bridge file goes through
+  // the generated wrappers, which carry each export's async / whileSuspended rule.
   const bridgeDir = path.join(ROOT, 'src/wasm/bridge');
   for (const name of fs.readdirSync(bridgeDir)) {
-    if (!name.endsWith('.ts') || name === 'call.ts' || name.endsWith('.test.ts')) continue;
+    if (!name.endsWith('.ts') || name === 'call.ts' || name === '_generated.ts' || name.endsWith('.test.ts')) continue;
     const src = fs.readFileSync(path.join(bridgeDir, name), 'utf8');
-    for (const exp of j.jspiExports) {
-      if (new RegExp(`\\.ccall\\(\\s*['"]${exp}['"]`).test(src)) {
-        fail(`src/wasm/bridge/${name} ccalls '${exp}' directly — use callSuspending() from call.ts`);
-      }
+    if (/\.ccall\s*\(/.test(src)) {
+      fail(`src/wasm/bridge/${name} calls ccall directly — use the typed wrappers in _generated.ts (npm run gen:wasm-exports)`);
     }
   }
 }
@@ -1222,9 +1227,9 @@ function verifyBindGroup1() {
   for (const fnName of ['loadShader', 'reloadShader']) {
     const body = bridge.match(new RegExp(`export async function ${fnName}\\([\\s\\S]*?\\n\\}`));
     const refuse = body ? body[0].indexOf('declaresBindGroup1(') : -1;
-    const ccall = body ? body[0].indexOf(`callSuspending(wasmRef.module, '${fnName}'`) : -1;
+    const ccall = body ? body[0].indexOf(`cpp.${fnName}(wasmRef.module`) : -1;
     if (refuse < 0 || ccall < 0 || refuse > ccall) {
-      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before callSuspending(wasmRef.module, '${fnName}')`);
+      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before cpp.${fnName}(wasmRef.module, …)`);
     }
   }
 
@@ -1286,6 +1291,17 @@ function verifyBindGroup1() {
       fail(`${path.relative(ROOT, file)} simRing.stateCount must be 1–${ladder[0]}`);
     }
   }
+}
+
+/**
+ * wasm_exports.json `exports` (signature + whileSuspended per export) ↔ the
+ * generated wasm_renderer/wasm_exports.h and src/wasm/bridge/_generated.ts ↔
+ * main.cpp EMSCRIPTEN_KEEPALIVE definitions (types parsed here, so drift fails
+ * without emcc; the include makes the same drift a compile error under emcc).
+ */
+function verifyWasmExportSignatures() {
+  const gen = require('./gen-wasm-exports-header.js');
+  for (const problem of gen.collectProblems()) fail(problem);
 }
 
 /**
@@ -1365,6 +1381,7 @@ if (!ONLY_WASM_INVARIANTS) {
   verifyEmptyPlaceholder();
 }
 verifyWasmCompileFlags();
+verifyWasmExportSignatures();
 verifyWasmRuntimeInvariants();
 
 if (failed) {
@@ -1372,7 +1389,7 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + bind_group0 + canvas_configure + slot_limits + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + bind_group1 + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
+  '✅ Device policy sync OK (limits + optional features + bind_group0 + canvas_configure + slot_limits + wasm_exports (+ signatures) + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + bind_group1 + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
 /** True when `rel` is tracked by git (a committed artifact, not a fresh CI build). */

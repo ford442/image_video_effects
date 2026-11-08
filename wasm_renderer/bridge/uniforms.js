@@ -1,6 +1,7 @@
 // GENERATED — do not edit. Source: src/wasm/ (concat_bridge.sh / emit-wasm-bridge.mjs)
 
-import { callSuspending, isSuspended } from "./call.js";
+import * as cpp from "./_generated.js";
+import { isBusy, isSuspended, runWhenIdle } from "./call.js";
 import { state, wasmRef } from "./state.js";
 const SOURCE_MAP = {
   none: 0,
@@ -18,12 +19,7 @@ function setSlotParams(slotIndex, p1, p2, p3, p4) {
   if (slotIndex === 0) {
     state.zoomParams = [p1, p2, p3, p4];
   }
-  wasmRef.module.ccall(
-    "setSlotParams",
-    null,
-    ["number", "number", "number", "number", "number"],
-    [slotIndex, p1, p2, p3, p4]
-  );
+  cpp.setSlotParams(wasmRef.module, slotIndex, p1, p2, p3, p4);
 }
 function updateSlotParams(slotIndex, params) {
   if (!params || typeof params !== "object") return;
@@ -35,7 +31,8 @@ function updateSlotParams(slotIndex, params) {
   setSlotParams(slotIndex, p1, p2, p3, p4);
 }
 function applyUniformState(time, mouseX, mouseY, mouseDown, zoomP1, zoomP2, zoomP3, zoomP4) {
-  if (!state.initialized || !wasmRef.module) {
+  const mod = wasmRef.module;
+  if (!state.initialized || !mod) {
     return false;
   }
   state.time = time;
@@ -43,18 +40,13 @@ function applyUniformState(time, mouseX, mouseY, mouseDown, zoomP1, zoomP2, zoom
   state.mouseY = mouseY;
   state.mouseDown = mouseDown;
   state.zoomParams = [zoomP1, zoomP2, zoomP3, zoomP4];
-  wasmRef.module.ccall("setTime", null, ["number"], [time]);
-  wasmRef.module.ccall("updateMousePos", null, ["number", "number"], [mouseX, mouseY]);
-  wasmRef.module.ccall("setMouseDown", null, ["number"], [mouseDown ? 1 : 0]);
-  wasmRef.module.ccall(
-    "setZoomParams",
-    null,
-    ["number", "number", "number", "number"],
-    [zoomP1, zoomP2, zoomP3, zoomP4]
-  );
-  if (isSuspended()) return false;
-  wasmRef.module.ccall("updateUniforms", null, [], []);
-  return true;
+  cpp.setTime(mod, time);
+  cpp.updateMousePos(mod, mouseX, mouseY);
+  cpp.setMouseDown(mod, mouseDown ? 1 : 0);
+  cpp.setZoomParams(mod, zoomP1, zoomP2, zoomP3, zoomP4);
+  const rendered = !isSuspended(mod);
+  cpp.updateUniforms(mod);
+  return rendered;
 }
 function updateUniforms(timeOrUniforms, mouseX = 0.5, mouseY = 0.5, mouseDown = false, zoomP1 = 0.5, zoomP2 = 0.5, zoomP3 = 0.5, zoomP4 = 0.5) {
   if (typeof timeOrUniforms === "object" && timeOrUniforms !== null) {
@@ -77,32 +69,22 @@ function updateMousePos(x, y, down) {
   if (!state.initialized || !wasmRef.module) return;
   state.mouseX = x;
   state.mouseY = y;
-  wasmRef.module.ccall("updateMousePos", null, ["number", "number"], [x, y]);
+  cpp.updateMousePos(wasmRef.module, x, y);
   if (down !== void 0) {
     state.mouseDown = down;
-    wasmRef.module.ccall("setMouseDown", null, ["number"], [down ? 1 : 0]);
+    cpp.setMouseDown(wasmRef.module, down ? 1 : 0);
   }
 }
 function updateAudioData(bassOrData, mid, treble) {
   if (!state.initialized || !wasmRef.module) return;
   if (typeof bassOrData === "number") {
-    wasmRef.module.ccall(
-      "updateAudioData",
-      null,
-      ["number", "number", "number"],
-      [bassOrData, mid ?? 0, treble ?? 0]
-    );
+    cpp.updateAudioData(wasmRef.module, bassOrData, mid ?? 0, treble ?? 0);
     return;
   }
   const bass = Number(bassOrData[0] ?? 0);
   const midVal = Number(bassOrData[1] ?? 0);
   const trebleVal = Number(bassOrData[2] ?? 0);
-  wasmRef.module.ccall(
-    "updateAudioData",
-    null,
-    ["number", "number", "number"],
-    [bass, midVal, trebleVal]
-  );
+  cpp.updateAudioData(wasmRef.module, bass, midVal, trebleVal);
 }
 function updateAudioFrequencyBins(binsOrBass, mid, treble, energy) {
   if (!state.initialized || !wasmRef.module) return;
@@ -114,22 +96,27 @@ function updateAudioFrequencyBins(binsOrBass, mid, treble, energy) {
   const bytes = count * 4;
   const ptr = wasmRef.module._malloc(bytes);
   wasmRef.module.HEAPF32.set(binsOrBass, ptr / 4);
-  wasmRef.module.ccall("updateAudioFrequencyBins", null, ["number", "number"], [ptr, count]);
+  cpp.updateAudioFrequencyBins(wasmRef.module, ptr, count);
   wasmRef.module._free(ptr);
 }
 function updateDepthMap(depthData, width = 256, height = 256) {
-  if (!state.initialized || !wasmRef.module) return;
-  if (isSuspended()) return;
-  const floats = depthData instanceof Float32Array ? depthData : new Float32Array(depthData.buffer, depthData.byteOffset, depthData.byteLength / 4);
-  const ptr = wasmRef.module._malloc(floats.byteLength);
-  wasmRef.module.HEAPF32.set(floats, ptr / 4);
-  wasmRef.module.ccall(
-    "updateDepthMap",
-    null,
-    ["number", "number", "number"],
-    [ptr, width, height]
-  );
-  wasmRef.module._free(ptr);
+  const module = wasmRef.module;
+  if (!state.initialized || !module) return;
+  const view = depthData instanceof Float32Array ? depthData : new Float32Array(depthData.buffer, depthData.byteOffset, depthData.byteLength / 4);
+  const busy = isBusy(module);
+  const floats = busy ? view.slice() : view;
+  const upload = () => {
+    if (!state.initialized || wasmRef.module !== module) return;
+    const ptr = module._malloc(floats.byteLength);
+    module.HEAPF32.set(floats, ptr / 4);
+    try {
+      cpp.updateDepthMap(module, ptr, width, height);
+    } finally {
+      module._free(ptr);
+    }
+  };
+  if (!busy) upload();
+  else runWhenIdle(module, upload).catch((err) => console.error("[WASM] deferred depth upload failed:", err));
 }
 function setInputSource(source) {
   const sourceInt = typeof source === "string" ? SOURCE_MAP[source.toLowerCase()] ?? 0 : typeof source === "number" ? source : 0;
@@ -139,35 +126,34 @@ function setInputSource(source) {
     return;
   }
   state.inputSource = sourceInt;
-  wasmRef.module.ccall("setInputSource", null, ["number"], [sourceInt]);
+  cpp.setInputSource(wasmRef.module, sourceInt);
 }
 function addRipple(x, y, _amplitude = 1, _wavelength = 0.05) {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall("addRipple", null, ["number", "number"], [x, y]);
+  cpp.addRipple(wasmRef.module, x, y);
 }
 function clearRipples() {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall("clearRipples", null, [], []);
+  cpp.clearRipples(wasmRef.module);
 }
 function getFPS() {
   if (!state.initialized || !wasmRef.module) return 0;
-  return Number(wasmRef.module.ccall("getFPS", "number", [], []) ?? 0);
+  return cpp.getFPS(wasmRef.module);
 }
 function getSupportsDeepWorkgroup() {
   if (!state.initialized || !wasmRef.module) return true;
-  return Boolean(wasmRef.module.ccall("getSupportsDeepWorkgroup", "number", [], []));
+  return cpp.getSupportsDeepWorkgroup(wasmRef.module) !== 0;
 }
 function getColorFormat() {
   if (state.initialized && wasmRef.module) {
-    const v = Number(wasmRef.module.ccall("getColorFormat", "number", [], []) ?? state.colorFormat);
-    state.colorFormat = v === 1 ? 1 : 0;
+    state.colorFormat = cpp.getColorFormat(wasmRef.module) === 1 ? 1 : 0;
   }
   return state.colorFormat;
 }
 async function setColorFormat(format) {
   state.colorFormat = format === 1 ? 1 : 0;
   if (state.initialized && wasmRef.module) {
-    await callSuspending(wasmRef.module, "setColorFormat", null, ["number"], [state.colorFormat]);
+    await cpp.setColorFormat(wasmRef.module, state.colorFormat);
   }
 }
 function unavailableGPUTimings() {
@@ -188,12 +174,7 @@ function getGPUTimings() {
   const ptr = m._malloc(16);
   if (!ptr) return unavailableGPUTimings();
   try {
-    m.ccall(
-      "getGPUTimings",
-      null,
-      ["number", "number", "number", "number"],
-      [ptr, ptr + 4, ptr + 8, ptr + 12]
-    );
+    cpp.getGPUTimings(m, ptr, ptr + 4, ptr + 8, ptr + 12);
     const parallelTime = m.getValue(ptr, "float");
     const chainedTime = m.getValue(ptr + 4, "float");
     const totalTime = m.getValue(ptr + 8, "float");
@@ -213,15 +194,15 @@ function getGPUTimings() {
 }
 function getAdapterSummary() {
   if (!wasmRef.module || typeof wasmRef.module.ccall !== "function") return "";
-  return String(wasmRef.module.ccall("getAdapterSummary", "string", [], []) ?? "");
+  return cpp.getAdapterSummary(wasmRef.module);
 }
 function getLastInitErrorStage() {
   if (!wasmRef.module || typeof wasmRef.module.ccall !== "function") return 0;
-  return Number(wasmRef.module.ccall("getLastInitErrorStage", "number", [], []) ?? 0);
+  return cpp.getLastInitErrorStage(wasmRef.module);
 }
 function getLastInitErrorMessage() {
   if (!wasmRef.module || typeof wasmRef.module.ccall !== "function") return "";
-  return String(wasmRef.module.ccall("getLastInitErrorMessage", "string", [], []) ?? "");
+  return cpp.getLastInitErrorMessage(wasmRef.module);
 }
 export {
   addRipple,

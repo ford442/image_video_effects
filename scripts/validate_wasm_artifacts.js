@@ -188,6 +188,7 @@ function checkBridgeSkew() {
   ];
 
   const bridgeModules = [
+    '_generated.js',
     'api.js',
     'call.js',
     'capture.js',
