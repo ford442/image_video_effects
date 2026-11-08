@@ -6,8 +6,14 @@
 //            temporal trails, aces-tone-map, semantic alpha
 //  Complexity: Medium-High
 //  Created: 2026-07-05
-//  Upgraded: 2026-10-10
-//  Ideas: timed burst shock rings; foreground-led depth-staggered launches
+//  Upgraded: 2026-11-08
+//  Ideas: timed burst shock rings; foreground-led depth-staggered launches;
+//         square pixel-tile shrapnel (sparks are literal source pixels);
+//         launch craters punched into the photo where a shell lifted off
+//  Rescues: apogee rose 0.6-0.9 short-axis units -> nearly every burst
+//         exploded above the frame; fireworks were mixed at 30% into the
+//         trail instead of added, so sparks barely registered; probes
+//         launched from off-frame clamped edges; long idle launch gaps
 //  A packing: ACES display RGBA (rgb = tone-mapped trail history; a = visual coverage)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -46,6 +52,14 @@ fn sampleImage(uv: vec2<f32>, res: vec2<f32>) -> vec3<f32> {
   let q = vec2<f32>(uv.x * m / res.x + 0.5, 0.5 - uv.y * m / res.y);
   let p = clamp(q, vec2<f32>(0.0), vec2<f32>(1.0));
   return textureSampleLevel(readTexture, u_sampler, p, 0.0).rgb;
+}
+
+// Idea 3 — square pixel tile: Chebyshev distance gives a hard-edged
+// little square with a thin soft halo, so shrapnel reads as lifted pixels.
+fn pixelTile(uv: vec2<f32>, c: vec2<f32>, r: f32, i: f32) -> f32 {
+  let d = abs(uv - c);
+  let m = max(d.x, d.y);
+  return (smoothstep(r, r * 0.6, m) + 0.18 * exp(-m / (r * 2.0))) * i;
 }
 
 fn sparkPos(o: vec2<f32>, v: vec2<f32>, age: f32, g: f32) -> vec2<f32> {
@@ -100,6 +114,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Dark sky fill in dissolved areas
   col = mix(vec3<f32>(0.015, 0.012, 0.03), col, 1.0 - dissolve * 0.3);
   var glowAcc = 0.0;
+  var fx = vec3<f32>(0.0);   // fireworks, added after the trail mix
+  var crater = 0.0;
 
   // Detonation cores — bright pixels + edges launch fireworks
   let numCores = 8;
@@ -109,7 +125,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seed2 = hash1(si * 61.0 + 5.0);
 
     // Probe position biased to image features
-    let probeUV = vec2<f32>((seed - 0.5) * 1.6, (seed2 - 0.5) * 1.2);
+    // RESCUE: probes spanned ±0.8 × ±0.6 short-axis units, so on a square
+    // frame most launched from clamped edge pixels off-screen. Keep them
+    // inside the visible (aspect-aware) frame.
+    let halfW = 0.5 * res.x / minRes;
+    let probeUV = vec2<f32>((seed - 0.5) * 1.8 * halfW, (seed2 - 0.5) * 0.8);
     let probeCol = sampleImage(probeUV, res);
     let probeLum = dot(probeCol, vec3<f32>(0.299, 0.587, 0.114));
     let probeEdge = edgeStrength(probeUV, res);
@@ -127,7 +147,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — foreground source depth leads the launch clock, so nearer
     // features ignite first while retaining the existing mortar cadence.
     let depthLead = probeDepth * (0.35 + pixelLift * 0.35);
-    let period = cycle * 3.0;
+    let period = cycle * 1.6;  // RESCUE: was 3.0 → ~55% of each cycle had every shell idle
     let launchClock = (time + depthLead) * launchRate + seed * period;
     let age = (launchClock - floor(launchClock / period) * period) / launchRate;
     if (age < 0.0 || age > 6.0) { continue; }
@@ -135,6 +155,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — the same foreground ordering also gives nearer shells a higher apogee.
     let depthBoost = 0.7 + probeDepth * 0.8;
     let basePos = probeUV + vec2<f32>(0.0, -0.08 * depthBoost);
+    // RESCUE: cap the apogee inside the frame (short-axis top = 0.5) so the
+    // shell bursts on screen; foreground still climbs proportionally higher.
+    let rise = min(0.85 * depthBoost, max(0.34 - basePos.y, 0.08) * (0.55 + 0.45 * depthBoost / 1.5));
     let burstDelay = 0.9 + seed * 0.5;
     let bAge = max(0.0, age - burstDelay);
     let shellPow = power * igniteScore * depthBoost * (0.6 + bass * 0.7);
@@ -142,23 +165,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Ascent from pixel origin
     if (age < burstDelay) {
       let t = age / burstDelay;
-      let y = mix(basePos.y, basePos.y + 0.9 * depthBoost, t * t);
+      let y = mix(basePos.y, basePos.y + rise, t * t);
       let pos = vec2<f32>(basePos.x, y);
       let ascentGlow = softGlow(uv, pos, 0.01, shellPow * 2.0);
       let ascentCore = softGlow(uv, pos, 0.006, shellPow);
-      col += probeCol * ascentGlow;
-      col += vec3<f32>(1.0, 0.9, 0.6) * ascentCore;
+      fx += probeCol * ascentGlow;
+      fx += vec3<f32>(1.0, 0.9, 0.6) * ascentCore;
       glowAcc += ascentGlow + ascentCore;
     }
 
     // Pixel burst — sparks carry source colors, recolor over time
     if (bAge > 0.0 && bAge < 4.5) {
-      let bCenter = vec2<f32>(basePos.x, basePos.y + 0.85 * depthBoost);
+      let bCenter = vec2<f32>(basePos.x, basePos.y + rise);
+      // Idea 4 — launch crater: the photo is hollowed where the shell's
+      // pixels were lifted, healing as the burst fades.
+      crater = max(crater, exp(-bAge * 0.9) * smoothstep(0.07, 0.0, length(uv - probeUV)) * igniteScore);
       let fade = smoothstep(4.2, 0.3, bAge);
 
       // Core flash from source pixel color
       let coreGlow = exp(-bAge * 10.0) * shellPow * 2.0 * softGlow(uv, bCenter, 0.05, 1.0);
-      col += probeCol * coreGlow;
+      fx += probeCol * coreGlow;
       glowAcc += coreGlow;
 
       // Idea 1 — timed pressure fronts expand from the existing burst centre.
@@ -175,7 +201,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let echoRing = select(0.0, exp(-echoDelta * echoDelta) * exp(-echoAge * 1.65), bAge > 0.18);
       let shockRing = (primaryRing + echoRing * 0.55) * shellPow;
       let ringCol = mix(probeCol, vec3<f32>(1.0, 0.88, 0.62), 0.45);
-      col += ringCol * shockRing;
+      fx += ringCol * shockRing;
       glowAcc += shockRing;
 
       let nSparks = i32(20.0 + power * 35.0 + mids * 12.0);
@@ -199,8 +225,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         sparkCol = mix(sparkCol, vec3<f32>(1.0, 0.95, 0.8), hot * 0.8);
         sparkCol = mix(sparkCol, vec3<f32>(0.8, 0.35, 0.1), cool * 0.5);
 
-        let g = softGlow(uv, sp, 0.006 + js * 0.004, fade * shellPow * 1.5);
-        col += sparkCol * g * (0.85 + treble * 0.6);
+        let tileR = (0.004 + js * 0.003) * (1.0 + 0.6 * smoothstep(0.0, 1.5, bAge));
+        let g = pixelTile(uv, sp, tileR, fade * shellPow * 1.5);
+        fx += sparkCol * g * (0.85 + treble * 0.6);
         glowAcc += g;
       }
 
@@ -215,7 +242,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let eVel = vec2<f32>(cos(eAng), sin(eAng)) * (0.2 + ms * 0.25);
         let ePos = sparkPos(bCenter, eVel, bAge * 0.6, 0.6);
         let microGlow = softGlow(uv, ePos, 0.003, fade * treble * 0.7);
-        col += eCol * microGlow;
+        fx += eCol * microGlow;
         glowAcc += microGlow;
       }
     }
@@ -239,7 +266,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let kp = sparkPos(mC, kv, mbAge, 0.95);
         let kc = mix(sampleImage(mUV * 0.5 + kp * 0.5, res), mCol, 0.6);
         let mouseGlow = softGlow(uv, kp, 0.0055, mFade * mPow);
-        col += kc * mouseGlow;
+        fx += kc * mouseGlow;
         glowAcc += mouseGlow;
       }
     }
@@ -247,7 +274,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Temporal trails
   let smoke = vnoise(uv * 4.0 + vec2<f32>(time * 0.015)) * 0.02;
-  col = mix(prev * trailFade + smoke, col, 0.3);
+  col *= 1.0 - crater * 0.75;
+  col = mix(prev * trailFade + smoke, col, 0.3) + fx;
 
   // Treble pixel dust
   let dust = step(0.985 - treble * 0.035, hash2(uv * 220.0 + time * 14.0));

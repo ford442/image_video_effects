@@ -2,7 +2,7 @@
   "id": "crt-magnet",
   "name": "CRT Magnet",
   "url": "shaders/crt-magnet.wgsl",
-  "description": "CRT degaussing distortion with continuous magnetic rings and rolling beam sweeps, held-pointer field gain, bounded click shocks, exact-load feedback echo, aperture grille, hex bloom, spectral palette, and preserved A-state packing.",
+  "description": "CRT magnet distortion with tangential gun convergence error, a raster that bows through the field, a rolling hum bar, degauss rings, purity stains and a sprung cursor.",
   "updated": true,
   "params": [
     {

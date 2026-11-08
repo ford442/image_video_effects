@@ -6,6 +6,11 @@
 //  Chunks From: tensor-flow-sculpting.wgsl, conv-morphological-erosion-dilation.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-3 — Convolution Post-Processor
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-08
+//  Ideas: tensor-signed morphology (compression erodes, tension dilates, per pixel);
+//         photoelastic isochromatic fringes along the morphological gradient;
+//         bass-pressed structuring element (radius swells on the beat)
 // ═══════════════════════════════════════════════════════════════════
 //  Depth-aware tensor eigenwarp with morphological post-processing.
 //  Erosion darkens compressed tensor regions, dilation brightens
@@ -14,30 +19,13 @@
 //
 //  RGBA32FLOAT EXPLOITATION:
 //    RGB: Morphologically processed tensor-sculpted color
-//    Alpha: Top-hat transform luminance — isolated bright peaks
-//           stand out as high-alpha highlights
+//    Alpha: 0.7 base coverage + top-hat luminance — isolated bright
+//           peaks stand out as full-alpha highlights
+//    dataTextureA mirrors writeTexture.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=StrainScale, y=DetailPreserve, z=DepthWeight, w=TensorMode
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=StrainScale, y=DetailPreserve, z=DepthWeight, w=TensorMode
 
 // ═══ CHUNK: sampleDepth (from tensor-flow-sculpting.wgsl) ═══
 fn sampleDepth(uv: vec2<f32>) -> f32 {
@@ -60,8 +48,9 @@ fn tensorEigen(a: f32, b: f32, d: f32) -> Eigen2 {
   let sq = sqrt(disc);
   let lp = tr * 0.5 + sq;
   let ln = tr * 0.5 - sq;
-  let bIsSmall = step(abs(b), 1e-6);
-  let vp = mix(normalize(vec2<f32>(lp - d, b)), vec2<f32>(1.0, 0.0), bIsSmall);
+  // HEAD: normalize(0,0) on flat depth → NaN, and mix(NaN, x, 1) stays NaN.
+  let raw = vec2<f32>(lp - d, b);
+  let vp = select(vec2<f32>(1.0, 0.0), raw / max(length(raw), 1e-8), abs(b) > 1e-6 && length(raw) > 1e-8);
   var e: Eigen2;
   e.lam_pos = lp;
   e.lam_neg = ln;
@@ -137,10 +126,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depthWeight = u.zoom_params.z;
   let tensorMode = u.zoom_params.w;
 
-  let kernelRadius = i32(mix(2.0, 5.0, u.zoom_config.x));
-  let erosionDilationBlend = u.zoom_config.y;
-  let gradientBoost = mix(0.5, 3.0, u.zoom_config.z);
-  let morphBlend = u.zoom_config.w;
+  let bass = plasmaBuffer[0].x;
+  let mids = plasmaBuffer[0].y;
+  // HEAD read these from zoom_config, whose .yz is the mouse — so the cursor
+  // silently drove erosion/dilation and gradient gain. Pinned at the legacy defaults.
+  // Idea 3: bass presses the structuring element wider (3 → 5 taps).
+  let kernelRadius = 3 + i32(clamp(bass, 0.0, 1.0) * 2.0 + 0.5);
+  let gradientBoost = 1.75;
+  let morphBlend = 0.5;
 
   // ── Tensor flow sculpting core ──
   let h = sampleDepth(uv);
@@ -168,7 +161,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let warp1 = eigen.vec_pos * eigen.lam_pos * flowAmp;
   let warp2 = eigen.vec_neg * eigen.lam_neg * flowAmp;
-  let tensorWarp = clamp(warp1 + warp2, vec2<f32>(-0.1), vec2<f32>(0.1));
+  // Depth Weight (dead in HEAD): near surfaces strain harder than far ones.
+  let depthGain = mix(1.0, 0.4 + 1.2 * h, depthWeight);
+  let tensorWarp = clamp((warp1 + warp2) * depthGain, vec2<f32>(-0.1), vec2<f32>(0.1));
 
   let normalFlow = vec2<f32>(dX, dY) * strainScale * 3.0 * sin(t * 0.2);
   let rDisp = rippleDisp(uv, t, u32(u.config.y));
@@ -260,13 +255,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gradient = (dilation - erosion) * gradientBoost;
   let topHat = sculpted - erosion;
 
+  // Idea 1: tensor-signed morphology — compressed regions (negative trace) erode,
+  // tensile regions dilate. Flat depth (trace 0) lands on the old 0.5 blend.
+  let trace = eigen.lam_pos + eigen.lam_neg;
+  let erosionDilationBlend = clamp(0.5 + trace * 60.0 * depthGain, 0.0, 1.0);
   let blendRGB = mix(erosion, dilation, erosionDilationBlend);
-  let morphResult = blendRGB + gradient * 0.3;
+  var morphResult = blendRGB + gradient * 0.3;
 
-  let topHatLuma = dot(topHat, vec3<f32>(0.299, 0.587, 0.114));
+  // Idea 2: photoelastic isochromatic fringes — the morphological gradient rendered
+  // as birefringent colour bands whose order rises with shear (and mids).
+  let gradLuma = dot(dilation - erosion, vec3<f32>(0.299, 0.587, 0.114));
+  let shear = abs(eigen.lam_pos - eigen.lam_neg);
+  let order = gradLuma * 9.0 + shear * 120.0 + mids * 1.5 + t * 0.15;
+  let fringe = 0.5 + 0.5 * cos(6.2831853 * (order + vec3<f32>(0.0, 0.33, 0.67)));
+  let fringeMask = smoothstep(0.04, 0.25, gradLuma) * (0.35 + mids * 0.3);
+  morphResult = mix(morphResult, morphResult * 0.4 + fringe * 0.75, fringeMask);
 
-  let finalColor = mix(sculpted, morphResult, morphBlend);
+  let topHatLuma = max(dot(topHat, vec3<f32>(0.299, 0.587, 0.114)), 0.0);
 
-  textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, topHatLuma));
-  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(h, 0.0, 0.0, 1.0));
+  let finalColor = clamp(mix(sculpted, morphResult, morphBlend), vec3<f32>(0.0), vec3<f32>(1.0));
+  let outC = vec4<f32>(finalColor, clamp(0.7 + topHatLuma * 3.0, 0.0, 1.0));
+
+  textureStore(writeTexture, global_id.xy, outC);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), outC);
+  textureStore(writeDepthTexture, global_id.xy, vec4<f32>(h, 0.0, 0.0, 0.0));
 }

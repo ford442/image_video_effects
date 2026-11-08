@@ -864,7 +864,7 @@
     "name": "Soft Vignette Bloom",
     "url": "shaders/soft-vignette-bloom.wgsl",
     "category": "post-processing",
-    "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Enhanced with lens flare ghost images, 8-pointed starburst diffraction spikes, chromatic aberration at edges, bokeh depth-of-field with hexagonal aperture, and enhanced light falloff with realistic attenuation.",
+    "description": "Cinematic bloom pyramid, anamorphic streaks and superellipse vignette with lens flare, starburst and hex bokeh. The cursor racks focus to the depth beneath it; highlights gain red film halation and light up smudges of lens dirt.",
     "tags": [
       "bloom",
       "vignette",
@@ -891,7 +891,9 @@
       "bokeh-dof",
       "anamorphic-streaks",
       "light-attenuation",
-      "enhanced-falloff"
+      "enhanced-falloff",
+      "halation",
+      "lens-dirt"
     ],
     "params": [
       {

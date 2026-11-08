@@ -3,13 +3,15 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-09
-//  Ideas: wavelength-dependent EMA lag; Rayleigh tint on the lag residual
-//  A packing: linear display RGBA in A (C is color history); ACES on writeTexture
+//  Upgraded: 2026-11-08
+//  Ideas: wavelength-dependent EMA lag; Rayleigh tint on the lag residual;
+//         velocity-aligned tension split; elastic overshoot rebound
+//  A packing: rgb = ungraded linear EMA history, a = layered alpha;
+//             texel (0,0) = spring pos.xy/vel.xy, texel (1,0) = (time, init)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
-// zoom_params: x=Elasticity, y=Damping, z=ShockwaveBoost, w=PaletteMix
+// zoom_params: x=Elasticity, y=ChromaticScale, z=LissajousRatio, w=Damping (JSON params[] order)
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -162,10 +164,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv01 = vec2<f32>(pixel) / res;
     let aspect = res.x / res.y;
     let time = u.config.x;
-    let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+    let clock = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+    let dt = select(0.016, clamp(time - clock.x, 0.001, 0.05), clock.y > 0.5);
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w > 0.5;
     let isLeader = global_id.x == 0u && global_id.y == 0u;
+    let isClock = global_id.x == 1u && global_id.y == 0u;
 
     let p1 = u.zoom_params.x;
     let p2 = u.zoom_params.y;
@@ -175,27 +179,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
-    let prev = textureLoad(dataTextureC, pixel, 0);
+    let prevRaw = textureLoad(dataTextureC, pixel, 0);
+    // State texels (0,0)/(1,0) hold spring/clock, not colour history.
+    let prev = select(prevRaw, vec4<f32>(0.2, 0.2, 0.2, 0.5), global_id.y == 0u && global_id.x < 2u);
 
     // ── User parameters (sliders) ──────────────────────────────────
     // p1 Elasticity: spring stiffness + lag gain (bass widens the range)
     let elasticity = mix(0.1, 1.0, p1) * (1.0 + bass * 0.5);
     let stiffness = mix(28.0, 210.0, p1) * (1.0 + bass * 0.35);
-    // p2 Damping: spring damping ratio + legacy EMA lag scale
-    let zeta = mix(0.18, 1.05, p2);
-    let dampLag = mix(0.1, 0.9, p2);
-    // p3 Shockwave Boost: click ring strength on the chromatic split
-    let shockBoost = mix(0.4, 2.4, p3);
-    // p4 Palette Mix: IQ cosine palette tint amount over the grade
-    let paletteMix = clamp(p4, 0.0, 1.0);
-    // Legacy slider-derived constants pinned at their original defaults so
-    // the shader's established look survives the slider re-scoping.
-    let chromaticScale = 0.5;
-    let lissajousRatio = 1.25;
+    // p4 damping: spring damping ratio + EMA lag scale
+    let zeta = mix(0.18, 1.05, p4);
+    let dampLag = mix(0.1, 0.9, p4);
+    // p2 chromatic_scale / p3 lissajous_ratio — the JSON sliders were wired
+    // to Damping/Shockwave/Palette here, so 3 of 4 UI sliders did the wrong
+    // thing. Defaults (0.5) reproduce the previously pinned 0.5 / 1.25.
+    let chromaticScale = clamp(p2, 0.0, 1.0);
+    let lissajousRatio = mix(0.75, 1.75, p3);
+    // Former re-scoped sliders, pinned at their x-meta defaults.
+    let shockBoost = 1.4;
+    let paletteMix = 0.3;
 
-    // ── Spring-damper elastic mouse (state in extraBuffer[0..3]) ───
-    let rawPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    let rawVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    // ── Spring-damper elastic mouse (state in A texel (0,0)) ───────
+    // extraBuffer is re-uploaded by the host every frame, so the old
+    // extraBuffer[133..137] spring never persisted (dead spring).
+    let springTexel = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let hasSpring = clock.y > 0.5;
+    let rawPos = select(vec2<f32>(0.0), springTexel.xy, hasSpring);
+    let rawVel = select(vec2<f32>(0.0), springTexel.zw, hasSpring);
     // Lazy init: an untouched buffer snaps to the live mouse, so there is
     // no lurch from the origin on the first frames after load.
     let springPosPrev = select(rawPos, mouse, rawPos == vec2<f32>(0.0));
@@ -203,13 +213,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spring = springStep(springPosPrev, rawVel, mouse, stiffness, dampCoef, dt);
     let springPos = clamp(spring.xy, vec2<f32>(-0.1), vec2<f32>(1.1));
     let springVel = clamp(spring.zw, vec2<f32>(-6.0), vec2<f32>(6.0));
-    if (isLeader) {
-        extraBuffer[133] = springPos.x;
-        extraBuffer[134] = springPos.y;
-        extraBuffer[135] = springVel.x;
-        extraBuffer[136] = springVel.y;
-        extraBuffer[137] = time;
-    }
 
     // ── Click shockwave state (extraBuffer[4..6], edge in [8]) ─────
     var ring = 0.0;
@@ -227,16 +230,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lissFreqY = lissajousRatio + mids * 0.2;
     let lissAmp = chromaticScale * 0.08;
     let springKick = springVel * 0.02;   // spring velocity nudges the source
+    let wX = lissFreqX * 2.0 * (1.0 + elasticity);
+    let wY = lissFreqY * 2.0 * (1.0 + elasticity);
     let lissPos = springPos + springKick + vec2<f32>(
-        lissAmp * sin(time * lissFreqX * 2.0 * (1.0 + elasticity)),
-        lissAmp * sin(time * lissFreqY * 2.0 * (1.0 + elasticity))
+        lissAmp * sin(time * wX),
+        lissAmp * sin(time * wY)
     );
+    // Analytic Lissajous velocity (uv/s) — the source's own motion.
+    let lissVel = vec2<f32>(lissAmp * wX * cos(time * wX), lissAmp * wY * cos(time * wY));
 
     // ── Chromatic input sample with radial RGB shift ───────────────
     // The shockwave ring temporarily widens the split as it sweeps past.
     let caAmount = (0.003 * (1.0 + bass) + depth * 0.002 + chromaticScale * 0.004)
         * (1.0 + ring);
-    let source = srgbToLinear(chromaticAberration(uv01, caAmount));
+    var source = srgbToLinear(chromaticAberration(uv01, caAmount));
+
+    // ── Idea: velocity-aligned tension split ───────────────────────
+    // Near the spring head / Lissajous source the elastic band is under
+    // tension: R and B are pulled apart ALONG the motion direction
+    // instead of radially, like a stretched rubber sheet.
+    let springSpeed = length(springVel);
+    let lissNear = smoothstep(0.32, 0.0, distance((uv01 - lissPos) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0)));
+    let springNear = smoothstep(0.38, 0.0, distance((uv01 - springPos) * vec2<f32>(aspect, 1.0), vec2<f32>(0.0)));
+    let tensionVec = springVel * springNear * 0.035 + lissVel * lissNear * 0.05 * (1.0 + mids * 0.5);
+    let tension = length(tensionVec);
+    if (tension > 1e-5) {
+        let tr = textureSampleLevel(readTexture, u_sampler, clamp(uv01 - tensionVec, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+        let tb = textureSampleLevel(readTexture, u_sampler, clamp(uv01 + tensionVec * 0.7, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+        let tk = smoothstep(0.0, 0.012, tension);
+        source.r = mix(source.r, srgbToLinear(vec3<f32>(tr)).x, tk);
+        source.b = mix(source.b, srgbToLinear(vec3<f32>(tb)).x, tk);
+    }
 
     // ── Influences (spring position overshoots on fast moves) ──────
     let influence = mouseInfluence(uv01, springPos, aspect, elasticity) + ring * 0.6;
@@ -256,6 +280,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color.r = ema(source.r, prev.r, lagR);
     color.g = ema(source.g, prev.g, lagG);
     color.b = ema(source.b, prev.b, lagB);
+    // Ungraded accumulation is what feeds back (grading the history
+    // compounded the blackbody tint every frame → green/black drift).
+    let history = color;
+
+    // ── Idea: elastic overshoot rebound ────────────────────────────
+    // When the spring whips (or a shock ring passes) the short-lag blue
+    // channel snaps PAST the live frame, then the trail catches up:
+    // extrapolate away from history like a released rubber band.
+    let whip = clamp(springSpeed * 0.6 * springNear + ring * 0.8 + bass * 0.15, 0.0, 1.2);
+    color.b = max(source.b + (source.b - prev.b) * whip, 0.0);
+    color.g = max(color.g + (source.g - prev.g) * whip * 0.35, 0.0);
     // Rayleigh tint on the lag residual: blue scatters, red stays in the trail.
     let residual = color - source;
     color = color + vec3<f32>(0.12, 0.28, 0.85) * length(residual) * chromaticScale * 1.6;
@@ -289,6 +324,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dither = (ign(vec2<f32>(pixel)) - 0.5) / 255.0;
     let srgbOut = linearToSrgb(linearOut) + vec3<f32>(dither);
 
-    textureStore(dataTextureA, pixel, vec4<f32>(linearOut, effectAlpha));
-    textureStore(writeTexture, pixel, vec4<f32>(aces_tonemap(srgbOut * effectAlpha), effectAlpha));
+    var stateOut = vec4<f32>(history, effectAlpha);
+    if (isLeader) { stateOut = vec4<f32>(springPos, springVel); }
+    if (isClock) { stateOut = vec4<f32>(time, 1.0, 0.0, 0.0); }
+    textureStore(dataTextureA, pixel, stateOut);
+    // writeTexture already ACES-mapped above; the old second ACES pass on
+    // premultiplied sRGB crushed the frame to near-black.
+    textureStore(writeTexture, pixel, vec4<f32>(clamp(srgbOut, vec3<f32>(0.0), vec3<f32>(1.0)), effectAlpha));
 }

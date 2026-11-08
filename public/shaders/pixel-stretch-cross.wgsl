@@ -7,28 +7,15 @@
 //  Upgraded: 2026-07-08 (Phase B alpha compositor)
 //  Upgraded: 2026-07-21 (Visualist: velocity-steered axis blend,
 //            bass-pulse amplitude, HDR bloom on stretch crossings)
+//  Upgraded: 2026-11-08
+//  Ideas: stepped pixel-run streaks (smear snaps to blocks along each ray);
+//         per-channel streak length (RGB fringed streak tips);
+//         four-point cross glints on hot ray crossings, aligned to the axis blend
+//  A packing: (0,0) = (prevMouse.xy, smVel.xy); (1,0) = (smoothBass, 0, 0, sentinel -7);
+//             elsewhere linear HDR trail RGB + accumulated alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -126,20 +113,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    let prev = textureLoad(dataTextureC, pixel, 0);
+    let prevRaw = textureLoad(dataTextureC, pixel, 0);
+    let prev = clamp(select(vec4<f32>(0.0), prevRaw, prevRaw == prevRaw), vec4<f32>(0.0), vec4<f32>(8.0));
 
-    // ── Mouse velocity tracking (global scratch in extraBuffer) ───
-    // [0..1] = previous mouse uv, [2..3] = smoothed mouse velocity.
-    let prevMouse = vec2<f32>(extraBuffer[0], extraBuffer[1]);
-    var smVel = vec2<f32>(extraBuffer[2], extraBuffer[3]);
+    // ── Mouse velocity + bass envelope state (two texels of A/C) ──
+    // HEAD kept these in extraBuffer[0..3], which the CPU re-uploads every
+    // frame: prevMouse read as (0,0), so "velocity" was the mouse POSITION
+    // and the axis/twist were pinned by where the cursor sat.
+    let s0Raw = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let s1Raw = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+    let s0 = select(vec4<f32>(0.0), s0Raw, s0Raw == s0Raw);
+    let s1 = select(vec4<f32>(0.0), s1Raw, s1Raw == s1Raw);
+    let stateValid = s1.w == -7.0;
+    let prevMouse = select(mouse, s0.xy, stateValid);
+    var smVel = select(vec2<f32>(0.0), clamp(s0.zw, vec2<f32>(-1.0), vec2<f32>(1.0)), stateValid);
     let rawVel = mouse - prevMouse;
     smVel = mix(smVel, rawVel, 0.35);
-    if (global_id.x == 0u && global_id.y == 0u) {
-      extraBuffer[0] = mouse.x;
-      extraBuffer[1] = mouse.y;
-      extraBuffer[2] = smVel.x;
-      extraBuffer[3] = smVel.y;
-    }
 
     let mouseSpeed = length(smVel);
     // Confidence ramps in only when the pointer actually moves.
@@ -155,7 +144,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vStretch = ampScale * (1.0 - axisMix);
 
     // Smoothed bass envelope stored in dataTextureA.r
-    let smoothBass = bass_env(prev.r, bass, 0.8, 0.15);
+    // (HEAD stored it per pixel in A.r and then fed A.rgb back as the trail
+    // colour, tinting the whole smear green with the crossing mask.)
+    let smoothBass = bass_env(select(0.0, clamp(s1.x, 0.0, 2.0), stateValid), bass, 0.8, 0.15);
     // Bass-pulse: stretch magnitude breathes with the bass envelope.
     let stretchScale = 1.0 + smoothBass * (0.15 + bassResponse * 1.1);
     let depthFactor = 1.0 - depth * depthInfluence;
@@ -212,9 +203,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let ringDist = abs(centerDist - ring * 0.7);
             let clickPulse = select(0.0, exp(-ringDist * 45.0) * 2.0, mouseDown);
 
-            let sampleUv = mouse + dir * parallel;
-            let clampedUv = clamp(sampleUv, vec2<f32>(0.0), vec2<f32>(1.0));
-            let sampleColor = textureSampleLevel(readTexture, u_sampler, clampedUv, 0.0).rgb;
+            // Idea 1 (stepped pixel runs): the smear source snaps to blocks
+            // along the ray, so a streak is a staircase of held pixel runs
+            // like a sorted/stretched raster, not a soft blur. Block length
+            // grows with distance from the cursor; bass shortens it.
+            let runLen = (2.0 + alongDist * 90.0) / (1.0 + smoothBass * 0.8) / max(res.x, res.y);
+            let steppedPar = (floor(parallel / runLen) + 0.5) * runLen;
+            // Idea 2 (fringed tips): each gun stretches a little further, so
+            // streak tips split R→G→B the way an over-driven scan smear does.
+            let fringe = 1.0 + 0.05 * (1.0 + smoothBass) * min(alongDist * 8.0, 1.0);
+            let uvR = clamp(mouse + dir * steppedPar, vec2<f32>(0.0), vec2<f32>(1.0));
+            let uvG = clamp(mouse + dir * steppedPar * fringe, vec2<f32>(0.0), vec2<f32>(1.0));
+            let uvB = clamp(mouse + dir * steppedPar * fringe * fringe, vec2<f32>(0.0), vec2<f32>(1.0));
+            let sampleColor = vec3<f32>(
+                textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+                textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
+                textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b);
 
             let contribution = factor * (1.0 + clickPulse);
             accum += sampleColor * contribution;
@@ -244,7 +248,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // the bass envelope gives the bloom a subtle heartbeat.
     let crossMask = smoothstep(0.10, 0.85, crossEnergy * (0.5 + gravity));
     let bloomGain = bloomIntensity * 1.8 * (1.0 + smoothBass * 0.4);
-    let bloomed = trail + crossingBloom(trail, crossMask, bloomGain);
+    var bloomed = trail + crossingBloom(trail, crossMask, bloomGain);
+
+    // Idea 3 (cross glints): hot crossings throw a four-point star whose
+    // arms follow the stretch axes — long along the dominant axis (axisMix),
+    // short across it — evaluated against the cursor-centred crossing
+    // energy so the star sits on the well, not stamped per pixel.
+    let gl = toMouse * vec2<f32>(res.x / max(res.x, res.y), res.y / max(res.x, res.y));
+    let armH = exp(-abs(gl.y) * 260.0) * exp(-abs(gl.x) * mix(30.0, 9.0, axisMix));
+    let armV = exp(-abs(gl.x) * 260.0) * exp(-abs(gl.y) * mix(9.0, 30.0, axisMix));
+    let glint = (armH + armV) * bloomIntensity * (0.6 + smoothBass * 1.2 + treble * 0.4)
+              * clamp(crossEnergy * 0.8, 0.0, 1.5);
+    bloomed += luminance(src.rgb + 0.2) * glint * vec3<f32>(1.0, 0.97, 0.9);
 
     // Subtle exposure boost driven by smoothed bass, then ACES tone map
     let exposure = 0.95 + smoothBass * 0.15;
@@ -281,5 +296,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(smoothBass, crossMask, 0.0, alpha * 0.97 + 0.03));
+    if (pixel.x == 0 && pixel.y == 0) {
+        textureStore(dataTextureA, pixel, vec4<f32>(mouse, smVel));
+    } else if (pixel.x == 1 && pixel.y == 0) {
+        textureStore(dataTextureA, pixel, vec4<f32>(smoothBass, 0.0, 0.0, -7.0));
+    } else {
+        textureStore(dataTextureA, pixel, vec4<f32>(trail, alpha * 0.97 + 0.03));
+    }
 }
