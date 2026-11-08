@@ -66,7 +66,6 @@
     "block-distort-em": "eligible",
     "block-distort-interactive": "eligible",
     "blueprint-reveal-guided": "eligible",
-    "boids": "eligible",
     "breathing-kaleidoscope-morph": "eligible",
     "bubble-lens-coupled": "eligible",
     "cellular-automata-3d": "eligible",
@@ -155,7 +154,6 @@
     "gen-inverse-mandelbrot": "eligible",
     "gen-koch-snowflake-storm": "eligible",
     "gen-kryonic-quantum-aether-fractal-core": "eligible",
-    "gen-langton-ant": "eligible",
     "gen-lenia-2": "eligible",
     "gen-live-studio-tab": "eligible",
     "gen-lorenz-attractor": "eligible",
@@ -178,7 +176,6 @@
     "gen-quantum-superposition": "eligible",
     "gen-radiant-cyber-plasma-astro-griffin": "eligible",
     "gen-radiant-quantum-crystalline-forge": "eligible",
-    "gen-raptor-mini": "eligible",
     "gen-raptor-mini-flow": "eligible",
     "gen-resonant-quantum-obsidian-scarab-engine": "eligible",
     "gen-showcase-crystalline-pulse": "eligible",
@@ -199,7 +196,6 @@
     "gen_capabilities": "eligible",
     "gen_cyclic_automaton": "eligible",
     "gen_kimi_nebula": "eligible",
-    "gen_orb": "eligible",
     "gen_psychedelic_spiral": "eligible",
     "generative-psy-swirls": "eligible",
     "glass-bead-curtain": "eligible",
@@ -235,7 +231,6 @@
     "kaleido-portal-interactive": "eligible",
     "kimi_chromatic_warp": "eligible",
     "kimi_nebula_depth": "eligible",
-    "kimi_quantum_field": "eligible",
     "kimi_ripple_touch": "eligible",
     "kinetic-dispersion": "eligible",
     "lidar": "eligible",
@@ -350,7 +345,6 @@
     "solarize-warp": "eligible",
     "spatio-temporal-3d-conv": "eligible",
     "spec-bicubic-crystal": "eligible",
-    "spec-distance-field-text": "eligible",
     "spec-importance-sampled-bokeh": "eligible",
     "spec-iridescence-engine": "eligible",
     "spec-temporal-path-tracer": "eligible",
@@ -386,7 +380,6 @@
     "vortex-warp-coupled": "eligible",
     "wave-inject": "eligible",
     "wave-render": "eligible",
-    "wave-step": "eligible",
-    "wolfram-data-demo": "eligible"
+    "wave-step": "eligible"
   }
 }
