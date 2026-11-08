@@ -72,7 +72,7 @@
     "name": "Acoustic String Theory",
     "url": "shaders/acoustic-string-theory.wgsl",
     "category": "generative",
-    "description": "Vibrating string harmonics visualized as oscillating sine waves in perspective, with audio-driven pluck and resonance.",
+    "description": "Vibrating string harmonics visualized as oscillating sine waves in perspective, with audio-driven pluck and resonance. Clicks pluck the nearest string (pitch glides down as it rings), sympathetic strings ring in simple ratios, and nodal pins mark each wavelength.",
     "tags": [
       "generative",
       "strings",
@@ -3476,7 +3476,7 @@
       "music",
       "reactive"
     ],
-    "description": "Audio-reactive sampled epitrochoid and hypotrochoid trails with musical ratios, sprung mouse lensing, click chimes, bounded temporal persistence, and generated curve depth.",
+    "description": "Audio-reactive sampled epitrochoid and hypotrochoid trails with musical ratios, the rolling gear, its teeth and the pen arm drawn as the mechanism, ink that pools where the pen is slow, sprung mouse lensing, click chimes, bounded temporal persistence, and generated curve depth.",
     "workgroup_size": [
       16,
       16,
@@ -3494,7 +3494,8 @@
       "sprung-mouse-lens",
       "click-chime-shells",
       "bounded-temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "gear-mechanism"
     ],
     "params": [
       {
@@ -10148,7 +10149,7 @@
       "storm",
       "generative"
     ],
-    "description": "Electric lightning bolts radiating from the center in a kaleidoscope symmetry pattern with 6, 8, or 12-fold symmetry. Neon cyan, magenta, and yellow bolts crack and flicker on a deep dark background. Bolts rebranch and reseed each frame for constant motion. Sparks fly randomly. Mouse rotates the kaleidoscope and changes symmetry count.",
+    "description": "Lightning bolts radiating in kaleidoscope symmetry; return strokes flash the cloud deck and afterimages cool to violet. Mouse rotates and sets symmetry.",
     "workgroup_size": [
       16,
       16,
@@ -14683,7 +14684,7 @@
     "id": "gen-grid",
     "name": "Domain-Warped FBM Grid",
     "url": "shaders/gen_grid.wgsl",
-    "description": "Audio-reactive domain-warped FBM grid with mouse gravity well, recursive moiré sub-grids, chromatic dispersion edges, and temporal motion blur. Lattice cells hold a stable interior wash, and Jacobian creases brighten where the warp folds.",
+    "description": "Audio-reactive domain-warped FBM grid with a mouse gravity well, moiré sub-grids and chromatic edges. Overstretched lines break into dashes, a raster beam sweeps the lattice, and warp slopes emboss the cells.",
     "features": [
       "mouse-driven",
       "depth-aware",
@@ -15002,11 +15003,12 @@
     "id": "gen-grokcf-interference",
     "name": "Cylindrical Drum Modes",
     "url": "shaders/gen_grokcf_interference.wgsl",
-    "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring, antinode disks, and a radial beat between the first two circular zeros.",
+    "description": "Vibrating circular membrane Bessel function modal synthesis: u_{mn} = J_m(α_{mn}·r/R)·cos(mφ)·cos(ω_{mn}·t). GPU polynomial Bessel J₀–J₃ (Abramowitz & Stegun). Audio bands activate mode families (bass→radial, mids→azimuthal, treble→higher-order). Chladni node-line colouring, antinode disks, and a radial beat between the first two circular zeros. Sand settles on the stationary nodal figure, and clicks strike the membrane so each mode rings down by its own shape at the hit point.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
       "audio-reactive",
+      "mouse-driven",
       "procedural",
       "animated"
     ],
@@ -15068,7 +15070,7 @@
     ],
     "updated": true,
     "category": "generative",
-    "feedbackPacking": "A/C = membrane displacement, radius, normalized azimuth, semantic coverage; exact damped state load"
+    "feedbackPacking": "A/C = membrane displacement, leaky |u| sand energy, normalized azimuth, semantic coverage; exact damped state load"
   },
   {
     "id": "gen-grokcf-voronoi",
@@ -20759,7 +20761,7 @@
       "ph-science",
       "chemistry"
     ],
-    "description": "Geometric shapes (triangles, hexagons, circles) morphing and melting in psychedelic neon. Upgraded with universal-indicator pH color science: geometry edges glow with realistic acid/base transitions driven by bass oscillation. Critical-angle refraction distortion, temporal feedback trails, chromatic aberration, and ACES tone mapping.",
+    "description": "Neon triangles, hexagons and circles melting through universal-indicator pH colours, with striated tube glow, click titration fronts, salt precipitate where acid meets base, and acid drips running off the tubes.",
     "workgroup_size": [
       16,
       16,
@@ -23872,6 +23874,64 @@
     ],
     "supportsDepth": true,
     "updated": true
+  },
+  {
+    "name": "Prismatic Quantum Loom",
+    "description": "A hyper-dimensional weaving of chromatic threads that respond to cosmic gravity, creating an ethereal, glowing lattice of pure light and quantum entanglement.",
+    "type": "generative",
+    "category": "generative",
+    "tags": [
+      "cosmic",
+      "quantum",
+      "neon",
+      "geometry",
+      "lattice"
+    ],
+    "url": "shaders/gen-prismatic-quantum-loom.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "params": [
+      {
+        "id": "thread-density",
+        "name": "Thread Density",
+        "default": 1,
+        "min": 0.5,
+        "max": 3,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "chromatic-shift",
+        "name": "Chromatic Shift",
+        "default": 0,
+        "min": 0,
+        "max": 6.28,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "gravity-well-strength",
+        "name": "Gravity Well Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 2,
+        "step": 0.05,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "quantum-fluctuation-speed",
+        "name": "Quantum Fluctuation Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ],
+    "id": "gen-prismatic-quantum-loom"
   },
   {
     "id": "gen-prismatic-serpent-river",
@@ -27631,7 +27691,7 @@
         "step": 100
       }
     ],
-    "description": "A repeated stellar resonance manifold with coherent p/g-mode shells, compression-heated blackbody highlights, nodal dislocation seams, and coronal loop arc curtains driven by audio bands."
+    "description": "A repeated stellar resonance manifold with coherent p/g-mode shells, compression-heated blackbody highlights, nodal dislocation seams, and coronal loop arc curtains driven by audio bands. Stars are limb-darkened, carry a p/g-mode Dopplergram tint, and each rings up and decays on its own stochastic excitation clock."
   },
   {
     "id": "gen-stellar-cyber-lotus-forge",
@@ -27932,7 +27992,7 @@
       "music",
       "reactive"
     ],
-    "description": "A stylized standing-wave string ensemble with harmonic modes, sprung mouse plucking, click resonance shells, audio excitation, temporal trails, and generated relief depth.",
+    "description": "A stylized standing-wave string ensemble with harmonic modes, sprung mouse plucking, a held-pointer fretting finger, a long-exposure envelope that shows each string's swing, click resonance shells, audio excitation, temporal trails, and generated relief depth.",
     "workgroup_size": [
       16,
       16,
@@ -27949,7 +28009,52 @@
       "sprung-mouse-plucking",
       "click-resonance-shells",
       "temporal-feedback",
-      "depth-output"
+      "depth-output",
+      "long-exposure-envelope",
+      "fretting-finger",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "fundamental",
+        "name": "Fundamental Frequency",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Base pitch of the strings (spatial and temporal frequency)"
+      },
+      {
+        "id": "harmonicRichness",
+        "name": "Harmonic Richness",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "How many partials each string carries"
+      },
+      {
+        "id": "damping",
+        "name": "Damping",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How quickly the upper partials die away"
+      },
+      {
+        "id": "pluckStrength",
+        "name": "Pluck Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Excitation of the strings by bass and by the pointer"
+      }
     ]
   },
   {
@@ -29139,6 +29244,11 @@
         "step": 0.1,
         "mapping": "zoom_params.w"
       }
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -29146,7 +29256,7 @@
     "name": "Void Harmonic Cymatic Resonator",
     "category": "generative",
     "url": "/shaders/gen-void-harmonic-cymatic-resonator.wgsl",
-    "description": "A hyper-dimensional sound-reactive sculpture that renders the visible form of acoustic frequencies in the void, resembling Chladni patterns suspended in dark matter.",
+    "description": "A hyper-dimensional sound-reactive sculpture that renders the visible form of acoustic frequencies in the void, resembling Chladni patterns suspended in dark matter. Bass excites a radial breathing mode that flexes the cavity wall, and the nodal sheets are lit two-tone by pressure flank like a schlieren photograph.",
     "workgroup_size": [
       16,
       16,
@@ -32615,7 +32725,7 @@
     "name": "Topological Acoustic Knots",
     "url": "shaders/topological-acoustic-knots.wgsl",
     "category": "generative",
-    "description": "Nematic Q-tensor evolution with topological charge computation and trefoil-knot SDF constraint. Schlieren texture with defect-core coloring and HDR bloom on +1 defects. Bass creates defect pairs via Kibble-Zurek quench, mids drive annihilation dynamics, treble adds acoustic phonon waves. Mouse pins director with homeotropic anchoring. Ripples spawn defect loops.",
+    "description": "Nematic Q-tensor film read between crossed polarizers: true plaquette-winding disclinations (half-integer blue, integer red), Michel-Levy retardance colours that follow the order parameter, a trefoil thickness wedge, and brush counts of 2 or 4 per core. Bass melts the order and re-quenches domains (Kibble-Zurek), mids sweep the polarizer, treble adds phonon waves, the mouse pins the director radially and clicks spawn defect loops.",
     "features": [
       "nematic-Q-tensor",
       "topological-charge",
@@ -32623,7 +32733,8 @@
       "schlieren-texture",
       "audio-driven",
       "mouse-anchoring",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "tags": [
       "topological",

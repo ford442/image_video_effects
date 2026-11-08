@@ -3,8 +3,8 @@
 //  Category: distortion
 //  Features: voronoi shards, rotation, internal fractures, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: rutile silk needles; pointer-lit star asterism; rotation pleochroism
+//  Upgraded: 2026-11-08
+//  Ideas: rutile silk needles; pointer-lit star asterism; rotation pleochroism; conchoidal shell ridges; total-internal-reflection rim; dispersive fire flashes
 //  A packing: ACES display RGBA (rgb = shaded shard colour, a = transmission alpha)
 // ═══════════════════════════════════════════════════════════════
 // Simulates fractured gemstone with variable purity/transmission. Each
@@ -16,26 +16,7 @@
 // treble -> silk needle sparkle. Mouse (zoom_config.yz) is the light
 // position: needle glint and star offset follow it; held brightens stars.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const IOR_QUARTZ: f32 = 1.54;
 const IOR_DIAMOND: f32 = 2.42;
@@ -171,6 +152,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var m_point = vec2<f32>(0.0);
     var cell_id = vec2<f32>(0.0);
     var m_rel = vec2<f32>(0.0);             // pixel minus cell centre (st)
+    var s_rel = vec2<f32>(0.0);             // pixel minus 2nd-nearest centre (st)
 
     for (var y = -1; y <= 1; y++) {
         for (var x = -1; x <= 1; x++) {
@@ -183,12 +165,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
             if (dist < m_dist) {
                 second_dist = m_dist;
+                s_rel = m_rel;
                 m_dist = dist;
                 m_point = point;
                 cell_id = i_st + neighbor;
                 m_rel = -diff;
             } else if (dist < second_dist) {
                 second_dist = dist;
+                s_rel = -diff;
             }
         }
     }
@@ -292,6 +276,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let star = asterism(qc, px) * starGain * smoothstep(0.0, 0.08, edgeDist);
     color += vec3<f32>(1.0, 0.95, 0.85) * star;
     
+    // ═══════════════════════════════════════════════════════════════
+    // Idea 4 — total-internal-reflection rim. Light hitting the shard wall
+    // past the critical angle (asin(1/ior)) reflects back inside, so a band
+    // just inside each boundary shows the shard interior MIRRORED back off the
+    // wall. Wall normal = direction between the two nearest centres (st);
+    // band width grows with IOR (diamond keeps more light trapped).
+    // ═══════════════════════════════════════════════════════════════
+    let wallN = normalize(s_rel - m_rel + vec2<f32>(1e-5));   // inward wall normal (neighbour → this centre)
+    let wallD = edgeDist * 0.5;                               // ≈ distance to the wall (st)
+    let tirBand = (0.05 + 0.08 * iorMix);
+    let tirW = smoothstep(tirBand, tirBand * 0.25, edgeDist) * smoothstep(0.0, 0.012, edgeDist);
+    let mirrorUV = clamp(sampleUV + (wallN * wallD * 2.0 + wallN * tirBand) / (scale * aspectVec),
+                         vec2<f32>(0.0), vec2<f32>(1.0));
+    let mirrorCol = textureSampleLevel(readTexture, u_sampler, mirrorUV, 0.0).rgb;
+    color = mix(color, mirrorCol * (0.75 + 0.5 * fresnel) * mix(vec3<f32>(1.0), pleoHue, pleoStrength), tirW * (0.45 + 0.4 * iorMix));
+
+    // ═══════════════════════════════════════════════════════════════
+    // Idea 5 — conchoidal shell ridges. Fractured quartz breaks in curved,
+    // shell-like ripples radiating from an impact point on the wall. Each
+    // shard gets a hashed impact point; ridges are concentric arcs from it,
+    // fading away from the fracture line. Count/contrast follow fractureDensity.
+    // ═══════════════════════════════════════════════════════════════
+    let impact = (hash22(cell_id + vec2<f32>(3.7, 9.1)) - 0.5) * 0.6 + wallN * 0.35;
+    let shellR = length(m_rel - impact);
+    let ridge = 0.5 + 0.5 * cos(shellR * (28.0 + 30.0 * cellFracture));
+    let shellFade = smoothstep(0.25, 0.0, edgeDist) * effectiveFracture;
+    let ridgeAA = smoothstep(2.5, 5.0, 6.2831 / max(px * (28.0 + 30.0 * cellFracture), 1e-4)); // fade when period < ~3 px
+    let shell = (ridge - 0.5) * shellFade * ridgeAA;
+    color *= 1.0 + 0.3 * shell;
+    color += vec3<f32>(0.9, 0.95, 1.0) * max(shell, 0.0) * 0.25 * fresnel * 4.0;
+
+    // ═══════════════════════════════════════════════════════════════
+    // Idea 6 — dispersive fire. Facet edges facing the light (pointer) split
+    // white light into a short spectral flash (IOR raises dispersion). Hue is
+    // the angle between the wall normal and the light; bass makes it flare.
+    // ═══════════════════════════════════════════════════════════════
+    let facing = max(dot(wallN, -L), 0.0);
+    let fireHue = fract(dot(wallN, L) * 0.5 + 0.5 + cellHash.x * 0.3 + time * 0.05);
+    let fireCol = clamp(abs(fract(fireHue + vec3<f32>(0.0, 0.667, 0.333)) * 6.0 - 3.0) - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
+    let fireW = smoothstep(0.035, 0.0, edgeDist) * pow(facing, 3.0) * dispersion * (1.2 + 1.5 * bass);
+    color += fireCol * fireW;
+
     // Specular on edges
     let specular = edgeFactor * fresnel * 0.5;
     color += vec3<f32>(specular);

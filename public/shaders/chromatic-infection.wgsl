@@ -4,8 +4,8 @@
 //  Category: artistic
 //  Features: depth-aware, temporal-persistence, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: real contagion through C; inflamed front and scar tissue; patient zero (held pointer) + bass vein throb
+//  Upgraded: 2026-11-08
+//  Ideas: real contagion through C; inflamed front and scar tissue; patient zero (held pointer) + bass vein throb; strain-war necrotic borders where two strains meet; spore jump-dispersal satellite colonies
 //  A packing: raw state — rgb = infection colour, a = 10 + infection level 0..1 (sentinel offset; C alpha outside [10,11] reads as uninfected). Display is ACES RGB in writeTexture only.
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -249,15 +249,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let selfC = loadInfection(coord, dimsC);
     let prevLvl = selfC.a;
     var nb = loadInfection(coord + vec2<i32>(1, 0), dimsC);
+    // Idea 4: strain war — largest colour gap between this tissue and an established
+    // neighbouring strain. Two colonies of different colour meeting form a stalemate line.
+    var strainGap = 0.0;
+    if (nb.a > 0.3) { strainGap = length(nb.rgb - selfC.rgb); }
     var cand = loadInfection(coord + vec2<i32>(-1, 0), dimsC);
+    if (cand.a > 0.3) { strainGap = max(strainGap, length(cand.rgb - selfC.rgb)); }
     if (cand.a > nb.a) { nb = cand; }
     cand = loadInfection(coord + vec2<i32>(0, 1), dimsC);
+    if (cand.a > 0.3) { strainGap = max(strainGap, length(cand.rgb - selfC.rgb)); }
     if (cand.a > nb.a) { nb = cand; }
     cand = loadInfection(coord + vec2<i32>(0, -1), dimsC);
+    if (cand.a > 0.3) { strainGap = max(strainGap, length(cand.rgb - selfC.rgb)); }
     if (cand.a > nb.a) { nb = cand; }
+    let warLine = select(0.0, smoothstep(0.2, 0.5, strainGap), selfC.a > 0.3);
 
     let channel = smoothstep(0.42, 0.12, tendril);
-    let conduct = mix(0.90, 0.998, channel);
+    // A war line conducts poorly: neither strain pushes through the other.
+    let conduct = mix(0.90, 0.998, channel) * (1.0 - 0.08 * warLine);
     // Front speed ≈ rate px/frame: slider 0.5 (default, spreadSpeed 1.0) → rate 0.5.
     let rate = 0.15 + spreadSpeed * 0.35;
 
@@ -272,6 +281,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         if (infectionStrength > 0.01 && infectionStrength > tgtLvl) {
             tgtLvl = infectionStrength;
             tgtCol = infectionColor;
+        }
+    }
+
+    // Idea 5: spore jump-dispersal. Coarse cells (~28 px) occasionally receive a spore
+    // from a mature colony 2–3 cells away; the spore seeds a small satellite focus that
+    // then spreads by ordinary contagion. Bass makes the colonies sporulate more often.
+    if (isNeutral) {
+        let cellPx = 28.0;
+        let cell = floor(vec2<f32>(coord) / cellPx);
+        let epoch = floor(time * 0.6);
+        let hr = hash21(cell * 1.37 + epoch * 7.13);
+        if (hr < 0.05 * (1.0 + bass * 1.5)) {
+            let ang = hash21(cell + epoch * 3.1) * 6.28318;
+            let srcPx = (cell + 0.5) * cellPx + vec2<f32>(cos(ang), sin(ang)) * cellPx * 2.5;
+            let spore = loadInfection(vec2<i32>(srcPx), dimsC);
+            let ctr = (cell + 0.5) * cellPx + (hash22(cell + epoch) - 0.5) * cellPx * 0.6;
+            let dS = length(vec2<f32>(coord) - ctr);
+            let seed = smoothstep(0.6, 0.9, spore.a) * (1.0 - smoothstep(1.5, 3.5, dS)) * 0.7;
+            if (seed > tgtLvl) { tgtLvl = seed; tgtCol = spore.rgb; }
         }
     }
 
@@ -342,6 +370,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Idea 2: inflamed front — the advancing edge glows hot (HDR, ACES rolls it off).
         let hot = mix(lvlStrain, vec3<f32>(1.0, 0.45, 0.25), 0.4);
         outCol += hot * front * lvl * intensity * 1.2 * throb;
+        // Idea 4: the war line is necrotic — dark, bruised tissue with a faint hot rim.
+        let necro = warLine * lvlSpread;
+        outCol = mix(outCol, vec3<f32>(0.10, 0.02, 0.07), min(necro * 1.1, 0.9));
+        outCol += vec3<f32>(0.9, 0.2, 0.12) * necro * pulse * 0.45;
 
         coverage = max(finalSpread, lvlSpread);
     } else if (!isNeutral) {

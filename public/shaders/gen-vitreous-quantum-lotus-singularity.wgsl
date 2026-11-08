@@ -5,8 +5,8 @@
 //  Upgrade: canonical uniforms fix, slider mapping fix, thin-film
 //           iridescent glass petals, per-petal cell variation, radial
 //           vein inlay, 3-point lighting + Fresnel, ACES, real depth.
-//  Upgraded: 2026-10-10
-//  Ideas: petal torsion chirality bands; photon-sphere shear arcs; quantum fluctuation core; pistil stamen filaments
+//  Upgraded: 2026-11-08
+//  Ideas: petal torsion chirality bands; photon-sphere shear arcs; quantum fluctuation core; pistil stamen filaments; lotus-effect dew beads (refracting bead lenses with key-light caustic); gravitational redshift of petal light near the singularity
 //  A packing: raw normal/material fields in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -54,8 +54,10 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     var p = p_in;
 
     // Spacetime distortion & mouse interaction
+    // Rescue: was p -= mouse*3, which parked the bloom in the bottom-right
+    // corner at the idle cursor (0.5,0.5). Centre on the idle cursor instead.
     let mouse = u.zoom_config.yz;
-    p -= vec3<f32>(mouse.x * 3.0, mouse.y * 3.0, 0.0);
+    p -= vec3<f32>((mouse.x - 0.5) * 1.5, (0.5 - mouse.y) * 1.5, 0.0);
 
     let time = u.config.x;
     p = vec3<f32>(rot(time * 0.1) * p.xy, p.z);
@@ -74,7 +76,10 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
 
     // Central Singularity Sphere
     // Idea 1: quantum fluctuation core
-    let quantumFluct = hash31(p * 10.0 + time) * 0.05 * (u.zoom_params.w + 0.1);
+    // Rescue: a per-point hash made the core SDF discontinuous (static speckle);
+    // use a smooth interfering-wave field so the fluctuation actually boils.
+    let qf = sin(p.x * 9.0 + time * 2.1) * sin(p.y * 10.0 - time * 1.7) * sin(p.z * 11.0 + time * 2.6);
+    let quantumFluct = qf * 0.05 * (u.zoom_params.w + 0.1);
     let singularity = length(p) - (singularityMass * 0.5) + quantumFluct;
 
     // Polar folding for lotus petals
@@ -172,7 +177,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
     let time = u.config.x;
-    let uv = (vec2<f32>(id.xy) - res * 0.5) / res.y;
+    // Rescue: flip y so +y is up in the world (screen rows grow downward).
+    let uvRaw = (vec2<f32>(id.xy) - res * 0.5) / res.y;
+    let uv = vec2<f32>(uvRaw.x, -uvRaw.y);
 
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -5.0);
@@ -180,7 +187,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let mouse = u.zoom_config.yz;
     ro.x += (mouse.x - 0.5) * 2.0;
-    ro.y += (mouse.y - 0.5) * 2.0;
+    ro.y += (0.5 - mouse.y) * 2.0;
 
     // Raymarching
     var dO = 0.0;
@@ -259,6 +266,29 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let pulse = sin(length(p.xy) * 10.0 - time * 5.0) * 0.5 + 0.5;
             let glowCol = mix(vec3<f32>(1.0, 0.0, 0.5), vec3<f32>(1.0, 0.8, 0.0), pulse);
             col += glowCol * (veins * 0.8 + pow(pulse, 4.0) * 0.3) * audioReactiveLuminescence;
+
+            // Idea 5 — lotus-effect dew beads: the superhydrophobic petal skin
+            // beads water into spheres; each bead is a tiny lens with a dark
+            // refracted rim and a hot key-light caustic dot.
+            let bq = p * 7.0;
+            let bc = floor(bq);
+            let bh = hash31(bc + 3.1);
+            let bf = fract(bq) - 0.5 - (vec3<f32>(hash31(bc + 7.7), hash31(bc + 1.9), bh) - 0.5) * 0.4;
+            let bR = 0.12 + bh * 0.1;
+            let bd = length(bf);
+            let bead = step(0.72, bh) * smoothstep(bR, bR * 0.6, bd);
+            let beadRim = step(0.72, bh) * smoothstep(bR * 0.55, bR * 0.85, bd) * smoothstep(bR, bR * 0.85, bd);
+            col *= 1.0 - beadRim * 0.55;
+            let glint = pow(clamp(1.0 - length(bf.xy - keyL.xy * bR * 0.45) / (bR * 0.35), 0.0, 1.0), 3.0);
+            col += vec3<f32>(1.0, 0.98, 0.92) * bead * glint * (1.2 + plasmaBuffer[0].z * 0.8);
+
+            // Idea 6 — gravitational redshift: light leaving the petals deep in
+            // the singularity's well shifts toward red (z = 1/sqrt(1 - rs/r) - 1).
+            let rs = singularityMass * 0.5;
+            let rr = max(length(p), rs * 1.05);
+            let zShift = clamp(1.0 / sqrt(max(1.0 - rs / rr, 0.05)) - 1.0, 0.0, 2.0);
+            let lumP = dot(col, vec3<f32>(0.3, 0.5, 0.2));
+            col = mix(col, vec3<f32>(1.3, 0.35, 0.1) * lumP, clamp(zShift * 0.6, 0.0, 0.75));
         } else {
             // Singularity core: event-horizon disc + photon ring
             let ring = pow(1.0 - dot_nv, 2.0);

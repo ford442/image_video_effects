@@ -2,7 +2,7 @@
   "id": "chromatic-phase-inversion",
   "name": "Chromatic Phase Inversion",
   "url": "shaders/chromatic-phase-inversion.wgsl",
-  "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image. Sabattier-style Mackie lines flare on edges mid-inversion; the cursor phase-locks a coherent spot (hold for a full negative). Bass pulses phase and ghosts.",
+  "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image. Sabattier-style Mackie lines flare on edges mid-inversion; the cursor phase-locks a coherent spot (hold for a full negative). Tone reversal folds through a solarized V-curve instead of greying out, a negative slice sweeps through depth, and hairline isolines trace each channel's drifting phase fronts. Bass pulses phase, ghosts and the sweep.",
   "tags": [
     "chromatic",
     "phase",

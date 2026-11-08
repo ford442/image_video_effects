@@ -4,7 +4,9 @@
 //  Features: mouse-driven, depth-aware, audio-reactive, anisotropic-bokeh,
 //            diffraction-spikes, anamorphic-streaks, spectral-dispersion
 //  Complexity: Very High
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-11-08
+//  Ideas: clear-eye focus core; highlight light-trail streaks; zoom-burst sector spokes
+//  A packing: display RGBA (ACES) in A; alpha = blur-layer translucency
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -49,26 +51,7 @@
 //  focus outward and recover elastically.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ── Utilities ────────────────────────────────────────────────
 fn hash21(p: vec2<f32>) -> f32 {
@@ -271,7 +254,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Bass drives blur radius; mouse proximity adds local CoC
   let localCoC = mouseDown * exp(-mouseDist * 4.0) * 0.5;
-  let blurRadius = baseSigma * 0.25 * (1.0 + bass * 0.6 + coc * 2.0 + localCoC);
+  // Idea 1 — clear-eye focus core: a real zoom burst is sharp at the focus
+  // point and smears more with radius. Blur now ramps from a small clear eye
+  // (breathing with mids) out to full strength.
+  let mids = plasmaBuffer[0].y;
+  let eyeR = 0.05 + mids * 0.04;
+  let radial = length((uv - focusCenter) * vec2<f32>(resolution.x / resolution.y, 1.0));
+  let eyeRamp = 0.15 + 0.85 * smoothstep(eyeR, eyeR + 0.3, radial);
+  let blurRadius = baseSigma * 0.25 * (1.0 + bass * 0.6 + coc * 2.0 + localCoC) * eyeRamp;
 
   // Velocity adds directional motion blur
   let motionBlur = clamp(velMag * 0.06 + zoomBurst * 0.10, 0.0, 0.35);
@@ -299,17 +289,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── FAST MOTION 1: zoom-burst speed lines ────────────────────────────────
   // Closed-form line integral outward from the focus centre; length scales with
   // blur radius and pointer speed, hard-clamped so it can never run away.
-  let streakLen = clamp(strength * 0.9 + velMag * 0.012 + zoomBurst * 0.05, 0.0, 0.09);
+  // Idea 3 — zoom-burst sector spokes: the speed-line length varies per
+  // angular sector (36 spokes, slowly precessing), giving the spiky
+  // star-burst of an in-camera zoom pull instead of a uniform smear.
+  let spokeA = atan2(uv.y - focusCenter.y, uv.x - focusCenter.x) + time * 0.04;
+  let spokeId = floor(spokeA / 0.17453293);
+  let spokeF = fract(spokeA / 0.17453293);
+  let spokeGain = 0.55 + 0.9 * hash21(vec2<f32>(spokeId, 7.0)) * smoothstep(0.0, 0.25, spokeF) * smoothstep(1.0, 0.75, spokeF);
+  let streakLen = clamp((strength * 0.9 + velMag * 0.012 + zoomBurst * 0.05) * spokeGain, 0.0, 0.09);
   var speedLines = vec3<f32>(0.0);
   var slw = 0.0;
+  // Idea 2 — highlight light-trails: taps that land on highlights pour their
+  // excess into a separate trail term, so lamps and speculars draw long
+  // bright streaks toward the viewer like long-exposure zoom photos.
+  var trail = vec3<f32>(0.0);
   for (var s = 1u; s <= 6u; s = s + 1u) {
     let fs = f32(s) / 6.0;
     let w = 1.0 - fs * 0.75;
-    let tapUV = clamp(uv + dir * streakLen * fs, vec2<f32>(0.0), vec2<f32>(1.0));
-    speedLines += textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb * w;
+    let tapUV = clamp(uv + dir * streakLen * 1.6 * fs, vec2<f32>(0.0), vec2<f32>(1.0));
+    let tap = textureSampleLevel(readTexture, u_sampler, clamp(uv + dir * streakLen * fs, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    speedLines += tap * w;
     slw += w;
+    let far = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
+    trail += far * smoothstep(0.62, 0.95, rgbToLuma(far)) * w;
   }
   speedLines = speedLines / max(slw, 1e-4);
+  trail = trail / max(slw, 1e-4);
 
   // ── FAST MOTION 2: rotational shear streaks ──────────────────────────────
   // Tangential integral with a continuously advancing phase, so the field spins
@@ -331,6 +336,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let whipMix = clamp(motionBlur * 2.2 + zoomBurst * 0.6, 0.0, 0.75);
   color = vec4(mix(color.rgb, max(speedLines, shear), whipMix), color.a);
+  color = vec4(color.rgb + trail * (0.6 + bass * 0.6) * smoothstep(0.0, 0.03, streakLen), color.a);
 
   // ── PSYCHEDELIC: CoC + FFT keyed bokeh spectrum ──────────────────────────
   let bandIdx = u32(clamp(length(uv - focusCenter) * 8.0, 0.0, 7.999));

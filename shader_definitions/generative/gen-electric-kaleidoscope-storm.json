@@ -10,7 +10,7 @@
     "storm",
     "generative"
   ],
-  "description": "Electric lightning bolts radiating from the center in a kaleidoscope symmetry pattern with 6, 8, or 12-fold symmetry. Neon cyan, magenta, and yellow bolts crack and flicker on a deep dark background. Bolts rebranch and reseed each frame for constant motion. Sparks fly randomly. Mouse rotates the kaleidoscope and changes symmetry count.",
+  "description": "Lightning bolts radiating in kaleidoscope symmetry; return strokes flash the cloud deck and afterimages cool to violet. Mouse rotates and sets symmetry.",
   "workgroup_size": [
     16,
     16,

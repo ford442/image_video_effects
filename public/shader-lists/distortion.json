@@ -891,7 +891,7 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
-    "description": "Fragments the image into crystalline shards with physical light transmission, each shard rotated about its own centre. Golden rutile silk needles glint inside the shards, a six-rayed star asterism in every shard glides toward the pointer (the light), and pleochroic body tint shifts between violet-blue and honey with each shard's crystal orientation. Internal fractures scatter light, purity varies per cell, and IOR drives refraction. Bass brightens the stars, treble makes the needles sparkle.",
+    "description": "Fragments the image into crystalline shards with physical light transmission, each shard rotated about its own centre. Golden rutile silk needles glint inside the shards, a six-rayed star asterism in every shard glides toward the pointer (the light), and pleochroic body tint shifts between violet-blue and honey with each shard's crystal orientation. Internal fractures scatter light, purity varies per cell, and IOR drives refraction. Shard walls trap a mirrored rim by total internal reflection, fractured shards show conchoidal shell ridges, and edges facing the light flash spectral fire. Bass brightens stars and fire, treble makes the needles sparkle.",
     "params": [
       {
         "name": "Facet Size",
@@ -1407,6 +1407,7 @@
     "url": "shaders/infinite-zoom.wgsl",
     "features": [
       "mouse-driven",
+      "audio-reactive",
       "upgraded-rgba"
     ],
     "tags": [

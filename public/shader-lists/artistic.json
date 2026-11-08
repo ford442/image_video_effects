@@ -1215,7 +1215,7 @@
     "id": "chromatic-phase-inversion",
     "name": "Chromatic Phase Inversion",
     "url": "shaders/chromatic-phase-inversion.wgsl",
-    "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image. Sabattier-style Mackie lines flare on edges mid-inversion; the cursor phase-locks a coherent spot (hold for a full negative). Bass pulses phase and ghosts.",
+    "description": "Individual color channels are inverted by a slowly evolving temporal phase, causing color ghosts that drift ahead or behind the true image. Sabattier-style Mackie lines flare on edges mid-inversion; the cursor phase-locks a coherent spot (hold for a full negative). Tone reversal folds through a solarized V-curve instead of greying out, a negative slice sweeps through depth, and hairline isolines trace each channel's drifting phase fronts. Bass pulses phase, ghosts and the sweep.",
     "tags": [
       "chromatic",
       "phase",
@@ -1757,7 +1757,7 @@
     "id": "fabric-step",
     "name": "Fabric of Reality",
     "url": "shaders/fabric-step.wgsl",
-    "description": "Mass-spring cloth simulation with Verlet integration, constraint solving, and interactive tearing mechanics.",
+    "description": "Mass-spring cloth over the image with Verlet integration and tearing. Squeezed cloth wrinkles, deformed threads catch an anisotropic sheen, and tears show frayed thread ends.",
     "params": [
       {
         "id": "stiffness",
@@ -1794,7 +1794,8 @@
       "interactive",
       "physics",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "tags": [
       "simulation",
@@ -5103,7 +5104,7 @@
     "id": "stella-orbit",
     "name": "Stellar Orbit",
     "url": "shaders/stella-orbit.wgsl",
-    "description": "Orbital motion patterns with stellar particle systems.",
+    "description": "Raymarched field of twinkling stella octangulae around an icosahedral spoke structure whose charge pulses outward, with beaded orbit trails.",
     "tags": [
       "filter",
       "image-processing",
@@ -5112,9 +5113,9 @@
       "reactive"
     ],
     "features": [
+      "mouse-driven",
       "audio-reactive",
-      "audio-driven",
-      "mouse-driven"
+      "upgraded-rgba"
     ],
     "params": [
       {

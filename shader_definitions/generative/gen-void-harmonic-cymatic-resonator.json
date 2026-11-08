@@ -3,7 +3,7 @@
   "name": "Void Harmonic Cymatic Resonator",
   "category": "generative",
   "url": "/shaders/gen-void-harmonic-cymatic-resonator.wgsl",
-  "description": "A hyper-dimensional sound-reactive sculpture that renders the visible form of acoustic frequencies in the void, resembling Chladni patterns suspended in dark matter.",
+  "description": "A hyper-dimensional sound-reactive sculpture that renders the visible form of acoustic frequencies in the void, resembling Chladni patterns suspended in dark matter. Bass excites a radial breathing mode that flexes the cavity wall, and the nodal sheets are lit two-tone by pressure flank like a schlieren photograph.",
   "workgroup_size": [
     16,
     16,
