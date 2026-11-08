@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: catalyst stutter-hold on the nearest phase before releasing; temporal afterimage from exact dataTextureC history; per-phase seasonal color lean; cellular Voronoi shell patterns; chromatic depth bleed
+//  Upgraded: 2026-11-08
+//  Ideas: catalyst stutter-hold on the nearest phase before releasing; temporal afterimage from exact dataTextureC history; per-phase seasonal color lean; cellular Voronoi shell patterns; chromatic depth bleed; chrysalis moult seam glowing where outgoing and incoming primitives intersect; shed exuviae (the completed primitive leaves an expanding translucent ghost shell)
 //  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Mathematical approach: Smooth-min SDF blending of sphere/torus/box/capsule
@@ -89,16 +89,32 @@ fn sceneSDF(p_in: vec3<f32>, t: f32, blendK: f32, morphT: f32) -> f32 {
     let s2 = sdBox(p, vec3<f32>(0.52, 0.52, 0.52));
     let s3 = sdCapsule(p, vec3<f32>(0.0, -0.45, 0.0), vec3<f32>(0.0, 0.45, 0.0), 0.32);
 
-    // Weighted SDF interpolation via smin chain
-    var d = s0 * w0;
-    d = smin(d, s1, blendK * w1 + 0.01);
-    d = smin(d, s2, blendK * w2 + 0.01);
-    d = smin(d, s3, blendK * w3 + 0.01);
+    // Weighted SDF interpolation via smin chain.
+    // Rescue: HEAD seeded the chain with s0 * w0, which is 0 everywhere whenever the
+    // sphere weight is 0 — every ray "hit" at t = 0.01 and the frame was a flat disc.
+    // Absent primitives are now inflated away (shrunk by their missing weight,
+    // normalised so a mid-transition pair are both whole) before the same smin chain.
+    let wMax = max(max(w0, w1), max(max(w2, w3), 1e-3));
+    var d = s0 + (1.0 - w0 / wMax) * 1.5;
+    d = smin(d, s1 + (1.0 - w1 / wMax) * 1.5, blendK * w1 + 0.01);
+    d = smin(d, s2 + (1.0 - w2 / wMax) * 1.5, blendK * w2 + 0.01);
+    d = smin(d, s3 + (1.0 - w3 / wMax) * 1.5, blendK * w3 + 0.01);
     
     // Idea 1: Cellular Voronoi shell patterns (fractal displacement map on the surface)
     // h2_cm is available, let's just do a simple noise displacement
     let shellPattern = sin(p.x * 10.0) * cos(p.y * 10.0) * sin(p.z * 10.0) * 0.05 * w2;
     return d + shellPattern;
+}
+
+// Primitive k (0 sphere, 1 torus, 2 box, 3 capsule) in the scene's rotated frame.
+fn primitiveK(p_in: vec3<f32>, t: f32, k: i32) -> f32 {
+    let p = rotX(rotY(p_in, t * 0.17), t * 0.13);
+    switch (k) {
+        case 0: { return sdSphere(p, 0.75); }
+        case 1: { return sdTorus(p, vec2<f32>(0.55, 0.22)); }
+        case 2: { return sdBox(p, vec3<f32>(0.52, 0.52, 0.52)); }
+        default: { return sdCapsule(p, vec3<f32>(0.0, -0.45, 0.0), vec3<f32>(0.0, 0.45, 0.0), 0.32); }
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,7 +191,9 @@ fn ambientOcclusion(p: vec3<f32>, N: vec3<f32>, t: f32, bk: f32, mt: f32) -> f32
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res   = u.config.zw;
-    let uv    = (vec2<f32>(gid.xy) - res * 0.5) / min(res.x, res.y);
+    // y flipped so the key light (+y) is screen-up (HEAD rendered upside down)
+    let uvRaw = (vec2<f32>(gid.xy) - res * 0.5) / min(res.x, res.y);
+    let uv    = vec2<f32>(uvRaw.x, -uvRaw.y);
     let t     = u.config.x;
     let mouse = u.zoom_config.yz;
 
@@ -199,9 +217,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let morphT = t * morphSpeed * audioMorphBoost;
 
     // Mouse as catalyst — surprising behavior: proximity accelerates local morph and "splits" geometry
-    let mouseNDC = (mouse - 0.5) * 2.0;
+    let mouseNDC = (mouse - 0.5) * vec2<f32>(2.0, -2.0);
     let catDist = length(uv - mouseNDC);
-    let catalyst = smoothstep(0.9, 0.05, catDist) * (0.6 + bass * 0.8);
+    // Rescue: the catalyst only acts while the pointer is held. The idle pointer parks at
+    // the centre, so HEAD's always-on catalyst covered the whole form and its radial
+    // sin(catDist*12) perturbation sliced the morph into concentric hit/miss rings.
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let catalyst = smoothstep(0.9, 0.05, catDist) * (0.6 + bass * 0.8) * held;
 
     // Idea: catalyst stutter-hold — as catalyst rises, the morph clock is pulled
     // toward whichever integer phase (a completed primitive) it is nearest, so
@@ -227,11 +249,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var ro = camPos;
 
     // Ray march
+    // Idea 7: shed exuviae — the primitive just completed (phase floor) is left behind
+    // as a hollow shell that swells and fades through the following phase.
+    let phaseNow = fract(localMorph * 0.25) * 4.0;
+    let shedK = i32(floor(phaseNow)) % 4;
+    let shedAge = fract(phaseNow);
+    let shedGrow = shedAge * 0.9;
+    let shedFade = (1.0 - shedAge) * smoothstep(0.0, 0.08, shedAge);
+    var exuvia = 0.0;
+
     var tRay = 0.01;
     var hit  = false;
     var hitP = vec3<f32>(0.0);
     for (var i = 0; i < 80; i++) {
         let p  = ro + rd * tRay;
+        exuvia += exp(-abs(primitiveK(p, t, shedK) - shedGrow) * 45.0) * 0.06;
         let d  = sceneSDF(p, t, blendRadius, localMorph);
         if (d < 0.001) { hit = true; hitP = p; break; }
         if (tRay > 8.0) { break; }
@@ -304,12 +336,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ggxSpec = ggxD(NdotH, roughness) * 0.15;
         col += hsv2rgb(fract(t * colorSpeed * 0.3 + 0.3 + season * 0.4), 0.75, 1.0) * ggxSpec * (0.9 + edgeEnergy * 0.4);
 
+        // Idea 6: chrysalis moult seam — during a transition, the line where the outgoing
+        // and incoming primitives cross (equal SDF) splits open and glows hot.
+        let segK = i32(floor(phaseNow)) % 4;
+        let segF = fract(phaseNow);
+        let transition = 4.0 * segF * (1.0 - segF);
+        let seamD = abs(primitiveK(hitP, t, segK) - primitiveK(hitP, t, (segK + 1) % 4));
+        let seam = exp(-seamD * 60.0) * transition * (0.8 + bass * 0.6);
+        col = mix(col, col * 0.4, seam * 0.5);
+        col += hsv2rgb(fract(rimHue + 0.5), 0.8, 1.0) * seam * 1.4;
+
         // ── Full AO pass (catalyst aware) ──────────────────────────────────
         let ao2 = ambientOcclusion(hitP, N, t, blendRadius, localMorph);
         col *= ao2;
 
         col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
     }
+
+    // Idea 7: exuvia shell drawn over everything along the ray (translucent ghost).
+    let exu = min(exuvia, 1.5) * shedFade;
+    col += hsv2rgb(fract(t * colorSpeed * 0.2 + f32(shedK) * 0.25), 0.55, 1.0) * exu * 0.5;
 
     // Subtle filmic post + audio-reactive vignette (richer atmosphere)
     let vign = 1.0 - length(uv) * (0.35 + bass * 0.12);
@@ -321,10 +367,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Idea: temporal afterimage — dataTextureC was declared but never read; now
     // a faint exact-texel echo of the previous frame's surface trails behind
     // the current hit, paying off the "perpetual transformation" identity.
+    // Rescue: A stores ACES display RGB, so the echo is mixed after tone-mapping
+    // (HEAD fed display history back through ACES every frame → compounding).
     let histColor = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
-    col = mix(col, histColor.rgb, 0.1 * (1.0 - catalyst * 0.5));
-
     col = acesToneMap(col);
+    col = mix(col, clamp(histColor.rgb, vec3<f32>(0.0), vec3<f32>(1.0)), 0.1 * (1.0 - catalyst * 0.5));
 
     // ═══ Semantic alpha (rim + catalyst energy + fresnel bloom give transparent edges during morph) ═══
     var semantic_alpha = 0.88;
@@ -332,7 +379,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let edgeAlpha = pow(1.0 - max(dot(normalize(hitP), -rd), 0.0), 2.5);
         semantic_alpha = mix(0.65, 0.96, 0.4 + edgeAlpha * 0.5 + catalyst * 0.35 + edgeEnergy * 0.25);
     } else {
-        semantic_alpha = 0.25 + edgeEnergy * 0.2; // faint nebular mist
+        semantic_alpha = 0.25 + edgeEnergy * 0.2 + exu * 0.3; // faint nebular mist + shed shell
     }
     semantic_alpha = clamp(semantic_alpha, 0.2, 1.0);
 
