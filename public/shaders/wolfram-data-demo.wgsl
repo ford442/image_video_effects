@@ -1,30 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Wolfram Data Demo - Scientific constants and mathematical functions
 //  Category: generative
-//  Features: procedural, mathematical, scientific
+//  Features: procedural, mathematical, scientific, mouse-driven, audio-reactive, upgraded-rgba
 //  Data Source: Wolfram Alpha API
+//  Upgraded: 2026-11-08
+//  Ideas: parastichy arms (Fibonacci 13/21 spiral families lit in phyllotaxis); Rayleigh
+//         limit twin (second Airy source at the cursor, rings fuse at 1.22 r); golden
+//         rectangle tiling (nested φ-rectangle edges behind the Fibonacci spiral)
+//  Rescues: phyllotaxis centred at uv=-0.5 (off-screen, black); mode=1.0 fell to passthrough
+//  A packing: display RGB (ACES), alpha = pattern coverage blended with input alpha
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Wolfram Mathematical Constants
@@ -99,48 +86,43 @@ fn bessel_j0(x: f32) -> f32 {
 }
 
 // Phyllotaxis pattern using golden angle from Wolfram
-fn phyllotaxis(uv: vec2<f32>, n: f32, scale: f32) -> f32 {
+// Returns (seed coverage, parastichy-arm coverage).
+fn phyllotaxis(uv: vec2<f32>, n: f32, scale: f32, seedR: f32, armPhase: f32) -> vec2<f32> {
     var value: f32 = 0.0;
+    var arms: f32 = 0.0;
     for (var i: f32 = 1.0; i <= n; i = i + 1.0) {
         let r: f32 = scale * sqrt(i) * 0.01;
         let theta: f32 = i * GOLDEN_ANGLE;
         let pos = vec2<f32>(r * cos(theta), r * sin(theta));
-        let dist = length(uv - pos + 0.5);
-        value = value + smoothstep(0.05, 0.0, dist);
+        let dist = length(uv - pos);
+        let seed = smoothstep(seedR, 0.0, dist);
+        value = value + seed;
+        // Idea 1: parastichy arms — seeds sharing i mod 21 (clockwise) or i mod 13
+        // (counter-clockwise) form the visible Fibonacci spirals; one arm of each family
+        // is lit and the lit arm rotates around the family over time.
+        let a21 = f32(abs(i32(i) - i32(armPhase * 21.0)) % 21 == 0);
+        let a13 = f32(abs(i32(i) - i32(armPhase * 13.0)) % 13 == 0);
+        arms = arms + seed * max(a21, a13 * 0.6);
     }
-    return value;
+    return vec2<f32>(value, arms);
 }
 
-// Blackbody color temperature (Wolfram-derived polynomial)
+// Blackbody color temperature (Tanner Helland fit to CIE 1964 blackbody data).
+// Rescue: the old cubic fit returned g≈13 below 6600 K and g<0, r≈0 above it, so every
+// temperature was either clamped yellow-white or pure blue.
 fn blackbody(t: f32) -> vec3<f32> {
-    let T = clamp(t, 1000.0, 40000.0);
-    let T2 = T * T;
-    let T3 = T2 * T;
-    
-    var r: f32;
-    if (T < 6600.0) {
-        r = 1.0;
-    } else {
-        r = 1.292936186062745 * pow(T/10000.0 - 0.6, 1.25);
-    }
-    
+    let T = clamp(t, 1000.0, 40000.0) / 100.0;
+    var r = 1.0;
     var g: f32;
-    if (T < 6600.0) {
-        g = -4.59336e-11 * T3 + 6.3646e-7 * T2 + 0.0003198 * T - 0.02504;
+    var b = 1.0;
+    if (T <= 66.0) {
+        g = (99.4708025861 * log(T) - 161.1195681661) / 255.0;
+        if (T <= 19.0) { b = 0.0; } else { b = (138.5177312231 * log(T - 10.0) - 305.0447927307) / 255.0; }
     } else {
-        g = -2.14574e-10 * T3 + 2.50735e-6 * T2 - 0.00950783 * T + 11.27;
+        r = 329.698727446 * pow(T - 60.0, -0.1332047592) / 255.0;
+        g = 288.1221695283 * pow(T - 60.0, -0.0755148492) / 255.0;
     }
-    
-    var b: f32;
-    if (T < 2000.0) {
-        b = 0.0;
-    } else if (T < 6600.0) {
-        b = -2.3252e-14 * T3 + 4.64544e-10 * T2 - 3.15481e-5 * T + 0.5166;
-    } else {
-        b = 1.0;
-    }
-    
-    return vec3<f32>(clamp(r, 0.0, 1.0), clamp(g, 0.0, 1.0), clamp(b, 0.0, 1.0));
+    return clamp(vec3<f32>(r, g, b), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Spherical harmonic Y(2,0) for planet/cloud detail
@@ -157,6 +139,25 @@ fn airy_disk(uv: vec2<f32>, center: vec2<f32>, radius: f32) -> f32 {
     }
     let j0 = bessel_j0(x);
     return j0 * j0;
+}
+
+// Idea 3: golden rectangle tiling — the classic construction behind the golden spiral:
+// each step removes a square from a φ-rectangle, the remainder is the next φ-rectangle.
+fn golden_tiling(p: vec2<f32>, lw: f32) -> f32 {
+    var q = p;              // rectangle-local, size (PHI, 1) at origin corner
+    var w = PHI; var h = 1.0;
+    var line = 0.0;
+    var k = 1.0;
+    for (var i = 0; i < 9; i = i + 1) {
+        if (q.x < 0.0 || q.y < 0.0 || q.x > w || q.y > h) { break; }
+        // edge of the square cut at x = h
+        line = max(line, smoothstep(lw * k, 0.0, abs(q.x - h)) * k);
+        // remainder rectangle (w-h) x h, rotate 90° so it is again landscape
+        q = vec2<f32>(h - q.y, q.x - h);
+        let nw = h; h = w - h; w = nw;
+        k = k * 0.85;
+    }
+    return line;
 }
 
 // Fibonacci spiral using Wolfram's golden ratio data
@@ -203,12 +204,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let currentTime = u.config.x;
     let params = u.zoom_params;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let mouse = u.zoom_config.yz;
+    let aspect = resolution.x / resolution.y;
     
     // Sample input
     let input_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     
-    // Mode selection based on param1
-    let mode = i32(params.x * 4.0);
+    // Mode selection based on param1 (slider max 1.0 now stays on Atmosphere)
+    let mode = min(i32(params.x * 4.0), 3);
+    var coverage = 0.0;
     
     var output_color = vec3<f32>(0.0);
     
@@ -217,41 +224,65 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Mode 0: Phyllotaxis pattern (golden angle)
             let scale = 1.0 + params.y * 2.0;
             let n = 50.0 + params.z * 200.0;
-            let pattern = phyllotaxis(uv, n, scale);
+            let uvA = vec2<f32>((uv.x - 0.5) * aspect, uv.y - 0.5);
+            let ph = phyllotaxis(uvA, n, scale, 0.011 * scale * (1.0 + bass * 0.4), fract(currentTime * 0.08 * (1.0 + mids)));
             let temp = 3000.0 + params.w * 7000.0;
-            output_color = blackbody(temp) * pattern;
+            // lit arms burn cooler (amber) and brighter than the seed head
+            output_color = blackbody(temp) * (ph.x - ph.y) * 0.75 + blackbody(temp - 3500.0) * ph.y * 1.8;
+            coverage = clamp(ph.x, 0.0, 1.0);
         }
         case 1: {
             // Mode 1: Airy disk diffraction pattern
             let sun_pos = vec2<f32>(0.5 + sin(currentTime * 0.3) * 0.3, 0.5);
             let radius = 0.1 + params.y * 0.3;
-            let airy = airy_disk(uv, sun_pos, radius);
+            let ax = vec2<f32>(aspect, 1.0);
+            let airy = airy_disk(uv * ax, sun_pos * ax, radius);
             let temp = 4000.0 + params.z * 6000.0;
-            output_color = blackbody(temp) * airy;
+            // Idea 2: Rayleigh-limit twin — a second point source at the cursor. When the
+            // pair is closer than the Rayleigh criterion (first dark ring, ~1.22 r here
+            // with the J0 profile scaled to BESSEL_J0_ZERO) the two discs fuse into one blob.
+            let twin = airy_disk(uv * ax, mouse * ax, radius) * (0.7 + bass * 0.5);
+            let sep = length(mouse - sun_pos) / radius;
+            let resolved = smoothstep(0.8, 1.22, sep);
+            // unresolved: warmer merged glow; resolved: twin keeps a cooler temperature
+            output_color = blackbody(temp) * airy * (1.0 + bass * 0.3)
+                         + blackbody(mix(temp - 1500.0, temp + 3000.0, resolved)) * twin;
+            coverage = clamp(airy + twin, 0.0, 1.0);
         }
         case 2: {
             // Mode 2: Fibonacci spiral
-            output_color = vec3<f32>(fibonacci_spiral(uv, currentTime * 0.5));
+            let sp = fibonacci_spiral(uv, currentTime * 0.5 * (1.0 + mids * 0.5));
             let temp = 2500.0 + params.y * 8000.0;
-            output_color = output_color * blackbody(temp);
+            // golden tiling whose pole (1.1708, 0.2764) sits on the spiral's pole
+            let tp = vec2<f32>((uv.x - 0.5) * aspect, 0.5 - uv.y) / 0.6 + vec2<f32>(1.1708, 0.2764);
+            let tiles = golden_tiling(tp, 0.012 * (1.0 + bass * 0.5));
+            output_color = sp * blackbody(temp) + tiles * blackbody(temp + 3000.0) * 0.45;
+            coverage = clamp(sp + tiles * 0.5, 0.0, 1.0);
         }
         case 3: {
             // Mode 3: Atmospheric scattering
             let sun_pos = vec2<f32>(0.5 + sin(currentTime * 0.2) * 0.4, 0.3 + cos(currentTime * 0.15) * 0.2);
             output_color = atmospheric_scatter(uv, sun_pos);
-            output_color = output_color + blackbody(5778.0) * 0.1; // Sun color
+            output_color = output_color * (1.0 + bass * 0.3) + blackbody(5778.0) * 0.1; // Sun color
+            coverage = clamp(dot(output_color, vec3<f32>(0.33)), 0.0, 1.0);
         }
         default: {
             output_color = input_color.rgb;
+            coverage = 1.0;
         }
     }
     
     // Blend with input
     let blend = params.w;
-    let final_color = mix(input_color.rgb, output_color, blend);
+    let mapped = output_color * 1.25; // pre-exposure so ACES keeps 1.0 near white
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    let toned = clamp((mapped * (a * mapped + b)) / (mapped * (c * mapped + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+    let final_color = mix(input_color.rgb, toned, blend);
+    let alpha = mix(input_color.a, max(coverage, 0.15), blend);
     
     // Write output
-    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, 1.0));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(final_color, alpha));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(final_color, alpha));
     
     // Pass through depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -1852,8 +1852,17 @@
       ]
     },
     "boids": {
-      "hash": "0b9faab4cf1cbdad",
-      "history": []
+      "hash": "f847a77d56906f71",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "f847a77d56906f71",
+          "prev_hash": "0b9faab4cf1cbdad",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "chromatic-crawler": {
       "hash": "9b6d810e019494b6",
@@ -7446,8 +7455,17 @@
       "history": []
     },
     "gen-langton-ant": {
-      "hash": "c78003b25bc321dc",
-      "history": []
+      "hash": "e70103b3333c2a08",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "e70103b3333c2a08",
+          "prev_hash": "c78003b25bc321dc",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "gen-lenia-2": {
       "hash": "56eee3e5055a7a7d",
@@ -9209,8 +9227,17 @@
       ]
     },
     "gen-raptor-mini": {
-      "hash": "93894f926f6e6456",
-      "history": []
+      "hash": "851c3a0c007f278e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "851c3a0c007f278e",
+          "prev_hash": "93894f926f6e6456",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "gen-recursive-ancestral-terrains": {
       "hash": "6af7031168924a66",
@@ -10144,7 +10171,7 @@
       ]
     },
     "gen-grok4-life": {
-      "hash": "bbfe5c70e172d3ba",
+      "hash": "288220bc6451d961",
       "history": [
         {
           "event": "upgraded",
@@ -10153,11 +10180,19 @@
           "prev_hash": "f16093d6c1910123",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "288220bc6451d961",
+          "prev_hash": "bbfe5c70e172d3ba",
+          "commit": "355fb48c",
+          "note": null
         }
       ]
     },
     "gen-grok4-perlin": {
-      "hash": "b2820793f6725b88",
+      "hash": "7291f2e04ff9f8e9",
       "history": [
         {
           "event": "upgraded",
@@ -10166,6 +10201,14 @@
           "prev_hash": "d2db9d22dd8b7292",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "7291f2e04ff9f8e9",
+          "prev_hash": "b2820793f6725b88",
+          "commit": "355fb48c",
+          "note": null
         }
       ]
     },
@@ -10191,7 +10234,7 @@
       ]
     },
     "gen-grokcf-voronoi": {
-      "hash": "4a0207dfd8604ca7",
+      "hash": "e0d211b41c66f14d",
       "history": [
         {
           "event": "upgraded",
@@ -10200,6 +10243,14 @@
           "prev_hash": "9bb0db0d1145c06a",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "e0d211b41c66f14d",
+          "prev_hash": "4a0207dfd8604ca7",
+          "commit": "355fb48c",
+          "note": null
         }
       ]
     },
@@ -10260,8 +10311,17 @@
       ]
     },
     "gen-orb": {
-      "hash": "09e8c257abd49c4d",
-      "history": []
+      "hash": "03b248b96f558648",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "03b248b96f558648",
+          "prev_hash": "09e8c257abd49c4d",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "gen-psychedelic-spiral": {
       "hash": "c0a95d3352dd461f",
@@ -10440,8 +10500,17 @@
       "history": []
     },
     "kimi-quantum-field": {
-      "hash": "ccdfda5843cf9f23",
-      "history": []
+      "hash": "fc197ffc3b95557d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "fc197ffc3b95557d",
+          "prev_hash": "ccdfda5843cf9f23",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "lava-lamp-blobs": {
       "hash": "e31cf0a1c56a9a23",
@@ -10709,8 +10778,17 @@
       ]
     },
     "spec-distance-field-text": {
-      "hash": "6021502c6d5fc31a",
-      "history": []
+      "hash": "2ff8ab64e862bf76",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "2ff8ab64e862bf76",
+          "prev_hash": "6021502c6d5fc31a",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "spec-quaternion-julia": {
       "hash": "a6d030ea5ab30796",
@@ -10843,8 +10921,17 @@
       ]
     },
     "wolfram-data-demo": {
-      "hash": "e8a1f8c434a0e390",
-      "history": []
+      "hash": "f3838c26958c0aa6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-08T11:36:20.378Z",
+          "hash": "f3838c26958c0aa6",
+          "prev_hash": "e8a1f8c434a0e390",
+          "commit": "355fb48c",
+          "note": null
+        }
+      ]
     },
     "adaptive-mosaic": {
       "hash": "3076cb5e3cb7a58d",
