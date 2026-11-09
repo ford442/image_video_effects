@@ -3,7 +3,7 @@
   "name": "Interactive Voronoi Lens",
   "url": "shaders/interactive-voronoi-lens.wgsl",
   "category": "interactive-mouse",
-  "description": "Voronoi cells act as audio-reactive lenses with mouse-driven focus, temporal trail accumulation, depth-aware edge fog, and neon cell-boundary accents.",
+  "description": "Voronoi cells act as audio-reactive lenslets with depth parallax, cursor refocus, glassy seam catch-lights, a spring-damped gravity well, click shockwaves and temporal trails.",
   "tags": [
     "voronoi",
     "lens",
