@@ -1,34 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cyber Magnifier
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, depth-aware
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: digital-zoom texel grid at high magnification; sweep-traced Sobel outlines; depth rangefinder arc
+//  Upgraded: 2026-10-04, 2026-11-09
+//  Ideas: digital-zoom texel grid at high magnification; sweep-traced Sobel outlines; depth rangefinder arc; Brown-Conrady loupe distortion (§12.2B); autofocus defocus keyed to the rangefinder
 //  A packing: masks (inLens, border, sweep, alpha); texel (0,0) = (glide.x, glide.y, 7 marker, 1) lens state
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 // Hue-preserving highlight clamp: scales rgb toward a peak ceiling while
 // keeping channel ratios (and therefore hue) intact. Tames the additive
@@ -107,7 +88,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let edgeWidth = 0.005;
     let inLens = 1.0 - smoothstep(radius, radius + edgeWidth, dist);
-    let uvZoomed = clamp((uv - mouse) / magnification + mouse, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
+    // ── Idea 4: loupe distortion, Brown-Conrady radial (§12.2B) ──────
+    // The pure gnomonic zoom (uv-m)/mag keeps the magnification the same all the way to the rim. A glass loupe
+    // rolls off: the local magnification is mag * s(r) with s = 1 + k1 r^2 + k2 r^4, r = aspect-corrected
+    // distance / lens radius. k1, k2 scale with (mag - 1), so the mapping is the identity at magnification 1;
+    // both are negative (barrel roll-off toward the rim; monotone, no fold-over). s is clamped >= 0.4 and the
+    // distortion is faded out beyond the lens (inLens) so the area outside the loupe maps exactly as before, and
+    // with pixAmt (gone by pixAmt 0.5, ~2.9x): past ~2.5x the loupe is a DIGITAL zoom (exact square texels, Idea 1), not glass.
+    // gUV, the Sobel taps, the texel grid and the CA taps below all follow uvZoomed.
+    let pixAmt = smoothstep(2.2, 3.6, magnification);   // Idea 1's digital-zoom blend (hoisted: Idea 4/5 fade with it)
+    let rLens = dist / max(radius, 0.001);
+    let rLens2 = rLens * rLens;
+    let bcK1 = -0.10 * (magnification - 1.0);
+    let bcK2 = -0.03 * (magnification - 1.0);
+    let bcScale = mix(1.0, max(1.0 + bcK1 * rLens2 + bcK2 * rLens2 * rLens2, 0.4), inLens * (1.0 - smoothstep(0.1, 0.5, pixAmt)));
+    let uvZoomed = clamp((uv - mouse) / (magnification * bcScale) + mouse, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
     let safeDir = distVecAspect / max(dist, 0.0001);
     let aberrationOffset = vec2<f32>(safeDir.x / aspect, safeDir.y) *
         aberrationStrength * (dist / max(radius, 0.001)) * (1.0 + treble * 0.4);
@@ -124,7 +119,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1: digital zoom. Past ~2.5x the magnifier stops interpolating and
     // shows the source texels themselves, each one outlined by the texel grid.
     let texRes = vec2<f32>(textureDimensions(readTexture));
-    let pixAmt = smoothstep(2.2, 3.6, magnification);
     let snapR = (floor(rUV * texRes) + vec2<f32>(0.5)) / texRes;
     let snapG = (floor(gUV * texRes) + vec2<f32>(0.5)) / texRes;
     let snapB = (floor(bUV * texRes) + vec2<f32>(0.5)) / texRes;
@@ -135,7 +129,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     let texelLocal = abs(fract(gUV * texRes) - 0.5);
     let texelLine = smoothstep(0.42, 0.5, max(texelLocal.x, texelLocal.y)) * pixAmt;
-    let lensColor = vec4<f32>(mix(smoothLens, blockLens, pixAmt) * (1.0 - texelLine * 0.45), 1.0);
+
+    // ── Idea 5: autofocus defocus keyed to the rangefinder ───────────
+    // The depth under the lens centre (the value the rangefinder arc reads out) is the focal plane. Circle of
+    // confusion = |depth(gUV) - centreDepth| (small dead-band against depth-map noise), full at ~0.14 of depth.
+    // The smooth lens colour blends to a 4-tap cross blur by CoC (tap radius also grows with CoC, up to 1.8% of
+    // the frame height on screen). A pixel-view loupe is not defocused: CoC fades out with pixAmt. Flat depth
+    // -> CoC 0 (inert); the depth is read at the magnified source position gUV, so a depth ramp spans
+    // only ~1/mag of the lens radius.
+    let centreDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, mouse, 0.0).r;
+    let depthG = textureSampleLevel(readDepthTexture, non_filtering_sampler, gUV, 0.0).r;
+    let coc = clamp((abs(depthG - centreDepth) - 0.015) * 8.0, 0.0, 1.0) * (1.0 - pixAmt) * inLens;
+    var focusLens = smoothLens;
+    if (coc > 0.002) {
+        let bs = coc * 0.018 * vec2<f32>(1.0 / aspect, 1.0) / magnification;   // screen-space radius <= 1.8% of the frame height
+        let blurred = 0.2 * (smoothLens
+            + textureSampleLevel(readTexture, u_sampler, clamp(gUV + vec2<f32>(bs.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb
+            + textureSampleLevel(readTexture, u_sampler, clamp(gUV - vec2<f32>(bs.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb
+            + textureSampleLevel(readTexture, u_sampler, clamp(gUV + vec2<f32>(0.0, bs.y), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb
+            + textureSampleLevel(readTexture, u_sampler, clamp(gUV - vec2<f32>(0.0, bs.y), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb);
+        focusLens = mix(smoothLens, blurred, coc);
+    }
+    let lensColor = vec4<f32>(mix(focusLens, blockLens, pixAmt) * (1.0 - texelLine * 0.45), 1.0);
     let bgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     var finalColor = mix(bgColor, lensColor, inLens);
 
@@ -178,7 +193,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Idea 3: rangefinder. An arc of ticks outside the border fills clockwise
     // from 12 o'clock in proportion to the depth under the lens centre.
-    let centreDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, mouse, 0.0).r;
+    // (centreDepth is sampled above for Idea 5: the same value is now also the focal plane.)
     let arcBand = 1.0 - smoothstep(0.003, 0.006, abs(dist - (radius + 0.018)));
     let arcAngle = fract((scanAngle + 1.5707963) / 6.28318530718);
     let arcFill = 1.0 - step(centreDepth * 0.75, arcAngle);
@@ -190,7 +205,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = mix(finalColor, finalColor * (0.65 - mids * 0.08), vignette * 0.55);
 
     let alpha = clamp(bgColor.a * 0.28 + inLens * 0.28 + border * 0.28 + sweep * 0.12 + bass * 0.05, 0.08, 1.0);
-    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, gUV, 0.0).r + inLens * 0.04, 0.0, 1.0);
+    let depth = clamp(depthG + inLens * 0.04, 0.0, 1.0);
     let outPixel = vec4<f32>(finalColor.rgb, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), outPixel);

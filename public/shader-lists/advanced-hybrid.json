@@ -2939,7 +2939,6 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "temporal-feedback",
       "upgraded-rgba"
@@ -3233,7 +3232,7 @@
     "id": "data-stream-corruption-hdr",
     "name": "Data Stream Corruption Hdr",
     "url": "shaders/data-stream-corruption-hdr.wgsl",
-    "description": "Data Stream Corruption Hdr",
+    "description": "Paint corruption into the image: column glitches, RGB split and green glyph rain with phosphor trails, white-hot packet glyphs, stream-light bloom and a cyan bit-flip seam on the corruption frontier.",
     "tags": [
       "mouse-driven",
       "data-stream-corruption",
@@ -3244,7 +3243,9 @@
       "mouse-driven",
       "data-stream-corruption",
       "hdr-bloom",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3547,7 +3548,7 @@
     "id": "digital-decay-rgba",
     "name": "Digital Decay RGBA",
     "url": "shaders/digital-decay-rgba.wgsl",
-    "description": "MPEG block corruption seeds a 4-species reaction-diffusion system with spring injection, held corrupt bursts, capped ripples, exact C Laplacian, and spectral RD visualization.",
+    "description": "MPEG block corruption seeds a 4-species reaction-diffusion system with pointer injection, held corrupt bursts, capped ripples, exact C Laplacian, and spectral RD visualization. Corruption seams seed the reaction-diffusion rot, dense rot erodes bit depth, and corrupted macroblocks bleed block-centre chroma.",
     "features": [
       "advanced-hybrid",
       "digital-decay",
