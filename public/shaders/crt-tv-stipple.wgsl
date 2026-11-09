@@ -1,27 +1,14 @@
-// CRT TV Stipple — Composer batch cyber/digital/glitch cohort 3
-// CRT phosphor core + blue-noise stipple grille, spring focus, held bulge,
-// capped ripples, exact C persistence, three-band audio, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  CRT TV Stipple
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal-feedback
+//  Complexity: Medium
+//  Upgraded: 2026-11-09
+//  Ideas: per-channel P22 afterglow (red slow, blue fast) from exact C; rolling hum bar up the tube; radial R/B stipple convergence error toward corners
+//  A packing: ACES display RGBA (C read back as phosphor afterglow colour)
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn curveUv(uv: vec2<f32>, curvature: f32) -> vec2<f32> {
   var centered = uv * 2.0 - 1.0;
@@ -42,7 +29,7 @@ fn blueNoiseOffset(pixelCoord: vec2<f32>, frame: f32) -> vec2<f32> {
   return fract(pixelCoord * phi2 + frame * phi2);
 }
 
-fn stippleGrille(uv: vec2<f32>, dotScale: f32, time: f32) -> vec3<f32> {
+fn stippleGrille(uv: vec2<f32>, dotScale: f32, time: f32, conv: vec2<f32>) -> vec3<f32> {
   let cellId = floor(uv * dotScale);
   let cellLocal = fract(uv * dotScale) - 0.5;
   let sampleUV = (cellId + 0.5) / dotScale;
@@ -55,7 +42,9 @@ fn stippleGrille(uv: vec2<f32>, dotScale: f32, time: f32) -> vec3<f32> {
   else if (triadX < 2.0) { mask.g = 1.0; }
   else { subpixelOffset = vec2<f32>(0.25, 0.0); mask.b = 1.0; }
   let jitter = blueNoiseOffset(cellId + subpixelOffset * 10.0, time * 0.1);
-  let dotCenter = (jitter - 0.5) * 0.6 + subpixelOffset * 0.3;
+  // Idea 3: convergence error — R and B guns land off-centre in opposite radial directions.
+  let convShift = conv * (mask.r - mask.b);
+  let dotCenter = (jitter - 0.5) * 0.6 + subpixelOffset * 0.3 + convShift;
   let dotSize = mix(0.45, 0.08, luma);
   let dist = length(cellLocal - dotCenter);
   let dotMask = 1.0 - smoothstep(dotSize - 0.06, dotSize + 0.06, dist);
@@ -63,14 +52,11 @@ fn stippleGrille(uv: vec2<f32>, dotScale: f32, time: f32) -> vec3<f32> {
 }
 
 fn phosphorDecay(baseColor: vec3<f32>, time: f32, flicker: f32) -> vec3<f32> {
-  let decayRates = vec3<f32>(2.5, 5.0, 10.0);
   let refreshFlicker = 1.0 - flicker * 0.03 * sin(time * 377.0);
   let humBar = 1.0 - flicker * 0.02 * sin(time * 6.28 * 0.5);
-  var decayed = baseColor;
-  decayed.r = pow(decayed.r, 1.0 / decayRates.r) * refreshFlicker * humBar;
-  decayed.g = pow(decayed.g, 1.0 / decayRates.g) * refreshFlicker * humBar;
-  decayed.b = pow(decayed.b, 1.0 / decayRates.b) * refreshFlicker * humBar;
-  return decayed;
+  // Rescue: HEAD lifted each channel with pow(c, 1/rate) (blue^0.1), a cyan-grey
+  // wash. Decay now lives in the per-channel C afterglow in main().
+  return baseColor * refreshFlicker * humBar;
 }
 
 fn halationGlow(uv: vec2<f32>, strength: f32, curvature: f32, resolution: vec2<f32>) -> vec3<f32> {
@@ -135,32 +121,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
   let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 9.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
+  let smoothMouse = mouse;
 
   let scanlineIntensity = u.zoom_params.x * (1.0 + mids * 0.5);
   let phosphorGlow = u.zoom_params.y * (1.0 + bass * 0.7);
@@ -185,18 +146,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var crtUV = select(uv, curveUv(uv, curvature), barrelAmount > 0.01);
   if (crtUV.x < 0.0 || crtUV.x > 1.0 || crtUV.y < 0.0 || crtUV.y > 1.0) {
     textureStore(writeTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(0.0, 0.0, 0.0, 1.0));
     let depth = textureLoad(readDepthTexture, coord, 0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     return;
   }
 
   let baseSample = textureSampleLevel(readTexture, u_sampler, crtUV, 0.0);
-  let r = textureSampleLevel(readTexture, u_sampler, crtUV + vec2<f32>(chromaticStr, 0.0), 0.0).r;
+  // Idea 3 (cont.): misconvergence grows radially with barrel, so R/B separate at the corners.
+  let radial = (crtUV - 0.5) * 2.0;
+  let convDir = vec2<f32>(chromaticStr, 0.0) + radial * dot(radial, radial) * barrelAmount * 0.004;
+  let r = textureSampleLevel(readTexture, u_sampler, crtUV + convDir, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, crtUV, 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, crtUV - vec2<f32>(chromaticStr, 0.0), 0.0).b;
+  let b = textureSampleLevel(readTexture, u_sampler, crtUV - convDir, 0.0).b;
   var color = vec3<f32>(r, g, b);
 
-  let stippleMask = stippleGrille(crtUV, stippleDensity, time);
+  let stippleMask = stippleGrille(crtUV, stippleDensity, time, radial * dot(radial, radial) * barrelAmount * 0.18);
   color *= 0.3 + stippleMask * 0.7;
   color *= scanlines(crtUV, resolution, scanlineIntensity, time, mids);
   color += halationGlow(crtUV, phosphorGlow * 0.5, curvature, resolution);
@@ -209,13 +174,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   color = phosphorDecay(color, time, flickerAmount);
+
+  // Idea 2: rolling hum bar — a soft 60/50 Hz beat band drifting up the tube.
+  let humPhase = fract(crtUV.y + time * (0.07 + mids * 0.05)) - 0.5;
+  let humBand = exp(-humPhase * humPhase * 18.0);
+  color *= 1.0 - flickerAmount * 0.07 + humBand * flickerAmount * 0.12;
   color *= crtVignette(uv, 0.5 + barrelAmount * 0.5);
   color *= vec3<f32>(1.05, 1.02, 0.98);
 
+  // Idea 1: P22 afterglow — red phosphor persists longest, blue shortest. The
+  // previous frame (exact C) decays per channel and only lifts dimmer pixels.
+  // Applied in display space after ACES so persist < 1 always decays (no latch).
+  // Exposure 1.9 restores the brightness HEAD's pow() lift gave the stipple.
+  color = acesToneMap(color * (1.9 + bass * 0.1));
   let prev = textureLoad(dataTextureC, coord, 0).rgb;
-  color = mix(color, prev, 0.08 + phosphorGlow * 0.06);
-
-  color = acesToneMap(color * (0.95 + bass * 0.05));
+  let persist = vec3<f32>(0.86, 0.72, 0.45) * (0.55 + u.zoom_params.y * 0.4);
+  color = max(color, prev * persist);
 
   let maskScalar = dot(stippleMask, vec3<f32>(0.3333));
   let alpha = clamp(baseSample.a * 0.9 + rippleFlash * 0.15 + maskScalar * 0.1 + bass * 0.05, 0.0, 1.0);

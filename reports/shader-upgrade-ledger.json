@@ -309,8 +309,17 @@
       "history": []
     },
     "chroma-vortex-coupled": {
-      "hash": "11d6fe40fe98800d",
-      "history": []
+      "hash": "3d00cb1dc12df55f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "3d00cb1dc12df55f",
+          "prev_hash": "11d6fe40fe98800d",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
+        }
+      ]
     },
     "chromatic-crawler-structure": {
       "hash": "0f3e5066961ee74c",
@@ -449,8 +458,17 @@
       "history": []
     },
     "crt-tv-stipple": {
-      "hash": "d7020192eedc212f",
-      "history": []
+      "hash": "bda3ad91cb2dc5ef",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "bda3ad91cb2dc5ef",
+          "prev_hash": "d7020192eedc212f",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
+        }
+      ]
     },
     "crystal-illuminator-iridescence": {
       "hash": "2ca936dca8c99ec3",
@@ -619,8 +637,17 @@
       ]
     },
     "digital-glitch-explosion": {
-      "hash": "69c812ac2116ed25",
-      "history": []
+      "hash": "b88c0179802f8f21",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "b88c0179802f8f21",
+          "prev_hash": "69c812ac2116ed25",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
+        }
+      ]
     },
     "digital-lens-prismatic": {
       "hash": "a183ad12cfd516d2",
@@ -3603,8 +3630,17 @@
       "history": []
     },
     "pixel-sort-glitch": {
-      "hash": "4e40f7120b550f42",
-      "history": []
+      "hash": "4c80bcbc199c6037",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "4c80bcbc199c6037",
+          "prev_hash": "4e40f7120b550f42",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
+        }
+      ]
     },
     "pixel-storm": {
       "hash": "2a8d831fe3619ea2",
@@ -3720,8 +3756,17 @@
       ]
     },
     "scan-distort-gpt52": {
-      "hash": "e07fd4aa58916419",
-      "history": []
+      "hash": "84699159eeec5641",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "84699159eeec5641",
+          "prev_hash": "e07fd4aa58916419",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
+        }
+      ]
     },
     "sine-wave": {
       "hash": "7ebc14794bfb90d0",
@@ -14010,8 +14055,17 @@
       ]
     },
     "directional-glitch": {
-      "hash": "44fae4f46e0d6d92",
-      "history": []
+      "hash": "3e987bef39ba4523",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "3e987bef39ba4523",
+          "prev_hash": "44fae4f46e0d6d92",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
+        }
+      ]
     },
     "double-exposure": {
       "hash": "77e8793123617b5f",
@@ -14249,7 +14303,7 @@
       ]
     },
     "holographic-edge-ripple": {
-      "hash": "4fb7056af5440f49",
+      "hash": "0f23f83125b2aa8a",
       "history": [
         {
           "event": "upgraded",
@@ -14258,6 +14312,14 @@
           "prev_hash": "66079a07f69ae980",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "0f23f83125b2aa8a",
+          "prev_hash": "4fb7056af5440f49",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
         }
       ]
     },
@@ -17199,8 +17261,17 @@
       ]
     },
     "audio-reactive-temporal-decay": {
-      "hash": "0c0e3a44e4d681e5",
-      "history": []
+      "hash": "f29df3014bcbcacb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "f29df3014bcbcacb",
+          "prev_hash": "0c0e3a44e4d681e5",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
+        }
+      ]
     },
     "chrono-luma-slit-scan": {
       "hash": "bd01c4366d63ce1c",
@@ -17414,7 +17485,7 @@
       ]
     },
     "temporal-phosphor-burn": {
-      "hash": "11cb5b3d148f25a2",
+      "hash": "e4142666c9b966f5",
       "history": [
         {
           "event": "upgraded",
@@ -17423,6 +17494,14 @@
           "prev_hash": "d688df834ae14a2d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "e4142666c9b966f5",
+          "prev_hash": "11cb5b3d148f25a2",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
         }
       ]
     },
@@ -17943,7 +18022,7 @@
       ]
     },
     "scan-distort": {
-      "hash": "27ce3ce1f2175808",
+      "hash": "42445881baa79d19",
       "history": [
         {
           "event": "upgraded",
@@ -17952,6 +18031,14 @@
           "prev_hash": "d94339f2d95c5421",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T06:39:35.063Z",
+          "hash": "42445881baa79d19",
+          "prev_hash": "27ce3ce1f2175808",
+          "commit": "3b52830b",
+          "note": "2026-11-09 opus/batch-25 scan/CRT/glitch ten (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-25"
         }
       ]
     },

@@ -1967,7 +1967,7 @@
     "features": [
       "chroma-vortex",
       "fluid-coupling",
-      "spring-dynamics",
+      "audio-reactive",
       "cauchy-dispersion",
       "strain-birefringence",
       "mouse-driven",
@@ -2600,7 +2600,7 @@
     "id": "crt-tv-stipple",
     "name": "CRT TV Stipple",
     "url": "shaders/crt-tv-stipple.wgsl",
-    "description": "CRT phosphor physics with blue-noise stipple aperture grille, spring focus, held bulge, capped ripples, exact C persistence, and three-band audio.",
+    "description": "CRT with blue-noise stipple triads, per-channel phosphor afterglow, a rolling hum bar and corner misconvergence.",
     "workgroup_size": [
       16,
       16,
@@ -2617,7 +2617,6 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "temporal-feedback",
       "upgraded-rgba"
@@ -3625,7 +3624,7 @@
     "id": "digital-glitch-explosion",
     "name": "Digital Glitch Explosion",
     "url": "shaders/digital-glitch-explosion.wgsl",
-    "description": "Bitwise corruption meets prismatic chromatic shockwaves with spring cursor, held burst, capped ripples, exact C smear, and three-band audio.",
+    "description": "Bitwise corruption and prismatic chromatic shockwaves with macroblock datamosh, bit-plane slices and a bass shard burst from the cursor.",
     "workgroup_size": [
       16,
       16,
@@ -3639,7 +3638,6 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "upgraded-rgba",
       "temporal-feedback"

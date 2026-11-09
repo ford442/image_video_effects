@@ -1,31 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  chroma-vortex-coupled
 //  Category: advanced-hybrid
-//  Features: chroma-vortex, fluid-coupling, mouse-driven, temporal
-//  Ideas: Cauchy prismatic dispersion streamline ribbons, acoustic vortex cavitation glints, fluid rate-of-strain birefringence
+//  Features: chroma-vortex, fluid-coupling, mouse-driven, audio-reactive, temporal
+//  Upgraded: 2026-11-09
+//  Ideas: Cauchy prismatic dispersion streamline ribbons, acoustic vortex cavitation glints, fluid rate-of-strain birefringence; 2nd pass: tangential vortex-eye injection, bass-pulsed eye breathing, low-pressure core lens
 //  A packing: fluid transport state [vel.x, vel.y, vorticity, density]
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
     let s = sin(angle);
@@ -76,28 +58,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    // Single-writer spring-damper cursor for fluid vortex eye in extraBuffer[133..138]
-    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var sprungMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) {
-        sprungMouse = rawMouse;
-        mouseVel = vec2<f32>(0.0);
-    }
-    let dt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
-    let omega = 9.0;
-    mouseVel += ((rawMouse - sprungMouse) * (omega * omega) - mouseVel * (2.0 * omega)) * dt;
-    sprungMouse += mouseVel * dt;
-
-    if (gid.x == 0u && gid.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = sprungMouse.x;
-        extraBuffer[134] = sprungMouse.y;
-        extraBuffer[135] = mouseVel.x;
-        extraBuffer[136] = mouseVel.y;
-        extraBuffer[137] = 1.0;
-        extraBuffer[138] = time;
-    }
-
+    // RESCUE (2026-11-09): HEAD kept a spring in extraBuffer[133..138], which the
+    // host re-uploads as zeros every frame, so mouseVel was always 0 and the
+    // pointer never stirred the fluid. Stirring is now stateless (idea 1 below).
+    let sprungMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
+    let mouseVel = vec2<f32>(0.0);
     let mousePos = sprungMouse;
     let mouseSpeed = length(mouseVel);
 
@@ -127,8 +92,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let influence = smoothstep(mouseRadius, 0.0, distMouse);
 
     vel += mouseVel * influence * 0.6;
-    let vortexDir = vec2<f32>(-mouseVel.y, mouseVel.x);
-    vel += vortexDir * influence * vortexStrength * (mouseSpeed + 0.1);
+    // Idea 1 — tangential vortex-eye injection: circumferential momentum around
+    // the pointer, spinning the same way as the optical Twist, so the fluid field
+    // actually co-rotates with the vortex the shader draws.
+    let spinSign = select(-1.0, 1.0, u.zoom_params.x >= 0.5);
+    let tangent = vec2<f32>(-toMouse.y, toMouse.x) / max(distMouse, 1e-3);
+    let ringProfile = influence * smoothstep(0.0, mouseRadius * 0.35, distMouse);
+    vel += vec2<f32>(tangent.x / aspect, tangent.y) * ringProfile * spinSign
+         * vortexStrength * 0.06 * (1.0 + mouseSpeed);
+
+    // Idea 2 — bass-pulsed eye breathing: bass kicks inject dye at the eye and a
+    // radial puff that the swirl then winds into spiral arms.
+    let eye = exp(-distMouse * distMouse / max(mouseRadius * mouseRadius * 0.25, 1e-4));
+    let radialOut = select(vec2<f32>(0.0), toMouse / max(distMouse, 1e-3), distMouse > 1e-3);
+    dens += eye * (0.04 + bass * 0.35);
+    vel += vec2<f32>(radialOut.x / aspect, radialOut.y) * eye * bass * 0.12;
 
     // Click shockwaves inject outward momentum and density burst
     let rippleCount = min(u32(u.config.y), 50u);
@@ -170,7 +148,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Optical vortex swirl sampling
     let fluidDisp = vel * (dens * 0.08 + 0.02);
-    let displacedUV = uv + fluidDisp;
+    // Idea 3 — low-pressure core lens: strong spin + dye rarefies the core, pulling
+    // the sample toward the eye (magnified, slightly dimmed centre).
+    let corePressure = clamp(abs(vorticity) * 20.0 * dens + eye * abs(vortexStrength) * 0.08, 0.0, 1.0);
+    let displacedUV = mix(uv + fluidDisp, mousePos, corePressure * 0.35);
     let diff = displacedUV - mousePos;
     let dist = length(vec2<f32>(diff.x * aspect, diff.y));
     var factor = smoothstep(radius, 0.0, dist);
@@ -223,6 +204,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let specular = pow(specNoise, 18.0) * influence * (dens + 0.2) * 2.5;
     outColor += vec3<f32>(0.9, 0.95, 1.0) * specular;
 
+    outColor *= 1.0 - corePressure * 0.25;
     let finalRGB = acesFilm(max(outColor, vec3<f32>(0.0)));
     let alpha = clamp(0.75 + dens * 0.15 + factor * 0.1, 0.0, 1.0);
 

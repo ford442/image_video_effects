@@ -2,7 +2,7 @@
   "id": "digital-glitch-explosion",
   "name": "Digital Glitch Explosion",
   "url": "shaders/digital-glitch-explosion.wgsl",
-  "description": "Bitwise corruption meets prismatic chromatic shockwaves with spring cursor, held burst, capped ripples, exact C smear, and three-band audio.",
+  "description": "Bitwise corruption and prismatic chromatic shockwaves with macroblock datamosh, bit-plane slices and a bass shard burst from the cursor.",
   "workgroup_size": [
     16,
     16,
@@ -16,7 +16,6 @@
     "audio-reactive",
     "click-ripples",
     "held-drag",
-    "spring-cursor",
     "aces-tone-map",
     "upgraded-rgba",
     "temporal-feedback"
