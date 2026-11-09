@@ -2,7 +2,7 @@
   "id": "deep-workgroup-multi-effect-blend",
   "name": "Deep-Workgroup Multi-Effect Blend",
   "url": "shaders/deep-workgroup-multi-effect-blend.wgsl",
-  "description": "Uses a 16×16×4 workgroup (1024 invocations) to run four effects simultaneously in Z-lanes — edge detection, bloom, hue-shift, and phosphor glow — then blends them via workgroup shared memory. Requires a GPU with maxComputeInvocationsPerWorkgroup ≥ 1024 (Apple M1+, NVIDIA RTX, AMD RDNA2+).",
+  "description": "16×16×4 workgroup runs edge, bloom, hue-shift and phosphor lanes in parallel, then blends them by per-pixel content votes; phosphor leaves a decaying afterglow, and holding the pointer solos one lane per quadrant.",
   "tags": [
     "deep-workgroup",
     "advanced",
@@ -14,7 +14,11 @@
     "shared-memory"
   ],
   "features": [
-    "deep-workgroup"
+    "deep-workgroup",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal-feedback"
   ],
   "requiresDeepWorkgroup": true,
   "params": [

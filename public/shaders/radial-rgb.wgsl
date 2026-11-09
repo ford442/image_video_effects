@@ -3,31 +3,12 @@
 //  Category: distortion
 //  Features: mouse-driven, chromatic-aberration, upgraded-rgba, audio-reactive
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: radial chromatic (R/B at different k1); mustache k3 r^6 Brown term
+//  Upgraded: 2026-09-08, 2026-11-09
+//  Ideas: radial chromatic (R/B at different k1); mustache k3 r^6 Brown term; held-pointer decentred optical axis; tangential astigmatism smear; cat's-eye mechanical vignette
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ Math Snippets ═══
 fn tentAlpha(x: f32) -> f32 {
@@ -86,9 +67,9 @@ fn smoothVignette(uv: vec2<f32>, intensity: f32, roundness: f32) -> f32 {
   let dist = length(uv - 0.5);
   let inner = 0.3 * roundness;
   let outer = 0.85;
-  let v = 1.0 - smoothstep(inner, outer, dist * intensity);
-  let softEdge = smoothstep(0.0, inner, dist * intensity);
-  return v * softEdge;
+  // FIX 2026-11-09: a softEdge = smoothstep(0, inner, dist) factor here blacked out the
+  // frame centre (dist 0 -> 0). A vignette darkens the rim only.
+  return 1.0 - smoothstep(inner, outer, dist * intensity);
 }
 
 fn smoothFalloff(x: f32, edge0: f32, edge1: f32) -> f32 {
@@ -115,7 +96,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let uv = vec2<f32>(global_id.xy) / resolution;
   let time = u.config.x;
 
-  let center = vec2(0.5);
+  let audio0 = plasmaBuffer[0];
+  // Idea: held-pointer decentred optical axis — dragging slides the lens centre (a shifted /
+  // decentred element), so the barrel, fringes and vignette all re-centre on the pointer.
+  // Gated on mouse down: the idle pointer parks at the frame centre anyway.
+  let held = u.zoom_config.w > 0.5;
+  let center = select(vec2<f32>(0.5), clamp(u.zoom_config.yz, vec2<f32>(0.1), vec2<f32>(0.9)), held);
   let k1 = (u.zoom_params.x - 0.5) * 2.0;
   let k2 = (u.zoom_params.y - 0.5) * 2.0;
   let anamorphic = 1.0 + u.zoom_params.z * 2.0;
@@ -135,14 +121,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   uvR = clamp(uvR, vec2<f32>(0.0), vec2<f32>(1.0));
   uvB = clamp(uvB, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let mouseDir = normalize(u.zoom_config.yz - 0.5 + vec2(0.0001));
   let distortedUV = uvG;
   let displacementMag = length(distortedUV - uv);
-  let splitColor = vec3<f32>(
-    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
-    textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
-    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
-  );
+  // Idea: tangential astigmatism smear — off-axis points spread along the tangential
+  // (circumferential) direction, growing with field radius^2 and dispersion; bass widens it.
+  let fieldVec = uv - center;
+  let fieldR2 = dot(fieldVec, fieldVec);
+  let tangentDir = vec2<f32>(-fieldVec.y, fieldVec.x) / max(sqrt(fieldR2), 1e-4);
+  let astig = tangentDir * fieldR2 * dispersion * 0.6 * (1.0 + audio0.x * 0.5);
+  var splitColor = vec3<f32>(0.0);
+  for (var k = -1; k <= 1; k = k + 1) {
+    let o = astig * f32(k);
+    splitColor += vec3<f32>(
+      textureSampleLevel(readTexture, u_sampler, clamp(uvR + o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
+      textureSampleLevel(readTexture, u_sampler, clamp(uvG + o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g,
+      textureSampleLevel(readTexture, u_sampler, clamp(uvB + o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+    ) * select(0.25, 0.5, k == 0);
+  }
   let baseColor = textureSampleLevel(readTexture, u_sampler, clamp(uvG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   let sampled = mix(baseColor, splitColor, clamp(dispersion * 14.0, 0.0, 1.0));
 
@@ -171,8 +166,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Multi-zone vignette falloff with smooth inner/outer curves
   let vignetteIntensity = 1.0 + abs(k1) * 0.5;
-  let vignette = smoothVignette(uv, vignetteIntensity, 1.0);
-  color = color * vignette;
+  let vignette = smoothVignette(uv - (center - 0.5) * 0.5, vignetteIntensity, 1.0);
+  // Idea: cat's-eye mechanical vignette — off-axis the entrance pupil is clipped by the rear
+  // barrel, a second disc displaced along the field direction; the lens-shaped intersection
+  // darkens the outer field with an almond-shaped falloff (stronger with |k1|).
+  let catShift = fieldVec * (1.2 + abs(k1) * 0.8);
+  let catEye = 1.0 - smoothstep(0.55, 0.85, length(fieldVec + catShift * 0.5) * 1.1);
+  color = color * vignette * mix(1.0, catEye, 0.3);
 
   // Additional smoothstep falloff for edge darkening near frame boundaries
   let edgeX = smoothstep(0.0, 0.08, uv.x) * (1.0 - smoothstep(0.92, 1.0, uv.x));
