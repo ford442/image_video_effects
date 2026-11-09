@@ -7421,7 +7421,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "feedbackPacking": "A/C = vx, vy, vorticity, density. Prev mouse extraBuffer[133..134].",
+    "feedbackPacking": "A/C = vx, vy, curl, density. Texel (0,0) holds the previous pointer (x, y, marker 7, fract(time)) and is masked as zero on fluid reads.",
     "updated": true
   },
   {
