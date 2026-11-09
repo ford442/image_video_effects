@@ -2,7 +2,7 @@
   "id": "digital-decay-rgba",
   "name": "Digital Decay RGBA",
   "url": "shaders/digital-decay-rgba.wgsl",
-  "description": "MPEG block corruption seeds a 4-species reaction-diffusion system with spring injection, held corrupt bursts, capped ripples, exact C Laplacian, and spectral RD visualization.",
+  "description": "MPEG block corruption seeds a 4-species reaction-diffusion system with pointer injection, held corrupt bursts, capped ripples, exact C Laplacian, and spectral RD visualization. Corruption seams seed the reaction-diffusion rot, dense rot erodes bit depth, and corrupted macroblocks bleed block-centre chroma.",
   "features": [
     "advanced-hybrid",
     "digital-decay",

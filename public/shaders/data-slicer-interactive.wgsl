@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Data Slicer Interactive — Batch 67
-//  fp128 slice phase, exact C feedback, capped ripples, racing
-//  fracture packet, held gravity well, ACES + semantic alpha.
+//  Data Slicer Interactive
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-09
+//  Ideas: gravity-bent slices; per-slice bit-crush; edge-row drag
+//  A packing: [trail RGB, smoothed bass]; B = [strength, offset, split, bass]
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -108,7 +112,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let distMouse = length(dMouse);
     let gravity = (1.0 - smoothstep(0.0, 0.35, distMouse)) * select(1.0, 1.5, held);
 
-    let slicePhase = fp128_mul(fp128(uv01.y), fp128(sliceCount));
+    // Idea 1 — gravity-bent slices: slice phase is pulled toward the pointer well
+    let bendY = uv01.y - (uv01.y - mouse.y) * gravity * gravity * select(0.25, 0.5, held) * (1.0 + bass * 0.3);
+    let slicePhase = fp128_mul(fp128(bendY), fp128(sliceCount));
     let sliceIndex = floor(fp128_val(slicePhase));
     let invSliceCount = 1.0 / max(sliceCount, EPS);
     let sliceY = sliceIndex * invSliceCount;
@@ -117,7 +123,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lodOct = select(2, 4, distMouse < 0.4);
     let edgeNoise = fbmLod(vec2<f32>(uv01.x * 8.0, sliceY * 4.0 + time * 0.35), lodOct);
     let warpedSliceWidth = sliceWidth + edgeNoise * 0.03;
-    let distToSlice = min(abs(uv01.y - sliceY), abs(uv01.y - nextSliceY));
+    let distToSlice = min(abs(bendY - sliceY), abs(bendY - nextSliceY));
     let strength = 1.0 - smoothstep(0.0, max(warpedSliceWidth, EPS), distToSlice);
 
     if (strength < 0.005 && gravity < 0.01 && packet < 0.01) {
@@ -182,10 +188,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fbAmt = 0.12 * strength + select(0.0, 0.25, held);
     var color = mix(vec3<f32>(r, g, b), prevCol.rgb, fbAmt);
 
+    // Idea 3 — edge-row drag: just below each slice edge the boundary row smears down
+    let below = bendY - sliceY;
+    let dragLen = 0.012 + hash21(vec2<f32>(sliceIndex, floor(time * 6.0))) * 0.03 * (1.0 + mids);
+    if (below > 0.0 && below < dragLen) {
+        let edgeUv = clamp(vec2<f32>(uv01.x + offset, uv01.y - below), vec2<f32>(0.0), vec2<f32>(1.0));
+        let edgeRow = textureSampleLevel(readTexture, u_sampler, edgeUv, 0.0).rgb;
+        color = mix(color, edgeRow, (1.0 - below / dragLen) * 0.8 * strength);
+    }
+
+    // Idea 2 — per-slice bit-crush: odd slices quantise to a hashed 3..6-bit depth
+    let sh = hash21(vec2<f32>(sliceIndex, 7.3));
+    if (sh < 0.35 + jitterParam * 0.4) {
+        let levels = exp2(floor(mix(3.0, 6.99, hash21(vec2<f32>(sliceIndex, floor(time * 2.0))))));
+        color = mix(color, floor(color * levels + 0.5) / levels, strength);
+    }
+
     let edgeT = 1.0 - smoothstep(0.0, max(warpedSliceWidth * 0.25, EPS), distToSlice);
     let edgeGlow = edgeT * strength * (0.25 + treble * 0.4 + shock * 0.3 + packet * 0.2);
     color += vec3<f32>(edgeGlow * 0.9, edgeGlow * 0.55, edgeGlow * 1.1);
-    color *= 1.0 + 0.06 * sin(uv01.y * res.y * PI) * strength;
+    color *= 1.0 + 0.06 * sin((uv01.y * res.y + 0.5) * PI) * strength;
     color += vec3<f32>(treble * strength * 0.25, treble * strength * 0.15, treble * strength * 0.1);
     color += vec3<f32>(shock * strength * 0.15);
     color = mix(color, color * 1.3, depth * strength * 0.5);

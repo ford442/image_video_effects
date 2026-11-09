@@ -3,7 +3,7 @@
   "name": "Cyber Glitch Hologram",
   "category": "interactive-mouse",
   "url": "shaders/cyber-glitch-hologram.wgsl",
-  "description": "Block-based datamoshing with structure-tensor motion estimation, holographic cosine interference fringes, cyan/magenta color separation, chromatic aberration on glitch blocks, and ACES tone mapping.",
+  "description": "Block-swap datamosh with structure-tensor motion, holographic interference fringes, swapped-macroblock seams, depth-slice contour lines and scan-carrier projector dropout around the pointer, ACES tone mapping.",
   "params": [
     {
       "id": "hologramIntensity",
