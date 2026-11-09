@@ -1,18 +1,4 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════
 //  Prismatic 3D Compositor - PASS 2 of 2
@@ -37,14 +23,16 @@
 //
 //  Features: compositor, parallax, volumetric-glow, mouse-driven, audio-reactive, upgraded-rgba
 //  Previous Pass: volumetric-rainbow-clouds.wgsl
+//  Upgraded: 2026-08 (Batch 22), 2026-11-09
+//  Ideas: afterglow (the formerly write-only temporal trail is now visible,
+//         depth-weighted); cursor light shafts (4 decaying taps toward the
+//         pointer through the glow's own threshold/depth weight)
+//  Rescue: exact textureLoad on C (was textureSampleLevel). No ACES: the input is
+//          already display colour from Pass 1 and HEAD's over-range highlights are
+//          part of the look (a tone-map or hue-preserving clip dulled the clouds in renders)
+//  A packing: trail colour (smoothed display RGB) + composite-luminance alpha;
+//             C is read as colour
 // ═══════════════════════════════════════════════════════════════
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>
-};
 
 // Mapping notes:
 // u.zoom_config.yz -> mouse X,Y (already normalized [0,1] by the engine)
@@ -112,6 +100,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     glow = glow / max(count, 1.0);
 
+    // ── Idea 2: cursor light shafts ──────────────────────────────────
+    // The pointer is the scene's active point. Four decaying taps from this pixel toward
+    // it use the glow's own bright-threshold x exp(-depth) weight, so the square glow
+    // footprint gains a direction: crepuscular shafts that fan out from the cursor.
+    let toLight = mousePos - uv;
+    var shaft = vec3<f32>(0.0);
+    var shaftDecay = 1.0;
+    for (var k: i32 = 1; k <= 4; k = k + 1) {
+        shaftDecay = shaftDecay * 0.7;
+        let suv = clamp(uv + toLight * (0.07 * f32(k)), vec2<f32>(0.0), vec2<f32>(1.0));
+        let sc = textureSampleLevel(readTexture, u_sampler, suv, 0.0).rgb;
+        let sd = textureSampleLevel(readDepthTexture, non_filtering_sampler, suv, 0.0).r;
+        shaft = shaft + sc * (exp(-sd) * max(length(sc) - glowThreshold, 0.0) * shaftDecay);
+    }
+
     // Spectral tint: hue rotates with depth so the halo reads prismatic
     // rather than a flat white bloom.
     let prismTint = 0.5 + 0.5 * cos(TWO_PI * (depth + vec3<f32>(0.0, 0.33, 0.67)));
@@ -166,17 +169,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // audio bands drive the composite.
     let liveGlowIntensity = glowIntensity * (1.0 + treble * 0.3);
     let lit = layered + glow * liveGlowIntensity * (1.0 + bass * 0.6)
-            + prismTint * flare * 0.25;
+            + prismTint * flare * 0.25
+            + shaft * prismTint * (0.22 * liveGlowIntensity);
     let finalColor = mix(videoColor, lit, videoBlend);
 
     // 5) Temporal feedback — mids shorten the trail so busy passages stay crisp
-    let prev = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).rgb;
+    // Rescue: exact textureLoad (was a sampler fetch of the history).
+    let histCoord = clamp(vec2<i32>(gid.xy), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+    let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
     let feedback = mix(finalColor, prev, 0.85 - mids * 0.25);
+
+    // ── Idea 1: afterglow ────────────────────────────────────────────
+    // HEAD stored this trail in A but displayed only finalColor, so the history was
+    // write-only. What the trail still holds that the live frame no longer has is shown
+    // as a lingering wake; far haze (low depth) lingers a little more. Static scenes:
+    // prev ~ finalColor -> nothing added.
+    let afterglow = max(prev - finalColor, vec3<f32>(0.0)) * (0.45 + 0.4 * (1.0 - clamp(depth, 0.0, 1.0)));
+    let shown = finalColor + afterglow;
+    let outColor = shown;
 
     // Alpha carries composite luminance so downstream passes can key on it
     let alpha = clamp(length(finalColor) * 0.7 + depth * 0.3, 0.0, 1.0);
 
-    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, alpha));
+    textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(outColor, alpha));
     textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(feedback, alpha));
     textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
