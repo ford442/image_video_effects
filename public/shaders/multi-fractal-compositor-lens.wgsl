@@ -217,8 +217,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let g = baseColor.g;
   var color = mix(baseColor, vec3<f32>(r, g, b), 0.7);
 
-  // Idea 1 (critical-curve brightening): image brightness x clamp(mu, 1, 3), only where the lens acts.
-  color = color * mix(1.0, magArea, lensKeep);
+  // Idea 1 (critical-curve brightening): image brightness x clamp(mu, 1, 3), only where the lens acts. The excess
+  // (mu - 1) is attenuated to 25%..75% by the Ring Glow slider (default 0.5 -> peak x2.0, slider 1 -> x2.5, slider 0
+  // -> x1.5): the literal x3 on a pale photo clips the whole band to white under ACES, and "Ring Glow" is the
+  // slider that already owns how strong the Einstein ring reads.
+  color = color * (1.0 + (magArea - 1.0) * (0.25 + 0.5 * ringGlowStrength) * lensKeep);
 
   // Einstein ring glow — Rescue R2: painted on the true critical curve theta_E = sqrt(lensMass * 0.01) in
   // aspect-corrected distance (HEAD: sqrt(lensMass * 0.015), 22% too wide, and an ellipse-vs-circle mismatch).

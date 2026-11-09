@@ -13689,7 +13689,7 @@
       "music",
       "reactive"
     ],
-    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync, stepping one tooth per escapement tick around ruby jewel bearings. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control. Oil weeps along the mesh, and a hairspring sits in each axle bore.",
+    "description": "Infinite interlocking brass gears stepping one tooth per escapement tick on a shadowed walnut workbench, with ruby jewel bearings, engraved faces, oil weep, hairsprings and amber dust haze. Mouse orbits the camera.",
     "workgroup_size": [
       16,
       16,
@@ -13743,13 +13743,12 @@
       "mouse-driven",
       "upgraded-rgba",
       "raymarched-gears",
-      "sprung-orbit-camera",
       "click-torque-waves",
       "multi-band-material-lighting",
       "temporal-feedback",
       "depth-output"
     ],
-    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133..138] = sprung orbit state"
+    "feedbackPacking": "dataTextureA/C = pre-ACES linear RGB (0..4) + alpha"
   },
   {
     "name": "Fractal Ember Lattice",
@@ -17775,7 +17774,7 @@
       "audio-reactive",
       "storm"
     ],
-    "description": "Recursive Koch snowflake fractals animated with domain-warped fBm turbulence. Ice crystal aesthetic with subsurface scattering, HDR corner bloom, and chromatic dispersion on refracted edges.",
+    "description": "Recursive Koch snowflakes with self-similar offspring and 22° ice halos tumbling through a storm sky of parallax snowfall, rime-feathered bodies and bass-driven thundersnow flashes.",
     "workgroup_size": [
       16,
       16,
@@ -29942,7 +29941,6 @@
       "temporal",
       "chromatic",
       "audio-reactive",
-      "sprung-mouse-vortex",
       "guarded-click-swirls",
       "depth-output"
     ],

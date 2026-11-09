@@ -39,8 +39,7 @@
     "depth",
     "lighting",
     "mouse-driven",
-    "audio-reactive",
-    "upgraded-rgba"
+    "audio-reactive"
   ],
   "tags": [
     "filter",
