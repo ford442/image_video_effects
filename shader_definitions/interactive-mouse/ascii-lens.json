@@ -54,7 +54,9 @@
   "supportsDepth": true,
   "tags": [
     "filter",
-    "image-processing"
+    "image-processing",
+    "ascii",
+    "lens"
   ],
   "updated": true,
   "x-meta": {
