@@ -2,7 +2,7 @@
   "id": "frost-reveal",
   "name": "Frost Reveal",
   "url": "shaders/frost-reveal.wgsl",
-  "description": "Interactive frost reveal effect with crystalline patterns that form based on mouse interaction.",
+  "description": "Interactive frost reveal effect with crystalline patterns that form based on mouse interaction. Meltwater runs down the pane in clear rivulets, rime re-nucleates along the frost edge, and half-melted glass beads with tiny lens droplets.",
   "features": [
     "mouse-driven",
     "interactive",

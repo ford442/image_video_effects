@@ -6,8 +6,8 @@
 //  Complexity: High
 //  Created: 2026-05-30
 //  Optimized: 2026-07-22 — feedback stabilization + real slider wiring
-//  Upgraded: 2026-10-17
-//  Ideas: fold caustics; flow stretch; level-set etching; prismatic trails; radial flux; octave grit
+//  Upgraded: 2026-11-09
+//  Ideas: fold caustics; flow stretch; level-set etching; prismatic trails; radial flux; octave grit; reaction rims; flow-compass hue
 //  A packing: raw HDR history RGBA (pre-ACES chromatic color, coverage alpha)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -171,7 +171,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // --- Advanced Color Mapping ---
     // Blend between two psychedelic palettes based on the pattern value.
     // Scale slider drives palette frequency and a hue offset between the two.
-    let palT = final_val * palFreq + time + mid * 0.08;
+    // Idea 8: flow-compass hue — the palette phase turns with the local flow
+    // direction, so each liquid current carries its own hue band.
+    let flowAng = atan2(r.y - 0.5, r.x - 0.5) / 6.28318;
+    let palT = final_val * palFreq + time + mid * 0.08 + flowAng; // full period: seamless across the atan2 wrap
     let color1 = palette(palT, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.0, 0.1, 0.2));
     let color2 = palette(palT + hueShift, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 1.0, 0.5), vec3<f32>(0.8, 0.9, 0.3));
     var color = mix(color1, color2, smoothstep(0.4, 0.6, final_val));
@@ -226,6 +229,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let histEnergy = smoothstep(0.0, 0.05, lumaOf(history));
     let seededHistory = mix(color, safeHistory, histEnergy);
     let generatedColor = clamp(mix(color, seededHistory, feedbackMix), vec3<f32>(0.0), vec3<f32>(1.0));
+    // Idea 7: reaction rims — where the fresh pattern disagrees with the
+    // advected history the loop is still "reacting"; that front glows as a
+    // thin palette-tinted rim (bass thickens it) instead of a soft blur.
+    let reactGap = abs(lumaOf(color) - lumaOf(safeHistory)) * histEnergy;
+    let front = smoothstep(0.08, 0.35 - 0.12 * bass, reactGap);
+    // (display-only: kept out of the history so the loop never accumulates it)
+    let rimGlow = color2 * front * (0.12 + 0.18 * detailCtl);
 
     // ═══ BLEND WITH INPUT ═══
     let finalColor = mix(inputColor.rgb, generatedColor, opacity);
@@ -237,7 +247,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Gentle vignette keeps the radial burst composition focused on center
     let vignette = 1.0 - 0.25 * smoothstep(0.45, 0.95, length(p));
-    let acesColor = acesToneMap(chromaticColor * 1.1 * vignette);
+    let acesColor = acesToneMap((chromaticColor + rimGlow) * 1.1 * vignette);
 
     let rawHistory = clamp(chromaticColor * vignette, vec3<f32>(0.0), vec3<f32>(6.0));
     let generatedDepth = clamp(0.18 + length(flowVec) * 0.045 + radial_burst * 0.45 + mouse_warp * 0.25, 0.0, 1.0);

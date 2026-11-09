@@ -3,8 +3,10 @@
 //  Category: simulation
 //  Features: simulation, rgba-state-machine, temporal, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: paint-flake holes when integrity drops; rust bleed from metal into failed paint
+//  Upgraded: 2026-11-09 (opus/batch-23, second pass)
+//  Ideas: gravity tide-line stains (rot drips down, salt rim at the wet front); moisture blisters (domed paint bubbles before peeling)
+//  Rescue: seeded only at time<0.1 -> a late start sat on a blank (0,0,0,0) state; now also seeds an all-zero texel
+//  Ideas (2026-09-12): paint-flake holes when integrity drops; rust bleed from metal into failed paint
 //  A packing: raw (paint, metal, organic, structure)
 // ═══════════════════════════════════════════════════════════════════
 //  Four-layer material decay with cross-coupling. Each layer decays
@@ -19,39 +21,8 @@
 //  Why f32: Subtle early-stage decay requires precision below 0.01;
 //  8-bit would make everything appear either perfect or ruined.
 // ═══════════════════════════════════════════════════════════════════
-//  Four-layer material decay with cross-coupling. Each layer decays
-//  at a different rate and affects the decay rate of other layers.
-//  RGBA Channels:
-//    R = Paint layer integrity (1=perfect, 0=fully peeled)
-//    G = Metal corrosion (0=pristine, 1=fully rusted)
-//    B = Organic rot / wood decay (0=healthy, 1=fully rotten)
-//    A = Structural integrity (1=sound, 0=collapsed)
-//  Cross-coupling: when paint fails, metal corrodes faster;
-//                  when structure weakens, all layers decay faster.
-//  Why f32: Subtle early-stage decay requires precision below 0.01;
-//  8-bit would make everything appear either perfect or ruined.
-// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -106,7 +77,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let isEdge = step(0.08, edges);
 
     // Initialize from source on first frame
-    if (time < 0.1) {
+    // Fresh texel: rot only ever grows, so a real decayed texel is never all-zero.
+    if (time < 0.1 || all(state == vec4<f32>(0.0))) {
         let brightness = dot(sourceColor, vec3<f32>(0.299, 0.587, 0.114));
         // Bright areas = paint; mid = metal; dark = organic
         paint = smoothstep(0.3, 0.7, brightness);
@@ -164,6 +136,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Organic rot: accelerated by moisture, spreads from neighbors
     let rotRate = baseDecay * 1.5 * (1.0 + moisture * 2.0);
     organic = organic + rotRate * (1.0 + decayedNeighbors * 0.1);
+
+    // Idea 3 solver — gravity tide-lines: wet rot runs down the surface.
+    // The texel above (y-1, screen-up) feeds this one when it is rottener.
+    let aboveRot = stateAt(coord - vec2<i32>(0, 1), dims).b;
+    let above2Rot = stateAt(coord - vec2<i32>(0, 3), dims).b;
+    let drip = max(aboveRot - organic, 0.0) * moisture * (0.05 + audio.y * 0.04);
+    organic = organic + drip;
 
     // Structural integrity: decays when other layers fail
     let layerDamage = (1.0 - paint) * 0.2 + metal * 0.3 + organic * 0.2;
@@ -232,6 +211,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Idea 2 visual — rust bleed from metal into failed paint
     let rustSeep = metal * exposedMetal * (0.35 + neighborFailedPaint * 0.5);
     displayColor = mix(displayColor, rustColor, clamp(rustSeep, 0.0, 0.7));
+
+    // Idea 3 visual — tide-line stains: the wet front (where rot falls off
+    // sharply below rotten texels) dries to a pale salt rim with a dark
+    // tea-coloured band just behind it, like water damage on plaster.
+    let wetFront = clamp((above2Rot - organic) * 6.0, 0.0, 1.0) * moisture;
+    displayColor = mix(displayColor, vec3<f32>(0.82, 0.78, 0.66), wetFront * 0.45);
+    displayColor = mix(displayColor, vec3<f32>(0.28, 0.19, 0.09), clamp((organic - aboveRot * 0.5) * moisture, 0.0, 0.3) * (1.0 - wetFront));
+
+    // Idea 4 — moisture blisters: paint that is failing but not yet gone
+    // lifts into domed bubbles. Jittered cells give each blister a centre;
+    // a fake dome normal lights the top-left rim and shades the bottom-right.
+    let bScale = 38.0;
+    let bCell = floor(uv * bScale);
+    let bJit = vec2<f32>(hash12(bCell + 3.1), hash12(bCell + 7.7));
+    let bRad = 0.18 + 0.22 * hash12(bCell + 1.9);
+    let bLocal = (fract(uv * bScale) - (0.3 + 0.4 * bJit)) / bRad;
+    let bR2 = dot(bLocal, bLocal);
+    let blisterOn = smoothstep(0.78, 0.6, paint) * smoothstep(0.25, 0.4, paint) * (0.3 + moisture * 0.9) * step(0.35, hash12(bCell + 5.3));
+    let dome = sqrt(max(1.0 - bR2, 0.0));
+    let shade = dot(normalize(vec3<f32>(-bLocal, dome + 1e-3)), normalize(vec3<f32>(-0.5, -0.6, 0.6)));
+    let blister = blisterOn * step(bR2, 1.0);
+    displayColor = displayColor * mix(1.0, 0.65 + 0.7 * shade, blister) + vec3<f32>(0.25) * pow(max(shade, 0.0), 12.0) * blister;
 
     // Add rust texture noise in corroded areas
     let rustNoise = hash12(uv * 150.0 + time * 0.005);
