@@ -3278,7 +3278,9 @@
       "continuous-motion",
       "held-pointer",
       "click-reactive",
-      "psychedelic-color"
+      "psychedelic-color",
+      "upgraded-rgba",
+      "temporal"
     ],
     "tags": [
       "warp",
