@@ -9,7 +9,7 @@
     "fluid-coupling",
     "temporal"
   ],
-  "feedbackPacking": "A/C = velocity.xy, vorticity, density; exact fluid-coupled cyber ripple state",
+  "feedbackPacking": "A/C = velocity.xy, curl (true vorticity), density; exact fluid-coupled cyber ripple state. Texels (0,0) = pointer spring (pos.xy, vel.xy) and (1,0) = (fract(lastTime), 0, 0, 0.7371 sentinel) are state, not pixels",
   "features": [
     "mouse-driven",
     "digital-ripples",
@@ -22,7 +22,8 @@
     "held-vortex",
     "click-reactive",
     "aces-tone-map",
-    "semantic-alpha"
+    "semantic-alpha",
+    "upgraded-rgba"
   ],
   "params": [
     {

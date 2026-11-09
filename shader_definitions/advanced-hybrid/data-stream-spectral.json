@@ -2,7 +2,7 @@
   "id": "data-stream-spectral",
   "name": "Data Stream Spectral",
   "url": "shaders/data-stream-spectral.wgsl",
-  "description": "Catalog entry for Data Stream Spectral.",
+  "description": "Vertical data-rain strips scroll the photo through four spectral bands with racing head packets; strips latch into stuttering stalls and suffer dropout bursts.",
   "tags": [
     "mouse-driven",
     "data-stream",
@@ -11,7 +11,10 @@
   "features": [
     "mouse-driven",
     "data-stream",
-    "spectral-decomposition"
+    "spectral-decomposition",
+    "audio-reactive",
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
