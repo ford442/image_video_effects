@@ -110,8 +110,17 @@
       ]
     },
     "audio-voronoi-gabor": {
-      "hash": "820cf2ef93daaf24",
-      "history": []
+      "hash": "4004a38e2394e346",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "4004a38e2394e346",
+          "prev_hash": "820cf2ef93daaf24",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "aurora-borealis-iridescence": {
       "hash": "b13bd82eb6d57ec6",
@@ -498,8 +507,17 @@
       "history": []
     },
     "cyber-ripples-coupled": {
-      "hash": "2b3cd21c46d63467",
-      "history": []
+      "hash": "e53df7958195d0b4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "e53df7958195d0b4",
+          "prev_hash": "2b3cd21c46d63467",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "cyber-scan-gabor": {
       "hash": "12fc12c41c68f56e",
@@ -527,8 +545,17 @@
       "history": []
     },
     "data-stream-spectral": {
-      "hash": "8e6ce68a16eaf1ae",
-      "history": []
+      "hash": "67756b09cf14988a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "67756b09cf14988a",
+          "prev_hash": "8e6ce68a16eaf1ae",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "data-stream-structure": {
       "hash": "f2c68294f5283007",
@@ -719,8 +746,17 @@
       "history": []
     },
     "fabric-step-gabor": {
-      "hash": "236dc6757d766142",
-      "history": []
+      "hash": "21f0a3f293645814",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "21f0a3f293645814",
+          "prev_hash": "236dc6757d766142",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "ferrofluid-em": {
       "hash": "f9136a9b426f219e",
@@ -1543,8 +1579,17 @@
       "history": []
     },
     "spectral-bleed-confine": {
-      "hash": "c6bab12ff570a671",
-      "history": []
+      "hash": "eeb37ebf8de7480b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "eeb37ebf8de7480b",
+          "prev_hash": "c6bab12ff570a671",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "spectral-flow-sorting": {
       "hash": "593caa129bd8b373",
@@ -1644,8 +1689,17 @@
       ]
     },
     "vaporwave-horizon-prismatic": {
-      "hash": "ee16d467054a5796",
-      "history": []
+      "hash": "c2d95523a33d0c2a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "c2d95523a33d0c2a",
+          "prev_hash": "ee16d467054a5796",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "vhs-tracking-bilateral": {
       "hash": "cfe9e440b7ea958b",
@@ -12501,7 +12555,7 @@
       ]
     },
     "magnetic-chroma": {
-      "hash": "adceef6d0b0416fb",
+      "hash": "6a611af1b3f1f657",
       "history": [
         {
           "event": "upgraded",
@@ -12510,6 +12564,14 @@
           "prev_hash": "564eb42cbd72628a",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "6a611af1b3f1f657",
+          "prev_hash": "adceef6d0b0416fb",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
         }
       ]
     },
@@ -13290,8 +13352,17 @@
       ]
     },
     "chroma-kinetic": {
-      "hash": "30995a3debd9dd33",
-      "history": []
+      "hash": "da51b89c5efe90b6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "da51b89c5efe90b6",
+          "prev_hash": "30995a3debd9dd33",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "chroma-lens": {
       "hash": "c40376f29779e343",
@@ -13661,8 +13732,17 @@
       ]
     },
     "digital-haze": {
-      "hash": "d0d59365f60634e1",
-      "history": []
+      "hash": "f05ddbd3777e56ec",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "f05ddbd3777e56ec",
+          "prev_hash": "d0d59365f60634e1",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "digital-mold": {
       "hash": "3ef624d65e085726",
@@ -13780,8 +13860,17 @@
       ]
     },
     "fabric-zipper": {
-      "hash": "a8825663acadd157",
-      "history": []
+      "hash": "4bdc3ec76f1fb2aa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T01:47:30.732Z",
+          "hash": "4bdc3ec76f1fb2aa",
+          "prev_hash": "a8825663acadd157",
+          "commit": "7d29bf79",
+          "note": "2026-11-09 sonnet/batch-24 spectral colour fields, fabric textures and cyber ripples (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-24"
+        }
+      ]
     },
     "ferrofluid": {
       "hash": "0620547ff1ec4c8f",

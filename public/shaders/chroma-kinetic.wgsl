@@ -5,14 +5,17 @@
 //  Complexity: High
 //  Chunks From: chroma-kinetic, bass_env, temporal-feedback
 //  Created: 2026-05-10
-//  Upgraded: 2026-08-02
-//  Notes: sprung effect center (critically-damped, extraBuffer[133..138]),
-//         flick-speed strength bonus, click kinetic bursts (ripples),
-//         per-sector FFT voices on the smear mix.
+//  Upgraded: 2026-08-02, 2026-11-09
+//  Ideas: motion-aligned lead/lag (the sprung centre's real velocity drives R-lead / B-lag and the smear, so the fringe follows the cursor's travel); Cauchy spectral fringe (five wavelength taps placed by n(λ)=A+B/λ², §12.2F Cauchy dispersion, calibrated to HEAD's R/B anchors). Rescued: the scratch-buffer spring never persisted (flick bonus was dead) — the sprung centre now lives in two A texels; dead per-sector FFT voices (spectrum bins above index 0 are never uploaded) removed.
+//  A packing: RGBA before ACES (HEAD), C not read as colour. Texels (0,0) = (sprung centre.xy, centre velocity.xy) and (1,0) = (fract(lastTime), 0, 0, 0.7371 sentinel) are STATE, not pixels (top-left corner, invisible).
+//  Notes: critically-damped sprung effect centre (omega 10), flick-speed strength bonus,
+//         click kinetic bursts (ripples), bass/mids/treble smear mix.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 // zoom_params: x=Strength, y=Radius, z=LumaInfluence, w=Rotation
+
+const SENT: f32 = 0.7371;
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.4 + mids * 0.15;
@@ -38,6 +41,33 @@ fn aces_tonemap(color: vec3<f32>) -> vec3<f32> {
     return clamp(m2 * (a / b), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// ── Idea 2: Cauchy spectral fringe (§12.2F) ─────────────────────────────────
+// n(λ) = A + B/λ² spaces the colours non-linearly: blue bends much more than red per nm.
+// Five wavelength taps (660/600/550/500/450 nm) sit at their Cauchy fractions along the
+// lead→lag segment, f = (1/λ² − 1/λ_R²)/(1/λ_B² − 1/λ_R²), then re-centred so the R channel's
+// weighted centroid is HEAD's −lead and the B channel's is HEAD's +lag (G lands at its Cauchy
+// position, −0.35 instead of the old arbitrary −0.5). Each channel integrates the taps with
+// its own spectral response (weights sum to 1), so the three ghost copies of HEAD become a
+// continuous rainbow fringe. At zero velocity every tap is the same pixel and the image is
+// returned unchanged.
+fn spectralFringe(uv: vec2<f32>, lead: vec2<f32>, lag: vec2<f32>) -> vec3<f32> {
+  let span = lead + lag;                       // offset(f) = −lead + f·span
+  let o0 = -lead + span * (-0.190);            // 660 nm
+  let o1 = -lead + span * (0.037);             // 600 nm
+  let o2 = -lead + span * (0.286);             // 550 nm
+  let o3 = -lead + span * (0.613);             // 500 nm
+  let o4 = -lead + span * (1.055);             // 450 nm
+  let s0 = textureSampleLevel(readTexture, u_sampler, clamp(uv + o0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let s1 = textureSampleLevel(readTexture, u_sampler, clamp(uv + o1, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let s2 = textureSampleLevel(readTexture, u_sampler, clamp(uv + o2, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let s3 = textureSampleLevel(readTexture, u_sampler, clamp(uv + o3, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let s4 = textureSampleLevel(readTexture, u_sampler, clamp(uv + o4, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let r = 0.265 * s0.r + 0.645 * s1.r + 0.089 * s2.r + 0.001 * s3.r;
+  let g = 0.091 * s1.g + 0.726 * s2.g + 0.182 * s3.g + 0.001 * s4.g;
+  let b = 0.124 * s3.b + 0.876 * s4.b;
+  return vec3<f32>(r, g, b);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
@@ -50,47 +80,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
-    let mousePos = u.zoom_config.yz;   // raw cursor = spring TARGET
-    let isMouseDown = u.zoom_config.w; // mouseDown flag
+    let mousePos = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));   // raw cursor = spring TARGET
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthMod = mix(0.5, 1.5, depth);
 
-    // ── Spring-damper effect center (extraBuffer[133..138]) ─────────
-    // [133..134] sprung position, [135..136] spring velocity,
-    // [137] last integration time, [138] initialized flag.
-    // Thread (0,0) integrates a critically-damped spring toward the raw
-    // cursor so the distortion field glides instead of snapping.
-    let hasState = arrayLength(&extraBuffer) > 138u;
-    var center = mousePos;
-    var springVel = vec2<f32>(0.0);
-    if (hasState && extraBuffer[138] > 0.5) {
-        center = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasState) {
-        var springPos = center;
-        var nextVel = springVel;
-        if (extraBuffer[138] <= 0.5) {
-            springPos = mousePos;
-            nextVel = vec2<f32>(0.0);
-        } else {
-            let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-            let omega = 10.0;
-            let accel = (mousePos - springPos) * (omega * omega) - nextVel * (2.0 * omega);
-            nextVel += accel * dt;
-            springPos += nextVel * dt;
-        }
-        extraBuffer[133] = springPos.x;
-        extraBuffer[134] = springPos.y;
-        extraBuffer[135] = nextVel.x;
-        extraBuffer[136] = nextVel.y;
-        extraBuffer[137] = time;
-        extraBuffer[138] = 1.0;
-    }
+    // ── Sprung effect centre, persisted in two A texels ─────────────
+    // HEAD kept this spring in the extra scratch buffer, which is re-uploaded zeroed every frame, so
+    // it never persisted (centre = raw cursor, velocity always 0). Texel (0,0) = (pos.xy, vel.xy),
+    // texel (1,0) = (fract(lastTime), 0, 0, SENT). Every thread integrates the same critically
+    // damped step (omega 10) from the stored state; the sentinel guards the first frame / inherited C.
+    // fract(time) keeps the stored time exact on rgba16float tiers.
+    let st0 = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let st1 = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+    let stateOk = abs(st1.w - SENT) < 0.001;
+    var center = select(mousePos, st0.xy, stateOk);
+    var centerVel = select(vec2<f32>(0.0), st0.zw, stateOk);
+    let springDt = select(0.016, clamp(fract(time - st1.x), 0.001, 0.05), stateOk);
+    let omega = 10.0;
+    centerVel += ((mousePos - center) * (omega * omega) - centerVel * (2.0 * omega)) * springDt;
+    center += centerVel * springDt;
+    // f16 rest-snap (see cyber-ripples-coupled): a spring stored in rgba16float stalls ~2e-3 short of the
+    // cursor with a residual velocity that never decays; settle exactly once near and slow.
+    let settled = all(abs(mousePos - center) < vec2<f32>(0.004)) && length(centerVel) < 0.06;
+    center = select(center, mousePos, settled);
+    centerVel = select(centerVel, vec2<f32>(0.0), settled);
 
-    // Kinetic flick bonus: fast cursor flicks smear harder.
-    let springSpeed = length(springVel);
+    // Kinetic flick bonus: fast cursor flicks smear harder (alive now: centerVel is real).
+    let springSpeed = length(centerVel);
     var strength = u.zoom_params.x * 0.1 * bass_env(bass, mids) * depthMod;
     strength *= 1.0 + min(springSpeed * 3.0, 0.4);
     let radius = u.zoom_params.y;
@@ -115,6 +132,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Velocity chromatic aberration: R leads, B lags based on motion direction
     var velocity = uvOffsetDir * strength * falloff * modFactor;
 
+    // ── Idea 1: motion-aligned lead/lag ─────────────────────────────
+    // The centre's real velocity (uv/s) is an exposure-length offset along the direction of
+    // travel: R leads and B lags along it, and the smear below trails behind it. It is zero at
+    // an idle cursor, so the idle look is HEAD's radial fringe. Direction Rot turns only the
+    // radial field; the motion stays true to the cursor's travel.
+    // 0.16 * Strength: equals the previous 0.03 + 0.1*Strength at the 0.5 default, but now goes to zero
+    // with the slider (the constant base kept the fringe and a saturating alpha alive at Strength 0).
+    var motion = centerVel * (0.16 * u.zoom_params.x);
+    motion = motion * min(1.0, 0.12 / max(length(motion), 1e-5));
+    velocity += motion * falloff * modFactor;
+
     // ── Click kinetic bursts ────────────────────────────────────────
     // Each live ripple fires a decaying directional smear pulse at its
     // click point: exp(-rippleAge * 2.0) boost, aspect-corrected ~0.25
@@ -136,13 +164,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let leadAmount = velocity * (1.0 + bass * 0.5);
     let lagAmount = velocity * (1.0 + mids * 0.3);
 
-    let uvR = clamp(uv - leadAmount, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvG = clamp(uv - velocity * 0.5, vec2<f32>(0.0), vec2<f32>(1.0));
-    let uvB = clamp(uv + lagAmount, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+    let fringe = spectralFringe(uv, leadAmount, lagAmount);
 
     // Directional smear: sample along velocity vector for motion trails
     let smearSamples = 3;
@@ -161,17 +183,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     smearG = smearG / f32(smearSamples);
     smearB = smearB / f32(smearSamples);
 
-    // ── Per-sector FFT voices ───────────────────────────────────────
-    // The field splits into 8 angular sectors around the sprung center;
-    // each sector's smear mix rides its own spectrum bin, so the
-    // chromatic trail shimmers directionally with the audio.
-    let angle = atan2(diffAspect.y, diffAspect.x);
-    let sector = u32(clamp(floor((angle + 3.14159) * 8.0 / 6.28318), 0.0, 7.0));
-    let sectorVoice = plasmaBuffer[(sector % 8u) + 1u].x * 0.25;
-
-    let finalR = mix(r, smearR, bass * 0.3 + sectorVoice);
-    let finalG = mix(g, smearG, mids * 0.2 + sectorVoice);
-    let finalB = mix(b, smearB, treble * 0.2 + sectorVoice);
+    // Audio mix of the smear (HEAD's per-sector FFT voices read spectrum bins above index 0, which
+    // are never uploaded, so they were always 0 and are gone).
+    let finalR = mix(fringe.r, smearR, bass * 0.3);
+    let finalG = mix(fringe.g, smearG, mids * 0.2);
+    let finalB = mix(fringe.b, smearB, treble * 0.2);
     let color = vec3<f32>(finalR, finalG, finalB);
 
     // Audio split: bass shifts hue globally, mids add glow
@@ -180,7 +196,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let finalRGBA = vec4<f32>(color, alpha);
 
+    // State texels carry the sprung centre instead of pixels (C is not read as colour here).
+    var aOut = finalRGBA;
+    if (global_id.y == 0u && global_id.x == 0u) { aOut = vec4<f32>(center, centerVel); }
+    if (global_id.y == 0u && global_id.x == 1u) { aOut = vec4<f32>(fract(time), 0.0, 0.0, SENT); }
+
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(aces_tonemap(finalRGBA.rgb), finalRGBA.a));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), finalRGBA);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), aOut);
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

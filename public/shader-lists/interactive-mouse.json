@@ -2244,7 +2244,7 @@
       "hex"
     ],
     "name": "Digital Haze",
-    "description": "Beer-Lambert digital haze with hex grid overlay, iridescent scatter, sprung clear window, capped click pulses, and per-cell FFT static.",
+    "description": "Beer-Lambert digital haze with hex grid overlay and iridescent scatter. A sprung clear window wipes the fog and the wiped path re-fogs over seconds; thick fog extinguishes blue first and glows around bright lights; capped click pulses and per-cell treble static.",
     "updated": true
   },
   {

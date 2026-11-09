@@ -702,7 +702,8 @@
       "mouse-driven",
       "depth-aware",
       "randomization-safe",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2995,7 +2996,7 @@
       "fluid-coupling",
       "temporal"
     ],
-    "feedbackPacking": "A/C = velocity.xy, vorticity, density; exact fluid-coupled cyber ripple state",
+    "feedbackPacking": "A/C = velocity.xy, curl (true vorticity), density; exact fluid-coupled cyber ripple state. Texels (0,0) = pointer spring (pos.xy, vel.xy) and (1,0) = (fract(lastTime), 0, 0, 0.7371 sentinel) are state, not pixels",
     "features": [
       "mouse-driven",
       "digital-ripples",
@@ -3008,7 +3009,8 @@
       "held-vortex",
       "click-reactive",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3288,7 +3290,7 @@
     "id": "data-stream-spectral",
     "name": "Data Stream Spectral",
     "url": "shaders/data-stream-spectral.wgsl",
-    "description": "Catalog entry for Data Stream Spectral.",
+    "description": "Vertical data-rain strips scroll the photo through four spectral bands with racing head packets; strips latch into stuttering stalls and suffer dropout bursts.",
     "tags": [
       "mouse-driven",
       "data-stream",
@@ -3297,7 +3299,10 @@
     "features": [
       "mouse-driven",
       "data-stream",
-      "spectral-decomposition"
+      "spectral-decomposition",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4551,7 +4556,8 @@
       "physics",
       "gabor",
       "texture-analysis",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9282,7 +9288,8 @@
       "advanced hybrid"
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9759,7 +9766,7 @@
     "id": "vaporwave-horizon-prismatic",
     "name": "Vaporwave Horizon Prismatic",
     "url": "shaders/vaporwave-horizon-prismatic.wgsl",
-    "description": "Retro-futuristic vaporwave perspective grid with 4-band Cauchy spectral reflection, glowing striped sunset sun, CRT scanlines, ACES tone mapping, and phosphor glow persistence.",
+    "description": "Retro-futuristic vaporwave perspective grid with 4-band Cauchy spectral reflection, a striped sunset sun that reflects in the mirror floor, anti-aliased blooming neon lines, CRT scanlines, ACES tone mapping, and phosphor glow persistence.",
     "tags": [
       "vaporwave-horizon",
       "spectral-dispersion",
@@ -9775,7 +9782,8 @@
       "mouse-driven",
       "audio-reactive",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9815,7 +9823,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "feedbackPacking": "A/C = ACES display RGBA for CRT phosphor glow persistence; B is unused; depth passes through source depth."
+    "feedbackPacking": "A/C = ACES display RGBA for CRT phosphor glow persistence; texels (0,0) and (1,0) hold the grid scroll state (phase, held ease, last time, sentinel 0.7371) and are masked from the phosphor read; B is unused; depth passes through source depth."
   },
   {
     "id": "vhs-tracking-bilateral",
