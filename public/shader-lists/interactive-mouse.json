@@ -7761,32 +7761,32 @@
     "id": "neon-pulse",
     "name": "Neon Pulse Distortion",
     "url": "shaders/neon-pulse.wgsl",
-    "description": "Blackbody plasma cell array where each cell owns one of the eight FFT bins driving its base temperature and flicker rate. Cell temperature is carried through dataTextureC and relaxed with a Stefan-Boltzmann-style T^4 cooling term, so filaments heat fast under the cursor and cool slowly. Fixes a shader catalogued as mouse-driven that never read the mouse (zoom_config appeared only in the struct declaration), an 8x8 workgroup, a depth clobber, and unbounded additive HDR written with an out-of-range alpha.",
+    "description": "Blackbody plasma cell array: each cell owns a spectrum band that sets its temperature and flicker, heat conducts between neighbouring cells, and hot neighbours strike jittering filament arcs. Temperature persists with T^4 radiative cooling; the cursor heats cells, clicks send thermal shock fronts.",
     "params": [
       {
         "id": "strength",
-        "name": "Distortion",
+        "name": "Grid Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "speed",
-        "name": "Pulse Speed",
+        "name": "Base Temperature",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "glow",
-        "name": "Neon Glow",
+        "name": "Audio Heat Gain",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "radius",
-        "name": "Radius",
+        "name": "Glow Width",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -7794,7 +7794,6 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion",
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba",
@@ -7806,7 +7805,9 @@
       "aces",
       "blackbody",
       "plasma-arcs",
-      "thermal-diffusion"
+      "thermal-diffusion",
+      "heat-conduction",
+      "arc-breakdown"
     ],
     "tags": [
       "filter",
@@ -10740,7 +10741,7 @@
     "id": "scanline-wave",
     "name": "Scanline Wave",
     "url": "shaders/scanline-wave.wgsl",
-    "description": "CRT phosphor aurora with sprung cursor, held local distortion, capped click shockwaves, exact C bass-envelope trail, ACES premultiplied alpha. Preserves [premultipliedRGB, drive] A packing.",
+    "description": "CRT scanlines that wave with the bass: chromatic beam split, per-channel phosphor decay trails, beam-current bloom that swells bright lines, retrace ringing at the left edge, and Lissajous aurora bands.",
     "workgroup_size": [
       16,
       16,
@@ -10757,12 +10758,13 @@
       "HDR-color-grading",
       "ACES-tone-map",
       "IGN-dither",
-      "premultiplied-alpha",
       "phosphor-aurora",
       "lissajous-bands",
       "bounded-click-ripples",
-      "spring-cursor",
-      "held-drag"
+      "held-drag",
+      "phosphor-decay",
+      "beam-bloom",
+      "retrace-ringing"
     ],
     "updated": true,
     "params": [

@@ -2,7 +2,7 @@
   "id": "gen-psychedelic-spiral",
   "name": "Superformula Spirograph Spiral",
   "url": "shaders/gen_psychedelic_spiral.wgsl",
-  "description": "Superformula-driven spirograph spiral with nested epicycles, audio-reactive petal modulation, mouse-centered orbit drift, and temporal feedback warping.",
+  "description": "Superformula spirograph spiral with nested epicycles, log-spiral arms, a prismatic split rim, audio-reactive petals and temporal feedback warping.",
   "features": [
     "mouse-driven",
     "audio-reactive",

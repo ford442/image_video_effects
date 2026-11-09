@@ -4,32 +4,14 @@
 //  Features: mouse-driven, audio-reactive, audio-driven, temporal, chromatic,
 //            depth-aware, spirograph, superformula, feedback-warp, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: petal-tip pearls from outline curvature; pen-trace rosette (the real epicycle curve); nested outline ladder
+//  Upgraded: 2026-11-09 (opus/batch-23, second pass)
+//  Ideas: log-spiral arms through the bloom; prismatic outline split (per-channel n1)
+//  Ideas (2026-09-27): petal-tip pearls from outline curvature; pen-trace rosette (the real epicycle curve); nested outline ladder
 //  A packing: raw hue-clamped colour history (pre-ACES) + presence alpha; ACES on display RGB only
 //  Earlier (2026-07-26): per-bin FFT n2/n3, click petal bursts, IQ palette, hueClamp for the history loop
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.283185307179586;
 
@@ -189,20 +171,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Inner core pulse: hot nucleus at the orbit centroid, breathing with bass.
     let core = smoothstep(0.09 + bass * 0.05, 0.0, dist) * (0.5 + 0.5 * binLow);
 
-    let band = smoothstep(0.08, 0.0, abs(dist - shapeRadius));
+    var band = smoothstep(0.08, 0.0, abs(dist - shapeRadius));
+
+    // Idea 4 - log-spiral arms: the "spiral" made literal. Equiangular arms
+    // (angle - k*ln r) wind from the nucleus out to the superformula outline,
+    // one arm per petal so they land on the tips; bass tightens the winding.
+    let armWind = 2.2 + bass * 1.5;
+    let armPh = angle * floor(petalCount + 0.5) - log(max(dist, 1e-3)) * armWind * floor(petalCount + 0.5) * 0.35 - time * spinSpeed * 0.6;
+    let armLine = pow(0.5 + 0.5 * cos(armPh), 6.0);
+    let arms = armLine * smoothstep(1.0, 0.7, dist / max(shapeRadius, 0.03)) * smoothstep(0.0, 0.25, dist / max(shapeRadius, 0.03));
+
+    // Idea 5 - prismatic outline split: each colour channel draws the outline
+    // with its own n1 (the superformula's "bulge" exponent), so the rim splits
+    // into R/G/B petals that separate when mids push n1 apart.
+    let prism = 0.06 + mids * 0.25;
+    let rR2 = superformula(sfAng, sfM, n1 * (1.0 + prism), n2, n3) * mix(0.12, 0.42, intensity);
+    let rB2 = superformula(sfAng, sfM, n1 * (1.0 - prism), n2, n3) * mix(0.12, 0.42, intensity);
+    let rimSplit = vec3<f32>(smoothstep(0.025, 0.0, abs(dist - rR2 - (shapeRadius - superR * mix(0.12, 0.42, intensity)))),
+                             smoothstep(0.025, 0.0, abs(dist - shapeRadius)),
+                             smoothstep(0.025, 0.0, abs(dist - rB2 - (shapeRadius - superR * mix(0.12, 0.42, intensity)))));
     let spokes = 0.5 + 0.5 * cos(angle * (petalCount * 2.0) - dist * 28.0 + time * spinSpeed * 4.0);
     let swirl = 0.5 + 0.5 * sin(length(p) * 24.0 - angle * (petalCount * 1.5) - time * spinSpeed * 3.0);
     let halo = smoothstep(0.35, 0.0, abs(dist - shapeRadius * 1.18));
     let pattern = band * (0.6 + 0.4 * spokes) + pow(swirl, 3.0) * 0.25 + halo * 0.18
                 + ghostBand * 0.22 + core * 0.45
-                + pearl * 0.55 + pen * 0.4 + ladder * 0.16;
+                + pearl * 0.55 + pen * 0.4 + ladder * 0.16
+                + arms * 0.3 + dot(rimSplit, vec3<f32>(0.12));
 
     // IQ cosine palette replaces HSV: t plays the hue role, gain plays value.
     let hueT = fract(angle / TAU + time * 0.12 * spinSpeed + spokes * 0.18 + length(p) * 0.2 + mids * 0.1);
     let gain = pattern * mix(0.85, 2.6, intensity) * mix(0.85, 1.0, treble * 0.5);
     var color = iqPalette(hueT) * gain;
     color = color + vec3<f32>(1.0, 0.94, 0.82) * pearl * 0.35              // pearls run hot
-                  + iqPalette(fract(hueT + 0.33)) * pen * 0.25;             // pen hairline gets its own hue
+                  + iqPalette(fract(hueT + 0.33)) * pen * 0.25              // pen hairline gets its own hue
+                  + iqPalette(fract(hueT + 0.5 - log(max(dist, 1e-3)) * 0.1)) * arms * 0.35
+                  + rimSplit * 0.55;
 
     // ── Feedback history UV chain (warp signature - preserve verbatim) ──
     let rot = 0.015 + spinSpeed * 0.01;

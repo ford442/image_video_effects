@@ -5700,7 +5700,7 @@
       ]
     },
     "gen-dragon-curve": {
-      "hash": "9cc7d0b81f1ce141",
+      "hash": "1a3e51a5ec0927e4",
       "history": [
         {
           "event": "upgraded",
@@ -5709,6 +5709,14 @@
           "prev_hash": "50809a2de500b562",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "1a3e51a5ec0927e4",
+          "prev_hash": "9cc7d0b81f1ce141",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
         }
       ]
     },
@@ -7668,8 +7676,17 @@
       ]
     },
     "gen-live-studio-tab": {
-      "hash": "edc06f46b37cca28",
-      "history": []
+      "hash": "b6392e2477860b39",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "b6392e2477860b39",
+          "prev_hash": "edc06f46b37cca28",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
+        }
+      ]
     },
     "gen-lorenz-attractor-flow": {
       "hash": "7220b61fcde36e94",
@@ -10374,7 +10391,7 @@
       ]
     },
     "gen-hyper-warp": {
-      "hash": "c9c6fbe5aa1277eb",
+      "hash": "49a5516fab9ef855",
       "history": [
         {
           "event": "upgraded",
@@ -10383,6 +10400,14 @@
           "prev_hash": "04fa734e0ef66371",
           "commit": "52029017",
           "note": "2026-10-17 grid-hyper ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-grid-hyper-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "49a5516fab9ef855",
+          "prev_hash": "c9c6fbe5aa1277eb",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
         }
       ]
     },
@@ -10443,8 +10468,17 @@
       ]
     },
     "gen-psychedelic-spiral": {
-      "hash": "c0a95d3352dd461f",
-      "history": []
+      "hash": "dd5a8345999bd0c1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "dd5a8345999bd0c1",
+          "prev_hash": "c0a95d3352dd461f",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
+        }
+      ]
     },
     "gen_quantum_foam": {
       "hash": "928285361d7307b6",
@@ -10850,8 +10884,17 @@
       "history": []
     },
     "retro_phosphor_dream": {
-      "hash": "fb8ebcaf1ab907cb",
-      "history": []
+      "hash": "e9d113f78d19c5a0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "e9d113f78d19c5a0",
+          "prev_hash": "fb8ebcaf1ab907cb",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
+        }
+      ]
     },
     "sacred-geometry-torus": {
       "hash": "9b9c313490883cc1",
@@ -12247,7 +12290,7 @@
       ]
     },
     "frost-reveal": {
-      "hash": "6c491be68f58cea9",
+      "hash": "d38935efa1e59c7e",
       "history": [
         {
           "event": "upgraded",
@@ -12256,6 +12299,14 @@
           "prev_hash": "2e6f53cd593020de",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "d38935efa1e59c7e",
+          "prev_hash": "6c491be68f58cea9",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
         }
       ]
     },
@@ -12540,7 +12591,7 @@
       ]
     },
     "neon-pulse-stream": {
-      "hash": "398e3d55e29d80e4",
+      "hash": "38f816c62a1881a6",
       "history": [
         {
           "event": "upgraded",
@@ -12549,6 +12600,14 @@
           "prev_hash": "d6147ee3846fae7d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "38f816c62a1881a6",
+          "prev_hash": "398e3d55e29d80e4",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
         }
       ]
     },
@@ -14928,8 +14987,17 @@
       ]
     },
     "neon-pulse": {
-      "hash": "bc78a2313b129feb",
-      "history": []
+      "hash": "792edaea545ad5c1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "792edaea545ad5c1",
+          "prev_hash": "bc78a2313b129feb",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
+        }
+      ]
     },
     "neon-ripple-split": {
       "hash": "28ea300e9412f346",
@@ -15542,8 +15610,17 @@
       ]
     },
     "scanline-wave": {
-      "hash": "df5794c9c8397a8d",
-      "history": []
+      "hash": "1465097f91f75adc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "1465097f91f75adc",
+          "prev_hash": "df5794c9c8397a8d",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
+        }
+      ]
     },
     "selective-color": {
       "hash": "97911e61de4baf93",
@@ -18095,7 +18172,7 @@
       "history": []
     },
     "sim-decay-system-rgba": {
-      "hash": "7ff93fa1cf40983e",
+      "hash": "f235af6a67643b25",
       "history": [
         {
           "event": "upgraded",
@@ -18104,6 +18181,14 @@
           "prev_hash": "4722c1ce2e21ebb0",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T00:41:47.402Z",
+          "hash": "f235af6a67643b25",
+          "prev_hash": "7ff93fa1cf40983e",
+          "commit": "418cb4a7",
+          "note": "2026-11-09 opus/batch-23 (claude-opus-5-5) — phosphor/neon/warp ten"
         }
       ]
     },

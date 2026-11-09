@@ -9789,7 +9789,7 @@
       "abstract",
       "colorful"
     ],
-    "description": "Heighway dragon curve — a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon filament with iteration-depth coloring from red to violet, upgraded with thin-film iridescence, a warm-key / cool-fill two-temperature glow rig, split-tone grading, atmospheric depth haze, and ACES tone mapping. Audio drives fold depth and FFT-shimmered halo, mouse zooms into detail, and depth controls line thickness perspective.",
+    "description": "Heighway dragon curve — a folded paper strip rendered as a glowing neon filament with thin-film iridescence and a warm/cool glow rig. The strip unrolls along the curve with a hinge flare at its tip, beside its 180° twin dragon.",
     "workgroup_size": [
       16,
       16,
@@ -16324,7 +16324,7 @@
     "id": "gen-hyper-warp",
     "name": "Hyper Warp",
     "url": "shaders/gen_hyper_warp.wgsl",
-    "description": "Advanced domain warping with fractal noise, etched warped contour lines, and flow-dispersed prismatic reaction-diffusion feedback. Radial flux brightens outflow, and the finest noise octave grains the field.",
+    "description": "Advanced domain warping with fractal noise, etched warped contour lines, and flow-dispersed prismatic reaction-diffusion feedback. Radial flux brightens outflow, and the finest noise octave grains the field. Hue turns with the local flow direction, and a thin rim glows where fresh pattern and history disagree.",
     "features": [
       "aces-tone-map",
       "audio-reactive",
@@ -18349,7 +18349,7 @@
       "mouse-driven",
       "chromatic"
     ],
-    "description": "A broadcast studio control room aesthetic with live video preview, audio VU meters, waveform scopes, vector scopes, scanlines, chromatic separation, and a blinking LIVE indicator.",
+    "description": "A broadcast control-room overlay: video preview, VU meters, waveform and vector scopes, scanlines and a blinking LIVE tally. A running HH:MM:SS:FF timecode, a lower-third strap that wipes in, and tape-dropout tears on bass hits.",
     "workgroup_size": [
       16,
       16,
@@ -24187,7 +24187,7 @@
     "id": "gen-psychedelic-spiral",
     "name": "Superformula Spirograph Spiral",
     "url": "shaders/gen_psychedelic_spiral.wgsl",
-    "description": "Superformula-driven spirograph spiral with nested epicycles, audio-reactive petal modulation, mouse-centered orbit drift, and temporal feedback warping.",
+    "description": "Superformula spirograph spiral with nested epicycles, log-spiral arms, a prismatic split rim, audio-reactive petals and temporal feedback warping.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -31930,7 +31930,7 @@
     "id": "retro_phosphor_dream",
     "name": "Phosphor Dream",
     "url": "shaders/retro_phosphor_dream.wgsl",
-    "description": "Authentic CRT simulation with RGB phosphor triads, persistence afterglow, interlaced flicker, barrel distortion, and chromatic aberration",
+    "description": "CRT phosphor simulation: RGB triads, P22 per-channel afterglow trails, beam halation, slow burn-in ghosting, interlaced flicker and barrel distortion; click to degauss",
     "tags": [
       "crt",
       "retro",
