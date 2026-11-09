@@ -2,7 +2,7 @@
   "id": "byte-mosh",
   "name": "Byte-Mosh Glitch",
   "url": "shaders/byte-mosh-mangle.wgsl",
-  "description": "LFSR/GF(2) datamosh corruption with spring cursor, held burst, capped ripple packets, wired zoom_params, regional FFT edges, and ACES output.",
+  "description": "8-bit byte-word datamosh: block-hashed xor / bit-rotate / byte-mask corruption with motion-vector block copy, per-block bit-plane severity, and macroblock seam ringing in the render pass, ACES output.",
   "workgroup_size": [
     16,
     16,
@@ -46,16 +46,9 @@
     "aces-tone-map",
     "audio-reactive",
     "chromatic-aberration",
-    "click-reactive",
     "glitch",
     "graph-runner",
-    "held-drag",
-    "interactive",
-    "mouse-driven",
     "multi-pass",
-    "physics",
-    "simulation",
-    "spring-cursor",
     "upgraded-rgba"
   ],
   "tags": [

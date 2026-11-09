@@ -3,32 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-04
-//  Ideas: refraction from the simulated surface (exact C neighbour gradient); caustic focusing from the height Laplacian
-//  A packing: raw sim state [h, v, nx, ny] (normal is now the blended sim normal); display is ACES on writeTexture only
+//  Upgraded: 2026-10-04, 2026-11-09
+//  Ideas: refraction from the simulated surface (exact C neighbour gradient); caustic focusing from the height Laplacian; neighbour-coupled capillary waves (damped wave equation + isotropic 9-point Laplacian, §12.2D); Snell vector refraction (η = 1/1.33, §12.2F)
+//  A packing: raw sim state [h, v, nx, ny] (normal is the blended sim normal); texel (0,0) = cursor-lag tracker (glide.x, glide.y, 7 marker, fract(time)) and is masked (h = v = 0) in every sim read; display is ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn aces_film(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -39,6 +20,42 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
   return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
 }
+
+// ── Rescue R1 (lag only): cursor-lag tracker in A texel (0,0) ─────────
+// HEAD estimated the droplet's stretch from the last two CLICKS (ripples[rc-1] - ripples[rc-2]), so the
+// teardrop tracked click history, not the drag. A glide of the raw cursor now lives in A texel (0,0)
+// (extraBuffer[133..] is re-uploaded zeroed every frame, so it cannot hold state). The droplet itself stays
+// at the RAW cursor; only the lag vector (raw - glide) is used, as the velocity proxy for stretch_dir /
+// stretch_mag. First-order glide: lag = velocity / GLIDE_RATE when the cursor moves steadily. At rest: lag = 0.
+// Texel (0,0) is therefore not sim data any more; every sim read of C goes through simLoad(), which masks it.
+const GLIDE_MARK: f32 = 7.0;
+const GLIDE_RATE: f32 = 8.0;
+
+fn glideStep(st: vec4<f32>, raw: vec2<f32>, time: f32, rate: f32) -> vec2<f32> {
+  let ok = abs(st.z - GLIDE_MARK) < 0.01 && st.w >= 0.0 && st.w <= 1.0;   // <= 1: f16 rounds fract(time) > 0.9997 to exactly 1.0
+  let dt = clamp(fract(time - st.w), 0.001, 0.05);
+  let g = st.xy + (raw - st.xy) * (1.0 - exp(-rate * dt));
+  let snapped = select(g, raw, length(raw - g) < 0.003);   // exact at rest even through f16 rounding
+  return select(raw, snapped, ok);
+}
+
+// Exact C load of the sim state with the border clamped (reflecting wall) and texel (0,0) masked to h = v = 0.
+fn simLoad(c: vec2<i32>, maxc: vec2<i32>) -> vec4<f32> {
+  let cc = clamp(c, vec2<i32>(0), maxc);
+  let s = textureLoad(dataTextureC, cc, 0);
+  return select(s, vec4<f32>(0.0), all(cc == vec2<i32>(0)));
+}
+
+// Wave speed in screen heights per second, converted to the CFL number kappa = c^2 dt^2 / texel^2 per frame
+// (texel = 1/res.y). The isotropic 9-point Laplacian has |lambda_max| = 16/3 per texel^2, so the leapfrog limit
+// is kappa <= 0.75; WAVE_KAPPA_MAX = 0.25 keeps a 3x margin for the spring + damping + f16 rounding + the h
+// clamp. Below ~390 px height kappa < 0.25 gives the same on-screen speed; above, the wave is CFL-capped
+// (texels per frame) and travels slower on screen, but never goes unstable.
+const WAVE_SPEED: f32 = 0.08;
+const WAVE_KAPPA_MAX: f32 = 0.25;
+const V_MAX: f32 = 12.0;
+// Air -> water, relative index n1/n2. eta < 1 so the refracted ray always exists (no total internal reflection).
+const SNELL_ETA: f32 = 0.7519;
 
 fn droplet_shape(p: vec2<f32>, center: vec2<f32>, radius: f32, stretch_dir: vec2<f32>, stretch_mag: f32) -> f32 {
   let d = p - center;
@@ -78,18 +95,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth_tex = textureLoad(readDepthTexture, coord, 0).r;
   let depth_mass = mix(0.5, 1.6, depth_tex);
 
-  let prev_state = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
+  let maxc = vec2<i32>(res) - vec2<i32>(1);
+  let prev_state = simLoad(coord, maxc);   // texel (0,0) reads as h = v = 0 (Rescue R1)
   let prev_h = prev_state.r;
   let prev_v = prev_state.g;
 
   let rc = min(u32(u.config.y), 50u);
-  var pointer_vel = vec2<f32>(0.0);
-  if (rc >= 2u) {
-    let r1 = u.ripples[rc - 1u];
-    let r2 = u.ripples[rc - 2u];
-    let dt = max(r1.z - r2.z, 0.016);
-    pointer_vel = (r1.xy - r2.xy) / dt;
-  }
+  // ── Rescue R1 (lag only): the velocity proxy is the cursor lag, not the last two clicks ──
+  // droplet stays at the RAW cursor; glide state is last frame's A(0,0) (exact C load, same for every pixel).
+  let glide_state = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let glide = glideStep(glide_state, mouse_pos, t, GLIDE_RATE);
+  let has_ptr = all(mouse_pos >= vec2<f32>(0.0));
+  let pointer_vel = select(vec2<f32>(0.0), (mouse_pos - glide) * GLIDE_RATE, has_ptr);   // uv / s
   let speed = length(pointer_vel * aspect_vec);
   let stretch_dir = select(vec2<f32>(1.0, 0.0), normalize(pointer_vel * aspect_vec), speed > 0.001);
   let stretch_mag = clamp(speed * 0.12 / mass, 0.0, 1.5) * (1.0 + held * 0.45);
@@ -103,11 +120,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let capillary = sin(dist_m * 48.0 - t * 6.0) * exp(-dist_m * 8.0) * (0.1 + 0.25 * is_down) * (1.0 + treble * 0.6);
   let runners = pow(max(0.0, sin(dist_m * 28.0 - t * (9.0 + mids * 5.0))), 12.0) * exp(-dist_m * 4.0);
 
+  // ── Idea 3: neighbour-coupled capillary waves (damped wave equation + isotropic 9-point Laplacian, §12.2D) ──
+  // HEAD's sim had no neighbour coupling: each pixel was an independent spring toward an analytic target, so
+  // the "ripples" were painted functions. Promote the Laplacian to a force: h_tt = c^2 lap(h) - damping, with
+  // the 9-point stencil (edges 0.2, corners 0.05, centre -1; x10/3 to make it a true Laplacian per texel^2) so
+  // rings are round, not diamond. The 4 corner loads are exact C loads; texel (0,0) is masked to 0 (R1).
+  // Per frame: dv = (kappa/dt) lap, dh = kappa lap  (kappa = c^2 dt^2 / texel^2, see WAVE_SPEED).
+  let s_l = simLoad(coord + vec2<i32>(-1, 0), maxc).r;
+  let s_r = simLoad(coord + vec2<i32>(1, 0), maxc).r;
+  let s_d = simLoad(coord + vec2<i32>(0, -1), maxc).r;
+  let s_u = simLoad(coord + vec2<i32>(0, 1), maxc).r;
+  let s_ll = simLoad(coord + vec2<i32>(-1, -1), maxc).r;
+  let s_lr = simLoad(coord + vec2<i32>(1, -1), maxc).r;
+  let s_ul = simLoad(coord + vec2<i32>(-1, 1), maxc).r;
+  let s_ur = simLoad(coord + vec2<i32>(1, 1), maxc).r;
+  let lap9 = (10.0 / 3.0) * (0.2 * (s_l + s_r + s_d + s_u) + 0.05 * (s_ll + s_lr + s_ul + s_ur) - prev_h);
+
   let spring_k = 12.0 * surface_tension / mass;
   let damp_c = 4.0 * viscosity;
-  let accel = spring_k * (target_h + capillary - prev_h) - damp_c * prev_v;
   let dt_sub = 0.016;
-  let new_v = prev_v + accel * dt_sub;
+  let wave_c = WAVE_SPEED * dt_sub * res.y;                  // texels per frame
+  let wave_kappa = min(wave_c * wave_c, WAVE_KAPPA_MAX);     // CFL number, <= 0.25 always
+  let accel = spring_k * (target_h + capillary - prev_h) - damp_c * prev_v + (wave_kappa / (dt_sub * dt_sub)) * lap9;
+  let new_v = clamp(prev_v + accel * dt_sub, -V_MAX, V_MAX);
   let new_h = clamp(prev_h + new_v * dt_sub, 0.0, 2.0);
 
   let eps = 1.0 / res.y;
@@ -121,11 +156,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 1: refract through the surface the solver actually simulated. The
   // neighbours' last-frame heights (exact C loads) carry the overshoot,
   // jiggle and capillary ripples that the analytic target shape never had.
-  let maxc = vec2<i32>(res) - vec2<i32>(1);
-  let s_l = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), vec2<i32>(0), maxc), 0).r;
-  let s_r = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), maxc), 0).r;
-  let s_d = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), maxc), 0).r;
-  let s_u = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), maxc), 0).r;
   let px = 1.0 / res.y; // one pixel in aspect-corrected units
   let sim_dx = (s_r - s_l) / (2.0 * px);
   let sim_dy = (s_u - s_d) / (2.0 * px);
@@ -136,7 +166,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2: caustics. A convex droplet focuses light (negative Laplacian of
   // the simulated height brightens its body) and the steep meniscus bends
   // light away, leaving a darker ring.
-  let lap = (s_l + s_r + s_d + s_u - 4.0 * prev_h) / (px * px);
+  let lap = lap9 / (px * px);   // same isotropic Laplacian that drives the waves (HEAD: 5-point, diamond-biased)
   let focus = clamp(-lap * 0.015, 0.0, 0.5);
   let meniscus = smoothstep(2.0, 6.0, length(vec2<f32>(grad_x, grad_y))) * 0.35;
 
@@ -156,7 +186,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  let refr_vec = normal.xy * (0.12 * new_h) + splash_disp;
+  // ── Idea 4: Snell refraction (§12.2F) replaces the small-angle `normal.xy * 0.12 * h` ──
+  // Refracted ray T = eta*I + (eta*cos_i - cos_t)*n with I = (0,0,-1) (view ray), n = the blended sim normal.
+  // Its lateral run per unit of depth is  bend / |T.z|  with  bend = cos_t - eta*cos_i  and  |T.z| = eta + bend*cos_i.
+  // The water depth is taken proportional to the simulated height, depth = h * 0.12/(1 - eta), so at weak slope
+  // (cos_i -> 1: bend -> 1 - eta, |T.z| -> 1) the shift is exactly HEAD's 0.12*h*normal.xy (calibration), while a
+  // steep meniscus bends non-linearly (up to ~3.5x per unit normal.xy at grazing incidence). Direction is kept as
+  // in HEAD (displacement along +normal.xy). eta < 1 (air -> water): no total internal reflection is possible,
+  // the sqrt is guarded anyway, and the shift is length-capped to 0.25*h (<= ~2x HEAD's small-angle maximum
+  // 0.12*h) so a steep, tall transient meniscus can tear the picture at most about twice as hard as HEAD did.
+  let cos_i = clamp(normal.z, 0.0, 1.0);
+  let cos_t = sqrt(max(1.0 - SNELL_ETA * SNELL_ETA * (1.0 - cos_i * cos_i), 0.0));
+  let bend = cos_t - SNELL_ETA * cos_i;
+  let lateral = bend / max(SNELL_ETA + bend * cos_i, 0.2);
+  var snell_shift = normal.xy * (0.12 / (1.0 - SNELL_ETA) * new_h * lateral);
+  snell_shift = snell_shift * min(1.0, (0.25 * new_h) / max(length(snell_shift), 1e-5));   // <= ~2x HEAD's small-angle maximum, and 0 where there is no water
+  let refr_vec = snell_shift + splash_disp;
   let uv_r = clamp(uv + refr_vec * 1.06, vec2<f32>(0.001), vec2<f32>(0.999));
   let uv_g = clamp(uv + refr_vec, vec2<f32>(0.001), vec2<f32>(0.999));
   let uv_b = clamp(uv + refr_vec * 0.94, vec2<f32>(0.001), vec2<f32>(0.999));
@@ -169,7 +214,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let light_dir = normalize(vec3<f32>(mouse_pos.x - 0.5, mouse_pos.y - 0.5, 0.8));
   let view_dir = vec3<f32>(0.0, 0.0, 1.0);
   let half_v = normalize(light_dir + view_dir);
-  let spec = pow(max(dot(normal, half_v), 0.0), 36.0) * (0.6 + 0.8 * is_down);
+  // ── Rescue R2: the specular lobe only exists where there is water ──
+  // HEAD added `spec` to the WHOLE frame: on flat water the normal is (0,0,1), half_v ~ (0,0,1) for a cursor near
+  // the centre, so spec ~ 1 and the background got a +0.6 (+1.4 held) white wash. Gate it by droplet presence.
+  let present = smoothstep(0.02, 0.25, new_h);
+  let spec = pow(max(dot(normal, half_v), 0.0), 36.0) * (0.6 + 0.8 * is_down) * present;
   let fresnel_term = pow(1.0 - max(dot(normal, view_dir), 0.0), 3.5) * new_h;
   let slick = hsv2rgb(vec3<f32>(fract(0.55 + new_h * 0.35 + mids * 0.2 + t * 0.1), 0.7, 1.0));
 
@@ -179,6 +228,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   final_color = aces_film(final_color);
 
   textureStore(writeTexture, coord, vec4<f32>(final_color, src_alpha));
-  textureStore(dataTextureA, coord, vec4<f32>(new_h, new_v, normal.x, normal.y));
+  // A = RAW sim [h, v, nx, ny]; texel (0,0) is the cursor-lag tracker instead (Rescue R1) and is masked in simLoad().
+  var a_out = vec4<f32>(new_h, new_v, normal.x, normal.y);
+  if (global_id.x == 0u && global_id.y == 0u) {
+    a_out = vec4<f32>(glide, GLIDE_MARK, fract(t));
+  }
+  textureStore(dataTextureA, coord, a_out);
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth_tex + new_h * 0.35, 0.0, 1.0), 0.0, 0.0, 0.0));
 }
