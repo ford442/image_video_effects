@@ -4,8 +4,8 @@
 //  Features: rotated screens, scanline, audio-reactive, plasma-tint,
 //            mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: AM circular cells on 15/75/0/45 screens; scanline hard-dot
+//  Upgraded: 2026-09-09, 2026-11-02
+//  Ideas: AM circular cells on 15/75/0/45 screens; scanline hard-dot; interlaced field shear (§12.2B); lamp dropout (§12.2B)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -109,16 +109,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let texG = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     let texB = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>( sep,  sep), 0.0).b;
 
-    // Canonical CMYK screen angles — AM cells, not sin×sin.
-    let patR = amCell(uv, 15.0  * PI / 180.0, dotScale);
-    let patG = amCell(uv, 75.0  * PI / 180.0, dotScale);
-    let patB = amCell(uv,  0.0,                dotScale);
-    let patK = amCell(uv, 45.0  * PI / 180.0, dotScale * 1.05);
+    // ── Idea 1: interlaced field — odd scanner rows lag half a dot, so the screens shear (§12.2B)
+    let scanField = f32((global_id.y + u32(time * 24.0)) & 1u);
+    let sheared = uv + vec2<f32>(scanField * 0.5 / max(dotScale, 1.0), 0.0);
 
-    let thrR = texR * brightness + boost;
-    let thrG = texG * brightness + boost;
-    let thrB = texB * brightness + boost;
-    let thrK = dot(vec3<f32>(texR, texG, texB), vec3<f32>(0.299, 0.587, 0.114)) * brightness + boost;
+    // Canonical CMYK screen angles — AM cells, not sin×sin.
+    let patR = amCell(sheared, 15.0  * PI / 180.0, dotScale);
+    let patG = amCell(sheared, 75.0  * PI / 180.0, dotScale);
+    let patB = amCell(sheared,  0.0,                dotScale);
+    let patK = amCell(sheared, 45.0  * PI / 180.0, dotScale * 1.05);
+
+    let thrR0 = texR * brightness + boost;
+    let thrG0 = texG * brightness + boost;
+    let thrB0 = texB * brightness + boost;
+    let thrK0 = dot(vec3<f32>(texR, texG, texB), vec3<f32>(0.299, 0.587, 0.114)) * brightness + boost;
+
+    // ── Idea 2: lamp dropout — a missed scanline goes to paper with an exponential tail (§12.2B)
+    let drop = step(0.972, hash11(floor(uv.y * 240.0) * 0.17 + floor(time * 5.0))) * exp(-uv.x * 2.4);
+    let lampMiss = drop * (0.45 + clamp(scanLive, 0.0, 1.0) * 0.55);
+    let openLamp = 1.0 - lampMiss;
+    let thrR = thrR0 * openLamp;
+    let thrG = thrG0 * openLamp;
+    let thrB = thrB0 * openLamp;
+    let thrK = thrK0 * openLamp;
 
     // Idea 2: scan hard-dot — under the scanline the AM threshold goes binary.
     let hardAmt = clamp(scanLive + scanGlitch + burstIntensity * 0.5, 0.0, 1.0);

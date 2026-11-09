@@ -1,9 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
 //  Boids Swarm with Alpha Scattering
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-11-08
 //  Ideas: blind-spot vision cone (leaders, lines, V fronts); held pointer is a predator the
-//         flock splits around (fountain manoeuvre)
-//  A packing: row 0 = boid state (pos.xy, vel.xy); rest of A unused
+//         flock splits around (fountain manoeuvre); wingbeat flicker (per-boid flap phase,
+//         bass quickens it); murmuration ink (dense cores darken to starling-black);
+//         fading wakes (each boid leaves a decaying trail, mids lengthen it)
+//  A packing: row 0 = boid state (pos.xy, vel.xy); rows >= 1 = wake trail RGB + coverage
 //  GPU-based flocking with physical light simulation
 //
 //  Scientific Concepts:
@@ -24,26 +26,7 @@
 //  then splat the boids read from dataTextureC.
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const BOID_COUNT: u32 = 256u;
 const MAX_SPEED: f32 = 0.28;          // normalized units per second
@@ -203,6 +186,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coord = vec2<u32>(gid.xy);
     let tex_size = vec2<f32>(dim);
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
 
     // ═══ Phase 1: sim update — one boid per flattened invocation ═══
     let flat = gid.y * dim.x + gid.x;
@@ -256,7 +241,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let perp_vel = length(wrap_delta - vel_dir * along_vel);
 
             // Elongated particle shape for motion blur
-            let stretch = particle_radius * 0.5 * mix(1.0, speed * 2.0, motion_blur);
+            // Idea 3 — wingbeat flicker: each boid flaps on its own phase; the splat's width
+            // across the heading pulses with the beat (bass flaps faster).
+            let flap = 0.55 + 0.45 * sin(time * (9.0 + bass * 8.0) + hash11(f32(i) * 5.3) * 6.2831853);
+            let stretch = particle_radius * 0.5 * mix(1.0, speed * 2.0, motion_blur) * flap;
             let blur_alpha = soft_alpha * exp(-(perp_vel * perp_vel) / stretch);
 
             // Boid color based on velocity direction
@@ -280,11 +268,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     // Tone mapping
-    accumulated_color = toneMap(accumulated_color * 0.5);
+    // Rescue: HEAD tone-mapped the alpha-weighted sum, so colour was pre-darkened by the
+    // splat alpha and again by coverage; un-premultiply so a bird keeps its hue.
+    accumulated_color = toneMap(accumulated_color / max(accumulated_density, 0.05) * 2.2);
+
+    // Idea 4 — murmuration ink: where many boids overlap the flock reads as a dark core
+    // (as starling murmurations do) instead of summing to white.
+    let ink = smoothstep(1.2, 4.0, accumulated_density);
+    accumulated_color = mix(accumulated_color, accumulated_color * 0.18 + vec3<f32>(0.02, 0.02, 0.04), ink);
 
     // Cumulative alpha using exponential transmittance
     // More particles = higher density = lower transmittance
-    let trans = transmittance(accumulated_density * 0.1);
+    // Rescue: HEAD scaled density by 0.1, so a lone boid reached ~7% coverage and the
+    // flock rendered near-black. 1.2 makes a single splat core read as a solid bird.
+    let trans = transmittance(accumulated_density * 1.2);
     let final_alpha = 1.0 - trans;
 
     // Boost alpha with energy for glowing effect
@@ -293,9 +290,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Sample background with inverse alpha
     let bg_color = textureLoad(readTexture, vec2<i32>(i32(coord.x), i32(coord.y)), 0).rgb;
-    let final_color = mix(bg_color * 0.1, accumulated_color, final_alpha_boosted);
+    // Idea 5 — fading wakes: rows >= 1 of A hold a decaying trail of the splats
+    // (row 0 is boid state). Mids make the wakes persist longer.
+    var wake = vec4<f32>(0.0);
+    if (coord.y >= 1u) {
+        let prevWake = textureLoad(dataTextureC, vec2<i32>(i32(coord.x), i32(coord.y)), 0);
+        let decay = clamp(0.86 + mids * 0.08, 0.0, 0.95);
+        let fresh = vec4<f32>(accumulated_color * final_alpha_boosted, final_alpha_boosted);
+        wake = max(clamp(prevWake, vec4<f32>(0.0), vec4<f32>(1.0)) * decay, fresh);
+        textureStore(dataTextureA, vec2<i32>(i32(coord.x), i32(coord.y)), wake);
+    }
+    let trailA = wake.a * 0.6 * (1.0 - final_alpha_boosted);
+    let withWake = mix(bg_color * 0.1, wake.rgb / max(wake.a, 0.001), trailA);
+    let final_color = mix(withWake, accumulated_color, final_alpha_boosted);
 
-    let output = vec4<f32>(final_color, final_alpha_boosted);
+    let output = vec4<f32>(final_color, max(final_alpha_boosted, trailA));
     textureStore(writeTexture, vec2<i32>(i32(coord.x), i32(coord.y)), output);
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, vec2<f32>(gid.xy) / vec2<f32>(textureDimensions(readTexture)), 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));

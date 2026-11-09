@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: plain-weave over-under interlacing (weft and warp threads bob past each other at every crossing); Snell-refracted thin-film thread sheath at true RGB wavelengths; twill-diagonal shuttle drift; selvedge knot sparks at crossing edges
+//  Upgraded: 2026-11-08
+//  Ideas: plain-weave over-under interlacing (weft and warp threads bob past each other at every crossing); Snell-refracted thin-film thread sheath at true RGB wavelengths; twill-diagonal shuttle drift; selvedge knot sparks at crossing edges; punched-card figured lift (scrolling binary card raises warp columns); ikat resist-dye feathering on the threads
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -123,21 +123,35 @@ fn map(p: vec3<f32>) -> f32 {
     // KIFS Braid
     pos = kifsFold(pos, complexity);
 
+    // Idea 5: punched-card figured lift. Before wrapping, each warp column
+    // reads a scrolling binary card (hash per column per card row); a punched
+    // hole lifts that warp over the weft so a figured motif marches down the loom.
+    let spacingPre = 20.0 / max(density, 1.0);
+    let column = floor(pos.x / spacingPre);
+    let cardT = time * (0.6 + complexity * 0.08);
+    let row = floor(cardT);
+    let holeA = step(0.55, hash(vec3<f32>(column, row, 7.0)));
+    let holeB = step(0.55, hash(vec3<f32>(column, row + 1.0, 7.0)));
+    let punchLift = mix(holeA, holeB, smoothstep(0.7, 1.0, fract(cardT)));
+
     // Infinite Cylindrical Lattice
-    let spacing = 100.0 / density;
+    // Rescue: 100/density put threads 5-10 units off-axis, beyond the fog
+    // horizon, so every ray missed. 20/density keeps the loom in view.
+    let spacing = 20.0 / max(density, 1.0);
     pos.x = mod_f32(pos.x, spacing) - spacing * 0.5;
     pos.y = mod_f32(pos.y, spacing) - spacing * 0.5;
 
     // Cylinders along Z
-    let d1 = length(pos.xy) - 0.1;
+    let r = max(0.1, spacing * 0.11);
+    let d1 = length(pos.xy) - r;
     // Idea 1: plain-weave interlacing. Weft (along X) and warp (along Y) threads
     // undulate in z with opposite phase, so at every crossing one passes over
     // the other. Amplitude is capped by spacing to keep the SDF step-safe.
     let weave = min(0.12 * (1.0 + audio * 0.4), spacing * 0.08);
     // Cylinders along X (weft)
-    let d2 = length(vec2<f32>(pos.y, pos.z - weave * cos(6.28318 * pos.x / spacing))) - 0.1;
+    let d2 = length(vec2<f32>(pos.y, pos.z - weave * cos(6.28318 * pos.x / spacing))) - r;
     // Cylinders along Y (warp)
-    let d3 = length(vec2<f32>(pos.z + weave * cos(6.28318 * pos.y / spacing), pos.x)) - 0.1;
+    let d3 = length(vec2<f32>(pos.z + weave * cos(6.28318 * pos.y / spacing) - punchLift * spacing * 0.12, pos.x)) - r;
 
     return min(min(d1, d2), d3);
 }
@@ -200,7 +214,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         d = map(p);
         if (d < 0.001) { hit = true; break; }
         if (t > 20.0) { break; }
-        t += d * 0.5;
+        t += d * 0.6;
     }
 
     var col = vec3<f32>(0.0);
@@ -225,15 +239,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Sheath thickness: Chromatic Shift sets the order, mids breathe it,
         // treble adds a fine shimmer along the thread length.
         let sheathNm = 180.0 + chromaticShift * 120.0 + mids * 60.0 + sin(p.z * 9.0 + time * 3.0) * treble * 25.0;
-        let interference = mix(paletteFilm, threadFilm(sheathNm, ndotv), 0.45);
+        var interference = mix(paletteFilm, threadFilm(sheathNm, ndotv), 0.45);
+        // Idea 6: ikat resist-dye feathering. Threads were bound and dyed
+        // before weaving, so each carries indigo / madder bands whose edges
+        // bleed in noisy feathers; the film still glints over the dye.
+        let dyeSpacing = 20.0 / max(u.zoom_params.x, 1.0);
+        let dyeCell = floor(p.xy / dyeSpacing);
+        let along = p.z * 0.45 + hash(vec3<f32>(dyeCell, 3.0)) * 4.0;
+        let feather = (noise3D(p * 6.0) - 0.5) * 0.35;
+        let band = smoothstep(0.32, 0.5, abs(fract(along + feather) - 0.5) * 2.0 * 0.5 + 0.25);
+        let dye = mix(vec3<f32>(0.08, 0.16, 0.55), vec3<f32>(0.78, 0.16, 0.12), band);
+        interference = mix(interference, dye * (0.7 + 0.6 * interference), 0.4);
 
         // Stable lighting occupancy; the previous d/0.1 term approached zero
         // exactly at a hit and accidentally erased the material.
         let ao = 0.68 + 0.32 * diff;
 
-        col = (interference * diff + vec3<f32>(spec)) * ao;
+        col = (interference * (0.3 + diff) + vec3<f32>(spec)) * ao;
         // Idea 3: twill-diagonal shuttle drift across the woven lattice.
-        let spacing = 100.0 / max(u.zoom_params.x, 1.0);
+        let spacing = 20.0 / max(u.zoom_params.x, 1.0);
         let cx = mod_f32(p.x + p.z * 0.35, spacing) / spacing;
         let cy = mod_f32(p.y - p.z * 0.35, spacing) / spacing;
         let twillPhase = (cx + cy) * 3.0 + time * (0.35 + u.zoom_params.y * 0.2);
@@ -274,7 +298,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col += vec3<f32>(0.45, 0.9, 1.6) * clickThread * (0.6 + audio * 0.8);
 
     // Fog
-    col = mix(col, vec3<f32>(0.0, 0.0, 0.1), 1.0 - exp(-0.05 * t * t));
+    // Rescue: 0.05*t^2 fogged every hit (hits land at t~8-14) to flat navy.
+    col = mix(col, vec3<f32>(0.0, 0.0, 0.1), 1.0 - exp(-0.006 * t * t));
 
     // Radially advected, bounded braid history creates coherent warp trails.
     let radialDir = uv / max(length(uv), 0.001);
@@ -285,7 +310,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let history = acesInverse(historyTex.rgb);
     let hdrColor = clamp(col + history / 1.2 * clamp(0.24 + u.zoom_params.z * 0.12, 0.24, 0.46), vec3<f32>(0.0), vec3<f32>(5.0));
     // Alpha = thread luminance coverage + spectral streaks + shuttle waves.
-    let alpha = clamp(length(col) * 0.42 + speedLines * 0.35 + clickThread * (0.3 + held * 0.1), 0.02, 0.96);
+    // Hit threads are solid cloth (fogged out with distance); streaks and waves add glow coverage.
+    let threadCover = select(0.0, 0.92 * exp(-0.006 * t * t), hit);
+    let alpha = clamp(max(threadCover, length(col) * 0.42) + speedLines * 0.35 + clickThread * (0.3 + held * 0.1), 0.02, 0.96);
     let depth = select(0.0, clamp(1.0 - t / 20.0, 0.0, 1.0), hit);
     let outColor = vec4<f32>(acesToneMap(hdrColor * (1.2 + bass * 0.1)), alpha);
     textureStore(writeTexture, coords, outColor);

@@ -9,7 +9,6 @@
     "audio-reactive",
     "upgraded-rgba",
     "depth-aware",
-    "fast-motion",
     "spring-cursor",
     "held-drag",
     "bounded-click-ripples",
@@ -59,7 +58,6 @@
     "double-exposure",
     "zoom",
     "overlay",
-    "fast-motion",
     "audio-reactive",
     "aces"
   ],

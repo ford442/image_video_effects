@@ -7,32 +7,16 @@
 //  Chunks From: impasto-swirl, conv-bilateral-dream
 //  Created: 2026-04-18
 //  By: Agent CB-26
+//  Upgraded: 2026-11-01
+//  Ideas: halftone dot screen twists around the cursor; impasto dome shading on each dot
+//  A packing: none (A not written)
 // ═══════════════════════════════════════════════════════════════════
 //  Edge-preserving bilateral smoothing meets physical impasto
 //  dot/halftone texture. Creates a painted-canvas look where smooth
 //  color regions are punctuated by raised ink dots and edge strokes.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn getLuma(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
@@ -158,7 +142,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Halftone dot pattern
     let dotSize = (u.zoom_params.x * 20.0) + 2.0;
     let levels = floor(u.zoom_params.y * 10.0) + 2.0;
-    let gridPos = vec2<f32>(gid.xy) / vec2<f32>(dotSize);
+    // Idea 1 — swirl: the dot screen is screwed around the cursor, so dots spiral where you point
+    let swirlAspect = res.x / res.y;
+    let swirlD = (uv - mousePos) * vec2<f32>(swirlAspect, 1.0);
+    let twist = mouseFactor * (1.1 + 0.9 * mouseDown) * sin(time * 0.4 + 0.3);
+    let sc = cos(twist);
+    let sn = sin(twist);
+    let swirlP = (vec2<f32>(gid.xy) - mousePos * res);
+    let swirled = vec2<f32>(sc * swirlP.x - sn * swirlP.y, sn * swirlP.x + sc * swirlP.y) + mousePos * res;
+    let gridPos = swirled / vec2<f32>(dotSize);
     let gridCenter = floor(gridPos) + vec2<f32>(0.5);
     let distDot = length(gridPos - gridCenter);
     let lumaSmooth = getLuma(smoothColor);
@@ -181,6 +173,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let dotCoverage = smoothstep(0.0, 0.7, 1.0 - lumaSmooth);
         let dotAlpha = dotCoverage * inkDensity * 0.85;
         finalColor = mix(finalColor, finalColor * 0.7, isDot * 0.8);
+        // Idea 2 — dome shading: each dot is a raised blob lit from the upper left
+        let domeN = (gridPos - gridCenter) / max(dotRadius, 0.05);
+        let domeLight = dot(domeN, vec2<f32>(-0.7, -0.7));
+        finalColor = finalColor * (1.0 + domeLight * 0.35 * inkDensity) + vec3<f32>(smoothstep(0.55, 0.95, domeLight) * 0.12);
         inkAlpha = max(inkAlpha, dotAlpha);
     }
     if (inkAlpha < 0.01) {

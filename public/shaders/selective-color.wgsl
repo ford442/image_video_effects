@@ -3,8 +3,10 @@
 //  Category: image
 //  Features: mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-16
-//  Ideas: hue window around the pointer sample; mask contour on the island edge
+//  Upgraded: 2026-10-16, 2026-11-09
+//  Ideas: hue window around the pointer sample; mask contour on the island edge;
+//         chroma-plane hue + saturation window with a 5-tap key (luminance independent);
+//         mono-stock density-weighted grain (§12.2A) only in the removed-colour field
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -160,11 +162,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeMag = depthSobel(uv, texel);
 
   // Idea 1 — hue window: islands keep the color under the pointer.
-  let key = textureSampleLevel(readTexture, u_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-  let hueGate = 1.0 - smoothstep(0.08, 0.38, length(color.rgb - key));
+  // Idea 3 — the window is now measured in the chroma plane (hue angle + saturation), so a
+  // shadow and a highlight of the same hue both pass, and the key is a 5-tap cross average
+  // instead of one noisy texel. A neutral key falls back to HEAD's RGB distance.
+  let m0 = clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0));
+  let kp = 0.006;
+  let key = (textureSampleLevel(readTexture, u_sampler, m0, 0.0).rgb
+           + textureSampleLevel(readTexture, u_sampler, clamp(m0 + vec2<f32>(kp, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+           + textureSampleLevel(readTexture, u_sampler, clamp(m0 - vec2<f32>(kp, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+           + textureSampleLevel(readTexture, u_sampler, clamp(m0 + vec2<f32>(0.0, kp), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb
+           + textureSampleLevel(readTexture, u_sampler, clamp(m0 - vec2<f32>(0.0, kp), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb) * 0.2;
+  let rgbGate = 1.0 - smoothstep(0.08, 0.38, length(color.rgb - key));
+  let keyChroma = key - vec3<f32>(dot(key, vec3<f32>(0.299, 0.587, 0.114)));
+  let pixChroma = color.rgb - grayVec;
+  let lenK = length(keyChroma);
+  let lenC = length(pixChroma);
+  let cosSim = dot(pixChroma, keyChroma) / max(lenC * lenK, 1e-4);
+  let satWindow = mix(0.6, 1.0, smoothstep(0.15, 0.5, lenC / max(lenK, 1e-3)));
+  let chromaGate = smoothstep(0.74, 0.97, cosSim) * smoothstep(0.015, 0.07, lenC) * satWindow;
+  let hueGate = mix(rgbGate, chromaGate, smoothstep(0.03, 0.10, lenK));
   let selective = mix(grayVec, caColor, mix(0.25, 1.0, hueGate));
   let desatColor = mix(caColor, grayVec, desatStrength);
   var finalRGB = mix(desatColor, selective, combinedMask);
+  // Idea 4 — mono-stock grain (§12.2A density-weighted grain) in the removed-colour field only.
+  // Film grain peaks in the midtones and vanishes in clear base and dense shadow; it runs at
+  // film cadence (24 fps, the one place a quantised seed is native) and stays out of the
+  // colour islands, which read as clean digital against it.
+  let grainLuma = clamp(dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+  let grainDensity = sqrt(max(grainLuma * (1.0 - grainLuma), 0.0)) * 2.0;
+  let filmFrame = floor(time * 24.0);
+  let grainNoise = hash12(vec2<f32>(global_id.xy) + vec2<f32>(filmFrame * 13.7, filmFrame * 7.1)) - 0.5;
+  let removedColour = (1.0 - combinedMask) * desatStrength;
+  finalRGB += vec3<f32>(grainNoise) * 0.14 * grainDensity * removedColour;
   // Idea 2 — mask contour.
   finalRGB = mix(finalRGB, finalRGB * vec3<f32>(0.32, 0.30, 0.27), boundary * 0.85);
   let edgeTint = vec3<f32>(1.0, 0.92, 0.75) * edgeMag * combinedMask * 0.4;

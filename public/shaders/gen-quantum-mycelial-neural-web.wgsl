@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: action-potential spikes along fibres; synaptic junction flares
+//  Upgraded: 2026-09-27, 2026-10-31
+//  Ideas: action-potential spikes along fibres; synaptic junction flares; axonal varicosities (radius swells into boutons that the spike lights as it passes); Fresnel-Schlick myelin sheath rim (E.F Fresnel-Schlick); entanglement phase-lock (Entanglement slider also locks the three axons' spike phases together)
 //  A packing: ACES display RGBA (C unused)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Web Density, .y = Pulse Speed, .z = Bioluminescence, .w = Entanglement
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Web Density, .y = Pulse Speed, .z = Bioluminescence, .w = Entanglement
 
 // --- CORE UTILITIES ---
 // Rotation matrix
@@ -69,8 +51,8 @@ fn noise(p: vec3<f32>) -> f32 {
 }
 
 // Distance estimation for mycelial network
-// returns (sdf, axial coord along nearest fibre + fibre seed, junction closeness)
-fn map(p: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
+// returns (sdf, axial coord along nearest fibre, junction closeness, fibre id 0/1/2)
+fn map(p: vec3<f32>, time: f32, audio: f32) -> vec4<f32> {
     let density = u.zoom_params.x; // Web Density
     let entanglement = u.zoom_params.w; // Entanglement
 
@@ -95,18 +77,23 @@ fn map(p: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
     q = vec3<f32>(q.x, rot(q.x * entanglement * 0.5) * q.yz);
 
     // Fibers
-    let fiber_x = length(q.yz) - 0.1 * density;
-    let fiber_y = length(q.xz) - 0.1 * density;
-    let fiber_z = length(q.xy) - 0.1 * density;
+    // Idea 3 (varicosities): each axon's radius swells into boutons every ~1 unit of
+    // its own axis, where a real axon stores vesicles. Boutons are narrower than
+    // 35% so the SDF stays safely conservative at the 0.5 step factor.
+    let r0 = 0.1 * density;
+    let fiber_x = length(q.yz) - r0 * (1.0 + 0.35 * sin(q.x * 6.0));
+    let fiber_y = length(q.xz) - r0 * (1.0 + 0.35 * sin(q.y * 6.0));
+    let fiber_z = length(q.xy) - r0 * (1.0 + 0.35 * sin(q.z * 6.0));
 
     // Combine fibers
     let min_fiber = min(min(fiber_x, fiber_y), fiber_z);
 
-    // Idea 1 support: axial coordinate of the nearest fibre (+ per-fibre seed
-    // so the three axons fire out of phase).
+    // Idea 1 support: axial coordinate of the nearest fibre + which axon it is
+    // (the per-fibre phase seed is applied in main so Entanglement can lock it).
     var axial = q.x;
-    if (fiber_y <= fiber_x && fiber_y <= fiber_z) { axial = q.y + 17.0; }
-    if (fiber_z < fiber_x && fiber_z < fiber_y) { axial = q.z + 41.0; }
+    var fibreId = 0.0;
+    if (fiber_y <= fiber_x && fiber_y <= fiber_z) { axial = q.y; fibreId = 1.0; }
+    if (fiber_z < fiber_x && fiber_z < fiber_y) { axial = q.z; fibreId = 2.0; }
 
     // Idea 2 support: second-nearest fibre almost as close = a crossing.
     let max_fiber = max(max(fiber_x, fiber_y), fiber_z);
@@ -116,7 +103,7 @@ fn map(p: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
     // Add some noise displacement for organic feel
     let disp = noise(q * 4.0) * 0.1 * (1.0 + audio);
 
-    return vec3<f32>(min_fiber * spacing - disp, axial, junction);
+    return vec4<f32>(min_fiber * spacing - disp, axial, junction, fibreId);
 }
 
 // Calculate normal
@@ -133,7 +120,8 @@ fn getNormal(p: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = vec2<f32>(u.config.z, u.config.w);
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let st = (uv - vec2<f32>(0.5)) * 2.0;
+    // HEAD fix: y-up (HEAD left uv.y down, so the picture and the mouse mapping disagreed).
+    let st = vec2<f32>(uv.x - 0.5, 0.5 - uv.y) * 2.0;
     let aspect = resolution.x / resolution.y;
     let st_aspect = vec2<f32>(st.x * aspect, st.y);
 
@@ -151,12 +139,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audio = bass;
 
     // Camera setup
-    var ro = vec3<f32>(0.0, 0.0, -3.0);
-    var rd = normalize(vec3<f32>(st_aspect, 1.5));
+    // HEAD fix: the camera sat at (0,0,-3), exactly inside the z-axis fibre, so every
+    // pixel hit at t=0 and the frame was one flat wash. Orbit it off-axis instead.
+    let orbit = time * 0.07;
+    let camDir = normalize(vec3<f32>(sin(orbit) * 0.8 + 0.35, 0.45 + 0.2 * sin(orbit * 0.7), -cos(orbit) * 0.8 - 0.45));
+    let ro = camDir * 3.2;
+    let fwd = -camDir;
+    let camR = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
+    let camU = cross(fwd, camR);
+    let rd = normalize(camR * st_aspect.x + camU * st_aspect.y + fwd * 1.5);
 
     // Mouse interaction - acts as an attractor point
+    // The attractor sits 2 units in front of the (orbiting) camera, under the cursor.
     let mouse = u.zoom_config.yz;
-    let mouse_world = vec3<f32>((mouse.x - 0.5) * 4.0 * aspect, (0.5 - mouse.y) * 4.0, -1.0);
+    let mouse_world = ro + fwd * 2.0
+        + camR * ((mouse.x - 0.5) * 2.0 * aspect * 1.3333)
+        + camU * ((0.5 - mouse.y) * 2.0 * 1.3333);
 
     // Raymarching
     var t = 0.0;
@@ -216,13 +214,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         col = base_col * (diff + amb) + emit_col * 0.5;
 
         // Idea 1: action-potential spikes travel along each fibre's axis.
-        let spikePhase = sin(hitRes.y * 3.0 - time * pulse_speed * 2.5);
+        // Idea 4 (entanglement phase-lock): HEAD seeds were 17 / 41 units of axial phase.
+        // Same values at the default Entanglement 0.2; at 1.0 the three axons fire in lockstep.
+        let seedOff = select(select(0.0, 17.0, hitRes.w > 0.5), 41.0, hitRes.w > 1.5);
+        let axialP = hitRes.y + seedOff * (1.0 - u.zoom_params.w) * 1.25;
+        let spikePhase = sin(axialP * 3.0 - time * pulse_speed * 2.5);
         spike = pow(max(spikePhase, 0.0), 18.0 - treble * 8.0);
         col += vec3<f32>(0.55, 0.95, 1.0) * spike * bioluminescence * (1.6 + bass);
 
+        // Idea 3 (varicosities): the spike lights each bouton it crosses.
+        let bouton = pow(0.5 + 0.5 * sin(hitRes.y * 6.0), 4.0);
+        col += vec3<f32>(0.9, 0.75, 1.0) * bouton * (0.12 + 0.9 * spike) * bioluminescence * (0.5 + mids);
+
+        // Idea 2 (Fresnel-Schlick sheath): grazing angles of the myelin membrane reflect the
+        // cool sky; F0 ~ lipid/water interface.
+        let ndv = clamp(dot(n, -rd), 0.0, 1.0);
+        let fres = 0.06 + 0.94 * pow(1.0 - ndv, 5.0);
+        col += vec3<f32>(0.35, 0.7, 1.0) * fres * (0.35 + 0.35 * mids) * (1.0 + bass * 0.5);
+
         // Idea 2: synaptic junction flares where fibres cross — they fire as
         // the spike train passes, tinted warmer by Entanglement.
-        let arrival = pow(max(sin(-time * pulse_speed * 2.5 + hitRes.y * 0.35), 0.0), 6.0);
+        let arrival = pow(max(sin(-time * pulse_speed * 2.5 + axialP * 0.35), 0.0), 6.0);
         flare = hitRes.z * (0.25 + 0.75 * max(arrival, spike));
         let synCol = mix(vec3<f32>(1.0, 0.62, 0.25), vec3<f32>(1.0, 0.3, 0.75), u.zoom_params.w);
         col += synCol * flare * bioluminescence * 1.4;

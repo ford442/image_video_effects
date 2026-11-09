@@ -3,8 +3,8 @@
 //  Category: visual-effects
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag, depth-aware, temporal
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: held-pointer edge peel (curl shows paper backing with roll shading + soft shadow on the image); embossed guilloche security rosettes whose hue slides with sticker tilt
+//  Upgraded: 2026-11-09
+//  Ideas: held-pointer edge peel (curl shows paper backing with roll shading + soft shadow on the image); embossed guilloche security rosettes whose hue slides with sticker tilt; glitter-flake foil flashing on tilt alignment; kinegram emboss of the photo luma whose relief flips with tilt
 //  A packing: ACES display RGBA + semantic alpha; C read back as display RGB for the 5% temporal foil shimmer
 // ═══════════════════════════════════════════════════════════════════
 
@@ -64,37 +64,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-  // Critically damped spring cursor in extraBuffer[133..138]
-  let rawMouse = u.zoom_config.yz;
+  // HEAD fix: the extraBuffer[133..138] spring never persisted (the scratch array is
+  // re-uploaded zeroed every frame), so it was dead code; the raw pointer is the truth.
+  let mouse = u.zoom_config.yz;
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  let isWriter = (global_id.x == 0u && global_id.y == 0u);
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.1);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 49.0;
-    let damping = 14.0;
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel = sVel + accel * dt;
-    sPos = sPos + sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
 
   // Aspect-corrected sticker distance
   let dM_vec = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -147,6 +120,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gCol = value * mix(k.xxx, clamp(gp - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), saturation);
   foil = mix(foil, gCol, gLine * 0.55);
   foil = foil * (1.0 + gShade * 0.6) + vec3<f32>(1.0, 0.97, 0.92) * (max(gShade, 0.0) * max(gShade, 0.0) * 0.5);
+
+  // ── Idea 3: glitter-flake foil ────────────────────────────────────
+  // Sparkle foil is a mosaic of tiny embossed flakes, each with its own grating tilt.
+  // A flake flashes white-hot when its normal lines up with the sticker tilt (the view
+  // angle the guilloche already uses); treble jitters the flake normals.
+  let fGrid = dM_vec / (px * 7.0);
+  let fCell = floor(fGrid);
+  let fh = fract(sin(vec2<f32>(dot(fCell, vec2<f32>(127.1, 311.7)), dot(fCell, vec2<f32>(269.5, 183.3)))) * 43758.5453);
+  let fN = (fh - 0.5) * 0.9 + vec2<f32>(sin(time * 0.7 + fh.x * TAU), cos(time * 0.6 + fh.y * TAU)) * treble * 0.08;
+  let fAlign = exp(-dot(fN - tilt * 1.2, fN - tilt * 1.2) * 60.0);
+  let fEdge = 1.0 - smoothstep(0.32, 0.5, max(abs(fract(fGrid.x) - 0.5), abs(fract(fGrid.y) - 0.5)));
+  let flake = fAlign * fEdge * (1.0 - smoothstep(0.86, 0.95, rN));
+  foil = foil + vec3<f32>(1.0, 0.98, 0.94) * flake * 1.4;
+
+  // ── Idea 4: kinegram image emboss ────────────────────────────────
+  // The photo under the sticker is hot-stamped into the foil as relief: its luma
+  // gradient shades the foil like the guilloche ridges, and the light side flips with
+  // tilt.x so the stamped image switches between raised and engraved as the sticker moves.
+  let kTex = 1.0 / resolution;
+  let kL = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(kTex.x, 0.0) * 1.5, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let kR = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(kTex.x, 0.0) * 1.5, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let kU = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, kTex.y) * 1.5, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let kD = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, kTex.y) * 1.5, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let kFlip = clamp(tilt.x * 6.0 + 0.4, -1.0, 1.0); // idle (centred) reads as raised
+  let kShade = clamp(((kR - kL) * -0.5 + (kD - kU) * -0.6) * 4.0 * kFlip, -0.6, 0.6);
+  foil = foil * (1.0 + kShade * 0.7);
 
   // Click foil flashes
   var flash = vec3<f32>(0.0);

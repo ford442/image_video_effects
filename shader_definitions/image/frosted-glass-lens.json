@@ -2,7 +2,7 @@
   "id": "frosted-glass-lens",
   "name": "Frosted Glass Lens",
   "url": "shaders/frosted-glass-lens.wgsl",
-  "description": "Frosted lens with a Beckmann microfacet scattering lobe \u2014 five taps drawn from a Beckmann slope distribution, giving the heavy-tailed blur of ground glass rather than a single offset \u2014 and depth-dependent frost thickness so far, cold geometry frosts over while near geometry stays clear. Adds ACES, bounded click frost-clear fronts and dataTextureC persistence, and replaces a per-frame hash grain that strobed as static with a spatially coherent drifting field.",
+  "description": "Frosted lens with a Beckmann microfacet scatter lobe and depth-dependent frost thickness (far geometry frosts first). Frost forward-scatters in a Henyey-Greenstein two-ring halo with veiling glare; the clear window is a polished meniscus whose rim refracts radially and glints. ACES, bounded click frost-clear fronts and dataTextureC frost memory.",
   "params": [
     {
       "id": "frost_amt",
@@ -47,7 +47,9 @@
     "fresnel",
     "beer-lambert",
     "chromatic-aberration",
-    "temporal-frost"
+    "temporal-frost",
+    "forward-scatter",
+    "meniscus-bevel"
   ],
   "tags": [
     "filter",

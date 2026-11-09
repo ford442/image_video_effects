@@ -2,31 +2,12 @@
 //  Neon Light
 //  Category: lighting-effects
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven, blackbody-emission, fresnel-edges
-//  Upgraded: 2026-09-10
-//  Ideas: phosphor persist from exact C; tube-axis stretch along Sobel tangent
+//  Upgraded: 2026-09-10, 2026-10-31
+//  Ideas: phosphor persist from exact C; tube-axis stretch along Sobel tangent; bore and sheath; cooling phosphor
 //  A packing: raw phosphor RGB in A; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -154,12 +135,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let edgeGain = mix(0.9, 4.5, u.zoom_params.z);
   let fogAmount = u.zoom_params.w * (0.08 + 0.22 * (1.0 - depth)) + mouseHot * 0.12;
 
-  let emission = spectral * edgeStrength * edgeGain * (0.35 + 1.65 * fresnel);
+  var emission = spectral * edgeStrength * edgeGain * (0.35 + 1.65 * fresnel);
+  // ── Idea 1: bore and sheath ───────────────────────────────────────
+  // The gas core is dimmer than the glass wall. edgeMetric is the ridge
+  // the Sobel already measured; the shoulder is the sheath.
+  let bore = smoothstep(0.62, 0.92, edgeStrength);
+  let sheath = smoothstep(0.05, 0.22, edgeMetric) * (1.0 - smoothstep(0.38, 0.7, edgeMetric));
+  emission = emission * (1.0 - bore * 0.4) + spectral * sheath * edgeGain * 0.5;
   let tubeGlow = spectral * tubeStrength * edgeGain * 0.35 * (1.0 + treble * 0.25);
   let hotSpot = spectral * mouseHot * (0.08 + 0.24 * u.zoom_params.z);
   let fog = fogSpectral * fogAmount * (0.45 + 0.55 * mids);
   let prevGlow = textureLoad(dataTextureC, coord, 0).rgb;
-  let phosphor = prevGlow * 0.78 + emission + tubeGlow;
+  // ── Idea 2: cooling phosphor ──────────────────────────────────────
+  // Leftover tube light drops toward 1200 K. Fresh emission stays hot.
+  let prevL = max(luminance(prevGlow), 0.0);
+  let freshL = luminance(emission + tubeGlow);
+  let leftover = prevL / max(prevL + freshL, 0.001);
+  let coolCol = blackbodyRGB(mix(temperature, 1200.0, leftover));
+  let phosphor = coolCol * prevL * 0.78 + emission + tubeGlow;
 
   let finalColor = base.rgb * (1.0 - 0.18 * edgeStrength) + fog + phosphor + hotSpot;
   let alpha = clamp(max(base.a, 0.6) + edgeStrength * 0.12 + fogAmount * 0.2 + tubeStrength * 0.08, 0.0, 1.0);

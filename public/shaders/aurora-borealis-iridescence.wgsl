@@ -1,26 +1,10 @@
 // Aurora Borealis Iridescence — geomagnetic aurora ribbons with curl-noise advection, thin-film interference, and spectral shimmer.
+// Upgraded: 2026-11-01
+// Ideas: sharp-lower / diffuse-upper curtain profile (signed distance); metastable 630nm red afterglow (per-channel persistence of exact C)
+// Fixes: curl noise was differenced white noise (ribbons jumped); height colour was upside down (green low, red high now)
 // A/C stores ACES display RGBA for atmospheric luminescence persistence; B is unused; depth passes through source depth.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -33,12 +17,25 @@ fn hash3(p: vec3<f32>) -> f32 {
   return fract((q.x + q.y) * q.z);
 }
 
+fn valueNoise3(p: vec3<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (vec3<f32>(3.0) - 2.0 * f);
+  let a = mix(mix(hash3(i), hash3(i + vec3<f32>(1.0, 0.0, 0.0)), w.x),
+              mix(hash3(i + vec3<f32>(0.0, 1.0, 0.0)), hash3(i + vec3<f32>(1.0, 1.0, 0.0)), w.x), w.y);
+  let b = mix(mix(hash3(i + vec3<f32>(0.0, 0.0, 1.0)), hash3(i + vec3<f32>(1.0, 0.0, 1.0)), w.x),
+              mix(hash3(i + vec3<f32>(0.0, 1.0, 1.0)), hash3(i + vec3<f32>(1.0, 1.0, 1.0)), w.x), w.y);
+  return mix(a, b, w.z);
+}
+
+// Smooth value noise differenced over a finite eps (was raw white noise / 0.01).
 fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
-  let eps = 0.01;
-  let n = hash3(vec3<f32>(p, time * 0.1));
-  let nx = hash3(vec3<f32>(p + vec2<f32>(eps, 0.0), time * 0.1));
-  let ny = hash3(vec3<f32>(p + vec2<f32>(0.0, eps), time * 0.1));
-  return vec2<f32>(ny - n, n - nx) / eps;
+  let eps = 0.12;
+  let t = time * 0.1;
+  let n = valueNoise3(vec3<f32>(p, t));
+  let nx = valueNoise3(vec3<f32>(p + vec2<f32>(eps, 0.0), t));
+  let ny = valueNoise3(vec3<f32>(p + vec2<f32>(0.0, eps), t));
+  return vec2<f32>(ny - n, n - nx) / eps * 0.5;
 }
 
 fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
@@ -145,17 +142,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let waveY1 = sin(uv.x * freq1 * PI * 2.0 + time * flowSpeed * 0.4) * (0.12 + bass * 0.06);
     let waveY2 = sin(uv.x * freq2 * PI * 2.0 + time * flowSpeed * 0.6 + fi) * 0.08;
 
-    let curl = curlNoise(vec2<f32>(uv.x * 2.5, time * 0.15 + fi * 0.5), time) * (0.05 + mids * 0.04);
+    let curl = curlNoise(vec2<f32>(uv.x * 2.5, time * 0.15 + fi * 0.5), time) * (0.2 + mids * 0.12);
     let magneticPull = (mousePos.y - 0.5) * mouseInfluence * 0.3;
 
     let ribbonY = 0.35 + fi * 0.06 + waveY1 + waveY2 + curl.y + magneticPull + rippleOffset.y;
-    let distY = abs(uv.y - ribbonY);
+    // ── Idea 1: curtain profile (sharp lower edge, diffuse upper edge) ──
+    // uv.y grows downward, so screen-below the ribbon is uv.y > ribbonY.
+    // Precipitating electrons stop abruptly at the bottom; the top fades out.
+    let signedY = uv.y - ribbonY;
+    let edgeScale = select(1.6, 0.6, signedY > 0.0);
+    let distY = abs(signedY) / edgeScale;
 
     let ribbonShape = smoothstep(ribbonWidth * (1.0 + fi * 0.25), 0.0, distY);
     let ribbonGlow = smoothstep(ribbonWidth * 3.5, ribbonWidth * 0.5, distY) * 0.45;
 
     // Atmospheric oxygen & nitrogen aurora base colors
-    let heightFactor = clamp((uv.y - 0.2) / 0.5, 0.0, 1.0);
+    let heightFactor = clamp(((1.0 - uv.y) - 0.2) / 0.5, 0.0, 1.0);
     let greenIon = vec3<f32>(0.2, 0.95, 0.45);
     let redIon = vec3<f32>(0.92, 0.25, 0.35);
     let purpleIon = vec3<f32>(0.65, 0.2, 0.85);
@@ -191,7 +193,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let history = historyAt(uv - rippleOffset * 0.5, resolution);
 
   var hdr = sourceColor.rgb * (1.0 + auroraTotal * 0.4) + auroraTotal * 1.4 + vec3<f32>(rippleWave);
-  hdr += history.rgb * 0.06;
+  // ── Idea 2: metastable red afterglow ──
+  // 557nm green decays in ~0.7s, 630nm red lingers ~110s: persistence per channel from exact C.
+  hdr += history.rgb * vec3<f32>(0.11, 0.035, 0.05);
 
   let finalAlpha = clamp(sourceColor.a * 0.6 + totalAlpha * 0.5 + rippleWave * 0.1, 0.0, 1.0);
 

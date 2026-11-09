@@ -1,3 +1,5 @@
+import * as cpp from './_generated.js';
+
 /** Minimal Emscripten module surface used by the WASM JS glue. */
 export interface EmscriptenModule {
   ccall(
@@ -110,7 +112,7 @@ export function isCppRendererReady(): boolean {
   const mod = wasmRef.module;
   if (!state.initialized || !mod) return false;
   try {
-    return Number(mod.ccall('isRendererInitialized', 'number', [], [])) === 1;
+    return cpp.isRendererInitialized(mod) === 1;
   } catch {
     return false;
   }
@@ -122,9 +124,9 @@ export function isCppRendererReady(): boolean {
  */
 export function readCanvasCopySrc(): boolean | null {
   const mod = wasmRef.module;
-  if (!mod || typeof mod._getCanvasCopySrcSupported !== 'function') return null;
-  if (!isCppRendererReady()) return null;
-  return mod._getCanvasCopySrcSupported() === 1;
+  if (!mod || !isCppRendererReady()) return null;
+  const supported = cpp.getCanvasCopySrcSupported(mod);
+  return supported === null ? null : supported === 1;
 }
 
 export const INIT_STAGE_NAMES: Record<number, string> = {

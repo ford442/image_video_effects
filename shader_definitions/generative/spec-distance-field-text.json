@@ -25,7 +25,8 @@
     "depth-aware",
     "temporal-feedback",
     "ACES-tone-map",
-    "chromatic-aberration"
+    "chromatic-aberration",
+    "upgraded-rgba"
   ],
   "params": [
     {

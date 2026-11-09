@@ -1,3 +1,5 @@
+import * as cpp from './_generated.js';
+import { getSeamDiagnostics } from './call.js';
 import { INIT_STAGE_NAMES, readCanvasCopySrc, state, wasmRef } from './state.js';
 
 export interface CppInitDiagnostics {
@@ -8,13 +10,14 @@ export interface CppInitDiagnostics {
 }
 
 export function readCppInitDiagnostics(): CppInitDiagnostics {
-  if (!wasmRef.module || typeof wasmRef.module.ccall !== 'function') {
+  const mod = wasmRef.module;
+  if (!mod || typeof mod.ccall !== 'function') {
     return { stage: 0, stageName: 'None', message: '', adapterSummary: '' };
   }
 
-  const stage = Number(wasmRef.module.ccall('getLastInitErrorStage', 'number', [], []) ?? 0);
-  const message = String(wasmRef.module.ccall('getLastInitErrorMessage', 'string', [], []) ?? '');
-  const adapterSummary = String(wasmRef.module.ccall('getAdapterSummary', 'string', [], []) ?? '');
+  const stage = cpp.getLastInitErrorStage(mod);
+  const message = cpp.getLastInitErrorMessage(mod);
+  const adapterSummary = cpp.getAdapterSummary(mod);
 
   return {
     stage,
@@ -55,6 +58,8 @@ export function getDiagnostics() {
     canvasCopySrc: readCanvasCopySrc(),
     /** MAX_SHADER_SLOTS in the loaded artifact; null when it predates the export. */
     maxShaderSlots: state.maxShaderSlots,
+    /** Call seam (bridge/call.ts): the suspended async export, queued calls, skipped sync calls. */
+    seam: getSeamDiagnostics(wasmRef.module),
   };
 }
 
@@ -87,15 +92,14 @@ export interface WasmErrorRing {
   recent: string[];
 }
 
-type CStringExport = '_getPassTimingsJson' | '_getLastError' | '_getErrorRingJson';
+type CStringExport = 'getPassTimingsJson' | 'getLastError' | 'getErrorRingJson';
 
-/** UTF8ToString of a const char* export; null when the module or export is missing. */
+/** A const char* export decoded; null when the module or export is missing. */
 function readCStringExport(name: CStringExport): string | null {
   const mod = wasmRef.module;
-  const fn = mod?.[name];
-  if (!mod || typeof fn !== 'function' || typeof mod.UTF8ToString !== 'function') return null;
+  if (!mod) return null;
   try {
-    return mod.UTF8ToString(fn());
+    return cpp[name](mod);
   } catch {
     return null;
   }
@@ -156,21 +160,20 @@ export function parseErrorRingJson(json: string | null, last: string | null = nu
 
 /** Smoothed per-pass C++ GPU timings; [] until timestamps resolve or on artifacts without the export. */
 export function readPassTimings(): WasmPassTiming[] {
-  return parsePassTimingsJson(readCStringExport('_getPassTimingsJson'));
+  return parsePassTimingsJson(readCStringExport('getPassTimingsJson'));
 }
 
 /** C++ uncaptured-error ring; empty on artifacts without the export. Readable before init / after shutdown. */
 export function readErrorRing(): WasmErrorRing {
-  return parseErrorRingJson(readCStringExport('_getErrorRingJson'), readCStringExport('_getLastError'));
+  return parseErrorRingJson(readCStringExport('getErrorRingJson'), readCStringExport('getLastError'));
 }
 
 /** Drop the held error messages (the count keeps counting). False when the artifact lacks the export. */
 export function clearErrorRing(): boolean {
-  const fn = wasmRef.module?._clearErrorRing;
-  if (typeof fn !== 'function') return false;
+  const mod = wasmRef.module;
+  if (!mod) return false;
   try {
-    fn();
-    return true;
+    return cpp.clearErrorRing(mod) !== null;
   } catch {
     return false;
   }
@@ -194,7 +197,8 @@ export function awaitSubmittedWorkDone(timeoutMs = 60_000): Promise<boolean> | n
       mod.__pxWorkDone = undefined;
       resolve(ok !== 0);
     };
-    if (mod._requestWorkDoneMark!() !== 1) {
+    // skip mid-suspend (→ 0): resolves false rather than marking a half-built frame.
+    if (cpp.requestWorkDoneMark(mod) !== 1) {
       clearTimeout(timer);
       mod.__pxWorkDone = undefined;
       resolve(false);

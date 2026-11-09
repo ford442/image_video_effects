@@ -38,12 +38,40 @@
       "failure_note": "Needs WebGPU to render"
     },
     {
+      "id": "gen-bioluminescent-mycelial-nexus",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-04",
+      "expires": "2026-12-04",
+      "reason": "other"
+    },
+    {
       "id": "gen-bioluminescent-neural-coral-matrix",
       "added_by": "Jules",
       "deferred_at": "2026-10-20",
       "expires": "2026-11-19",
       "reason": "gpu-capture-pending",
       "failure_note": "New shader requires GPU capture for thumbnail"
+    },
+    {
+      "id": "gen-cymatic-void-glass-geode",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-09",
+      "expires": "2026-12-09",
+      "reason": "other"
+    },
+    {
+      "id": "gen-ethereal-neon-bismuth-origami",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-07",
+      "expires": "2026-12-07",
+      "reason": "other"
+    },
+    {
+      "id": "gen-harmonic-ferrofluid-kinetics",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-06",
+      "expires": "2026-12-06",
+      "reason": "other"
     },
     {
       "id": "gen-liquid-metal-chrono-flora",
@@ -107,6 +135,13 @@
       "renewals": 1,
       "renewed_at": "2026-09-26",
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-prismatic-quantum-loom",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-08",
+      "expires": "2026-12-08",
+      "reason": "other"
     },
     {
       "id": "gen-psychedelic-time-warp-kaleidoscope",
@@ -177,6 +212,13 @@
       "renewals": 1,
       "renewed_at": "2026-09-26",
       "failure_note": "no self-hosted gpu runner registered (gpu-required.yml / thumbs-capture-farm.yml); next capture wave"
+    },
+    {
+      "id": "gen-stellar-cyber-lotus-forge",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-02",
+      "expires": "2026-12-02",
+      "reason": "other"
     },
     {
       "id": "gen-stellar-mycelium-overdrive",

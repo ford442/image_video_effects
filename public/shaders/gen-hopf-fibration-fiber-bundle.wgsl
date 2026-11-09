@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-17
-//  Ideas: knot gaps; U(1) beads; S2 inset; stereo horizon; hot crossings; equatorial generator; longitudinal phase seam
+//  Upgraded: 2026-10-12, 2026-10-17, 2026-11-01
+//  Ideas (2026-11): perspective tube thickness (glow radius follows depth4); aerial cooling (distant strands desaturate and cool). Earlier: knot gaps; U(1) beads; S2 inset; stereo horizon; hot crossings; equatorial generator; longitudinal phase seam
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -150,16 +150,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let tProj = clamp(dot(toPixel, seg) / max(segLen2, 0.00001), 0.0, 1.0);
         let closest = prevProj + seg * tProj;
         let d = length(uv - closest);
-        let glow = exp(-d * d / (fiberThick * fiberThick));
+        // 2026-11 Idea 1: perspective tube thickness. A tube thins with distance; depth4 = 1 / (2.5 + rz) is
+        // already computed for this sample, so the glow radius follows it (x0.55 far .. x1.6 near).
+        let tubeThick = fiberThick * clamp(depth4 / 0.4, 0.55, 1.6);
+        let glow = exp(-d * d / (tubeThick * tubeThick));
         if (glow > 0.001) {
           let depthFade = smoothstep(-1.0, 1.0, wCoord) * 0.5 + 0.5;
           // Idea 2: bead riding the U(1) circle action at its own psi phase.
           let bead = pow(0.5 + 0.5 * cos(tt - beadPhase), 28.0);
           // Idea 7 — double-angle stripe so each circle reads as a ruled tube
           let seam = pow(0.5 + 0.5 * cos(psi * 2.0 + fi * 0.5), 8.0);
-          fiberAcc += fiberColor * glow * depthFade * eqBoost;
+          // 2026-11 Idea 2: aerial cooling. Distant strands (small depth4) desaturate toward a cool tint.
+          let coolTint = vec3<f32>(dot(fiberColor, vec3<f32>(0.3, 0.59, 0.11))) * vec3<f32>(0.7, 0.85, 1.15);
+          let segColor = mix(coolTint, fiberColor, smoothstep(0.22, 0.5, depth4));
+          fiberAcc += segColor * glow * depthFade * eqBoost;
           fiberAcc += vec3<f32>(1.0, 0.78, 0.32) * glow * depthFade * (eqBoost - 1.0) * 0.8;
-          fiberAcc += fiberColor * glow * seam * depthFade * 0.65;
+          fiberAcc += segColor * glow * seam * depthFade * 0.65;
           fiberAcc += vec3<f32>(1.0, 0.96, 0.88) * glow * bead * depthFade * (0.7 + bass * 1.3);
           if (d < fiberMinD) {
             fiberMinD = d;

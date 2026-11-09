@@ -16,13 +16,79 @@ FastAPI-based storage manager for Google Cloud Storage with shader library suppo
 ```bash
 GCP_BUCKET_NAME=your-bucket-name
 GCP_CREDENTIALS={"type": "service_account", ...}  # JSON string
+WEBHOOK_SIGNING_SECRET=...   # server-only, >= 32 chars: openssl rand -hex 32
 ```
+
+`WEBHOOK_SIGNING_SECRET` enables the browser write path (`POST /upload-token`, `POST /image-effects`).
+Unset or too short: the server logs a warning at startup and both routes return 503. Other
+optional knobs (`WEBHOOK_ALLOWED_ORIGINS`, `WEBHOOK_RATE_LIMIT_REQUESTS`, `WEBHOOK_MAX_BODY_BYTES`,
+`REDIS_URL`) are in [docs/STORAGE_API.md](../docs/STORAGE_API.md#operating-it).
+
+### Upload tokens: rotation
+
+1. `openssl rand -hex 32`
+2. Set it as `WEBHOOK_SIGNING_SECRET` on the host that runs storage_manager and restart it. Tokens
+   already issued (60 s lifetime) stop working; clients simply ask for a new one.
+3. **The old `REACT_APP_WEBHOOK_SECRET` was inlined into previously deployed JS bundles. Treat it as
+   public and rotate it everywhere it was accepted; delete it from `.env` files, CI secrets and hosting config.**
+4. Run more than one worker only with `REDIS_URL` set (single-use tokens are tracked there, in `WEBHOOK_REDIS_DB`,
+   default `REDIS_DB + 1`: never the response cache's DB, which is flushed on every shader save).
+
+## Rate limiting and `TRUSTED_PROXIES`
+
+`/api/*` is limited to `RATE_LIMIT_REQUESTS` (120) per `RATE_LIMIT_WINDOW` (60 s) per client IP and method; the webhook
+routes have their own, stricter bucket (`WEBHOOK_RATE_LIMIT_REQUESTS`, 30). The client IP is only as trustworthy as
+the thing that reports it, and `X-Forwarded-For` is just a request header: anyone who can reach the app directly
+can send any value and get a fresh bucket per request.
+
+So the header (`RATE_LIMIT_IP_HEADER`, default `X-Forwarded-For`) is honoured **only when the TCP peer
+(`request.client.host`) is listed in `TRUSTED_PROXIES`**; from any other peer it is ignored and the bucket is the peer's own IP.
+
+| Setting | Default | Meaning |
+|---------|---------|---------|
+| `TRUSTED_PROXIES` | `127.0.0.1,::1` | Comma-separated IPs or CIDRs of reverse proxies you run (`10.0.0.0/8,192.0.2.7`). `""` trusts nobody. Invalid entries are logged and skipped. |
+| `RATE_LIMIT_IP_HEADER` | `X-Forwarded-For` | Header the proxy sets. Several header lines count as one chain. |
+
+When the peer is trusted, the chain is read **right to left, skipping addresses that are themselves trusted proxies, and the
+first untrusted address is the client**. Each proxy appends the address it received the connection from, so entries to the
+left of that were written by the client and are never used. Examples with `TRUSTED_PROXIES=10.0.0.0/8`:
+
+| Peer | `X-Forwarded-For` | Bucket |
+|------|-------------------|--------|
+| `203.0.113.9` (direct, untrusted) | `1.2.3.4` | `203.0.113.9` (header ignored) |
+| `10.0.0.9` | `198.51.100.4` | `198.51.100.4` |
+| `10.0.0.9` | `6.6.6.6, 198.51.100.4, 10.0.0.5` | `198.51.100.4` (`10.0.0.5` skipped, `6.6.6.6` ignored) |
+| `10.0.0.9` | `garbage` | `10.0.0.9` (an unparseable value is never used as a key) |
+
+**uvicorn has its own forwarded-header handling, and it runs first.** `uvicorn` (CLI default `--proxy-headers`) rewrites
+`request.client` from `X-Forwarded-For` whenever the peer is in `--forwarded-allow-ips` / `FORWARDED_ALLOW_IPS` (default
+`127.0.0.1`), *before* any middleware here sees the request. Verified live: with uvicorn's default and `TRUSTED_PROXIES=""`, a
+loopback client sending a fresh forged header each time was never limited (35 × 200); with `--no-proxy-headers` it got 30 × 200
+then 429s. With the default `127.0.0.1` the two layers agree, so a loopback nginx is fine either way, but `FORWARDED_ALLOW_IPS='*'`
+(common in Docker and Spaces recipes) lets any client choose its bucket and `TRUSTED_PROXIES` can no longer stop it.
+**Start uvicorn with `--no-proxy-headers`** so `TRUSTED_PROXIES` is the single place that decides. `python -m storage_manager.app` already does:
+
+```bash
+uvicorn storage_manager.app:app --host 0.0.0.0 --port 7860 --no-proxy-headers
+```
+
+Deployment notes:
+
+* **nginx/caddy on the same host** (the common case): nothing to set, loopback is trusted by default. Make sure the proxy
+  *appends* (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`) or overwrites (`$remote_addr`); both are safe here.
+* **Proxy in another container or host** (Docker bridge, load balancer): add its address or network, e.g.
+  `TRUSTED_PROXIES=127.0.0.1,::1,172.18.0.0/16`. Until you do, every request arrives from the proxy's IP and **all users share one bucket**.
+* **No proxy at all** (e.g. a bare `uvicorn --host 0.0.0.0`): set `TRUSTED_PROXIES=""` and run with `--no-proxy-headers`.
+* **Behind two proxies**: list both; the walk skips every trusted hop.
 
 ## Running Locally
 
 ```bash
 pip install -r requirements.txt
-uvicorn app:app --host 0.0.0.0 --port 7860 --reload
+# from the repository root (the package imports itself as `storage_manager`)
+uvicorn storage_manager.app:app --host 0.0.0.0 --port 7860 --no-proxy-headers --reload
+# tests (either directory works)
+cd storage_manager && python -m pytest -q
 ```
 
 ## Deploy to Hugging Face Spaces
@@ -58,6 +124,10 @@ uvicorn app:app --host 0.0.0.0 --port 7860 --reload
 - `PATCH /api/songs/{item_id}` - Patch metadata
 - `POST /api/samples` - Upload sample file
 - `GET /api/samples/{sample_id}` - Stream sample file
+
+### Webhook writes (token-gated)
+- `POST /upload-token` (also `/webhook/upload-token`) - `{action, name}` -> 60 s single-use token
+- `POST /image-effects` (also `/webhook/image-effects`) - `Authorization: Bearer <token>`, performs the write
 
 ### Admin
 - `POST /api/admin/sync` - Rebuild indexes from GCS

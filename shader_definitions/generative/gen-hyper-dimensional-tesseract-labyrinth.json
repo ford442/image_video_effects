@@ -8,7 +8,7 @@
     "audio-reactive",
     "raymarching"
   ],
-  "description": "A dizzying, gravity-defying maze of glowing hyper-cubes that unfold and rotate through 4D space, creating impossible, Escher-like geometries driven by sound.",
+  "description": "A maze of glowing hypercube cells rotating through 4D space. Eight hyper-edge struts join each cell's frame to its W-slice ghost frame, and edge glow is coloured by the fourth coordinate, warm for +w and cool for -w.",
   "workgroup_size": [
     16,
     16,

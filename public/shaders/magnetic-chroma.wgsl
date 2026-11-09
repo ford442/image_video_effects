@@ -3,11 +3,14 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: per-channel RK2 field-line smear; compass hue (field angle → hue wheel); true N/S pole pair around the cursor
+//  Upgraded: 2026-10-05, 2026-11-09
+//  Ideas: per-channel RK2 field-line smear; compass hue (field angle → hue wheel); true N/S pole pair around the cursor; Lorentz gyration (R and B streamlines are rotated ±θ per RK2 step, opposite "charges" curl opposite ways, θ ∝ Chromatic); iron filings (jittered needle per cell, oriented by the same magnetic_field() at the needle centre)
 //  A packing: raw field record (fieldStrength, influence, chromaticSep, alpha) — HEAD packing kept; C is not read
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
+
+// Idea 5: iron-filing cell size, aspect space (16 px at 576 px tall; floored to 7 px on small canvases in main)
+const FILING_CELL: f32 = 0.028;
 
 // Half-separation of the N/S pole pair, aspect space (set once per invocation)
 var<private> gPoleOffset: vec2<f32> = vec2<f32>(0.05, 0.0);
@@ -92,9 +95,19 @@ fn magnetic_field(uv: vec2<f32>, mouse: vec2<f32>, aspect: f32, strength: f32) -
   return vec2<f32>(field.x / aspect, field.y);
 }
 
-fn rk2_advect(uv: vec2<f32>, mouse: vec2<f32>, aspect: f32, strength: f32, dt: f32) -> vec2<f32> {
-  let k1 = magnetic_field(uv, mouse, aspect, strength);
-  let k2 = magnetic_field(uv + k1 * dt * 0.5, mouse, aspect, strength);
+// Idea 4: Lorentz gyration. A charge moving through B is pushed sideways, with the sign set by
+// its charge: the field vector that steps a channel's streamline is rotated by `cs` = (cos θ, sin θ)
+// in aspect space. cs = (1, 0) is HEAD's pure field-line step.
+fn lorentz_field(uv: vec2<f32>, mouse: vec2<f32>, aspect: f32, strength: f32, cs: vec2<f32>) -> vec2<f32> {
+  let f = magnetic_field(uv, mouse, aspect, strength);
+  let fa = vec2<f32>(f.x * aspect, f.y);
+  let r = vec2<f32>(fa.x * cs.x - fa.y * cs.y, fa.x * cs.y + fa.y * cs.x);
+  return vec2<f32>(r.x / aspect, r.y);
+}
+
+fn rk2_advect(uv: vec2<f32>, mouse: vec2<f32>, aspect: f32, strength: f32, dt: f32, cs: vec2<f32>) -> vec2<f32> {
+  let k1 = lorentz_field(uv, mouse, aspect, strength, cs);
+  let k2 = lorentz_field(uv + k1 * dt * 0.5, mouse, aspect, strength, cs);
   return uv + k2 * dt;
 }
 
@@ -129,6 +142,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   gPoleOffset = vec2<f32>(cos(poleAngle), sin(poleAngle)) * poleHalf;
 
   let dt = 0.003 * (1.0 + treble * 0.5);
+  // Idea 4: gyration angle rides the Chromatic slider (0 = HEAD): R curls +θ, G straight, B −θ.
+  let lorentz = u.zoom_params.z * 1.2;
   let sepR = chromatic * (1.0 + depth * 0.5);
   let sepG = chromatic * 0.5;
   let sepB = -chromatic * (1.0 + mids * 0.3);
@@ -142,11 +157,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var smear = vec3<f32>(0.0);
   for (var ch: i32 = 0; ch < 3; ch = ch + 1) {
     let dtc = dt * 0.4 * (1.0 + chromatic * 8.0 * f32(ch));
+    let gyro = lorentz * (1.0 - f32(ch));
+    let cs = vec2<f32>(cos(gyro), sin(gyro));
     var p = starts[ch];
     var acc = 0.0;
     var wsum = 0.0;
     for (var k: i32 = 0; k < 4; k = k + 1) {
-      p = clamp(rk2_advect(p, mouse, aspect, fieldStrength, dtc), vec2<f32>(0.001), vec2<f32>(0.999));
+      p = clamp(rk2_advect(p, mouse, aspect, fieldStrength, dtc, cs), vec2<f32>(0.001), vec2<f32>(0.999));
       let w = f32(k + 1);
       let s = textureSampleLevel(readTexture, u_sampler, p, 0.0);
       acc = acc + w * select(select(s.b, s.g, ch == 1), s.r, ch == 0);
@@ -170,13 +187,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let compassW = clamp(influence * fieldStrength * 0.6, 0.0, 1.0);
   baseColor = mix(baseColor, compassRGB, compassW);
 
+  // Idea 5: iron filings. One jittered needle per cell (aspect space), oriented along the SAME
+  // magnetic_field() evaluated at the needle's centre, so it agrees with the RK2 smear by
+  // construction; real filings never align perfectly and never fill every cell, so the angle,
+  // length and presence are jittered per cell. Dark metallic needles fade in with the field
+  // region and sit under the neon. Cell is at least 7 px so small canvases do not turn to dots.
+  let filingCell = max(FILING_CELL, 7.0 / resolution.y);
+  let pa = vec2<f32>(uv.x * aspect, uv.y);
+  let cellId = floor(pa / filingCell);
+  let cj = hash22(cellId);
+  let hLen = fract(cj.x * 7.31 + cj.y * 3.17);
+  let hPres = fract(cj.y * 13.7 + cj.x * 5.3);
+  let needleC = (cellId + 0.38 + 0.24 * cj) * filingCell;
+  let fc = magnetic_field(vec2<f32>(needleC.x / aspect, needleC.y), mouse, aspect, 1.0);
+  let fcA = vec2<f32>(fc.x * aspect, fc.y);
+  let fDir = fcA / max(length(fcA), 0.0001);
+  let jitA = (hPres - 0.5) * 0.35;                                      // ±10° misalignment
+  let needleDir = vec2<f32>(fDir.x * cos(jitA) - fDir.y * sin(jitA), fDir.x * sin(jitA) + fDir.y * cos(jitA));
+  let nRel = pa - needleC;
+  let nAlong = dot(nRel, needleDir);
+  let nAcross = abs(nRel.x * needleDir.y - nRel.y * needleDir.x);
+  let halfLen = filingCell * (0.18 + 0.18 * hLen);
+  let needle = (1.0 - smoothstep(filingCell * 0.05, filingCell * 0.14, nAcross))
+             * (1.0 - smoothstep(halfLen * 0.7, halfLen, abs(nAlong)))
+             * smoothstep(0.12, 0.45, hPres);
+  let filing = needle * clamp(influence * fieldStrength * 1.5 + highField * 0.6, 0.0, 1.0);
+  baseColor = mix(baseColor, baseColor * 0.18 + vec3<f32>(0.02, 0.03, 0.05), filing * 0.75);
+
   let neon = vec3<f32>(0.15, 0.85 + treble * 0.15, 1.0) * highField * (0.25 + bass * 0.12);
   let bloom = vec3<f32>(1.0, 0.3 + mids * 0.2, 0.7) * influence * fieldStrength * 0.18;
   let finalColor = aces_tone_map(max(baseColor + neon + bloom, vec3<f32>(0.0)));
 
   let chromaticSep = abs(sepR) + abs(sepB);
   // Semantic coverage: the photo covers the frame; the field region is fully opaque
-  let alpha = mix(0.8, 1.0, clamp(influence + highField + fieldStrength * chromaticSep * depth, 0.0, 1.0));
+  let alpha = mix(0.8, 1.0, clamp(influence + highField + fieldStrength * chromaticSep * depth + filing, 0.0, 1.0));
   let outDepth = clamp(depth + influence * 0.04 + highField * 0.03, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));

@@ -6,7 +6,14 @@
     "node": ">=24"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^6.20.4",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/language": "^6.13.1",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.15",
     "@huggingface/transformers": "^4.2.0",
+    "@lezer/highlight": "^1.2.5",
     "@mlc-ai/web-llm": "^0.2.80",
     "@xyflow/react": "^12.12.0",
     "hls.js": "^1.6.15",
@@ -35,6 +42,8 @@
     "gen:canvas-configure": "node scripts/gen-canvas-configure-header.js",
     "gen:webgpu-limits": "node scripts/gen-webgpu-limits-header.js",
     "gen:bind-group0": "node scripts/gen-bind-group0-header.js",
+    "gen:wasm-exports": "node scripts/gen-wasm-exports-header.js",
+    "gen:wasm-contracts": "node scripts/gen-wasm-contracts.js",
     "wasm:validate": "node scripts/validate_wasm_artifacts.js",
     "wasm:clean": "rm -rf wasm_renderer/build public/wasm",
     "test:wasm:unit": "vitest run WASM",

@@ -1,5 +1,7 @@
-import { callSuspending } from './call.js';
+import * as cpp from './_generated.js';
+import { abandonSeam } from './call.js';
 import { formatCppInitFailure, readCppInitDiagnostics } from './diagnostics.js';
+import { finishRecordingForShutdown } from './recording.js';
 import { state, wasmRef } from './state.js';
 import type { EmscriptenModule, PixelocityWasmFactory, WasmArtifactKind } from './state.js';
 
@@ -33,8 +35,8 @@ type CppInitOutcome = 'ready' | 'failed' | 'pending';
  */
 function readCppInitOutcome(mod: EmscriptenModule): CppInitOutcome {
   try {
-    if (Number(mod.ccall('isRendererInitialized', 'number', [], [])) === 1) return 'ready';
-    const stage = Number(mod.ccall('getLastInitErrorStage', 'number', [], []) ?? 0);
+    if (cpp.isRendererInitialized(mod) === 1) return 'ready';
+    const stage = cpp.getLastInitErrorStage(mod);
     // 0 = None (still running), 8 = Ready; anything else is a stage C++ failed at
     // after running its own Shutdown().
     return stage > 0 && stage < 8 ? 'failed' : 'pending';
@@ -69,7 +71,11 @@ function reapAbandonedInit(mod: EmscriptenModule): void {
   const poll = () => {
     if (readCppInitOutcome(mod) !== 'pending') {
       try {
-        mod.ccall('shutdownWasmRenderer', null, [], []);
+        // C++ has left WaitAny (its getters say so) even though the init ccall
+        // promise never settled; drop that call from the seam so the queued-
+        // while-suspended shutdown runs now instead of never.
+        abandonSeam(mod);
+        cpp.shutdownWasmRenderer(mod);
         console.log('[WASM] Abandoned init settled; C++ renderer shut down');
       } catch (err) {
         console.error('[WASM] Abandoned init shutdown error:', err);
@@ -134,13 +140,8 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
     // { async: true } waits out WaitAny. The poll is the backstop if that
     // promise never settles (C++ still suspended past CPP_INIT_TIMEOUT_MS).
     const raced = await Promise.race([
-      callSuspending(
-        mod,
-        'initWasmRenderer',
-        'number',
-        ['number', 'number', 'string'],
-        [state.canvasWidth, state.canvasHeight, selector],
-      ).then((value) => ({ tag: 'call' as const, value })),
+      cpp.initWasmRenderer(mod, state.canvasWidth, state.canvasHeight, selector)
+        .then((value) => ({ tag: 'call' as const, value })),
       waitForCppInit(mod).then((outcome) => ({ tag: 'poll' as const, outcome })),
     ]);
     if (raced.tag === 'poll' && raced.outcome === 'timeout') {
@@ -158,7 +159,7 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
     if (raced.tag === 'poll') {
       ok = raced.outcome === 'ready' ? 1 : 0;
     } else {
-      ok = Number(raced.value);
+      ok = raced.value;
       const settled = readCppInitOutcome(mod);
       if (settled === 'failed') ok = 0;
       else if (settled === 'ready') ok = 1;
@@ -192,18 +193,15 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
   const elapsed = state.initEndTime - state.initStartTime;
   console.log(`[WASM] ✅ Initialization complete in ${elapsed} ms (${state.wasmArtifact ?? 'preloaded'} build)`);
 
-  state.maxShaderSlots = typeof mod._getMaxShaderSlots === 'function'
-    ? mod._getMaxShaderSlots()
-    : null;
+  state.maxShaderSlots = cpp.getMaxShaderSlots(mod);
   console.log(`[WASM] maxShaderSlots=${state.maxShaderSlots ?? 'unknown (artifact predates export)'}`);
 
-  const cppFmt = Number(mod.ccall('getColorFormat', 'number', [], []) ?? 0);
+  const cppFmt = cpp.getColorFormat(mod);
   const pending = state.colorFormat;
   if (pending !== 0 && pending !== cppFmt) {
-    await callSuspending(mod, 'setColorFormat', null, ['number'], [pending]);
+    await cpp.setColorFormat(mod, pending);
   }
-  const applied = Number(mod.ccall('getColorFormat', 'number', [], []) ?? cppFmt);
-  state.colorFormat = applied === 1 ? 1 : 0;
+  state.colorFormat = cpp.getColorFormat(mod) === 1 ? 1 : 0;
   console.log(
     `[WASM] colorFormat=${state.colorFormat === 1 ? 'rgba16float' : 'rgba32float'}`,
   );
@@ -214,7 +212,7 @@ export async function initWasmRenderer(canvasElement: HTMLCanvasElement): Promis
     const src = state.pendingInputSource;
     state.pendingInputSource = null;
     const sourceInt = typeof src === 'string' ? (SOURCE_MAP[src] ?? 0) : src;
-    mod.ccall('setInputSource', null, ['number'], [sourceInt]);
+    cpp.setInputSource(mod, sourceInt);
     state.inputSource = sourceInt;
   }
 
@@ -303,8 +301,14 @@ export function shutdownWasmRenderer(): void {
     return;
   }
 
+  // Settle an active take while the module is still live (finite clip, not a
+  // hung promise or a stale session that blocks the next take after re-init).
+  finishRecordingForShutdown();
+
   try {
-    wasmRef.module.ccall('shutdownWasmRenderer', null, [], []);
+    // queue: destroying the instance under a suspended WaitAny crashes the tab,
+    // so a shutdown during loadShader / resize runs once that call settles.
+    cpp.shutdownWasmRenderer(wasmRef.module);
   } catch (err) {
     console.error('[WASM] Shutdown error:', err);
   }

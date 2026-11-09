@@ -21,7 +21,9 @@
     "audio-reactive",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba",
+    "semantic-alpha"
   ],
   "params": [
     {
@@ -61,7 +63,7 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "feedbackPacking": "A/C = display RGBA with chromatic lens magnification and iridescent sheen history",
+  "feedbackPacking": "A/C = display RGBA with chromatic lens magnification and iridescent sheen history; texels (0,0) and (1,0) hold the sprung lens state (not pixels)",
   "updated": true,
   "x-meta": {
     "upgrade": {

@@ -2,7 +2,7 @@
   "id": "neon-cursor-trace",
   "name": "Neon Cursor Trace",
   "url": "shaders/neon-cursor-trace.wgsl",
-  "description": "Spring-lagged electric bead chain trailing the cursor with forking arcs, white-hot cooling phosphor and overshoot sparks.",
+  "description": "Spring-lagged electric bead chain trailing the cursor with forking arcs, white-hot cooling phosphor, overshoot sparks, neon spill lighting the scene and tube flicker.",
   "params": [
     {
       "id": "intensity",

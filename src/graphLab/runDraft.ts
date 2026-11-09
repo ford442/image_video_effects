@@ -116,3 +116,109 @@ export function readLive(manager: RendererManager): LiveReading {
     .filter((t) => t.kind === 'compute' && t.shaderId === GRAPH_LAB_RUNTIME_ID);
   return { report: mine, passTimings };
 }
+
+// ── Inline WGSL drafts ─────────────────────────────────────────────────────
+
+/** What the WGSL runner needs from the renderer (RendererManager satisfies it). */
+export type WgslRunnerHost = Pick<RendererManager, 'loadShader' | 'setSlotShader' | 'getSlotState' | 'setSlotParams'>;
+
+export type WgslSwapResult =
+  | { ok: true; shaderId: string }
+  /** `superseded`: a newer text arrived while this one compiled; it was never bound. */
+  | { ok: false; reason: 'compile' | 'superseded' | 'stopped'; message: string };
+
+/**
+ * Runtime ids of a slot's draft. Two per slot, used in turn: the next text compiles
+ * under the id that is not bound, so the slot keeps rendering the last good pipeline
+ * until the new one has compiled, and a failed compile never touches it.
+ */
+export function wgslRuntimeIds(slot: number): [string, string] {
+  return [`graphlab-wgsl-${slot}-a`, `graphlab-wgsl-${slot}-b`];
+}
+
+export const isWgslRuntimeId = (id: string | null | undefined): boolean => !!id && id.startsWith('graphlab-wgsl-');
+
+/**
+ * Hot-swaps one slot's WGSL draft. `submit` takes the include-expanded module of a
+ * text that already passed naga; only the latest submitted text is compiled (older
+ * queued ones are skipped) and bound. Nothing is bound before a compile succeeds,
+ * so starting never shows a black frame and an edit that fails keeps the old one.
+ */
+export class WgslDraftRunner {
+  private bound: string | null = null;
+  private latest = 0;
+  private chain: Promise<unknown> = Promise.resolve();
+  private stopped = false;
+  private readonly ids: [string, string];
+
+  constructor(
+    private readonly host: WgslRunnerHost,
+    readonly slot: number,
+    readonly previousShaderId: string | null,
+    private readonly makeUrl: (wgsl: string) => { url: string; release(): void } = blobUrl,
+  ) {
+    this.ids = wgslRuntimeIds(slot);
+  }
+
+  /** The runtime id currently bound to the slot (null until the first good compile). */
+  get shaderId(): string | null {
+    return this.bound;
+  }
+
+  submit(expandedWgsl: string): Promise<WgslSwapResult> {
+    const mine = ++this.latest;
+    const job = this.chain.then(() => this.swap(expandedWgsl, mine));
+    this.chain = job.catch(() => undefined);
+    return job;
+  }
+
+  private async swap(wgsl: string, mine: number): Promise<WgslSwapResult> {
+    if (this.stopped) return { ok: false, reason: 'stopped', message: 'The draft was stopped.' };
+    if (mine !== this.latest) return { ok: false, reason: 'superseded', message: 'A newer edit replaced this one.' };
+    const target = this.bound === this.ids[0] ? this.ids[1] : this.ids[0];
+    const { url, release } = this.makeUrl(wgsl);
+    let ok = false;
+    try {
+      ok = await this.host.loadShader(target, url);
+    } finally {
+      release();
+    }
+    if (this.stopped) return { ok: false, reason: 'stopped', message: 'The draft was stopped.' };
+    if (!ok) {
+      return {
+        ok: false,
+        reason: 'compile',
+        message: this.bound
+          ? 'The GPU rejected this version; the last good one keeps running.'
+          : 'The GPU rejected this shader.',
+      };
+    }
+    // A newer text compiled meanwhile is still queued; binding this one first is fine (it is good).
+    this.host.setSlotShader(this.slot, target);
+    this.bound = target;
+    return { ok: true, shaderId: target };
+  }
+
+  setParams(values: readonly [number, number, number, number]): void {
+    if (this.stopped) return;
+    this.host.setSlotParams(this.slot, values[0], values[1], values[2], values[3]);
+  }
+
+  /** Still the slot's shader? (false once the user picked another one). */
+  isBound(): boolean {
+    const current = this.host.getSlotState(this.slot)?.shaderId ?? null;
+    return !!this.bound && current === this.bound;
+  }
+
+  /** Put the slot back, unless someone else already took it. */
+  stop(): void {
+    this.stopped = true;
+    if (this.isBound()) this.host.setSlotShader(this.slot, this.previousShaderId ?? '');
+    this.bound = null;
+  }
+}
+
+function blobUrl(wgsl: string): { url: string; release(): void } {
+  const url = URL.createObjectURL(new Blob([wgsl], { type: 'text/plain' }));
+  return { url, release: () => URL.revokeObjectURL(url) };
+}

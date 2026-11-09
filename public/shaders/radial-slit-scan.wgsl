@@ -4,29 +4,12 @@
 //  Features: mouse-driven, feedback, audio-reactive, upgraded-rgba,
 //            cosine-palette, volumetric-glow, aces-tone-map, oklab-mixing
 //  Complexity: Medium
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-11-09
+//  Ideas: capture-age strata (A.a carries seconds since the slit last wrote; isochrone contour lines every 0.5 s); age weathering (old strata desaturate + cool, the scan's fresh band stays vivid)
+//  A packing: raw slit-scan composite RGB (ungraded) + A.a = capture age in seconds
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ── Color Science ─────────────────────────────────────────────────
 
@@ -163,8 +146,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let width = scan_width * 0.5;
 
     let current_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    // dataTextureC contains the previous frame (feedback)
-    var history_color = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // HEAD fix: C was sampled through a filtering sampler and A stored the graded,
+    // ACES'd, premultiplied output, so history was re-graded + re-tonemapped + darkened by
+    // its own alpha every frame (compounding to mud). A now holds the raw composite; C is
+    // loaded exactly. C.a = capture age (0 on the first frame → reads as "fresh").
+    let history = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+    let dtFrame = 1.0 / 60.0;
+    let firstFrame = select(0.0, 1.0, dot(history, history) == 0.0);
+    let history_color = vec4<f32>(mix(history.rgb, current_color.rgb, firstFrame), 1.0);
 
     // Determine if we are updating this pixel
     let half_width = width * 0.5;
@@ -186,6 +175,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (decay > 0.0) {
         final_color = mix(final_color, current_color, decay * 0.05);
     }
+
+    // ── Idea 1 state: capture age. Reset where the slit writes, grows elsewhere.
+    let age = mix(history.a + dtFrame, 0.0, max(update_factor, decay * 0.05));
+    let rawStore = vec4<f32>(final_color.rgb, age);
 
     // ═══════════════════════════════════════════════════════════════
     //  VISUALIST ENHANCEMENTS
@@ -226,6 +219,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       mix(rgb.b, chromaB, glowIntensity * 0.3)
     );
 
+    // ── Idea 2: age weathering — strata frozen longer ago drain of chroma and drift
+    // cool, so the eye reads time depth across the frozen rings.
+    let weather = smoothstep(0.5, 6.0, age) * 0.6;
+    let wl = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
+    rgb = mix(rgb, vec3<f32>(wl) * vec3<f32>(0.9, 0.97, 1.08), weather);
+
+    // ── Idea 1: isochrones — a thin dark contour wherever capture age crosses a 0.5 s
+    // step, drawing the scan's own time-strata like tree rings (mids thicken them).
+    let isoP = age * 2.0;
+    let isoD = abs(fract(isoP + 0.5) - 0.5);
+    let isoW = 0.06 + mids * 0.05;
+    let iso = (1.0 - smoothstep(isoW * 0.5, isoW, isoD)) * smoothstep(0.3, 1.0, age);
+    rgb = rgb * (1.0 - iso * 0.35);
+
     // Split-tone: shadows cool, highlights warm
     let luma = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
     let shadowColor = vec3<f32>(0.15, 0.25, 0.45); // cool blue shadows
@@ -248,15 +255,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Bloom-based alpha
     let bloomAlpha = pow(max(0.0, luma - 0.6), 2.0) * 3.0;
-    let alpha = clamp(final_color.a + glowIntensity * 0.3 + bloomAlpha * 0.2, 0.0, 1.0);
-
-    // Premultiplied alpha writeback
-    let outColor = vec4<f32>(rgb * alpha, alpha);
+    // Semantic alpha: image coverage, plus ring glow/bloom (HEAD multiplied colour by an
+    // alpha seeded from C.a = 0, which blacked the picture)
+    let alpha = clamp(current_color.a * 0.85 + glowIntensity * 0.3 + bloomAlpha * 0.2, 0.0, 1.0);
+    let outColor = vec4<f32>(rgb, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
 
-    // Write to history for next frame
-    textureStore(dataTextureA, global_id.xy, outColor);
+    // Write raw composite + age to history for next frame
+    textureStore(dataTextureA, global_id.xy, rawStore);
 
     // Pass depth through
     let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

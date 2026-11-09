@@ -2,7 +2,7 @@
 // Do not edit manually — re-run the script instead.
 
 import type { MultipassGraphDef } from './multipassGraph';
-import { getRuntimeGraph, getRuntimeSimRingRequest } from './runtimeGraphs';
+import { getRuntimeGraph, getRuntimeSimHashRequest, getRuntimeSimRingRequest } from './runtimeGraphs';
 
 export interface MultipassInfo {
   pass: number;
@@ -440,6 +440,73 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       }
     ]
   },
+  "murmuration": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "flock",
+        "entry": "murmuration-flock",
+        "dispatch": "simState",
+        "reads": [
+          "simIndex",
+          "simHash"
+        ],
+        "writes": [
+          "simState",
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "murmuration-render",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
+  "photon-bins": {
+    "maxPassesPerFrame": 8,
+    "nodes": [
+      {
+        "id": "march",
+        "entry": "photon-bins-march",
+        "dispatch": "simState",
+        "reads": [
+          "read"
+        ],
+        "writes": [
+          "simState"
+        ]
+      },
+      {
+        "id": "splat",
+        "entry": "photon-bins-splat",
+        "reads": [
+          "dataC",
+          "simIndex",
+          "simHash"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "present",
+        "entry": "photon-bins-present",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "color"
+        ]
+      }
+    ]
+  },
   "photonic-caustics-graph": {
     "maxPassesPerFrame": 8,
     "nodes": [
@@ -473,6 +540,46 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
         "writes": [
           "color",
           "dataA"
+        ]
+      }
+    ]
+  },
+  "physarum-agents": {
+    "maxPassesPerFrame": 4,
+    "nodes": [
+      {
+        "id": "diffuse",
+        "entry": "physarum-agents-diffuse",
+        "reads": [
+          "dataC"
+        ],
+        "writes": [
+          "dataA"
+        ]
+      },
+      {
+        "id": "agents",
+        "entry": "physarum-agents-step",
+        "dispatch": "simState",
+        "reads": [
+          "dataC",
+          "read",
+          "simState"
+        ],
+        "writes": [
+          "simState",
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "physarum-agents-render",
+        "reads": [
+          "dataC",
+          "read"
+        ],
+        "writes": [
+          "color"
         ]
       }
     ]
@@ -609,6 +716,50 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
       }
     ]
   },
+  "sph-fluid": {
+    "maxPassesPerFrame": 4,
+    "nodes": [
+      {
+        "id": "density",
+        "entry": "sph-fluid-density",
+        "dispatch": "simState",
+        "reads": [
+          "simIndex",
+          "simHash"
+        ],
+        "writes": [
+          "simState"
+        ],
+        "keepsHash": true
+      },
+      {
+        "id": "force",
+        "entry": "sph-fluid-force",
+        "dispatch": "simState",
+        "reads": [
+          "simIndex",
+          "simHash",
+          "read"
+        ],
+        "writes": [
+          "simState",
+          "dataA"
+        ]
+      },
+      {
+        "id": "render",
+        "entry": "sph-fluid-render",
+        "reads": [
+          "dataC",
+          "read"
+        ],
+        "writes": [
+          "color",
+          "dataA"
+        ]
+      }
+    ]
+  },
   "wave-tank": {
     "maxPassesPerFrame": 8,
     "nodes": [
@@ -649,9 +800,24 @@ export const GRAPH_REGISTRY: Record<string, MultipassGraphDef> = {
 };
 
 /** Opt-in @group(1) sim-ring requests (shader_definitions `simRing` field). */
-export const SIM_RING_REGISTRY: Record<string, { stateCount: number }> = {
+export const SIM_RING_REGISTRY: Record<string, { stateCount: number; spatialHash?: boolean }> = {
   "dla-crystals": {
     "stateCount": 65536
+  },
+  "murmuration": {
+    "stateCount": 65536,
+    "spatialHash": true
+  },
+  "photon-bins": {
+    "stateCount": 65536,
+    "spatialHash": true
+  },
+  "physarum-agents": {
+    "stateCount": 65536
+  },
+  "sph-fluid": {
+    "stateCount": 65536,
+    "spatialHash": true
   }
 };
 
@@ -716,4 +882,18 @@ export function resolveSimRingRequest(shaderId: string): number | undefined {
     if (GRAPH_REGISTRY[ownerId]?.nodes.some((n) => n.entry === shaderId)) return req.stateCount;
   }
   return undefined;
+}
+
+/**
+ * Whether the shader id (or one of its graph entries) asked for the sim ring's spatial hash
+ * (`simRing.spatialHash`, bind_group1.json `spatialHash`). Off unless the definition sets it.
+ */
+export function resolveSimHashRequest(shaderId: string): boolean {
+  const runtime = getRuntimeSimHashRequest(shaderId);
+  if (runtime !== undefined) return runtime;
+  if (SIM_RING_REGISTRY[shaderId]) return SIM_RING_REGISTRY[shaderId].spatialHash === true;
+  for (const [ownerId, req] of Object.entries(SIM_RING_REGISTRY)) {
+    if (GRAPH_REGISTRY[ownerId]?.nodes.some((n) => n.entry === shaderId)) return req.spatialHash === true;
+  }
+  return false;
 }

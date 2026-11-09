@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: photo-luma occluder in the march; sun-disk core at the source
+//  Upgraded: 2026-09-11, 2026-10-31
+//  Ideas: photo-luma occluder in the march; sun-disk core at the source; dust Beer-Lambert; Cauchy split along the march
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = vec3<f32>(2.51);
@@ -48,6 +29,12 @@ fn hash12(p: vec2<f32>) -> f32 {
   var pp = fract(p * vec2<f32>(0.1031, 0.1030));
   pp = pp + dot(pp, pp.yx + 33.33);
   return fract((pp.x + pp.y) * 43758.5453);
+}
+
+fn cauchyScale(bDisp: f32) -> vec3<f32> {
+  let lam2 = vec3<f32>(0.4225, 0.3025, 0.2025);
+  let n = 1.0 + bDisp / lam2;
+  return n / max(n.y, 1e-4);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -107,12 +94,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cosTheta = dot(sampleRayDir, lightDir);
     let phase = miePhase(0.6, cosTheta);
     let edgeFade = length(currentUV - mousePos);
-    let dispersion = 1.0 + edgeFade * 0.5;
+    // ── Idea 4: Cauchy split along the march (§12.2F) ───────────────
+    // R and B sample different distances toward the source. The old
+    // single-sample R-up/B-down tint is replaced by that spatial split.
+    let scales = cauchyScale(0.012 + 0.02 * edgeFade);
+    let chrom = 0.003 + 0.006 * edgeFade;
+    let uvR = clamp(currentUV - rayDir * chrom * scales.x, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(currentUV - rayDir * chrom * scales.z, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampleR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+    let sampleB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
     let contrib = illuminationDecay * weight * phase * dust * extinction;
-    accumulatedR += sampleColor.r * contrib * dispersion;
+    accumulatedR += sampleR * contrib;
     accumulatedG += sampleColor.g * contrib;
-    accumulatedB += sampleColor.b * contrib / max(dispersion, 0.001);
-    illuminationDecay = illuminationDecay * decay;
+    accumulatedB += sampleB * contrib;
+    // ── Idea 3: dust Beer–Lambert (§12.2F) ──────────────────────────
+    // decay still multiplies every step. Denser motes add optical depth.
+    let optical = max(dust - 0.9, 0.0) * dustDensity * 0.045;
+    illuminationDecay = illuminationDecay * decay * exp(-optical);
   }
 
   let accumulatedColor = vec3<f32>(accumulatedR, accumulatedG, accumulatedB);

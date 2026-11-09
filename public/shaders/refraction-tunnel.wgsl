@@ -4,32 +4,14 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            hoop-rails, liquid-rainbow-caustics, semantic-alpha, ACES
 //  Complexity: High
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-11-01
 //  Ideas: glass-pipe wall reflection (Fresnel toward the wall); perspective hoops/helix in 1/r
-//         with rails foreshortening into the vanishing point
+//         with rails foreshortening into the vanishing point; Beer-Lambert path tint (z = 0.35/r down the glass tube, green-cyan far end); refractive hoops (hoop phase slope bends the wall sample radially)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=TunnelDepth, y=TwistAmount, z=ChromaticDispersion, w=TunnelCurvature
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=TunnelDepth, y=TwistAmount, z=ChromaticDispersion, w=TunnelCurvature
 
 const TAU: f32 = 6.28318530718;
 
@@ -141,7 +123,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pivot = vec2<f32>(0.5 - mouseOffset.x / aspect, 0.5 - mouseOffset.y);
   let aspectV = vec2<f32>(aspect, 1.0);
   let headUV = uv + centeredUV * (1.0 - pow(safeDist / max(tunnelRadius, 0.001), 0.5));
-  let baseUV = clamp(pivot + rot2d((headUV - pivot) * aspectV, twistDelta) / aspectV, vec2<f32>(0.001), vec2<f32>(0.999));
+  let baseUV0 = pivot + rot2d((headUV - pivot) * aspectV, twistDelta) / aspectV;
+
+  // Idea 2: refractive hoops. The hoops were light only; as glass ridges they are cylindrical lenses,
+  // so across each ring the wall sample slides radially by the profile's slope (inward on one flank,
+  // outward on the other), strongest mid-tunnel and gone at the vanishing point.
+  let tunnelZ = 0.35 / max(safeDist, 0.02);
+  let vanish = smoothstep(0.03, 0.16, safeDist);
+  let hoopPh = fract(tunnelZ * 3.0 + time * (0.55 + bass * 0.45)) - 0.5;
+  let hoopBand = smoothstep(0.07, 0.0, abs(hoopPh));
+  let hoopShift = (centeredUV / safeDist) / aspectV * (hoopPh / 0.07) * hoopBand * 0.024 * insideWall * vanish;
+  let baseUV = clamp(baseUV0 + hoopShift, vec2<f32>(0.001), vec2<f32>(0.999));
 
   let rUV = clamp(baseUV + vec2<f32>(rOffset.x / aspect, rOffset.y), vec2<f32>(0.001), vec2<f32>(0.999));
   let gUV = clamp(baseUV + vec2<f32>(gOffset.x / aspect, gOffset.y), vec2<f32>(0.001), vec2<f32>(0.999));
@@ -173,9 +165,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // spaced in 1/r: they bunch toward the vanishing point and slide outward as you fly in.
   // Radial ribs are already perspective-correct; all three fade into the vanishing point
   // (foreshortening) instead of aliasing there.
-  let tunnelZ = 0.35 / max(safeDist, 0.02);
-  let vanish = smoothstep(0.03, 0.16, safeDist);
-  let hoop = smoothstep(0.07, 0.0, abs(fract(tunnelZ * 3.0 + time * (0.55 + bass * 0.45)) - 0.5)) * vanish;
+  let hoop = hoopBand * vanish;
   let ribs = smoothstep(0.05, 0.0, abs(fract(newAngle / TAU * 18.0) - 0.5)) * vanish;
   let helix = smoothstep(0.08, 0.0, abs(fract(newAngle / TAU * 7.0 - tunnelZ * 0.5 - time * 2.5) - 0.5)) * vanish;
   let axial = smoothstep(0.07, 0.0, abs(fract(safeDist * 3.5 + newAngle * 0.3 - time * (3.0 + mids)) - 0.5));
@@ -196,6 +186,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   rgb += liquidRainbow * (mobiusCaustic * 0.45 + hoop * 0.28 + helix * 0.2 + clickRing * 0.5) * insideWall;
   rgb += liquidRainbow * ribs * 0.16 * insideWall;
   rgb += vec3<f32>(0.85, 0.95, 1.0) * axial * 0.18 * insideWall * treble;
+
+  // Idea 1: Beer-Lambert path tint. z = 0.35/r is how far down the tube this pixel looks; a glass
+  // tube absorbs red and blue faster than green, so the far end goes green-cyan and dims toward the
+  // vanishing point. Strength rides Tunnel Depth.
+  let pathT = exp(-vec3<f32>(0.14, 0.03, 0.08) * min(tunnelZ, 8.0) * (0.4 + 0.8 * tunnelDepth));
+  rgb = rgb * mix(vec3<f32>(1.0), pathT, insideWall);
 
   let fogDensity = wallProximity * (1.0 - depth * 0.6) * tunnelDepth;
   let fogColor = vec3<f32>(0.05, 0.08, 0.15) * (1.0 + mids * 0.5);

@@ -2,7 +2,7 @@
   "id": "fractal-boids-field",
   "name": "Fractal Boids Field",
   "url": "shaders/fractal-boids-field.wgsl",
-  "description": "Flocking behavior on a fractal vector field. Swarms of particles flowing through organic fractal currents.",
+  "description": "Flocking on a fractal vector field. Boid trails curve with the current and linger: the Trail Persistence slider sets how fast a trail evaporates from the history layer. Audio rides the flow strength.",
   "features": [
     "advanced-hybrid",
     "boids",
@@ -10,7 +10,9 @@
     "gpu-particles",
     "randomization-safe",
     "audio-reactive",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba",
+    "temporal"
   ],
   "params": [
     {

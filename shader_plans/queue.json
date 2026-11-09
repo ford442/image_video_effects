@@ -733,7 +733,24 @@
     {
       "filename": "2026-10-31_stellar-cyber-lotus-forge.md",
       "title": "Stellar Cyber-Lotus Forge",
-      "added": "2026-10-31T15:23:25.599338"
+      "added": "2026-10-31T15:23:25.599338",
+      "status": "completed",
+      "completed_at": "2026-11-02T09:05:00.521833"
+    },
+    {
+      "filename": "2026-11-01_aetheric-holo-dendrite-core.md",
+      "title": "Aetheric Holo-Dendrite Core",
+      "added": "2026-11-01T16:17:10.587034"
+    },
+    {
+      "filename": "2026-11-05_harmonic-ferrofluid-kinetics.md",
+      "title": "Harmonic Ferrofluid Kinetics",
+      "added": "2026-11-05T16:27:13.636967"
+    },
+    {
+      "filename": "2026-11-06_ethereal-neon-bismuth-origami.md",
+      "title": "Ethereal Neon-Bismuth Origami",
+      "added": "2026-11-06T16:35:45.248463"
     }
   ],
   "current": null,
@@ -971,6 +988,43 @@
       "added": "2026-10-26T15:53:07.587338",
       "status": "completed",
       "completed_at": "2026-10-27T11:18:29.056718+00:00"
+    },
+    {
+      "filename": "2026-11-02_bioluminescent-mycelial-nexus.md",
+      "title": "Bioluminescent Mycelial Nexus",
+      "added": "2026-11-02T16:19:29.817205",
+      "status": "completed",
+      "completed_at": "2026-11-05T09:06:27.888890"
+    },
+    {
+      "filename": "2026-11-05_harmonic-ferrofluid-kinetics.md",
+      "title": "Harmonic Ferrofluid Kinetics",
+      "added": "2026-11-05T16:27:13.636967",
+      "status": "completed",
+      "completed_at": "2026-11-06T08:58:47.954852+00:00"
+    },
+    {
+      "filename": "2026-11-06_ethereal-neon-bismuth-origami.md",
+      "title": "Ethereal Neon-Bismuth Origami",
+      "added": "2026-11-06T16:35:45.248463",
+      "id": "ethereal-neon-bismuth-origami",
+      "status": "completed",
+      "completed_at": "2026-11-07T09:12:46.653397+00:00"
+    },
+    {
+      "filename": "2026-11-07_prismatic-quantum-loom.md",
+      "title": "Prismatic Quantum Loom",
+      "added": "2026-11-07T16:15:11.820728",
+      "id": "prismatic-quantum-loom",
+      "status": "completed",
+      "completed_at": "2026-11-08T09:09:44.900351+00:00"
+    },
+    {
+      "filename": "2026-11-08_cymatic-void-glass-geode.md",
+      "title": "Cymatic Void-Glass Geode",
+      "added": "2026-11-08T16:20:00.517204",
+      "status": "completed",
+      "completed_at": "2026-11-09T08:51:04.331924+00:00"
     }
   ],
   "completed": [

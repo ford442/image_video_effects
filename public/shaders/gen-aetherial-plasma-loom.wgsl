@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: alternating heddle lanes; plasma shuttle necking; warp thread-memory ghosting from exact C history; weft-catch spark where heddle lift meets shuttle pinch
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: alternating heddle lanes; plasma shuttle necking; warp thread-memory ghosting from exact C history; weft-catch spark where heddle lift meets shuttle pinch; plain-weave over/under crimp; beater-bar ratchet on the shuttle; coverage alpha with ambient aether floor
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Density, .y = Flow Speed, .z = Twist, .w = Core Brightness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Density, .y = Flow Speed, .z = Twist, .w = Core Brightness
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -107,11 +89,21 @@ fn map(p: vec3<f32>) -> vec3<f32> {
     let heddle_offset = (heddle - 0.5) * 0.16 * (0.4 + twist_amount * 0.15);
 
     // Idea 2: a longitudinal shuttle pinches the ribbon and leaves bright knots.
-    let shuttle_phase = 0.5 + 0.5 * cos(pos.z * 3.2 - flow * 2.8 + strand_angle);
+    // Idea 6: beater-bar ratchet — the shuttle advances in beats (a pick, then
+    // a dwell while the beater packs the weft) instead of gliding. The mean
+    // advance (1.6 * 1.75 = 2.8 per flow unit) matches the old glide.
+    let beat = flow * 1.6;
+    let pick = floor(beat) + smoothstep(0.0, 0.55, fract(beat));
+    let shuttle_phase = 0.5 + 0.5 * cos(pos.z * 3.2 - pick * 1.75 + strand_angle);
     let shuttle = pow(shuttle_phase, 8.0);
     let neck = 1.0 - shuttle * 0.38;
 
-    let d_ribbon = length(pos.xy) - 1.0 + fbm_val * twist_amount * 0.35 + heddle_offset;
+    // Idea 5: plain-weave over/under crimp — adjacent warp lanes cross the
+    // weft picks in opposite order, so the ribbon surface carries a checker
+    // relief built from the strand angle and z already in hand.
+    let crimp = sin(strand_angle * 12.0) * sin(pos.z * 5.0 - flow * 1.1) * 0.045;
+
+    let d_ribbon = length(pos.xy) - 1.0 + fbm_val * twist_amount * 0.35 + heddle_offset + crimp;
     let thickness = (0.055 + 0.07 * heddle) * neck;
     return vec3<f32>(abs(d_ribbon) - thickness, heddle, shuttle);
 }
@@ -205,9 +197,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     final_color += history.rgb * 0.1 * clamp(1.0 - density * 0.2, 0.0, 1.0);
 
     let normalized_density = clamp(density * 0.1, 0.0, 1.0);
+    // Alpha = coverage of the woven plasma (1 - exp(-density)) plus the ambient
+    // aether glow that the background tint above actually paints, so the
+    // backdrop is not left at alpha 0 (white-page wash when composited).
+    let ambient = 0.3 * clamp(1.0 - length(clip), 0.0, 1.0);
+    let alpha = clamp(1.0 - exp(-density * 0.5) + ambient + shuttle_light * 0.04, 0.0, 1.0);
     let display = vec4<f32>(
         acesToneMap(max(final_color, vec3<f32>(0.0))),
-        clamp(normalized_density * 0.8 + shuttle_light * 0.08, 0.0, 1.0)
+        alpha
     );
     let source_depth = textureLoad(readDepthTexture, coord, 0).r;
     let has_volume = first_depth < 10.0;

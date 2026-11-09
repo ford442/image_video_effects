@@ -2,30 +2,26 @@
 //  Particle Dreams RGBA
 //  Category: artistic
 //  Features: rgba, alpha-trails, temporal-feedback, mouse-attraction, audio-reactive
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-06-28, 2026-11-01
 //  By: Codex
+//  Ideas (2026-11): zoom-layer ghosts reach the picture with a birth/death window (the layered colour was computed and never used); per-layer hue shift (slider z, saved as Color Shift, was multiplied by zero); depth-parallax zoom
+//  A packing: none - HEAD writes no A and reads no C. ACES display on writeTexture.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: 4 user params mapped 0..1
 
-struct Uniforms {
-  config: vec4<f32>,    // .x=time, .y=click_count, .zw=resolution
-  zoom_config: vec4<f32>, // .x=zoom, .yz=mouseXY (0..1), .w=click_flag
-  zoom_params: vec4<f32>, // 4 user params mapped 0..1
-  ripples: array<vec4<f32>, 50>, // ripple history for temporal fx
-};
+fn hueRotate(color: vec3<f32>, angle: f32) -> vec3<f32> {
+    let k = vec3<f32>(0.57735, 0.57735, 0.57735);
+    let cosA = cos(angle);
+    let sinA = sin(angle);
+    return color * cosA + cross(k, color) * sinA + k * dot(k, color) * (1.0 - cosA);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn ping_pong(a: f32) -> f32 {
     return (1.0 - abs(((fract((a * 0.5)) * 2.0) - 1.0)));
@@ -140,6 +136,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var accumulatedColor: vec3<f32> = vec3(0.0);
     var accumulatedDepth: f32 = 0.0;
     var totalWeight: f32 = 0.0;
+    var ghostAcc: vec3<f32> = vec3(0.0);
+    var ghostWeight: f32 = 0.0;
+    var ghostDensity: f32 = 0.0;
     var i: i32 = 0;
     var chroma: f32;
 
@@ -191,16 +190,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let _e126 = noise(((rotatedUV * 6.0) + vec2<f32>((time * 0.15), 0.0)));
             let _e132 = noise(((rotatedUV * 6.0) + vec2<f32>(0.0, (time * 0.15))));
             let flowUV = (rotatedUV + ((vec2<f32>(_e126, _e132) * 0.015) * layerDepth_1));
-            let transformed = (((flowUV - zoom_center) / vec2(layerZoom)) + zoom_center);
+            // 2026-11 Idea 3: depth-parallax zoom. This file's fog grows with depth (larger = farther),
+            // so nearer content (smaller depth) zooms up to 25 % faster than far content.
+            let parallaxDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, ping_pong_v2_(flowUV), 0.0).x;
+            let parallaxZoom = layerZoom * (1.0 + 0.25 * (1.0 - parallaxDepth));
+            let transformed = (((flowUV - zoom_center) / vec2(parallaxZoom)) + zoom_center);
             let _e142 = ping_pong_v2_(transformed);
             let _e146 = textureSampleLevel(readTexture, u_sampler, _e142, 0.0);
             let sampleColor = _e146.xyz;
             let _e151 = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0);
             let sampleDepth = _e151.x;
-            let density = exp((-(layerDepth_1) * 1.5)) * (1.0 + u.zoom_params.z * 0.0);
+            let density = exp((-(layerDepth_1) * 1.5));
             let weight = (density * (1.0 + (sampleDepth * 0.5)));
             let _e162 = accumulatedColor;
             accumulatedColor = (_e162 + (sampleColor * weight));
+            // 2026-11 Idea 2: per-layer hue shift — slider z (saved as Color Shift) rotates each layer's
+            // colour by z * layerDepth * pi, so the tunnel's depth reads as a spectrum.
+            // 2026-11 Idea 1: birth/death window — each layer fades in and out over its zoom cycle
+            // (sin^2 of the cycle phase) instead of snapping back from zoom 5 to 1.
+            let layerPhase = fract(zoom_time * layerSpeed);
+            let layerWindow = sin(3.14159265 * layerPhase) * sin(3.14159265 * layerPhase);
+            let ghostLayer = max(hueRotate(sampleColor, colorShift * layerDepth_1 * 3.14159265), vec3<f32>(0.0));
+            ghostAcc = ghostAcc + ghostLayer * density * layerWindow;
+            ghostWeight = ghostWeight + density * layerWindow;
+            ghostDensity = ghostDensity + density;
             let _e165 = accumulatedDepth;
             accumulatedDepth = (_e165 + (sampleDepth * weight));
             let _e168 = totalWeight;
@@ -217,12 +230,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e179 = accumulatedDepth;
     let _e180 = totalWeight;
     let baseDepth = (_e179 / max(_e180, 0.0001));
-    if (arrayLength((&extraBuffer)) > 0u) {
-        let _e192 = extraBuffer[0];
-        chroma = _e192;
-    } else {
-        chroma = 0.02;
-    }
+    // HEAD read extraBuffer[0] (engine layout: bass, 0..1) and used it raw as a UV offset times
+    // depth, so a loud bass moved red and blue by up to a whole screen. Same audio value from
+    // plasmaBuffer, scaled to a lens-like split.
+    chroma = plasmaBuffer[0].x * 0.05;
     let _e196 = uv;
     let _e197 = chroma;
     let _e203 = textureSampleLevel(readTexture, u_sampler, (_e196 + vec2<f32>((_e197 * baseDepth), 0.0)), 0.0);
@@ -246,7 +257,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthY = _e250.x;
     let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
     let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
-    let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
+    // 2026-11 Idea 1: the layered zoom colour (baseColor in HEAD) was computed and never used, so the
+    // five layers only fed depth. Hue-shifted layer ghosts now reach the picture, at up to 40 %,
+    // scaled by how much of the layer stack is inside its birth/death window.
+    let ghostColor = ghostAcc / max(ghostWeight, 0.0001);
+    let ghostPresence = ghostWeight / max(ghostDensity, 0.0001);
+    let layered = mix(chromaticColor, ghostColor, 0.4 * ghostPresence);
+    let finalColor = (layered + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
 
     // Evaluate Color Shift parameter
     let color_shift_eval = u.zoom_params.z;
@@ -261,7 +278,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fog = exp(((-(baseDepth) * fogDensity_1) * 3.0));
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let outColor = mix(finalColor, fogColor, (1.0 - fog));
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, _e284));
+    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(acesToneMap(max(outColor, vec3<f32>(0.0))), _e284));
     textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
     return;
 }

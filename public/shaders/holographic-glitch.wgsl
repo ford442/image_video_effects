@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, click-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: emitter flicker (random blackouts + slow luminance sag on the Flicker slider); grating-order ghosts (±1-order hue-split copies along the shear axis, scaled by Holographic Intensity); peel shadow (the folded crest casts a soft contact shadow onto the image beneath)
+//  Upgraded: 2026-09-28, 2026-11-01
+//  Ideas: emitter flicker; grating-order ghosts; peel shadow; carrier nulls; scan/grating moiré
 //  A packing: pre-ACES linear display RGB + transmission alpha; C read back as that linear colour by the three per-channel history taps (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -138,7 +138,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                            uv.y * 5.0 + time * 0.55 + mids * 0.5 +
                            depth * 7.0 + peelFold * 2.5 + desync;
   let hologram = spectrum(interferencePhase / TAU) * (0.22 + holoIntensity * 1.15);
-  let scan = 0.5 + 0.5 * sin(uv.y * resolution.y * 0.68 + time * 3.0 + treble * 2.0);
+  let scanPhase = uv.y * resolution.y * 0.68 + time * 3.0 + treble * 2.0;
+  let scan = 0.5 + 0.5 * sin(scanPhase);
   let scanMask = mix(0.76, 1.08, scan) * (1.0 + treble * 0.12);
   let rimBase = max(1.0 - pointerDist / 0.42, 0.0);
   let peelRim = rimBase * rimBase * abs(peelFold);
@@ -162,6 +163,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr += (plusOrder * vec3<f32>(1.0, 0.85, 0.7) + minusOrder * vec3<f32>(0.7, 0.85, 1.0)) * orderGain;
 
   hdr = mix(hdr, hologram + source.rgb * 0.24, holoIntensity * (0.38 + phaseNoise * 0.28));
+
+  // ── Idea 4: carrier nulls ─────────────────────────────────────────
+  // The scan sine is the carrier. Where it crosses zero the hologram drops out.
+  let nullLine = smoothstep(0.07 + phaseInstability * 0.07, 0.0, abs(scan - 0.5));
+  hdr = hdr * (1.0 - nullLine * (0.35 + phaseInstability * 0.4));
+
+  // ── Idea 5: scan/grating moiré ────────────────────────────────────
+  // The interference grating and the scan comb beat. Holographic Intensity
+  // is how strongly that envelope shows.
+  let beat = 0.5 + 0.5 * cos(interferencePhase - scanPhase);
+  hdr = mix(hdr, hdr * (0.72 + 0.56 * beat), holoIntensity * 0.35);
   hdr += spectrum(time * 0.08 + pointerDist + mids * 0.12) * peelRim * (0.45 + treble * 0.7);
   hdr += spectrum(desync * 0.2 + time * 0.04) * abs(desync) * (0.22 + bass * 0.4);
 

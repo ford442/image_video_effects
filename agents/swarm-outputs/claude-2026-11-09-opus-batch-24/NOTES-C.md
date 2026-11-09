@@ -1,0 +1,3 @@
+radial-slit-scan: RESCUE — HEAD sampled C with filtering sampler and stored graded/ACES'd/premultiplied output in A, re-grading every frame → flat mustard wash (minirender stdL 0.019 → 0.089). Now exact C load, raw composite in A, age in A.a. Ideas 1 (isochrones) and 2 (weathering) marked "Idea n" in WGSL. Alpha no longer seeded from C.a.
+holographic-sticker: removed dead extraBuffer[133..138] spring (never persisted; raw pointer used, behaviour identical). Ideas 3 (glitter flakes) and 4 (kinegram emboss, idle bias +0.4 so visible at centred cursor). Packing unchanged.
+Gates: precommit gate pass both; dead-sliders pass. Real-GPU QA external.

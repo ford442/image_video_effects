@@ -2,7 +2,7 @@
   "id": "hyper-space-jump",
   "name": "Hyper Space Jump",
   "url": "shaders/hyper-space-jump.wgsl",
-  "description": "Continuous relativistic streak integration combines a Doppler palette, helical flight, a movable vanishing point, held acceleration, and age-bounded jump shocks.",
+  "description": "Radial streak tunnel toward the pointer. Jump Strength, Streak Decay, Chromatic Spread, and Vignette Size drive the blur. The rim shifts blue, and the previous frame leaves a short afterimage.",
   "features": [
     "mouse-driven",
     "audio-reactive",
@@ -10,7 +10,8 @@
     "doppler-color",
     "helical-motion",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "hyperspace",

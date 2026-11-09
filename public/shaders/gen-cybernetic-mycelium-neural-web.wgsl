@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: saltatory conduction leaps across myelinated segments; astrocyte calcium halos around dense synaptic hubs
+//  Upgraded: 2026-10-10, 2026-10-31
+//  Ideas: saltatory conduction leaps across myelinated segments; astrocyte calcium halos around dense synaptic hubs; Airy-disc calcium wave rings travelling out of the astrocyte hub (F Airy disc); advancing colony growth fronts along trail-density iso-contours (promotes trailDensity)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -48,6 +48,38 @@ fn fbm(p: vec2<f32>) -> f32 {
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Bessel J1 (Numerical Recipes rational / asymptotic fit), x > 0 only.
+fn besselJ1(x: f32) -> f32 {
+  let ax = max(x, 1e-3);
+  let y = ax * ax;
+  let n1 = ax * (72362614232.0 + y * (-7895059235.0 + y * (242396853.1 + y * (-2972611.439 + y * (15704.4826 + y * (-30.16036606))))));
+  let d1 = 144725228442.0 + y * (2300535178.0 + y * (18583304.74 + y * (99447.43394 + y * (376.9991397 + y))));
+  let z = 8.0 / ax;
+  let w = z * z;
+  let xx = ax - 2.356194491;
+  let p1 = 1.0 + w * (0.183105e-2 + w * (-0.3516396496e-4 + w * (0.2457520174e-5 + w * (-0.240337019e-6))));
+  let q1 = 0.04687499995 + w * (-0.2002690873e-3 + w * (0.8449199096e-5 + w * (-0.88228987e-6 + w * 0.105787412e-6)));
+  let far = sqrt(0.636619772 / ax) * (cos(xx) * p1 - z * sin(xx) * q1);
+  return select(far, n1 / d1, ax < 8.0);
+}
+
+// Airy diffraction pattern (2 J1(x)/x)^2, 1 at the centre, first zero at x = 3.8317.
+fn airy(x: f32) -> f32 {
+  let xs = max(x, 1e-3);
+  let a = 2.0 * besselJ1(xs) / xs;
+  return a * a;
+}
+
+// Inverse of acesToneMap for display values (positive root of the fit's quadratic).
+fn acesInverse(y: vec3<f32>) -> vec3<f32> {
+  let yc = clamp(y, vec3<f32>(0.0), vec3<f32>(0.985));
+  let qa = 2.43 * yc - vec3<f32>(2.51);
+  let qb = 0.59 * yc - vec3<f32>(0.03);
+  let qc = 0.14 * yc;
+  let disc = max(qb * qb - 4.0 * qa * qc, vec3<f32>(0.0));
+  return max((-qb - sqrt(disc)) / (2.0 * qa), vec3<f32>(0.0));
 }
 
 // Psychedelic mycelial spectrum — neon wheel spun by the audio
@@ -184,7 +216,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let totalDensity = detailedTrails * (1.0 + myelin * 0.55) * audioGrowth + mouseAttraction + audioTurbulence * 0.3;
 
   // Decay
-  let age2 = fract(hash2(floor(uv * 20.0)) + time * decaySpeed * (1.0 + bass) + mutationSeed);
+  // HEAD fix: hard 20x20 hash cells printed a checkerboard over the whole frame; a value-noise
+  // patch field keeps the same cell scale and decay rate but with soft organic borders.
+  let age2 = fract(noise2(uv * 20.0) * 1.0 + time * decaySpeed * (1.0 + bass) + mutationSeed);
   let alive = smoothstep(0.0, 0.3, age2) * smoothstep(1.0, 0.7, age2);
 
   // ── Color: bio-mechanical base under a psychedelic pulse spectrum ────
@@ -214,6 +248,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 6 — astrocyte calcium halos around dense hubs.
   let astro = exp(-mouseDist * 4.0) * (0.5 + 0.5 * sin(time * 2.8 + trailDensity * 20.0));
   col += mycoPalette(baseHue + 0.9, mid) * astro * 0.42;
+  // Idea 3 — Ca2+ wave rings: astrocyte calcium spreads as concentric waves; the Airy
+  // pattern gives the hub a real ring ladder whose brightness travels outward.
+  let airyR = airy(mouseDist * 34.0);
+  let calciumWave = airyR * (0.55 + 0.45 * sin(time * 3.0 - mouseDist * 16.0)) * smoothstep(0.55, 0.05, mouseDist);
+  col += mycoPalette(baseHue + 0.95, mid) * calciumWave * (0.32 + mid * 0.4);
+  // Idea 4 — colony growth fronts: hyphae advance as contour bands of trail density that
+  // creep outward at the Growth Rate; the front is brightest on already-myelinated runs.
+  let frontPhase = fract(trailDensity * 3.2 - time * (0.08 + growthRate * 0.22));
+  let growthFront = smoothstep(0.0, 0.05, frontPhase) * smoothstep(0.16, 0.05, frontPhase) * smoothstep(0.12, 0.4, trailDensity);
+  col += mycoPalette(baseHue + 0.3, 1.0) * growthFront * (0.22 + myelin * 0.35);
   // Idea 2 — gap-junction flash: this pixel and a neighbor both spike (AND, not ridge)
   let gap = pulse * smoothstep(0.42, 0.78, neighborLuma) * smoothstep(0.35, 0.75, pulse);
   col += mycoPalette(baseHue + 0.08, 1.0 + treble) * gap * 1.65;
@@ -239,7 +283,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // the history payload display-safe RGBA.
   let connectivity = clamp(length(prevData.rgb - neighborHistory) * 1.8, 0.0, 1.0);
   let feedbackMix = 0.3 + bass * 0.15;
-  col = mix(prevData.rgb * 0.95, col, feedbackMix);
+  // HEAD fix: C holds ACES output; re-tone-mapping it every frame drove the whole
+  // frame to a pastel wash, so decode the trail to linear before it is blended.
+  col = mix(acesInverse(prevData.rgb) / (1.05 + mid * 0.25) * 0.95, col, feedbackMix);
   col += mycoPalette(baseHue + 0.18, mid) * connectivity * (0.08 + treble * 0.12);
 
   col = acesToneMap(col * (1.05 + mid * 0.25));
@@ -249,7 +295,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(
     clamp(totalDensity * 0.3, 0.0, 0.7) + luma * 0.45 + pulse * 0.2
       + burst * 0.25 + connectivity * 0.12 + myelin * 0.08 + gap * 0.15 + depthSample * 0.1
-      + saltatory * 0.12 + astro * 0.08
+      + saltatory * 0.12 + astro * 0.08 + calciumWave * 0.08 + growthFront * 0.06
       + dendriticSpine * 0.1,
     0.0, 1.0);
 

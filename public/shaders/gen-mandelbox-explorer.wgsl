@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: distance-estimate lighting; fold itinerary; space-diagonal orbit trap; bounded glassy interior
+//  Upgraded: 2026-10-10, 2026-11-01
+//  Ideas: distance-estimate lighting; fold itinerary; space-diagonal orbit trap; bounded glassy interior; metallic environment reflection (Schlick Fresnel); fold-wall orbit trap
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -114,10 +114,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var coreScalings = 0.0;
   var itersRun = 0.0;
   var diagMin = 1e9;
+  var wallMin = 1e9;
 
   for (var i = 0; i < maxIter; i = i + 1) {
     // IDEA 2 bookkeeping: which folds actually fired this iteration
     let a = abs(z);
+    // 2026-11 Idea 2: fold-wall trap — closest approach of the orbit to the box-fold planes |z.c| = 1
+    // (HEAD's traps were the origin and the diagonal; the walls are the Mandelbox's own structure).
+    wallMin = min(wallMin, min(abs(a.x - 1.0), min(abs(a.y - 1.0), abs(a.z - 1.0))));
     boxReflections = boxReflections + step(1.0, a.x) + step(1.0, a.y) + step(1.0, a.z);
     z = boxFold(z);
     let r2 = dot(z, z);
@@ -197,6 +201,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let blinn = pow(max(dot(n, halfV), 0.0), shininess) * specular * (1.0 + treble * 0.8);
   color = color * (0.75 + 0.45 * diffuse * shell);
   color = color + vec3<f32>(1.0, 0.93, 0.8) * blinn * shell * 1.6;
+  // 2026-11 Idea 1: metallic environment reflection. The surface is described as metallic but
+  // reflected nothing. The view vector reflected about the DE normal looks up a procedural
+  // ground/sky gradient; Schlick Fresnel (F0 = 0.6, a metal) weights it, the DE shell confines it
+  // to the surface, and the reflection is tinted by the surface colour like a real metal.
+  let reflDir = reflect(-viewDir, n);
+  let skyMix = smoothstep(-0.4, 0.8, reflDir.y);
+  let envCol = mix(vec3<f32>(0.10, 0.09, 0.08), vec3<f32>(0.62, 0.74, 0.95), skyMix)
+             + vec3<f32>(0.9, 0.7, 0.45) * exp(-abs(reflDir.y - 0.1) * 6.0) * 0.25;
+  let fresnel = 0.6 + 0.4 * pow(1.0 - max(dot(n, viewDir), 0.0), 5.0);
+  color = color + envCol * (0.6 + 0.4 * color) * fresnel * shell * 0.55;
+  // 2026-11 Idea 2 (display): a lattice that follows the fold planes.
+  let wallLattice = exp(-wallMin * 25.0);
+  color = color + vec3<f32>(0.55, 0.75, 1.0) * wallLattice * (0.18 + treble * 0.2);
   // iso-distance contours hugging the boundary
   let contour = smoothstep(0.08, 0.0, abs(fract(de0 * 24.0) - 0.5)) * exp(-de0 * 6.0);
   color = color + vec3<f32>(0.35, 0.55, 0.9) * contour * 0.18 * (1.0 + treble * 0.5);

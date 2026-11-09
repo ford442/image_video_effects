@@ -3,8 +3,8 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: luma-keyed delay; motion-gated smear
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: luma-keyed delay; motion-gated smear; lag iso-lines; lag-gradient flow
 //  A packing: history RGB (C is previous history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -77,6 +77,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   var lagAmount = getLagAmount(uv, mappingFunction, time, depth);
+  // ── Idea 3: lag iso-lines and the field gradient ────────────────
+  // Level sets of the mapping, before the pointer and ripple bumps.
+  let lagDx = getLagAmount(clamp(uv + vec2<f32>(texelSize.x * 4.0, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), mappingFunction, time, depth) - lagAmount;
+  let lagDy = getLagAmount(clamp(uv + vec2<f32>(0.0, texelSize.y * 4.0), vec2<f32>(0.0), vec2<f32>(1.0)), mappingFunction, time, depth) - lagAmount;
+  let gLag = vec2<f32>(lagDx, lagDy);
+  let band = fract(lagAmount * 5.0);
+  let lagIso = exp(-min(band, 1.0 - band) * 26.0);
 
   var mouse = u.zoom_config.yz;
   let mouseDist = length(uv - mouse);
@@ -105,17 +112,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let motionInfluence = clamp(motion * motionSense, 0.0, 1.0);
   lagAmount = lagAmount * (1.0 - motionInfluence * 0.7 * f32(motionSense > 0.0));
 
-  // Idea 2 — motion-gated smear along |current−C| gradient.
-  let nCoord = clamp(iCoord + vec2<i32>(1, 0), vec2<i32>(0), vec2<i32>(size) - vec2<i32>(1));
-  let histN = textureLoad(dataTextureC, nCoord, 0).rgb;
-  let smearDir = vec2<f32>(motion, length(histN - historyColor.rgb));
-  let smearUV = clamp(uv + smearDir * motionInfluence * 0.012 * (1.0 + mids * 0.3), vec2<f32>(0.0), vec2<f32>(1.0));
+  // Idea 2 — motion-gated smear. Direction is the lag gradient.
+  // ── Idea 4: lag-gradient flow ────────────────────────────────────
+  let gDir = gLag / max(length(gLag), 1e-4);
+  let smearUV = clamp(uv + gDir * motionInfluence * 0.018 * (1.0 + mids * 0.3), vec2<f32>(0.0), vec2<f32>(1.0));
   let smearHist = textureLoad(dataTextureC, clamp(vec2<i32>(smearUV * vec2<f32>(size)), vec2<i32>(0), vec2<i32>(size) - vec2<i32>(1)), 0);
 
   let blendFactor = lagAmount * bufferLength;
   var delayedColor = mix(currentColor.rgb, mix(historyColor.rgb, smearHist.rgb, motionInfluence * 0.5), blendFactor);
 
-  let newHistory = mix(historyColor.rgb, currentColor.rgb, 0.1 + (1.0 - lagAmount) * 0.3);
+  let writeRate = mix(0.55, 0.08, feedbackMix / 0.95);
+  let newHistory = mix(historyColor.rgb, currentColor.rgb, writeRate * (0.35 + (1.0 - lagAmount) * 0.65));
   textureStore(dataTextureA, iCoord, vec4<f32>(newHistory, 1.0));
 
   let chromaLag = lagAmount * 0.02;
@@ -130,6 +137,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor + ghost * 0.2;
   finalColor = finalColor + vec3<f32>(0.3, 0.6, 1.0) * motion * 0.5 * f32(motion > 0.1);
   finalColor = finalColor * (1.0 - lagAmount * 0.2);
+  finalColor = finalColor + vec3<f32>(0.45, 0.72, 1.0) * lagIso * 0.22 * (0.65 + treble * 0.45);
   finalColor = aces(max(finalColor, vec3<f32>(0.0)));
   let alpha = clamp(currentColor.a * 0.3 + lagAmount * 0.45 + motionInfluence * 0.2 + bass * 0.05, 0.0, 1.0);
 

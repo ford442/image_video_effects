@@ -1,36 +1,34 @@
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-}
+// ═══════════════════════════════════════════════════════════════════
+//  Matrix Digital Rain
+//  Category: lighting-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-09
+//  Ideas: per-layer glyph rain columns gating each zoom layer (head decodes the true image, trail falls off as green phosphor code); depth-parallax column speed (near layers rain faster); live chroma split + pointer vortex (HEAD read dead extraBuffer[0]/[10])
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+#include "_prelude.wgsl"
 
-@group(0) @binding(0) 
-var u_sampler: sampler;
-@group(0) @binding(1) 
-var readTexture: texture_2d<f32>;
-@group(0) @binding(2) 
-var writeTexture: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(3) 
-var<uniform> u: Uniforms;
-@group(0) @binding(4) 
-var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) 
-var non_filtering_sampler: sampler;
-@group(0) @binding(6) 
-var writeDepthTexture: texture_storage_2d<r32float,write>;
-@group(0) @binding(7) 
-var dataTextureA: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(8) 
-var dataTextureB: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(9) 
-var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) 
-var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) 
-var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) 
-var<storage, read> plasmaBuffer: array<vec4<f32>>;
+// ── Idea 1 helper: digital-rain glyph cell. Returns (glyph mask, trail
+// brightness, head flag). Glyph = 3x5 hashed bitmap that re-rolls as it falls.
+fn rain_cell(p: vec2<f32>, cols: f32, speed: f32, t: f32) -> vec3<f32> {
+    let cell = vec2<f32>(cols, cols * 1.6);
+    let g = p * cell;
+    let col = floor(g.x);
+    let colSeed = hash21_(vec2<f32>(col, 17.0));
+    let fall = t * speed * (0.6 + colSeed * 0.8) + colSeed * 40.0;
+    let row = floor(g.y);
+    let len = 8.0 + colSeed * 14.0;
+    let d = fract((fall - row) / (len + 6.0)) * (len + 6.0);   // rows behind the head
+    let trail = select(0.0, pow(1.0 - d / len, 1.6), d < len);
+    let head = select(0.0, 1.0, d < 1.0);
+    let f = fract(g);
+    let bit = floor(f * vec2<f32>(3.0, 5.0));
+    let glyphSeed = floor(t * (2.0 + colSeed * 6.0) + row * 0.37);
+    let on = step(0.45, hash21_(vec2<f32>(col * 7.0 + bit.x + glyphSeed * 3.1, row * 11.0 + bit.y)));
+    let inset = step(0.12, f.x) * step(f.x, 0.88) * step(0.08, f.y) * step(f.y, 0.92);
+    return vec3<f32>(on * inset, trail, head);
+}
 
 fn ping_pong(a: f32) -> f32 {
     return (1.0 - abs(((fract((a * 0.5)) * 2.0) - 1.0)));
@@ -123,6 +121,10 @@ fn reconstruct_normal(uv_1: vec2<f32>, depth: f32) -> vec3<f32> {
     return normalize(n);
 }
 
+fn acesFilm_mdr(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn schlickFresnel(cosTheta: f32, F0_: f32) -> f32 {
     return (F0_ + ((1.0 - F0_) * pow((1.0 - cosTheta), 5.0)));
 }
@@ -165,13 +167,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e33 = resolution.x;
     let _e38 = u.zoom_config.z;
     let _e40 = resolution.y;
-    mousePos = vec2<f32>((_e31 / _e33), (_e38 / _e40));
-    if (arrayLength((&extraBuffer)) > 10u) {
-        let _e52 = extraBuffer[10];
-        clickIntensity = _e52;
-    } else {
-        clickIntensity = 0.0;
-    }
+    mousePos = zoom_center;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    // Rescue: extraBuffer[10] is not a click channel (always 0) -> vortex dead.
+    // Held pointer + newest ripple drive the spin instead.
+    var rippleKick = 0.0;
+    let nRip = min(u32(u.config.y), 50u);
+    if (nRip > 0u) { rippleKick = exp(-(time - u.ripples[nRip - 1u].z) * 1.5); }
+    clickIntensity = u.zoom_config.w * 0.6 + rippleKick;
+    var rainGlow: f32 = 0.0;
     loop {
         let _e64 = i;
         if (_e64 < 5) {
@@ -199,7 +204,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let transformed = (((flowUV - zoom_center) / vec2(layerZoom)) + zoom_center);
             let _e142 = ping_pong_v2_(transformed);
             let _e146 = textureSampleLevel(readTexture, u_sampler, _e142, 0.0);
-            let sampleColor = _e146.xyz;
+            var sampleColor = _e146.xyz;
+            // ── Idea 1+2: glyph rain on this layer's own UV, so code columns
+            // zoom with the layer; near layers (low depth idx) rain faster.
+            let rc = rain_cell(_e142, 28.0 + layerDepth_1 * 20.0, (9.0 - layerDepth_1 * 5.0) * (1.0 + bass * 0.5), time);
+            let lum = dot(sampleColor, vec3<f32>(0.299, 0.587, 0.114));
+            let code = vec3<f32>(0.15, 1.0, 0.35) * lum * rc.x * rc.y * 1.6;
+            let decoded = sampleColor * (0.25 + 0.75 * rc.z);      // head shows the true image
+            sampleColor = mix(sampleColor * 0.35, max(code, decoded * rc.x), 0.85);
+            rainGlow += rc.x * (rc.y * 0.4 + rc.z) * exp(-layerDepth_1 * 1.5);
             let _e151 = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0);
             let sampleDepth = _e151.x;
             let density = exp((-(layerDepth_1) * 1.5)) * (1.0 + u.zoom_params.z * 0.0);
@@ -228,6 +241,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     } else {
         chroma = 0.02;
     }
+    // Rescue: extraBuffer[0] is scratch (0) -> chroma split was dead.
+    chroma = 0.006 * (1.0 + bass * 1.5);
     let _e196 = uv;
     let _e197 = chroma;
     let _e203 = textureSampleLevel(readTexture, u_sampler, (_e196 + vec2<f32>((_e197 * baseDepth), 0.0)), 0.0);
@@ -239,7 +254,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e214 = chroma;
     let _e220 = textureSampleLevel(readTexture, u_sampler, (_e213 - vec2<f32>((_e214 * baseDepth), 0.0)), 0.0);
     let b = _e220.z;
-    let chromaticColor = vec3<f32>(r, g, b);
+    // Chroma split re-gated through the same rain so it doesn't wash the code.
+    let chromaticColor = mix(baseColor, vec3<f32>(r, g, b) * 0.35, 0.3);
     let _e225 = resolution.x;
     let _e229 = resolution.y;
     let ps = vec2<f32>((1.0 / _e225), (1.0 / _e229));
@@ -264,7 +280,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fog = exp(((-(baseDepth) * fogDensity_1) * 3.0));
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let outColor = mix(finalColor, fogColor, (1.0 - fog));
-    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(outColor, _e284));
+    let lit = outColor + vec3<f32>(0.6, 1.0, 0.7) * rainGlow * (0.15 + mids * 0.2);
+    let display = acesFilm_mdr(max(lit, vec3<f32>(0.0)) * 1.2);
+    let alpha = clamp(max(_e284 * 0.5, rainGlow * 0.6), 0.0, 1.0);   // alpha tracks glyph brightness
+    textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(display, alpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(display, alpha));
     textureStore(writeDepthTexture, vec2<u32>(gid.xy), vec4<f32>(baseDepth, 0.0, 0.0, 0.0));
     return;
 }

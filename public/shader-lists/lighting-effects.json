@@ -247,7 +247,7 @@
     "name": "Cinematic Flare",
     "category": "lighting-effects",
     "url": "shaders/cinematic-flare.wgsl",
-    "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, Cauchy chromatic dispersion, ACES tone mapping, and temporal persistence.",
+    "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, Cauchy chromatic dispersion, ACES tone mapping, and temporal persistence. Hexagonal iris ghosts line up along the light axis and the starburst spikes split into spectral colour.",
     "features": [
       "audio-reactive",
       "depth-aware",
@@ -306,7 +306,7 @@
     "id": "divine-light-gpt52",
     "name": "Divine Light Cathedral gpt52",
     "url": "shaders/divine-light-gpt52.wgsl",
-    "description": "Expanded volumetric rays with dust motes, Cauchy ray dispersion, rose-window stained-glass projections, and Airy disk diffraction halos.",
+    "description": "Expanded volumetric rays with dust motes, Cauchy ray dispersion, rose-window stained-glass projections, and Airy disk diffraction halos. Long shafts redden with Rayleigh path loss and dust motes glitter only where the rays are lit.",
     "workgroup_size": [
       16,
       16,
@@ -344,12 +344,12 @@
     ],
     "features": [
       "mouse-driven",
-      "spring-dynamics",
       "volumetric",
       "atmospheric",
       "audio-reactive",
       "cauchy-dispersion",
-      "aces-tone-mapping"
+      "aces-tone-mapping",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -417,14 +417,15 @@
     "id": "dynamic-lens-flares",
     "name": "Dynamic Lens Flares",
     "url": "shaders/dynamic-lens-flares.wgsl",
-    "description": "Cinematic optical train lens flare following cursor, featuring distributed ghost elements with Cauchy chromatic dispersion, internal reflection halos, starburst diffraction, ACES tone mapping, and temporal phosphor persistence.",
+    "description": "Cinematic optical train lens flare following cursor, featuring distributed ghost elements with Cauchy chromatic dispersion, internal reflection halos, starburst diffraction, ACES tone mapping, and temporal phosphor persistence. Off-axis ghosts are clipped into cat's-eye shapes by the lens barrel and their rims split red-outside, blue-inside.",
     "features": [
       "mouse-driven",
       "optical",
       "cinematic",
       "audio-reactive",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -469,7 +470,7 @@
     "id": "lens-flare-brush",
     "name": "Lens Flare Brush",
     "url": "shaders/lens-flare-brush.wgsl",
-    "description": "Generates anamorphic lens flares from bright pixels near the mouse with rainbow chromatic shift, ghost elements, ACES tone mapping, and brush trail persistence.",
+    "description": "Generates anamorphic lens flares from bright pixels near the mouse with rainbow chromatic shift, ghost elements, ACES tone mapping, and brush trail persistence. Every highlight under the brush throws its own streak, and holding the pointer still loads the brush so the flare blooms.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -534,7 +535,10 @@
       "matrix",
       "digital-rain",
       "decoding",
-      "retro"
+      "retro",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

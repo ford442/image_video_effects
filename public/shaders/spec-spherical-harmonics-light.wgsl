@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  spec-spherical-harmonics-light
 //  Category: advanced-hybrid
-//  Features: spherical-harmonics, SH-lighting, depth-aware
+//  Features: spherical-harmonics, SH-lighting, depth-aware, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Chunks From: chunk-library (hash12)
-//  Created: 2026-04-18
-//  By: Agent 3C — Spectral Computation Pioneer
+//  Upgraded: 2026-10-31
+//  Ideas: cosine-lobe irradiance; specular from L1; Fresnel-Schlick (§12.2F)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Spherical Harmonics Lighting
 //  Uses spherical harmonic coefficients derived from the input image
@@ -13,58 +13,44 @@
 //  normal-mapped surface derived from depth.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
-
-fn hash12(p: vec2<f32>) -> f32 {
-    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
-    p3 = p3 + dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-// Evaluate spherical harmonics bands 0-2
+fn schlickFresnel(cosTheta: f32) -> f32 {
+    let m = clamp(1.0 - cosTheta, 0.0, 1.0);
+    let m2 = m * m;
+    return 0.04 + 0.96 * m2 * m2 * m;
+}
+
+// Radiance SH, then the cosine-lobe irradiance ratios A1/A0 = 2/3 and A2/A0 = 1/4.
+// L0 is left as it was so the ambient term does not jump.
 fn evaluateSH(normal: vec3<f32>, coeffs: array<vec3<f32>, 9>) -> vec3<f32> {
-    // Band 0
     var result = coeffs[0] * 0.282095;
-    // Band 1
-    result += coeffs[1] * 0.488603 * normal.y;
-    result += coeffs[2] * 0.488603 * normal.z;
-    result += coeffs[3] * 0.488603 * normal.x;
-    // Band 2
-    result += coeffs[4] * 1.092548 * normal.x * normal.y;
-    result += coeffs[5] * 1.092548 * normal.y * normal.z;
-    result += coeffs[6] * 0.315392 * (3.0 * normal.z * normal.z - 1.0);
-    result += coeffs[7] * 1.092548 * normal.x * normal.z;
-    result += coeffs[8] * 0.546274 * (normal.x * normal.x - normal.y * normal.y);
+    // ── Idea 1: cosine-lobe irradiance ──────────────────────────────
+    result += coeffs[1] * 0.488603 * normal.y * 0.6667;
+    result += coeffs[2] * 0.488603 * normal.z * 0.6667;
+    result += coeffs[3] * 0.488603 * normal.x * 0.6667;
+    result += coeffs[4] * 1.092548 * normal.x * normal.y * 0.25;
+    result += coeffs[5] * 1.092548 * normal.y * normal.z * 0.25;
+    result += coeffs[6] * 0.315392 * (3.0 * normal.z * normal.z - 1.0) * 0.25;
+    result += coeffs[7] * 1.092548 * normal.x * normal.z * 0.25;
+    result += coeffs[8] * 0.546274 * (normal.x * normal.x - normal.y * normal.y) * 0.25;
     return result;
 }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    if (gid.x >= u32(res.x) || gid.y >= u32(res.y)) { return; }
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let texel = 1.0 / res;
     let time = u.config.x;
 
-    let shStrength = mix(0.2, 2.0, u.zoom_params.x);
+    let bass = plasmaBuffer[0].x;
+    let shStrength = mix(0.2, 2.0, u.zoom_params.x) * (1.0 + bass * 0.22);
     let normalScale = mix(0.5, 3.0, u.zoom_params.y);
     let specPower = mix(4.0, 64.0, u.zoom_params.z);
     let ambientBoost = mix(0.1, 0.8, u.zoom_params.w);
@@ -73,7 +59,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let isMouseDown = u.zoom_config.w > 0.5;
 
     // Sample base color and depth
-    let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let baseColor = baseSample.rgb;
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
     // Compute normal from depth using Sobel filter
@@ -122,21 +109,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Evaluate SH lighting
     let shLight = evaluateSH(normal, coeffs) * shStrength;
 
-    // Specular highlight
+    // ── Idea 2: specular from L1 ─────────────────────────────────────
+    // coeffs[3], [1], [2] are the X, Y, Z linear terms already fit above.
+    let lum3 = vec3<f32>(0.299, 0.587, 0.114);
+    let l1 = vec3<f32>(
+        dot(coeffs[3], lum3),
+        dot(coeffs[1], lum3),
+        abs(dot(coeffs[2], lum3)) + 0.25
+    );
+    let lightDir = l1 / max(length(l1), 0.001);
     let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-    let lightDir = normalize(vec3<f32>(0.3, 0.5, 0.8));
     let halfDir = normalize(lightDir + viewDir);
     let spec = pow(max(dot(normal, halfDir), 0.0), specPower);
+    // ── Idea 3: Fresnel–Schlick (§12.2F) ────────────────────────────
+    let specFres = spec * schlickFresnel(clamp(normal.z, 0.0, 1.0));
 
-    // Combine
     let ambient = baseColor * ambientBoost;
-    let litColor = ambient + baseColor * max(shLight, vec3<f32>(0.0)) + vec3<f32>(spec * 0.3);
+    let litColor = ambient + baseColor * max(shLight, vec3<f32>(0.0)) + vec3<f32>(specFres * 0.3);
+    let display = aces(max(litColor, vec3<f32>(0.0)));
+    let alpha = clamp(baseSample.a * 0.6 + specFres * 0.45 + clamp(length(shLight), 0.0, 1.0) * 0.25, 0.0, 1.0);
 
-    // Tone map
-    let display = litColor / (1.0 + litColor * 0.3);
-
-    textureStore(writeTexture, gid.xy, vec4<f32>(display, depth));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(shLight, spec));
+    textureStore(writeTexture, gid.xy, vec4<f32>(display, alpha));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(display, alpha));
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

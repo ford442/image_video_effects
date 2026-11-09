@@ -302,6 +302,10 @@
               "minScale": {
                 "type": "number",
                 "enum": [0.25, 0.5, 0.75, 1]
+              },
+              "keepsHash": {
+                "description": "The node's simState writes only touch parked records (xy < 0), so the spatial hash stays valid after it and the planner skips the rebuild before the next simHash reader (multipassGraph.ts GraphNodeDef.keepsHash). The simIndex snapshot still goes stale.",
+                "type": "boolean"
               }
             }
           }
@@ -311,11 +315,11 @@
     "graphRole": {
       "title": "ShaderDefinitionGraphRole",
       "type": "string",
-      "enum": ["read", "color", "dataA", "dataB", "dataC", "simState", "simIndex"]
+      "enum": ["read", "color", "dataA", "dataB", "dataC", "simState", "simIndex", "simHash"]
     },
     "simRing": {
       "title": "ShaderDefinitionSimRing",
-      "description": "Opt-in @group(1) sim-ring request (see bind_group1.json). Only stateCount is consumed.",
+      "description": "Opt-in @group(1) sim-ring request (see bind_group1.json). stateCount sizes the ring; spatialHash additionally asks for the optional simHash binding (bind_group1.json spatialHash) and requires a graph node that reads the simHash role.",
       "type": "object",
       "additionalProperties": false,
       "required": ["stateCount"],
@@ -323,6 +327,10 @@
         "stateCount": {
           "type": "integer",
           "minimum": 1
+        },
+        "spatialHash": {
+          "description": "Allocate the 128×128 spatial hash (binding 3 simHash) and have the frame planner rebuild it before the first node that reads the simHash role. Default off.",
+          "type": "boolean"
         },
         "agent": {
           "type": "string"

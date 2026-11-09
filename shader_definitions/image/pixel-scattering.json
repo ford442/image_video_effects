@@ -3,7 +3,7 @@
   "name": "Pixel Scattering",
   "category": "image",
   "url": "shaders/pixel-scattering.wgsl",
-  "description": "Curl-noise, pointer-vortex and Fibonacci scatter advect the photo with travelling history tails and blown-out gaps that refill.",
+  "description": "Curl-noise, pointer-vortex and Fibonacci scatter advect the photo with travelling tails; bass detonates square cells whose lit rims fade as they refill.",
   "features": [
     "mouse-driven",
     "audio-reactive",

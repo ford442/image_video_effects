@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-10
-//  Ideas: positive-column striations; titration fronts; acid-etch bevel; cathode spot
+//  Upgraded: 2026-11-08
+//  Ideas: positive-column striations; titration fronts; acid-etch bevel; cathode spot; neutralisation precipitate; acid drip runs
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -196,6 +196,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
     var coverage = 0.0;
+    // IDEA 5 state: two strongest tube halos at this pixel and their pH
+    var haloW1 = 0.0; var haloPH1 = 7.0;
+    var haloW2 = 0.0; var haloPH2 = 7.0;
+    var dripAcc = vec3<f32>(0.0);
 
     // Deep psychedelic background tinted by pH
     let bgNoise = fbm(refractUV * 2.0 * scale, time * 0.1 * speed);
@@ -276,7 +280,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let undercut = smoothstep(-0.028, -0.012, shapeDist) * (1.0 - smoothstep(-0.006, 0.002, shapeDist));
             let etchShade = mix(1.0, 0.55, undercut);
             // Idea: cathode spot fixed on the tube; held mouse is higher discharge current.
-            let cathode = exp(-pow(abs(arc + 1.5707963), 2.0) * (4.0 + mouseDown * 6.0));
+            // Gated to the tube wall: ungated, 81 cathodes summed over every pixel washed the frame white.
+            let cathode = exp(-pow(abs(arc + 1.5707963), 2.0) * (4.0 + mouseDown * 6.0))
+                        * exp(-abs(shapeDist) * 90.0);
+
+            // ── IDEA 5: neutralisation precipitate — remember the two strongest halos ──
+            let haloW = exp(-max(shapeDist, 0.0) * 14.0);
+            if (haloW > haloW1) {
+                haloW2 = haloW1; haloPH2 = haloPH1;
+                haloW1 = haloW; haloPH1 = shapePH;
+            } else if (haloW > haloW2) {
+                haloW2 = haloW; haloPH2 = shapePH;
+            }
+
+            // ── IDEA 6: acid drip runs — liquid creeps down from the tube, necks, drops a bead ──
+            if (seed2 > 0.35) {
+                let q = refractUV - center;
+                let cycle = fract(time * speed * (0.12 + seed * 0.1) + seed2);
+                let runLen = shapeScale * (0.6 + 4.0 * cycle) * (1.0 + bass * 0.5);
+                let dx = q.x - (seed - 0.5) * shapeScale * 0.8;
+                let dy = q.y - shapeScale * 0.7;              // +y is screen-down
+                let along = clamp(dy / max(runLen, 1e-4), 0.0, 1.0);
+                let width = shapeScale * 0.16 * (1.0 - along * 0.7);
+                let inRun = step(0.0, dy) * step(dy, runLen);
+                let runD = abs(dx) - width;
+                let bead = length(vec2<f32>(dx, dy - runLen - shapeScale * 0.12)) - shapeScale * 0.22 * smoothstep(0.3, 1.0, cycle);
+                let dripD = min(select(1.0, runD, inRun > 0.5), bead);
+                let dripGlow = exp(-max(dripD, 0.0) * 160.0) * (1.0 - smoothstep(0.85, 1.0, cycle));
+                dripAcc += shapeCol * dripGlow * (0.55 + 0.45 * smoothstep(0.0, -0.004, dripD));
+                coverage = max(coverage, clamp(dripGlow * 0.7, 0.0, 1.0));
+            }
 
             col += shapeCol * glow1 * intensity * 1.5;
             col += shapeCol * glow2 * intensity * 0.5;
@@ -299,6 +332,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
+    // IDEA 6 composite
+    col += dripAcc * intensity * 0.9;
+
+    // IDEA 5 composite: where an acid halo meets a base halo, a milky salt
+    // precipitate flocculates — sparse grains that settle slowly downward.
+    let phGap = smoothstep(3.0, 8.0, abs(haloPH1 - haloPH2));
+    let meet = smoothstep(0.08, 0.35, haloW2) * phGap;
+    let grainUV = refractUV * 140.0 + vec2<f32>(0.0, -time * speed * 6.0);
+    let grain = smoothstep(0.72, 0.95, hash2(floor(grainUV))) * (0.6 + 0.4 * vnoise(grainUV * 0.15));
+    let precip = meet * (0.25 + grain * (0.9 + mids * 0.6));
+    col += vec3<f32>(0.92, 0.95, 1.0) * precip * intensity * 0.8;
+    coverage = max(coverage, clamp(precip * 0.6, 0.0, 1.0));
+
     // Global overlay: morphing acid waves tinted by pH
     let wave1 = sin(refractUV.x * 8.0 * scale + time * 2.0 * speed) * cos(refractUV.y * 6.0 * scale - time * 1.5 * speed);
     let wave2 = sin(refractUV.x * 5.0 * scale - time * speed + refractUV.y * 7.0 * scale) * 0.5;
@@ -316,15 +362,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let maxC = vec2<i32>(i32(resolution.x) - 1, i32(resolution.y) - 1);
     let prev = textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), maxC), 0);
-    col = mix(prev.rgb * 0.96, col, 0.25);
-
     let caStr = 0.003 * (1.0 + bass * 0.5);
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
     let vig = 1.0 - dot(uv * 0.7, uv * 0.7);
     col *= clamp(vig, 0.0, 1.0) * 1.3;
 
-    let mapped = acesToneMap(max(col, vec3<f32>(0.0)) * 1.1);
+    // Trails blend in display space: blending ACES-encoded prev into HDR col
+    // and re-tonemapping (x1.43 gain) ran away to a white wash at HEAD.
+    let mapped = mix(prev.rgb * 0.96, acesToneMap(max(col, vec3<f32>(0.0)) * 1.1), 0.25);
     // Alpha = neon-tube coverage (rim glow / fill / splash) + titration front
     // + sparkle, with a decaying trail memory from the previous frame.
     let alpha = clamp(max(coverage + frontFlash * 0.4 + sparkleTrigger * treble * 0.3, prev.a * 0.85), 0.06, 1.0);

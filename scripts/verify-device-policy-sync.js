@@ -5,9 +5,10 @@
  * CI check: webgpu_limits.json ↔ TS policy ↔ device.cpp CheckLimit/requiredLimits;
  * optional feature order ↔ device.ts / device.cpp;
  * slot_limits.json ↔ PHYSICAL_SLOT_LIMIT / MAX_SHADER_SLOTS;
- * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE /
+ * canvas_configure.json ↔ buildCanvasConfigureOptions / JS_CreateSurfaceFromCanvas / ConfigureSurface; wasm_exports.json ↔ KEEPALIVE
+ * (names, and `exports` signatures ↔ generated wasm_exports.h / bridge/_generated.ts) /
  * build.sh (no hardcoded export lists; build.sh is the only build, CMakeLists.txt was removed);
- * workgroup_dispatch.json ↔ ShaderCompilation.ts ↔ wasm_internal.cpp ParseWorkgroupSize;
+ * workgroup_dispatch.json + bind_group0.json shaderUsageFlags ↔ generated _contracts.ts / wasm_contracts.h ↔ wgslAnalysis.ts;
  * emptyPlaceholder (r32float 1×1, 4 B/row) ↔ resources.ts emptyTex ↔ resources.cpp emptyTexture_;
  * bind_group1.json ↔ simRing.ts layout ↔ group-1 limits policy ↔ WASM group-1 refusal;
  * bind_group0.json ↔ pipeline.ts createComputeBindGroupLayout ↔ generated bind_group0.h ↔
@@ -793,7 +794,8 @@ function verifyWasmCompileSources(flags, buildSh) {
  * Two build graphs from one contract: the top-level ASYNCIFY fallback and the
  * `jspi` primary. Checks they differ only in the async mode, that jspiExports
  * covers every WaitAny site, and that the bridge ccalls exactly those exports
- * with { async: true } (src/wasm/bridge/call.ts SUSPENDING_EXPORTS).
+ * with { async: true } (src/wasm/bridge/_generated.ts ASYNC_EXPORTS, emitted from
+ * wasm_exports.json `exports`; only call.ts / _generated.ts may call ccall).
  */
 function verifyWasmBuildVariants(flags) {
   if (flags.asyncifyFallback !== true) {
@@ -854,27 +856,30 @@ function verifyWasmBuildVariants(flags) {
     }
   }
 
-  const callTs = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/call.ts'), 'utf8');
-  const listMatch = callTs.match(/SUSPENDING_EXPORTS\s*=\s*\[([^\]]*)\]/);
+  // wasm_exports.json `exports` marks the async set; the generator refuses a
+  // contract whose async set differs from jspiExports, and _generated.ts must be
+  // what it emits (verifyWasmExportSignatures). Re-read the emitted list here so
+  // a hand edit of _generated.ts cannot slip past.
+  const generatedTs = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/_generated.ts'), 'utf8');
+  const listMatch = generatedTs.match(/ASYNC_EXPORTS\s*=\s*\[([^\]]*)\]/);
   if (!listMatch) {
-    fail('src/wasm/bridge/call.ts must declare SUSPENDING_EXPORTS = [...]');
+    fail('src/wasm/bridge/_generated.ts must declare ASYNC_EXPORTS = [...] (npm run gen:wasm-exports)');
   } else {
     const bridgeList = [...listMatch[1].matchAll(/['"](\w+)['"]/g)].map((m) => m[1]);
     if (JSON.stringify([...bridgeList].sort()) !== JSON.stringify([...j.jspiExports].sort())) {
       fail(
-        `call.ts SUSPENDING_EXPORTS ${JSON.stringify(bridgeList)} must equal jspi.jspiExports ${JSON.stringify(j.jspiExports)}`,
+        `_generated.ts ASYNC_EXPORTS ${JSON.stringify(bridgeList)} must equal jspi.jspiExports ${JSON.stringify(j.jspiExports)}`,
       );
     }
   }
-  // No bridge module may ccall a suspending export directly (sync shape).
+  // Only the call seam calls into the module: every other bridge file goes through
+  // the generated wrappers, which carry each export's async / whileSuspended rule.
   const bridgeDir = path.join(ROOT, 'src/wasm/bridge');
   for (const name of fs.readdirSync(bridgeDir)) {
-    if (!name.endsWith('.ts') || name === 'call.ts' || name.endsWith('.test.ts')) continue;
+    if (!name.endsWith('.ts') || name === 'call.ts' || name === '_generated.ts' || name.endsWith('.test.ts')) continue;
     const src = fs.readFileSync(path.join(bridgeDir, name), 'utf8');
-    for (const exp of j.jspiExports) {
-      if (new RegExp(`\\.ccall\\(\\s*['"]${exp}['"]`).test(src)) {
-        fail(`src/wasm/bridge/${name} ccalls '${exp}' directly — use callSuspending() from call.ts`);
-      }
+    if (/\.ccall\s*\(/.test(src)) {
+      fail(`src/wasm/bridge/${name} calls ccall directly — use the typed wrappers in _generated.ts (npm run gen:wasm-exports)`);
     }
   }
 }
@@ -892,40 +897,50 @@ function verifyWorkgroupDispatch() {
     path.join(ROOT, 'src/renderer/ShaderCompilation.ts'),
     'utf8',
   );
-  if (!tsShader.includes("from '../contracts/workgroup_dispatch.json'")) {
-    fail('ShaderCompilation.ts must import workgroup_dispatch.json');
+  // One analysis for both backends: ShaderCompilation.ts delegates to the bridge's
+  // wgslAnalysis.ts, which reads the fallback from the generated _contracts.ts;
+  // C++ takes the result through loadShader and reads the fallback from the
+  // generated wasm_contracts.h (scripts/gen-wasm-contracts.js).
+  if (!tsShader.includes("from '../wasm/bridge/wgslAnalysis'")) {
+    fail('ShaderCompilation.ts must take parseWorkgroupSize/analyzeShaderBindings from src/wasm/bridge/wgslAnalysis');
   }
-  if (!tsShader.includes('workgroupDispatchContract.unparsedFallback.x')) {
-    fail('ShaderCompilation.ts unparsed fallback must use workgroupDispatchContract.unparsedFallback.x');
+  if (/function usedBeyondDeclaration/.test(tsShader)) {
+    fail('ShaderCompilation.ts must not keep its own WGSL analysis — it lives in src/wasm/bridge/wgslAnalysis.ts');
   }
-  if (!tsShader.includes('workgroupDispatchContract.unparsedFallback.y')) {
-    fail('ShaderCompilation.ts unparsed fallback must use workgroupDispatchContract.unparsedFallback.y');
+  const analysis = fs.readFileSync(path.join(ROOT, 'src/wasm/bridge/wgslAnalysis.ts'), 'utf8');
+  if (!analysis.includes('WORKGROUP_UNPARSED_FALLBACK.x') || !analysis.includes('WORKGROUP_UNPARSED_FALLBACK.y')) {
+    fail('wgslAnalysis.ts unparsed fallback must use WORKGROUP_UNPARSED_FALLBACK from _contracts.ts');
   }
-  if (/\breturn\s*\{\s*x:\s*8\s*,\s*y:\s*8\s*\}/.test(tsShader)) {
-    fail('ShaderCompilation.ts must not return hardcoded 8x8 unparsed fallback');
+  if (/\breturn\s*\{\s*x:\s*\d+\s*,\s*y:\s*\d+/.test(analysis)) {
+    fail('wgslAnalysis.ts must not return a hardcoded workgroup fallback');
   }
 
-  const cppInternal = fs.readFileSync(
-    path.join(ROOT, wgContract.cppReferences.file),
-    'utf8',
-  );
-  const fnBlock = cppInternal.match(
-    /void ParseWorkgroupSize\([\s\S]*?\n\}/,
-  );
-  if (!fnBlock) {
-    fail('ParseWorkgroupSize not found in wasm_internal.cpp');
-    return;
+  const contractsGen = require('./gen-wasm-contracts.js');
+  let generated;
+  try {
+    generated = contractsGen.generate();
+  } catch (e) {
+    fail(e.message);
+    generated = {};
   }
-  const init = fnBlock[0].match(/x\s*=\s*(\d+);\s*\n\s*y\s*=\s*(\d+);/);
-  if (!init) {
-    fail('ParseWorkgroupSize default x/y assignment not found in wasm_internal.cpp');
-  } else {
-    const cppX = parseInt(init[1], 10);
-    const cppY = parseInt(init[2], 10);
-    if (cppX !== fallback.x || cppY !== fallback.y) {
-      fail(
-        `wasm_internal.cpp ParseWorkgroupSize default: expected ${fallback.x}x${fallback.y}, got ${cppX}x${cppY}`,
-      );
+  for (const [rel, text] of Object.entries(generated)) {
+    const abs = path.join(ROOT, rel);
+    const have = fs.existsSync(abs) ? fs.readFileSync(abs, 'utf8') : '';
+    if (have !== text) fail(`${rel} is stale or missing; run: npm run gen:wasm-contracts`);
+  }
+
+  const cppRef = path.join(ROOT, wgContract.cppReferences.file);
+  if (!fs.existsSync(cppRef)) fail(`workgroup_dispatch.json cppReferences.file ${wgContract.cppReferences.file} is missing`);
+  const pipelineCpp = fs.readFileSync(path.join(ROOT, 'wasm_renderer/pipeline.cpp'), 'utf8');
+  if (!/#include "wasm_contracts\.h"/.test(pipelineCpp)) fail('pipeline.cpp must #include "wasm_contracts.h"');
+  if (!pipelineCpp.includes('kWorkgroupFallbackX') || !pipelineCpp.includes('kWorkgroupFallbackY')) {
+    fail('pipeline.cpp must fall back to wasm_contracts::kWorkgroupFallbackX/Y for a zero workgroup size');
+  }
+  for (const name of fs.readdirSync(path.join(ROOT, 'wasm_renderer'))) {
+    if (!/\.(cpp|h)$/.test(name)) continue;
+    const src = fs.readFileSync(path.join(ROOT, 'wasm_renderer', name), 'utf8');
+    if (/\b(ParseWorkgroupSize|AnalyzeShaderBindings)\b/.test(src)) {
+      fail(`wasm_renderer/${name} parses WGSL for dispatch/usage — take it from loadShader (wgslAnalysis.ts)`);
     }
   }
 
@@ -1071,6 +1086,11 @@ function verifySlotLimits() {
  * policy ↔ WASM refusal. The group-1 limits must never leak into the
  * catalog-wide requiredLimits, and the C++ pipeline stays group-0 only.
  */
+/** Drop // and block comments so a commented-out declaration does not count. */
+function stripWgslComments(wgsl) {
+  return wgsl.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+}
+
 function verifyBindGroup1() {
   const contractPath = path.join(ROOT, 'src/contracts/bind_group1.json');
   const c = JSON.parse(fs.readFileSync(contractPath, 'utf8'));
@@ -1080,6 +1100,7 @@ function verifyBindGroup1() {
     { binding: 2, name: 'simParams', bufferType: 'uniform' },
   ];
   if (c.group !== 1) fail('bind_group1.json group must be 1');
+  if (c.version !== 2) fail('bind_group1.json version must be 2 (adds the optional spatialHash binding)');
   if (!Array.isArray(c.bindings) || c.bindings.length !== expected.length) {
     fail(`bind_group1.json must declare exactly ${expected.length} bindings`);
     return;
@@ -1130,6 +1151,60 @@ function verifyBindGroup1() {
     fail(`${tsFile} createSimRingPipelineLayout must be [group0, group1]`);
   }
 
+  // Optional spatial hash (binding 3): contract shape, TS layout, WGSL helper constants.
+  const h = c.spatialHash || {};
+  if (h.binding !== 3 || h.name !== 'simHash' || h.bufferType !== 'storage') {
+    fail('bind_group1.json spatialHash must be binding 3 simHash (storage)');
+  }
+  if (h.wgsl !== 'var<storage, read_write> simHash: array<atomic<u32>>') {
+    fail('bind_group1.json spatialHash.wgsl must be `var<storage, read_write> simHash: array<atomic<u32>>`');
+  }
+  if (h.gridWidth !== 128 || h.gridHeight !== 128) fail('spatialHash grid must be 128 × 128');
+  if (h.cellCount !== h.gridWidth * h.gridHeight) fail('spatialHash.cellCount must be gridWidth × gridHeight');
+  if (h.headsOffset !== 0 || h.nextOffset !== h.cellCount) {
+    fail('spatialHash layout must be heads at 0, then one `next` per agent at cellCount');
+  }
+  if (h.emptyHead !== 0xffffffff) fail('spatialHash.emptyHead must be 0xFFFFFFFF');
+  if (JSON.stringify(h.visitCap) !== '[8,16]') fail('spatialHash.visitCap must be [8, 16]');
+  if (h.build?.countsAsPass !== true) fail('spatialHash.build.countsAsPass must be true (the scatter is a counted pass)');
+  const hashLimits = h.group1RequiredLimits || {};
+  for (const [key, need] of Object.entries(hashLimits)) {
+    if (!(key in (c.webgpuBaseLimits || {}))) fail(`webgpuBaseLimits missing ${key}`);
+    else if (need > c.webgpuBaseLimits[key]) fail(`spatialHash.group1RequiredLimits.${key}=${need} exceeds WebGPU base ${c.webgpuBaseLimits[key]}`);
+    if (need < (c.group1RequiredLimits?.[key] ?? 0)) fail(`spatialHash.group1RequiredLimits.${key} must not be below the base ring's`);
+  }
+  if (hashLimits.maxStorageBuffersPerShaderStage !== (c.group1RequiredLimits?.maxStorageBuffersPerShaderStage ?? 0) + 1) {
+    fail('spatialHash needs exactly one more storage buffer than the base ring (simHash)');
+  }
+  const hashBgl = ts.match(/export function createSimRingHashBindGroupLayout[\s\S]*?\n\}/);
+  if (!hashBgl) {
+    fail(`${tsFile} must export createSimRingHashBindGroupLayout`);
+  } else {
+    const hashEntries = [...hashBgl[0].matchAll(/\{\s*binding:\s*([\w_]+)[^}]*buffer:\s*\{\s*type:\s*'([a-z-]+)'\s*\}/g)];
+    const want = [...expected.map((e) => [String(e.binding), e.bufferType]), ['SIM_HASH_BINDING', 'storage']];
+    if (hashEntries.length !== want.length || hashEntries.some((m, i) => m[1] !== want[i][0] || m[2] !== want[i][1])) {
+      fail(`${tsFile} createSimRingHashBindGroupLayout must be bindings 0–2 as the base ring plus SIM_HASH_BINDING 'storage'`);
+    }
+  }
+  const hashTs = fs.readFileSync(path.join(ROOT, 'src/renderer/webgpu/simHash.ts'), 'utf8');
+  if (!/import bindGroup1Contract from '..\/..\/contracts\/bind_group1\.json'/.test(hashTs)) {
+    fail('src/renderer/webgpu/simHash.ts must import bind_group1.json (grid and offsets come from the contract)');
+  }
+  const helperFile = 'public/shaders/_sim_hash.wgsl';
+  const helper = stripWgslComments(fs.readFileSync(path.join(ROOT, helperFile), 'utf8'));
+  const wgslConst = (name) => {
+    const m = helper.match(new RegExp(`const\\s+${name}\\s*:\\s*u32\\s*=\\s*(0x[0-9A-Fa-f]+|\\d+)u\\s*;`));
+    return m ? Number(m[1]) : null;
+  };
+  for (const [name, want] of [
+    ['HASH_GRID', h.gridWidth],
+    ['HASH_CELLS', h.cellCount],
+    ['HASH_NEXT', h.nextOffset],
+    ['HASH_EMPTY', h.emptyHead],
+  ]) {
+    if (wgslConst(name) !== want) fail(`${helperFile} const ${name} must equal bind_group1.json spatialHash (${want})`);
+  }
+
   // OOM ladder discipline.
   const ladder = c.oom?.ladder || [];
   if (ladder.join(',') !== '65536,32768,16384,4096') fail('sim-ring OOM ladder must be 65536 → 32768 → 16384 → 4096');
@@ -1162,21 +1237,62 @@ function verifyBindGroup1() {
   for (const fnName of ['loadShader', 'reloadShader']) {
     const body = bridge.match(new RegExp(`export async function ${fnName}\\([\\s\\S]*?\\n\\}`));
     const refuse = body ? body[0].indexOf('declaresBindGroup1(') : -1;
-    const ccall = body ? body[0].indexOf(`callSuspending(wasmRef.module, '${fnName}'`) : -1;
+    const ccall = body ? body[0].indexOf(`cpp.${fnName}(wasmRef.module`) : -1;
     if (refuse < 0 || ccall < 0 || refuse > ccall) {
-      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before callSuspending(wasmRef.module, '${fnName}')`);
+      fail(`${bridgeFile} ${fnName} must refuse @group(1) WGSL before cpp.${fnName}(wasmRef.module, …)`);
     }
   }
 
   // Definitions that opt into the ring must dispatch at least one simState node.
+  // simRing.spatialHash is the same kind of promise: the graph has to read the simHash role (so the
+  // planner builds it) in an entry that declares binding 3, and nothing may read it without asking.
+  const entryDeclaresHash = (entry) => {
+    const file = path.join(ROOT, 'public/shaders', `${entry}.wgsl`);
+    if (!fs.existsSync(file)) return null;
+    return /@group\(\s*1\s*\)\s*@binding\(\s*3\s*\)/.test(stripWgslComments(fs.readFileSync(file, 'utf8')));
+  };
   const defsDir = path.join(ROOT, 'shader_definitions');
   const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
     e.isDirectory() ? walk(path.join(dir, e.name)) : e.name.endsWith('.json') ? [path.join(dir, e.name)] : []);
   for (const file of walk(defsDir)) {
     let def;
     try { def = JSON.parse(fs.readFileSync(file, 'utf8')); } catch { continue; }
+    const rel = path.relative(ROOT, file);
+    const graphNodes = def.multipass?.graph?.nodes || [];
+    const hashReaders = graphNodes.filter((n) => (n.reads || []).includes('simHash'));
+    const declaring = graphNodes.filter((n) => entryDeclaresHash(n.entry) === true);
+    if (!def.simRing?.spatialHash && (hashReaders.length > 0 || declaring.length > 0)) {
+      fail(`${rel} reads or declares simHash but simRing.spatialHash is not set`);
+    }
     if (!def.simRing) continue;
-    const nodes = def.multipass?.graph?.nodes || [];
+    if (def.simRing.spatialHash !== undefined && typeof def.simRing.spatialHash !== 'boolean') {
+      fail(`${rel} simRing.spatialHash must be a boolean`);
+    }
+    if (def.simRing.spatialHash === true) {
+      if (hashReaders.length === 0) {
+        fail(`${rel} sets simRing.spatialHash but no graph node reads the simHash role`);
+      }
+      for (const n of hashReaders) {
+        if (entryDeclaresHash(n.entry) === false) {
+          fail(`${rel} node ${n.id} reads simHash but ${n.entry}.wgsl does not declare @group(1) @binding(3) simHash`);
+        }
+      }
+      if (hashReaders.length > 0 && !hashReaders.some((n) => entryDeclaresHash(n.entry) !== false)) {
+        fail(`${rel} sets simRing.spatialHash but never reads the binding`);
+      }
+    }
+    // keepsHash promises the node's simState writes leave every hashed position where it was, so it
+    // only means something on a simState writer in a graph that has a hash to keep.
+    for (const n of graphNodes.filter((node) => node.keepsHash !== undefined)) {
+      if (typeof n.keepsHash !== 'boolean') fail(`${rel} node ${n.id} keepsHash must be a boolean`);
+      if (n.keepsHash === true && !(n.writes || []).includes('simState')) {
+        fail(`${rel} node ${n.id} sets keepsHash but does not write simState`);
+      }
+      if (n.keepsHash === true && def.simRing.spatialHash !== true) {
+        fail(`${rel} node ${n.id} sets keepsHash but simRing.spatialHash is not set`);
+      }
+    }
+    const nodes = graphNodes;
     if (!nodes.some((n) => n.dispatch === 'simState')) {
       fail(`${path.relative(ROOT, file)} declares simRing but no graph node dispatches simState`);
     }
@@ -1185,6 +1301,17 @@ function verifyBindGroup1() {
       fail(`${path.relative(ROOT, file)} simRing.stateCount must be 1–${ladder[0]}`);
     }
   }
+}
+
+/**
+ * wasm_exports.json `exports` (signature + whileSuspended per export) ↔ the
+ * generated wasm_renderer/wasm_exports.h and src/wasm/bridge/_generated.ts ↔
+ * main.cpp EMSCRIPTEN_KEEPALIVE definitions (types parsed here, so drift fails
+ * without emcc; the include makes the same drift a compile error under emcc).
+ */
+function verifyWasmExportSignatures() {
+  const gen = require('./gen-wasm-exports-header.js');
+  for (const problem of gen.collectProblems()) fail(problem);
 }
 
 /**
@@ -1264,6 +1391,7 @@ if (!ONLY_WASM_INVARIANTS) {
   verifyEmptyPlaceholder();
 }
 verifyWasmCompileFlags();
+verifyWasmExportSignatures();
 verifyWasmRuntimeInvariants();
 
 if (failed) {
@@ -1271,7 +1399,7 @@ if (failed) {
 }
 
 console.log(
-  '✅ Device policy sync OK (limits + optional features + bind_group0 + canvas_configure + slot_limits + wasm_exports + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + bind_group1 + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
+  '✅ Device policy sync OK (limits + optional features + bind_group0 + canvas_configure + slot_limits + wasm_exports (+ signatures) + wasm_compile_flags + workgroup_dispatch + emptyPlaceholder + bind_group1 + wasm_runtime_invariants ↔ TS/C++/shaders/wasm)',
 );
 
 /** True when `rel` is tracked by git (a committed artifact, not a fresh CI build). */

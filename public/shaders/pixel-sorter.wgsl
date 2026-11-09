@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: Asendorf interval close; span-seam accent
+//  Upgraded: 2026-09-09, 2026-11-01
+//  Ideas: Asendorf interval close; span-seam accent; head-to-tail ramp; sort-axis comb
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -153,7 +153,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let curl = vec2<f32>(ny, -nx) * 0.015 * mouseGate;
   let sampleUV = clamp(uv + walkDir * steps * stride + curl, vec2<f32>(0.0), vec2<f32>(1.0));
   let walked = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
-  let sampled = mix(c.rgb, mix(walked, bestColor, 0.65), f32(inRun) * mouseGate);
+  // ── Idea 3: head-to-tail ramp ──────────────────────────────────
+  // steps is the closed-run length. The head keeps the brightest
+  // sample; further steps fall darker. Threshold and the walk stay.
+  let tailT = clamp(steps / 10.0, 0.0, 1.0);
+  let headLit = mix(bestColor, bestColor * mix(1.0, 0.72, tailT), tailT);
+  let sampled = mix(c.rgb, mix(walked, headLit, 0.65), f32(inRun) * mouseGate);
 
   let histDims = vec2<i32>(textureDimensions(dataTextureC));
   let prevPixel = textureLoad(dataTextureC, historyCoord(uv, histDims), 0).rgb;
@@ -172,9 +177,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var finalColor = mix(tempColor, shimmerColor, depthFactor);
   finalColor = finalColor + vec3<f32>(0.12, 0.11, 0.09) * seam * (0.55 + treble * 0.45);
   finalColor = finalColor * (1.0 + closed * mids * 0.04);
+  // ── Idea 4: sort-axis comb ─────────────────────────────────────
+  // A hairline every eighth pixel across the sort, so a run reads as
+  // columns or rows. Intensity Scale still sets the stride.
+  let perpAxis = vec2<f32>(-sortAxis.y, sortAxis.x);
+  let combPhase = fract(dot(uv * resolution, perpAxis) / 8.0);
+  let comb = smoothstep(0.88, 1.0, combPhase) * f32(inRun) * clamp(mouseGate, 0.0, 1.0);
+  finalColor = finalColor * (1.0 - 0.22 * comb);
 
   let dispMag = sortLength;
-  let alpha = clamp(get_luma(finalColor) * 0.4 + dispMag * 6.0 + cursorMask * 0.3 + tentAlpha(dispMag * 4.0) * 0.2 + seam * 0.2, 0.0, 1.0);
+  let alpha = clamp(get_luma(finalColor) * 0.4 + dispMag * 6.0 + cursorMask * 0.3 + tentAlpha(dispMag * 4.0) * 0.2 + seam * 0.2 + comb * 0.12 + tailT * 0.08, 0.0, 1.0);
   let softMask = gaussianMask(dMouse, 0.35);
   let maskedAlpha = alpha * mix(0.6, 1.0, softMask);
   let vignette = 1.0 - smoothstep(0.3, 1.0, length(uv - vec2<f32>(0.5)) * 1.1);

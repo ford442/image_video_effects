@@ -53,6 +53,7 @@ Secondary WGSL files are referenced by `entry` id only — no separate JSON.
 | `dispatch` | no | `pixels` (default) or `simState` (sim-ring agents; see [`BINDING_CONTRACT.md`](BINDING_CONTRACT.md)) |
 | `scalable` | no | Opt in to per-node resolution scaling (see below) |
 | `minScale` | no | Lowest scale adaptive demotion may pick: `0.25`, `0.5` (default) or `0.75` |
+| `keepsHash` | no | The node's `simState` writes never move a hashed element (it only writes parked records), so the planner keeps the spatial hash fresh after it (see [Sim roles](#sim-roles-and-the-spatial-hash)) |
 
 Tier B `pass` / `nextShader` fields may coexist on the same shader for catalog compatibility; when `graph` is present, the graph runner takes precedence.
 
@@ -157,7 +158,7 @@ Writing these definitions by hand is optional: the [Graph Lab](GRAPH_LAB.md) aut
 
 `validateGraph(graph)` returns the error strings the frame planner acts on; an invalid graph is reported (`GraphRunReport.errors`) and not encoded. It checks:
 
-- Known roles only; `simIndex` is never a write target
+- Known roles only; `simIndex` and `simHash` are never write targets
 - `repeat` ∈ [1, 64]
 - Pass count ≤ `maxPassesPerFrame`
 - Every node has an `entry`, and declares reads or writes
@@ -165,11 +166,11 @@ Writing these definitions by hand is optional: the [Graph Lab](GRAPH_LAB.md) aut
 - Dependency order, simulated over the expanded dispatch list: no read of `dataA` / `dataB` before something in the frame produced it (`dataC` is seeded from the previous frame)
 - `knownEntries` (optional): every `entry` is one of the given WGSL ids
 
-`diagnoseGraph(graph, { knownEntries })` is the same pass with structure, for tools. Each diagnostic has a stable `code`, a `severity`, the same message `validateGraph` returns, and `nodeId` / `iteration` / `role` where they apply. Error codes: `max-passes`, `empty-graph`, `pass-budget`, `node-id`, `missing-entry`, `repeat-range`, `invalid-role`, `sim-index-write`, `invalid-dispatch`, `no-io`, `min-scale`, `scalable-sim`, `dependency`, `cycle`.
+`diagnoseGraph(graph, { knownEntries })` is the same pass with structure, for tools. Each diagnostic has a stable `code`, a `severity`, the same message `validateGraph` returns, and `nodeId` / `iteration` / `role` where they apply. Error codes: `max-passes`, `empty-graph`, `pass-budget`, `node-id`, `missing-entry`, `repeat-range`, `invalid-role`, `sim-index-write`, `sim-hash-write`, `invalid-dispatch`, `no-io`, `min-scale`, `scalable-sim`, `dependency`, `cycle`.
 
 Nodes run in array order, so a graph cannot contain a cycle in the graph-theory sense. `cycle` is the diagnostic for an unsatisfiable read that is circular: the node waits on a role only it writes, or on a later producer that in turn needs something this node writes. Any other unsatisfiable read is `dependency`.
 
-`diagnoseGraph` also returns **warnings**, which never change what the planner does: `no-color-writer` (nothing reaches the display), `duplicate-node-id` (per-node scale overrides and pass timings key on the node id), `non-integer-repeat`, `ineffective-role` (reading `color`, writing `read` or `dataC`), `unbounded-max-passes` (above 64; presets cap a graph at 4–16).
+`diagnoseGraph` also returns **warnings**, which never change what the planner does: `no-color-writer` (nothing reaches the display), `duplicate-node-id` (per-node scale overrides and pass timings key on the node id), `non-integer-repeat`, `ineffective-role` (reading `color`, writing `read` or `dataC`), `ineffective-keeps-hash` (`keepsHash` on a node that does not write `simState`), `unbounded-max-passes` (above 64; presets cap a graph at 4–16).
 
 ## Runtime graphs
 
@@ -181,6 +182,24 @@ Nodes run in array order, so a graph cannot contain a cycle in the graph-theory 
 - TS WebGPU only.
 - The optional `simRing` (`{ stateCount }`, the definition field as consumed) is what `resolveSimRingRequest` returns for the graph's id and its entries while it is registered; it wins over `SIM_RING_REGISTRY`. It only sizes the ring: the ring is still armed by `WebGPURenderer.loadShader` → `SimRing.ensure` when an entry that declares `@group(1)` compiles, and group 1 is still bound only to those entries. A request that is set after the entries compiled takes effect on their next compile.
 
+## Sim roles and the spatial hash
+
+With the [sim ring](BINDING_CONTRACT.md#sim-ring-opt-in-group1-ts-renderer-only) on, nodes may read and write `simState` and read `simIndex`, and dispatch over `simState` (`"dispatch": "simState"`). A fourth role, `simHash`, is **read-only** and opt-in per definition (`"simRing": { "stateCount": N, "spatialHash": true }`).
+
+- A node lists `simHash` in `reads`; the planner does the rest. Immediately before the first dispatch that reads a stale hash, `expandGraph` inserts one planner-owned dispatch (`entry: "__simHashBuild"`, `dispatch: "simHashBuild"`): reset the heads, scatter every agent. A `simState` write makes the hash stale again, so a second reader after a write gets a second build; readers with no write between share one.
+- **`keepsHash`:** a node whose `simState` writes only touch parked records (`xy < 0`) can say so with `"keepsHash": true`. Its write leaves the hash fresh, so the next reader shares the build; the `simIndex` snapshot still goes stale, so that reader still gets its `simState → simIndex` copy (a copy, not a pass). `sph-fluid`'s density pass writes only its stride-2 aux records, so the fluid is scatter → density → force → render, 4 passes instead of 5, and fits battery. It is the author's promise: a `keepsHash` node that moves an agent leaves later readers walking stale cells (visit-capped, so wrong neighbours, never a hang). `verify:device-policy` rejects the flag on a node that does not write `simState` or in a definition without `simRing.spatialHash`.
+- **It is a pass.** `countGraphPasses`, `pass-budget` validation, `GraphRunReport.requested / executed / truncated`, the per-graph quality cap and the frame pass budget all include it. `murmuration` is 3 passes (scatter, flock, render), `photon-bins` 4 (march, scatter, splat, present) and `sph-fluid` 4 (scatter, density, force, render).
+- **Truncation:** `shrinkGraphToCap` counts the build with the nodes, so dropping the last reader drops its scatter with it, and the colour write is dropped last: under a cap of 2, `murmuration` keeps only `murmuration-render`, never the render without its colour write.
+- A graph that never reads `simHash` (DLA) gets no build and no change to its bind-group layout. A definition that sets `spatialHash` and no node reads the role, or a node reads it without the flag, is a `verify:device-policy` error.
+- Pixel nodes that read the hash must not be `scalable`: agent positions and cells are in full working-size pixels.
+
+### Authoring checklist
+
+1. Entry declares `@group(1) @binding(3) var<storage, read_write> simHash: array<atomic<u32>>` (and whatever of bindings 0–2 it uses), `#include "_sim_hash.wgsl"` after `_prelude.wgsl`.
+2. The node lists `simHash` (and `simIndex` if it reads neighbour positions) in `reads`; the graph needs a `simState` writer before it.
+3. Park dead agents at `xy < 0`; walk chains with a visit cap of 8–16; read neighbour positions from `simIndex`, not `simState`.
+4. The definition sets `simRing.spatialHash: true`. Under `?renderer=wasm` the first entry is refused (logged skip, no `LoadShader`).
+
 ## Reference implementations
 
 | Shader | Pattern |
@@ -188,6 +207,10 @@ Nodes run in array order, so a graph cannot contain a cycle in the graph-theory 
 | `ripple-tank` | step×4 → inject → optics gather → render (flagship Tier C physics demo) |
 | `fabric-of-reality` | verlet → constraint×4 → tear → render (cloth sim) |
 | `photonic-caustics-graph` | emit → trace×2 → accumulate (caustic transport) |
+| `murmuration` | scatter → flock (simState, reads simHash + simIndex) → render (65k agents, hashed neighbour steering) |
+| `photon-bins` | march (simState) → scatter → splat (reads simHash + simIndex) → present (the agent form of `photonic-caustics-graph`) |
+| `physarum-agents` | diffuse (pixels) → agents (simState: sense, turn, move, deposit into dataA) → render (65k Jones agents on the plain ring, no hash) |
+| `sph-fluid` | scatter → density (simState, keepsHash: writes stride-2 aux records) → force + integrate (simState, stamps dataA) → render (WCSPH, 24k particles) |
 | `chromatographic-fluid` | force → advect → diffuse×2 → interact → phase → render (shared wind, RGB viscosity) |
 | `gray-scott-tank` | gs-step×4 → inject → render (true Jacobi Gray–Scott) |
 | `wave-tank` | step×3 → inject → render (minimal graph reference / tests) |

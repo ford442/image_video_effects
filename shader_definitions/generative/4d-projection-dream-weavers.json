@@ -3,7 +3,7 @@
   "name": "4D Projection Dream Weavers",
   "url": "shaders/4d-projection-dream-weavers.wgsl",
   "category": "generative",
-  "description": "A continuous slice through 4-dimensional fractal space. The mouse smoothly controls two extra dimensions, allowing genuine exploration of higher-dimensional forms. Audio modulates scale, speed, and detail.",
+  "description": "A hyper-rotating slice through 4-dimensional noise space, perspective-projected with colour dispersion along w. The mouse smoothly steers two extra dimensions. Audio modulates scale, speed, and detail.",
   "features": [
     "4d-fractal",
     "smooth-navigation",

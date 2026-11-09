@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: elliptical dots along wave gradient; 15-degree hex rosette
+//  Upgraded: 2026-09-08, 2026-11-01
+//  Ideas: elliptical dots along wave gradient; 15-degree hex rosette; midtone dot gain; wave-compressed screen
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -57,18 +57,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let gridDensity = 12.0 + u.zoom_params.y * 80.0;
   let waveAmp = u.zoom_params.z * 0.15;
   let chromaticAmt = u.zoom_params.w * 0.02;
+  // Wave Speed is zoom_params.w. Scale is 1 at the saved default 0.2,
+  // so the default timing matches the previous hardcoded rates.
+  let speedScale = mix(0.4, 2.6, u.zoom_params.w) / 0.84;
 
   let mousePos = u.zoom_config.yz;
   let mouseDown = u.zoom_config.w;
 
-  // Hexagonal close-packed grid coordinates
-  let hexUV = hexCell(uv, gridDensity);
-
   // 2D wave equation interference from multiple oscillators
   var interference = 0.0;
-  interference = interference + sin(uv.x * 12.0 + time * 2.0) * cos(uv.y * 10.0 - time * 1.5);
-  interference = interference + sin((uv.x + uv.y) * 8.0 + time * 1.2) * 0.5;
-  interference = interference + cos(uv.x * 6.0 - time * 0.8) * sin(uv.y * 14.0 + time * 1.1) * 0.3;
+  interference = interference + sin(uv.x * 12.0 + time * 2.0 * speedScale) * cos(uv.y * 10.0 - time * 1.5 * speedScale);
+  interference = interference + sin((uv.x + uv.y) * 8.0 + time * 1.2 * speedScale) * 0.5;
+  interference = interference + cos(uv.x * 6.0 - time * 0.8 * speedScale) * sin(uv.y * 14.0 + time * 1.1 * speedScale) * 0.3;
   interference = interference * waveAmp * (1.0 + bass * 1.5);
 
   // Dynamic wave sources from mouse ripples
@@ -82,10 +82,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Mouse cursor acts as a continuous wave source
   let mouseDist = length(uv - mousePos);
-  interference = interference + sin(mouseDist * 25.0 - time * 5.0) * exp(-mouseDist * 4.0) * 0.08 * mouseDown;
+  interference = interference + sin(mouseDist * 25.0 - time * 5.0 * speedScale) * exp(-mouseDist * 4.0) * 0.08 * mouseDown;
+
+  // ── Idea 2: wave-compressed screen
+  // Local density rises with |interference|. The density slider stays the base.
+  let localDensity = gridDensity * (1.0 + clamp(abs(interference) * 1.6, 0.0, 0.45));
+  let hexUV = hexCell(uv, localDensity);
 
   // Sample image at hex cell center for color quantization
-  let cellCenter = hexCenter(uv, gridDensity);
+  let cellCenter = hexCenter(uv, localDensity);
   let safeCenter = clamp(cellCenter, vec2<f32>(0.001), vec2<f32>(0.999));
   let color = textureSampleLevel(readTexture, u_sampler, safeCenter, 0.0);
   let luma = dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114));
@@ -96,7 +101,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Dot radius modulated by luma and wave interference crests
   let waveMod = 1.0 + interference * 0.5;
-  let radius = luma * 0.45 * dotSizeScale * waveMod * perspective;
+  // ── Idea 1: midtone dot gain
+  // Radius stays linear in luma. Midtones spread; clear paper and dense ink do not.
+  let dotGain = sqrt(max(luma * (1.0 - luma), 0.0)) * 2.0;
+  let radius = luma * 0.45 * dotSizeScale * waveMod * perspective * (1.0 + 0.32 * dotGain);
 
   // Moire patterns at high-interference nodes
   let moire = smoothstep(0.7, 1.0, abs(interference)) * 0.25;
@@ -111,8 +119,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let paper = hash21(uv * 400.0 + time * 0.1) * 0.06 + 0.94;
 
   let waveGrad = vec2<f32>(
-    cos(uv.x * 12.0 + time * 2.0) * 12.0 * cos(uv.y * 10.0 - time * 1.5),
-    sin(uv.x * 12.0 + time * 2.0) * (-10.0) * sin(uv.y * 10.0 - time * 1.5)
+    cos(uv.x * 12.0 + time * 2.0 * speedScale) * 12.0 * cos(uv.y * 10.0 - time * 1.5 * speedScale),
+    sin(uv.x * 12.0 + time * 2.0 * speedScale) * (-10.0) * sin(uv.y * 10.0 - time * 1.5 * speedScale)
   );
   let gLen = max(length(waveGrad), 0.001);
   let gN = waveGrad / gLen;
@@ -124,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let c15 = 0.9659258;
   let s15 = 0.2588190;
   let uvRosette = vec2<f32>(uv.x * c15 - uv.y * s15, uv.x * s15 + uv.y * c15);
-  let hexUV2 = hexCell(uvRosette, gridDensity);
+  let hexUV2 = hexCell(uvRosette, localDensity);
   let ellip2 = vec2<f32>(dot(hexUV2, gN) * stretch, dot(hexUV2, gT) / stretch);
 
   // Anti-aliased dot mask

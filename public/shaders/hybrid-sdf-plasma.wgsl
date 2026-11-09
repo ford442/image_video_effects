@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Hybrid SDF Plasma Field (ink-edge halftone print)
+//  Category: hybrid
+//  Features: mouse-driven
+//  Complexity: Medium
+//  Upgraded: 2026-11-01
+//  Ideas: 45-degree rotated anti-aliased halftone screen with dot gain; Sobel-hypot magnitude-weighted ink line; paper-tooth ink starvation
+//  A packing: display RGBA (alpha = ink coverage; A/C not used)
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 fn getLuma(color_1: vec3<f32>) -> f32 {
@@ -118,38 +127,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             i = (_e137 + 1);
         }
     }
-    let _e139 = gx;
-    let _e140 = gy;
-    let edge = length((_e139 + _e140));
+    // ── Idea 2: Sobel-hypot magnitude-weighted ink line ─────────────────
+    // HEAD summed the two gradient vectors (axis-biased). True hypot is
+    // isotropic; the continuous weight makes strong edges heavy, weak thin.
+    let gxs = gx.x;
+    let gys = gy.x;
+    let edge = length(vec2<f32>(gxs, gys)) * 1.5;
+    let inkLine = smoothstep(edgeThresh, edgeThresh * 1.6, edge);
     let isEdge = select(0.0, 1.0, (edge > edgeThresh));
+    let lineWeight = isEdge * mix(0.55, 1.0, inkLine);
     let _e149 = uv;
     let _e151 = textureSampleLevel(readTexture, u_sampler, _e149, 0.0);
     color = _e151.xyz;
     let _e154 = color;
     let _e155 = getLuma(_e154);
-    let gridPos = (vec2<f32>(global_id.xy) / vec2(dotSize));
+    // ── Idea 1: 45-degree rotated screen, anti-aliased dots, dot gain ───
+    // A real black-plate halftone screen sits at 45 degrees; ink spreads, so
+    // shadow dots grow a little and edges are soft instead of stair-stepped.
+    let screenPos = vec2<f32>(global_id.xy) / vec2(dotSize);
+    let gridPos = vec2<f32>(
+        0.70710678 * (screenPos.x - screenPos.y),
+        0.70710678 * (screenPos.x + screenPos.y));
     let gridCenter = (floor(gridPos) + vec2(0.5));
     let dist = length((gridPos - gridCenter));
-    let radius = (sqrt(_e155) * 0.5);
     let _e169 = color;
     color = (floor((_e169 * levels)) / vec3(levels));
-    let dotRadius = ((1.0 - _e155) * 0.7);
-    let isDot = select(0.0, 1.0, (dist < dotRadius));
+    let dotRadius = ((1.0 - _e155) * 0.7) * (1.0 + 0.15 * (1.0 - _e155));
+    let dotAA = max(0.5 / dotSize, 0.02);
+    // ── Idea 3: paper-tooth ink starvation (static fibre, no strobing) ──
+    let tooth = hash12_(floor(vec2<f32>(global_id.xy) * 0.5) + vec2(37.0));
+    let starve = 1.0 - 0.35 * inkDensity * smoothstep(0.55, 0.95, tooth);
+    let dotCov = (1.0 - smoothstep(dotRadius - dotAA, dotRadius + dotAA, dist)) * starve;
     let _e182 = color;
     finalColor = _e182;
-    if (isEdge > 0.5) {
-        let line_density = ((inkDensity * 0.9) + 0.05);
-        ink_alpha = line_density;
+    if (lineWeight > 0.0) {
+        let line_density = ((inkDensity * 0.9) + 0.05) * starve;
+        ink_alpha = line_density * lineWeight;
         let _e192 = finalColor;
-        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (isEdge * inkDensity));
+        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (lineWeight * starve * inkDensity));
     }
-    if (isDot > 0.5) {
+    if (dotCov > 0.0) {
         let dot_coverage = smoothstep(0.0, 0.7, (1.0 - _e155));
-        let dot_alpha = ((dot_coverage * inkDensity) * 0.85);
-        let inkColor = vec3<f32>(0.08, 0.07, 0.09);
+        let dot_alpha = ((dot_coverage * inkDensity) * 0.85) * dotCov;
         let _e213 = finalColor;
         let _e214 = finalColor;
-        finalColor = mix(_e213, (_e214 * 0.7), (isDot * 0.8));
+        finalColor = mix(_e213, (_e214 * 0.7), (dotCov * 0.8));
         let _e220 = ink_alpha;
         ink_alpha = max(_e220, dot_alpha);
     }
@@ -169,7 +191,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let dVec = (_e247 - _e248);
         d = length(dVec);
         let _e254 = d;
-        let vignette = smoothstep(0.8, 0.2, (_e254 * 0.5));
+        // reversed smoothstep edges are undefined in WGSL (rendered black); same falloff, defined
+        let vignette = 1.0 - smoothstep(0.2, 0.8, (_e254 * 0.5));
         let _e258 = finalColor;
         finalColor = (_e258 * vignette);
         let _e260 = ink_alpha;

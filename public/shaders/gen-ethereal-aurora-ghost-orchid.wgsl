@@ -3,15 +3,15 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, click-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: spring-eased magnetic pole (extraBuffer 133-136) so the orchid's
-//         field-line spiral lags and overshoots the cursor; persistent bass
-//         bloom envelope (extraBuffer 137) unfurls petals and lifts the red
-//         630 nm oxygen band ceiling; raymarch hit distance written as depth;
-//         2nd pass (2026-10-10): metastable per-channel persistence (630 nm
-//         red lingers, 557 green / 428 blue fade faster); auroral vertical
-//         ray striations that drift with time, density from Petal Complexity
-//         (revives the formerly dead slider)
+//  Upgraded: 2026-10-10, 2026-10-25
+//  Ideas: bass bloom lifts the red 630 nm oxygen band ceiling and unfurls petals;
+//         raymarch hit distance written as depth; metastable per-channel persistence
+//         (630 nm red lingers, 557 green / 428 blue fade faster); auroral vertical
+//         ray striations, density from Petal Complexity; 3rd pass (2026-10-25):
+//         additive domain twist along the stem axis (§12.2E); soft inverse-square
+//         stamen light, petal root gain + volumetric halo (§12.2F); sharp lower
+//         auroral border (§12.1 physics). HEAD fixes: upside-down view / mirrored
+//         pole, racy extraBuffer[133..138] spring (never persisted) removed.
 //  A packing: ACES display RGB blended with exact C read; alpha = aurora
 //             emission/shock/held coverage (semantic, never 1.0)
 //  Enrichment: aurora altitude physics (557.7 / 630.0 / 427.8 nm bands)
@@ -88,6 +88,12 @@ fn map(p_in: vec3<f32>, time: f32, audio_react: f32, mouse_pos: vec2<f32>, bass:
     let solarWind = 1.0 + bass * 2.0;
     p.z += sin(p.x * solarWind + time) * 0.05 * pull;
 
+    // ── Idea 1: additive domain twist (§12.2E). The stem axis is z, so petals spiral
+    // as they bend away from the flower; Audio Reactivity still owns the motion.
+    let twistXY = rot2(p.z * (0.3 + 0.15 * audio_react)) * p.xy;
+    p.x = twistXY.x;
+    p.y = twistXY.y;
+
     // Stem
     let stem_d = length(p.xy) - 0.05 + p.z * 0.01;
 
@@ -134,7 +140,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         return;
     }
 
-    let uv = (fragCoord - 0.5 * res) / res.y;
+    // HEAD fix: flip y so the orchid stands upright and the pole follows the cursor.
+    let uv = vec2<f32>(fragCoord.x - 0.5 * res.x, 0.5 * res.y - fragCoord.y) / res.y;
     let uv01 = (fragCoord + 0.5) / res;
     let time = u.config.x;
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
@@ -145,28 +152,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audio = bass * 0.5 + mids * 0.3 + treble * 0.2;
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
-    // Persistent state: spring-eased magnetic pole + bass bloom envelope.
-    var pole = mouse;
-    var poleVel = vec2<f32>(0.0);
-    var bloomEnv = bass;
-    let hasState = arrayLength(&extraBuffer) > 138u;
-    if (hasState && extraBuffer[138] > 0.5) {
-        pole = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        poleVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        bloomEnv = extraBuffer[137];
-    }
-    if (hasState && id.x == 0u && id.y == 0u) {
-        let k = 0.08 + held * 0.06;
-        poleVel = poleVel * 0.82 + (mouse - pole) * k;
-        pole = pole + poleVel;
-        bloomEnv = mix(bloomEnv, bass, select(0.03, 0.25, bass > bloomEnv));
-        extraBuffer[133] = pole.x;
-        extraBuffer[134] = pole.y;
-        extraBuffer[135] = poleVel.x;
-        extraBuffer[136] = poleVel.y;
-        extraBuffer[137] = bloomEnv;
-        extraBuffer[138] = 1.0;
-    }
+    // HEAD fix: the extraBuffer[133..138] spring/envelope never persisted (the buffer is
+    // re-uploaded each frame) and (0,0) wrote it while other pixels read it. The pole
+    // follows the cursor directly and the bloom envelope is the live bass.
+    let pole = mouse;
+    let bloomEnv = bass;
 
     let petal_complex = u.zoom_params.x;
     let aurora_int = u.zoom_params.y;
@@ -184,6 +174,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var col = vec3<f32>(0.0);
     var emission = vec3<f32>(0.0);
     var hitT = -1.0;
+    var haloAcc = 0.0;
 
     // Raymarching
     for (var i = 0; i < 64; i += 1) {
@@ -227,10 +218,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
             // Solar wind intensity = bass-driven particle density
             let solarWindInt = 1.0 + bass * 3.0;
-            emission += aurora_col * 0.05 * aurora_int * solarWindInt * ray / (1.0 + abs(d) * 10.0);
+            // ── Idea 3: sharp lower auroral border (§12.1 physics): electron penetration
+            // ends abruptly, so the lower edge of a curtain is crisp, the upper edge soft.
+            let lowerBorder = mix(0.3, 1.0, smoothstep(0.08, 0.2, altitude));
+            // ── Idea 2: soft inverse-square stamen light (§12.2F), petals brighten toward the core.
+            let stamenGain = 1.0 + 0.7 * 0.6 / (dot(p, p) + 0.6);
+            emission += aurora_col * 0.05 * aurora_int * solarWindInt * ray * lowerBorder * stamenGain / (1.0 + abs(d) * 10.0);
 
+            haloAcc += 0.02 / (dot(p, p) + 0.5);
             t += 0.02;
         } else {
+            haloAcc += d / (dot(p, p) + 0.5);
             t += d;
         }
 
@@ -243,6 +241,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let spark = pow(pollen_val, 10.0) * pollen_dens;
         emission += vec3<f32>(1.0, 0.8, 0.2) * spark;
     }
+
+    // Stamen in-scatter: line integral of the soft inverse-square light along the ray.
+    emission += vec3<f32>(0.25, 0.9, 0.5) * haloAcc * 0.015 * aurora_int;
 
     col += emission;
 

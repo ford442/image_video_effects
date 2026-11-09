@@ -364,7 +364,7 @@
     "id": "anamorphic-caustic-flare",
     "name": "Anamorphic Caustic Flare",
     "url": "shaders/anamorphic-caustic-flare.wgsl",
-    "description": "Cinematic anamorphic lens flare combined with living water caustics that refract the source footage along the caustic slope. Caustic peaks are squeezed into short horizontal glints whose length follows Caustic Stretch, matching the flare's anamorphic look. Bass stretches the flare and glints, treble brightens the caustics, and clicks fire local horizontal flare bursts. Mouse tilts the virtual lens.",
+    "description": "Cinematic anamorphic lens flare combined with living water caustics that refract the source footage along the caustic slope. Caustic peaks are squeezed into short horizontal glints whose length follows Caustic Stretch, matching the flare's anamorphic look. Bass stretches the flare and glints, treble brightens the caustics, and clicks fire local horizontal flare bursts. Mouse tilts the virtual lens. Bright highlights bloom into tall anamorphic oval bokeh and the caustic ridges split into red/blue spectral fringes.",
     "tags": [
       "anamorphic",
       "caustic",
@@ -958,7 +958,8 @@
       "particles",
       "glow"
     ],
-    "name": "Data Scanner"
+    "name": "Data Scanner",
+    "description": "Racing scan fronts analyse the image into voronoi data blocks, with per-row readout ticks and a decaying decode wake behind the lead front."
   },
   {
     "id": "elastic-chromatic",
@@ -1150,7 +1151,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1208,7 +1211,7 @@
     "name": "Holographic Flicker",
     "category": "visual-effects",
     "url": "shaders/holographic-flicker.wgsl",
-    "description": "Unstable laser hologram: mode-hopping laser lines with matching fringes, per-channel phosphor trails, vertical-hold slips and a rotating hex emblem.",
+    "description": "Unstable laser hologram: mode-hopping lines, per-channel phosphor trails, vertical-hold slips, and a hex emblem. Speckle grain follows the hopped wavelength, and the slow red phosphor smears a few pixels back along the scan.",
     "params": [
       {
         "id": "flickerSpeed",
@@ -1265,7 +1268,7 @@
     "id": "holographic-projection-gpt52",
     "name": "Holo Projection Prism gpt52",
     "url": "shaders/holographic-projection-gpt52.wgsl",
-    "description": "Prismatic volume hologram with Bragg diffraction physics, stabilized focus, scan interference, and spectral tinting.",
+    "description": "Volume hologram: Bragg sinc per wavelength, a thin-film order, scan jitter, and a Pepper's ghost. Brightness oscillates through scene depth, and the sample walks along the diffracted ray where the sinc is efficient.",
     "features": [
       "mouse-driven",
       "glitch",
@@ -1322,7 +1325,7 @@
     "id": "holographic-projection",
     "name": "Holo Projector",
     "url": "shaders/holographic-projection.wgsl",
-    "description": "Hologram projection with laser speckle, rainbow Bragg colour that shifts with viewing angle, and a rolling refresh band. Move the mouse to focus and stabilize it.",
+    "description": "Plate projector with object-locked speckle, Bragg colour versus viewing angle, and a rolling refresh band. The undiffracted photo leaks through dark fringes, and the reconstruction holds only near the cursor's vertical angle.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1374,7 +1377,7 @@
     "id": "holographic-sticker",
     "name": "Holographic Sticker",
     "url": "shaders/holographic-sticker.wgsl",
-    "description": "Mouse-centered iridescent foil sticker with chromatic view-angle dispersion, grating ripple and rim highlight, embossed guilloche security rosettes whose hue slides as the sticker tilts across the screen, and an edge peel while the pointer is held that curls back the outer rim to show the white paper backing with a soft shadow on the image beneath. Click rainbow rings, audio-driven sticker pulse and hue-banded bass/mid/treble foil brightness, depth-layered alpha, subtle temporal shimmer.",
+    "description": "Mouse-centered iridescent foil sticker with chromatic view-angle dispersion, grating ripple and rim highlight, embossed guilloche security rosettes whose hue slides as the sticker tilts across the screen, glitter flakes that flash when their tilt lines up with the view, a kinegram emboss of the photo whose relief flips with tilt, and an edge peel while the pointer is held that curls back the outer rim to show the white paper backing with a soft shadow on the image beneath. Click rainbow rings, audio-driven sticker pulse and hue-banded bass/mid/treble foil brightness, depth-layered alpha, subtle temporal shimmer.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1436,7 +1439,7 @@
     "id": "hyper-space-jump",
     "name": "Hyper Space Jump",
     "url": "shaders/hyper-space-jump.wgsl",
-    "description": "Continuous relativistic streak integration combines a Doppler palette, helical flight, a movable vanishing point, held acceleration, and age-bounded jump shocks.",
+    "description": "Radial streak tunnel toward the pointer. Jump Strength, Streak Decay, Chromatic Spread, and Vignette Size drive the blur. The rim shifts blue, and the previous frame leaves a short afterimage.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -1444,7 +1447,8 @@
       "doppler-color",
       "helical-motion",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "hyperspace",
@@ -2212,7 +2216,7 @@
     "id": "signal-modulation",
     "name": "Signal Modulation",
     "url": "shaders/signal-modulation.wgsl",
-    "description": "AM/FM carrier wave with sprung origin, held widen, capped click carrier bursts, honest regional FFT spectral bands, ACES composite.",
+    "description": "AM/FM carrier from a sprung origin. The trace excursion swells with the FFT band on that row, and zero-crossing ticks mark where the carrier crosses mid-line. Bands read extraBuffer FFT bins.",
     "workgroup_size": [
       16,
       16,
@@ -2338,7 +2342,7 @@
     "id": "temporal-rgb-smear",
     "name": "Temporal RGB Smear",
     "url": "shaders/temporal-rgb-smear.wgsl",
-    "description": "Directional RGB smear with curl-noise velocity field, domain-warped drift, Halton-jittered chromatic sampling, temporal feedback decay, ACES tone mapping, and advanced layered alpha compositing (luminance key, edge preserve, effect intensity, depth layer, accumulative trails).",
+    "description": "Directional RGB smear along a curl-noise flow: bright highlights throw longer comet streaks, extra taps bend the streaks along the turbulence, and bass kicks briefly hold the frame as a ghost. Mouse flicks lean the smear.",
     "params": [
       {
         "id": "smear_length",
@@ -2393,7 +2397,8 @@
       "alpha-layered",
       "luminance-key",
       "edge-preserve",
-      "accumulative"
+      "accumulative",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -2421,7 +2426,8 @@
     "description": "Multi-slit temporal scan with curved parametric slits, polar drift, and time-warp color tinting.",
     "features": [
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

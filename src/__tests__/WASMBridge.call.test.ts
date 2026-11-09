@@ -75,10 +75,10 @@ async function flush() {
   for (let i = 0; i < 5; i++) await Promise.resolve();
 }
 
-describe('SUSPENDING_EXPORTS contract', () => {
+describe('ASYNC_EXPORTS contract', () => {
   it('equals wasm_compile_flags.json jspi.jspiExports', async () => {
-    const { SUSPENDING_EXPORTS } = await import('../wasm/bridge/call');
-    expect([...SUSPENDING_EXPORTS].sort()).toEqual([...compileFlags.jspi.jspiExports].sort());
+    const { ASYNC_EXPORTS } = await import('../wasm/bridge/_generated');
+    expect([...ASYNC_EXPORTS].sort()).toEqual([...compileFlags.jspi.jspiExports].sort());
   });
 
   it('artifact file names match the contract graphs', async () => {
@@ -111,6 +111,37 @@ describe.each<Shape>(['asyncify', 'jspi'])('bridge over the %s build', (shape) =
   afterEach(() => {
     bridge.shutdownWasmRenderer();
     delete (window as unknown as { PixelocityWASM?: unknown }).PixelocityWASM;
+  });
+
+  it('shutdown finalizes an active WebCodecs take, even mid-suspend, and setRecording stays sync', async () => {
+    const g = globalThis as Record<string, unknown>;
+    g.VideoEncoder = class {};
+    g.VideoFrame = class {};
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await initBridge();
+      const blob = new Blob(['partial'], { type: 'video/webm' });
+      const stop = vi.fn().mockResolvedValue(blob);
+      const take = bridge.startRecording(document.createElement('canvas'), {
+        gpuEncode: vi.fn().mockResolvedValue({ stop }),
+      });
+      await flush();
+      expect(mock.log).toContain('call:setRecording');
+
+      // A suspending export is in flight (resize / shader compile) when the
+      // renderer is torn down: the take must still settle, not hang.
+      mock.hold();
+      void bridge.loadShader('b', 'code');
+      await flush();
+      bridge.shutdownWasmRenderer();
+      await expect(take).resolves.toBe(blob);
+      expect(stop).toHaveBeenCalledTimes(1);
+      mock.release();
+      await flush();
+    } finally {
+      delete g.VideoEncoder;
+      delete g.VideoFrame;
+    }
   });
 
   it('ccalls every suspending export with { async: true } and sync exports without', async () => {

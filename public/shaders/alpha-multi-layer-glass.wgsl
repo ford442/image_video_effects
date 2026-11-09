@@ -7,7 +7,16 @@
 //               depth, so panes slide against each other (parallax around the cursor)
 //            2. frosting — roughness is a rotated 4-tap scatter blur, not hash grain
 //            3. Beer-Lambert pane edges — long paths through steep glass turn green
+//            4. inter-pane ghost reflections — double-bounce images of bright highlights, displaced
+//               between neighbouring panes and weighted by F_i·F_(i-1) (double glazing)
+//            5. press dimple — a Gaussian-bump touch profile (zero slope at the contact point,
+//               steepest at the rim; the front pane flexes most) instead of a singular unit cone
 //  Complexity: High
+//  Upgraded: 2026-11-09
+//  Rescued: `chromatic` was ~35x too weak to show (0.02 px) and `ior` only touched grazing
+//           Fresnel — ior now scales each pane's bend (normalised: the default is unchanged) and
+//           dispersion is visible; inherited C is clamped before the display-space ghost mix.
+//  A packing: ACES display RGBA (unchanged); C is read as display colour.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -67,7 +76,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let iorBase = mix(1.15, 1.75, iorParam);
   let thickness = mix(0.003, 0.025, thickParam);
-  let chromaticStrength = chromParam * (0.008 + mids * 0.006);
+  // Dispersion is a RELATIVE split of each pane's offset (0.01-0.03 UV); HEAD's 0.008 scale made it
+  // 3e-5 UV (invisible). ~0.09 at the default gives a 1-2 px fringe at 192 p.
+  let chromaticStrength = chromParam * (0.40 + mids * 0.12);
   let roughness = roughParam * (0.012 + treble * 0.008);
 
   // Raw pointer: the old extraBuffer[133..138] spring raced (pixel (0,0) wrote
@@ -79,6 +90,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseDist = length((uv - mouse) * vec2<f32>(aspect, 1.0));
   let mouseInfluence = smoothstep(0.35, 0.0, mouseDist) * (0.5 + held * 0.5);
   let mouseNormal = normalize(uv - mouse + vec2<f32>(0.0001));
+  // ── Idea 5: press dimple ─────────────────────────────────────────────────
+  // A pane pressed by a finger flexes into a bump whose slope is zero at the contact point and
+  // steepest at the rim: s(r) = (r/σ)·exp(½(1 − (r/σ)²)), peak 1 at r = σ. HEAD pushed with a
+  // unit-slope cone that is singular at the cursor (the idle cursor sits at the screen centre).
+  let dimpleR = mouseDist / 0.12;
+  let dimple = dimpleR * exp(0.5 * (1.0 - dimpleR * dimpleR)) * smoothstep(0.35, 0.2, mouseDist)
+             * (0.5 + held * 0.5);
 
   // Click ripple shocks on glass surface
   let rippleCount = min(u32(u.config.y), 50u);
@@ -105,6 +123,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var accumulatedColor = vec3<f32>(0.0);
   var weightSum = 0.0;
   var specularTotal = 0.0;
+  var ghostTotal = vec3<f32>(0.0);
+  var prevOffset = vec2<f32>(0.0);
+  var prevFresnel = 0.0;
 
   for (var layer = 0; layer < 3; layer = layer + 1) {
     let layerF = f32(layer);
@@ -121,7 +142,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let normalX = (fbm2(noiseUV) - 0.5) * 2.0 + plateWave / (1.0 + layerF);
     let normalY = (fbm2(noiseUV + vec2<f32>(43.12, 17.89)) - 0.5) * 2.0;
     let surfaceNormal = normalize(vec2<f32>(normalX, normalY));
-    let combinedNormal = normalize(mix(surfaceNormal, mouseNormal, mouseInfluence * 0.6));
+    // Idea 5: the front pane takes the press fully, deeper panes flex less.
+    let combinedNormal = normalize(mix(surfaceNormal, mouseNormal, dimple * 0.6 * (1.0 - 0.3 * layerF)));
     let paneNormal = normalize(combinedNormal + rippleNormal * 0.5);
 
     // Schlick Fresnel
@@ -132,7 +154,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let layerTransmittance = clamp(1.0 - fresnel * 0.65, 0.05, 1.0);
 
     // Refraction offset per pane with physical dispersion
-    let paneOffset = paneNormal * thickness * (layerF + 1.0);
+    // The pane's bend follows its index: (n-1) normalised by the DEFAULT index of this pane, so
+    // ior = 0.5 reproduces HEAD exactly while the slider now bends harder or softer.
+    let bend = (ior - 1.0) / (0.45 + 0.08 * layerF);
+    let paneOffset = paneNormal * thickness * (layerF + 1.0) * bend;
     let refractR = uv + paneOffset * (1.0 + chromaticStrength * 1.5);
     let refractG = uv + paneOffset;
     let refractB = uv + paneOffset * (1.0 - chromaticStrength * 1.5);
@@ -165,6 +190,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pathLen = thickParam * (0.4 + layerF * 0.3) * (1.0 / max(cosI, 0.2) - 1.0);
     let edgeTint = exp(-vec3<f32>(0.55, 0.12, 0.40) * pathLen);
 
+    // ── Idea 4: inter-pane ghost reflections ─────────────────────────────────
+    // Light that reflects off the back of one pane and the front of the next arrives displaced by
+    // twice the pane-to-pane offset and weak (R1·R2): only bright sources survive (a lamp's second
+    // image in double glazing). Weight = F_i · F_(i-1), bright-pass only, attenuated by the stack.
+    // (layer 0 has no pane above it: its weight is 0, so its tap is skipped — `layer` is uniform.)
+    if (layer > 0) {
+      let ghostUV = clamp(uv - (paneOffset + prevOffset) * 2.0, vec2<f32>(0.0), vec2<f32>(1.0));
+      let ghostSrc = textureSampleLevel(readTexture, u_sampler, ghostUV, 0.0).rgb;
+      let ghostBright = clamp((dot(ghostSrc, vec3<f32>(0.2126, 0.7152, 0.0722)) - 0.55) / 0.45, 0.0, 1.0);
+      ghostTotal += ghostSrc * ghostBright * min(fresnel * prevFresnel, 0.5) * 6.0 * totalTransmittance;
+    }
+    prevOffset = paneOffset;
+    prevFresnel = fresnel;
+
     let layerColor = sampled * tint * edgeTint;
     let w = totalTransmittance * layerTransmittance;
     accumulatedColor += layerColor * w;
@@ -180,11 +219,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Panes are averaged by their transmitted weight (HEAD summed ~2.7x and blew
   // out), then dimmed by what the stack actually passes.
   accumulatedColor = accumulatedColor / max(weightSum, 1e-4) * (0.6 + 0.4 * totalTransmittance);
-  accumulatedColor += vec3<f32>(1.0, 0.98, 0.95) * specularTotal;
+  accumulatedColor += vec3<f32>(1.0, 0.98, 0.95) * specularTotal + ghostTotal;
 
   // ACES tonemap, then internal multi-bounce reflection from the exact
   // dataTextureC load, mixed in display space (C holds ACES output).
-  let prevInternal = textureLoad(dataTextureC, pixel, 0).rgb;
+  let prevInternal = clamp(textureLoad(dataTextureC, pixel, 0).rgb, vec3<f32>(0.0), vec3<f32>(1.0));
   let finalRGB = mix(aces(accumulatedColor), prevInternal, 0.08 + thickParam * 0.05);
 
   // Semantic transmittance alpha

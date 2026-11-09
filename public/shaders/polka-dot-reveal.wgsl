@@ -6,32 +6,14 @@
 //            hash-jitter, optimized
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-09-21 (first 2026-07-08)
+//  Upgraded: 2026-09-21, 2026-11-02 (first 2026-07-08)
 //  Ideas: chain-dot merge (bright dots join past ~50% coverage, the gaps become holes);
-//         drag-stretched dots along the cursor's motion; per-cell jitter (was per pixel)
+//         drag-stretched dots along the cursor's motion; per-cell jitter (was per pixel);
+//         chain holes; dot pip
 //  A packing: R bass envelope, GB smoothed mouse, A trail alpha
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -44,6 +26,10 @@ fn hash21(p: vec2<f32>) -> f32 {
 
 fn luma(rgb: vec3<f32>) -> f32 {
     return dot(rgb, LUMA);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
@@ -175,15 +161,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     dotAlpha = max(dotAlpha, trailAlpha);
 
     let interaction = clamp(bass_smooth * 0.5 + mouseVel * 2.0 + treble * 0.1, 0.0, 1.0);
-    let finalAlpha = clamp(dotAlpha + interaction * 0.25, 0.05, 1.0);
+    // ── Idea 1: chain holes — once the dots join, the gaps punch through the trail
+    let gap = chain * (1.0 - circle);
+    var finalAlpha = clamp(dotAlpha + interaction * 0.25, 0.05, 1.0);
+    finalAlpha = clamp(finalAlpha * (1.0 - gap * 0.9), 0.0, 1.0);
 
     // Chromatic offset inside dots, keyed by treble and depth.
     let chromaShift = (cellHash - 0.5) * 0.015 * (1.0 + treble * 1.5) * (1.0 - depth * 0.5);
-    let rColor = textureSampleLevel(readTexture, u_sampler, cell_center + vec2<f32>(chromaShift, 0.0), 0.0).r;
-    let bColor = textureSampleLevel(readTexture, u_sampler, cell_center - vec2<f32>(chromaShift, 0.0), 0.0).b;
+    let rColor = textureSampleLevel(readTexture, u_sampler, clamp(cell_center + vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let bColor = textureSampleLevel(readTexture, u_sampler, clamp(cell_center - vec2<f32>(chromaShift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     var rgb = color.rgb;
     rgb.r = mix(rgb.r, rColor, circle * 0.6);
     rgb.b = mix(rgb.b, bColor, circle * 0.6);
+    // ── Idea 2: dot pip — a small highlight inside the dot, toward the pointer
+    let toMouse = mAspect - uvAspect;
+    let pipOff = toMouse / max(length(toMouse), 1e-4) * 0.06;
+    let pip = (1.0 - smoothstep(0.012, 0.05, length(local - pipOff))) * circle;
+    rgb = mix(rgb, min(rgb + vec3<f32>(0.45), vec3<f32>(1.0)), pip * 0.75);
 
     let satBoost = 1.0 + bass_smooth * 0.3 + treble * 0.1;
     var final_color = vec4<f32>(rgb * satBoost, finalAlpha);
@@ -192,7 +186,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // State: R=bass envelope, G=smoothed mouse x, B=smoothed mouse y, A=alpha.
     let state = vec4<f32>(bass_smooth, smoothMouse.x, smoothMouse.y, final_color.a);
 
-    textureStore(writeTexture, pixel, final_color);
+    textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(final_color.rgb), final_color.a));
     textureStore(dataTextureA, pixel, state);
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

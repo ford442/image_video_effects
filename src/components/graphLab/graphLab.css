@@ -610,3 +610,51 @@
   color: #ff9f6b;
   font-size: 12px;
 }
+
+/* WGSL editor (lazy "graph-lab-editor" chunk) */
+.graph-lab__wgsl {
+  display: grid;
+  gap: 8px;
+}
+.graph-lab__wgsl-status {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 18px;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+.graph-lab__wgsl-editor {
+  height: 320px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.12));
+  border-radius: 6px;
+}
+.graph-lab__wgsl-editor .cm-editor {
+  height: 100%;
+}
+.graph-lab__wgsl-params {
+  display: grid;
+  gap: 4px;
+}
+.graph-lab__wgsl-params label {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 2fr 40px;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.graph-lab__wgsl-params output {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.graph-lab__wgsl-save summary {
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+.graph-lab__errors {
+  margin: 6px 0;
+  padding-left: 18px;
+  color: var(--error, #ff4757);
+  font-size: 12px;
+}

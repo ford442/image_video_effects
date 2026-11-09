@@ -3,7 +3,7 @@
   "name": "Digital Crease",
   "category": "geometric",
   "url": "shaders/digital-crease.wgsl",
-  "description": "Origami crease simulation with spring fold focus, held deepen, capped ripples, exact C fold memory, chromatic folding, and ACES tone map.",
+  "description": "Origami crease fan over the image with cursor folds, chromatic folding, pleated-fan panel lighting, crease misregistration across each fold, lingering worn crease scars from fold memory, valley AO and a wet-glue seam.",
   "workgroup_size": [
     16,
     16,
@@ -53,7 +53,6 @@
     "mouse-driven",
     "click-reactive",
     "held-drag",
-    "spring-cursor",
     "aces-tone-map"
   ],
   "tags": [

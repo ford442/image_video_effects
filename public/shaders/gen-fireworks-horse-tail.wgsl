@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-10
-//  Ideas: brocade pinch then parallel rain; tip spark-out (gold cuts off); tail swish wave down each streamer; gold dock knot at the burst
+//  Upgraded: 2026-11-01
+//  Ideas: brocade pinch then parallel rain; tip spark-out (gold cuts off); tail swish wave down each streamer; gold dock knot at the burst; running sheen; tip ember
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -171,10 +171,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           // Tip spark-out: gold cuts off at the streamer end.
           let sparkOut = smoothstep(0.88, 0.58, tf);
           let gc = goldPalette(gold, js);
-          let glow = softGlow(uv, sp, 0.004 + js * 0.002, tFade * energy * 1.3 * sparkOut);
+          // ── Idea 1: running sheen — a bright pulse down the streamer, separate from the swish
+          let sheenWave = pow(clamp(0.5 + 0.5 * sin(tf * 10.0 - bAge * 3.2 + js * 5.1), 0.0, 1.0), 4.0);
+          let sheen = 0.78 + 0.45 * sheenWave;
+          let glow = softGlow(uv, sp, 0.004 + js * 0.002, tFade * energy * 1.3 * sparkOut * sheen);
           col += gc * glow;
           heat += glow * 0.3;
         }
+
+        // ── Idea 2: tip ember — a dull coal continues past the gold cutoff
+        let tipAge = max(0.0, bAge - 0.4);
+        var tipP = tailPos(center, vec2<f32>(dir.x * 0.2, dir.y), tipAge, fall, spread, js, gust);
+        tipP.y -= 0.045 + fall * 0.02;
+        let tipEmber = softGlow(uv, tipP, 0.0035, fade * energy * 0.28 * smoothstep(0.4, 1.2, bAge));
+        col += vec3<f32>(0.62, 0.16, 0.05) * tipEmber;
+        heat += tipEmber * 0.15;
 
         // silver micro-dust on treble
         if (treble > 0.3) {

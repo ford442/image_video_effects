@@ -4,8 +4,8 @@
 //  Features: advanced-alpha, holographic, shatter, glass, mouse-driven, audio-reactive,
 //            temporal-shard-persistence, audio-impact, chromatic-edge-refraction
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: diffraction grating per shard; two-beam interference ghost; scanline reconstruction sweep
+//  Upgraded: 2026-10-05, 2026-11-01
+//  Ideas: diffraction grating per shard; two-beam interference ghost; scanline reconstruction sweep; lit bevel; open crack
 //  A packing: pre-ACES display RGBA (C read back as shard colour history)
 // ═══════════════════════════════════════════════════════════════════
 //  Batch-19: wired the dead Depth Weight slider, near-focused impact
@@ -184,6 +184,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ghostW = holographicIntensity * 0.35 * flight;
     let ghost = baseColor.rgb * (0.4 + 1.2 * fringe) * vec3<f32>(0.85, 1.05, 1.0);
     finalColor = mix(finalColor, ghost, ghostW * 0.5);
+
+    // ── Idea 4: lit bevel ─────────────────────────────────────────────
+    // The rim facing the flight catches light. The trailing rim goes dark.
+    let bevelSide = dot(shardUv - vec2<f32>(0.5), flightDir);
+    let litBevel = smoothstep(0.0, 0.45, bevelSide) * edgeGlow;
+    let shadeBevel = smoothstep(0.0, 0.45, -bevelSide) * edgeGlow;
+    finalColor = finalColor + vec3<f32>(0.8, 0.92, 1.0) * litBevel * holographicIntensity * 0.32;
+    finalColor = finalColor * (1.0 - shadeBevel * 0.4 * holographicIntensity);
+
+    // ── Idea 5: open crack ────────────────────────────────────────────
+    // A shard that has left its place opens a gap. The ghost is what shows there.
+    let crack = smoothstep(0.028, 0.0, edgeDist) * flight;
+    finalColor = mix(finalColor, ghost, crack * holographicIntensity * 0.6);
+    finalColor = finalColor * (1.0 - crack * 0.22);
 
     // Idea 3: Scanline reconstruction sweep — each shard is re-drawn by its own
     // horizontal scan beam; shards in flight lose signal on alternate rows.

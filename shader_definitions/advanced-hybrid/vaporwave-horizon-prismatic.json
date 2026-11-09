@@ -2,7 +2,7 @@
   "id": "vaporwave-horizon-prismatic",
   "name": "Vaporwave Horizon Prismatic",
   "url": "shaders/vaporwave-horizon-prismatic.wgsl",
-  "description": "Retro-futuristic vaporwave perspective grid with 4-band Cauchy spectral reflection, glowing striped sunset sun, CRT scanlines, ACES tone mapping, and phosphor glow persistence.",
+  "description": "Retro-futuristic vaporwave perspective grid with 4-band Cauchy spectral reflection, a striped sunset sun that reflects in the mirror floor, anti-aliased blooming neon lines, CRT scanlines, ACES tone mapping, and phosphor glow persistence.",
   "tags": [
     "vaporwave-horizon",
     "spectral-dispersion",
@@ -18,7 +18,8 @@
     "mouse-driven",
     "audio-reactive",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -58,7 +59,7 @@
       "mapping": "zoom_params.w"
     }
   ],
-  "feedbackPacking": "A/C = ACES display RGBA for CRT phosphor glow persistence; B is unused; depth passes through source depth.",
+  "feedbackPacking": "A/C = ACES display RGBA for CRT phosphor glow persistence; texels (0,0) and (1,0) hold the grid scroll state (phase, held ease, last time, sentinel 0.7371) and are masked from the phosphor read; B is unused; depth passes through source depth.",
   "x-meta": {
     "upgrade": {
       "params": [

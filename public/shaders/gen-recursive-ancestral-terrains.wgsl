@@ -8,31 +8,12 @@
 //            temporal, semantic-alpha, chromatic
 //  Complexity: High
 //  Math: Golden Ratio φ=1.6180339887, Koch D=1.2619, Sierpinski D=1.585
-//  Upgraded: 2026-09-27
-//  Ideas: unconformity terraces; valley sediment
+//  Upgraded: 2026-09-27, 2026-11-01
+//  Ideas: unconformity terraces; valley sediment; generation strata bedding; slope-gated snow line
 //  A packing: A.rgb ACES display; A.a raw height (not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -219,7 +200,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Depth (viewer distance from top)
     let terrainDepth = 1.0 - clamp(eroded, 0.0, 1.0);
 
-    var color = terrainColor(clamp(eroded, 0.0, 1.0), diffuse, bass, t);
+    let hC = clamp(eroded, 0.0, 1.0);
+    var color = terrainColor(hC, diffuse, bass, t);
+
+    // ── 2026-11-01 Idea 2: slope-gated snow line ─────────────────────
+    // Snow does not stick to steep faces: strip the cap colour where the
+    // finite-difference normal already computed above leans over, so caps sit
+    // on plateaus and gentle sides and cliffs show rock.
+    let steepness = 1.0 - normalizedNormal.z;
+    let snowWeight = smoothstep(0.75, 0.9, hC);
+    let snowStrip = snowWeight * smoothstep(0.6, 0.92, steepness);   // measured: median steepness ~0.7 on this terrain
+    color = mix(color, terrainColor(min(hC, 0.74), diffuse, bass, t), snowStrip);
+
+    // ── 2026-11-01 Idea 1: generation strata ─────────────────────────────
+    // One stratum per generation (clampedGen of them over the height range),
+    // each with its own warm/cool bedding tint and a dark bedding line at the
+    // boundary, on exposed rock only (not under the snow that remains).
+    let rockExposed = 1.0 - snowWeight * (1.0 - snowStrip);
+    let strataBand = hC * f32(clampedGen);
+    let strataId = floor(strataBand);
+    let strataHue = hash12(vec2<f32>(strataId * 1.7, 9.1));
+    let strataTint = mix(vec3<f32>(0.82, 0.90, 1.05), vec3<f32>(1.10, 0.95, 0.80), strataHue);
+    let bedEdge = min(fract(strataBand), 1.0 - fract(strataBand));
+    let beddingLine = 1.0 - smoothstep(0.0, 0.06, bedEdge);
+    color = color * mix(vec3<f32>(1.0), strataTint, 0.5 * rockExposed);
+    color = color * (1.0 - beddingLine * 0.3 * rockExposed);
 
     // Atmospheric fog in valleys
     let fog = atmosphericFog(clamp(eroded, 0.0, 1.0), terrainDepth, mids);

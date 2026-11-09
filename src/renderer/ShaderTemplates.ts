@@ -78,7 +78,7 @@ fn fs(in: VSOut) -> @location(0) vec4f {
 }
 `;
 
-const makeBlitWGSL = (flipY: boolean, hdr = false) => /* wgsl */ `
+const makeBlitWGSL = (flipY: boolean, hdr = false, holdMix = false) => /* wgsl */ `
 struct VSOut {
   @builtin(position) pos : vec4f,
   @location(0)       uv  : vec2f,
@@ -110,6 +110,18 @@ fn shoulder(x: f32, headroom: f32) -> f32 {
   return 1.0 + r * (1.0 - exp(-(x - 1.0) / r));
 }
 ` : ''}
+${holdMix ? `
+// Present-only crossfade (webgpu/presentHold.ts). Group 1 is the frozen previous
+// picture (already gamma-encoded, canvas-sized, canvas orientation) and the mix factor.
+struct HoldMix {
+  amount : f32, // 0 = the new frame, 1 = the hold
+  pad0   : f32,
+  pad1   : f32,
+  pad2   : f32,
+}
+@group(1) @binding(0) var holdTex: texture_2d<f32>;
+@group(1) @binding(1) var<uniform> holdMix: HoldMix;
+` : ''}
 fn tap(p: vec2i, maxP: vec2i) -> vec4f {
   return textureLoad(src, clamp(p, vec2i(0), maxP), 0);
 }
@@ -136,9 +148,12 @@ ${hdr ? `  // HDR canvas (rgba16float, extended tone mapping): canvas 1.0 is SDR
   let lin   = max(c.rgb, vec3f(0.0)) * presentParams.x;
   let peak  = max(lin.r, max(lin.g, lin.b));
   let toned = select(lin, lin * (shoulder(peak, presentParams.y) / peak), peak > 1.0);
-  return vec4f(pow(toned, vec3f(1.0 / 2.2)), 1.0);` : `  // Gamma encode: linear → sRGB (γ = 2.2 approximation)
-  let rgb   = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));
-  return vec4f(rgb, 1.0);`}
+  let rgb   = pow(toned, vec3f(1.0 / 2.2));` : `  // Gamma encode: linear → sRGB (γ = 2.2 approximation)
+  let rgb   = pow(clamp(c.rgb, vec3f(0.0), vec3f(1.0)), vec3f(1.0 / 2.2));`}
+${holdMix ? `  // The hold is the canvas as last presented: same size, same pixel, no flip.
+  let hdim = vec2i(textureDimensions(holdTex));
+  let held = textureLoad(holdTex, clamp(vec2i(in.pos.xy), vec2i(0), hdim - vec2i(1)), 0).rgb;
+  return vec4f(mix(rgb, held, clamp(holdMix.amount, 0.0, 1.0)), 1.0);` : '  return vec4f(rgb, 1.0);'}
 }
 `;
 
@@ -161,3 +176,15 @@ export const GENERATIVE_BLIT_WGSL = makeBlitWGSL(false);
  */
 export const HDR_BLIT_WGSL = makeBlitWGSL(true, true);
 export const HDR_GENERATIVE_BLIT_WGSL = makeBlitWGSL(false, true);
+
+/**
+ * The blit with the crossfade hold mixed in after the gamma encode: the standard
+ * and Y-up variants are chosen exactly as before (selectPresentPipeline), then the
+ * frozen previous picture is mixed over the result. Present-only; never a catalog
+ * shader and never part of the compute `Uniforms` struct. HDR_* variants mix after
+ * the HDR tonemap, into an rgba16float hold.
+ */
+export const BLIT_MIX_WGSL = makeBlitWGSL(true, false, true);
+export const GENERATIVE_BLIT_MIX_WGSL = makeBlitWGSL(false, false, true);
+export const HDR_BLIT_MIX_WGSL = makeBlitWGSL(true, true, true);
+export const HDR_GENERATIVE_BLIT_MIX_WGSL = makeBlitWGSL(false, true, true);

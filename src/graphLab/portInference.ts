@@ -34,6 +34,8 @@ const HISTORY_BINDING = 13;
 const SIM_GROUP = 1;
 const SIM_STATE_BINDING = 0;
 const SIM_INDEX_BINDING = 1;
+/** bind_group1.json `spatialHash`: the optional simHash binding. */
+const SIM_HASH_BINDING = 3;
 
 export type PortStatus =
   /** Reflected and validated: `reads` / `writes` are what the entry points use. */
@@ -114,6 +116,9 @@ export function portsFromReflection(entry: string, r: NagaReflection): EntryPort
       if (bits & (USE_WRITE | USE_ATOMIC)) writes.add('simState');
     } else if (g === SIM_GROUP && b === SIM_INDEX_BINDING) {
       reads.add('simIndex');
+    } else if (g === SIM_GROUP && b === SIM_HASH_BINDING) {
+      // The planner owns the writes (the scatter pass); a node only ever reads the chain.
+      reads.add('simHash');
     }
   }
 
@@ -154,7 +159,7 @@ export function portWarnings(nodes: readonly GraphNodeDef[], ports: ReadonlyMap<
       warn(`${node.entry}: ${p.message}`);
       return;
     }
-    const usesSim = (node.reads ?? []).some((r) => r === 'simState' || r === 'simIndex') ||
+    const usesSim = (node.reads ?? []).some((r) => r === 'simState' || r === 'simIndex' || r === 'simHash') ||
       (node.writes ?? []).includes('simState') ||
       node.dispatch === 'simState';
     if (usesSim && !p.declaresSimRing) {
@@ -162,7 +167,7 @@ export function portWarnings(nodes: readonly GraphNodeDef[], ports: ReadonlyMap<
     }
     if (p.status !== 'ok') return;
     for (const role of node.reads ?? []) {
-      if (role === 'read' || role === 'dataC' || role === 'simState' || role === 'simIndex') {
+      if (role === 'read' || role === 'dataC' || role === 'simState' || role === 'simIndex' || role === 'simHash') {
         if (!p.reads.includes(role)) warn(`reads ${role}, but ${node.entry} never samples it`);
       }
     }

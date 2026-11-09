@@ -3,7 +3,7 @@
   "name": "Cinematic Flare",
   "category": "lighting-effects",
   "url": "shaders/cinematic-flare.wgsl",
-  "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, Cauchy chromatic dispersion, ACES tone mapping, and temporal persistence.",
+  "description": "Physically-based lens flare with Cooke triplet ghost reflections, 6-blade diffraction starburst, scatter halo, anamorphic streaks, Cauchy chromatic dispersion, ACES tone mapping, and temporal persistence. Hexagonal iris ghosts line up along the light axis and the starburst spikes split into spectral colour.",
   "features": [
     "audio-reactive",
     "depth-aware",

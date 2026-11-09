@@ -1630,7 +1630,7 @@
     "id": "crt-scanline-damage",
     "name": "CRT Scanline Damage",
     "url": "shaders/crt-scanline-damage.wgsl",
-    "description": "Damaged CRT monitor simulation with depth-aware barrel distortion, RGB phosphor triad mask, a real raster of scanlines, flicker, temporal phosphor decay via dataTextureC, treble snow and scar rows, occasional dark-band fault, and click degauss rings. Upgraded with a misconvergence swirl (degauss rings pull the R/G/B rasters apart radially with a rotating magenta/green purity blotch that settles), flyback retrace lines during the dark-band fault, and a radial chromatic barrel (the RGB split grows toward the tube edges).",
+    "description": "Damaged CRT monitor simulation with depth-aware barrel distortion, RGB phosphor triad mask, a real raster of scanlines, flicker, temporal phosphor decay via dataTextureC, treble snow and scar rows, occasional dark-band fault, and click degauss rings. Upgraded with a misconvergence swirl (degauss rings pull the R/G/B rasters apart radially with a rotating magenta/green purity blotch that settles), flyback retrace lines during the dark-band fault, and a radial chromatic barrel (the RGB split grows toward the tube edges). Second pass: a burnt phosphor patch (a fixed worn region of the tube, dimmer and brown-desaturated with a coarser raster) and rare treble-gated HV arc flashes (blue-white row streak, brightness pop, momentary raster shrink).",
     "tags": [
       "crt",
       "scanline",
@@ -1841,7 +1841,7 @@
     "id": "digital-lens",
     "name": "Digital Lens",
     "url": "shaders/digital-lens.wgsl",
-    "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion, caustic streaks, bass-envelope trails, and preserved [bassEnvelope, trailRGB] A packing.",
+    "description": "Brown-Conrady lens with sprung gravity-well focus, held boost, capped click ripples, chromatic dispersion and caustic streaks. Astigmatic corner softening smears along the radius as r² and lens strength grow, and internal-reflection ghosts re-image bright pixels through the focus axis. Preserved [bassEnvelope, trailRGB] A packing.",
     "workgroup_size": [
       16,
       16,
@@ -1896,7 +1896,9 @@
       "continuous-motion",
       "bounded-click-ripples",
       "spring-cursor",
-      "held-drag"
+      "held-drag",
+      "astigmatism",
+      "lens-ghosts"
     ],
     "tags": [
       "filter",
@@ -1973,7 +1975,7 @@
     "id": "ember-drift-dissolve",
     "name": "Ember Drift Dissolve",
     "url": "shaders/ember-drift-dissolve.wgsl",
-    "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow. Held press opens a furnace under the cursor — stronger rise, denser birth, white-hot cores cooling through amber into ash wisps. Click bursts ignite local fires that the heat field then advects. Exact textureLoad history, ACES on the display path only.",
+    "description": "Bright areas of the image lift off as glowing embers and are carried upward by a living heat field. Creates haunting, beautiful disintegration especially on video. Treble controls spark density while bass thickens the rising glow. Held press opens a furnace under the cursor — stronger rise, denser birth, white-hot cores cooling through amber into ash wisps. Click bursts ignite local fires that the heat field then advects. Exact textureLoad history, ACES on the display path only. White-hot embers outrun the ash, and a scorch stain stays in the photo after the glow fades.",
     "tags": [
       "ember",
       "fire",
@@ -1993,7 +1995,8 @@
       "aces-tone-mapping",
       "mouse-driven",
       "held-interaction",
-      "click-ignition"
+      "click-ignition",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -2035,7 +2038,7 @@
     "id": "fireworks-depth-parade",
     "name": "4th of July — Depth Parade",
     "url": "shaders/fireworks-depth-parade.wgsl",
-    "description": "Depth layers of your image launch fireworks in parade sequence — foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage.",
+    "description": "Depth layers of your image launch fireworks in parade sequence — foreground detonates first, then midground, then background. Creates a cinematic 3D-ish celebration where near elements pop before far ones. Image colors tint each layer's shells. Bass amplifies foreground launches. Mouse triggers a depth-sorted barrage. Far layers climb as mortars before they break, and foreground smoke dims the shells behind them.",
     "tags": [
       "fireworks",
       "depth",
@@ -2097,7 +2100,7 @@
     "id": "fireworks-edge-ignite",
     "name": "4th of July — Edge Ignite",
     "url": "shaders/fireworks-edge-ignite.wgsl",
-    "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor.",
+    "description": "Image contours and edges become ignition lines for a fireworks show. Bright boundaries spark and launch colored shells along the detected edges of your photo. The picture's outlines trace themselves in pyrotechnic light. Bass deepens edge bursts, treble adds crackle along contours. Mouse ignites edges at the cursor. A hot bead travels each contour and leaves a charred lip behind it.",
     "tags": [
       "fireworks",
       "edge",
@@ -2155,7 +2158,7 @@
     "id": "fireworks-patriotic-july4",
     "name": "4th of July — Patriotic Pyro",
     "url": "shaders/fireworks-patriotic-july4.wgsl",
-    "description": "Happy July 4th! Your image fuels a red, white, and blue fireworks spectacular. Bright regions launch patriotic shells cycling through crimson, silver-white, and electric blue. Image hues blend with the classic American palette for a backyard celebration feel. Bass booms the big shells, treble crackles the finale. Mouse fires a patriotic barrage.",
+    "description": "Happy July 4th! Your image fuels a red, white, and blue fireworks spectacular. Bright regions launch patriotic shells cycling through crimson, silver-white, and electric blue. Image hues blend with the classic American palette for a backyard celebration feel. Bass booms the big shells, treble crackles the finale. Mouse fires a patriotic barrage. Each shell breaks red, then white, then blue, and the flag stripes show a cloth crease.",
     "tags": [
       "fireworks",
       "patriotic",
@@ -2213,7 +2216,7 @@
     "id": "fireworks-portrait-burst",
     "name": "4th of July — Portrait Burst",
     "url": "shaders/fireworks-portrait-burst.wgsl",
-    "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself — portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor.",
+    "description": "Bright regions of your image become the cores of spectacular firework detonations. Faces, skylines, and luminous highlights erupt in bursts that inherit the source colors. The photo celebrates itself — portraits explode in their own palette. Bass triggers larger cores, treble adds sparkle. Mouse detonates at the cursor. The brightest catchlight stays in the portrait, and sparks leave along the highlight.",
     "tags": [
       "fireworks",
       "portrait",
@@ -2319,7 +2322,7 @@
     "id": "frost-reveal",
     "name": "Frost Reveal",
     "url": "shaders/frost-reveal.wgsl",
-    "description": "Interactive frost reveal effect with crystalline patterns that form based on mouse interaction.",
+    "description": "Interactive frost reveal effect with crystalline patterns that form based on mouse interaction. Meltwater runs down the pane in clear rivulets, rime re-nucleates along the frost edge, and half-melted glass beads with tiny lens droplets.",
     "features": [
       "mouse-driven",
       "interactive",
@@ -2372,7 +2375,7 @@
     "id": "frosted-glass-lens",
     "name": "Frosted Glass Lens",
     "url": "shaders/frosted-glass-lens.wgsl",
-    "description": "Frosted lens with a Beckmann microfacet scattering lobe — five taps drawn from a Beckmann slope distribution, giving the heavy-tailed blur of ground glass rather than a single offset — and depth-dependent frost thickness so far, cold geometry frosts over while near geometry stays clear. Adds ACES, bounded click frost-clear fronts and dataTextureC persistence, and replaces a per-frame hash grain that strobed as static with a spatially coherent drifting field.",
+    "description": "Frosted lens with a Beckmann microfacet scatter lobe and depth-dependent frost thickness (far geometry frosts first). Frost forward-scatters in a Henyey-Greenstein two-ring halo with veiling glare; the clear window is a polished meniscus whose rim refracts radially and glints. ACES, bounded click frost-clear fronts and dataTextureC frost memory.",
     "params": [
       {
         "id": "frost_amt",
@@ -2417,7 +2420,9 @@
       "fresnel",
       "beer-lambert",
       "chromatic-aberration",
-      "temporal-frost"
+      "temporal-frost",
+      "forward-scatter",
+      "meniscus-bevel"
     ],
     "tags": [
       "filter",
@@ -2726,7 +2731,7 @@
     "name": "Hex Lens Interactive",
     "category": "image",
     "url": "shaders/hex-lens.wgsl",
-    "description": "Honeycomb microlenses with hexagonal bokeh blur, wavelength-dependent chromatic dispersion, hexagonal aperture diffraction starbursts, FBM domain warping, and 6-fold/12-fold star patterns. Audio-reactive lens rotation and prismatic shimmer.",
+    "description": "Honeycomb microlenses with hexagonal bokeh, aperture diffraction starbursts and FBM warp. Each cell is a domed lenslet: Snell refraction through the cap with Cauchy per-channel dispersion fringes that grow toward the rim, a focal hot-spot at the cell centre and cos⁴ rim falloff. Luminance ACES tone map; audio-reactive rotation and shimmer.",
     "params": [
       {
         "id": "tile_size",
@@ -2764,7 +2769,10 @@
       "chromatic-aberration",
       "hexagonal-bokeh",
       "chromatic-dispersion",
-      "diffraction-patterns"
+      "diffraction-patterns",
+      "snell-refraction",
+      "cauchy-dispersion",
+      "aces"
     ],
     "tags": [
       "hex",
@@ -2783,7 +2791,7 @@
     "id": "holographic-shatter",
     "name": "Holographic Shatter",
     "url": "shaders/holographic-shatter.wgsl",
-    "description": "Fractures the image into digital shards with temporal shard velocity persistence, chromatic edge refraction per shard, audio-driven impact intensity, holographic interference patterns, and plasma palette tinting.",
+    "description": "The photo cracked into flying shards, with a per-shard grating, a two-beam ghost, and a scan sweep. The rim facing the flight is lit and the trailing rim is dark. A flying shard opens a crack that shows the ghost.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -3276,7 +3284,7 @@
   {
     "id": "neon-pulse-stream",
     "url": "shaders/neon-pulse-stream.wgsl",
-    "description": "Bundled neon tube bank: five curl-perturbed sinusoidal tubes are shaded with a gaussian core, Fresnel rim and outer bloom, and each owns one FFT bin driving its thickness, hue drift and the gaussian light packets running along it. The pointer is a magnetic attractor that bends the bundle, clicks inject bounded pulse fronts that flare the tubes they cross, and dataTextureC supplies exact-load afterglow.",
+    "description": "Bundled neon tube bank: five curl-perturbed sinusoidal glass tubes with banded gas columns, comet-tailed light packets and flickering arcs where tubes cross. Bass, mids and treble each weight the tubes' thickness and packet speed; the pointer bends the bundle, clicks flare it, and the afterglow persists.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -3341,7 +3349,7 @@
     "name": "Oil Slick Iridescence",
     "url": "shaders/oil-slick-iridescence.wgsl",
     "category": "image",
-    "description": "Nanometre-scale thin-film interference: film thickness is expressed in real nanometres (120–900 nm), the incidence angle comes from the height field's own gradient, the in-film angle follows Snell's law, and the two reflected beams combine with Fresnel weighting plus the pi phase step at the external interface. Curl-noise flow banded by the FFT transports the film; pointer and bounded click ring waves deform its surface.",
+    "description": "Nanometre-scale thin-film interference: film thickness is expressed in real nanometres (120–900 nm), the incidence angle comes from the height field's own gradient, the in-film angle follows Snell's law, and the two reflected beams combine with Fresnel weighting plus the pi phase step at the external interface. Curl-noise flow banded by the FFT transports the film; pointer and bounded click ring waves deform its surface. Cauchy dispersion shifts each channel's film angle, gravity drainage thins the slick toward the top into common-black film, and finite-bandwidth channels wash high orders to pastel.",
     "tags": [
       "iridescence",
       "oil",
@@ -3351,7 +3359,9 @@
       "audio-reactive",
       "cinematic",
       "snell",
-      "fresnel"
+      "fresnel",
+      "dispersion",
+      "drainage"
     ],
     "features": [
       "mouse-driven",
@@ -3591,7 +3601,7 @@
     "name": "Pixel Scattering",
     "category": "image",
     "url": "shaders/pixel-scattering.wgsl",
-    "description": "Curl-noise, pointer-vortex and Fibonacci scatter advect the photo with travelling history tails and blown-out gaps that refill.",
+    "description": "Curl-noise, pointer-vortex and Fibonacci scatter advect the photo with travelling tails; bass detonates square cells whose lit rims fade as they refill.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -4635,7 +4645,7 @@
     "id": "tesseract-fold",
     "name": "Tesseract Fold",
     "url": "shaders/tesseract-fold.wgsl",
-    "description": "Neon stained-glass tesseract faces with spectral edge diffraction, inner-face interference, held projection-plane deformation, bounded click-pulsed fold shells, closed-form 4D-style rotation, and depth-aware alpha.",
+    "description": "Neon stained-glass tesseract faces with spectral edge diffraction, held projection-plane deformation, bounded click-pulsed fold shells, true 4D double rotation with perspective, lead cames on the mirror seams, fold-count glass thickness, and depth-aware alpha.",
     "updated": true,
     "params": [
       {
@@ -4842,7 +4852,8 @@
       "held-pointer",
       "click-reactive",
       "psychedelic-color",
-      "display-history"
+      "display-history",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -5146,7 +5157,7 @@
   {
     "id": "wave-halftone",
     "url": "shaders/wave-halftone.wgsl",
-    "description": "Halftone dot pattern with a waving grid and mouse magnification lens.",
+    "description": "Hex halftone whose dots stretch along the wave and pick up a 15-degree rosette. Midtones gain dot size, and the screen packs tighter where the wave is strong. Wave speed is normalized to the saved default.",
     "features": [
       "mouse-driven",
       "audio-reactive",

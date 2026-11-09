@@ -3,29 +3,17 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
+//  Upgraded: 2026-05-17, 2026-11-01
+//  Ideas: N-wave on the ring stack; crest-gated aberration
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Speed, y=Frequency, z=Aberration, w=RingCount
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Speed, y=Frequency, z=Aberration, w=RingCount
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ═══════════════════════════════════════════════════════════════════
 //  SPECTRAL PHYSICS CONSTANTS
@@ -111,14 +99,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     wave /= f32(ringLayers);
 
+    // ── Idea 1: N-wave. The crest steepens; the rarefaction is unchanged.
+    let nwave = wave + max(wave, 0.0) * abs(wave) * 0.55;
+
     let sectorAngle = atan2(diffAspect.y, diffAspect.x);
     let sector = u32(clamp(floor((sectorAngle + 3.14159265) * 8.0 / 6.2831853), 0.0, 7.0));
     let sectorVoice = plasmaBuffer[(sector % 8u) + 1u].x;
     let heldGain = select(1.0, 1.25, u.zoom_config.w > 0.5);
-    var displacement = dirUV * wave * heldGain * (1.0 + sectorVoice * 0.25 + treble * 0.1);
+    let waveDisp = dirUV * nwave * heldGain * (1.0 + sectorVoice * 0.25 + treble * 0.1);
 
     // Discrete clicks launch their own normalized, aspect-corrected shells.
     let rippleCount = min(u32(u.config.y), 50u);
+    var clickDisp = vec2<f32>(0.0);
     for (var ri = 0u; ri < rippleCount; ri += 1u) {
         let ripple = u.ripples[ri];
         let age = time - ripple.z;
@@ -128,14 +120,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let clickDir = (clickVec / max(clickDist, 0.0001)) / aspectVec;
             let shell = sin(clickDist * freq - age * speed * 1.2)
                 * exp(-age * 1.6) * smoothstep(0.55, 0.0, clickDist);
-            displacement += clickDir * shell * 0.8;
+            clickDisp += clickDir * shell * 0.8;
         }
     }
 
-    // Chromatic aberration offsets
-    let offsetR = displacement * aberr;
-    let offsetB = -displacement * aberr;
-    let offsetG = displacement * aberr * 0.3;
+    let displacement = waveDisp + clickDisp;
+    // ── Idea 2: aberration of the continuous wave peaks on the crest.
+    let crestGate = smoothstep(0.08, 0.7, abs(nwave));
+    let waveAberr = aberr * mix(0.15, 1.0, crestGate);
+    let chromaVec = waveDisp * waveAberr + clickDisp * aberr;
+    let offsetR = chromaVec;
+    let offsetB = -chromaVec;
+    let offsetG = chromaVec * 0.3;
 
     // Clamp displaced UVs before sampling
     let uvR = clamp(uv + offsetR, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -157,7 +153,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luminanceWeights = vec3<f32>(0.299, 0.587, 0.114);
     let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
 
-    let finalColor = vec4<f32>(r * alphaR, g * alphaG, b * alphaB, finalAlpha);
+    let mapped = acesToneMap(max(vec3<f32>(r, g, b), vec3<f32>(0.0)));
+    let finalColor = vec4<f32>(mapped.r * alphaR, mapped.g * alphaG, mapped.b * alphaB, finalAlpha);
 
     textureStore(writeTexture, coord, finalColor);
 

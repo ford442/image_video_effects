@@ -4,9 +4,9 @@
 //   y Burst Power  : shell energy, spark count, velocity, finale radius (0.35..1.6)
 //   z Stripe Wave  : waving flag-stripe tint amplitude + scroll speed (0..1)
 //   w Sparkle      : star-field density + crackle finale brightness (0.2..1.0)
-// Upgraded: 2026-10-27
-// Ideas: tricolor shell breaks; star diffraction
-// A packing: ACES display RGBA; B: dimmed display/previous-color echo
+// Upgraded: 2026-11-01
+//  Ideas: tricolor shell breaks; star diffraction; sequenced break; cloth crease
+//  A packing: ACES display RGBA; B: dimmed display/previous-color echo
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
@@ -51,9 +51,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let imgCol = sampleImg(uv);
   let lum = dot(imgCol, vec3<f32>(0.299,0.587,0.114));
   // Waving flag stripes: mids rocks the stripe phase, wave slider sets scroll speed
-  let stripe = sin(uv.y*12.0 + time*wave*2.0 + mids*0.3*sin(uv.x*7.0 + time*1.7))*0.5+0.5;
+  let stripePhase = uv.y*12.0 + time*wave*2.0 + mids*0.3*sin(uv.x*7.0 + time*1.7);
+  let stripe = sin(stripePhase)*0.5+0.5;
   var col = imgCol * (0.5 + lum*0.2);
   col = mix(col, patriotColor(stripe, patriot, imgCol), wave*0.15*lum*(0.7+mids*0.3));
+  // ── Idea 2: cloth crease where the flag wave is steepest
+  let crease = pow(abs(cos(stripePhase)), 8.0);
+  col *= 1.0 - crease * wave * 0.28;
 
   for (var s = 0; s < 8; s = s + 1) {
     let si = f32(s); let seed = hash1(si*33.0+7.0);
@@ -74,8 +78,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let js = hash1(si*47.0+f32(j)*2.9);
         let ang = f32(j)/f32(n)*TAU + js;
         let band = f32(j % 3);
+        // ── Idea 1: sequenced break — red, then white, then blue
+        let bandOn = smoothstep(0.0, 0.06, bAge - band * 0.22);
         let sp = sparkPos(center, vec2<f32>(cos(ang),sin(ang))*(0.32+band*0.12+js*0.05)*energy, bAge, 0.85);
-        col += patriotColor(band/9.0, patriot, pCol) * softGlow(uv, sp, 0.006, fade*energy*(0.8+treble*0.5));
+        col += patriotColor(band/9.0, patriot, pCol) * softGlow(uv, sp, 0.006, fade*energy*(0.8+treble*0.5)*bandOn);
       }
     }
   }

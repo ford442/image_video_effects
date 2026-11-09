@@ -2,7 +2,7 @@ import { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 're
 import { loadNagaReflector } from '../../utils/nagaWasm';
 import { fetchShaderWgsl } from '../../utils/fetchShaderWgsl';
 import type { RendererManager } from '../../renderer/RendererManager';
-import { GRAPH_REGISTRY } from '../../renderer/multipassRegistry';
+import { GRAPH_REGISTRY, SIM_RING_REGISTRY } from '../../renderer/multipassRegistry';
 import { GRAPH_LAB_RUNTIME_ID } from '../../renderer/runtimeGraphs';
 import type { ShaderEntry } from '../../renderer/types';
 import { buildEntryCatalog, EntryCatalog } from '../../graphLab/entryCatalog';
@@ -72,7 +72,11 @@ function templateDraft(id: string, availableModes: ShaderEntry[]): GraphDraft | 
   const graph = GRAPH_REGISTRY[id];
   if (!graph) return null;
   const entry = availableModes.find((m) => m.id === id);
-  return forkDraft(draftFromRegistryGraph(id, graph, entry), `${id}-lab`, `${entry?.name ?? id} (lab)`);
+  const draft = draftFromRegistryGraph(id, graph, entry);
+  // The request ships with the definition: a flagship that needs the spatial hash must keep asking for it.
+  const ring = SIM_RING_REGISTRY[id];
+  const withRing = ring && draft.envelope.simRing === undefined ? { ...draft, envelope: { ...draft.envelope, simRing: { ...ring } } } : draft;
+  return forkDraft(withRing, `${id}-lab`, `${entry?.name ?? id} (lab)`);
 }
 
 function loadStoredDraft(availableModes: ShaderEntry[]): GraphDraft {
@@ -122,7 +126,8 @@ export function useGraphLab({ rendererRef, availableModes, activeSlot, setStatus
   );
   const simRing = simRingRequest(draft);
   // Identity of the ring request: a change re-arms the ring, plain graph edits do not.
-  const simRingKey = simRing ? String(simRing.stateCount) : '';
+  // The hash is part of the ring's allocation, so toggling it re-arms exactly like a size change.
+  const simRingKey = simRing ? `${simRing.stateCount}${simRing.spatialHash ? ':hash' : ''}` : '';
   const armedSimRingRef = useRef<string | null>(null);
 
   const setDraft = useCallback(

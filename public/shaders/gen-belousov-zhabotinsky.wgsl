@@ -4,31 +4,14 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, temporal, mouse-driven, hue-preserve-clamp, ign-dither
 //  Complexity: Medium
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-07, 2026-09-15, 2026-09-27
-//  Ideas: refractory-tail shading behind the wavefront; pacemaker excitability gradient forming target-wave zones; phase hue around the spiral; annihilation cusp where fronts meet
+//  Upgraded: 2026-06-07, 2026-09-15, 2026-09-27, 2026-11-09
+//  Ideas: refractory-tail shading behind the wavefront; pacemaker excitability gradient forming target-wave zones; phase hue around the spiral; annihilation cusp where fronts meet;
+//         isotropic 9-point Laplacian (§12.2D: round fronts, no grid lock, diffusion strength kept);
+//         Schlieren front relief (raking light on the activator gradient, as a dish is photographed)
 //  A packing: raw sim (newA, newB, waveFront, alpha) + B detail (lapA, lapB, oxidized, waveFront^2)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -93,8 +76,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let e = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), lo, hi), 0);
   let w = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), lo, hi), 0);
 
-  let lapA = (n.r + s.r + e.r + w.r) * 0.25 - a;
-  let lapB = (n.g + s.g + e.g + w.g) * 0.25 - b;
+  // ── Idea 5: isotropic 9-point Laplacian (§12.2D) ──────────────────────────
+  // The 5-point stencil (4 edge neighbours) has an axis bias: BZ fronts on it grow diamond-
+  // shaped and lock to the grid. Adding the four corner neighbours with the isotropic weights
+  // (0.2 edge / 0.05 corner) removes it. 0.2*4 + 0.05*4 - 1 gives 0.3 * lap(f) for a smooth
+  // field against HEAD's 0.25, so the result is scaled by 5/6: Da and Db keep their strength.
+  let cNE = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 1), lo, hi), 0);
+  let cNW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 1), lo, hi), 0);
+  let cSE = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, -1), lo, hi), 0);
+  let cSW = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, -1), lo, hi), 0);
+  let lapA = (0.2 * (n.r + s.r + e.r + w.r) + 0.05 * (cNE.r + cNW.r + cSE.r + cSW.r) - a) * 0.8333333;
+  let lapB = (0.2 * (n.g + s.g + e.g + w.g) + 0.05 * (cNE.g + cNW.g + cSE.g + cSW.g) - b) * 0.8333333;
 
   // Idea 2 — pacemaker excitability gradient: a slow concentric gradient on
   // epsilon forms target-wave pacemaker zones where waves originate, the way
@@ -149,6 +141,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea: annihilation cusp — fronts meeting (steep front, flat laplacian).
   let meet = smoothstep(0.35, 1.2, waveFront) * (1.0 - smoothstep(0.015, 0.12, abs(lapA)));
   col = col + vec3<f32>(1.0, 0.96, 0.9) * meet * 0.7;
+
+  // ── Idea 6: Schlieren front relief ───────────────────────────────────────
+  // BZ waves in a dish are photographed by refractive-index gradients (Schlieren): the front is
+  // a ridge that catches raking light. The activator gradient comes from the n/s/e/w taps
+  // already loaded; light from the upper left, warm on the lit flank, dark on the lee flank.
+  let frontGrad = vec2<f32>(e.r - w.r, n.r - s.r) * 0.5;
+  let relief = clamp(-dot(frontGrad, vec2<f32>(-0.6, -0.8)) * 2.6, -0.8, 0.8);
+  col = col * (1.0 + relief * 0.5) + vec3<f32>(1.0, 0.82, 0.55) * max(relief, 0.0) * 0.22;
 
   let tipDist = length(uv - vec2<f32>(0.5 + 0.2 * cos(time * 0.3), 0.5 + 0.2 * sin(time * 0.4)));
   let spiralTip = 0.002 / (tipDist * tipDist + 0.001);

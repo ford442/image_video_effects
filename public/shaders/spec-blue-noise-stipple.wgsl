@@ -4,31 +4,12 @@
 //  Features: blue-noise, pointillism, stochastic-sampling, mouse-driven,
 //            audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: dark-cell packing (jitter shrinks with ink); neighbor occupancy skip
+//  Upgraded: 2026-09-09, 2026-11-02
+//  Ideas: dark-cell packing (jitter shrinks with ink); neighbor occupancy skip; void push; stacked pigment
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -106,7 +87,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let skipExtra = 1.0 - smoothstep(0.45, 0.85, nInk) * 0.85;
 
     let jitter2 = blueNoiseOffset(cellId + vec2<f32>(37.0, 17.0), time * 0.1);
-    let dotCenter2 = (jitter2 - 0.5) * 0.6 * pack;
+    var dotCenter2 = (jitter2 - 0.5) * 0.6 * pack;
+    // ── Idea 1: void push — the secondary dot steps off the primary when they land too close
+    let sep = dotCenter2 - dotCenter;
+    let sepLen = length(sep);
+    let push = max(0.2 - sepLen, 0.0);
+    dotCenter2 = dotCenter2 + sep / max(sepLen, 1e-4) * push;
     let dotSize2 = mix(dotSizeBase * 0.5, dotSizeBase * 0.05, luma) * density * 0.7;
     let dist2 = length(cellLocal - dotCenter2);
     let dotMask2 = (1.0 - smoothstep(dotSize2 - edgeWidth, dotSize2 + edgeWidth, dist2)) * skipExtra;
@@ -138,12 +124,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dotColor = localColor + chromaticShift.xyx * colorVar + trebleShift;
 
     var outColor = mix(paperColor, dotColor, combinedMask);
+    // ── Idea 2: stacked pigment — where the two dots overlap, the ink goes darker
+    let overlap = dotMask * dotMask2;
+    outColor = mix(outColor, outColor * vec3<f32>(0.42, 0.38, 0.36), overlap * 0.8);
 
     let sharpMask = select(0.0, 1.0, dist < dotSize * 0.8);
     outColor = mix(outColor, dotColor, sharpMask * mouseInfluence * 0.5);
     outColor = mix(outColor, dotColor, combinedMask * mouseInfluence * 0.15 * (1.0 + bass * 0.2));
 
-    let mapped = acesToneMap(outColor);
+    let mapped = acesToneMap(clamp(outColor, vec3<f32>(0.0), vec3<f32>(4.0)));
     let alpha = clamp(combinedMask * 0.75 + mouseInfluence * 0.15 + localSample.a * 0.1 + 0.08, 0.0, 1.0);
     let outCol = vec4<f32>(mapped, alpha);
     textureStore(writeTexture, gid.xy, outCol);

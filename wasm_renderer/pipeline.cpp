@@ -1,4 +1,5 @@
 #include "renderer.h"
+#include "wasm_contracts.h"
 #include "performance_policy.h"
 #include "wasm_internal.h"
 #include "bind_group0.h"
@@ -20,8 +21,6 @@ namespace pixelocity {
 using wasm_internal::MakeStringView;
 using wasm_internal::AlignUp;
 using wasm_internal::CheckLimit;
-using wasm_internal::ParseWorkgroupSize;
-using wasm_internal::AnalyzeShaderBindings;
 using wasm_internal::RewriteWgslStorageFormats;
 using wasm_internal::ContainsWgslIncludeDirective;
 
@@ -437,7 +436,8 @@ void WebGPURenderer::DispatchComputePass(WGPUCommandEncoder encoder,
     wgpuComputePassEncoderEnd(cp);
 }
 
-bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
+bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode,
+                                uint32_t workgroupX, uint32_t workgroupY, uint32_t usageBits) {
     if (!device_.get() || deviceLost_) return false;
 
     // Check if already loaded
@@ -582,13 +582,13 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     sp.pipeline = std::move(pipeline);
     sp.id       = id;
     sp.name     = id;
-    ParseWorkgroupSize(compiledWgsl, sp.workgroupX, sp.workgroupY);
-    const auto usage = AnalyzeShaderBindings(compiledWgsl);
-    sp.writesDataA = usage.writesDataA;
-    sp.writesDataB = usage.writesDataB;
-    sp.readsDataC = usage.readsDataC;
-    sp.usesHistory = usage.usesHistory;
-    sp.writesDepth = usage.writesDepth;
+    sp.workgroupX = workgroupX ? workgroupX : wasm_contracts::kWorkgroupFallbackX;
+    sp.workgroupY = workgroupY ? workgroupY : wasm_contracts::kWorkgroupFallbackY;
+    sp.writesDataA = (usageBits & wasm_contracts::kUsage_writesDataA) != 0;
+    sp.writesDataB = (usageBits & wasm_contracts::kUsage_writesDataB) != 0;
+    sp.readsDataC  = (usageBits & wasm_contracts::kUsage_readsDataC) != 0;
+    sp.usesHistory = (usageBits & wasm_contracts::kUsage_usesHistory) != 0;
+    sp.writesDepth = (usageBits & wasm_contracts::kUsage_writesDepth) != 0;
     shaders_[id] = std::move(sp);
 
     printf("✅ Loaded shader: %s (workgroup: %ux%u)\n", id,
@@ -596,7 +596,8 @@ bool WebGPURenderer::LoadShader(const char* id, const char* wgslCode) {
     return true;
 }
 
-bool WebGPURenderer::ReloadShader(const char* id, const char* wgslCode) {
+bool WebGPURenderer::ReloadShader(const char* id, const char* wgslCode,
+                                  uint32_t workgroupX, uint32_t workgroupY, uint32_t usageBits) {
     if (!device_.get() || deviceLost_ || !id || !wgslCode) return false;
 
     auto it = shaders_.find(id);
@@ -604,7 +605,7 @@ bool WebGPURenderer::ReloadShader(const char* id, const char* wgslCode) {
         printf("♻️  Reloading shader: %s\n", id);
         shaders_.erase(it);
     }
-    return LoadShader(id, wgslCode);
+    return LoadShader(id, wgslCode, workgroupX, workgroupY, usageBits);
 }
 
 

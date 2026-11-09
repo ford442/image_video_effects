@@ -3,7 +3,7 @@
   "name": "Refraction Shards",
   "category": "interactive-mouse",
   "url": "shaders/refraction-shards.wgsl",
-  "description": "Voronoi crystalline shards refract and Cauchy-disperse the source image. Features continuous orbital facet drift, acoustic stress birefringence, spring cursor deflection, click fracture wavefronts, exact-C temporal persistence, and ACES tonemapping.",
+  "description": "Voronoi crystalline shards refract and Cauchy-disperse the source image. Features continuous orbital facet drift, per-shard Snell tilt with Cauchy dispersion and glass tint, spring cursor deflection, click fracture wavefronts, exact-C temporal persistence, and ACES tonemapping.",
   "features": [
     "mouse-driven",
     "audio-reactive",

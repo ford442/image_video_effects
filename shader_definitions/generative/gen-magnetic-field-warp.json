@@ -9,7 +9,7 @@
     "strange-attractor",
     "domain-warp"
   ],
-  "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices, and Clifford strange-attractor modulation.",
+  "description": "Charged particles warped by a magnetic field with domain-warped FBM turbulence, curl-noise vortices and Clifford attractor modulation. Synchrotron emission is Doppler-beamed by gyration phase, and the image is combed along the field lines.",
   "workgroup_size": [
     16,
     16,

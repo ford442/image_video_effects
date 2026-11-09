@@ -18,7 +18,8 @@
     "mouse-driven",
     "audio-reactive",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

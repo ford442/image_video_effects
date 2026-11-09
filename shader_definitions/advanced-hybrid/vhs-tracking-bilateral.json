@@ -2,7 +2,7 @@
   "id": "vhs-tracking-bilateral",
   "name": "VHS Tracking Bilateral",
   "url": "shaders/vhs-tracking-bilateral.wgsl",
-  "description": "VHS signal chain with AR(1) capstan jitter, chroma phase noise, control-track dropouts, tracking-band bilateral smoothing, spring bar, held freeze, click dropout pulses, and exact C smear.",
+  "description": "VHS signal chain: capstan jitter, lagging low-bandwidth chroma, dropout comet streaks, bass tape-stretch wow, and bilateral smoothing in the tracking band at the cursor row.",
   "workgroup_size": [
     16,
     16,
@@ -19,7 +19,6 @@
     "audio-reactive",
     "click-ripples",
     "held-drag",
-    "spring-cursor",
     "aces-tone-map",
     "temporal-feedback",
     "upgraded-rgba"

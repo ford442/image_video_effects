@@ -271,6 +271,7 @@ export const FP32_REQUIRED_SHADER_IDS = new Set([
   'optical-flow-dream',
   'photonic-caustics-graph',
   'sim-fluid-feedback-coupled',
+  'sph-fluid',
 ]);
 
 export interface Fp32PinDecision {

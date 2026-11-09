@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: recursive forked antler tines (Fractal Intensity); per-channel prism dispersion of the aurora rift (Prismatic Refraction); chrono-echo afterimage from exact C history (Temporal Distortion); constellation hide (stars + Voronoi-seam filaments); antler sap pulse burr-to-tip
+//  Upgraded: 2026-11-08
+//  Ideas: recursive forked antler tines (Fractal Intensity); per-channel prism dispersion of the aurora rift (Prismatic Refraction); chrono-echo afterimage from exact C history (Temporal Distortion); constellation hide (stars + Voronoi-seam filaments); antler sap pulse burr-to-tip; hour-tick chrono halo between the antlers (ticks once per second, bass kicks the tick); dispersed rift caustic pool on a floor plane under the stag
 //  A packing: ACES display RGBA (C read back as colour for the chrono-echo)
 // ═══════════════════════════════════════════════════════════════════
 // Raymarched prismatic void-stag with volumetric aurora bloom.
@@ -121,11 +121,37 @@ fn constellationHide(sp: vec3<f32>, time: f32, mids: f32) -> vec2<f32> {
     return vec2<f32>(star, line);
 }
 
+// Stag yaw: HEAD looked straight down the body capsule (z axis) so the stag
+// read as a blob. A 3/4 yaw shows the body length and both antlers.
+fn stagYaw(p: vec3<f32>) -> vec3<f32> {
+    let a = 0.7;
+    let c = cos(a);
+    let s = sin(a);
+    return vec3<f32>(c * p.x + s * p.z, p.y, -s * p.x + c * p.z);
+}
+
+// Idea 6: hour-tick chrono halo. A thin ring hovering between the antlers;
+// twelve tick notches step round once per second (bass adds a kick overshoot).
+fn sdChronoHalo(p: vec3<f32>, time: f32, bass: f32) -> f32 {
+    let q = p - vec3<f32>(0.0, 1.35, 1.1);
+    let ring = vec2<f32>(length(q.xy) - 0.42, q.z);
+    var d = length(ring) - 0.018;
+    let tick = floor(time) + smoothstep(0.0, 0.18, fract(time)) * (1.0 + bass * 0.6);
+    let ang = atan2(q.y, q.x) + tick * 0.5236;
+    let seg = 0.5236;
+    let a = (fract(ang / seg + 0.5) - 0.5) * seg;
+    let r = length(q.xy);
+    let lp = vec3<f32>(r * cos(a) - 0.42, r * sin(a), q.z);
+    let notch = length(max(abs(lp) - vec3<f32>(0.07, 0.012, 0.012), vec3<f32>(0.0))) - 0.006;
+    d = min(d, notch);
+    return d;
+}
+
 // --- SCENE MAP ---
 fn map(p_in: vec3<f32>, time: f32, audio: f32, params: vec4<f32>) -> f32 {
     // Mouse drags the stag (canvas uv centred; y=0 is top so world y flips)
     let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)) - vec2<f32>(0.5);
-    let p = p_in - vec3<f32>(mouse.x * 2.0, -mouse.y * 2.0, 0.0);
+    let p = stagYaw(p_in - vec3<f32>(mouse.x * 2.0, -mouse.y * 2.0, 0.0));
     // Stag Core
     var body = sdCapsule(p, vec3<f32>(0.0, 0.0, -1.0), vec3<f32>(0.0, 0.0, 1.0), 0.5);
     // Add biomechanical noise details
@@ -141,6 +167,7 @@ fn map(p_in: vec3<f32>, time: f32, audio: f32, params: vec4<f32>) -> f32 {
 
     // Smooth blend
     var scene = smin(body, antler, 0.2);
+    scene = min(scene, sdChronoHalo(p, time, plasmaBuffer[0].x));
 
     // Apply temporal shockwaves
     scene += sin(length(p) * 10.0 - time * 5.0) * audio * 0.05 * params.x;
@@ -175,7 +202,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // (HEAD divided the 0..1 mouse uv by resolution, so the orbit never moved)
     let mouseRaw = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)) - vec2<f32>(0.5);
     let mouseNorm = vec2<f32>(mouseRaw.x, -mouseRaw.y);
-    let ro = vec3<f32>(mouseNorm.x * 1.5, mouseNorm.y * 1.5, -3.0 + bass * 0.5);
+    let ro = vec3<f32>(mouseNorm.x * 1.5, mouseNorm.y * 1.5, -4.6 + bass * 0.5);
     let rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0)); // screen y down -> world y up (antlers rise)
 
     // Raymarching
@@ -210,7 +237,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Stag-local frame (map() drags the stag with the cursor) for the hide + antler masks
         let mouseL = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)) - vec2<f32>(0.5);
-        let sp = p - vec3<f32>(mouseL.x * 2.0, -mouseL.y * 2.0, 0.0);
+        let sp = stagYaw(p - vec3<f32>(mouseL.x * 2.0, -mouseL.y * 2.0, 0.0));
         var stp = sp;
         stp.x = abs(stp.x);
         let bodyD = sdCapsule(sp, vec3<f32>(0.0, 0.0, -1.0), vec3<f32>(0.0, 0.0, 1.0), 0.5);
@@ -243,6 +270,33 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         }
         let dispAmt = smoothstep(0.0, 1.0, params.w) * (1.0 - fresnel);
         col += disp * dispAmt * 1.2;
+
+        // Halo glows warm gold so the dial reads against the cyan body
+        let haloD = sdChronoHalo(sp, time, bass);
+        col += vec3<f32>(1.0, 0.75, 0.35) * (1.0 - smoothstep(0.0, 0.02, haloD)) * (0.8 + mids);
+    }
+
+    // Idea 7: dispersed rift caustic pool. Light refracted down through the
+    // prism body lands on a floor plane (y = -1.1) as three offset spectral
+    // pools; each channel is displaced by its own IOR spread.
+    var poolGlow = 0.0;
+    if (!hit && rd.y < -0.02) {
+        let tf = (-1.1 - ro.y) / rd.y;
+        if (tf > 0.0) {
+            let fp = ro + rd * tf;
+            let mouseF = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0)) - vec2<f32>(0.5);
+            let fc = fp.xz - vec2<f32>(mouseF.x * 2.0, 0.0);
+            var pool = vec3<f32>(0.0);
+            for (var c = 0; c < 3; c = c + 1) {
+                let off = (f32(c) - 1.0) * 0.12 * (0.3 + params.w);
+                let r = length(fc - vec2<f32>(off, off * 0.5));
+                let caustic = 0.5 + 0.5 * sin(r * 14.0 - time * 1.5 + noise(vec3<f32>(fc * 3.0, time * 0.3)) * 4.0);
+                pool[c] = exp(-r * r * 1.4) * pow(caustic, 4.0);
+            }
+            pool *= (0.35 + 0.5 * params.y) * (1.0 + bass * 0.5) * exp(-tf * 0.12);
+            col += pool;
+            poolGlow = dot(pool, vec3<f32>(0.33));
+        }
     }
 
     // Bloom / Volumetric Glow — bass pumps the volumetric haze
@@ -268,7 +322,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Alpha: hit coverage minus fresnel transmission; void carries haze + echo
     let hitAlpha = 0.78 + 0.2 * (1.0 - fresnelOut);
-    let voidAlpha = clamp(length(tone) * 0.6 + dot(ghost, vec3<f32>(0.33)), 0.0, 0.9);
+    let voidAlpha = clamp(length(tone) * 0.6 + dot(ghost, vec3<f32>(0.33)) + poolGlow, 0.0, 0.9);
     let alpha = clamp(select(voidAlpha, hitAlpha, hit), 0.0, 1.0);
     let outColor = vec4<f32>(tone, alpha);
 

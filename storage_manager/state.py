@@ -48,6 +48,7 @@ def _create_cache_backend():
         try:
             from urllib.parse import urlparse
             from aiocache import Cache
+            from aiocache.serializers import JsonSerializer
 
             if REDIS_URL:
                 parsed = urlparse(REDIS_URL)
@@ -68,7 +69,9 @@ def _create_cache_backend():
                 password=password,
                 db=db,
                 namespace="storage_manager",
-                serializer={"class": "aiocache.serializers.JsonSerializer"},
+                # An instance, not the {"class": ...} config dict (only caches.add() takes
+                # that form; here aiocache calls .loads on it and GET /api/shaders 500s).
+                serializer=JsonSerializer(),
             )
         except Exception as exc:
             _log_event("redis_cache_init_failed", error=str(exc))

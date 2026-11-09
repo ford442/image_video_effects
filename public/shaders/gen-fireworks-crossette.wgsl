@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-11
-//  Ideas: parent star then four-way fork at splitDelay; split-instant X flash; parent comet sheath; split stagger
+//  Upgraded: 2026-11-01
+//  Ideas: parent star then four-way fork at splitDelay; split-instant X flash; parent comet sheath; split stagger; broken core; axis ghost
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -100,11 +100,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let parentVel = armDir * armSpread * energy * 1.15;
         let parentAge = min(bAge, splitT);
         let parentPos = sparkPos(center, parentVel, parentAge, GRAVITY);
-        col += armColor(af, hueShift)*hexBokeh(uv, parentPos, 0.008, fade*energy*1.4*exp(-parentAge*1.2));
+        // ── Idea 1: broken core — the parent star goes dark once this arm forks
+        let broken = exp(-armAge * 9.0);
+        col += armColor(af, hueShift)*hexBokeh(uv, parentPos, 0.008, fade*energy*1.4*exp(-parentAge*1.2)*broken);
         // Parent comet sheath — stretch the traveling star back along its velocity.
         let cometTail = parentPos - armDir * min(parentAge, 0.22) * 0.42 * energy;
-        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.35), 0.006, fade*energy*0.65);
-        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.7), 0.007, fade*energy*0.9);
+        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.35), 0.006, fade*energy*0.65*broken);
+        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.7), 0.007, fade*energy*0.9*broken);
+        // ── Idea 2: axis ghost — the cross stays as a thin line after the fork
+        let axisPerp = abs(dot(uv - center, vec2<f32>(-armDir.y, armDir.x)));
+        let axisAlong = dot(uv - center, armDir);
+        let axisGhost = exp(-axisPerp * 70.0) * exp(-max(axisAlong, 0.0) * 2.4) * step(0.0, axisAlong) * step(axisAlong, 0.55) * step(0.02, armAge);
+        col += armColor(af, hueShift) * axisGhost * fade * 0.22;
 
         if (armAge > 0.0) {
           let fork = sparkPos(center, parentVel, splitT, GRAVITY);
@@ -146,9 +153,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let parentVel = dir * armSpread * power * 1.15;
         let parentAge = min(mb, mSplit);
         let parentPos = sparkPos(mouseUV, parentVel, parentAge, GRAVITY);
-        col += armColor(af, hueShift)*hexBokeh(uv, parentPos, 0.008, smoothstep(3.0,0.2,mb)*power);
+        let broken = exp(-mArmAge * 9.0);
+        col += armColor(af, hueShift)*hexBokeh(uv, parentPos, 0.008, smoothstep(3.0,0.2,mb)*power*broken);
         let cometTail = parentPos - dir * min(parentAge, 0.22) * 0.42 * power;
-        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.55), 0.006, smoothstep(3.0,0.2,mb)*power*0.7);
+        col += armColor(af, hueShift)*hexBokeh(uv, mix(cometTail, parentPos, 0.55), 0.006, smoothstep(3.0,0.2,mb)*power*0.7*broken);
+        let mPerp = abs(dot(uv - mouseUV, vec2<f32>(-dir.y, dir.x)));
+        let mAlong = dot(uv - mouseUV, dir);
+        let axisGhost = exp(-mPerp * 70.0) * exp(-max(mAlong, 0.0) * 2.4) * step(0.0, mAlong) * step(mAlong, 0.55) * step(0.02, mArmAge);
+        col += armColor(af, hueShift) * axisGhost * smoothstep(3.0, 0.2, mb) * 0.22;
         if (mArmAge > 0.0) {
           let fork = sparkPos(mouseUV, parentVel, mSplit, GRAVITY);
           col += vec3<f32>(1.0)*exp(-mArmAge*22.0)*power*hexBokeh(uv, fork, 0.03, 1.4);

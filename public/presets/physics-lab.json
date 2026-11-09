@@ -2,7 +2,7 @@
   "version": 1,
   "id": "physics-lab",
   "name": "Physics Lab",
-  "description": "Tier C multipass flagships — wave tanks, cloth, caustics, chromatographic dyes, Gray–Scott, and optical-flow dreams. Prefer balanced quality or higher (rgba32float).",
+  "description": "Tier C multipass flagships — wave tanks, cloth, caustics, chromatographic dyes, Gray–Scott, optical-flow dreams, and the sim-ring agents (physarum, SPH fluid). Prefer balanced quality or higher (rgba32float).",
   "packs": [
     {
       "id": "physics-lab-ripple",
@@ -113,6 +113,44 @@
               "zoomParam2": 0.7,
               "zoomParam3": 0.45,
               "zoomParam4": 0.75
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-physarum",
+      "name": "Physarum Agents Solo",
+      "description": "65k slime-mould agents weave a living network that feeds on the image's red. Click drops a pheromone bloom, hold to lure. graph · 3 passes — battery-friendly.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "physarum-agents",
+            "params": {
+              "zoomParam1": 0.5,
+              "zoomParam2": 0.5,
+              "zoomParam3": 0.5,
+              "zoomParam4": 0.55
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "physics-lab-sph",
+      "name": "SPH Fluid Solo",
+      "description": "Zero-g droplets of SPH liquid that refract the image and flow around its bright areas. Hold to part, click to splash, bass bursts. graph · 4 passes (one hash scatter) — battery-friendly.",
+      "chain": {
+        "v": 1,
+        "slots": [
+          {
+            "shaderId": "sph-fluid",
+            "params": {
+              "zoomParam1": 0.4,
+              "zoomParam2": 0.5,
+              "zoomParam3": 0.5,
+              "zoomParam4": 0.5
             }
           }
         ]

@@ -1,0 +1,129 @@
+{
+  "id": "sph-fluid",
+  "name": "SPH Fluid",
+  "url": "shaders/sph-fluid-density.wgsl",
+  "description": "Physics Lab — up to 24k particles of weakly compressible SPH liquid (Tait pressure, viscosity, XSPH, vorticity confinement, surface tension) found through the spatial hash, rendered as zero-g droplets of liquid chrome that refract the image. Bright areas are obstacles, the pointer parts the fluid, a click splashes, bass bursts the droplets. graph · 4 passes · @group(1) sim ring + hash.",
+  "params": [
+    {
+      "id": "viscosity",
+      "name": "Viscosity",
+      "default": 0.4,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Water-thin to honey-thick: viscosity and XSPH smoothing together"
+    },
+    {
+      "id": "restDensity",
+      "name": "Rest Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Low lets the liquid swell, high pulls it into tighter droplets (capped so a hash cell never overfills)"
+    },
+    {
+      "id": "pointerForce",
+      "name": "Pointer Force",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How hard the pointer parts the fluid (hold for full strength) and how big a click splashes",
+      "audio": "bass"
+    },
+    {
+      "id": "obstacleStrength",
+      "name": "Obstacle Strength",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "How firmly the image's bright areas push the liquid away and slow it down"
+    }
+  ],
+  "features": [
+    "audio-driven",
+    "audio-reactive",
+    "fluid",
+    "graph-runner",
+    "interactive",
+    "mouse-driven",
+    "multi-pass",
+    "particles",
+    "physics",
+    "sim-ring",
+    "spatial-hash",
+    "simulation",
+    "temporal-persistence"
+  ],
+  "tags": [
+    "audio",
+    "droplets",
+    "fluid",
+    "liquid",
+    "physics",
+    "reactive",
+    "refraction",
+    "showcase",
+    "simulation",
+    "sph"
+  ],
+  "requiresRgba32Float": true,
+  "multipass": {
+    "graph": {
+      "maxPassesPerFrame": 4,
+      "nodes": [
+        {
+          "id": "density",
+          "entry": "sph-fluid-density",
+          "dispatch": "simState",
+          "reads": [
+            "simIndex",
+            "simHash"
+          ],
+          "writes": [
+            "simState"
+          ],
+          "keepsHash": true
+        },
+        {
+          "id": "force",
+          "entry": "sph-fluid-force",
+          "dispatch": "simState",
+          "reads": [
+            "simIndex",
+            "simHash",
+            "read"
+          ],
+          "writes": [
+            "simState",
+            "dataA"
+          ]
+        },
+        {
+          "id": "render",
+          "entry": "sph-fluid-render",
+          "reads": [
+            "dataC",
+            "read"
+          ],
+          "writes": [
+            "color",
+            "dataA"
+          ]
+        }
+      ]
+    }
+  },
+  "simRing": {
+    "stateCount": 65536,
+    "spatialHash": true,
+    "agent": "fluid particle",
+    "packing": "stride 2 — simState[2p] = xy position (px), zw velocity (px/frame); simState[2p+1] = (-1, -1, density, vorticity), an aux record parked at xy < 0 so the hash never sees it. 32768 particles fit; 24576 are active, the rest stay parked."
+  }
+}

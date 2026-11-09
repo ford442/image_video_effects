@@ -1,5 +1,7 @@
+import * as cpp from './_generated.js';
 import { captureFrame } from './capture.js';
 import { readCanvasCopySrc, state, wasmRef } from './state.js';
+import type { EmscriptenModule } from './state.js';
 
 /** One WebCodecs take (src/recording/gpuEncodeSupport.ts GpuEncodeSession). */
 export interface WasmEncodeSession {
@@ -110,12 +112,21 @@ function startGpuReadbackPump(drawCanvas: HTMLCanvasElement): void {
 
 export function setRecording(active: boolean): void {
   if (!state.initialized || !wasmRef.module) return;
-  wasmRef.module.ccall('setRecording', null, ['number'], [active ? 1 : 0]);
+  cpp.setRecording(wasmRef.module, active ? 1 : 0);
+}
+
+/**
+ * End-of-take `setRecording(false)` for the module the take started on. A take
+ * that outlives its module (shutdown → re-init) must not clear the recording
+ * flag of the fresh instance, which may already be running the next take.
+ */
+function clearRecordingFlag(owner: EmscriptenModule | null): void {
+  if (owner && wasmRef.module === owner) setRecording(false);
 }
 
 export function isRecordingActive(): boolean {
   if (!state.initialized || !wasmRef.module) return false;
-  return Boolean(wasmRef.module.ccall('isRecording', 'number', [], []));
+  return cpp.isRecording(wasmRef.module) !== 0;
 }
 
 /** Loaded artifact probed canvas COPY_SRC as supported and exports the setter. */
@@ -133,7 +144,7 @@ export function setCanvasCopySrc(enabled: boolean): boolean {
   if (!state.initialized || !mod || typeof mod._setCanvasCopySrc !== 'function') return false;
   if (enabled && readCanvasCopySrc() !== true) return false;
   try {
-    if (!mod._setCanvasCopySrc(enabled ? 1 : 0)) return false;
+    if (!cpp.setCanvasCopySrc(mod, enabled ? 1 : 0)) return false;
   } catch (err) {
     console.warn('[WASM] canvas COPY_SRC reconfigure failed:', err);
     return false;
@@ -147,7 +158,7 @@ export function setCanvasCopySrc(enabled: boolean): boolean {
   const copySrcBit = typeof GPUTextureUsage !== 'undefined' ? GPUTextureUsage.COPY_SRC : 0x01;
   if (cfg && typeof cfg.usage === 'number' && !(cfg.usage & copySrcBit)) {
     console.warn('[WASM] canvas COPY_SRC dropped by getConfiguration(); restoring render-only');
-    mod._setCanvasCopySrc(0);
+    cpp.setCanvasCopySrc(mod, 0);
     return false;
   }
   return true;
@@ -179,6 +190,7 @@ export async function startRecording(
   } else if (!options.gpuEncode) {
     logRecordingFallback('no WebCodecs starter injected');
   } else if (state.initialized && wasmRef.module) {
+    const owner = wasmRef.module;
     _encodeStarting = true;
     let session: WasmEncodeSession | null = null;
     try {
@@ -194,13 +206,23 @@ export async function startRecording(
     } finally {
       _encodeStarting = false;
     }
-    if (session) return runEncodeSession(session, options.durationMs);
+    if (session && wasmRef.module !== owner) {
+      // shutdownWasmRenderer() (destroy / device loss / backend switch) ran while
+      // the encoder was configuring: there is no renderer left to feed it.
+      session.stop().catch(() => {});
+      throw new Error('[WASM Recording] Renderer shut down while the take was starting');
+    }
+    if (session) return runEncodeSession(session, owner, options.durationMs);
   }
 
   return startMediaRecorder(canvasElement, options, fps, bitrate);
 }
 
-function runEncodeSession(session: WasmEncodeSession, durationMs?: number): Promise<Blob> {
+function runEncodeSession(
+  session: WasmEncodeSession,
+  owner: EmscriptenModule,
+  durationMs?: number,
+): Promise<Blob> {
   _encodeSession = session;
   setRecording(true);
   console.log(`[WASM Recording] WebCodecs take started (source=${session.kind ?? 'unknown'})`);
@@ -210,7 +232,7 @@ function runEncodeSession(session: WasmEncodeSession, durationMs?: number): Prom
       _encodeSession = null;
       session.stop()
         .then(resolve, reject)
-        .finally(() => setRecording(false));
+        .finally(() => clearRecordingFlag(owner));
     };
     if (durationMs && durationMs > 0) {
       _recordAutoStopTimer = setTimeout(stopRecording, durationMs);
@@ -236,6 +258,7 @@ function startMediaRecorder(
     _recordChunks = [];
     _recordResolve = resolve;
 
+    const owner = wasmRef.module;
     setRecording(true);
 
     try {
@@ -270,7 +293,7 @@ function startMediaRecorder(
 
     _recorder.onstop = () => {
       const blob = new Blob(_recordChunks, { type: mimeType });
-      setRecording(false);
+      clearRecordingFlag(owner);
       cleanupRecordingPump();
       if (_recordResolve) {
         _recordResolve(blob);
@@ -281,7 +304,7 @@ function startMediaRecorder(
     };
 
     _recorder.onerror = (e) => {
-      setRecording(false);
+      clearRecordingFlag(owner);
       cleanupRecordingPump();
       const error = (e as ErrorEvent).error;
       reject(new Error(`[WASM Recording] MediaRecorder error: ${error}`));
@@ -309,6 +332,33 @@ export function stopRecording(): void {
   }
   if (_recorder && _recorder.state !== 'inactive') {
     _recorder.stop();
+  }
+}
+
+/** A take (WebCodecs or MediaRecorder) is running or its encoder is starting. */
+export function isTakeActive(): boolean {
+  return _encodeSession !== null || _encodeStarting || (_recorder !== null && _recorder.state !== 'inactive');
+}
+
+/**
+ * Called by shutdownWasmRenderer() BEFORE the C++ instance goes away (destroy,
+ * device-loss teardown, backend switch). Finalizes an active take so its
+ * startRecording() promise settles with the frames captured so far instead of
+ * hanging (no durationMs) or blocking the next take with "already in
+ * progress". The VideoEncoder / MediaRecorder do not depend on the GPU device,
+ * so flushing after a device loss still yields a playable clip; a take with no
+ * frames rejects, which useRecording reports. A take whose encoder is still
+ * starting is rejected in startRecording() once the starter resolves.
+ */
+export function finishRecordingForShutdown(): void {
+  if (!isTakeActive()) return;
+  console.warn('[WASM Recording] Renderer shutting down; finalizing the active take');
+  stopRecording();
+  // MediaRecorder fires onstop asynchronously; the readback pump must not keep
+  // calling captureFrame() against a module that is about to be destroyed.
+  if (_recordRafId !== null) {
+    cancelAnimationFrame(_recordRafId);
+    _recordRafId = null;
   }
 }
 

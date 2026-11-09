@@ -1,0 +1,59 @@
+{
+  "id": "gen-ethereal-neon-bismuth-origami",
+  "name": "Ethereal Neon-Bismuth Origami",
+  "url": "shaders/gen-ethereal-neon-bismuth-origami.wgsl",
+  "type": "generative",
+  "category": "generative",
+  "workgroup_size": [16, 16, 1],
+  "description": "A hyper-dimensional realm where geometric crystal shards, reminiscent of bismuth hopper crystals, continuously fold and unfold like ethereal neon origami floating in a dark expanse.",
+  "features": [
+    "Fractal Origami Folding",
+    "Dynamic Unfolding",
+    "Prismatic Neon Iridescence",
+    "Volumetric Neon Core",
+    "Glass Refraction Illusion"
+  ],
+  "tags": ["origami", "bismuth", "fractal", "iridescent", "neon", "crystal"],
+  "params": [
+    {
+      "id": "scale",
+      "name": "Scale",
+      "default": 0.5,
+      "min": 0.1,
+      "max": 2.0,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Initial spacing of the fractal folds"
+    },
+    {
+      "id": "bloom-strength",
+      "name": "Bloom Strength",
+      "default": 1.0,
+      "min": 0.0,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.y",
+      "description": "The intensity of the unfolding effect when the mouse is near"
+    },
+    {
+      "id": "iridescence-rate",
+      "name": "Iridescence Rate",
+      "default": 2.0,
+      "min": 0.5,
+      "max": 5.0,
+      "step": 0.1,
+      "mapping": "zoom_params.z",
+      "description": "How rapidly the colors cycle across the viewing angles"
+    },
+    {
+      "id": "time-speed",
+      "name": "Time Speed",
+      "default": 1.0,
+      "min": 0.1,
+      "max": 3.0,
+      "step": 0.1,
+      "mapping": "zoom_params.w",
+      "description": "The overall animation speed"
+    }
+  ]
+}

@@ -5,8 +5,8 @@
 //  Complexity: Very High
 //  Chunks From: warp_drive, spec-blackbody-thermal
 //  Created: 2026-04-18
-//  Upgraded: 2026-09-15
-//  Ideas: Alcubierre warp-bubble wall; bow/wake Doppler on the aberration axis
+//  Upgraded: 2026-09-15, 2026-11-01
+//  Ideas: Alcubierre warp-bubble wall; bow/wake Doppler on the aberration axis; quiescent pocket inside the wall; wake afterglow from C.a
 //  A packing: raw HDR RGB + normalized avgTemp
 // ═══════════════════════════════════════════════════════════════════
 //  Warp drive radial blur combined with physically-correct blackbody
@@ -14,26 +14,7 @@
 //  = hotter colors. The radial blur streaks glow with thermal emission.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -90,6 +71,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var dir = mouse - uv;
   let dist = length(dir);
+  let distAspect = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
+  let bubbleR = mix(0.14, 0.42, clamp(u.zoom_params.x, 0.0, 1.0));
+  // ── Idea 3: quiescent pocket. The wall radius is unchanged; the streak eases inside it.
+  let pocket = smoothstep(bubbleR * 0.92, bubbleR * 0.4, distAspect);
 
   var colorSum = vec3<f32>(0.0);
   var tempSum = 0.0;
@@ -122,7 +107,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let doppler = 1.0 + intensity * percent * 0.5 + max(bowWake, 0.0) * 0.35;
     let photo = vec3<f32>(sampleR.r, sampleG.g, sampleB.b);
-    let sampleColor = mix(photo, thermalColor, clamp(percent * intensity * 5.0, 0.0, 1.0))
+    let streakMix = clamp(percent * intensity * 5.0, 0.0, 1.0) * (1.0 - pocket * 0.82);
+    let sampleColor = mix(photo, thermalColor, streakMix)
       * doppler
       * vec3<f32>(1.0 + max(-bowWake, 0.0) * 0.25, 1.0, 1.0 + max(bowWake, 0.0) * 0.35);
 
@@ -141,15 +127,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let avgTemp = tempSum * invW;
 
   // Center glow (engine heat) — floor look, kept
-  let distAspect = distance(vec2<f32>(uv.x * aspect, uv.y), vec2<f32>(mouse.x * aspect, mouse.y));
   let glow = exp(-distAspect * 5.0) * brightness;
   let glowTemp = mix(tempRangeHigh, tempRangeHigh * 2.0, glow);
   finalColor += blackbodyColor(glowTemp) * thermalIntensity * glow * 0.3;
   finalAlpha = min(finalAlpha + glow * 0.3, 1.0);
 
   // Idea 1 — Alcubierre warp-bubble wall (thin annulus, not a second center glow)
-  let bubbleR = mix(0.14, 0.42, u.zoom_params.x);
-  let wall = exp(-pow((distAspect - bubbleR) * 16.0, 2.0));
+  let wallD = (distAspect - bubbleR) * 16.0;
+  let wall = exp(-wallD * wallD);
   let wallTemp = mix(tempRangeLow * 1.4, tempRangeHigh, wall);
   finalColor += blackbodyColor(wallTemp) * thermalIntensity * wall * 0.45 * (1.0 + mids * 0.4);
   finalAlpha = min(finalAlpha + wall * 0.25, 1.0);
@@ -159,6 +144,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseHeat = exp(-mouseDist * mouseDist * 400.0) * select(0.0, 1.0, isMouseDown);
   let mouseTemp = tempRangeHigh * (1.0 + mouseHeat * 0.5);
   finalColor = mix(finalColor, blackbodyColor(mouseTemp) * thermalIntensity, mouseHeat * 0.4);
+
+  // ── Idea 4: wake afterglow. C.a is last frame's avgTemp; a cold first frame stays quiet.
+  let prevWake = textureLoad(dataTextureC, coord, 0);
+  let outside = smoothstep(bubbleR, bubbleR + 0.16, distAspect);
+  let wakeMix = outside * smoothstep(0.04, 0.22, prevWake.a) * 0.4;
+  let wakeKelvin = max(prevWake.a * 15000.0, tempRangeLow);
+  finalColor = mix(finalColor, blackbodyColor(wakeKelvin) * thermalIntensity * 0.45, wakeMix);
 
   let displayColor = toneMapACES(finalColor);
   let alpha = clamp(finalAlpha, 0.0, 1.0);

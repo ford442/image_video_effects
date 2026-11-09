@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
 from . import config, state, models, middleware, intents, utils
-from .routes import system, locations, shaders, preset_packs, library, media, sync, ftp, osc
+from .routes import system, locations, shaders, preset_packs, library, media, sync, ftp, osc, webhook
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ async def lifespan(app_instance: FastAPI):
         state._has_signing_creds = False
 
     state._media_semaphore = asyncio.Semaphore(config.MEDIA_STREAM_MAX_CONCURRENT)
+    webhook.log_startup_status()
     yield
 
 
@@ -70,6 +71,8 @@ app.include_router(media.router)
 app.include_router(sync.router)
 app.include_router(ftp.router)
 app.include_router(osc.router)
+app.include_router(webhook.router)
+app.include_router(webhook.prefixed_router)
 
 _delegate_modules = (state, intents, config, utils, models, middleware)
 
@@ -125,4 +128,7 @@ sys.modules[__name__] = _new_mod
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7860)
+    # uvicorn's own --proxy-headers (on by default) rewrites the client address from
+    # X-Forwarded-For before RateLimitMiddleware runs, which would bypass TRUSTED_PROXIES
+    # whenever FORWARDED_ALLOW_IPS is widened. Leave the header to TRUSTED_PROXIES.
+    uvicorn.run(app, host="0.0.0.0", port=7860, proxy_headers=False)

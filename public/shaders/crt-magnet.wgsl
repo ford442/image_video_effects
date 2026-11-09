@@ -4,10 +4,13 @@
 // Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, aces-tone-map,
 //           feedback-echo, audio-palette, sdf-mask
 // Complexity: Medium
-// Upgraded: 2026-09-21
+// Upgraded: 2026-11-08
 // Ideas: tangential convergence error (gun ring, not one axis); warped
-//        shadow-mask moire; purity stain erased by the degauss ring
-// A packing: ACES display RGBA (C is read as a displaced colour echo)
+//        shadow-mask moire; purity stain erased by the degauss ring;
+//        raster scan lines bowing and bunching through the field;
+//        magnet-induced rolling hum bar with row wobble
+// A packing: (0,0) = (springPos.xy, springVel.xy); (1,0) = (bassEnv, 0, 0, sentinel -7);
+//            elsewhere ACES display RGBA (C is read as a displaced colour echo)
 // Transform: canonical noise/fbm, 16x16 workgroup, unified envelope/mouse state,
 //            branchless aperture grille, hex-bloom, beam-purity RGB separation,
 //            ACES tone map, temporal feedback echo, audio-driven cosine palette,
@@ -100,37 +103,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let colorShift = u.zoom_params.z;
   let distortionRadius = u.zoom_params.w;
 
-  var env = bass;
-  let hasSpring = arrayLength(&extraBuffer) > 139u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    env = bass_env(extraBuffer[139], bass, 0.8, 0.15);
-  }
-  var smoothMouse = mousePos;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mousePos;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 8.0;
-      let accel = (mousePos - springPos) * (omega * omega) - springVel * (2.0 * omega * 0.85);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[139] = env;
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
+  // Spring cursor + bass envelope live in two state texels of A/C. HEAD kept
+  // them in extraBuffer[133..139], which the CPU zeroes every frame, so the
+  // "spring" never ran and env was raw bass.
+  let s0Raw = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let s1Raw = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+  let s0 = select(vec4<f32>(0.0), s0Raw, s0Raw == s0Raw);
+  let s1 = select(vec4<f32>(0.0), s1Raw, s1Raw == s1Raw);
+  let stateValid = s1.w == -7.0;
+  var springPos = select(mousePos, clamp(s0.xy, vec2<f32>(-0.5), vec2<f32>(1.5)), stateValid);
+  var springVel = select(vec2<f32>(0.0), clamp(s0.zw, vec2<f32>(-10.0), vec2<f32>(10.0)), stateValid);
+  let env = bass_env(select(0.0, clamp(s1.x, 0.0, 2.0), stateValid), bass, 0.8, 0.15);
+  let dtS = 1.0 / 60.0;
+  let omega = 8.0;
+  let accel = (mousePos - springPos) * (omega * omega) - springVel * (2.0 * omega * 0.85);
+  springVel += accel * dtS;
+  springPos += springVel * dtS;
+  let smoothMouse = springPos;
 
   let uv = barrel(uv01, 0.15);
   let aspect = res.x / res.y;
@@ -249,15 +238,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                    vec3<f32>(1.15, 0.8, 0.8), step(2.0, stripe));
   color *= mix(vec3<f32>(1.0), grille, clamp(field * 1.2, 0.0, 0.5));
 
+  // ── Idea 4: bent raster ───────────────────────────────────────────
+  // The tube had a grille but no scan lines. Lines are phased off the
+  // DISPLACED y, so where the magnet pulls the beam the raster visibly bows
+  // and bunches (bright where lines crowd), flat elsewhere.
+  let lineY = (uv01.y - displacement.y * 1.6) * res.y * 0.5;
+  let crowd = 1.0 + clamp(abs(displacement.y) * res.y * 0.004, 0.0, 0.6);
+  let scan = 0.5 + 0.5 * cos(lineY * TAU);
+  color *= mix(1.0, mix(0.72, 1.08, scan) * crowd, 0.35 + clamp(field, 0.0, 0.5));
+
+  // ── Idea 5: induced hum bar ───────────────────────────────────────
+  // A magnet near the yoke couples mains hum into the deflection: a soft
+  // dark bar rolls up the screen, and inside the field its rows wobble
+  // sideways. Bass drags the bar faster.
+  let barY = fract(uv01.y + time * (0.07 + env * 0.05));
+  let humBar = exp(-pow((barY - 0.5) * 5.0, 2.0));
+  let wobble = sin(uv01.y * res.y * 0.25 + time * 40.0) * humBar * clamp(field, 0.0, 1.0);
+  let wobUV = clamp(uv - displacement + vec2<f32>(wobble * 0.006, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  color = mix(color, color * 0.5 + textureSampleLevel(readTexture, u_sampler, wobUV, 0.0).rgb * 0.5,
+              clamp(abs(wobble) * 3.0, 0.0, 0.5));
+  color *= 1.0 - humBar * (0.12 + magnetStrength * 0.12);
+
   let vigUV = uv01 - 0.5;
   color *= 1.0 - smoothstep(0.25, 0.55, dot(vigUV, vigUV)) * 0.6;
 
-  color = acesToneMap(color * (0.9 + mids * 0.2));
+  color = acesToneMap(max(color, vec3<f32>(0.0)) * (0.9 + mids * 0.2));
 
-  let alpha = clamp(field * 1.5 + env * 0.3, 0.0, 1.0);
+  // HEAD alpha was field*1.5 + env*0.3 — the whole tube image went
+  // transparent outside the magnet. The screen is opaque; the field only
+  // thickens it.
+  let alpha = clamp(0.82 + field * 0.4 + env * 0.06, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 
-  textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+  if (pixel.x == 0 && pixel.y == 0) {
+    textureStore(dataTextureA, pixel, vec4<f32>(springPos, springVel));
+  } else if (pixel.x == 1 && pixel.y == 0) {
+    textureStore(dataTextureA, pixel, vec4<f32>(env, 0.0, 0.0, -7.0));
+  } else {
+    textureStore(dataTextureA, pixel, vec4<f32>(color, alpha));
+  }
 }

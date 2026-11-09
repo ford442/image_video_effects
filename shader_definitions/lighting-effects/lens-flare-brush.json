@@ -2,7 +2,7 @@
   "id": "lens-flare-brush",
   "name": "Lens Flare Brush",
   "url": "shaders/lens-flare-brush.wgsl",
-  "description": "Generates anamorphic lens flares from bright pixels near the mouse with rainbow chromatic shift, ghost elements, ACES tone mapping, and brush trail persistence.",
+  "description": "Generates anamorphic lens flares from bright pixels near the mouse with rainbow chromatic shift, ghost elements, ACES tone mapping, and brush trail persistence. Every highlight under the brush throws its own streak, and holding the pointer still loads the brush so the flare blooms.",
   "features": [
     "mouse-driven",
     "audio-reactive",

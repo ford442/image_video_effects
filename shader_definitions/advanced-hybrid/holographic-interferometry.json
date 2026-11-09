@@ -2,7 +2,7 @@
   "id": "holographic-interferometry",
   "name": "Holographic Interferometry",
   "url": "shaders/holographic-interferometry.wgsl",
-  "description": "Simulated optical hologram with interference fringe patterns. Reference and object laser wavefronts interfere across depth and luma fields, creating iridescent diffraction fringes with laser speckle coherence and parallax depth reconstruction.",
+  "description": "Object and reference beams interfere across depth and luma, with speckle and a parallax reconstruction. Equal-phase lines ink the half-fringe, and Coherence Length fades the fringes as the path difference grows.",
   "tags": [
     "hologram",
     "interference",

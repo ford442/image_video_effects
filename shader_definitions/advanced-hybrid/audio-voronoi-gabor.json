@@ -11,7 +11,8 @@
     "mouse-driven",
     "depth-aware",
     "randomization-safe",
-    "audio-driven"
+    "audio-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -70,7 +71,7 @@
       "hash22 (gen_grid.wgsl)",
       "gaborResponse (conv-gabor-texture-analyzer)",
       "Voronoi pattern (audio-voronoi-displacement)",
-      "Audio band simulation (audio-voronoi-displacement)"
+      "Audio bands (plasmaBuffer[0] bass/mids/treble; HEAD's simulated bands removed 2026-11-09)"
     ],
     "created_by": "Agent CB-7 - Flow & Multi-Pass Enhancer",
     "created_date": "2026-04-18"

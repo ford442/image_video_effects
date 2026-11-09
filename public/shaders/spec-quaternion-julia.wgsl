@@ -6,7 +6,9 @@
 //  Chunks From: chunk-library (hash22)
 //  Created: 2026-04-18
 //  By: Agent 3C — Spectral Computation Pioneer
-//  Upgraded: 2026-07-26 (Batch 16 — Optimizer pass)
+//  Upgraded: 2026-07-26 (Batch 16 — Optimizer pass), 2026-11-01
+//  Ideas (2026-11): hyperplane slice drift (the 3-D cut slides through the 4-D set via w0); DE cone soft shadow
+//  A packing: raw HDR colour in A (no reader), ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 //  4D Quaternion Julia Set Raymarched
 //  Raymarches a 4D quaternion Julia set projected into 3D and then
@@ -21,26 +23,7 @@
 //     accumulated over the whole march (classic Julia glow bands).
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -63,8 +46,10 @@ fn quaternionMul(a: vec4<f32>, b: vec4<f32>) -> vec4<f32> {
 // The escape radius (256.0) and the 0.5 * r * log(r) / dr estimator are
 // preserved verbatim — fractal correctness depends on them. r is clamped
 // away from 0 before log() to avoid a first-iteration -inf.
-fn quaternionJuliaDE(p: vec3<f32>, c: vec4<f32>, iters: i32) -> vec2<f32> {
-    var q = vec4<f32>(p, 0.0);
+fn quaternionJuliaDE(p: vec3<f32>, c: vec4<f32>, iters: i32, w0: f32) -> vec2<f32> {
+    // 2026-11 Idea 1: the start quaternion is (p, w0). HEAD fixed the slice at w0 = 0. dq still starts
+    // at 1 (the derivative is taken with respect to p), so the DE derivation is unchanged.
+    var q = vec4<f32>(p, w0);
     var dq = vec4<f32>(1.0, 0.0, 0.0, 0.0);
     var trap = 1000.0;
 
@@ -102,6 +87,8 @@ fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
+    // HEAD had no bounds guard: every dispatched invocation wrote.
+    if (f32(gid.x) >= res.x || f32(gid.y) >= res.y) { return; }
     let uv = (vec2<f32>(gid.xy) + 0.5) / res;
     let time = u.config.x;
 
@@ -168,6 +155,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         0.2 * cos(t * 0.4) + mids * 0.15
     );
 
+    // 2026-11 Idea 1: the 3-D cross-section slides through the 4-D set (|w0| <= 0.18 keeps it inside
+    // the bounded region), so lobes grow and pinch as w0 drifts.
+    let w0 = 0.18 * sin(t * 0.37);
+
     // Raymarch — track min DE (for alpha) and min orbit trap (for palette).
     var t_dist = 0.0;
     var hit = false;
@@ -177,7 +168,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     for (var i: i32 = 0; i < 64; i = i + 1) {
         let p = ro + rd * t_dist;
-        let de = quaternionJuliaDE(p * zoom, c, iters);
+        let de = quaternionJuliaDE(p * zoom, c, iters, w0);
         let d = de.x / zoom;
         orbitTrap = min(orbitTrap, d);
         trapMin = min(trapMin, de.y);
@@ -198,9 +189,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let p = ro + rd * t_dist;
         let e = vec2<f32>(0.001, 0.0);
         let n = normalize(vec3<f32>(
-            quaternionJuliaDE((p + e.xyy) * zoom, c, iters).x - quaternionJuliaDE((p - e.xyy) * zoom, c, iters).x,
-            quaternionJuliaDE((p + e.yxy) * zoom, c, iters).x - quaternionJuliaDE((p - e.yxy) * zoom, c, iters).x,
-            quaternionJuliaDE((p + e.yyx) * zoom, c, iters).x - quaternionJuliaDE((p - e.yyx) * zoom, c, iters).x
+            quaternionJuliaDE((p + e.xyy) * zoom, c, iters, w0).x - quaternionJuliaDE((p - e.xyy) * zoom, c, iters, w0).x,
+            quaternionJuliaDE((p + e.yxy) * zoom, c, iters, w0).x - quaternionJuliaDE((p - e.yxy) * zoom, c, iters, w0).x,
+            quaternionJuliaDE((p + e.yyx) * zoom, c, iters, w0).x - quaternionJuliaDE((p - e.yyx) * zoom, c, iters, w0).x
         ));
 
         // Lighting
@@ -208,6 +199,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let diff = max(dot(n, lightDir), 0.0);
         let spec = pow(max(dot(reflect(-lightDir, n), -rd), 0.0), 32.0);
         let ao = 1.0 - f32(steps) / 64.0;
+
+        // 2026-11 Idea 2: DE cone soft shadow. 12 steps from the surface toward the light: the
+        // narrowest ratio of clearance h to distance t sets the penumbra, so lobes shade each other.
+        var shadow = 1.0;
+        var st = 0.02;
+        let sro = p + n * 0.01;
+        for (var si: i32 = 0; si < 12; si = si + 1) {
+            let sh = quaternionJuliaDE((sro + lightDir * st) * zoom, c, iters, w0).x / zoom;
+            shadow = min(shadow, 8.0 * sh / st);
+            st = st + clamp(sh, 0.01, 0.2);
+            if (sh < 0.0005 || st > 2.0) { break; }
+        }
+        shadow = clamp(shadow, 0.0, 1.0);
         let fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.0);
 
         // IQ cosine palette keyed on the minimum orbit-trap distance
@@ -220,9 +224,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let glow = exp(-trapMin * 3.0);
         let glowColor = iqCosinePalette(trapKey * colorCycles + hue + 0.15);
 
-        col = baseColor * (diff * 0.7 + 0.3) * ao
+        col = baseColor * (diff * mix(0.35, 1.0, shadow) * 0.7 + 0.3) * ao
             + glowColor * glow * 0.6
-            + vec3<f32>(spec * 0.5)
+            + vec3<f32>(spec * 0.5 * shadow)
             + baseColor * fresnel * 0.25;
         alpha = 1.0;
     } else {

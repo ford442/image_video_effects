@@ -9,7 +9,7 @@ Single source of truth for the Pixelocity compute bind group layout and device p
 - C++ layout: [`wasm_renderer/pipeline.cpp`](../wasm_renderer/pipeline.cpp) (`CreateBindGroupLayout`)
 - Device limits: [`src/contracts/webgpu_limits.json`](../src/contracts/webgpu_limits.json) ↔ [`src/renderer/webgpuDevicePolicy.ts`](../src/renderer/webgpuDevicePolicy.ts) ↔ [`wasm_renderer/device.cpp`](../wasm_renderer/device.cpp)
 - Optional features: [`src/contracts/webgpu_optional_features.json`](../src/contracts/webgpu_optional_features.json) ↔ [`collectOptionalDeviceFeatures`](../src/renderer/webgpu/device.ts) ↔ `device.cpp` `requiredFeatures[3]`
-- WASM exports: [`src/contracts/wasm_exports.json`](../src/contracts/wasm_exports.json) (build.sh + CMake)
+- WASM exports: [`src/contracts/wasm_exports.json`](../src/contracts/wasm_exports.json) — export lists for build.sh, plus per-export signatures and suspension policy (`exports`) that generate [`wasm_renderer/wasm_exports.h`](../wasm_renderer/wasm_exports.h) and the typed bridge wrappers [`src/wasm/bridge/_generated.ts`](../src/wasm/bridge/_generated.ts) (`npm run gen:wasm-exports`; see [wasm_renderer/README.md](../wasm_renderer/README.md#export-contract-wasm_exportsjson--wasm_exportsh--bridge_generatedts))
 - WGSL authoring: [`docs/agents/WGSL_BUILTINS_GENERATIVE.md`](agents/WGSL_BUILTINS_GENERATIVE.md)
 - Shader **upgrades** (ideas, not hygiene): [`docs/SHADER_UPGRADE_BATCH.md`](SHADER_UPGRADE_BATCH.md)
 - Uniforms layout: [`src/contracts/uniforms_layout.json`](../src/contracts/uniforms_layout.json) ↔ [`src/renderer/UniformBuffer.ts`](../src/renderer/UniformBuffer.ts) ↔ [`wasm_renderer/renderer.h`](../wasm_renderer/renderer.h)
@@ -140,7 +140,7 @@ Total size **848 bytes** (212 floats) — matches `UNIFORM_BUFFER_LAYOUT.TOTAL_S
 - **CPU:** `historyHead` written to `extraBuffer[4]` when any enabled shader uses binding 13
 - **GPU:** after each frame, copy presented color into `historyTexture[historyHead]`, then `historyHead = (historyHead + 1) % 8`
 - Shaders that sample `@binding(13) var historyTexture` must declare the binding; others omit it
-- Copy is gated by static analysis (`analyzeShaderBindings` / C++ `AnalyzeShaderBindings`) — skipped when no shader references binding 13
+- Copy is gated by static analysis (`analyzeShaderBindings` in `src/wasm/bridge/wgslAnalysis.ts`, shared by both backends; WASM receives it as `loadShader` usageBits from `bind_group0.json` `shaderUsageFlags`) — skipped when no shader references binding 13
 
 ## Sim ring (opt-in `@group(1)`, TS renderer only)
 
@@ -161,7 +161,60 @@ Group 0 is at the contract ceiling (bindings 0–13, 2 storage buffers, 4 storag
 - **WASM:** feature freeze — `pipeline.cpp` keeps `bindGroupLayoutCount = 1` and `src/wasm/bridge/shader.ts` refuses group-1 WGSL before `LoadShader` (logged skip).
 - **Never** park persistent agents in `extraBuffer[0..]` or steal group-0 bindings.
 
-Flagship: `dla-crystals` (`dla-walkers` over simState → `dla-render` over pixels).
+Flagships: `dla-crystals` (`dla-walkers` over simState → `dla-render` over pixels) and `physarum-agents` (diffuse over pixels → agents over simState → render; the agents' deposit writes the same value per texel, so its last-writer race has one outcome).
+
+### Spatial hash (`simHash`, optional binding 3)
+
+Agents that have to find *other agents* (flocking, photon binning) cannot scan 65,536 `vec4`s per invocation, and a texture grid is the wrong structure for them. `bind_group1.json` v2 adds one optional binding, off unless the shader definition asks (`"simRing": { "stateCount": 65536, "spatialHash": true }`):
+
+| Binding | Name | Type |
+|--------:|------|------|
+| 3 | `simHash` | `var<storage, read_write> simHash: array<atomic<u32>>` — `HASH_CELLS` (16384) cell heads, then one `next` link per agent |
+
+- **Layout:** shaders that declare binding 3 get a second group-1 layout (4 bindings). Every other group-1 shader keeps today's three, and a ring that nobody asked a hash of (DLA) never allocates it. `simParams` stays 16 bytes: the grid width is the contract constant `HASH_GRID = 128`, not a field.
+- **Grid:** fixed 128 × 128 cells over the working-size domain (`u.config.zw`, the pixel space DLA already uses). `cell = floor(xy / resolution * 128)`, id `= cy * 128 + cx`. An empty head is `0xFFFFFFFFu`. An agent is hashed iff its `simState.xy` is finite and inside `[0, resolution)`: **park dead agents at `xy < 0`**.
+- **Build:** the planner (not the author) inserts it, only when some graph node reads the `simHash` role: a `copyBufferToBuffer` of a pre-filled `0xFFFFFFFF` buffer over the heads (`clearBuffer` can only zero-fill), then one `@workgroup_size(64)` scatter, `next[i] = atomicExchange(head[cell], i)`. It runs once per frame before the first reader and again only after a later `simState` write makes the chain stale. The scatter is a compute pass: it counts toward `maxPassesPerFrame`, the frame pass budget and the timestamp profile.
+- **Reading:** `simIndex` is the snapshot of `simState` (the existing barrier); the hash is not a copy. Read neighbour positions from `simIndex` and walk a cell by following `next` from its head, **with a hard visit cap** (8 or 16) so a crowded cell cannot hang the frame. `public/shaders/_sim_hash.wgsl` carries the constants and `hashCell` / `hashCellId` / `hashWrap` / `hashCellSize`; `verify:device-policy` keeps them equal to the contract.
+
+```wgsl
+#include "_prelude.wgsl"
+#include "_sim_hash.wgsl"
+// ... SimParams, then the four @group(1) declarations (see the header of _sim_hash.wgsl)
+
+let cell = hashCell(pos, res);
+for (var dy = -1; dy <= 1; dy = dy + 1) {
+  for (var dx = -1; dx <= 1; dx = dx + 1) {
+    var j = atomicLoad(&simHash[hashCellId(hashWrap(cell + vec2<i32>(dx, dy)))]);
+    for (var k = 0u; k < 8u && j != HASH_EMPTY; k = k + 1u) {
+      let q = bitcast<vec4<f32>>(vec4<u32>(simIndex[j * 4u], simIndex[j * 4u + 1u], simIndex[j * 4u + 2u], simIndex[j * 4u + 3u]));
+      // ... q.xy is the neighbour's position ...
+      j = atomicLoad(&simHash[HASH_NEXT + j]);
+    }
+  }
+}
+```
+
+- **Limits:** a hash shader sees the two group-0 storage buffers plus `simState`, `simIndex` and `simHash` = 5, under the WebGPU base limit of 8. `spatialHash.group1RequiredLimits` in the contract carries it; it is checked against `device.limits` when the first hash pipeline compiles. `MINIMUM_COMPUTE_LIMITS` and the catalog-wide device request are untouched.
+- **OOM:** the hash is part of each ladder rung (heads fixed, links scale with `stateCount`), so a step-down rebuilds it at the smaller count. There is no separate ladder.
+- **Gates:** a definition that sets `spatialHash` must have a graph node that reads `simHash` in an entry that declares binding 3, and a graph that reads or declares it without the flag fails `npm run verify:device-policy`.
+- **WASM:** unchanged. The bridge refuses `@group(1)` WGSL before `LoadShader`; `pipeline.cpp` is not touched.
+
+Flagships: `murmuration` (steering through the hash), `photon-bins` (wavelength-binned photons gathered per pixel) and `sph-fluid` (SPH neighbour sums with stride-2 records).
+
+#### Stride-2 records and the parked sentinel
+
+An agent that needs more than one `vec4` can own consecutive elements, as long as only one of them is ever hashed. `sph-fluid` (stride 2) is the reference:
+
+| Element | Contents | Hashed? |
+|--------:|----------|---------|
+| `2p` | `(pos.xy px, vel.xy px / frame)` | yes: a live agent |
+| `2p + 1` | `(-1, -1, density, vorticity)` | no: parked |
+
+- The `(-1, -1)` sentinel *is* the existing alive rule (`xy` outside `[0, resolution)`), so the scatter skips aux records with no contract change and no `simParams` field. Write **both** components negative, every time: a reader or tool that checks only one axis still sees a parked record.
+- A hash neighbour `j` is therefore always an even element; its aux record is `j + 1` (read it from `simIndex` like the position).
+- `stateCount` counts elements, so a 65,536-element ring holds 32,768 stride-2 agents, and each OOM rung halves that. Dispatch over `simState` and return early for `gid.x >= stateCount / 2` (agent `p` = `gid.x`).
+- A pass that writes only aux records moves no hashed position, so its graph node may set `keepsHash` ([`MULTIPASS_GRAPH.md`](MULTIPASS_GRAPH.md#sim-roles-and-the-spatial-hash)): the planner then reuses the hash for the next reader and only refreshes the `simIndex` snapshot. Frame 0 is the exception, because the seed moves every agent: the reader after a seeding `keepsHash` pass must skip `simParams.frame == 0u` (the hash is rebuilt next frame).
+- Document the layout in the definition's `simRing.packing`.
 
 ### Runtime format tiers (#1008)
 
@@ -205,7 +258,7 @@ This is `minimumComputeLimits`, which the frozen C++ backend still checks (`Chec
 
 ### Canonical dispatch
 
-The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both TypeScript (`parseWorkgroupSize`) and C++ WASM (`ParseWorkgroupSize`) fall back to **16×16** — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
+The engine's standard 2D compute dispatch is **16×16×1**. When a shader's `@workgroup_size` cannot be parsed, both backends fall back to **16×16**: the one parser is `src/wasm/bridge/wgslAnalysis.ts` (TS renderer via `parseWorkgroupSize`, WASM via `loadShader` workgroupX/Y; C++ reads the fallback from generated `wasm_contracts.h`, `npm run gen:wasm-contracts`) — see [`src/contracts/workgroup_dispatch.json`](../src/contracts/workgroup_dispatch.json). The same contract's `emptyPlaceholder` is **r32float**, **4 bytes/row** for the 1×1 unused-slot texture (TS `emptyTex` / C++ `emptyTexture_`). CI enforces both via `npm run verify:device-policy`.
 
 Documented exceptions in that contract:
 

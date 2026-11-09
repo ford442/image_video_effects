@@ -82,6 +82,9 @@ node "$REPO_ROOT/scripts/gen-canvas-configure-header.js" --check
 node "$REPO_ROOT/scripts/gen-webgpu-limits-header.js" --check
 # bind_group0.h is generated from src/contracts/bind_group0.json (committed).
 node "$REPO_ROOT/scripts/gen-bind-group0-header.js" --check
+# wasm_exports.h (+ src/wasm/bridge/_generated.ts) is generated from
+# src/contracts/wasm_exports.json `exports`; also checks main.cpp's signatures.
+node "$REPO_ROOT/scripts/gen-wasm-exports-header.js" --check
 
 # Single-pass compile+link via emcc.
 # --use-port=emdawnwebgpu runs emdawnwebgpu.py's process_args() exactly once

@@ -1,7 +1,7 @@
 {
   "id": "neon-pulse-stream",
   "url": "shaders/neon-pulse-stream.wgsl",
-  "description": "Bundled neon tube bank: five curl-perturbed sinusoidal tubes are shaded with a gaussian core, Fresnel rim and outer bloom, and each owns one FFT bin driving its thickness, hue drift and the gaussian light packets running along it. The pointer is a magnetic attractor that bends the bundle, clicks inject bounded pulse fronts that flare the tubes they cross, and dataTextureC supplies exact-load afterglow.",
+  "description": "Bundled neon tube bank: five curl-perturbed sinusoidal glass tubes with banded gas columns, comet-tailed light packets and flickering arcs where tubes cross. Bass, mids and treble each weight the tubes' thickness and packet speed; the pointer bends the bundle, clicks flare it, and the afterglow persists.",
   "features": [
     "mouse-driven",
     "audio-reactive",

@@ -14,16 +14,25 @@ export const TEXTURE_ROLES: readonly TextureRole[] = [
 /**
  * Group-1 sim-ring buffer roles (src/contracts/bind_group1.json). `simState` is
  * the live agent buffer; `simIndex` is its read-only snapshot, refreshed by a
- * copyBufferToBuffer barrier — the buffer twin of dataA → dataC.
+ * copyBufferToBuffer barrier — the buffer twin of dataA → dataC. `simHash` is
+ * the optional spatial hash over simState: read-only for nodes, rebuilt by the
+ * planner (one counted scatter pass) before the first node that reads it.
  */
-export type SimBufferRole = 'simState' | 'simIndex';
+export type SimBufferRole = 'simState' | 'simIndex' | 'simHash';
 
-export const SIM_BUFFER_ROLES: readonly SimBufferRole[] = ['simState', 'simIndex'] as const;
+export const SIM_BUFFER_ROLES: readonly SimBufferRole[] = ['simState', 'simIndex', 'simHash'] as const;
+
+/** Planner-inserted dispatch that rebuilds simHash (not a graph node; see expandGraph and GraphNodeDef.keepsHash). */
+export const SIM_HASH_BUILD_ENTRY = '__simHashBuild';
+export const SIM_HASH_BUILD_NODE_ID = '__simHashBuild';
 
 export type GraphRole = TextureRole | SimBufferRole;
 
 /** `pixels` dispatches ceil(W/wg.x)×ceil(H/wg.y); `simState` dispatches ceil(stateCount/wg.x)×1. */
 export type GraphDispatchDomain = 'pixels' | 'simState';
+
+/** Nodes pick a GraphDispatchDomain; `simHashBuild` only appears on planner-inserted dispatches. */
+export type ExpandedDispatchDomain = GraphDispatchDomain | 'simHashBuild';
 
 export const MAX_REPEAT = 64;
 
@@ -47,6 +56,15 @@ export interface GraphNodeDef {
   scalable?: boolean;
   /** Lowest scale adaptive demotion may pick (one of NODE_SCALE_LEVELS; default 0.5). */
   minScale?: number;
+  /**
+   * The node's `simState` writes never move a hashed element: it only writes records that stay
+   * parked (`xy < 0`), like sph-fluid's density pass writing its stride-2 aux records. The hash it
+   * read stays valid for the next reader, so the planner does not rebuild it (one counted pass
+   * saved). The `simIndex` snapshot still goes stale, so a later `simIndex` reader still gets its
+   * copy barrier. An author promise: a keepsHash node that moves an agent leaves later readers
+   * walking stale cells (visit-capped, so wrong neighbours, never a hang).
+   */
+  keepsHash?: boolean;
 }
 
 export interface MultipassGraphDef {
@@ -65,7 +83,7 @@ export interface ExpandedDispatch {
   writes: GraphRole[];
   iteration: number;
   copiesBefore: CopyBarrier[];
-  dispatch: GraphDispatchDomain;
+  dispatch: ExpandedDispatchDomain;
   scalable?: boolean;
   minScale?: number;
 }
@@ -94,13 +112,19 @@ export function graphUsesSimRing(graph: MultipassGraphDef): boolean {
   );
 }
 
+/** True when any node reads the spatial hash, so the planner must rebuild it each frame. */
+export function graphUsesSimHash(graph: MultipassGraphDef): boolean {
+  return graph.nodes.some((n) => (n.reads ?? []).includes('simHash'));
+}
+
 /**
- * simIndex freshness. It is stale at frame start (simState persists across
- * frames and may have been written since the last snapshot), becomes fresh
- * after a copy, and goes stale again on every simState write.
+ * simIndex / simHash freshness. Both are stale at frame start (simState persists
+ * across frames and may have been written since the last snapshot / scatter),
+ * become fresh after a copy / scatter, and go stale again on every simState write.
  */
 interface SimIndexState {
   fresh: boolean;
+  hashFresh: boolean;
 }
 
 function simCopiesBeforeRead(reads: GraphRole[], sim: SimIndexState): CopyBarrier[] {
@@ -109,15 +133,55 @@ function simCopiesBeforeRead(reads: GraphRole[], sim: SimIndexState): CopyBarrie
   return [{ from: 'simState', to: 'simIndex', reason: 'simState → simIndex snapshot' }];
 }
 
-function applySimWrites(writes: GraphRole[], sim: SimIndexState): void {
-  if (writes.includes('simState')) sim.fresh = false;
+function applySimWrites(writes: GraphRole[], sim: SimIndexState, keepsHash = false): void {
+  if (writes.includes('simState')) {
+    sim.fresh = false;
+    if (!keepsHash) sim.hashFresh = false;
+  }
+}
+
+/** One scatter pass before a reader of a stale simHash. */
+function simHashBuildBefore(reads: GraphRole[], sim: SimIndexState): ExpandedDispatch | null {
+  if (!reads.includes('simHash') || sim.hashFresh) return null;
+  sim.hashFresh = true;
+  return {
+    nodeId: SIM_HASH_BUILD_NODE_ID,
+    entry: SIM_HASH_BUILD_ENTRY,
+    reads: ['simState'],
+    writes: ['simHash'],
+    iteration: 0,
+    copiesBefore: [],
+    dispatch: 'simHashBuild',
+  };
+}
+
+/**
+ * How many scatter passes expandGraph inserts for `nodes`. The count is part of
+ * the graph's pass budget: a graph that reads simHash really costs one more
+ * compute pass, and shrinking the graph can drop the pass with its last reader.
+ */
+function simHashBuildCount(nodes: GraphNodeDef[]): number {
+  let hashFresh = false;
+  let builds = 0;
+  for (const node of nodes) {
+    // Same bound as the dependency simulation: a repeat past the limit is already an error.
+    const iterations = Math.min(node.repeat ?? 1, MAX_REPEAT + 1);
+    for (let i = 0; i < iterations; i++) {
+      if ((node.reads ?? []).includes('simHash') && !hashFresh) {
+        builds++;
+        hashFresh = true;
+      }
+      if ((node.writes ?? []).includes('simState') && !node.keepsHash) hashFresh = false;
+    }
+  }
+  return builds;
 }
 
 /** Roles that hold simulation state across intra-frame handoff. */
 const SIM_ROLES: TextureRole[] = ['dataA', 'dataB', 'dataC'];
 
 function totalPassCount(graph: MultipassGraphDef): number {
-  return graph.nodes.reduce((sum, n) => sum + (n.repeat ?? 1), 0);
+  return graph.nodes.reduce((sum, n) => sum + (n.repeat ?? 1), 0) + simHashBuildCount(graph.nodes);
 }
 
 /**
@@ -199,6 +263,7 @@ export type GraphDiagnosticCode =
   | 'repeat-range'
   | 'invalid-role'
   | 'sim-index-write'
+  | 'sim-hash-write'
   | 'invalid-dispatch'
   | 'no-io'
   | 'min-scale'
@@ -210,6 +275,7 @@ export type GraphDiagnosticCode =
   | 'duplicate-node-id'
   | 'non-integer-repeat'
   | 'ineffective-role'
+  | 'ineffective-keeps-hash'
   | 'unbounded-max-passes';
 
 export interface GraphDiagnostic {
@@ -300,6 +366,13 @@ function collectDiagnostics(
         error(
           'sim-index-write',
           `node ${node.id}: simIndex is read-only (written only by the simState → simIndex barrier)`,
+          { ...at, role: w },
+        );
+      }
+      if (w === 'simHash') {
+        error(
+          'sim-hash-write',
+          `node ${node.id}: simHash is read-only (rebuilt by the planner's scatter pass before its first reader)`,
           { ...at, role: w },
         );
       }
@@ -419,6 +492,13 @@ function collectDiagnostics(
         );
       }
     }
+    if (node.keepsHash && !(node.writes ?? []).includes('simState')) {
+      warn(
+        'ineffective-keeps-hash',
+        `node ${node.id}: keepsHash has no effect (the node does not write simState, so it never invalidates the hash)`,
+        at,
+      );
+    }
   }
 
   return out;
@@ -448,13 +528,15 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
   const result: ExpandedDispatch[] = [];
   const state = new Map<TextureRole, TextureRole | 'frameSeed'>();
   state.set('dataC', 'frameSeed');
-  const sim: SimIndexState = { fresh: false };
+  const sim: SimIndexState = { fresh: false, hashFresh: false };
 
   for (const node of graph.nodes) {
     const repeat = node.repeat ?? 1;
     for (let i = 0; i < repeat; i++) {
       const reads = [...(node.reads ?? [])];
       const writes = alternateWrite(node.writes ?? [], i);
+      const build = simHashBuildBefore(reads, sim);
+      if (build) result.push(build);
       const copiesBefore = [
         ...copiesNeededBeforeRead(reads, state),
         ...simCopiesBeforeRead(reads, sim),
@@ -472,7 +554,7 @@ export function expandGraph(graph: MultipassGraphDef): ExpandedDispatch[] {
       });
 
       applyWrites(state, writes);
-      applySimWrites(writes, sim);
+      applySimWrites(writes, sim, node.keepsHash === true);
     }
   }
 
@@ -506,7 +588,7 @@ export function shrinkGraphToCap(graph: MultipassGraphDef, cap: number): Multipa
     repeat: n.repeat ?? 1,
   }));
 
-  const passCount = () => nodes.reduce((sum, n) => sum + (n.repeat ?? 1), 0);
+  const passCount = () => nodes.reduce((sum, n) => sum + (n.repeat ?? 1), 0) + simHashBuildCount(nodes);
 
   if (lastColorWriterIndex(nodes) < 0) {
     // No display pass — keep the original node list; caller prefix-slices.

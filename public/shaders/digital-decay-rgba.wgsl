@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Digital Decay RGBA — Batch 60
-//  Block corruption seeds 4-species RD: spring injection, capped
-//  ripples, held corrupt burst, exact C Laplacian, spectral colors.
+//  Digital Decay RGBA
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-09
+//  Ideas: seam-born rot; bit-depth erosion; macroblock chroma bleed
+//  A packing: raw 4-species RD state (A, B, C, D)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -83,32 +68,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let corruptionSpeed = clamp(u.zoom_params.z, 0.0, 1.0) * 5.0 * (1.0 + mids * 0.3);
   let feed = mix(0.02, 0.06, u.zoom_params.w);
 
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring) {
-    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 9.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
+  // HEAD rescue: the extraBuffer[133..138] spring is zeroed every frame, which
+  // pinned the held burst to (0,0). Use the live pointer.
+  let smoothMouse = mouse;
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
 
@@ -157,6 +119,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b = textureSampleLevel(readTexture, u_sampler, glitchUV - aberrationOffset, 0.0).b;
   var decayColor = vec3<f32>(r, g, b);
 
+  // Idea 3 — macroblock chroma bleed: corrupted blocks carry one chroma sample
+  // from the block centre (4:2:0-style); luma stays per pixel.
+  let blockCorrupt = blockHash < corruptionAmount * 0.5;
+  if (blockCorrupt) {
+    let centreUV = clamp((vec2<f32>(blockUV) + 0.5) * blockSizePx / resolution + (glitchUV - uv), vec2<f32>(0.0), vec2<f32>(1.0));
+    let cc = textureSampleLevel(readTexture, u_sampler, centreUV, 0.0).rgb;
+    let wY = vec3<f32>(0.299, 0.587, 0.114);
+    decayColor = clamp(cc - vec3<f32>(dot(cc, wY)) + vec3<f32>(dot(decayColor, wY)), vec3<f32>(0.0), vec3<f32>(1.0));
+  }
+
   let scanLine = sin(uv.y * resolution.y * 1.5 + time) * 0.04 * corruptionAmount;
   decayColor -= scanLine;
   let noise = (hash11(dot(uv, vec2<f32>(12.9898, 78.233)) + time) - 0.5) * 0.15 * corruptionAmount;
@@ -178,6 +150,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (corruptionAmount > 0.3 && blockHash < corruptionAmount * 0.3) {
     B += corruptionAmount * 0.2;
     D += corruptionAmount * 0.1;
+  }
+  // Idea 1 — seam-born rot: corrupted blocks inject B/D along their borders,
+  // so the decay organism grows out of the macroblock seams.
+  if (blockCorrupt) {
+    let inBlock = fract(uv * resolution / blockSizePx);
+    let seamPx = min(min(inBlock.x, 1.0 - inBlock.x), min(inBlock.y, 1.0 - inBlock.y)) * blockSizePx;
+    let seam = smoothstep(2.0, 0.0, seamPx);
+    B += seam * (0.08 + corruptionAmount * 0.12);
+    D += seam * hash21(vec2<f32>(blockUV) + 7.0) * 0.06;
   }
 
   let left = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), dims - vec2<i32>(1)), 0);
@@ -212,6 +193,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   D = clamp(D, 0.0, 1.0);
 
   textureStore(dataTextureA, coord, vec4<f32>(A, B, C, D));
+
+  // Idea 2 — bit-depth erosion: where the rot species are dense the picture
+  // loses colour precision (8 bits → 2 bits), before the RD tint is mixed in.
+  let rot = clamp((B + D) * 1.6, 0.0, 1.0);
+  let levels = exp2(mix(8.0, 2.0, rot));
+  decayColor = mix(decayColor, floor(decayColor * levels + 0.5) / levels, step(0.02, rot));
 
   let rdColor = spectralRD(A, B, C, D, time * 0.05 + bass * 0.1);
   var finalColor = mix(decayColor, rdColor, intensity * 0.65);

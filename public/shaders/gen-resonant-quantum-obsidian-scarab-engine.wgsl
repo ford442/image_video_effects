@@ -5,31 +5,12 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-09-27
-//  Ideas: elytra plate seams lit by an outgoing core-breath pulse; plasma mirror in the obsidian; core corona leaking between plates
+//  Upgraded: 2026-09-27, 2026-11-08
+//  Ideas: elytra plate seams lit by an outgoing core-breath pulse; plasma mirror in the obsidian; core corona leaking between plates; joint-fluid curvature (§12.2E SDF curvature); carapace flex with the core breath
 //  A packing: ACES display RGBA
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -53,6 +34,12 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// ── IDEA 5: carapace flex. The core breathes with sin(time * pulseRate); the shell it sits in
+// flexes with the same scalar (8% of the fold offset), so shell and core share one cycle.
+fn shellFlex(pulse: f32) -> f32 {
+    return 1.0 + 0.08 * pulse;
+}
+
 fn map(p: vec3<f32>, audioLevel: f32) -> vec2<f32> {
     var p_mod = p;
 
@@ -63,14 +50,16 @@ fn map(p: vec3<f32>, audioLevel: f32) -> vec2<f32> {
 
     // Core pulsing Torus
     let corePulseRate = u.zoom_params.w + audioLevel * 2.0;
-    let t = sdTorus(p_mod, vec2<f32>(1.0 + sin(u.config.x * corePulseRate) * 0.2, 0.5));
+    let pulse = sin(u.config.x * corePulseRate);   // one sin drives the torus AND the shell flex
+    let t = sdTorus(p_mod, vec2<f32>(1.0 + pulse * 0.2, 0.5));
     var res = vec2<f32>(t, 1.0); // 1.0 = Core
 
     // KIFS Exoskeleton
     let exoskeletonComplexity = u.zoom_params.x;
     var p_kifs = p;
+    let flex = shellFlex(pulse);
     for(var i = 0; i < 4; i++) {
-        p_kifs = abs(p_kifs) - 0.5 * exoskeletonComplexity;
+        p_kifs = abs(p_kifs) - 0.5 * exoskeletonComplexity * flex;
         let r = rot(u.config.x * 0.5 + f32(i) + audioLevel * 0.5);
         p_kifs.x = p_kifs.x * r[0][0] + p_kifs.y * r[1][0];
         p_kifs.y = p_kifs.x * r[0][1] + p_kifs.y * r[1][1];
@@ -116,8 +105,9 @@ fn coreDist(p: vec3<f32>, audioLevel: f32) -> f32 {
 fn scarabPlates(p: vec3<f32>, audioLevel: f32) -> vec2<f32> {
     let exoskeletonComplexity = u.zoom_params.x;
     var p_kifs = p;
+    let flex = shellFlex(sin(u.config.x * (u.zoom_params.w + audioLevel * 2.0)));
     for(var i = 0; i < 4; i++) {
-        p_kifs = abs(p_kifs) - 0.5 * exoskeletonComplexity;
+        p_kifs = abs(p_kifs) - 0.5 * exoskeletonComplexity * flex;
         let r = rot(u.config.x * 0.5 + f32(i) + audioLevel * 0.5);
         p_kifs.x = p_kifs.x * r[0][0] + p_kifs.y * r[1][0];
         p_kifs.y = p_kifs.x * r[0][1] + p_kifs.y * r[1][1];
@@ -126,6 +116,18 @@ fn scarabPlates(p: vec3<f32>, audioLevel: f32) -> vec2<f32> {
     let seam = min(abs(s.x), min(abs(s.y), abs(s.z)));
     let plateId = step(0.0, p_kifs.x) + 2.0 * step(0.0, p_kifs.y) + 4.0 * step(0.0, p_kifs.z);
     return vec2<f32>(seam, plateId);
+}
+
+// ── IDEA 4 helper (§12.2E SDF curvature): κ ≈ (Σ d(p±e·axis) − 6d)/e², probed at the hit only.
+// κ > 0 convex bead crowns, κ < 0 the concave valleys between the stacked plates. Probe radius
+// 0.04 is the width of the valleys on the shell (0.012 only found hairlines on the seams).
+fn mapCurv(p: vec3<f32>, audioLevel: f32) -> f32 {
+    let e = 0.04;
+    let d0 = map(p, audioLevel).x;
+    let sum = map(p + vec3<f32>(e, 0.0, 0.0), audioLevel).x + map(p - vec3<f32>(e, 0.0, 0.0), audioLevel).x
+            + map(p + vec3<f32>(0.0, e, 0.0), audioLevel).x + map(p - vec3<f32>(0.0, e, 0.0), audioLevel).x
+            + map(p + vec3<f32>(0.0, 0.0, e), audioLevel).x + map(p - vec3<f32>(0.0, 0.0, e), audioLevel).x;
+    return (sum - 6.0 * d0) / (e * e);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -144,7 +146,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let audioLevel = bass;
 
     let ro = vec3<f32>(0.0, 0.0, -5.0);
-    let rd = normalize(vec3<f32>(uv, 1.0));
+    // ── Rescue R1: uv.y grows DOWN the screen, so `vec3(uv, 1)` made world +y screen-down:
+    // moving the pointer down moved the core up and the key light came from below. Flip y.
+    let rd = normalize(vec3<f32>(uv.x, -uv.y, 1.0));
 
     var t = 0.0;
     var mat = 0.0;
@@ -187,7 +191,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
              // IDEA 1 (elytra plates): per-plate obsidian tint (mean 1.0).
              let plates = scarabPlates(p, audioLevel);
              let plateTint = 0.8 + 0.4 * fract(sin(plates.y * 12.9898 + 3.1) * 43758.5453);
-             col = vec3<f32>(0.1) * plateTint * dif + vec3<f32>(1.0) * spec * obsidianReflectivity;
+
+             // ── IDEA 4: joint fluid. Hydraulic fluid pools in the concave valleys between
+             // plates: the valley goes darker (fluid absorbs), carries a tight wet highlight,
+             // and mirrors the core harder than the dry obsidian crown.
+             let kap = mapCurv(p, audioLevel);
+             let joint = smoothstep(1.5, 8.0, -kap);
+             let wetSpec = pow(clamp(dot(refl, l), 0.0, 1.0), 48.0) * joint;
+             col = vec3<f32>(0.1) * plateTint * dif * (1.0 - 0.75 * joint) + vec3<f32>(1.0) * spec * obsidianReflectivity
+                 + vec3<f32>(0.7, 1.0, 1.0) * wetSpec * obsidianReflectivity * 2.5
+                 + vec3<f32>(0.0, 0.6, 0.7) * joint * 0.05 * plasmaIntensity;
 
              // IDEA 1 (seam circuitry): seams carry the core's breath outward —
              // same sin(time*rate) that pulses the torus, delayed by distance.
@@ -207,7 +220,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
              }
              mirror = min(mirror, 1.5);
              let fres = pow(1.0 - clamp(dot(-rd, n), 0.0, 1.0), 5.0);
-             col += vec3<f32>(0.0, 1.0, 1.0) * mirror * (0.2 + 0.8 * fres) * obsidianReflectivity * plasmaIntensity * 0.6;
+             col += vec3<f32>(0.0, 1.0, 1.0) * mirror * (0.2 + 0.8 * fres) * (1.0 + 2.5 * joint) * obsidianReflectivity * plasmaIntensity * 0.6;
         }
     }
 

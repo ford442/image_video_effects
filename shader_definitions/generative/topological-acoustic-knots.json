@@ -3,7 +3,7 @@
   "name": "Topological Acoustic Knots",
   "url": "shaders/topological-acoustic-knots.wgsl",
   "category": "generative",
-  "description": "Nematic Q-tensor evolution with topological charge computation and trefoil-knot SDF constraint. Schlieren texture with defect-core coloring and HDR bloom on +1 defects. Bass creates defect pairs via Kibble-Zurek quench, mids drive annihilation dynamics, treble adds acoustic phonon waves. Mouse pins director with homeotropic anchoring. Ripples spawn defect loops.",
+  "description": "Nematic Q-tensor film read between crossed polarizers: true plaquette-winding disclinations (half-integer blue, integer red), Michel-Levy retardance colours that follow the order parameter, a trefoil thickness wedge, and brush counts of 2 or 4 per core. Bass melts the order and re-quenches domains (Kibble-Zurek), mids sweep the polarizer, treble adds phonon waves, the mouse pins the director radially and clicks spawn defect loops.",
   "features": [
     "nematic-Q-tensor",
     "topological-charge",
@@ -11,7 +11,8 @@
     "schlieren-texture",
     "audio-driven",
     "mouse-anchoring",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "tags": [
     "topological",

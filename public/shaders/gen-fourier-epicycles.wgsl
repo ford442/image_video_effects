@@ -3,12 +3,18 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, temporal, mouse-driven, feedback-loop
 //  Complexity: Medium
-//  Upgraded: 2026-10-11
+//  Upgraded: 2026-10-11, 2026-11-01
+//  Ideas (2026-11): true pen velocity (cusp blot from the real |v|, ink thins with speed); rim comets (each wheel's rim glow trails behind its arm tip)
 //  Ideas: arm-segment glow hub→next; pen ink into existing C trail pack; phase tick; cusp ink
 //  A packing: bassEnv, trail.r, trail.g, alpha
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
+
+// Calibrated on SwiftShader (default sliders, 400 frames): the pen's |v| had percentiles 0/10/50/90/100 =
+// 0.08/0.34/0.72/1.87/2.29, while HEAD's penSpeed sat at 2.6 .. 3.0 (exp(-2.4 * 2.6) = 0.002, so its cusp never
+// fired). exp(-v^2 * 12) is 0.9 at v = 0.1 and 0.25 at v = 0.34: it fires only near true cusps.
+const CUSP_K: f32 = 12.0;
 
 fn acesToneMapping(color: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -84,6 +90,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var center = vec2<f32>(0.0);
   var accum = vec3<f32>(0.0);
   var penSpeed = 0.0;
+  var penVel = vec2<f32>(0.0);
 
   for (var i: i32 = 1; i <= 12; i = i + 1) {
     if (i > nCycles) { break; }
@@ -99,7 +106,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rimDist = abs(dist - radius + shockWave * 0.02);
     let wCol = wheelColor(fi - 1.0, f32(nCycles));
 
-    let rimGlow = rimIntensity * 0.015 / (rimDist * rimDist + 0.0003);
+    // 2026-11 Idea 2: rim comet. The arm tip sits at angle `phase`; a wheel turns toward increasing phase, so the
+    // rim just behind the tip (phase - angle > 0) is bright and decays with the angular gap, which shows each
+    // wheel's direction and speed (HEAD's rim glow was uniform around the circle).
+    let rimAng = atan2(toPixel.y, toPixel.x);
+    let behind = phase - rimAng;
+    let behindWrapped = behind - 6.28318530718 * floor((behind + 3.14159265359) / 6.28318530718);
+    let cometTail = exp(-max(behindWrapped, 0.0) * 2.5) * smoothstep(-0.25, 0.0, behindWrapped);
+    let rimGlow = rimIntensity * 0.015 / (rimDist * rimDist + 0.0003) * (0.45 + 1.8 * cometTail);
     accum = accum + wCol * rimGlow;
 
     // Idea 1 — arm segment from hub to next hub
@@ -109,6 +123,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let armDist = length(ap - ab * ah);
     accum = accum + wCol * (0.006 * rimIntensity) / (armDist * armDist + 0.00018);
     penSpeed = penSpeed + abs(freq) * radius;
+    // 2026-11 Idea 1: the pen's real velocity: each ring contributes freq * radius * (-sin phase, cos phase).
+    penVel = penVel + freq * radius * vec2<f32>(-sin(phase), cos(phase));
 
     // Phase tick — short radial mark where the arm meets the rim.
     let armLen = length(ab);
@@ -132,12 +148,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let penPos = center;
 
   let penDist = length(p - penPos);
-  let penGlow = 0.012 / (penDist * penDist + 0.00025);
+  // Idea 1 (2026-11): speed-thinning (12.2C): w = w0 / (1 + k |v|). A fast pen draws a thin bright line, a slow
+  // one pools into a blot.
+  let penVelMag = length(penVel);
+  let inkW = 1.0 / (1.0 + 2.0 * penVelMag);
+  let penGlow = 0.012 * mix(0.55, 1.0, inkW) / (penDist * penDist + 0.00025 * mix(0.35, 1.0, inkW));
   let penBloom = 0.003 / (penDist * penDist + 0.001);
   var chroma = vec3<f32>(1.0, 0.92, 0.78) * penGlow;
   chroma = chroma + vec3<f32>(0.7, 0.8, 1.0) * penBloom;
   // Cusp ink — the pen dwells and blots when the chain is barely moving.
-  let cusp = exp(-penSpeed * 2.4);
+  // HEAD tested exp(-penSpeed * 2.4) with penSpeed = sum |freq| radius, a magnitude sum that is never small; the
+  // real velocity vanishes only at true cusps.
+  let cusp = exp(-penVelMag * penVelMag * CUSP_K);
   chroma = chroma + vec3<f32>(1.0, 0.96, 0.88) * penGlow * cusp * (0.85 + bassEnv * 0.6);
 
   // Treble sparkle

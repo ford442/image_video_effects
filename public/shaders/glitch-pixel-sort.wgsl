@@ -1,9 +1,12 @@
-// ═══════════════════════════════════════════════════════════════
-//  Glitch Pixel Sort — Batch 66
-//  fp128 sort displacement, exact C temporal melt, racing bright
-//  streak packets, capped click ripples, held deepens melt, ACES +
-//  semantic alpha.
-// ═══════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Glitch Pixel Sort
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-01
+//  Ideas: chroma delay line (§12.2B); dropout tail (§12.2B)
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -87,6 +90,17 @@ fn streak_packet(uv: vec2<f32>, dir: vec2<f32>, time: f32, bass: f32) -> f32 {
   return pow(max(0.0, 1.0 - d * 8.0), 4.0);
 }
 
+// ── Idea 2: dropout tail (§12.2B) ─────────────────────────────────
+// One-sided exponential behind the packet head. 0 at the head, gone
+// before the next period. Glitch Amount scales it in main.
+fn dropout_tail(uv: vec2<f32>, dir: vec2<f32>, time: f32, bass: f32) -> f32 {
+  let along = dot(uv, normalize(dir + vec2<f32>(0.0001)));
+  let head = fract(time * (0.8 + bass * 1.6) + along * 2.0);
+  let phase = fract(along * 3.0);
+  let behind = fract(head - phase);
+  return exp(-behind * 7.0) * step(behind, 0.45);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
@@ -129,6 +143,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var finalColor = textureSampleLevel(readTexture, u_sampler, sortUV, 0.0);
 
+    // ── Idea 1: chroma delay line (§12.2B) ─────────────────────────
+    // Luma stays on the sorted sample. Chroma lags one step back along
+    // the sort axis. Glitch Amount owns the mix; the threshold mask
+    // keeps dark pixels on the unsplit sample.
+    let lagUV = clamp(sortUV - sortDir * (0.006 + glitchAmount * 0.016), vec2<f32>(0.0), vec2<f32>(1.0));
+    let lagged = textureSampleLevel(readTexture, u_sampler, lagUV, 0.0);
+    let sortedLuma = getLuminance(finalColor.rgb);
+    let laggedChroma = lagged.rgb - vec3<f32>(getLuminance(lagged.rgb));
+    let delayed = vec4<f32>(clamp(vec3<f32>(sortedLuma) + laggedChroma, vec3<f32>(0.0), vec3<f32>(1.0)), finalColor.a);
+    finalColor = mix(finalColor, delayed, clamp(glitchAmount, 0.0, 1.0) * thresholdMask);
+
     let meltRate = fp128_sum(fp128(0.005 + bass * 0.01), fp128(0.003 * select(0.0, 1.0, held)));
     let prevCoord = vec2<i32>(clamp(vec2<i32>((uv - sortDir * fp128_val(meltRate)) * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)));
     let prevColor = textureLoad(dataTextureC, prevCoord, 0);
@@ -139,6 +164,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (prevLuma > currLuma + 0.05 && prevLuma > threshold) {
         finalColor = mix(finalColor, prevColor, 0.85 + packet * 0.1);
     }
+
+    let tail = dropout_tail(uv, sortDir, time, bass) * clamp(glitchAmount, 0.0, 1.0) * thresholdMask;
+    finalColor = vec4<f32>(mix(finalColor.rgb, vec3<f32>(0.93, 0.95, 0.97), tail * 0.5), finalColor.a);
 
     if (glitchAmount > 0.3 && hash2(uv + time) < 0.1) {
         let r = textureSampleLevel(readTexture, u_sampler, uv + sortDir * 0.01, 0.0).r;
@@ -158,7 +186,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     var rgb = acesToneMap(finalColor.rgb + vec3<f32>(packet * 0.2 + clickBurst * 0.25));
-    let alpha = clamp(finalColor.a * 0.85 + packet * 0.1 + clickBurst * 0.12 + treble * 0.05, 0.06, 0.98);
+    let alpha = clamp(finalColor.a * 0.85 + packet * 0.1 + tail * 0.1 + clickBurst * 0.12 + treble * 0.05, 0.06, 0.98);
 
     textureStore(writeTexture, coord, vec4<f32>(rgb, alpha));
     textureStore(dataTextureA, coord, vec4<f32>(rgb, alpha));

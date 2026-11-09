@@ -3,7 +3,7 @@
   "name": "Glass Shatter",
   "category": "interactive-mouse",
   "url": "shaders/glass-shatter.wgsl",
-  "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. Crack energy accumulates in dataTextureC so repeated clicks progressively craze the glass rather than each producing an isolated ring. Fixes a mask-as-colour hazard where dataTextureA held a mask tuple that nothing read, and adds ACES in place of a hard clamp.",
+  "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. A press or click fragments the glass into finer shards at the impact, with fracture hairlines on the real shard borders and a faint display-space ghost of the previous frame; ACES output.",
   "params": [
     {
       "id": "scale",
@@ -50,8 +50,7 @@
     "voronoi-facets",
     "stress-birefringence",
     "fresnel",
-    "crack-propagation",
-    "temporal-crack-memory"
+    "crack-propagation"
   ],
   "tags": [
     "glass",
@@ -88,7 +87,7 @@
           "default": 0.2,
           "min": 0,
           "max": 1,
-          "description": "Bevel highlight strength and glass density."
+          "description": "Bevel highlight strength and glass density; also the width and brightness of the fracture hairlines and the strength of the stress fringes."
         },
         {
           "id": "aberration",

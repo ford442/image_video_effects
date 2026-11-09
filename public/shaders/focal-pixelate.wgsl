@@ -3,26 +3,11 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, domain-warp, depth-aware, hex-bokeh, anti-moiré, lod-bias, shared-memory-tiling, temporal-feedback, upgraded-rgba
 //  Complexity: Low
+//  Upgraded: 2026-10-31
+//  Ideas: pixel-aperture well; defocus circle of confusion
+//  A packing: raw metadata (mix, 1/blocks, bass, alpha); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Tiling hint: reserve shared memory for a 18x18 tile so future cooperative
 // sampling passes can reuse texels across the workgroup boundary.
@@ -119,8 +104,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Combine point sampling for the focused center with hex-bokeh sampling for
     // the pixelated fringe using a branchless mix.
     let pointColor = textureSampleLevel(readTexture, non_filtering_sampler, sample_uv, 0.0).rgb;
-    let bokehColor = sampleHexBokeh(sample_uv, 1.0 / blocks, lod);
-    let color = mix(pointColor, bokehColor, mix_factor);
+    // ── Idea 2: defocus circle of confusion ─────────────────────────
+    // The quantize grid stays `blocks`. The hex kernel widens with how
+    // far this pixel already is from focus.
+    let coc = mix(0.2, 2.6, mix_factor);
+    let bokehColor = sampleHexBokeh(sample_uv, coc / blocks, lod);
+    let shown = mix(pointColor, bokehColor, mix_factor);
+
+    // ── Idea 1: pixel-aperture well ─────────────────────────────────
+    // fract inside the block is the square pixel. Corners darken only
+    // in the fringe that is already pixelated.
+    let fr = fract((uv + warp * mix_factor) * blocks);
+    let margin = min(min(fr.x, 1.0 - fr.x), min(fr.y, 1.0 - fr.y));
+    let aperture = smoothstep(0.0, 0.14, margin);
+    let color = mix(shown, shown * (0.42 + 0.58 * aperture), mix_factor);
 
     // Depth-aware fog uses the warped sample coordinate to match the pixelated
     // look, but is attenuated near the focused center.

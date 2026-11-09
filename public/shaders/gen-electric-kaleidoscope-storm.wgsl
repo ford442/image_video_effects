@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: kaleidoscope, electric, storm, audio-reactive, mouse-driven, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-10
-//  Ideas: Lichtenberg afterimage from exact C along the bolt; leader vs return-stroke; mirror-seam arcing; bolt-tip corona bulbs; leader pause beads; ground streamers
+//  Upgraded: 2026-11-08
+//  Ideas: Lichtenberg afterimage from exact C along the bolt; leader vs return-stroke; mirror-seam arcing; bolt-tip corona bulbs; leader pause beads; ground streamers; sheet-lightning sky flash; channel recombination cooling
 //  A packing: HDR trail RGB in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -68,10 +68,12 @@ fn lightningBolt(
     let boltPoint = start + ndir * (projT * len) + perp * offset;
     let d = length(uv - boltPoint);
     
-    // Core bolt
-    let core = exp(-d * d * 800.0);
+    // Core bolt. Rescue: the old glow (exp(-d*d*120)*0.4, sigma ~0.065) on
+    // 8+ bolts packed into ONE fold sector covered the entire folded plane, so
+    // the "deep dark background" read as a flat cyan wash. Tighter halo.
+    let core = exp(-d * d * 2600.0);
     // Glow around bolt
-    let glow = exp(-d * d * 120.0) * 0.4;
+    let glow = exp(-d * d * 520.0) * 0.22;
     
     return core + glow;
 }
@@ -115,11 +117,11 @@ fn branchingBolt(
 
         // Idea 4 — bolt-tip corona bulb: brush discharge where each segment's leader stalls
         let tipD = uv - end;
-        let tipBulb = exp(-dot(tipD, tipD) * 2600.0) * 0.9 + exp(-dot(tipD, tipD) * 420.0) * 0.18;
+        let tipBulb = exp(-dot(tipD, tipD) * 6000.0) * 0.9 + exp(-dot(tipD, tipD) * 1500.0) * 0.1;
         *color += vec3<f32>(0.75, 0.6, 1.0) * tipBulb * step(0.3, flicker);
         // Idea: leader pause bead — a knot halfway along the segment, where the stepped leader hesitates.
         let mid = (curStart + end) * 0.5;
-        let pauseBead = exp(-dot(uv - mid, uv - mid) * 2200.0);
+        let pauseBead = exp(-dot(uv - mid, uv - mid) * 7000.0);
         *color += vec3<f32>(1.0, 0.94, 0.72) * pauseBead * 0.7;
 
         totalIntensity += (bolt + tipBulb * 0.6 + pauseBead * 0.35) * weight;
@@ -258,6 +260,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Generate lightning bolts in folded space
     var boltColor = vec3<f32>(0.0);
     var boltEnergy = 0.0;
+    var returnCount = 0.0;
     
     let numBolts = 8;
     for (var i = 0; i < numBolts; i++) {
@@ -284,6 +287,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let visibility = smoothstep(0.2, 0.5, flicker);
         let isReturn = hash1(seed + floor(time * 12.0)) > 0.55;
         let strokeScale = select(0.38, 1.85, isReturn);
+        returnCount += select(0.0, visibility, isReturn);
         
         col += boltCol * bolt * visibility * audioIntensity * 2.0 * strokeScale;
         
@@ -299,6 +303,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     
+    // Idea A — sheet-lightning sky flash: each 1/12 s stroke tick, the return
+    // strokes that fired light the cloud deck behind the kaleidoscope — a
+    // soft, noise-mottled lavender flash that decays within the tick. Bass
+    // makes the flashes fuller.
+    let tickPhase = fract(time * 12.0);
+    let cloud = noise(uv * 3.0 + vec2<f32>(floor(time * 12.0) * 0.37, 0.0)) * 0.6 + 0.4;
+    let flash = clamp(returnCount * 0.22, 0.0, 1.0) * exp(-tickPhase * 3.5) * cloud * (0.7 + bass * 0.6);
+    col += vec3<f32>(0.32, 0.3, 0.55) * flash * intensity * (0.5 + 0.5 * exp(-dot(uv, uv) * 1.5));
+
     // Central electric orb
     let centerDist = length(kp);
     let fieldStrength = 5.0 * audioIntensity;
@@ -350,7 +363,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let decay = 0.96;
     let lich = clamp(boltEnergy * 0.22, 0.0, 0.5);
     col = mix(col, prev.rgb, lich);
-    let temporal = mix(prev.rgb * decay, col, 0.25);
+    // Idea B — channel recombination cooling: the ionised channel left in the
+    // trail cools from white-blue toward violet as it fades (red and green
+    // recombine faster than blue), so afterimages read as cooling plasma.
+    let coolDecay = vec3<f32>(0.935, 0.92, decay * 1.015);
+    let temporal = mix(prev.rgb * coolDecay, col, 0.25);
     var mapped = acesToneMap(temporal);
     mapped = pow(max(mapped, vec3<f32>(0.0)), vec3<f32>(1.1, 1.0, 0.9));
 

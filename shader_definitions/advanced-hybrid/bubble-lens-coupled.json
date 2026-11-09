@@ -9,7 +9,6 @@
     "lens-distortion",
     "temporal",
     "audio-reactive",
-    "depth-aware",
     "upgraded-rgba"
   ],
   "params": [

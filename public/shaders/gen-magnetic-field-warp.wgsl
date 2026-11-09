@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-14
-//  Ideas: Larmor gyration of the sampling point (ω_c ∝ |B|, r_L ∝ 1/|B|); synchrotron emission tint (j ∝ B^1.75, ν_c ∝ γ²B, polarization ⊥ B)
+//  Upgraded: 2026-09-14, 2026-11-01
+//  Ideas: Larmor gyration of the sampling point (ω_c ∝ |B|, r_L ∝ 1/|B|); synchrotron emission tint (j ∝ B^1.75, ν_c ∝ γ²B, polarization ⊥ B); Doppler beaming of the synchrotron term by gyration phase; field-aligned comb (iron-filings smear along ±B)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Warp Strength, .y = Plasma Mix, .z = Turbulence, .w = Attractor Mix
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Warp Strength, .y = Plasma Mix, .z = Turbulence, .w = Attractor Mix
 
 const PHI = 1.618033988749895;
 
@@ -168,7 +150,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let safe_uv = clamp(warped_uv, vec2<f32>(0.0), vec2<f32>(1.0));
     let maxCoord = res - vec2<i32>(1);
     let read_coords = clamp(vec2<i32>(safe_uv * vec2<f32>(res)), vec2<i32>(0), maxCoord);
-    let color = textureLoad(readTexture, read_coords, 0);
+    let colorPoint = textureLoad(readTexture, read_coords, 0);
+
+    // ── 2026-11 Idea 2: field-aligned comb ──
+    // Iron filings lie along the field: two extra taps along +-B (up to 0.012 uv, scaled by the
+    // normalised |B|) smear the image along its own field lines; flat where the field is weak.
+    let combStrength = clamp(bMag * 0.35, 0.0, 1.0);
+    let combDir = field / max(bMag, 1e-4);
+    let combPx = combDir * (0.012 * combStrength) * vec2<f32>(res);
+    let combA = textureLoad(readTexture, clamp(read_coords + vec2<i32>(round(combPx)), vec2<i32>(0), maxCoord), 0);
+    let combB = textureLoad(readTexture, clamp(read_coords - vec2<i32>(round(combPx)), vec2<i32>(0), maxCoord), 0);
+    let color = vec4<f32>(mix(colorPoint.rgb, (colorPoint.rgb * 2.0 + combA.rgb + combB.rgb) * 0.25, 0.8 * combStrength), colorPoint.a);
 
     // Depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -182,7 +174,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // polariser (mids) reveals the field direction as cos² fringes.
     let bNorm = clamp(bMag * 0.35, 0.0, 1.0);
     let gamma2 = 1.0 + bass * 2.5;
-    let emissivity = pow(bNorm, 1.75) * (0.6 + luma * 0.8);
+    // ── 2026-11 Idea 1: Doppler beaming ──
+    // A gyrating electron's velocity leads its position by 90 degrees. Its emission is beamed
+    // along the velocity, so it is brightest when that velocity points at the observer (a fixed
+    // upper-right view direction here): j ~ D^2.5, D = sqrt(1-b^2) / (1 - b cos(theta)). Clamped
+    // and blended so the mean brightness stays near HEAD's.
+    let beamBeta = clamp(0.3 + bass * 0.4, 0.0, 0.75);
+    let beamCos = cos(gyroPhase + 1.5707963 - 0.7853982);
+    let beamD = sqrt(1.0 - beamBeta * beamBeta) / (1.0 - beamBeta * beamCos);
+    let beaming = mix(1.0, clamp(pow(beamD, 2.5), 0.25, 3.0), 0.7);
+    let emissivity = pow(bNorm, 1.75) * (0.6 + luma * 0.8) * beaming;
     let nuC = clamp(bNorm * gamma2 * 0.55, 0.0, 1.0);
     let bAngle = atan2(field.y, field.x);
     let polariser = time * (0.15 + mids * 0.4);

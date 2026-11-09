@@ -3,9 +3,9 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: valley-fold ambient occlusion; wet-glue seam highlight on spring crease
-//  A packing: fold sim in RGBA (C.r fold memory)
+//  Upgraded: 2026-11-09
+//  Ideas: valley-fold ambient occlusion; wet-glue seam highlight on cursor crease; lingering crease scars (C.g fold-memory EMA leaves worn grey fibre lines); pleated-fan panel lighting (panel normals tilt along the azimuth so alternate panels catch/lose the light); crease misregistration (image slides tangentially across each crease)
+//  A packing: [|fold|, crease-memory EMA, shadowFactor, alpha] (C.g read back as crease memory)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -32,11 +32,10 @@ fn paperTex(p: vec2<f32>, dir: vec2<f32>) -> f32 {
   return coarse + fine + micro;
 }
 
+// RESCUE: HEAD used a Hable-style curve with no exposure/white-point divide, mapping
+// mid-grey 0.5 → 0.14 (picture ~3.5x too dark). Standard ACES fit.
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = x * (x * 0.15 + 0.05) + 0.004;
-  let b = x * (x * 0.15 + 0.50) + 0.06;
-  let c = x * 0.85 + 0.30;
-  return clamp((a / b) * c, vec3<f32>(0.0), vec3<f32>(1.0));
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -52,25 +51,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let audio = plasmaBuffer[0].xyz;
   let coord = vec2<i32>(gid.xy);
 
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring) { smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) { springPos = mouse; springVel = vec2<f32>(0.0); }
-    else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 9.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time; extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
+  // RESCUE: HEAD kept a spring in extraBuffer[133..138], which is re-uploaded as zeros
+  // every frame, pinning the cursor fold to (0,0). Use the live pointer.
+  let smoothMouse = mouse;
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
 
@@ -121,8 +104,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mask = smoothstep(-softness, 0.0, foldAngle) * smoothstep(softness, 0.0, foldAngle);
 
   // Temporal fold history for paper memory
-  let prevFold = textureLoad(dataTextureC, coord, 0).r;
-  let persistentMask = mix(mask, prevFold * 0.88, 0.22);
+  // RESCUE: HEAD read C.r (|fold|) as if it were the mask, and never displayed the result.
+  let prevFold = textureLoad(dataTextureC, coord, 0).g;
+  let persistentMask = clamp(mix(mask, prevFold, 0.94), 0.0, 1.0);
 
   // Depth controls paper layer ordering and shadow casting
   let inShadow = step(0.0, foldAngle) * step(depth, 0.5);
@@ -139,16 +123,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let paperColor = vec3<f32>(0.93, 0.91, 0.87) * (1.0 + fiber);
 
   // Paper fiber shading
-  let paperNormal = vec3<f32>(fiberDir * 0.15, 1.0);
+  // Idea 4 — pleated-fan panel lighting: the panel surface tilts along the azimuthal
+  // tangent by the fold slope cos(baseFold), so alternate panels face toward/away from the light.
+  let tangent = vec2<f32>(-fiberDir.y, fiberDir.x);
+  let panelSlope = cos(baseFold) * foldDepth * 0.55 * (1.0 - dist * 0.6);
+  let paperNormal = vec3<f32>(fiberDir * 0.15 + tangent * panelSlope, 1.0);
   let lightDir = normalize(vec3<f32>(0.3, 0.5, 1.0));
   let paperShade = max(dot(normalize(paperNormal), lightDir), 0.0);
   let shadedPaper = paperColor * (0.4 + paperShade * 0.6);
 
+  // Idea 5 — crease misregistration: the two sides of each crease are different layers of
+  // paper, so the picture slides tangentially by the fold sign and breaks at every crease line.
+  let misreg = tangent * signFold * foldDepth * 0.006 * smoothstep(0.02, 0.25, dist) * bassEnv;
+  let suv = uv + misreg;
+
   // Chromatic folding: R/B sample from different crease depths
   let shift = animatedFold * chromaOffset * bassEnv;
-  let rUV = clamp(uv + vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-  let bUV = clamp(uv - vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-  let gUV = clamp(uv + vec2<f32>(0.0, shift * 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+  let rUV = clamp(suv + vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let bUV = clamp(suv - vec2<f32>(shift, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let gUV = clamp(suv + vec2<f32>(0.0, shift * 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
@@ -176,6 +169,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     + vec3<f32>(layerHighlight + creaseHighlight + edgeGlow + creaseSpec)
     + vec3<f32>(0.94, 0.97, 1.0) * seamRidge;
 
+  // Idea 3 — lingering crease scars: where creases sat for a while (C.g memory EMA)
+  // the paper keeps a worn line — fibres lifted and greyed, slightly darker than the sheet.
+  let scar = smoothstep(0.25, 0.85, persistentMask) * (1.0 - mask * 0.6);
+  let scarFibre = 0.75 + noise2(uv * 260.0 + fiberDir * 4.0) * 0.5;
+  rgb = mix(rgb, vec3<f32>(dot(rgb, vec3<f32>(0.3, 0.59, 0.11))) * 0.82, scar * 0.45 * scarFibre);
+
   // Mountain/valley tint
   let mountainValley = signFold * 0.5 + 0.5;
   let origamiTint = mix(vec3<f32>(0.92, 0.90, 0.88), vec3<f32>(0.96, 0.95, 0.93), mountainValley);
@@ -194,7 +193,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let foldOpacity = clamp(abs(animatedFold) * 1.2 + 0.15, 0.0, 1.0);
   let paperOpacity = 0.9;
-  let finalAlpha = clamp(foldOpacity * paperOpacity * depth, 0.08, 0.98);
+  let finalAlpha = clamp(foldOpacity * paperOpacity * mix(0.6, 1.0, depth), 0.08, 0.98);
   let depthLayer = mix(0.25, 0.75, depth);
   let outDepth = clamp(mix(depthLayer, 0.3 + abs(animatedFold) * 0.4, 0.25), 0.0, 1.0);
 

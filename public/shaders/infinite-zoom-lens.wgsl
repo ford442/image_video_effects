@@ -4,32 +4,14 @@
 //  Features: mouse-driven, audio-reactive, droste-recursion, chromatic-dispersion,
 //            temporal-feedback, semantic-alpha, ACES
 //  Complexity: High
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-11-01
 //  Ideas: log-periodic Droste nesting inside the lens; endless inward fall (Zoom Strength);
-//         picture-frame seams at each nesting boundary
+//         picture-frame seams at each nesting boundary; Escher conformal spiral (each nesting generation also rotates, so copies form a log-spiral); generation falloff (each deeper copy is a dimmer screen)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=ZoomStrength, y=LensRadius, z=FeedbackPersistence, w=Twist
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=ZoomStrength, y=LensRadius, z=FeedbackPersistence, w=Twist
 
 const TAU: f32 = 6.28318530718;
 
@@ -125,7 +107,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let nestU = log(max(dist, 1e-5) / radius) / logS + fallPhase;
   let nestF = fract(nestU);
   let nestR = radius * exp((nestF - 1.0) * logS);
-  let nestUV = mouse + (uv - mouse) * (nestR / max(dist, 1e-5));
+  // Idea 4 — Escher conformal spiral. A true Droste picture is a log-spiral, not concentric copies:
+  // the nested copy is rotated as well as shrunk. The angle grows with the phase inside a generation
+  // and rides the Twist slider (plus a constant, so the default already spirals). Zero angle = HEAD.
+  let spiralTwist = 0.45 + twistAmt * 0.9;
+  let nestAng = (nestF - 1.0) * spiralTwist;
+  let aspV = vec2<f32>(dims.x / max(dims.y, 1.0), 1.0);
+  let nestV = (uv - mouse) * aspV * (nestR / max(dist, 1e-5));
+  let nestC = cos(nestAng);
+  let nestS_ = sin(nestAng);
+  let nestUV = mouse + vec2<f32>(nestV.x * nestC - nestV.y * nestS_, nestV.x * nestS_ + nestV.y * nestC) / aspV;
   let lensUV = mix(uv, nestUV, lensMask);
   // Idea 3 — picture-frame seams: the outer edge of every nested copy is a thin shadowed
   // frame with a lit inner lip, like Droste packaging art.
@@ -162,6 +153,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   var finalColor = accum / max(totalW, 1e-4);
+  // Idea 5 — generation falloff. Every nested copy is a screen inside a screen, so each one is a touch
+  // dimmer toward its inner edge (nestF -> 0) and the step back up at the seam reads as the next frame.
+  finalColor = finalColor * mix(1.0, mix(0.74, 1.0, nestF), lensMask);
   finalColor = finalColor * (1.0 - frameShadow * 0.6 * lensMask) + vec3<f32>(0.9, 0.85, 0.75) * frameLip * 0.18 * lensMask;
   let axial = smoothstep(0.07, 0.0, abs(fract(dist * 6.0 - time * (2.5 + mids)) - 0.5));
   let runner = smoothstep(0.05, 0.0, abs(fract(atan2(centered.y, centered.x) / TAU * 14.0 + time * 1.8) - 0.5));

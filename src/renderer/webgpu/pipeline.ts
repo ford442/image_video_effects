@@ -34,10 +34,13 @@ import { PIPELINE_CACHE_LIMIT, PipelineLru } from './pipelineCache';
 import {
   checkSimRingLimits,
   createSimRingBindGroupLayout,
+  createSimRingHashBindGroupLayout,
   createSimRingPipelineLayout,
   declaresBindGroup1,
+  declaresSimHash,
   validateGroup1Declarations,
 } from './simRing';
+import { createSimHashBuildResources, type SimHashBuildResources } from './simHash';
 import {
   WebGPUBufferSet,
   WebGPUSamplerSet,
@@ -68,8 +71,8 @@ export interface WebGPUBlitResources {
   supportsExternalTexture: boolean;
 }
 
-/** Group-1 layout provider; null when the device cannot host the sim ring. */
-export type SimRingLayoutProvider = () => GPUPipelineLayout | null;
+/** Group-1 layout provider (`spatialHash`: the 4-binding layout); null when the device cannot host it. */
+export type SimRingLayoutProvider = (spatialHash: boolean) => GPUPipelineLayout | null;
 
 /** Which precision a shader compiled at: 'f32-fallback' = it asked for f16 and the half variant failed. */
 export type ShaderPrecision = F16Choice | 'f32-fallback';
@@ -82,6 +85,7 @@ export class WebGPUShaderManager {
   /** Ids bound to a slot (including graph chains): never evicted. */
   private boundIds: () => ReadonlySet<string> = () => new Set<string>();
   private simRingShaders = new Set<string>();
+  private simHashShaders = new Set<string>();
   private simRingLayoutProvider: SimRingLayoutProvider = () => null;
   private pipelineHashes = new Map<string, string>();
   private workgroupSizes = new Map<string, { x: number; y: number }>();
@@ -167,6 +171,11 @@ export class WebGPUShaderManager {
     return this.simRingShaders.has(id);
   }
 
+  /** True when the cached pipeline for `id` was built against the 4-binding (simHash) group-1 layout. */
+  usesSimHash(id: string): boolean {
+    return this.simHashShaders.has(id);
+  }
+
   getBindingUsage(id: string): ShaderBindingUsage {
     return this.bindingUsages.get(id) ?? CONSERVATIVE_BINDING_USAGE;
   }
@@ -189,6 +198,7 @@ export class WebGPUShaderManager {
     this.precisions.delete(id);
     this.sources.delete(id);
     this.directPipelines.delete(id);
+    this.simHashShaders.delete(id);
   }
 
   clear(): void {
@@ -203,6 +213,7 @@ export class WebGPUShaderManager {
     this.directPipelines.clear();
     this.directPending.clear();
     this.directGeneration++;
+    this.simHashShaders.clear();
   }
 
   /**
@@ -298,9 +309,11 @@ export class WebGPUShaderManager {
     // Everything else keeps the single group-0 layout it has always used.
     let layout = pipelineLayout;
     const wantsSimRing = declaresBindGroup1(wgsl);
+    // Opt-in within the opt-in: binding 3 selects the second, 4-binding group-1 layout.
+    const wantsSimHash = wantsSimRing && declaresSimHash(wgsl);
     if (wantsSimRing) {
       const errors = validateGroup1Declarations(wgsl);
-      const simLayout = this.simRingLayoutProvider();
+      const simLayout = this.simRingLayoutProvider(wantsSimHash);
       if (errors.length > 0 || !simLayout) {
         console.warn(
           `[WebGPU] Shader "${id}" declares @group(1) but ` +
@@ -332,6 +345,8 @@ export class WebGPUShaderManager {
       this.bindingUsages.set(id, analyzeShaderBindings(wgsl));
       if (wantsSimRing) this.simRingShaders.add(id);
       else this.simRingShaders.delete(id);
+      if (wantsSimHash) this.simHashShaders.add(id);
+      else this.simHashShaders.delete(id);
       this.lru.touch(id);
       this.trim(id);
     }
@@ -672,12 +687,16 @@ export class WebGPUPipelineModule {
   /** Group-1 sim-ring layouts; created lazily, null when the device lacks the limits. */
   simRingBindGroupLayout: GPUBindGroupLayout | null = null;
   private simRingPipelineLayout: GPUPipelineLayout | null = null;
+  /** The second group-1 layout (bindings 0–3), only built once a simHash shader compiles. */
+  simRingHashBindGroupLayout: GPUBindGroupLayout | null = null;
+  private simRingHashPipelineLayout: GPUPipelineLayout | null = null;
+  private simHashBuild: SimHashBuildResources | null = null;
   private simRingDevice: GPUDevice | null = null;
 
   readonly shaderManager = new WebGPUShaderManager();
 
   constructor() {
-    this.shaderManager.setSimRingLayoutProvider(() => this.getSimRingPipelineLayout());
+    this.shaderManager.setSimRingLayoutProvider((spatialHash) => this.getSimRingPipelineLayout(spatialHash));
   }
 
   setupComputeLayout(
@@ -696,6 +715,9 @@ export class WebGPUPipelineModule {
     this.simRingDevice = device;
     this.simRingBindGroupLayout = null;
     this.simRingPipelineLayout = null;
+    this.simRingHashBindGroupLayout = null;
+    this.simRingHashPipelineLayout = null;
+    this.simHashBuild = null;
   }
 
   /**
@@ -703,22 +725,46 @@ export class WebGPUPipelineModule {
    * so non-sim sessions never create it; the group-1 limits are checked against
    * device.limits here instead of being added to catalog-wide requiredLimits.
    */
-  getSimRingPipelineLayout(): GPUPipelineLayout | null {
-    if (this.simRingPipelineLayout) return this.simRingPipelineLayout;
+  getSimRingPipelineLayout(spatialHash = false): GPUPipelineLayout | null {
+    const cached = spatialHash ? this.simRingHashPipelineLayout : this.simRingPipelineLayout;
+    if (cached) return cached;
     const device = this.simRingDevice;
     if (!device || !this.bindGroupLayout) return null;
-    const check = checkSimRingLimits(device.limits as never);
+    // The one extra storage buffer of simHash is checked here, never added to catalog-wide limits.
+    const check = checkSimRingLimits(device.limits as never, spatialHash);
     if (!check.ok) {
-      console.warn('[WebGPU] sim ring unavailable:', check.failures.join('; '));
+      console.warn(`[WebGPU] sim ring${spatialHash ? ' spatial hash' : ''} unavailable:`, check.failures.join('; '));
       return null;
     }
-    this.simRingBindGroupLayout = createSimRingBindGroupLayout(device);
-    this.simRingPipelineLayout = createSimRingPipelineLayout(
+    // A hash ring still binds the base layout for its nodes that do not declare simHash.
+    if (!this.simRingBindGroupLayout) {
+      this.simRingBindGroupLayout = createSimRingBindGroupLayout(device);
+      this.simRingPipelineLayout = createSimRingPipelineLayout(
+        device,
+        this.bindGroupLayout,
+        this.simRingBindGroupLayout,
+      );
+    }
+    if (!spatialHash) return this.simRingPipelineLayout;
+    this.simRingHashBindGroupLayout = createSimRingHashBindGroupLayout(device);
+    this.simRingHashPipelineLayout = createSimRingPipelineLayout(
       device,
       this.bindGroupLayout,
-      this.simRingBindGroupLayout,
+      this.simRingHashBindGroupLayout,
     );
-    return this.simRingPipelineLayout;
+    return this.simRingHashPipelineLayout;
+  }
+
+  /**
+   * The planner's scatter pass (simHash.ts) and its bind group layout; built on
+   * first use so sessions without a simHash shader never compile it.
+   */
+  getSimHashBuildResources(): SimHashBuildResources | null {
+    if (this.simHashBuild) return this.simHashBuild;
+    const device = this.simRingDevice;
+    if (!device) return null;
+    this.simHashBuild = createSimHashBuildResources(device);
+    return this.simHashBuild;
   }
 
   setupBlitPipelines(

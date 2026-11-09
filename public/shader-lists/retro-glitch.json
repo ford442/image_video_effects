@@ -128,7 +128,7 @@
     "id": "byte-mosh",
     "name": "Byte-Mosh Glitch",
     "url": "shaders/byte-mosh-mangle.wgsl",
-    "description": "LFSR/GF(2) datamosh corruption with spring cursor, held burst, capped ripple packets, wired zoom_params, regional FFT edges, and ACES output.",
+    "description": "8-bit byte-word datamosh: block-hashed xor / bit-rotate / byte-mask corruption with motion-vector block copy, per-block bit-plane severity, and macroblock seam ringing in the render pass, ACES output.",
     "workgroup_size": [
       16,
       16,
@@ -172,16 +172,9 @@
       "aces-tone-map",
       "audio-reactive",
       "chromatic-aberration",
-      "click-reactive",
       "glitch",
       "graph-runner",
-      "held-drag",
-      "interactive",
-      "mouse-driven",
       "multi-pass",
-      "physics",
-      "simulation",
-      "spring-cursor",
       "upgraded-rgba"
     ],
     "tags": [
@@ -227,7 +220,7 @@
     "id": "crt-magnet",
     "name": "CRT Magnet",
     "url": "shaders/crt-magnet.wgsl",
-    "description": "CRT degaussing distortion with continuous magnetic rings and rolling beam sweeps, held-pointer field gain, bounded click shocks, exact-load feedback echo, aperture grille, hex bloom, spectral palette, and preserved A-state packing.",
+    "description": "CRT magnet distortion with tangential gun convergence error, a raster that bows through the field, a rolling hum bar, degauss rings, purity stains and a sprung cursor.",
     "updated": true,
     "params": [
       {
@@ -959,7 +952,7 @@
     "id": "digital-waves",
     "name": "Digital Waves",
     "url": "shaders/digital-waves.wgsl",
-    "description": "Cyber wave interference with hex quantization, spring cursor focus, held boost, capped ripples, regional FFT bins, and ACES tone map. Standing nodes darken where the sines cancel, and scanlines bunch on the crests.",
+    "description": "Cyber wave interference with standing nodes and crest scanlines. Posterize steps drop toward the nodes, and the pixel grid shears with the wave.",
     "workgroup_size": [
       16,
       16,
@@ -1160,7 +1153,7 @@
     "name": "Holographic Glitch",
     "category": "retro-glitch",
     "url": "shaders/holographic-glitch.wgsl",
-    "description": "Continuous holographic scan and phase corruption with chromatic peel interaction, click desynchronization fronts, and channel-separated exact-history trails. Upgraded 2026-09-28: emitter flicker (random blackouts and slow luminance sag on the Flicker slider); grating-order ghosts (hue-split ±1-order copies along the shear axis, scaled by Holographic Intensity); peel shadow cast by the folded crest onto the image beneath.",
+    "description": "Peeled, sheared hologram with grating-order ghosts, a peel shadow, and emitter blackouts. The scan carrier drops out on its nulls, and the grating beats the scan into a moiré.",
     "workgroup_size": [
       16,
       16,
@@ -1232,7 +1225,7 @@
     "id": "holographic-projection-failure",
     "name": "Holo-Projection Failure v2",
     "url": "shaders/holographic-projection-failure.wgsl",
-    "description": "Faulty holographic emitter simulation with CRT V-hold rolling, chromatic RGB beam desync, DAC bit-depth truncation, and phosphor beam persistence. Upgraded 2026-09-28: emitter cone (cyan carrier cast from bottom-centre; brightness and fringe pitch fall off with throw, alpha = carrier transmission); stale-frame tear bands that reveal the previous frame; re-sync lock line sweeping down inside the cursor repair circle (holding widens it and speeds the sweep).",
+    "description": "Failing emitter: a cone from the bottom, stale-frame tear bands, and a re-sync line in the repair circle. Torn bands split into two fields, and static arrives as a dropout streak along the scanline.",
     "tags": [
       "glitch",
       "holographic",
@@ -1651,7 +1644,7 @@
     "id": "scan-distort",
     "name": "Scan Distort",
     "url": "shaders/scan-distort.wgsl",
-    "description": "CRT scanline tear with block quantization, held glitch bursts, exact C smear, capped click ripples, three-band audio, and ACES output. Upgraded with a sync-tear band (rows inside the glitch pulse slide along a sawtooth ramp and show stale rows from C), DCT-basis garble (corrupted blocks decode as hashed cosine basis patterns and the garbled set re-rolls with time), and MV arrows from a per-block temporal gradient (dots on still content).",
+    "description": "CRT scanline tear over a block-quantised codec picture: sync-tear band from C, DCT-basis garble, temporal-gradient MV arrows, 4:2:0 chroma macroblock bleed, and P-frame macroblock skip that freezes still blocks during glitch pulses.",
     "workgroup_size": [
       16,
       16,
@@ -2098,7 +2091,7 @@
     "id": "waveform-glitch",
     "name": "Waveform Glitch",
     "url": "shaders/waveform-glitch.wgsl",
-    "description": "Oscilloscope Lissajous waveform glitch with signal aliasing and exact C phosphor trails. Upgraded 2026-09-28: a waveform-monitor trace plots the luma of the source row under the cursor; beam-dwell brightness makes slow Lissajous lobes burn brighter than fast crossings; treble block glitch slides whole quantisation cells sideways. Aspect-corrected scope, three-band audio, held burst, capped click ripples.",
+    "description": "Oscilloscope Lissajous waveform glitch with signal aliasing and exact C phosphor trails. Upgraded 2026-09-28: a waveform-monitor trace plots the luma of the source row under the cursor; beam-dwell brightness makes slow Lissajous lobes burn brighter than fast crossings; treble block glitch slides whole quantisation cells sideways. Aspect-corrected scope, three-band audio, held burst, capped click ripples. VHS chroma lags luma in one direction, and the Lissajous ghosts longer than the field.",
     "workgroup_size": [
       16,
       16,

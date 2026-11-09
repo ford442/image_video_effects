@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, FBM, domain-warping,
 //            curl-noise, Worley, Fresnel-Schlick, Beer-Lambert, IOR, temporal, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: lead came ridge (rounded metal came with a specular ridge instead of a flat dark line); seed bubbles (tiny lens inclusions that offset the refracted UV and ring-light at their rim); kept: Voronoi facet-pane Snell tilt; meniscus refraction kick at the lead came
+//  Upgraded: 2026-11-09
+//  Ideas: lead came ridge (rounded metal came with a specular ridge instead of a flat dark line); seed bubbles (tiny lens inclusions that offset the refracted UV and ring-light at their rim); antique reams (per-pane draw-line ridges shift the refracted image along one axis); backlit-window sun at the pointer transmitted through pane tint + absorption, blocked by the came; fixed live-time height gradient; kept: Voronoi facet-pane Snell tilt; meniscus refraction kick at the lead came
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -94,8 +94,16 @@ fn heightMap(uv: vec2<f32>, time: f32, audioBass: f32) -> f32 {
     return h;
 }
 
-fn refractOffset(uv: vec2<f32>, h: f32, bevel: f32) -> vec2<f32> {
-    let grad = vec2<f32>(heightMap(uv + vec2<f32>(0.01, 0.0), 0.0, 0.0) - h, heightMap(uv + vec2<f32>(0.0, 0.01), 0.0, 0.0) - h);
+// FIX: HEAD sampled the neighbours at time 0 / bass 0 but the centre at the
+// live time, so the "gradient" was a full-height difference that swung the
+// whole image around every frame. The gradient is now taken once, at the
+// live time and bass, and scaled by the caller.
+fn heightGrad(uv: vec2<f32>, h: f32, time: f32, audioBass: f32) -> vec2<f32> {
+    return vec2<f32>(heightMap(uv + vec2<f32>(0.01, 0.0), time, audioBass) - h,
+                     heightMap(uv + vec2<f32>(0.0, 0.01), time, audioBass) - h);
+}
+
+fn refractOffset(grad: vec2<f32>, bevel: f32) -> vec2<f32> {
     return grad * bevel * 0.5;
 }
 
@@ -155,16 +163,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let depth = baseDepth * 0.5 + lum * 0.3 + h * 0.2;
     // Refraction with IOR-based Snell approximation
     let eta = IOR_AIR / IOR_GLASS;
-    var refractUV = uv + refractOffset(uv, h, bevelWidth) * refractionStrength * (1.0 + bass * 0.5);
-    var refractUV2 = uv + refractOffset(uv, h * 0.7, bevelWidth * 0.5) * refractionStrength * eta * (1.0 + mids * 0.3);
-    // Idea 1 — facet-pane Snell: each Voronoi cell tilts as a stable pane
+    let hGrad = heightGrad(uv, h, time * rippleSpeed, bass);
+    var refractUV = uv + refractOffset(hGrad, bevelWidth) * refractionStrength * (1.0 + bass * 0.5);
+    var refractUV2 = uv + refractOffset(hGrad * 0.7, bevelWidth * 0.5) * refractionStrength * eta * (1.0 + mids * 0.3);
+    // kept — facet-pane Snell: each Voronoi cell tilts as a stable pane
     let paneTilt = (hash2(vec2<f32>(cellHash, cellHash * 1.7)) - 0.5) * 2.0;
     let paneAmt = refractionStrength * 0.12 * smoothstep(0.0, bevelWidth * 4.0, edgeDist);
     refractUV += paneTilt * paneAmt;
     refractUV2 += paneTilt * paneAmt * eta;
-    // Idea 2 — meniscus at lead: extra refraction kick on the came
+    // kept — meniscus at lead: extra refraction kick on the came
     let meniscus = exp(-edgeDist * edgeDist * 380.0) * bevelWidth * 8.0;
-    let meniscusDir = normalize(refractOffset(uv, h, 1.0) + vec2<f32>(0.0001));
+    let meniscusDir = normalize(refractOffset(hGrad, 1.0) + vec2<f32>(0.0001));
     refractUV += meniscusDir * meniscus * refractionStrength;
     refractUV2 += meniscusDir * meniscus * refractionStrength * 0.7;
     // Idea 2 - seed bubbles: sparse lens inclusions inside the panes
@@ -178,6 +187,18 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let sbRing = sbOn * exp(-sq((sbD - sbRad) / (sbRad * 0.18 + 0.001)));
     refractUV -= sbV * sbInside * 0.05 * (0.5 + refractionStrength * 3.0);
     refractUV2 -= sbV * sbInside * 0.04 * (0.5 + refractionStrength * 3.0);
+    // ── Idea 3: antique reams — cylinder-blown glass carries parallel draw
+    // lines; each pane gets its own ream angle (from its cell hash) and the
+    // ridges push the refracted UV across the stripe, so the image behind a
+    // pane wobbles in one direction only and the direction changes per pane.
+    let reamAng = cellHash * PI;
+    let reamDir = vec2<f32>(cos(reamAng), sin(reamAng));
+    let reamCoord = dot(warpUV, reamDir) * facetCount * 2.5 + vnoise2(warpUV * facetCount * 1.5) * 1.5;
+    let ream = sin(reamCoord) * 0.6 + sin(reamCoord * 2.3 + cellHash * 7.0) * 0.4;
+    let reamAmt = ream * (0.004 + refractionStrength * 0.012) * smoothstep(0.0, bevelWidth * 3.0, edgeDist);
+    let reamPerp = vec2<f32>(-reamDir.y, reamDir.x);
+    refractUV += reamPerp * reamAmt;
+    refractUV2 += reamPerp * reamAmt * eta;
     refractUV = clamp(refractUV, vec2<f32>(0.0), vec2<f32>(1.0));
     refractUV2 = clamp(refractUV2, vec2<f32>(0.0), vec2<f32>(1.0));
     // Glass pane color with thin-film interference
@@ -203,7 +224,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let tintedGlass = mix(videoCol, videoCol * paneTint, 0.4 + bass * 0.1);
     // Fresnel reflection on glass surface
     let viewDir = normalize(vec2<f32>(0.0, 1.0));
-    let normal = normalize(refractOffset(uv, h, 1.0) * 10.0 + vec2<f32>(0.0, 1.0));
+    let normal = normalize(refractOffset(hGrad, 1.0) * 10.0 + vec2<f32>(0.0, 1.0));
     let fres = fresnel(max(dot(normal, viewDir), 0.0), 0.04);
     let reflectCol = vec3<f32>(0.9, 0.95, 1.0) * fres * (0.3 + mids * 0.3);
     // Edge highlight (lead lines) with Beer-Lambert attenuation
@@ -213,7 +234,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let withLead = mix(leadCol * attenuation + tintedGlass * (1.0 - attenuation), tintedGlass + reflectCol, edge);
     // Caustic sparkle on edges with physical dispersion
     let caustic = pow(sin(edgeDist * 50.0 + time * 3.0 + w.y * 10.0) * 0.5 + 0.5, 8.0);
-    let caustic2 = causticPattern(uv * facetCount, time, 1.0 + bass * 2.0);
+    // FIX: uv * facetCount fed 30-cycle sines up to 600 cycles/frame — pure
+    // per-pixel speckle on any bass hit. Caustic web now scales gently with facets.
+    let caustic2 = causticPattern(uv * (1.0 + facetCount * 0.12), time, 1.0 + bass * 2.0);
     let sparkle = (caustic * 0.6 + caustic2 * 0.4) * bass * 0.5 * (1.0 + treble * 2.0);
     var finalCol = withLead + vec3<f32>(0.9, 0.85, 0.7) * sparkle;
     // Idea 1 - lead came ridge: cylindrical profile, highlight sits off-centre, side picked per pane
@@ -224,6 +247,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     finalCol = mix(finalCol, finalCol * 0.55, camMask * 0.5);
     finalCol += vec3<f32>(0.78, 0.74, 0.66) * camSheen * (0.4 + mids * 0.4);
     finalCol += vec3<f32>(1.0, 0.97, 0.9) * sbRing * (0.2 + treble * 0.6);
+    // ── Idea 4: backlit window — the pointer is the sun behind the glass. Its
+    // disc and halo transmit through the panes (coloured by the pane's own
+    // tint and Beer–Lambert absorption) and the lead came blocks it, so the
+    // cames read as a silhouette against the light. Idle pointer (0.5,0.5)
+    // puts a soft sun in the centre.
+    let sunPos = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
+    let sunD = length((uv - sunPos) * vec2<f32>(res.x / res.y, 1.0));
+    let sunCore = exp(-sunD * sunD * 90.0);
+    let sunHalo = exp(-sunD * 5.0) * 0.35;
+    let transmit = paneTint * absorption * edge * (1.0 - camMask * 0.85);
+    finalCol += transmit * (sunCore * 1.4 + sunHalo) * (0.6 + bass * 0.6);
     // Glass specular with temporal shimmer
     let specAngle = sin(uv.x * 20.0 + uv.y * 15.0 + time + fbm2(uv * 5.0, 3) * TAU) * 0.5 + 0.5;
     finalCol += vec3<f32>(0.3, 0.3, 0.35) * specAngle * specAngle * 0.3 * (1.0 + mids * 0.5);

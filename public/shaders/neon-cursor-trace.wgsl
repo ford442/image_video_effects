@@ -6,8 +6,9 @@
 //            phosphor-decay, electric-arc, multi-point-trail, particle-spawn,
 //            velocity-smear, ripple-spark, depth-aware, aces-tone-map
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: arc forking above a spring-velocity threshold; white-hot beads cooling through the hue; overshoot spark burst when the spring passes the cursor
+//  Upgraded: 2026-11-08
+//  Ideas: arc forking above a spring-velocity threshold; white-hot beads cooling through the hue; overshoot spark burst when the spring passes the cursor;
+//         neon spill lighting the scene in the trail's colour; failing-ballast tube flicker
 //  A packing: linear phosphor RGB + bassEnv alpha; (0,0) = (lagPos.xy, lagVel.xy); (1,0) = (arcPhase, 0, 0, sentinel -7)
 // ═══════════════════════════════════════════════════════════════════
 //  Electric bead chain from the cursor to a spring-lagged point, jittered by
@@ -129,6 +130,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2 (cooling afterimage): the chain is hottest at the cursor end and
   // when the spring is moving fast; hot beads are stored white.
   let heat = clamp(0.25 + velMag * 0.35 + bassEnv * 0.4, 0.0, 1.0);
+
+  // Idea 5 (tube flicker): a neon tube on a failing ballast stutters — a
+  // 30 Hz hash drops whole frames of the live arc to a dim glow, more often
+  // as chaos rises; treble shortens the gaps. The phosphor in A keeps the
+  // trail continuous, so the stutter reads as flicker, not as gaps.
+  let flickRoll = hash21(vec2<f32>(floor(time * 30.0), 17.0));
+  let flickDrop = step(flickRoll, chaos * 0.35 * (1.0 - trebleSpark * 0.5));
+  let tubeFlicker = mix(1.0, 0.25 + 0.2 * flickRoll, flickDrop) * (1.0 + 0.06 * sin(time * 376.99));
 
   var glow = vec3<f32>(0.0);
   var accum = 0.0;
@@ -255,20 +264,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coolHue = fract(time * 0.07 * midsMorph + bassEnv * 0.25 + arcPhase * 0.015 + 0.3);
   cooled = mix(cooled, neonColor(coolHue) * luma(cooled) * 1.15, 0.08);
 
-  var phosphor = cooled + glow * audioIntensity * 0.2 * lumaBoost + particleGlow;
+  var phosphor = cooled + glow * audioIntensity * 0.2 * lumaBoost * tubeFlicker + particleGlow;
   phosphor = clamp(phosphor, vec3<f32>(0.0), vec3<f32>(8.0));
 
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthMix = max(clamp(depth * 2.5, 0.0, 1.0), 0.5);
-  var outRGB = mix(baseVideo.rgb * 0.15, phosphor, depthMix);
+  // Idea 4 (neon spill): the trail is a light source in a dark room — the
+  // scene behind it is lit by the phosphor's own colour with a soft
+  // inverse-luma falloff, so the image surfaces in neon around the trail and
+  // sinks back to the 15% ambient as the phosphor cools. Near (high-depth)
+  // surfaces catch more of the spill.
+  let spill = phosphor / (1.0 + luma(phosphor) * 0.6);
+  let litScene = baseVideo.rgb * (0.15 + spill * (0.9 + depth * 0.6));
+  var outRGB = mix(litScene, phosphor + litScene * 0.5, depthMix);
 
   let caStr = 0.003 * (1.0 + bassEnv) + depth * 0.001;
   let dir = safeNormalize(uv - vec2<f32>(0.5));
-  outRGB = vec3<f32>(
+  outRGB = max(vec3<f32>(0.0), vec3<f32>(
     outRGB.r + dir.x * caStr,
     outRGB.g,
     outRGB.b - dir.y * caStr * 0.5
-  );
+  ));
 
   // Single ACES on display only; A keeps the linear phosphor.
   outRGB = acesToneMap(clamp(outRGB * (0.9 + mids * 0.2), vec3<f32>(0.0), vec3<f32>(16.0)));

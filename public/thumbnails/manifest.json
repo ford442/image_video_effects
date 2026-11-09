@@ -14958,5 +14958,149 @@
     ],
     "source_hash": "98bf03797af989ba",
     "capture_host": "swiftshader"
+  },
+  "murmuration": {
+    "thumbnail_url": "thumbnails/murmuration.png",
+    "generated_at": "2026-10-26T07:00:01.315Z",
+    "params_snapshot": [
+      0.7,
+      0.65,
+      0.5,
+      0.6
+    ],
+    "source_hash": "b30ab171d7348613",
+    "capture_host": "swiftshader"
+  },
+  "photon-bins": {
+    "thumbnail_url": "thumbnails/photon-bins.png",
+    "generated_at": "2026-10-26T06:55:29.531Z",
+    "params_snapshot": [
+      0.5,
+      0.55,
+      0.35,
+      0.6
+    ],
+    "source_hash": "709bc6008f83a680",
+    "capture_host": "swiftshader"
+  },
+  "gen-audio-reactive-aurora-ribbons": {
+    "thumbnail_url": "thumbnails/gen-audio-reactive-aurora-ribbons.png",
+    "generated_at": "2026-11-08T03:11:37.443Z",
+    "params_snapshot": [
+      0.55,
+      0.5,
+      0.45,
+      0.35
+    ],
+    "source_hash": "64bddfda7330730a",
+    "capture_host": "swiftshader"
+  },
+  "gen-audio-reactive-mycelium-pulse": {
+    "thumbnail_url": "thumbnails/gen-audio-reactive-mycelium-pulse.png",
+    "generated_at": "2026-11-08T03:12:09.653Z",
+    "params_snapshot": [
+      0.5,
+      0.55,
+      0.45,
+      0.35
+    ],
+    "source_hash": "737268c9cd5924e3",
+    "capture_host": "swiftshader"
+  },
+  "gen-audio-reactive-quantum-pollen": {
+    "thumbnail_url": "thumbnails/gen-audio-reactive-quantum-pollen.png",
+    "generated_at": "2026-11-08T03:12:40.837Z",
+    "params_snapshot": [
+      0.7,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "ec52573861d1a7c1",
+    "capture_host": "swiftshader"
+  },
+  "gen-audio-reactive-spiral-galaxy": {
+    "thumbnail_url": "thumbnails/gen-audio-reactive-spiral-galaxy.png",
+    "generated_at": "2026-11-08T03:13:18.522Z",
+    "params_snapshot": [
+      0.55,
+      0.5,
+      0.45,
+      0.4
+    ],
+    "source_hash": "764dca37b56bfb00",
+    "capture_host": "swiftshader"
+  },
+  "gen-cymatic-bloom-fronds": {
+    "thumbnail_url": "thumbnails/gen-cymatic-bloom-fronds.png",
+    "generated_at": "2026-11-08T03:13:42.760Z",
+    "params_snapshot": [
+      0.55,
+      0.5,
+      0.45,
+      0.35
+    ],
+    "source_hash": "b4356a6c74b99f27",
+    "capture_host": "swiftshader"
+  },
+  "gen-cymatic-hex-mandala": {
+    "thumbnail_url": "thumbnails/gen-cymatic-hex-mandala.png",
+    "generated_at": "2026-11-08T03:14:02.626Z",
+    "params_snapshot": [
+      0.5,
+      0.45,
+      0.5,
+      0.35
+    ],
+    "source_hash": "31577facdcd055a9",
+    "capture_host": "swiftshader"
+  },
+  "gen-fractal-lightning-canvas": {
+    "thumbnail_url": "thumbnails/gen-fractal-lightning-canvas.png",
+    "generated_at": "2026-11-08T03:14:23.468Z",
+    "params_snapshot": [
+      0.5,
+      0.55,
+      0.45,
+      0.6
+    ],
+    "source_hash": "4eea148b569e3919",
+    "capture_host": "swiftshader"
+  },
+  "gen-magnetic-liquid-glyphs": {
+    "thumbnail_url": "thumbnails/gen-magnetic-liquid-glyphs.png",
+    "generated_at": "2026-11-08T03:14:45.649Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.6,
+      0.55
+    ],
+    "source_hash": "4d3a8c8aa4581b6d",
+    "capture_host": "swiftshader"
+  },
+  "physarum-agents": {
+    "thumbnail_url": "thumbnails/physarum-agents.png",
+    "generated_at": "2026-11-08T06:18:19.824Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "38befc20cdbebb2d",
+    "capture_host": "swiftshader"
+  },
+  "sph-fluid": {
+    "thumbnail_url": "thumbnails/sph-fluid.png",
+    "generated_at": "2026-11-08T06:18:45.435Z",
+    "params_snapshot": [
+      0.4,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "bc433b4600f07837",
+    "capture_host": "swiftshader"
   }
 }

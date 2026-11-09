@@ -49,7 +49,8 @@
     "name": "ASCII Decode",
     "url": "shaders/ascii-decode.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "description": "Renders the view as a digital ASCII matrix. Mouse movement acts as a decoding lens.",
     "params": [
@@ -143,7 +144,9 @@
     "supportsDepth": true,
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ascii",
+      "lens"
     ],
     "updated": true
   },
@@ -688,7 +691,7 @@
     "id": "chroma-shift-grid",
     "name": "Chroma Shift Grid",
     "url": "shaders/chroma-shift-grid.wgsl",
-    "description": "Grid-based multi-mode chromatic aberration with alpha-channel translucency blending. Uses single UV displacement + spectral tint via mix(), with Voronoi F2-F1 cell pattern variation. Alpha encodes grid distortion strength * cell activity.",
+    "description": "Grid-based multi-mode chromatic aberration. Each cell still lens-distorts, then splits R/G/B along that offset by a Cauchy spectrum. The pointer locally raises lens and chroma amount. Alpha encodes grid distortion strength * cell activity.",
     "features": [
       "mouse-driven",
       "upgraded-rgba"
@@ -1082,8 +1085,7 @@
       "crossover",
       "mouse-driven",
       "spectral-rendering",
-      "audio-reactive",
-      "upgraded-rgba"
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1171,7 +1173,7 @@
     "id": "crystal-freeze",
     "name": "Crystal Freeze",
     "url": "shaders/crystal-freeze.wgsl",
-    "description": "Mouse freezes the image into growing ice crystals with physical light transmission. Features Voronoi-based crystal cells with Fresnel reflection, path absorption, and purity-based scattering.",
+    "description": "Mouse freezes the image into growing ice crystals with physical light transmission. Features Voronoi-based crystal cells with Fresnel reflection, path absorption, purity-based scattering, hexagonal-axis frost creep, age-annealed rime and grain-boundary hoar.",
     "params": [
       {
         "id": "decay",
@@ -1233,6 +1235,8 @@
     "description": "Faceted glass/gemstone surface with physical light transmission. Features Voronoi-based facets with mouse-controlled lighting, Fresnel reflection, and purity-based scattering for realistic crystal appearance.",
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
       "alpha-transmission",
       "physical-refraction"
     ],
@@ -1284,7 +1288,7 @@
     "id": "crystal-refraction",
     "name": "Crystal Refraction",
     "url": "shaders/crystal-refraction.wgsl",
-    "description": "Interactive faceted crystal lens with a flat brilliant-cut table window in the centre, IOR-based chromatic dispersion, Fresnel reflection and thickness-dependent transmission. Facets throw spectral fire flashes as they turn past the light; bass makes the stone sparkle.",
+    "description": "Interactive faceted crystal lens with a flat brilliant-cut table window in the centre, IOR-based chromatic dispersion, Fresnel reflection and thickness-dependent transmission. Facets throw spectral fire flashes that spill into their neighbours, a frosted girdle outlines the stone, and a click ignites the facets in sequence.",
     "params": [
       {
         "id": "facetScale",
@@ -1321,6 +1325,7 @@
     ],
     "features": [
       "mouse-driven",
+      "upgraded-rgba",
       "alpha-transmission",
       "chromatic-aberration",
       "physical-refraction",
@@ -1444,7 +1449,7 @@
     "name": "Cyber Glitch Hologram",
     "category": "interactive-mouse",
     "url": "shaders/cyber-glitch-hologram.wgsl",
-    "description": "Block-based datamoshing with structure-tensor motion estimation, holographic cosine interference fringes, cyan/magenta color separation, chromatic aberration on glitch blocks, and ACES tone mapping.",
+    "description": "Block-swap datamosh with structure-tensor motion, holographic interference fringes, swapped-macroblock seams, depth-slice contour lines and scan-carrier projector dropout around the pointer, ACES tone mapping.",
     "params": [
       {
         "id": "hologramIntensity",
@@ -1859,7 +1864,7 @@
       "temporal",
       "upgraded-rgba"
     ],
-    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Display RGBA packed in A.",
+    "description": "Traveling multi-head slit scan with diagonal tear ribbons, phosphor aurora / oil-slick bands, held-pointer bending, click injections, conveyor decay, bit crushing, and three-band audio. Linear scroll RGBA in A; ACES on the display.",
     "params": [
       {
         "name": "Scan Speed",
@@ -2243,14 +2248,14 @@
       "hex"
     ],
     "name": "Digital Haze",
-    "description": "Beer-Lambert digital haze with hex grid overlay, iridescent scatter, sprung clear window, capped click pulses, and per-cell FFT static.",
+    "description": "Beer-Lambert digital haze with hex grid overlay and iridescent scatter. A sprung clear window wipes the fog and the wiped path re-fogs over seconds; thick fog extinguishes blue first and glows around bright lights; capped click pulses and per-cell treble static.",
     "updated": true
   },
   {
     "id": "digital-mold",
     "name": "Digital Mold",
     "url": "shaders/digital-mold.wgsl",
-    "description": "Gray-Scott mycelium with nutrient-gradient chemotaxis — hyphae extend up the image-luminance gradient the way real mycelium forages, rather than diffusing isotropically — and per-band sporulation regimes, where each FFT bin pushes its own zone into a different region of the Gray-Scott parameter plane so the colony grows visibly different structures per frequency. Also replaces a per-frame spore hash that strobed with a coherent drifting field, and derives alpha from colony density instead of passing the source alpha through.",
+    "description": "Gray-Scott mycelium with nutrient-gradient chemotaxis — hyphae extend up the image-luminance gradient the way real mycelium forages, rather than diffusing isotropically — and per-band sporulation regimes, where each FFT bin pushes its own zone into a different region of the Gray-Scott parameter plane so the colony grows visibly different structures per frequency. Also replaces a per-frame spore hash that strobed with a coherent drifting field, and derives alpha from colony density instead of passing the source alpha through; also ambient spore germination on bright damp patches, colony zonation rings, and sporangia fruiting dots on concentration peaks.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2266,7 +2271,10 @@
       "semantic-alpha",
       "aces",
       "gray-scott",
-      "chemotaxis"
+      "chemotaxis",
+      "spore-germination",
+      "zonation-rings",
+      "fruiting-bodies"
     ],
     "updated": true,
     "params": [
@@ -2386,7 +2394,7 @@
     "id": "directional-glitch",
     "name": "Directional Glitch",
     "url": "shaders/directional-glitch.wgsl",
-    "description": "SDF-masked Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, audio-reactive cosine palette, chromatic aberration, depth-aware masking, and kaleidoscope temporal feedback.",
+    "description": "SDF mouse zone where voronoi/FBM glitch cells tear along the cursor heading in block-pitch steps, with compass-snapped per-cell headings, RGB split on the tear axis, leading-edge overrun slivers, audio palette, and a local kaleidoscope echo.",
     "params": [
       {
         "id": "intensity",
@@ -2471,7 +2479,6 @@
       "audio-reactive",
       "upgraded-rgba",
       "depth-aware",
-      "fast-motion",
       "spring-cursor",
       "held-drag",
       "bounded-click-ripples",
@@ -2521,7 +2528,6 @@
       "double-exposure",
       "zoom",
       "overlay",
-      "fast-motion",
       "audio-reactive",
       "aces"
     ]
@@ -3197,7 +3203,7 @@
     "name": "Glass Shatter",
     "category": "interactive-mouse",
     "url": "shaders/glass-shatter.wgsl",
-    "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. Crack energy accumulates in dataTextureC so repeated clicks progressively craze the glass rather than each producing an isolated ring. Fixes a mask-as-colour hazard where dataTextureA held a mask tuple that nothing read, and adds ACES in place of a hard clamp.",
+    "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. A press or click fragments the glass into finer shards at the impact, with fracture hairlines on the real shard borders and a faint display-space ghost of the previous frame; ACES output.",
     "params": [
       {
         "id": "scale",
@@ -3244,8 +3250,7 @@
       "voronoi-facets",
       "stress-birefringence",
       "fresnel",
-      "crack-propagation",
-      "temporal-crack-memory"
+      "crack-propagation"
     ],
     "tags": [
       "glass",
@@ -3263,14 +3268,19 @@
     "url": "shaders/glass-wall.wgsl",
     "features": [
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive",
+      "held-drag",
+      "bounded-click-ripples",
+      "chromatic-dispersion",
+      "caustics"
     ],
     "tags": [
       "filter",
       "image-processing"
     ],
     "name": "Glass Wall",
-    "description": "Physical glass refraction with single-sample spectral tint, depth-aware mortar edges, and alpha translucency from refraction strength and glass thickness.",
+    "description": "Wavy hammered glass over the image: height-field normals refract with per-channel dispersion, spectral tint, Beer-Lambert thickness and Fresnel; convex crests focus warm caustic filaments. A held pointer bulges the glass and click ripples now travel (they were dead). Alpha from thickness and pointer influence.",
     "params": [
       {
         "id": "refraction_strength",
@@ -3565,7 +3575,7 @@
     "name": "Holographic Prism",
     "category": "interactive-mouse",
     "url": "shaders/holographic-prism.wgsl",
-    "description": "Triangular prism dispersion with Snell's law refraction, wavelength-accurate rainbow spectrum, holographic interference fringes and speckle. Bass rotates prism, mouse controls incident angle, depth drives parallax.",
+    "description": "A prism under the pointer. Snell refraction, facet count, and wavelength caustics stay. Dispersion follows Cauchy's n(λ), and facets past the critical angle flash instead of refracting.",
     "params": [
       {
         "id": "facets",
@@ -3658,7 +3668,9 @@
       "multi-tap-temporal",
       "lens-distortion",
       "motion-trails",
-      "audio-reverb"
+      "audio-reverb",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -4054,7 +4066,7 @@
     "name": "Film Burn",
     "category": "interactive-mouse",
     "url": "shaders/interactive-film-burn.wgsl",
-    "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. A remains [hole, fire, smoke, alpha].",
+    "description": "Sprung film-burn hole with cigarette-click brands, ember conveyors along the rim, oil-slick heat color, and held-drag flare. The hole lingers in A.r and the fire cools in A.g. A remains [hole, fire, smoke, alpha].",
     "params": [
       {
         "id": "radius",
@@ -4658,7 +4670,7 @@
     "name": "Interactive Voronoi Lens",
     "url": "shaders/interactive-voronoi-lens.wgsl",
     "category": "interactive-mouse",
-    "description": "Voronoi cells act as audio-reactive lenses with mouse-driven focus, temporal trail accumulation, depth-aware edge fog, and neon cell-boundary accents.",
+    "description": "Voronoi cells act as audio-reactive lenslets with depth parallax, cursor refocus, glassy seam catch-lights, a spring-damped gravity well, click shockwaves and temporal trails.",
     "tags": [
       "voronoi",
       "lens",
@@ -5142,7 +5154,7 @@
     "id": "light-leaks",
     "name": "Light Leaks",
     "url": "shaders/light-leaks.wgsl",
-    "description": "Simulates film light leaks. Move the mouse to change the light source angle.",
+    "description": "Simulates film light leaks. Move the mouse to choose which frame edge the rebate leak comes from.",
     "params": [
       {
         "id": "intensity",
@@ -5175,7 +5187,9 @@
     ],
     "features": [
       "mouse-driven",
-      "overlay"
+      "overlay",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -5186,7 +5200,7 @@
     "id": "lighthouse-reveal",
     "name": "Lighthouse Reveal",
     "url": "shaders/lighthouse-reveal.wgsl",
-    "description": "A rotating lighthouse beam sweeps out from the mouse position and reveals the image in a dark, foggy scene. The lamp is a 3-panel Fresnel bull's-eye lens: panel bands run along the shaft and a group of flashes fires as each panel faces the viewer (bass strengthens the flashes and the reveal). Near depth along the beam blocks it, casting radial shadow streaks down the shaft.",
+    "description": "A rotating lighthouse beam sweeps out from the mouse position and reveals the image in a dark, foggy scene. The lamp is a 3-panel Fresnel bull's-eye lens: panel bands run along the shaft and a group of flashes fires as each panel faces the viewer (bass strengthens the flashes and the reveal). Near depth along the beam blocks it, casting radial shadow streaks down the shaft. The shaft brightens as it swings toward the viewer (forward scatter) and fades through dense mist.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -5673,7 +5687,7 @@
     "id": "luma-slice-interactive",
     "name": "Luma Slice Interactive",
     "url": "shaders/luma-slice-interactive.wgsl",
-    "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position. Audio-reactive intensity via bass, mids-shimmered RGB fringes tinted by a cosine palette, organic fBM wobble, and a mouse-down surge ripple, finished with vignette and grain.",
+    "description": "Slices the image into torn-edged strips displaced by luminance and mouse position; moving strips smear along their slide, with palette RGB fringes and a mouse-down surge.",
     "params": [
       {
         "id": "intensity",
@@ -5948,7 +5962,7 @@
     "id": "magnetic-luma-sort",
     "name": "Magnetic Luma Sort",
     "url": "shaders/magnetic-luma-sort.wgsl",
-    "description": "Luma-gated magnetic sorting with a guarded spring, canonical plasma bands and read-only FFT voices, exact-load trail advection, bounded click vortices, ACES, and semantic trail alpha.",
+    "description": "Luma-gated magnetic sorting: compare-swap sort taps along the pull, magnetic hysteresis that keeps moving pixels sorting below the gate, dipole field lines, click vortices, linear trail feedback with ACES on display.",
     "params": [
       {
         "id": "pullStrength",
@@ -5984,7 +5998,6 @@
       "audio-reactive",
       "temporal",
       "exact-history",
-      "spring-interaction",
       "click-reactive",
       "aces-tone-map",
       "semantic-alpha",
@@ -6271,11 +6284,12 @@
     "name": "Moiré Interference",
     "url": "shaders/moire-interference.wgsl",
     "icon": "wifi",
-    "description": "Generates dynamic interference patterns between the center and the mouse position.",
+    "description": "Interference between a centre emitter and a sprung pointer. The beat between the two carriers gates the displacement and darkens the fringe nulls.",
     "features": [
       "mouse-driven",
       "upgraded-rgba",
-      "audio-reactive"
+      "audio-reactive",
+      "aces-tone-map"
     ],
     "params": [
       {
@@ -6480,7 +6494,8 @@
     "features": [
       "mouse-driven",
       "chromatic-aberration",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "audio-reactive"
     ],
     "description": "The mouse drives a smooth displacement field with spectral tinting via mix and alpha translucency blending. Click ripples launch shockwaves. Audio-reactive bass pulses the entire field.",
     "params": [
@@ -7244,7 +7259,8 @@
     "name": "Voronoi Mosaic",
     "url": "shaders/mouse-voronoi-mosaic.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "description": "Click positions seed Voronoi cells that rotate, shift, and scale independently. Stained-glass edge effects with per-cell color tinting create an evolving mosaic.",
     "params": [
@@ -7338,7 +7354,7 @@
     "id": "nano-repair",
     "name": "Nano-Tech Repair",
     "url": "shaders/nano-repair.wgsl",
-    "description": "The image is corrupted by digital rot. Use the mouse to deploy nano-bots that repair the image.",
+    "description": "The image is corrupted by creeping digital rot. Deploy nano-bots with the mouse: an orbiting swarm welds pixels back, leaving a fading scar lattice.",
     "params": [
       {
         "id": "radius",
@@ -7373,7 +7389,8 @@
       "mouse-driven",
       "feedback",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",
@@ -7438,7 +7455,7 @@
     "id": "neon-cursor-trace",
     "name": "Neon Cursor Trace",
     "url": "shaders/neon-cursor-trace.wgsl",
-    "description": "Spring-lagged electric bead chain trailing the cursor with forking arcs, white-hot cooling phosphor and overshoot sparks.",
+    "description": "Spring-lagged electric bead chain trailing the cursor with forking arcs, white-hot cooling phosphor, overshoot sparks, neon spill lighting the scene and tube flicker.",
     "params": [
       {
         "id": "intensity",
@@ -7745,32 +7762,32 @@
     "id": "neon-pulse",
     "name": "Neon Pulse Distortion",
     "url": "shaders/neon-pulse.wgsl",
-    "description": "Blackbody plasma cell array where each cell owns one of the eight FFT bins driving its base temperature and flicker rate. Cell temperature is carried through dataTextureC and relaxed with a Stefan-Boltzmann-style T^4 cooling term, so filaments heat fast under the cursor and cool slowly. Fixes a shader catalogued as mouse-driven that never read the mouse (zoom_config appeared only in the struct declaration), an 8x8 workgroup, a depth clobber, and unbounded additive HDR written with an out-of-range alpha.",
+    "description": "Blackbody plasma cell array: each cell owns a spectrum band that sets its temperature and flicker, heat conducts between neighbouring cells, and hot neighbours strike jittering filament arcs. Temperature persists with T^4 radiative cooling; the cursor heats cells, clicks send thermal shock fronts.",
     "params": [
       {
         "id": "strength",
-        "name": "Distortion",
+        "name": "Grid Density",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "speed",
-        "name": "Pulse Speed",
+        "name": "Base Temperature",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "glow",
-        "name": "Neon Glow",
+        "name": "Audio Heat Gain",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "radius",
-        "name": "Radius",
+        "name": "Glow Width",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -7778,7 +7795,6 @@
     ],
     "features": [
       "mouse-driven",
-      "distortion",
       "audio-reactive",
       "audio-driven",
       "upgraded-rgba",
@@ -7790,7 +7806,9 @@
       "aces",
       "blackbody",
       "plasma-arcs",
-      "thermal-diffusion"
+      "thermal-diffusion",
+      "heat-conduction",
+      "arc-breakdown"
     ],
     "tags": [
       "filter",
@@ -8286,6 +8304,7 @@
       "stateful-simulation",
       "exact-history",
       "aces-tone-map",
+      "upgraded-rgba",
       "three-band-audio",
       "held-pointer",
       "click-reactive",
@@ -8419,7 +8438,9 @@
       "multi-pass",
       "volumetric",
       "depth",
-      "composite"
+      "composite",
+      "audio-reactive",
+      "mouse-driven"
     ],
     "tags": [
       "filter",
@@ -8476,7 +8497,7 @@
     "id": "particle-swarm",
     "name": "Particle Swarm",
     "url": "shaders/particle-swarm.wgsl",
-    "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion and separation, so the field forms travelling flocks instead of N independent springs. Per-particle FFT bands drive turbulence and the attractor is spring-damped through extraBuffer[133..136]. Fixes a missing bounds guard and a degenerate Henyey-Greenstein term whose cosine was dotted against vec2(0,0), making the phase function a constant.",
+    "description": "Boid swarm with anisotropic scattering: each particle reads its neighbours out of the state texture and applies cohesion, separation and alignment, so the field forms travelling flocks that move together. Per-particle FFT bands drive turbulence, the attractor is spring-damped through extraBuffer[133..136], and fast particles smear the plate along their travel.",
     "params": [
       {
         "id": "stiffness",
@@ -8945,7 +8966,7 @@
     "id": "pixel-stretch-cross",
     "name": "Pixel Stretch Cross",
     "url": "shaders/pixel-stretch-cross.wgsl",
-    "description": "Multi-direction pixel stretch using Fibonacci disk sampling, mouse gravity well, depth-aware attenuation, bass-envelope magnitude, click shockwaves, temporal trails, and layered alpha compositing with depth fading, luminance keying, and accumulative feedback.",
+    "description": "Fibonacci-ray pixel stretch around the cursor: stepped pixel-run streaks with RGB-fringed tips, velocity-steered axes, bass pulse, cross glints on hot crossings and temporal trails.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -8959,28 +8980,28 @@
     "params": [
       {
         "id": "h_stretch",
-        "name": "H Stretch",
+        "name": "Stretch Amplitude",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "v_stretch",
-        "name": "V Stretch",
+        "name": "Axis Blend",
         "default": 0.5,
         "min": 0,
         "max": 1
       },
       {
         "id": "depth_influence",
-        "name": "Depth Influence",
-        "default": 0.5,
+        "name": "Bloom Intensity",
+        "default": 0.3,
         "min": 0,
         "max": 1
       },
       {
         "id": "turbulence",
-        "name": "Turbulence",
+        "name": "Bass Response",
         "default": 0.5,
         "min": 0,
         "max": 1
@@ -9511,12 +9532,13 @@
     "features": [
       "mouse-driven",
       "distortion",
-      "audio-reactive",
-      "upgraded-rgba"
+      "audio-reactive"
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "quantum",
+      "chromatic"
     ],
     "updated": true
   },
@@ -9747,12 +9769,13 @@
     "id": "radial-hex-lens",
     "name": "Radial Hex Lens",
     "url": "shaders/radial-hex-lens.wgsl",
-    "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. FBM warp, hex bokeh, depth-aware fog and semantic alpha for slot-chain compositing.",
+    "description": "Interactive compound-eye lens: inside the radial magnifier every hex cell is a tiny domed lens with its own magnified, slightly parallaxed view, lit from the cursor side. Cells aligned with the cursor go dark (pseudopupil) and the fringing cells glint with a hashed gold/green tapetum eyeshine. FBM warp, hex bokeh, depth-aware fog and semantic alpha.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "depth-aware",
       "hex-bokeh",
+      "pseudopupil",
       "upgraded-rgba"
     ],
     "workgroup_size": [
@@ -9812,7 +9835,7 @@
     "name": "Radial Slit Scan",
     "category": "interactive-mouse",
     "url": "shaders/radial-slit-scan.wgsl",
-    "description": "A time-displacement effect that radiates from the cursor, now enhanced with volumetric glow, cosine palette color cycling, chromatic aberration, split-tone grading, and ACES filmic tone mapping.",
+    "description": "A time-displacement effect that radiates from the cursor, now with capture-age strata (isochrone contour lines tracing when each ring was frozen), age weathering that drains colour from older strata, volumetric glow, cosine palette color cycling, chromatic aberration, split-tone grading, and ACES filmic tone mapping.",
     "features": [
       "mouse-driven",
       "feedback",
@@ -10102,7 +10125,7 @@
     "name": "Refraction Shards",
     "category": "interactive-mouse",
     "url": "shaders/refraction-shards.wgsl",
-    "description": "Voronoi crystalline shards refract and Cauchy-disperse the source image. Features continuous orbital facet drift, acoustic stress birefringence, spring cursor deflection, click fracture wavefronts, exact-C temporal persistence, and ACES tonemapping.",
+    "description": "Voronoi crystalline shards refract and Cauchy-disperse the source image. Features continuous orbital facet drift, per-shard Snell tilt with Cauchy dispersion and glass tint, spring cursor deflection, click fracture wavefronts, exact-C temporal persistence, and ACES tonemapping.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -10625,13 +10648,11 @@
       "mouse-driven",
       "sorting",
       "audio-reactive",
-      "palette-mapped",
       "chromatic-edge",
       "upgraded-rgba",
       "aces-tone-map",
       "click-reactive",
       "held-drag",
-      "spring-cursor",
       "shared-memory",
       "bitonic-sort"
     ],
@@ -10720,7 +10741,7 @@
     "id": "scanline-wave",
     "name": "Scanline Wave",
     "url": "shaders/scanline-wave.wgsl",
-    "description": "CRT phosphor aurora with sprung cursor, held local distortion, capped click shockwaves, exact C bass-envelope trail, ACES premultiplied alpha. Preserves [premultipliedRGB, drive] A packing.",
+    "description": "CRT scanlines that wave with the bass: chromatic beam split, per-channel phosphor decay trails, beam-current bloom that swells bright lines, retrace ringing at the left edge, and Lissajous aurora bands.",
     "workgroup_size": [
       16,
       16,
@@ -10737,12 +10758,13 @@
       "HDR-color-grading",
       "ACES-tone-map",
       "IGN-dither",
-      "premultiplied-alpha",
       "phosphor-aurora",
       "lissajous-bands",
       "bounded-click-ripples",
-      "spring-cursor",
-      "held-drag"
+      "held-drag",
+      "phosphor-decay",
+      "beam-bloom",
+      "retrace-ringing"
     ],
     "updated": true,
     "params": [
@@ -11279,7 +11301,7 @@
     "id": "sonic-distortion",
     "name": "Sonic Distortion",
     "url": "shaders/sonic-distortion.wgsl",
-    "description": "Superellipse-masked sonic distortion with Lissajous wave interference, FBM domain warping, rose curve modulation, and alpha-ghosted echo trails.",
+    "description": "Superellipse-masked sonic distortion with Lissajous sources, a rose amplitude, and echo trails. The harmonic beat of the primary partials brightens inside the mask, and the rose's angular gaps darken the photo. Bass swells the amplitude slider.",
     "params": [
       {
         "id": "freq",
@@ -11317,7 +11339,10 @@
       "lissajous",
       "fbm",
       "temporal",
-      "echo-trails"
+      "echo-trails",
+      "audio-reactive",
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -11483,7 +11508,7 @@
     "id": "spectral-waves",
     "name": "Luma Ripple",
     "url": "shaders/spectral-waves.wgsl",
-    "description": "Premultiplied luminance waves from a guarded sprung origin, with bounded click trains, three-band and read-only FFT caustics, exact-C persistence, and authoritative A display history.",
+    "description": "Luminance-weighted radial ripples from a sprung pointer, with click trains and caustic persistence. Chromatic split follows the ripple slope, and a local luma contrast boosts the amplitude on edges.",
     "params": [
       {
         "id": "frequency",
@@ -12345,7 +12370,7 @@
     "id": "vertical-slice-wave",
     "name": "Vertical Slice Wave",
     "url": "shaders/vertical-slice-wave.wgsl",
-    "description": "Layered vertical strip waves with seam runners, held amplitude/twist, click fronts, rainbow interference, and state-only spring/audio feedback.",
+    "description": "Vertical strip waves with seam runners and click fronts. Strip edges lag toward the neighbour's phase, and the stored spring speed throws the slices. Feedback A stays raw state.",
     "params": [
       {
         "id": "strips",
@@ -12687,7 +12712,8 @@
       "multi-pass",
       "volumetric",
       "depth",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -12817,7 +12843,10 @@
     "id": "voronoi-shatter",
     "name": "Voronoi Shatter",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

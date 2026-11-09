@@ -4,7 +4,7 @@
     "name": "Audio Reactive Pyramid",
     "url": "shaders/audio-reactive-pyramid.wgsl",
     "category": "post-processing",
-    "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). A small silence floor from the gain sliders keeps it a gentle detail enhancer without audio. Depth-routed bands: with a depth map, near subjects take the fine-detail boost while distant areas get gentle coarse softening (aerial perspective); a flat or missing depth map falls back to the plain pyramid. Per-band chroma split: added coarse-band halos lean warm and added fine-band edges lean cool, leaving flat neutral areas neutral. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]).",
+    "description": "Three-level Laplacian-style sharpening pyramid whose band intensities are driven by matching FFT frequency bands: coarse detail by bass bins (0–12), mid detail by mid bins (13–50), fine detail by treble bins (51–127). A small silence floor from the gain sliders keeps it a gentle detail enhancer without audio. Depth-routed bands: with a depth map, near subjects take the fine-detail boost while distant areas get gentle coarse softening (aerial perspective); a flat or missing depth map falls back to the plain pyramid. Per-band chroma split: added coarse-band halos lean warm and added fine-band edges lean cool, leaving flat neutral areas neutral. Compatible with the ford442/flac_player FFT wire format (128 bins in extraBuffer[5..132]). Fine-band gain is quieter where the blur is isotropic, and the reconstruction is clamped to the local range of the original and the coarse blur so the pyramid does not ring.",
     "tags": [
       "audio-reactive",
       "sharpening",
@@ -59,7 +59,7 @@
     "name": "Audio Reactive RGB Dispersion",
     "url": "shaders/audio-reactive-rgb-dispersion.wgsl",
     "category": "post-processing",
-    "description": "RGB dispersion driven by the live 128-bin FFT: the spectral centroid steers direction and width, spectral spread turns two crisp fringes into a rainbow smear on broadband sound, and bass pushes a radial lens-like split while treble slides it sideways.",
+    "description": "RGB dispersion driven by the live 128-bin FFT: the spectral centroid steers direction and width, spectral spread turns two crisp fringes into a rainbow smear on broadband sound, and bass pushes a radial lens-like split while treble slides it sideways. Interior wavelength taps follow a Cauchy curve, and the falloff prefers local contrast along the dispersion axis. Passthrough grade, no filmic curve.",
     "tags": [
       "audio-reactive",
       "chromatic-aberration",
@@ -113,7 +113,7 @@
     "name": "Audio Reactive Temporal Decay",
     "url": "shaders/audio-reactive-temporal-decay.wgsl",
     "category": "post-processing",
-    "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range, now enhanced with spectral visualization overlay, chromatic aberration on trails, multi-pass bloom on bright areas, anamorphic streaks, film grain, scanlines, color grading with lift/gamma/gain, and vignette. Low-band energy → long ghostly trails; high-band energy → fast fade with spectral color highlights.",
+    "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range, now enhanced with spectral visualization overlay, chromatic aberration on trails, multi-pass bloom on bright areas, row anamorphic streaks, per-channel spectral persistence, bass-pushed trails, film grain, scanlines, color grading with lift/gamma/gain, and vignette. Low-band energy → long ghostly trails; high-band energy → fast fade with spectral color highlights.",
     "tags": [
       "audio-reactive",
       "temporal",
@@ -134,7 +134,8 @@
       "scanlines",
       "color-grading",
       "anamorphic-streaks",
-      "vignette"
+      "vignette",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -576,14 +577,13 @@
     "name": "PP Sharpen",
     "category": "post-processing",
     "url": "shaders/pp-sharpen.wgsl",
-    "description": "Adaptive bilateral unsharp mask with halo suppression, coring noise reduction, multi-mode edge pop, interactive spring lens inspection, click clarity wavefronts, exact-C temporal stabilization, and ACES tonemapping.",
+    "description": "Bilateral unsharp mask with anti-halo clamp, midtone clarity band, shadow/highlight protection, hold-to-inspect lens and click clarity wavefronts.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
       "depth-aware",
       "fast-motion",
-      "spring-cursor",
       "held-drag",
       "bounded-click-ripples",
       "aces-tone-map",
@@ -737,14 +737,13 @@
     "name": "PP Vignette",
     "category": "post-processing",
     "url": "shaders/pp-vignette.wgsl",
-    "description": "Cinematic optical vignette with triangular film grain, continuous multi-style color grading, bleach bypass blend modes, spring-damper cursor deflection, exposure ripple blooms, exact-C temporal grain integration, and ACES tonemapping.",
+    "description": "Cos^4 optical vignette with warm corner cast, highlight burn-through, emulsion film grain, colour styles and exposure ripple blooms.",
     "features": [
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba",
       "depth-aware",
       "fast-motion",
-      "spring-cursor",
       "held-drag",
       "bounded-click-ripples",
       "aces-tone-map",
@@ -802,7 +801,7 @@
     "id": "radial-blur",
     "name": "Radial Blur",
     "url": "shaders/radial-blur.wgsl",
-    "description": "Depth-aware radial blur with bokeh shape selection, chromatic aberration, Gaussian kernel weighting, and vignette.",
+    "description": "Depth-aware radial zoom blur with a clear focus eye, spoked burst streaks, highlight light-trails, bokeh shapes and chromatic fringing.",
     "params": [
       {
         "id": "sigma",
@@ -864,7 +863,7 @@
     "name": "Soft Vignette Bloom",
     "url": "shaders/soft-vignette-bloom.wgsl",
     "category": "post-processing",
-    "description": "Cinematic post-processing with multi-scale Gaussian bloom pyramid, anamorphic highlight streaks, and superellipse vignette. Enhanced with lens flare ghost images, 8-pointed starburst diffraction spikes, chromatic aberration at edges, bokeh depth-of-field with hexagonal aperture, and enhanced light falloff with realistic attenuation.",
+    "description": "Cinematic bloom pyramid, anamorphic streaks and superellipse vignette with lens flare, starburst and hex bokeh. The cursor racks focus to the depth beneath it; highlights gain red film halation and light up smudges of lens dirt.",
     "tags": [
       "bloom",
       "vignette",
@@ -891,7 +890,9 @@
       "bokeh-dof",
       "anamorphic-streaks",
       "light-attenuation",
-      "enhanced-falloff"
+      "enhanced-falloff",
+      "halation",
+      "lens-dirt"
     ],
     "params": [
       {

@@ -3,33 +3,19 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-06, 2026-09-21
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-06, 2026-09-21, 2026-11-09
+//  A packing: pre-tonemap linear RGB + semantic alpha (C history)
 //  Motion: mobile anamorphic vignette aperture + exposure ripple blooms
 //  Ideas (2026-09-21): cos^4 natural falloff; grain rides the emulsion
 //         (midtone response, applied under the vignette)
+//  Ideas (2026-11-09): corner cast (blue falls off first -> warm corners);
+//         highlight burn-through (bright sources punch through the falloff)
+//  Rescues (2026-11-09): (SDR shoulder replaces ACES re-grade; dead
+//         extraBuffer spring removed)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=VignetteIntensity, y=GrainIntensity, z=ColorStyle, w=BlendMode
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=VignetteIntensity, y=GrainIntensity, z=ColorStyle, w=BlendMode
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -37,8 +23,13 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3.x + p3.y) * p3.z);
 }
 
+// HEAD ran the full ACES fit over an SDR photo: whites landed at 0.80 and
+// mids were lifted (0.18 -> 0.27), a re-grade on a utility filter. Keep
+// SDR identity below 0.8 and roll only overshoot into a soft shoulder.
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+  let v = max(x, vec3<f32>(0.0));
+  let over = max(v - vec3<f32>(0.8), vec3<f32>(0.0));
+  return min(v, vec3<f32>(0.8)) + 0.2 * over / (over + vec3<f32>(0.2));
 }
 
 fn getLuma(c: vec3<f32>) -> f32 {
@@ -65,33 +56,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let binA = plasmaBuffer[2].x;
 
-  // Single-writer spring cursor in extraBuffer[133..138]
-  var spring = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var pos = spring;
-    var vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      pos = mouse;
-      vel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 12.0;
-      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
-      vel = clamp(vel, vec2<f32>(-3.5), vec2<f32>(3.5));
-      pos += vel * dt;
-    }
-    extraBuffer[133] = pos.x;
-    extraBuffer[134] = pos.y;
-    extraBuffer[135] = vel.x;
-    extraBuffer[136] = vel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    spring = pos;
-  }
+  // HEAD kept a spring cursor in extraBuffer[133..138]; that range is
+  // re-uploaded (zeroed) every frame so it never persisted. Use the cursor.
+  let spring = mouse;
 
   // Four saved controls preserved
   let vignetteIntensity = u.zoom_params.x;
@@ -192,6 +159,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bleach = mix(graded, vec3<f32>(srcLuma), 0.4) * (vigMask * 1.2 + 0.1);
     vignetted = mix(darkFog, bleach, tBlend);
   }
+
+  // ── Idea 3: corner cast ───────────────────────────────────────────
+  // Real glass loses short wavelengths faster off-axis, so a vignette is
+  // never neutral: the falloff warms slightly toward the corners. The
+  // darkening is applied per channel with blue falling hardest.
+  let fall = 1.0 - vigMask;
+  vignetted = vignetted * (vec3<f32>(1.0) - fall * vec3<f32>(-0.02, 0.04, 0.12) * vignetteIntensity);
+
+  // ── Idea 4: highlight burn-through ────────────────────────────────
+  // A strong light source in the corner of a frame still exposes through
+  // the falloff — a lamp in a vignetted corner stays a lamp. Bright source
+  // pixels recover part of what the vignette took.
+  let burn = smoothstep(0.7, 1.0, srcLuma) * fall * 0.6;
+  vignetted = mix(vignetted, graded, burn);
 
   // Inject grain and ripple flash bloom
   let bloomTint = vec3<f32>(1.0, 0.92, 0.82) * rippleBloom * 0.45;
