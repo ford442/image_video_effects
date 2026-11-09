@@ -2390,7 +2390,7 @@
     "id": "directional-glitch",
     "name": "Directional Glitch",
     "url": "shaders/directional-glitch.wgsl",
-    "description": "SDF-masked Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, audio-reactive cosine palette, chromatic aberration, depth-aware masking, and kaleidoscope temporal feedback.",
+    "description": "SDF mouse zone where voronoi/FBM glitch cells tear along the cursor heading in block-pitch steps, with compass-snapped per-cell headings, RGB split on the tear axis, leading-edge overrun slivers, audio palette, and a local kaleidoscope echo.",
     "params": [
       {
         "id": "intensity",

@@ -1,6 +1,12 @@
-// Digital Glitch Explosion — Composer batch cyber/digital/glitch
-// Bitwise corruption + prismatic chromatic shockwaves: spring cursor, held
-// burst, capped ripples, exact C smear, three-band audio, ACES + semantic alpha.
+// ═══════════════════════════════════════════════════════════════════
+//  Digital Glitch Explosion
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal-feedback
+//  Complexity: Medium
+//  Upgraded: 2026-11-09
+//  Ideas: macroblock datamosh carries C along block shift; 1-bit bit-plane slice blocks; bass shard burst flings blocks from cursor
+//  A packing: ACES display RGB + glitch energy (a); C read back as smear colour + energy
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -61,32 +67,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 9.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
+  let smoothMouse = mouse;
 
   let corruptionIntensity = clamp(u.zoom_params.x * (1.0 + bass * 0.35), 0.0, 1.0);
   let prismStrength = mix(0.02, 0.14, u.zoom_params.y) * (1.0 + treble * 0.2);
@@ -121,7 +102,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let xShift = (blockSeed - 0.5) * maxShift;
   let yShift = (hash21(blockCoord + vec2<f32>(7.0, 3.0) + vec2<f32>(time * 0.07, 0.0)) - 0.5) * maxShift;
 
-  var displacedUV = clamp(uv + vec2<f32>(xShift, yShift), vec2<f32>(0.0), vec2<f32>(1.0));
+  // Idea 3: bass-onset shard burst — each block is flung radially from the cursor.
+  let blockCenter = (blockCoord + 0.5) / blockSize;
+  let shardVec = (blockCenter - smoothMouse) * vec2<f32>(aspect, 1.0);
+  let shardLen = length(shardVec);
+  let shardDir = select(vec2<f32>(0.0), shardVec / max(shardLen, 1e-4) / vec2<f32>(aspect, 1.0), shardLen > 1e-3);
+  let shardPush = smoothstep(0.08, 0.6, bass) * smoothstep(0.7, 0.05, shardLen) * (0.35 + 0.65 * blockSeed) * 0.07 * (0.5 + effectiveIntensity);
+  let prismBoost = 1.0 + shardPush * 10.0;
+
+  var displacedUV = clamp(uv + vec2<f32>(xShift, yShift) - shardDir * shardPush, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let row = floor(uv.y * blockSize);
   let scanSeed = hash21(vec2<f32>(row, floor(time * 10.0)));
@@ -129,9 +118,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   displacedUV.x = displacedUV.x + tear * 0.15 * (blockSeed - 0.5) * effectiveIntensity;
   displacedUV = clamp(displacedUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let rUV = prismDisplace(displacedUV, smoothMouse, -1.0 * dispersion, prismStrength);
+  let rUV = prismDisplace(displacedUV, smoothMouse, -1.0 * dispersion, prismStrength * prismBoost);
   let gUV = prismDisplace(displacedUV, smoothMouse, 0.0, prismStrength);
-  let bUV = prismDisplace(displacedUV, smoothMouse, 1.0 * dispersion, prismStrength);
+  let bUV = prismDisplace(displacedUV, smoothMouse, 1.0 * dispersion, prismStrength * prismBoost);
 
   var rOffset = vec2<f32>(0.0);
   var gOffset = vec2<f32>(0.0);
@@ -172,14 +161,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     r = channels[0];
     g = channels[1];
     b = channels[2];
+
+    // Idea 2: bit-plane slice — a few corrupted blocks show one bit of each byte.
+    let planeSeed = hash21(blockCoord * 1.7 + vec2<f32>(floor(time * 6.0), 11.0));
+    if (planeSeed < effectiveIntensity * 0.07) {
+      let plane = 7u - (u32(planeSeed * 997.0) % 3u);
+      r = f32((floatToByte(r) >> plane) & 1u);
+      g = f32((floatToByte(g) >> plane) & 1u);
+      b = f32((floatToByte(b) >> plane) & 1u);
+    }
   }
 
   var color = vec3<f32>(r, g, b);
 
   if (decayRate > 0.01) {
-    let timeDecay = time * decayRate * 0.5;
-    let spatialDecay = hash21(floor(uv * 32.0) + time * 0.1) * decayRate * 2.0;
-    let levels = max(2.0, 16.0 - timeDecay * 2.0 - spatialDecay);
+    // Rescue: HEAD used 16 - time*decay, which pinned levels at 2 after ~15 s.
+    // The decay now sweeps 16 -> 3 levels and resets (a corrupt-then-recover cycle).
+    let timeDecay = fract(time * decayRate * 0.04) * 13.0;
+    let spatialDecay = hash21(floor(uv * 32.0) + floor(time * 2.0)) * decayRate * 2.0;
+    let levels = max(2.0, 16.0 - timeDecay - spatialDecay);
     color = floor(color * levels) / levels;
   }
 
@@ -189,11 +189,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let glow = exp(-mouseDist * mouseDist * 100.0) * prismStrength * 10.0;
   color = color + vec3<f32>(0.5, 0.3, 0.8) * glow * (1.0 + bass * 0.3);
 
-  let bandBin = min(u32(uv.x * 8.0), 7u) + 1u;
-  color = color + vec3<f32>(plasmaBuffer[bandBin].x * 0.04, plasmaBuffer[bandBin].y * 0.02, plasmaBuffer[bandBin].z * 0.05);
-
   let smearMix = mix(0.08, 0.35, decayRate) * (0.5 + effectiveIntensity * 0.5);
   color = mix(color, prevSmear, smearMix);
+
+  // Idea 1: macroblock datamosh — dropped "I-frame" blocks carry the previous
+  // frame forward along their own shift vector (P-frame motion smear).
+  let moshSeed = hash21(blockCoord + vec2<f32>(floor(time * 3.0), 41.0));
+  if (moshSeed < effectiveIntensity * 0.22) {
+    let mv = vec2<f32>(xShift, yShift) * resolution * 0.6 + vec2<f32>(sign(xShift + 1e-5), 0.0);
+    let srcPx = clamp(vec2<i32>(vec2<f32>(coord) - mv), vec2<i32>(0), vec2<i32>(resolution) - 1);
+    let carried = textureLoad(dataTextureC, srcPx, 0);
+    // Seed from the live frame when history is empty so moshing never goes black.
+    let hasHist = step(0.02, carried.a + dot(carried.rgb, vec3<f32>(0.333)));
+    color = mix(color, carried.rgb, 0.85 * hasHist);
+  }
 
   color = acesToneMap(color * (0.95 + bass * 0.08));
 

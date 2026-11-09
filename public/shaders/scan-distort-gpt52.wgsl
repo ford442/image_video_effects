@@ -6,6 +6,9 @@
 //  Complexity: High
 //  Upgrades: canonical math, branchless band mixing, textureLoad depth,
 //            domain-warped FBM displacement, audio-reactive color palette
+//  Upgraded: 2026-11-09
+//  Ideas: band-seam ghost echo; warp-stretched scanline pitch; scan-head trailing phosphor wake
+//  A packing: ACES display RGBA (C not read)
 
 #include "_prelude.wgsl"
 
@@ -114,7 +117,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // FBM-perturbed scan lines
   let fbmPerturb = fbm(vec2<f32>(warped.y * fbmScale * 5.0, time * 0.3), 4) * 0.02 * fbmScale;
-  let lines = mix(200.0, 1400.0, scanIntensity);
+  // Idea 2 — warp-stretched scanline pitch: the raster bunches where the
+  // domain warp is high and spreads where it is low (same FBM, no extra taps).
+  let pitchStretch = 1.0 + (domainWarp - 0.5) * fbmScale * 1.6;
+  let baseLines = mix(200.0, 1400.0, scanIntensity);
+  let lines = baseLines * pitchStretch;
   let glitch = scanIntensity * 0.08;
   let roll = time * mix(0.2, 2.5, chromaticMix);
   let linePhase = (warped.y + roll + fbmPerturb) * lines;
@@ -129,7 +136,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Audio-driven band distortion
   let bandDistort = (1.0 + mids * 3.0) * (1.0 + bass * 0.6);
-  let lineId = floor(warped.y * lines * 0.05);
+  let lineId = floor(warped.y * baseLines * 0.05);
   let phase1 = hash21(vec2<f32>(lineId, 11.0)) * TAU;
   let phase2 = hash21(vec2<f32>(lineId + 100.0, 19.0)) * TAU;
   let phase3 = hash21(vec2<f32>(lineId + 200.0, 29.0)) * TAU;
@@ -143,7 +150,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                   * glitch * 0.5 * step(blockNoise, scanIntensity * 0.6);
 
   // Two continuous tear structures: opposing scan heads and a diagonal tear conveyor.
-  let scanHead = exp(-abs(fract(warped.y - time * 0.32) - 0.5) * 52.0);
+  let headPhase = fract(warped.y - time * 0.32) - 0.5;
+  let scanHead = exp(-abs(headPhase) * 52.0);
+  // Idea 3 — trailing phosphor wake: one-sided glow left behind the head's travel.
+  let headWake = select(0.0, exp(headPhase * 7.0) * (1.0 - scanHead), headPhase < 0.0);
   let tearRunner = sin((warped.y * 9.0 + warped.x * 2.5) * TAU - time * 8.0);
   let pointerBand = exp(-abs(warped.y - mouse.y) * 45.0) * held;
 
@@ -167,8 +177,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let g = textureSampleLevel(readTexture, u_sampler, warped + totalOffset, 0.0).g;
   let b = textureSampleLevel(readTexture, u_sampler, warped + totalOffset - vec2<f32>(aberr, 0.0), 0.0).b;
 
+  // Idea 1 — band-seam ghost echo: where two jitter bands overlap, the picture
+  // carries both bands' offsets, so the seam shows a faint horizontal double image.
+  let seam12 = b1 * b2 * 4.0;
+  let seam23 = b2 * b3 * 4.0;
+  let seamW = saturate(seam12 + seam23);
+  let ghostShift = (jit1 - jit2) * seam12 + (jit2 - jit3) * seam23;
+  let ghostUV = warped + totalOffset + vec2<f32>(ghostShift * 2.5 + sign(ghostShift) * 0.004 * scanIntensity, 0.0);
+  let ghost = textureSampleLevel(readTexture, u_sampler, ghostUV, 0.0).rgb;
+
   // HDR scan processing
-  var color = toLinear(vec3<f32>(r, g, b)) * scanBoost;
+  var color = toLinear(mix(vec3<f32>(r, g, b), ghost, seamW * 0.42 * (0.4 + scanIntensity))) * scanBoost;
+  color = color * (1.0 + headWake * 0.45 * scanIntensity * (1.0 + bass * 0.5));
 
   // Film grain
   let grainPhase = hash21(vec2<f32>(pixel)) * TAU;
@@ -203,12 +223,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = color * (0.55 + 0.45 * vignette);
 
   // ACES tone map
-  color = acesToneMap(color);
+  color = acesToneMap(max(color, vec3<f32>(0.0)));
 
   // Semantic alpha
   let effectStrength = scanIntensity + bandDistort * 0.3 + length(totalOffset) * 10.0;
   let alpha = saturate(effectStrength);
 
-  textureStore(writeTexture, pixel, vec4<f32>(toSrgb(color), alpha));
+  let outC = vec4<f32>(toSrgb(color), alpha);
+  textureStore(writeTexture, pixel, outC);
+  textureStore(dataTextureA, pixel, outC);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

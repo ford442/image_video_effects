@@ -19,7 +19,7 @@
   "features": [
     "chroma-vortex",
     "fluid-coupling",
-    "spring-dynamics",
+    "audio-reactive",
     "cauchy-dispersion",
     "strain-birefringence",
     "mouse-driven",

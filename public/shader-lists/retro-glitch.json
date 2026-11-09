@@ -1651,7 +1651,7 @@
     "id": "scan-distort",
     "name": "Scan Distort",
     "url": "shaders/scan-distort.wgsl",
-    "description": "CRT scanline tear with block quantization, held glitch bursts, exact C smear, capped click ripples, three-band audio, and ACES output. Upgraded with a sync-tear band (rows inside the glitch pulse slide along a sawtooth ramp and show stale rows from C), DCT-basis garble (corrupted blocks decode as hashed cosine basis patterns and the garbled set re-rolls with time), and MV arrows from a per-block temporal gradient (dots on still content).",
+    "description": "CRT scanline tear over a block-quantised codec picture: sync-tear band from C, DCT-basis garble, temporal-gradient MV arrows, 4:2:0 chroma macroblock bleed, and P-frame macroblock skip that freezes still blocks during glitch pulses.",
     "workgroup_size": [
       16,
       16,
