@@ -1,5 +1,15 @@
-// Divine Light Iridescence — volumetric Crepuscular god rays with thin-film interference and spectral rainbow shimmer.
-// A/C stores ACES display RGBA for smooth volumetric beam persistence; B is unused; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Divine Light Iridescence — volumetric crepuscular god rays with thin-film interference
+//  and spectral rainbow shimmer.
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, volumetric-light, thin-film, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-09
+//  Ideas: sun corona (per-channel Airy diffraction rings around the light, §12.2F);
+//         Henyey–Greenstein forward-scatter lobe on the beam radiance (§12.2F);
+//         stratified march (interleaved-gradient start offset dissolves ray stepping)
+//  A packing: ACES display RGBA (A/C = smooth volumetric beam persistence); B unused; depth passes through
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -36,6 +46,32 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
                (x * (2.43 * x + 0.59) + 0.14),
                vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Bessel J1 (Numerical Recipes rational fit for x < 8, asymptotic form beyond), f32-checked to
+// ~1e-6 over 0.01..1000. Both branches are always finite (inputs clamped), then selected.
+fn besselJ1(xIn: f32) -> f32 {
+  let x = abs(xIn);
+  let xr = min(x, 8.0);
+  let y = xr * xr;
+  let n1 = xr * (72362614232.0 + y * (-7895059235.0 + y * (242396853.1 + y * (-2972611.439 + y * (15704.48260 + y * (-30.16036606))))));
+  let d1 = 144725228442.0 + y * (2300535178.0 + y * (18583304.74 + y * (99447.43394 + y * (376.9991397 + y))));
+  let small = n1 / d1;
+  let xa = max(x, 8.0);
+  let z = 8.0 / xa;
+  let y2 = z * z;
+  let ph = xa - 2.356194491;
+  let a1 = 1.0 + y2 * (0.183105e-2 + y2 * (-0.3516396496e-4 + y2 * (0.2457520174e-5 + y2 * (-0.240337019e-6))));
+  let a2 = 0.04687499995 + y2 * (-0.2002690873e-3 + y2 * (0.8449199096e-5 + y2 * (-0.88228987e-6 + y2 * 0.105787412e-6)));
+  let large = sqrt(0.636619772 / xa) * (cos(ph) * a1 - z * sin(ph) * a2);
+  return select(large, small, x < 8.0);
+}
+
+// Airy diffraction pattern (2 J1(x) / x)^2, 1 at x -> 0, first dark ring at x = 3.8317.
+fn airy(x: f32) -> f32 {
+  let xs = max(abs(x), 1e-3);
+  let v = 2.0 * besselJ1(xs) / xs;
+  return v * v;
 }
 
 fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
@@ -102,7 +138,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Radial ray-marching
   let numSteps = 14;
   let stepDelta = deltaToLight / f32(numSteps);
-  var marchUV = uv + rippleOffset;
+  // ── Idea 3: stratified march ───────────────────────────────────────────
+  // The 14 taps used to start exactly at the pixel with a fixed stride, so every ray showed
+  // stepped copies wherever the image has contrast. An interleaved-gradient offset of the start
+  // (within one step) turns the stepping into fine grain the 0.065 history then smooths.
+  let marchJitter = fract(52.9829189 * fract(dot(vec2<f32>(gid.xy), vec2<f32>(0.06711056, 0.00583715))));
+  var marchUV = uv + rippleOffset - stepDelta * (marchJitter - 0.5);
   var rayAccum = vec3<f32>(0.0);
   var decay = 1.0;
 
@@ -117,7 +158,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     decay *= 0.94;
   }
 
-  let rayDensity = (rayAccum / f32(numSteps)) * (0.4 + beamPattern * 0.6);
+  // ── Idea 2: Henyey–Greenstein forward-scatter lobe ──────────────────────
+  // Haze scatters sunlight forward: the beams are brightest looking toward the sun and fall off
+  // to an ambient floor away from it. theta is the angle between the view ray through this pixel
+  // and the sun (tan theta ~ screen distance), hgN is HG normalised to 1 at theta = 0 (g = 0.62).
+  let tanTheta = distToLight * 1.4;
+  let cosTheta0 = 1.0 / sqrt(1.0 + tanTheta * tanTheta);
+  let hgG = 0.62;
+  let hgN = (1.0 - hgG) * (1.0 - hgG) * (1.0 - hgG) / pow(max(1.0 + hgG * hgG - 2.0 * hgG * cosTheta0, 1e-3), 1.5);
+  let forwardLobe = mix(0.6, 1.5, clamp(hgN, 0.0, 1.0));
+
+  let rayDensity = (rayAccum / f32(numSteps)) * (0.4 + beamPattern * 0.6) * forwardLobe;
 
   // Thin-film iridescence calculation
   let toCenter = uv - vec2<f32>(0.5);
@@ -139,17 +190,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let halo = exp(-distToLight * distToLight * 28.0) * rayIntensity * (0.6 + bass * 0.4);
   let haloColor = mix(vec3<f32>(1.0, 0.94, 0.8), iridescent, 0.4) * halo;
 
+  // ── Idea 1: sun corona ───────────────────────────────────────────────────
+  // Sunlight through thin cloud diffracts around droplets: coloured rings around the disc whose
+  // radius scales with wavelength (red rings sit wider than blue), the Airy pattern per channel.
+  // Ring part only (the core belongs to the halo), fading with distance from the sun.
+  let lambdaRel = vec3<f32>(1.18, 1.0, 0.82);
+  let coronaX = vec3<f32>(distToLight * 38.0) / lambdaRel;
+  let coronaRings = vec3<f32>(airy(coronaX.x), airy(coronaX.y), airy(coronaX.z));
+  let coronaMask = smoothstep(0.04, 0.10, distToLight) * exp(-distToLight * 3.2);
+  let corona = coronaRings * coronaMask * 16.0 * (0.4 + 0.6 * clamp(rayIntensity, 0.0, 2.0)) * (0.7 + bass * 0.5);
+
   // Treble sparkle
   let sparkle = pow(max(0.0, sin(distToLight * 75.0 - time * 5.0 + treble * 4.0)), 14.0) * (treble * 0.2);
 
   // Exact previous frame history load for smooth volumetric accumulation
   let history = historyAt(uv - rippleOffset * 0.5, resolution);
 
-  var hdr = sourceColor.rgb + finalRays + haloColor + vec3<f32>(sparkle + rippleBurst);
+  var hdr = sourceColor.rgb + finalRays + haloColor + corona + vec3<f32>(sparkle + rippleBurst);
   hdr += history.rgb * 0.065;
 
   let rayLuma = dot(finalRays, vec3<f32>(0.2126, 0.7152, 0.0722));
-  let finalAlpha = clamp(sourceColor.a * 0.5 + rayLuma * 0.5 + halo * 0.3 + rippleBurst * 0.1, 0.0, 1.0);
+  let coronaLuma = dot(corona, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let finalAlpha = clamp(sourceColor.a * 0.5 + rayLuma * 0.5 + halo * 0.3 + coronaLuma * 0.3 + rippleBurst * 0.1, 0.0, 1.0);
 
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), finalAlpha);
 

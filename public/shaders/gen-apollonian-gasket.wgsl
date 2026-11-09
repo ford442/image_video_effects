@@ -4,9 +4,11 @@
 //  Features: procedural, fractal, apollonian-gasket, circle-inversion,
 //            descartes-theorem, audio-reactive, mouse-driven, aces-tonemap, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-11
-//  Ideas: packing rims on seed circles; curvature tint from last inverted k; generation stipple; tangent kisses; interior wash; soddy spark
-//  A packing: linear RGB + alpha (ACES on display)
+//  Upgraded: 2026-10-11, 2026-11-09
+//  Ideas: packing rims on seed circles; curvature tint from last inverted k; generation stipple; tangent kisses; interior wash; soddy spark;
+//         conformal hairlines (distance / accumulated inversion derivative = constant-width line on every nested copy);
+//         generation-delayed pulse (a beat of light cascades inward through the inversion depth)
+//  A packing: linear RGB + alpha, pre-ACES (C read as colour); texel (0,0) = (pointer glide.xy, 7, fract(time)), skipped by the feedback mix
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -34,15 +36,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
   let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-  let hasSpring = arrayLength(&extraBuffer) >= 139u;
-  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
-  if (hasSpring) { springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
-  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
-  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
-  let omega = 8.0; let springDecay = exp(-omega * dt); let sdelta = springPos - rawMouse; let temp = (springVel + omega * sdelta) * dt;
-  springVel = (springVel - omega * temp) * springDecay; springPos = rawMouse + (sdelta + temp) * springDecay;
-  if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
-  let mouse = springPos;
+  // Rescue R1 — HEAD's spring state lived in extraBuffer[133..138]; the host re-uploads that
+  // buffer as zero every frame, so the spring never persisted and the pointer lens was the raw
+  // cursor (plus a same-dispatch write race). The eased pointer now lives in texel (0,0) of A,
+  // read back through an exact C load: every pixel computes the same glide, only (0,0) stores
+  // it, and that texel skips the temporal-feedback read. Rate 8 = HEAD's omega.
+  let isWriter = gid.x == 0u && gid.y == 0u;
+  let glideState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let hasGlide = abs(glideState.z - 7.0) < 0.01;
+  let frameT = fract(u.config.x);
+  let glideDt = clamp(frameT - glideState.w + select(0.0, 1.0, frameT < glideState.w), 0.0, 0.1);
+  let glideK = 1.0 - exp(-8.0 * glideDt);
+  let mouse = select(rawMouse, glideState.xy + (rawMouse - glideState.xy) * glideK, hasGlide);
   let mouseDown = u.zoom_config.w > 0.5;
   let held = select(1.0, 1.5, mouseDown);
 
@@ -70,12 +75,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spin = mat2x2<f32>(cos(time * 0.35 + mids), sin(time * 0.35), -sin(time * 0.35), cos(time * 0.35 + mids));
   q = spin * q;
 
+  // Idea 7 bookkeeping: |dq/dp|, the accumulated derivative of the whole inversion chain. The
+  // spin matrix is a complex multiplication, i.e. a similarity with scale sqrt(c'^2 + s^2); each
+  // circle inversion scales distances by r^2 / |q - c|^2.
+  let spinC = cos(time * 0.35 + mids);
+  let spinS = sin(time * 0.35);
+  var dScale = max(sqrt(spinC * spinC + spinS * spinS), 0.05);
+
   for (var i = 0; i < recursion; i = i + 1) {
     var inverted = false;
     for (var j = 0; j < 5; j = j + 1) {
       let c = circles[j].xy;
       let r = circles[j].z;
       if (distance(q, c) < r) {
+        let dInv = q - c;
+        dScale = min(dScale * (r * r / (dot(dInv, dInv) + 1e-8)), 1e12);
         q = circle_inv(q, c, r);
         invCount = invCount + 1.0;
         lastK = 1.0 / max(r, 0.05);
@@ -89,6 +103,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mp = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 3.0 / circleSize;
   let mr = (0.18 + invIntensity * 0.35) * held;
   if (distance(q, mp) < mr * 1.4) {
+    let dInvM = q - mp;
+    dScale = min(dScale * (mr * mr / (dot(dInvM, dInvM) + 1e-8)), 1e12);
     q = circle_inv(q, mp, mr);
     invCount = invCount + 1.0;
   }
@@ -100,6 +116,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let density = exp(-minDist * 15.0);
+
+  // Idea 7 — conformal hairlines. `minDist` lives in the inverted plane, so its width changes
+  // with the local inversion scale. Dividing by the accumulated derivative gives the distance
+  // to the true preimage of the nearest seed circle in the p plane: a line of constant screen
+  // width (1.2 px) on every nested copy of every circle, at every generation. It fades where the
+  // derivative is so large that the copies pack tighter than a pixel (it would only be a fill).
+  let pxP = 3.0 / (circleSize * max(f32(dims.y), 1.0));
+  let hairDist = minDist / dScale;
+  let hairFade = 1.0 - smoothstep(150.0, 4.0e3, dScale);
+  let hair = (1.0 - smoothstep(0.0, 1.2 * pxP, hairDist)) * hairFade;
+
+  // Idea 8 — generation-delayed pulse. Generations are built one inversion at a time, so light
+  // arrives one generation at a time: each deeper copy flashes a beat after the previous one
+  // and a pulse cascades inward through the nesting. Bass raises the amplitude, never the phase.
+  let genPulse = pow(0.5 + 0.5 * sin(u.config.x * 1.6 - invCount * 0.9), 5.0) * (0.6 + bass * 0.8);
 
   // Idea 1 — packing rims on the five seed circles (pre-inversion plane)
   var packRim = 0.0;
@@ -122,7 +153,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea 2 — Descartes curvature tint from last inverted k
   let hue = fract(invCount * 0.14 + lastK * 0.08 + length(q) * 0.3 + time * 0.12 + treble * 0.2);
   let sat = 0.55 + density * 0.45 + mids * 0.15;
-  let val = 0.18 + density * 0.85;
+  let val = (0.18 + density * 0.85) * (1.0 + 0.3 * genPulse);
 
   var color = vec3<f32>(
     val * (0.5 + sat * cos(hue * 6.283) * 0.5),
@@ -149,6 +180,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
   color += vec3<f32>(1.0, 0.95, 0.75) * clamp(kisses, 0.0, 1.2) * 0.7;
+  // Idea 7 (cont.): the hairline, brightest on the generation the pulse is passing through (Idea 8).
+  color += vec3<f32>(1.0, 0.93, 0.78) * hair * (0.55 + 0.9 * genPulse);
 
   let ca = smoothstep(0.0, 0.4, density) * rainbow;
   color = vec3<f32>(
@@ -157,19 +190,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     color.b * (1.0 - ca * 0.1)
   );
 
-  let alpha = density * clamp(invCount / 8.0, 0.0, 1.0) * (0.7 + bass * 0.3);
+  let alpha = max(density * clamp(invCount / 8.0, 0.0, 1.0) * (0.7 + bass * 0.3), hair * 0.6);
   let depth = clamp(1.0 - minDist * 2.0, 0.0, 1.0);
 
   // Temporal feedback
   let hist = textureLoad(dataTextureC, coord, 0).rgb;
-  color = mix(color, hist * 0.94, 0.05);
+  // (texel (0,0) holds the pointer glide, not colour: it skips the feedback mix)
+  color = mix(color, hist * 0.94, 0.05 * select(1.0, 0.0, isWriter));
 
   // Chromatic aberration
   let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
   color = vec3<f32>(color.r + caStr, color.g, color.b - caStr * 0.5);
 
   // Write temporal feedback before ACES so next frame reads untonemapped color
-  textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+  textureStore(dataTextureA, coord, select(vec4<f32>(color, alpha), vec4<f32>(mouse, 7.0, frameT), isWriter));
 
   // Single ACES tonemap
   color = acesToneMap(color * 2.0);

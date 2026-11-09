@@ -7,6 +7,10 @@
 //               image at grazing angles (Fresnel used to reach alpha only)
 //            2. internal luminescence — light trapped in bright tiles escapes at edges
 //            3. Beer-Lambert body tint — thick, strongly magnified tiles turn cold cyan
+//            4. Cauchy lens dispersion (§12.2F) — R/G/B magnify differently, fringes grow with lens power
+//            5. hammered decentring — each tile's lens axis sits slightly off-centre (per-tile hash)
+//  Upgraded: 2026-10-04, 2026-11-01, 2026-11-09
+//  A packing: ACES display RGBA (C read back as colour, blended in display space)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
@@ -15,6 +19,20 @@
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+  var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+// Idea 4: Cauchy n(lambda) = 1 + B / lambda^2 (lambda in um) for R/G/B, relative to green:
+// blue refracts hardest, red least. B comes from the tile's own lens power.
+fn cauchyScale(B: f32) -> vec3<f32> {
+  let lam = vec3<f32>(0.650, 0.550, 0.450);
+  let n = vec3<f32>(1.0) + vec3<f32>(B) / (lam * lam);
+  return n / n.y;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -83,10 +101,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     distUV = vec2<f32>(distUV.x * c - distUV.y * s, distUV.x * s + distUV.y * c);
   }
 
+  // The centred, rotated tile coordinate is kept: Idea 4 re-scales it per channel.
+  let lensUV = distUV;
   distUV = distUV * scale + 0.5;
 
+  // Idea 5: hammered decentring. Hand-made glass block is never perfectly centred: each tile's
+  // lens axis sits a little off, so neighbouring tiles show different parts of the picture.
+  // The offset grows with lens power, so flat tiles stay flat. It moves the sampling only;
+  // `border` keeps its symmetric reference (distUV) so the dark edge logic is unchanged.
+  let lensPower = 1.0 - scale;
+  let hammerShift = (hash22(cellID) - vec2<f32>(0.5)) * 0.22 * lensPower;
+  let gridSize = vec2<f32>(density * aspect, density);
+
   let finalUV = clamp(
-    (cellID + distUV) / vec2<f32>(density * aspect, density),
+    (cellID + distUV + hammerShift) / gridSize,
     vec2<f32>(0.001),
     vec2<f32>(0.999)
   );
@@ -112,7 +140,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var transmission = (1.0 - fresnel) * dot(absorption, vec3<f32>(0.3333));
   transmission = mix(transmission * 0.6, transmission, 1.0 - smoothstep(0.45, 0.48, border));
 
-  var src = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).rgb;
+  // Idea 4: Cauchy lens dispersion. A lens refracts blue harder than red, so each channel
+  // sees the tile at its own magnification: scale_c = 1 - lensPower * n_c / n_green. Green
+  // is exactly HEAD's finalUV, so a flat tile (lensPower 0) is unchanged and the fringes
+  // appear only on tiles that actually magnify.
+  let channelScale = vec3<f32>(1.0) - vec3<f32>(lensPower) * cauchyScale(0.12 * lensPower);
+  let uvR = clamp((cellID + lensUV * channelScale.x + vec2<f32>(0.5) + hammerShift) / gridSize, vec2<f32>(0.001), vec2<f32>(0.999));
+  let uvB = clamp((cellID + lensUV * channelScale.z + vec2<f32>(0.5) + hammerShift) / gridSize, vec2<f32>(0.001), vec2<f32>(0.999));
+  var src = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, finalUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+  );
 
   if (border > 0.45) {
     src = src * 0.5;

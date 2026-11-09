@@ -4,9 +4,11 @@
 //  Features: mouse-driven, audio-reactive, multi-layer-static, temporal,
 //            VCR tracking noise, horizontal hold instability, snow patterns,
 //            signal acquisition phase, chrominance noise
-//  Upgraded: 2026-09-21 (first 2026-08-21, Batch 42 - VCR Tracking)
+//  Upgraded: 2026-09-21, 2026-11-09 (first 2026-08-21, Batch 42 - VCR Tracking)
 //  Ideas: vertical-hold roll with a blanking bar while a region is only partly locked;
-//         multipath antenna ghost that fades as the signal locks
+//         multipath antenna ghost that fades as the signal locks;
+//         head-switching noise (sheared foot of the field + snowy switch line);
+//         tape dropout bursts (§12.2B: white streak, exponential tail, 6 Hz event windows)
 //  A packing: display RGB + reveal mask in alpha
 // ═══════════════════════════════════════════════════════════════════
 
@@ -98,7 +100,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   
   // Horizontal hold instability
   let hHold = sin(uv.y * 30.0 + time * 10.0) * 0.02 * (1.0 - mask) * bass;
-  let dUV = uv + vec2<f32>(hHold + trackingOffset * trackingBand * (1.0 - mask), 0.0);
+
+  // ── Idea 3: head-switching noise ─────────────────────────────────────
+  // A VCR's rotating heads hand over just above the bottom of the field. Sync is torn
+  // there, so the last lines are sheared sideways and the switching point prints a
+  // snowy bright line. Only unlocked picture shows it — brushed picture has sync.
+  let footZone = smoothstep(0.925, 1.0, uv.y);
+  let headSkew = footZone * footZone * (0.07 + 0.035 * sin(time * 2.3 + uv.y * 90.0)) * (1.0 - mask);
+  let switchOff = (uv.y - 0.935) * 120.0;
+  let switchLine = exp(-switchOff * switchOff) * (1.0 - mask);
+
+  let dUV = uv + vec2<f32>(hHold + trackingOffset * trackingBand * (1.0 - mask) + headSkew, 0.0);
 
   // Snow pattern
   let snowHash = hash22(dUV * 500.0 + time);
@@ -149,6 +161,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalVideoColor *= 1.0 - (1.0 - blanking) * partialLock * 0.9;
 
   var finalColor = mix(tintedGrain, finalVideoColor, revealBias);
+
+  // Idea 3 (cont.): the head-switch line itself — grainy, per-column, at field rate.
+  let switchSnow = hash12(vec2<f32>(floor(uv.x * u.config.z * 0.5), floor(time * 30.0)));
+  finalColor += vec3<f32>(0.9, 0.95, 1.0) * switchLine * (0.25 + 0.6 * switchSnow) * (0.35 + 0.65 * noiseIntensity);
+
+  // ── Idea 4: tape dropouts (§12.2B dropout bursts) ────────────────────
+  // Oxide shed from the tape leaves the head with no signal for a moment: a short
+  // white streak on one scanline whose tail dies off to the right. Events live in
+  // 6 Hz windows under a smooth envelope, so they come and go instead of strobing.
+  let dropLine = floor(uv.y * 270.0);
+  let dropWin = floor(time * 6.0);
+  let dropEnv = sin(3.14159265 * fract(time * 6.0));
+  let dropFire = step(0.975, hash12(vec2<f32>(dropLine, dropWin)));
+  let dropStart = hash12(vec2<f32>(dropLine + 7.3, dropWin));
+  let dropDx = fract(uv.x - dropStart);
+  let dropStreak = dropFire * dropEnv * exp(-dropDx * 11.0) * (1.0 - mask) * (0.3 + 0.7 * noiseIntensity);
+  finalColor += vec3<f32>(1.0, 0.98, 0.95) * dropStreak * 0.9;
 
   finalColor = finalColor + vec3<f32>(unrevealedVig * 0.08, unrevealedVig * 0.05, 0.0);
   finalColor = acesToneMap(finalColor * 1.1);
