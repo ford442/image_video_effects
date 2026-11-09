@@ -1,0 +1,8 @@
+# NOTES — fork B (temporal-frequency-decomposition, gen-fractal-clockwork, cyber-lattice-bilateral)
+
+Renders: SwiftShader minirender (gen) / minirender_img SRC=img (filters), 160px, 30 frames; PNGs in scratchpad B/.
+
+- temporal-frequency-decomposition: RESCUE 1-layer ring (minirender; VRAM floor on real devices) → "DFT" = current frame → whole image glowed yellow (HEAD meanL 0.69); now passthrough base + glow only where pixels oscillate (meanL 0.33). Dead plasmaBuffer[1..8] band voices and no-op extraBuffer lens spring removed. Ideas: DC notch (windowed mean subtracted, two-pass with sample cache), second-harmonic voice (2× bin; harmonic share pushes complementary hue), treble shimmer bands. Real-GPU: check glow strength on an 8-layer ring with video — the notch lowers average response a bit.
+- gen-fractal-clockwork: RESCUE upside-down (uv.y flip), brass floor wash (gears unreadable; HEAD meanL 0.54 flat brass) → dark walnut workbench, ACES re-grade loop (A now pre-ACES linear), dead spring. Ideas: cast gear shadows (24-step soft shadow), guilloché engraving, amber brass dust haze (also fills sky). New render meanL 0.20, gears clearly separated with horizon. Real-GPU: shadow march cost (+24 map calls/hit pixel).
+- cyber-lattice-bilateral: RESCUE ACES re-grade loop (A pre-ACES linear now), dead spring. Ideas: data packets along grid lines (treble speeds them), chromatic line split near cursor warp, cell occupancy fill (quantised cell-centre luma tint). Packets are small at 160px — check visibility on real GPU at default grid scale.
+- JSON: descriptions updated; dropped untrue sprung-orbit-camera / spring-cursor features.

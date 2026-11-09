@@ -9212,8 +9212,7 @@
       "depth",
       "lighting",
       "mouse-driven",
-      "audio-reactive",
-      "upgraded-rgba"
+      "audio-reactive"
     ],
     "tags": [
       "filter",
@@ -9266,7 +9265,6 @@
       "depth-aware",
       "exact-history",
       "raw-state-feedback",
-      "spring-interaction",
       "click-reactive",
       "aces-tone-map",
       "semantic-alpha"

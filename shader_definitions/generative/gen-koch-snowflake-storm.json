@@ -11,7 +11,7 @@
     "audio-reactive",
     "storm"
   ],
-  "description": "Recursive Koch snowflake fractals animated with domain-warped fBm turbulence. Ice crystal aesthetic with subsurface scattering, HDR corner bloom, and chromatic dispersion on refracted edges.",
+  "description": "Recursive Koch snowflakes with self-similar offspring and 22° ice halos tumbling through a storm sky of parallax snowfall, rime-feathered bodies and bass-driven thundersnow flashes.",
   "workgroup_size": [
     16,
     16,
