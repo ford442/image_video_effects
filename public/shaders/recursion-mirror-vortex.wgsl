@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Recursion Mirror Vortex
 //  Category: artistic
-//  Features: [mouse-driven]
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Upgraded: 2026-11-09
+//  Ideas: per-reflection mirror absorbance (silvered-glass green loss per fold bounce); C-fed Droste hallway regress toward the singularity
+//  A packing: ACES display RGBA (C read back as hallway history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=FoldDepth(1-6), y=FoldRadius, z=VortexSpeed, w=MirrorBlend
@@ -100,13 +101,18 @@ fn sphereFold(z: vec2<f32>, minR: f32, fixedR: f32) -> vec2<f32> {
 // ─────────────────────────────────────────────────────────────────────────────
 fn chromaticVignette(uv: vec2<f32>, center: vec2<f32>, power: f32) -> vec3<f32> {
     let d = length(uv - center);
-    let v = pow(max(1.0 - d * 1.5, 0.0), power);
+    // Rescue: HEAD (1-1.5d)^power blacked out everything past d≈0.4 at defaults.
+    let v = 0.25 + 0.75 * pow(max(1.0 - d * 0.9, 0.0), power * 0.5);
     return vec3<f32>(v * 0.95, v * 0.97, v);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Luminance
 // ─────────────────────────────────────────────────────────────────────────────
+fn acesFilm(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn luma_rmv(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
@@ -174,11 +180,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var wUV = vortexTwist(uv, center, vortStrength);
 
     // ── Iterative Möbius folds ────────────────────────────────────────────
+    // ── Idea 1: each fold that actually mirrors (leaves [0,1]² before the
+    // abs-fract flip) is one more glass bounce; real silvered glass loses
+    // ~8-12% per bounce with a green cast, so deep hallway cells darken/green.
+    var absorb = vec3<f32>(1.0);
     for (var k = 0; k < foldDepth; k++) {
         let r_k   = foldRadius * pow(0.65, f32(k));           // shrink per iteration
         let angle = t * 0.08 * f32(k + 1) * sign(vortSpeed);
         let c_k   = center + rot2(vec2<f32>(r_k * 0.3, 0.0), angle);
         wUV = mobiusFold(wUV, c_k, 1.0 / (r_k * r_k + 0.01));
+        let bounced = step(0.5, abs(wUV.x - 0.5)) + step(0.5, abs(wUV.y - 0.5));
+        absorb *= mix(vec3<f32>(1.0), vec3<f32>(0.86, 0.95, 0.90), min(bounced, 1.0));
         // Mirror fold: flip if outside [0,1]² after each step
         wUV = abs(fract(wUV * 0.5) * 2.0 - 1.0) * 0.5 + center * (1.0 - pow(0.7, f32(k + 1)));
     }
@@ -200,7 +212,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edgeDist = length(uv - center);
     let vignette = smoothstep(0.0, 0.35, edgeDist) * (1.0 - smoothstep(0.35, 0.7, edgeDist));
 
-    let outColor = mix(colOrig, colFold, blend) * (0.7 + vignette * 0.5);
+    let colFoldAbs = vec4<f32>(colFold.rgb * absorb, colFold.a);
+    let outColor = mix(colOrig, colFoldAbs, blend) * (0.7 + vignette * 0.5);
 
     // ── Box+sphere fold for extra recursive complexity ─────────────────────
     var zMandelbox = foldedUV * 2.0 - 1.0;
@@ -250,8 +263,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let clockRings = sin(length(uv - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = liftedMirror.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, gid.xy, vec4<f32>(__finalRGB, finalAlpha));
-    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(foldedUV, foldDist, 1.0));
+    var mirrorRGB = liftedMirror.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+
+    // ── Idea 2: Droste hallway regress — last frame, pulled toward the
+    // singularity by one fold-radius step, shows through where the mirror
+    // folds dominate, so the recursion keeps receding over time. Exact C load.
+    let shrink = 0.90 - bass * 0.04;
+    let regUV  = clamp(center + (uv - center) * shrink, vec2<f32>(0.0), vec2<f32>(1.0));
+    let regPx  = vec2<i32>(regUV * (res - 1.0));
+    let prev   = textureLoad(dataTextureC, regPx, 0).rgb;
+    let regW   = mirrorBlend * 0.35 * smoothstep(0.02, 0.25, foldDist);
+    mirrorRGB  = mix(mirrorRGB, prev * vec3<f32>(0.90, 0.96, 0.93), regW);
+
+    let display = acesFilm(max(mirrorRGB, vec3<f32>(0.0)));
+    textureStore(writeTexture, gid.xy, vec4<f32>(display, finalAlpha));
+    textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(display, finalAlpha));
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 1.0));
 }

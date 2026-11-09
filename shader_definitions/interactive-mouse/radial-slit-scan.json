@@ -3,7 +3,7 @@
   "name": "Radial Slit Scan",
   "category": "interactive-mouse",
   "url": "shaders/radial-slit-scan.wgsl",
-  "description": "A time-displacement effect that radiates from the cursor, now enhanced with volumetric glow, cosine palette color cycling, chromatic aberration, split-tone grading, and ACES filmic tone mapping.",
+  "description": "A time-displacement effect that radiates from the cursor, now with capture-age strata (isochrone contour lines tracing when each ring was frozen), age weathering that drains colour from older strata, volumetric glow, cosine palette color cycling, chromatic aberration, split-tone grading, and ACES filmic tone mapping.",
   "features": [
     "mouse-driven",
     "feedback",

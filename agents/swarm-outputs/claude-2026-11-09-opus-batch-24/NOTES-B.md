@@ -1,0 +1,5 @@
+# Fork B notes
+- recursion-mirror-vortex: ideas at `// ── Idea 1` (absorb in fold loop) and `// ── Idea 2` (Droste C regress). Rescues: HEAD did not compile (`__finalRGB` reserved identifier); chromaticVignette (1-1.5d)^3.2 blacked out the frame (meanL 0.12 → 0.46). A: foldedUV → ACES display RGBA. Params exact. Note: VortexSpeed default 0.5 = zero speed (bidirectional slider), left as-is.
+- holographic-entropy-vortex: Idea 3 log-spiral arms, Idea 4 entropy-thickness thin film. Rescues: dead extraBuffer[133..138] spring/click (pointer pinned at 0,0) → live zoom_config.yz + newest ripple age; pow negative-base NaN in fresnel.
+- matrix_digital_rain: body was never rain (zoom-tunnel template since 4214d7fa). Ideas: rain_cell glyph columns in each layer UV, depth-parallax speed. Rescues: dead extraBuffer[0] chroma + extraBuffer[10] click → bass chroma + pointer/ripple spin; added header, audio, ACES, dataTextureA write; alpha tracks glyph brightness (per description).
+- Gates: precommit gate 3/3 OK, dead-sliders PASS. Renders minirender(_img) at JSON defaults; real-GPU QA external.

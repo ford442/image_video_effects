@@ -3,8 +3,9 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: Asendorf interval along V/H; exact-C ghost
+//  Upgraded: 2026-11-09
+//  Ideas: Asendorf interval along V/H; exact-C ghost; held-pointer radial comb;
+//         span-head glint where an interval ends
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -159,7 +160,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Layer 1: Primary sort direction
     // Idea 1 — Asendorf interval along the V/H axis.
-    let axis = select(vec2<f32>(0.0, 1.0), vec2<f32>(1.0, 0.0), direction > 0.5);
+    let axisVH = select(vec2<f32>(0.0, 1.0), vec2<f32>(1.0, 0.0), direction > 0.5);
+    // Idea 3: held-pointer radial comb — while the button is held, spans near the cursor
+    // bend to run radially away from it (the pointer combs the sort), easing back to V/H.
+    let toPix = (uv - mouse) * vec2<f32>(aspect, 1.0);
+    let radial = toPix / max(length(toPix), 1e-4) * vec2<f32>(1.0 / aspect, 1.0);
+    let combW = isMouseDown * influence;
+    let axisMix = mix(axisVH, normalize(radial + vec2<f32>(1e-5)), combW);
+    let axis = axisMix / max(length(axisMix), 1e-4);
     let invert = mode > 0.5;
     let inBright = luma > localThreshold;
     let inDark = invert && luma < (1.0 - localThreshold);
@@ -180,6 +188,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             }
         }
     }
+
+    // Idea 4: span-head glint — the pixel where the interval ENDS one stride ahead (next tap
+    // leaves the threshold band) is the span's leading edge; light it as a thin bright cap.
+    let headUV = clamp(uv + axis * stride, vec2<f32>(0.001), vec2<f32>(0.999));
+    let headL = get_luma(textureSampleLevel(readTexture, u_sampler, headUV, 0.0).rgb);
+    let headOut = !select(headL > localThreshold, headL < (1.0 - localThreshold), invert);
+    let headGlint = select(0.0, 1.0, (inBright || inDark) && headOut) * (0.18 + treble * 0.25) * (0.4 + 0.6 * influence);
 
     var sourceUV1 = uv + audioJitter + combinedWarp * influence;
     if (direction > 0.5) {
@@ -225,7 +240,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sparkleNoise = hash12(vec2<f32>(global_id.xy) + vec2<f32>(time * 15.0, time * 11.0));
     let sparkle = smoothstep(0.97, 1.0, sparkleNoise) * treble * influence * 2.0;
 
-    var finalColor = sorted.rgb + trailTint * streak * influence * (0.15 + bass * 0.12) + vec3<f32>(sparkle);
+    var finalColor = sorted.rgb + trailTint * streak * influence * (0.15 + bass * 0.12) + vec3<f32>(sparkle) + best * headGlint;
 
     // Idea 2 — exact-C ghost so streaks hold one frame.
     let histDims = vec2<i32>(textureDimensions(dataTextureC));

@@ -4,8 +4,8 @@
 //  Features: cooperative-workgroup, edge-linking, segmentation, mouse-driven,
 //            audio-reactive, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: gap bridging (link_radius enables diagonal + distance-2 links, 3→9 passes, bridge pixels drawn); chain-size confidence via workgroup atomic member count; per-chain strobe on its own hash(id) rhythm driven by mids
+//  Upgraded: 2026-11-09
+//  Ideas: gap bridging (link_radius enables diagonal + distance-2 links, 3→9 passes, bridge pixels drawn); chain-size confidence via workgroup atomic member count; per-chain strobe on its own hash(id) rhythm driven by mids; chain terminals (open-end nodes where linking stopped, 8-neighbour count == 1); held-pointer chain pick (atomic flag per root lights the whole linked chain)
 //  A packing: diagnostic (gradMag, chainId/256, isEdge, alpha)
 // ═══════════════════════════════════════════════════════════════════
 // Workgroup-Cooperative Edge Linking
@@ -21,6 +21,8 @@ var<workgroup> edgeFlags: array<u32, 256>;
 var<workgroup> edgeIds: array<u32, 256>;
 // Idea 2: members per root id, filled after the union passes.
 var<workgroup> chainCount: array<atomic<u32>, 256>;
+// Idea 5: 1 when any member of the chain (root id) lies under the held pointer.
+var<workgroup> chainPicked: array<atomic<u32>, 256>;
 
 // ═══ CHUNK: hash3 (from noise.wgsl) ═══
 fn hash3(p: vec2<f32>) -> vec3<f32> {
@@ -95,6 +97,7 @@ fn main(
     edgeFlags[lidx] = isEdge;
     edgeIds[lidx] = lidx; // Initially each edge is its own component
     atomicStore(&chainCount[lidx], 0u);
+    atomicStore(&chainPicked[lidx], 0u);
     workgroupBarrier();
 
     let lx = lid.x;
@@ -154,13 +157,40 @@ fn main(
 
     // Idea 2 (chain-size confidence): count members per root id, then read the
     // size of this pixel's chain. Long chains glow fully, fragments are dim.
+    // Pointer test moved up so the pick can ride the same barrier as the count.
+    let mouseDist = length(uv - mousePos);
+    let mouseInfluence = exp(-mouseDist * mouseDist * 1000.0);
     if (isEdge == 1u) {
         atomicAdd(&chainCount[myEdgeId], 1u);
+        // ── Idea 5: chain pick — a held pointer touching any member flags the
+        // whole linked chain, so the selection follows the union-find result
+        // instead of lighting only a disc of pixels.
+        if (isMouseDown && mouseInfluence > 0.01) {
+            atomicStore(&chainPicked[myEdgeId], 1u);
+        }
     }
     workgroupBarrier();
     let chainSize = f32(atomicLoad(&chainCount[myEdgeId]));
     let confidence = smoothstep(2.0, 16.0, chainSize);
     let confGain = mix(0.35, 1.0, confidence);
+    let picked = atomicLoad(&chainPicked[myEdgeId]) == 1u && (isEdge == 1u || isBridge);
+
+    // ── Idea 4: chain terminals — an edge pixel with exactly one linked
+    // neighbour (8-connected) is an open end of its chain, i.e. where linking
+    // stopped. Ends get a bright node so the topology of each chain is visible.
+    var nbr = 0u;
+    if (hasL) { nbr += 1u; }
+    if (hasR) { nbr += 1u; }
+    if (hasU) { nbr += 1u; }
+    if (hasD) { nbr += 1u; }
+    if (lx < 15u && ly > 0u && edgeFlags[u_idx + 1u] == 1u) { nbr += 1u; }
+    if (lx > 0u && ly > 0u && edgeFlags[u_idx - 1u] == 1u) { nbr += 1u; }
+    if (lx < 15u && ly < 15u && edgeFlags[d + 1u] == 1u) { nbr += 1u; }
+    if (lx > 0u && ly < 15u && edgeFlags[d - 1u] == 1u) { nbr += 1u; }
+    // Tile-border pixels are skipped: their neighbours sit in another workgroup,
+    // so every seam would otherwise read as a false open end.
+    let interior = lx > 0u && lx < 15u && ly > 0u && ly < 15u;
+    let isTerminal = isEdge == 1u && nbr == 1u && interior;
 
     let edgeIdHash = hash12(vec2<f32>(f32(myEdgeId % 16u), f32(myEdgeId / 16u)));
 
@@ -212,19 +242,23 @@ fn main(
     );
 
     // Mouse interaction — branchless via select()
-    let mouseDist = length(uv - mousePos);
-    let mouseInfluence = exp(-mouseDist * mouseDist * 1000.0);
     let mouseActive = isMouseDown && (isEdge == 1u) && (mouseInfluence > 0.01);
     let mouseBoost = select(vec3<f32>(0.0), vec3<f32>(0.3, 0.6, 1.0) * mouseInfluence, mouseActive);
     // ACES only where the neon runs hot; the untouched passthrough photo
     // (outColor == c on flat areas) keeps its HEAD tonality.
-    let linRGB = clamp(outColor + mouseBoost, vec3<f32>(0.0), vec3<f32>(16.0));
+    // Idea 5: the picked chain glows cyan along its full length.
+    let pickBoost = select(vec3<f32>(0.0), vec3<f32>(0.25, 0.7, 1.0) * (0.6 + bass * 0.4), picked);
+    // Idea 4: terminal nodes in the chain colour, pulsing with treble.
+    let nodeCol = mix(vec3<f32>(1.0), edgeColor, 0.5) * (0.8 + treble * 0.8) * confGain;
+    let termBoost = select(vec3<f32>(0.0), nodeCol, isTerminal);
+    let linRGB = clamp(outColor + mouseBoost + pickBoost + termBoost, vec3<f32>(0.0), vec3<f32>(16.0));
     let hot = smoothstep(0.7, 1.5, max(linRGB.r, max(linRGB.g, linRGB.b)));
     let finalRGB = mix(linRGB, acesToneMap(linRGB), hot);
 
     // Proper alpha computation — source alpha blended with edge presence,
     // scaled by chain confidence so fragments are also less opaque.
-    let alpha = saturate(src.a * (0.3 + edgeMix * 0.7 * confGain + gradMag * 0.5));
+    let alpha = saturate(src.a * (0.3 + edgeMix * 0.7 * confGain + gradMag * 0.5
+                         + select(0.0, 0.3, isTerminal) + select(0.0, 0.3, picked)));
 
     if (!inBounds) { return; }
     textureStore(writeTexture, gid.xy, vec4<f32>(finalRGB, alpha));
