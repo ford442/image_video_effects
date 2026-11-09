@@ -4,8 +4,10 @@
 //  Features: mouse-driven, glitch, audio-reactive, upgraded-rgba, semantic-alpha,
 //            mouse-down-surge, fbm-wobble, palette-fringe
 //  Complexity: Medium
-//  Upgraded: 2026-10-06
-//  Ideas: luma parallax layers (bright strips in front travel further); cut-face bevel + cast shadow at slice seams
+//  Upgraded: 2026-10-06, 2026-11-09
+//  Ideas: luma parallax layers (bright strips in front travel further); cut-face bevel + cast shadow at slice seams;
+//         ragged tear seams (per-column hashed seam height, like torn paper strips); velocity smear
+//         (each strip streaks back along its own instantaneous slide velocity)
 //  A packing: ACES display RGBA (C is never read)
 //  History: created 2026-05-10; Phase A swarm 2026-05-23; kimi-swarm 2026-07-19
 // ═══════════════════════════════════════════════════════════════════
@@ -103,7 +105,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Slice geometry ──────────────────────────────────────────────
     let sliceHeight = 1.0 / sliceCount;
-    let sliceIndex = floor(uv.y * sliceCount);
+    // IDEA 3 — ragged tear seams: jitter the seam height per 3-px column so strip edges are torn
+    let rawIdx = floor(uv.y * sliceCount);
+    let colCell = floor(uv.x * resolution.x / 3.0);
+    let rag = (hash21(vec2<f32>(colCell, rawIdx)) - 0.5) * 0.35 * sliceHeight
+            * smoothstep(0.0, 0.3, intensity);
+    let ySl = uv.y + rag;
+    let sliceIndex = floor(ySl * sliceCount);
     let sliceCenterY = (sliceIndex + 0.5) * sliceHeight;
 
     let sampleX = fract(mouse.x + time * 0.1);
@@ -130,13 +138,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── RGB-split sampling (u_sampler wraps; fract keeps it explicit) ─
     // Mids add a subtle shimmer to the channel separation.
     let shift = rgbShift * (1.0 + mids * 0.4);
-    let uvR = vec2<f32>(fract(uv.x + offset + shift), uv.y);
-    let uvG = vec2<f32>(fract(uv.x + offset), uv.y);
-    let uvB = vec2<f32>(fract(uv.x + offset - shift), uv.y);
-
-    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+    // IDEA 4 — velocity smear: finite-difference the strip's slide over 1/20 s and streak the
+    // samples back along that velocity (still strips stay sharp).
+    let dt = 0.05;
+    let offsetPrev = clamp((sliceTerms(sliceIndex, luma, time - dt, phase, intensity) + surge)
+                       * intensity * mouseFactor * mix(0.7, 1.3, z), -0.35, 0.35);
+    let smearLen = clamp((offset - offsetPrev) * 0.8, -0.04, 0.04);
+    var r = 0.0;
+    var g = 0.0;
+    var b = 0.0;
+    for (var k = 0; k < 4; k++) {
+        let o = offset - smearLen * (f32(k) / 3.0);
+        r += textureSampleLevel(readTexture, u_sampler, vec2<f32>(fract(uv.x + o + shift), uv.y), 0.0).r;
+        g += textureSampleLevel(readTexture, u_sampler, vec2<f32>(fract(uv.x + o), uv.y), 0.0).g;
+        b += textureSampleLevel(readTexture, u_sampler, vec2<f32>(fract(uv.x + o - shift), uv.y), 0.0).b;
+    }
+    r *= 0.25;
+    g *= 0.25;
+    b *= 0.25;
     var rgb = vec3<f32>(r, g, b);
 
     // ── Fringe tint: palette color only where channels separate ─────
@@ -145,7 +164,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rgb += tint * fringe * 0.18;
 
     // ── Scanline shading (kept from the original, softened) ─────────
-    let distCenter = abs(uv.y - sliceCenterY) / sliceHeight * 2.0;
+    let distCenter = abs(ySl - sliceCenterY) / sliceHeight * 2.0;
     let scanline = 1.0 - smoothstep(0.75, 1.0, distCenter) * 0.28;
     rgb *= scanline;
 
@@ -154,7 +173,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // shows a lit bevel, a strip under a front neighbour receives its shadow.
     let shear = offset - offsetAbove;
     let dz = z - zAbove;
-    let dy = uv.y - sliceIndex * sliceHeight;
+    let dy = ySl - sliceIndex * sliceHeight;
     let faceH = min(abs(shear) * 0.8 + abs(dz) * sliceHeight * 0.5, sliceHeight * 0.45);
     let band = (1.0 - smoothstep(0.0, max(faceH, 1e-5), dy)) * step(0.5, sliceIndex);
     let inFront = smoothstep(-0.02, 0.02, dz);

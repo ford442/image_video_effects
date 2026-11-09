@@ -3,8 +3,8 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: orthogonal null tint; retrace phosphor decay
+//  Upgraded: 2026-09-11, 2026-11-09
+//  Ideas: orthogonal null tint; retrace phosphor decay; dominant-orientation needle glyphs; doubled-angle orientation sheen
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -117,6 +117,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let totalResponse = abs(r0) + abs(r45) + abs(r90) + abs(r135) + 0.001;
     gaborColor = gaborColor / totalResponse * 1.3;
 
+    // Idea 4 — doubled-angle orientation sheen: the bank's 2θ vector picks a hue, strength = anisotropy
+    let ori = vec2<f32>(abs(r0) - abs(r90), abs(r45) - abs(r135));
+    let aniso = clamp(length(ori) / totalResponse, 0.0, 1.0);
+    let theta2 = atan2(ori.y, ori.x);
+    let sheen = vec3<f32>(0.5) + 0.5 * cos(vec3<f32>(theta2) + vec3<f32>(0.0, 2.094, 4.189));
+    gaborColor = mix(gaborColor, sheen * 1.1, aniso * (0.25 + mids * 0.25));
+
+    // Idea 3 — dominant-orientation needle glyphs: one short stroke per cell, along the winning filter
+    let cellPx = 10.0;
+    let cellId = floor(uv * resolution / cellPx);
+    // stroke runs along the stripes (perpendicular to the winning carrier), reusing the 2θ vector
+    let cellTheta = rotationOffset + 0.5 * theta2 + 1.570796;
+    let local = (uv * resolution - (cellId + 0.5) * cellPx);
+    let dirN = vec2<f32>(cos(cellTheta), sin(cellTheta));
+    let along = dot(local, dirN);
+    let across = abs(dot(local, vec2<f32>(-dirN.y, dirN.x)));
+    let needleLen = cellPx * 0.45 * smoothstep(0.1, 0.6, aniso);
+    let needle = (1.0 - smoothstep(0.4, 1.1, across)) * step(abs(along), needleLen);
+
     let stepX = pixelSize.x;
     let stepY = pixelSize.y;
     let edgeVal = length(vec2<f32>(
@@ -130,6 +149,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var processed = mix(gaborColor, cyberColor, gridVal * gridIntensity) + cyberColor * edgeVal * 3.0;
     processed += vec3<f32>(0.2, 0.95, 1.0) * packet * (0.2 + treble * 0.3);
     processed += nullTint * nullCross * gridIntensity * 0.55;
+    processed = mix(processed, vec3<f32>(0.85, 1.0, 1.0), needle * gridIntensity * (0.55 + bass * 0.3));
     processed += sin(uv.y * resolution.y * 0.5) * 0.1;
     finalColor = mix(baseColor.rgb, processed, scanMask);
   } else {
@@ -155,8 +175,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor = mix(finalColor, prev.rgb * 0.9, scanMask * 0.12);
   finalColor = finalColor + afterglow;
 
-  let band = min(u32(uv.x * 8.0), 7u);
-  finalColor += vec3<f32>(0.03, 0.08, 0.12) * plasmaBuffer[band + 1u].x * scanMask * 0.12;
+  // Rescue: plasmaBuffer[1..8] is never written (only index 0) — use treble instead of the dead band read
+  finalColor += vec3<f32>(0.03, 0.08, 0.12) * treble * scanMask * 0.12;
 
   finalColor = acesToneMap(finalColor);
   let alpha = clamp(baseColor.a * mix(0.5, 0.95, scanMask) + clickBurst * 0.1 + packet * 0.08 + phosphorDecay * 0.12, 0.06, 0.98);

@@ -1,7 +1,14 @@
-// VHS Tracking Bilateral — Composer batch cyber/digital/glitch cohort 3
+// ═══════════════════════════════════════════════════════════════════
+//  VHS Tracking Bilateral
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-09
+//  Ideas: lagging chroma bandwidth; dropout comet streaks; bass tape-stretch wow
+//  A packing: ACES display RGBA in A (alpha = tracking band/click/depth coverage)
+// ═══════════════════════════════════════════════════════════════════
 // AR(1) capstan jitter, chroma phase noise, control-track dropouts, tracking-band
-// bilateral smoothing, spring tracking bar, held freeze, click dropout pulses,
-// exact C smear, ACES + semantic alpha.
+// bilateral smoothing at the cursor row, held freeze, click dropout pulses, C smear.
 
 #include "_prelude.wgsl"
 
@@ -53,32 +60,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
   let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
 
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 10.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
+  // extraBuffer[133..138] is re-uploaded as zeros each frame; the old spring never ran.
+  let smoothMouse = mouse;
 
   let trackingError = u.zoom_params.x;
   let chromaNoiseAmt = u.zoom_params.y;
@@ -93,9 +76,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let scanlineIndex = floor(uv.y * resolution.y);
   let arJitter = (noise(vec2<f32>(scanlineIndex * 0.1, time * 0.3)) - 0.5) * trackingError * 0.02 * freezeMix;
-  let jitteredUV = vec2<f32>(uv.x + arJitter, uv.y);
+  // Idea 3 — bass tape-stretch wow: line timebase stretches about centre with slow flutter
+  let wow = (sin(time * 1.3 + uv.y * 2.0) * 0.6 + sin(time * 3.7) * 0.4) * (0.004 + bass * 0.012) * trackingError * freezeMix;
+  let jitteredUV = vec2<f32>((uv.x - 0.5) * (1.0 + wow) + 0.5 + arJitter, uv.y);
 
   var yuv = rgbToYuv(textureSampleLevel(readTexture, u_sampler, jitteredUV, 0.0).rgb);
+  // Idea 1 — lagging chroma bandwidth: U/V come from a low-pass, delayed tap row (luma stays sharp)
+  let lag = (1.5 + chromaNoiseAmt * 4.0) * pixelSize.x;
+  var uvLow = vec2<f32>(0.0);
+  for (var k = 0; k < 5; k++) {
+    let tap = rgbToYuv(textureSampleLevel(readTexture, u_sampler, jitteredUV - vec2<f32>(lag * (1.0 + f32(k) * 0.6), 0.0), 0.0).rgb);
+    uvLow += tap.yz * 0.2;
+  }
+  yuv = vec3<f32>(yuv.x, mix(yuv.yz, uvLow, 0.35 + chromaNoiseAmt * 0.5));
   let phaseNoise = sin(uv.y * 120.0 + time * (2.0 + trackingError * 5.0)) * chromaNoiseAmt * 0.1;
   yuv.y += (noise(uv * 300.0 + vec2<f32>(time * 50.0, 0.0)) - 0.5) * chromaNoiseAmt * 0.4 + phaseNoise;
   yuv.z += (noise(uv * 320.0 + vec2<f32>(0.0, time * 45.0)) - 0.5) * chromaNoiseAmt * 0.4 + phaseNoise * 0.7;
@@ -109,6 +102,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dropoutRand = hash2(vec2<f32>(floor(dropoutBase), time * 0.5));
   let dropoutActive = step(1.0 - trackingError * 0.3, dropoutRand);
   color += (noise(uv * 500.0 + time * 100.0) - 0.5) * dropoutEnvelope * dropoutActive * 0.5;
+
+  // Idea 2 — dropout comet streaks: oxide-loss flashes that start white and decay rightward along the line
+  let cometSeed = vec2<f32>(scanlineIndex, floor(time * 12.0));
+  let cometOn = step(1.0 - (0.004 + treble * 0.01) * (0.3 + trackingError * 2.0), hash2(cometSeed));
+  let cometX = hash2(cometSeed + 7.1);
+  let cometT = (uv.x - cometX) / (0.06 + 0.2 * hash2(cometSeed + 3.3));
+  let comet = cometOn * step(0.0, cometT) * exp(-cometT * 3.0) * freezeMix;
+  color = mix(color, vec3<f32>(0.95), clamp(comet, 0.0, 1.0) * 0.85);
 
   let headSwitchY = trackingY + sin(time * 2.0) * 0.02;
   let headSwitchBand = smoothstep(0.03, 0.0, abs(uv.y - headSwitchY));
@@ -161,7 +162,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = acesToneMap(color * (0.95 + bass * 0.05));
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
-  let alpha = clamp(depth * 0.85 + inTrackingBand * 0.1 + clickPulse * 0.2 + bass * 0.05, 0.0, 1.0);
+  // Rescue: alpha was depth*0.85 (≈0 on flat/zero depth → output vanished); keep depth as a minor term
+  let alpha = clamp(0.82 + depth * 0.08 + inTrackingBand * 0.06 + clickPulse * 0.1 + mids * 0.03, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(color, alpha));
   textureStore(dataTextureA, coord, vec4<f32>(color, alpha));

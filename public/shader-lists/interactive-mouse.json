@@ -5686,7 +5686,7 @@
     "id": "luma-slice-interactive",
     "name": "Luma Slice Interactive",
     "url": "shaders/luma-slice-interactive.wgsl",
-    "description": "Slices the image horizontally, displacing strips based on their luminance and mouse position. Audio-reactive intensity via bass, mids-shimmered RGB fringes tinted by a cosine palette, organic fBM wobble, and a mouse-down surge ripple, finished with vignette and grain.",
+    "description": "Slices the image into torn-edged strips displaced by luminance and mouse position; moving strips smear along their slide, with palette RGB fringes and a mouse-down surge.",
     "params": [
       {
         "id": "intensity",
@@ -7353,7 +7353,7 @@
     "id": "nano-repair",
     "name": "Nano-Tech Repair",
     "url": "shaders/nano-repair.wgsl",
-    "description": "The image is corrupted by digital rot. Use the mouse to deploy nano-bots that repair the image.",
+    "description": "The image is corrupted by creeping digital rot. Deploy nano-bots with the mouse: an orbiting swarm welds pixels back, leaving a fading scar lattice.",
     "params": [
       {
         "id": "radius",
@@ -7388,7 +7388,8 @@
       "mouse-driven",
       "feedback",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "semantic-alpha"
     ],
     "tags": [
       "filter",

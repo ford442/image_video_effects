@@ -2,7 +2,7 @@
   "id": "radial-rgb",
   "name": "Radial RGB",
   "url": "shaders/radial-rgb.wgsl",
-  "description": "Spectral chromatic aberration with lens distortion, anamorphic stretch, single-sample spectral tint via mix(), alpha translucency blending, and vignette.",
+  "description": "Brown-model lens with radial chromatic aberration, tangential astigmatism smear and a cat's-eye vignette; hold to decentre the optical axis onto the pointer.",
   "params": [
     {
       "id": "k1",
