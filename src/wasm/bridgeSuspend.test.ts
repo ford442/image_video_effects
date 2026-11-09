@@ -129,7 +129,7 @@ describe('generated wrappers (contract surface)', () => {
 describe('call seam', () => {
   it('runs async exports one at a time and resolves with the C++ result', async () => {
     const { mod, log, pending } = fakeModule();
-    const a = cpp.loadShader(mod, 64, 128);
+    const a = cpp.loadShader(mod, 64, 128, 16, 16, 0);
     const b = cpp.setColorFormat(mod, 1);
     await flush();
     expect(log).toEqual(['loadShader']);
@@ -209,8 +209,8 @@ describe('call seam', () => {
 
   it('a rejected async export does not wedge the queue', async () => {
     const { mod, log, pending } = fakeModule();
-    const bad = cpp.reloadShader(mod, 1, 2);
-    const next = cpp.loadShader(mod, 3, 4);
+    const bad = cpp.reloadShader(mod, 1, 2, 16, 16, 0);
+    const next = cpp.loadShader(mod, 3, 4, 16, 16, 0);
     pending.reloadShader![0]!.reject(new Error('trap'));
     await expect(bad).rejects.toThrow('trap');
     expect(log).toEqual(['reloadShader', 'loadShader']);
@@ -279,7 +279,7 @@ describe('bridge on the seam', () => {
     const load = loadShader('plasma', '@compute @workgroup_size(8, 8) fn main() {}');
     await flush();
     const call = mod.ccall.mock.calls.find((c) => c[0] === 'loadShader')!;
-    expect(call[2]).toEqual(['number', 'number']);
+    expect(call[2]).toEqual(['number', 'number', 'number', 'number', 'number']);
     expect(mod._free).not.toHaveBeenCalled();
 
     // Frames are skipped and the slot assignment waits for the pipeline.

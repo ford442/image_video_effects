@@ -45,10 +45,12 @@ export const WASM_SOURCE_PATTERNS = [
   'src/contracts/bind_group0.json',
   'src/contracts/canvas_configure.json',
   'src/contracts/webgpu_limits.json',
+  'src/contracts/workgroup_dispatch.json',
   'scripts/format-wasm-compile-flags.js',
   'scripts/format-wasm-exports.js',
   'scripts/emcc-version-gate.sh',
   'scripts/gen-*-header.js',
+  'scripts/gen-wasm-contracts.js',
 ];
 
 function globToRegex(pattern) {

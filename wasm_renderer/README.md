@@ -34,7 +34,7 @@ Full snapshot: [`STATUS.md`](./STATUS.md) · gaps: [`WASM_RENDERER_GAP_ANALYSIS.
 | `frame.cpp` | Multi-slot `Render()`, uniforms flush, async frame capture |
 | `timing.cpp` | GPU timestamp queries: one begin/end pair per slot compute pass, resolve/readback, `getGPUTimings` phases + `getPassTimingsJson` (#1314 D) |
 | `audio_depth.cpp` | Image/video upload, depth map, audio FFT bins |
-| `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ParseWorkgroupSize`, …) |
+| `wasm_internal.cpp/h` | Shared helpers (`CheckLimit`, `ContainsWgslIncludeDirective`, …). Dispatch size + usage bits arrive through `loadShader` from `src/wasm/bridge/wgslAnalysis.ts`; constants in generated `wasm_contracts.h` |
 | `canvas_configure.h` | **Generated** canvas configure constants (usage, alphaMode, presentMode) from `canvas_configure.json` |
 | `wasm_exports.h` | **Generated** `extern "C"` prototypes of every export, from `wasm_exports.json` `exports`; `main.cpp` includes it |
 | `src/wasm/bridge/*.ts` | **Hand-edited TypeScript glue** (edit here; webpack compiles `src/wasm/wasm_bridge.ts`) |

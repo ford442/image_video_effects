@@ -61,11 +61,11 @@ function initWasmRenderer(mod, width, height, canvasSelector) {
 function shutdownWasmRenderer(mod) {
   callSync(mod, "shutdownWasmRenderer", null, [], [], "queue", void 0);
 }
-function loadShader(mod, id, wgslCode) {
-  return callAsync(mod, "loadShader", "number", ["number", "number"], [id, wgslCode]).then((r) => Number(r ?? 0));
+function loadShader(mod, id, wgslCode, workgroupX, workgroupY, usageBits) {
+  return callAsync(mod, "loadShader", "number", ["number", "number", "number", "number", "number"], [id, wgslCode, workgroupX, workgroupY, usageBits]).then((r) => Number(r ?? 0));
 }
-function reloadShader(mod, id, wgslCode) {
-  return callAsync(mod, "reloadShader", "number", ["number", "number"], [id, wgslCode]).then((r) => Number(r ?? 0));
+function reloadShader(mod, id, wgslCode, workgroupX, workgroupY, usageBits) {
+  return callAsync(mod, "reloadShader", "number", ["number", "number", "number", "number", "number"], [id, wgslCode, workgroupX, workgroupY, usageBits]).then((r) => Number(r ?? 0));
 }
 function setActiveShader(mod, id) {
   callSync(mod, "setActiveShader", null, ["string"], [id], "queue", void 0);

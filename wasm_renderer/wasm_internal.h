@@ -13,15 +13,6 @@ static constexpr uint32_t WGPU_DEPTH_SLICE_UNDEFINED = 0xFFFFFFFFu;
 namespace pixelocity {
 namespace wasm_internal {
 
-/** Which optional per-frame texture copies a shader needs (mirrors TS ShaderBindingUsage). */
-struct ShaderBindingUsage {
-    bool writesDataA = false;
-    bool writesDataB = false;
-    bool readsDataC = false;
-    bool usesHistory = false;
-    bool writesDepth = false;  // binding 6 (depth write); gates depthWrite → depthRead feedback
-};
-
 // Finite budget for every error-scope pop WaitAny (format/COPY_SRC probes,
 // history texture, CreateComputePipeline). A pop resolves in milliseconds; a
 // wedged device must fail soft instead of suspending forever. Pop callbacks
@@ -53,8 +44,6 @@ constexpr uint32_t kTsQueryCapacity = kTsPhaseQueryCount + 2 * kMaxProfiledSlotP
 WGPUStringView MakeStringView(const char* str);
 uint32_t AlignUp(uint32_t value, uint32_t align);
 bool CheckLimit(const char* name, uint64_t have, uint64_t need, bool& ok);
-void ParseWorkgroupSize(const char* wgslCode, uint32_t& x, uint32_t& y);
-ShaderBindingUsage AnalyzeShaderBindings(const char* wgslCode);
 /** Force write-only rgba storage decls onto the allocated BGL format (rgba16float or rgba32float). */
 std::string RewriteWgslStorageFormats(const char* wgsl, const char* colorFormat);
 /**

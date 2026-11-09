@@ -67,8 +67,8 @@
   "exports": {
     "initWasmRenderer": {"returns": "int", "args": ["width:int", "height:int", "canvasSelector:string"], "async": true, "note": "Initialize → CreateDevice (adapter/device requests, error-scope pops) and CreateResources → TryCreateHistoryTexture."},
     "shutdownWasmRenderer": {"returns": "void", "args": [], "whileSuspended": "queue", "note": "Destroying the instance under a suspended WaitAny crashes the tab, so it runs after the in-flight call."},
-    "loadShader": {"returns": "int", "args": ["id:const char*", "wgslCode:const char*"], "async": true, "note": "Compute pipeline error-scope pop. The bridge keeps id/wgslCode allocated until the promise settles."},
-    "reloadShader": {"returns": "int", "args": ["id:const char*", "wgslCode:const char*"], "async": true, "note": "Same as loadShader; the old pipeline stays live until the new one compiles."},
+    "loadShader": {"returns": "int", "args": ["id:const char*", "wgslCode:const char*", "workgroupX:int", "workgroupY:int", "usageBits:int"], "async": true, "note": "Compute pipeline error-scope pop. workgroupX/Y and usageBits come from src/wasm/bridge/wgslAnalysis.ts (bits: wasm_contracts.h); C++ does not parse WGSL for them. The bridge keeps id/wgslCode allocated until the promise settles."},
+    "reloadShader": {"returns": "int", "args": ["id:const char*", "wgslCode:const char*", "workgroupX:int", "workgroupY:int", "usageBits:int"], "async": true, "note": "Same as loadShader; the old pipeline stays live until the new one compiles."},
     "setActiveShader": {"returns": "void", "args": ["id:string"], "whileSuspended": "queue", "note": "Looks the id up in the pipeline map, so it must land after a queued loadShader of that id. Void: read slot 0 back to see whether it took."},
     "setSlotShader": {"returns": "void", "args": ["slotIndex:int", "id:string"], "whileSuspended": "queue", "note": "Same ordering rule as setActiveShader."},
     "setSlotParams": {"returns": "void", "args": ["slotIndex:int", "p1:float", "p2:float", "p3:float", "p4:float"], "whileSuspended": "call"},

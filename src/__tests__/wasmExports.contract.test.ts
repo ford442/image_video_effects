@@ -42,7 +42,7 @@ describe('wasm_exports.json exports → generated TS + C++', () => {
 
   it('parses KEEPALIVE definitions down to their C types', () => {
     const defs = gen.parseKeepaliveSignatures(mainCpp);
-    expect(defs.get('loadShader')).toEqual({ returns: 'int', args: ['const char*', 'const char*'] });
+    expect(defs.get('loadShader')).toEqual({ returns: 'int', args: ['const char*', 'const char*', 'int', 'int', 'int'] });
     expect(defs.get('getGPUTimings')).toEqual({ returns: 'void', args: ['float*', 'float*', 'float*', 'int*'] });
     expect(defs.get('getSlotShaderId')).toEqual({ returns: 'const char*', args: ['int'] });
     expect(defs.get('getFPS')).toEqual({ returns: 'float', args: [] });
@@ -51,11 +51,11 @@ describe('wasm_exports.json exports → generated TS + C++', () => {
   it('flags a C++ definition that drifts from the contract', () => {
     const sigs = gen.loadSignatures(exportsContract);
     const drifted = mainCpp.replace(
-      'int loadShader(const char* id, const char* wgslCode)',
-      'int loadShader(const char* id, const char* wgslCode, int workgroupX)',
+      'int loadShader(const char* id, const char* wgslCode, int workgroupX, int workgroupY, int usageBits)',
+      'int loadShader(const char* id, const char* wgslCode, int workgroupX, int workgroupY)',
     );
     expect(gen.checkCppSignatures(sigs, drifted)).toEqual([
-      'wasm_renderer/main.cpp loadShader is int(const char*, const char*, int); wasm_exports.json says int(const char*, const char*)',
+      'wasm_renderer/main.cpp loadShader is int(const char*, const char*, int, int); wasm_exports.json says int(const char*, const char*, int, int, int)',
     ]);
     const retyped = mainCpp.replace('void resizeCanvas(int newWidth', 'int resizeCanvas(int newWidth');
     expect(gen.checkCppSignatures(sigs, retyped).join('\n')).toMatch(/resizeCanvas is int\(int, int\)/);

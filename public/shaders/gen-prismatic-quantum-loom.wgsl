@@ -68,9 +68,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let mousePos = (u.zoom_config.yz * 2.0 - 1.0) * vec2<f32>(resolution.x/resolution.y, 1.0);
         let distToMouse = length(uv - mousePos);
         let pull = exp(-distToMouse * 3.0) * u.zoom_params.z;
-        // WGSL cannot assign to a swizzle (rd.xy += ...): build the pulled xy, then renormalise.
-        let pulledXY = rd.xy + (mousePos - uv) * pull;
-        rd = normalize(vec3<f32>(pulledXY, rd.z));
+        rd = normalize(vec3<f32>(rd.xy + (mousePos - uv) * pull, rd.z));
     }
 
     // Raymarching loop
