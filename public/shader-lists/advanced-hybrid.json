@@ -7987,8 +7987,6 @@
     "description": "Multi-layer fractal compositor with mouse-controlled gravitational lensing. Mouse mass bends UV coordinates; ripples create temporary mass concentrations with Einstein ring glow.",
     "features": [
       "advanced-hybrid",
-      "mandelbrot",
-      "julia",
       "mouse-driven",
       "gravitational-lens",
       "interactive",
