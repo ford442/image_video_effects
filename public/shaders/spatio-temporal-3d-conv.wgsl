@@ -4,8 +4,9 @@
 //  Features: temporal, history-ring, advanced-convolution, audio-reactive,
 //             upgraded-rgba, spatio-temporal
 //  Complexity: High
-//  Upgraded: 2026-09-21
-//  Ideas: motion-adaptive temporal weights (NR mode); variance-driven NR strength
+//  Upgraded: 2026-11-09
+//  Ideas: grain-preserving NR; highlight persistence (long-exposure light trails); arrival/departure split (sharpen)
+//  Ideas (2026-09-21): motion-adaptive temporal weights (NR mode); variance-driven NR strength
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
@@ -119,6 +120,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var statW  = 1.0;
   var statL  = curLuma;
   var statL2 = curLuma * curLuma;
+  // Idea 2: highlight persistence — age-decayed max of past highlights above a luma knee.
+  var peak = vec3<f32>(0.0);
+  let peakDecay = 0.78 + bass * 0.12;
 
   for (var age: u32 = 1u; age <= depthUsed; age = age + 1u) {
     let layer = i32((historyHead + histDepth - age) % histDepth);
@@ -149,6 +153,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let similarity = exp(-delta * delta / (2.0 * 0.07 * 0.07));
     let adaptive   = select(1.0, similarity, isNR);
 
+    let knee = smoothstep(0.4, 0.75, dot(spatialLayer.rgb, lumaW));
+    peak = max(peak, spatialLayer.rgb * knee * pow(peakDecay, f32(age - 1u)));
+
     accumColor += spatialLayer * tw * adaptive;
     accumW     += tw * adaptive;
 
@@ -176,13 +183,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (mode < 0.33) {
     // Temporal noise reduction: blend current with temporal mean
     result = mix(current, accumColor, clamp(strength * nrGain, 0.0, 1.0));
+    // Idea 1: grain-preserving NR — re-inject a quarter of the removed luma residual
+    // (luma only, so chroma noise stays cleaned) to keep texture from going plastic.
+    let removed = dot(current.rgb - result.rgb, lumaW);
+    result = vec4<f32>(result.rgb + removed * 0.25, result.a);
   } else if (mode < 0.67) {
     // Motion blur: blend current with accumulated trail
     result = mix(current, accumColor, strength * 0.8);
+    // Idea 2 (cont.): highlights streak like a long exposure instead of smearing grey.
+    result = vec4<f32>(mix(result.rgb, max(result.rgb, peak), clamp(strength, 0.0, 1.0)), result.a);
   } else {
     // Temporal sharpening: enhance residual (current - temporalMean)
     let residual = current - accumColor;
     result = current + residual * strength * 2.0;
+    // Idea 3: arrival/departure split — light arriving (+residual) warms, light
+    // leaving (−residual) cools, so transients carry their direction in colour.
+    let dl = dot(residual.rgb, lumaW) * strength * 2.0;
+    let warm = vec3<f32>(0.25, 0.08, -0.15);
+    let cool = vec3<f32>(-0.15, 0.02, 0.25);
+    result = vec4<f32>(result.rgb + warm * max(dl, 0.0) + cool * max(-dl, 0.0), result.a);
     result = clamp(result, vec4<f32>(0.0), vec4<f32>(1.0));
   }
 

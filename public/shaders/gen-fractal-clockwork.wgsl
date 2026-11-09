@@ -6,9 +6,9 @@
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, temporal, chromatic, depth-aware
 //  Tags: steampunk, mechanical, 3d, raymarching, gears
 //  Author: ford442
-//  Upgraded: 2026-10-11
-//  Ideas: gear-tooth sparks; inter-gear mesh line; dead-beat escapement tick; ruby jewel bearings; oil weep; hairspring
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-11, 2026-11-09
+//  Ideas: gear-tooth sparks; inter-gear mesh line; dead-beat escapement tick; ruby jewel bearings; oil weep; hairspring; workbench floor with cast gear shadows; guilloché engraving; brass dust haze
+//  A packing: pre-ACES linear RGB (0..4) + alpha; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -87,21 +87,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   
   if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
 
-  var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-  let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
-  let springOmega = 7.0;
-  mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
-  mouse += mouseVelocity * springDt;
-  if (id.x == 0u && id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-    extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
-    extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-    extraBuffer[137] = 1.0; extraBuffer[138] = time;
-  }
+  // Rescue: extraBuffer[133..138] is re-uploaded (zeroed) every frame, so the
+  // old orbit spring never persisted — it always snapped to the raw cursor.
+  let mouse = rawMouse;
 
   // Standard UV calculation
   var uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
+  uv.y = -uv.y;  // Rescue: texel y grows downward — HEAD rendered the field upside-down
   let uv01 = (vec2<f32>(id.xy) + vec2<f32>(0.5)) / res;
 
   let gearScale = u.zoom_params.x * 1.5 + 0.5;
@@ -152,6 +144,27 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       map(p + vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity, esc) - map(p - vec3<f32>(0.0,0.0,eps), gearScale, teeth, speed, time, audioReactivity, esc)
     ));
     col = shade(p, n, ro, material);
+    let isFloor = p.y < -1.19;
+    // New idea: workbench floor with cast gear shadows. HEAD shaded the floor
+    // with the same brass as the gears → flat brass wash. Now dark oiled
+    // walnut with a soft shadow march toward the key light.
+    let keyL = normalize(vec3<f32>(1.0, 2.0, 1.0));
+    var shadow = 1.0;
+    var st = 0.05;
+    for (var k = 0; k < 24; k++) {
+      let h = map(p + n * 0.01 + keyL * st, gearScale, teeth, speed, time, audioReactivity, esc);
+      shadow = min(shadow, 8.0 * h / st);
+      st += clamp(h, 0.05, 0.6);
+      if (shadow < 0.02 || st > 8.0) { break; }
+    }
+    shadow = clamp(shadow, 0.0, 1.0);
+    if (isFloor) {
+      let grain = 0.5 + 0.5 * sin(p.x * 3.0 + sin(p.z * 0.7) * 2.5);
+      let wood = mix(vec3<f32>(0.05, 0.025, 0.012), vec3<f32>(0.11, 0.055, 0.025), grain);
+      col = wood * (0.35 + 0.9 * max(n.y, 0.0) * shadow);
+    } else {
+      col *= 0.45 + 0.55 * shadow;
+    }
 
     // Local gear cell (same tiling as map)
     let spacing = 5.0 * gearScale;
@@ -193,6 +206,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
       * (1.0 - smoothstep(0.38, 0.52, springR))
       * faceMask;
     col += vec3<f32>(0.82, 0.68, 0.38) * hairspring * (0.35 + audioHigh * 0.2);
+    // New idea: guilloché engraving — engine-turned rings, offset per gear and
+    // wobbled by angle, catch a moving specular band on the gear faces.
+    let gAng = atan2(q.z, q.x) - tGear;
+    let guil = 0.5 + 0.5 * sin(springR * 46.0 + sin(gAng * 12.0) * 1.4);
+    let guilSpec = pow(max(dot(reflect(normalize(p - ro), n), keyL), 0.0), 18.0);
+    let guilMask = faceMask * smoothstep(0.55, 0.7, springR) * (1.0 - smoothstep(1.4, 1.6, springR)) * (1.0 - jewelRing);
+    col += vec3<f32>(1.0, 0.82, 0.5) * guil * guilSpec * guilMask * (0.5 + audioHigh * 0.4);
 
     // ═══ Chromatic dispersion: per-channel spatial offsets on gear surface ═══
     let chromAmt = 0.015 + audioBass * 0.02;
@@ -200,18 +220,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col.g = col.g + cos(p.z * 20.0 + time * 1.7) * chromAmt * audioMid;
     col.b = col.b + sin((p.x + p.z) * 18.0 + time * 1.3) * chromAmt * audioHigh;
     col = clamp(col, vec3<f32>(0.0), vec3<f32>(1.0));
+    // New idea: brass dust haze — warm amber depth fog, thickened by bass.
+    let haze = 1.0 - exp(-t * (0.018 + audioBass * 0.012));
+    col = mix(col, vec3<f32>(0.22, 0.13, 0.05), haze);
+  } else {
+    col = vec3<f32>(0.22, 0.13, 0.05);
   }
 
   // ═══ Temporal feedback ═══
   let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
+  // Rescue: A used to hold the ACES display and was mixed back pre-ACES
+  // (re-grade loop). A now holds pre-grade linear colour.
   col = mix(col, prev.rgb * 0.9, clamp(0.03 + audioBass * 0.01, 0.0, 0.08));
   col += vec3<f32>(1.0, 0.55, 0.16) * clickTorque * (0.25 + audioHigh * 0.2);
-  col = acesToneMap(max(col, vec3<f32>(0.0)) * (1.0 + audioMid * 0.12));
+  let lin = clamp(col, vec3<f32>(0.0), vec3<f32>(4.0));
+  let disp = acesToneMap(lin * (1.0 + audioMid * 0.12));
 
   let hit = t < 79.9;
-  let alpha = clamp(select(0.0, 0.62 + clickTorque * 0.2, hit) + dot(col, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.25, 0.0, 0.96);
-  textureStore(writeTexture, id.xy, vec4<f32>(col, alpha));
-  textureStore(dataTextureA, id.xy, vec4<f32>(col, alpha));
+  let alpha = clamp(select(0.0, 0.62 + clickTorque * 0.2, hit) + dot(disp, vec3<f32>(0.2126, 0.7152, 0.0722)) * 0.25, 0.0, 0.96);
+  textureStore(writeTexture, id.xy, vec4<f32>(disp, alpha));
+  textureStore(dataTextureA, id.xy, vec4<f32>(lin, alpha));
   
   var depth = 0.0;
   if (hit) { depth = clamp(1.0 - t / 80.0, 0.0, 1.0); }
