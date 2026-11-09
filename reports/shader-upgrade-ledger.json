@@ -19548,6 +19548,18 @@
           "note": null
         }
       ]
+    },
+    "gen-prismatic-quantum-loom": {
+      "hash": "60ac4136061c7d64",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-08T23:49:41.145Z",
+          "hash": "60ac4136061c7d64",
+          "commit": "33ae9962",
+          "note": "2026-11-09 compile fix: swizzle assignment rd.xy += in mouse-gravity branch (main gate verify:naga-wasm:all) — no look change at idle cursor"
+        }
+      ]
     }
   }
 }
