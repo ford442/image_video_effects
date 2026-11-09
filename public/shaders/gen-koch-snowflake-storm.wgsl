@@ -3,14 +3,31 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-11-09
-//  Ideas: parallax snowfall (3 drifting depth layers sheared by turbulence); rime feathers (6 dendrite ribs with barbs inside each flake, treble-lit); thundersnow flash (bass backlights an fbm cloud deck)
-//  Ideas (2026-09-14): Koch self-similar offspring, where each flake buds 1/3-scale copies of itself at its three primary lobes (the Koch generator applied at flake scale, gated by Recursion Depth, pushed out by bass); 22-degree ice halo, a hexagonal-prism refraction ring around every flake with a sharp red inner edge fading to a diffuse blue outer skirt (Chromatic Dispersion + treble)
+//  Upgraded: 2026-09-14
+//  Ideas: Koch self-similar offspring, where each flake buds 1/3-scale copies of itself at its three primary lobes (the Koch generator applied at flake scale, gated by Recursion Depth, pushed out by bass); 22-degree ice halo, a hexagonal-prism refraction ring around every flake with a sharp red inner edge fading to a diffuse blue outer skirt (Chromatic Dispersion + treble)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
-#include "_prelude.wgsl"
-// zoom_params: x=Turbulence, y=Recursion Depth, z=Snowflake Count, w=Chromatic Dispersion
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Turbulence, y=Recursion Depth, z=Snowflake Count, w=Chromatic Dispersion
+  ripples: array<vec4<f32>, 50>,
+};
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -78,27 +95,6 @@ fn iceHalo(r: f32, R: f32, width: f32) -> vec3<f32> {
   return vec3<f32>(redBand * 1.0, greenBand * 0.75, blueBand * 0.85);
 }
 
-// Parallax snowfall: one hashed particle per cell, drifting down.
-fn snowLayer(p: vec2<f32>, scale: f32, speed: f32, t: f32, radius: f32) -> f32 {
-  let q = p * scale + vec2<f32>(sin(t * 0.3 + p.y) * 0.4, t * speed);
-  let cell = floor(q);
-  let h = hash21(cell);
-  let jit = vec2<f32>(hash21(cell + 7.3), hash21(cell + 3.1)) * 0.7 + 0.15;
-  let d = length(fract(q) - jit);
-  return smoothstep(radius, radius * 0.3, d) * step(0.45, h);
-}
-
-// Rime feathers: 6 thin ribs with side barbs inside a flake body.
-fn rimeFeathers(local: vec2<f32>, size: f32) -> f32 {
-  let a = atan2(local.y, local.x);
-  let r = length(local) / size;
-  let sector = (fract(a / 1.0472 + 0.5) - 0.5) * 1.0472; // angle from nearest rib
-  let ribD = abs(sin(sector)) * r;
-  let rib = smoothstep(0.035, 0.0, ribD);
-  let barb = smoothstep(0.05, 0.0, abs(fract(r * 6.0 - ribD * 5.0) - 0.5) * 0.25) * smoothstep(0.18, 0.0, ribD);
-  return (rib + barb * 0.5) * smoothstep(1.0, 0.2, r);
-}
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = vec2<u32>(u32(u.config.z), u32(u.config.w));
@@ -147,7 +143,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var minDist = 1e9;
   var nearestSize = 0.0;
-  var rime = 0.0;
   var halo = vec3<f32>(0.0);
 
   // Offspring fade in as Recursion Depth rises past its first step.
@@ -169,7 +164,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       minDist = d;
       nearestSize = size;
     }
-    rime = max(rime, rimeFeathers(local, size) * smoothstep(0.0, 0.03, -d));
 
     // ── Idea 1: Koch self-similar offspring at the three primary lobes ──
     if (offspringAmt > 0.001) {
@@ -196,26 +190,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let inside = smoothstep(0.0, 0.08, -minDist);
   let glow = exp(-edge * 4.0);
 
-  // Storm sky (rescue: HEAD painted pale ice everywhere → ACES white wash).
-  let skyUV = (uv - 0.5) * vec2<f32>(aspect, 1.0);
-  var sky = mix(vec3<f32>(0.035, 0.05, 0.09), vec3<f32>(0.01, 0.015, 0.035), uv.y);
-  // Thundersnow flash: bass backlights an fbm cloud deck.
-  let cloud = fbm(skyUV * 3.0 + vec2<f32>(time * 0.05, 0.0));
-  let flash = smoothstep(0.55, 0.95, bass) * (0.6 + 0.4 * sin(time * 37.0));
-  sky += vec3<f32>(0.08, 0.1, 0.16) * cloud * (0.35 + flash * 3.5);
-  // Parallax snowfall: far → near, larger and softer, sheared by turbulence.
-  let shear = vec2<f32>(warp * 0.6, 0.0);
-  let snow = snowLayer(skyUV + shear * 0.3, 22.0, 0.9, time, 0.08) * 0.35
-           + snowLayer(skyUV + shear * 0.6, 12.0, 0.6, time, 0.1) * 0.55
-           + snowLayer(skyUV + shear, 6.0, 0.4, time, 0.14) * 0.8;
-  sky += vec3<f32>(0.75, 0.85, 1.0) * snow * (1.0 + flash);
-
   var color = mix(
-    sky,
+    vec3<f32>(0.75, 0.88, 0.95),
     vec3<f32>(0.12, 0.35, 0.55),
     inside
   );
-  color += vec3<f32>(0.7, 0.9, 1.0) * rime * (0.35 + treble * 0.8);
 
   color = color + vec3<f32>(0.6, 0.75, 1.0) * glow * 1.5 * (1.0 + treble * 0.4);
 

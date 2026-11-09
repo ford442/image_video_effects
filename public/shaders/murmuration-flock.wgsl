@@ -6,7 +6,6 @@
 //  simState[i]: .xy position (px, torus), .zw velocity (px / frame)
 //  zoom_params: .x cohesion (bass tightens it), .y alignment (mids),
 //               .z perception radius, .w trail length (read by the render pass)
-//  Ideas: forward vision cone (alignment + cohesion see ahead, rear blind zone; separation stays all-round)
 //  Mouse is the predator: birds peel away from it, a held click is a stoop.
 //  Each bird paints a small heading-tinted patch into dataA: .a is how crowded the bird is (neighbour
 //  count against what a uniform scatter would see), so clumps read dense and voids stay empty. The patch
@@ -105,8 +104,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var ali = vec2<f32>(0.0);
   var coh = vec2<f32>(0.0);
   var count = 0.0;
-  var wsum = 0.0;
-  let invSpeed = 1.0 / max(length(vel), 1e-3);
   for (var dy = -WINDOW; dy <= WINDOW; dy = dy + 1) {
     for (var dx = -WINDOW; dx <= WINDOW; dx = dx + 1) {
       let c = hashWrap(cell + vec2<i32>(dx, dy));
@@ -118,17 +115,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
           let d2 = dot(d, d);
           if (d2 < r2 && d2 > 1e-4) {
             count = count + 1.0;
-            // ── Idea 1: forward vision cone ──────────────────────────
-            // Reynolds' boids look through a cone and starlings have a rear blind zone: a
-            // neighbour behind the bird steers it less than one ahead. Weight alignment and
-            // cohesion by cos(angle between heading and the neighbour direction); separation
-            // below stays all-round (collision avoidance does not need eyes), and `count`
-            // (the crowding statistic) stays unweighted.
-            let cosAng = dot(d, vel) * invSpeed * inverseSqrt(d2);
-            let w = smoothstep(-0.35, 0.25, cosAng);
-            wsum = wsum + w;
-            ali = ali + q.zw * w;
-            coh = coh + d * w;
+            ali = ali + q.zw;
+            coh = coh + d;
             if (d2 < sepR2) { sep = sep - d / d2; }
           }
         }
@@ -139,13 +127,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var acc = vec2<f32>(0.0);
   if (count > 0.0) {
+    let inv = 1.0 / count;
+    acc = acc + (ali * inv - vel) * alignment;
+    acc = acc + coh * inv * cohesion;
     acc = acc + sep * 2.6 * s;
-  }
-  if (wsum > 1e-3) {
-    // A bird with only rear neighbours (wsum ~ 0) has nothing to steer by: gate, never divide by ~0.
-    let inv = 1.0 / wsum;
-    let sight = min(wsum, 1.0);
-    acc = acc + ((ali * inv - vel) * alignment + coh * inv * cohesion) * sight;
   }
 
   // A slow wind keeps the whole flock undulating instead of settling.

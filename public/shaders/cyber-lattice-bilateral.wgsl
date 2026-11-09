@@ -3,9 +3,9 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11, 2026-11-09
-//  Ideas: node capacitive discharge; seam snap highlight; data packets; chromatic line split; cell occupancy fill
-//  A packing: pre-ACES linear RGB (0..4) + alpha; ACES on writeTexture only
+//  Upgraded: 2026-09-11
+//  Ideas: node capacitive discharge; seam snap highlight
+//  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -61,9 +61,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  // Rescue: extraBuffer[133..138] is zeroed by the engine every frame, so the
-  // old spring never persisted — it was the raw cursor. Removed the fake state.
-  let smoothMouse = mouse;
+  var smoothMouse = mouse;
+  let hasSpring = arrayLength(&extraBuffer) > 138u;
+  if (hasSpring && extraBuffer[138] > 0.5) {
+    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  }
+  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
+    var springPos = smoothMouse;
+    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    if (extraBuffer[138] <= 0.5) {
+      springPos = mouse;
+      springVel = vec2<f32>(0.0);
+    } else {
+      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
+      let omega = 9.0;
+      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
+      springVel += accel * dt;
+      springPos += springVel * dt;
+    }
+    extraBuffer[133] = springPos.x;
+    extraBuffer[134] = springPos.y;
+    extraBuffer[135] = springVel.x;
+    extraBuffer[136] = springVel.y;
+    extraBuffer[137] = time;
+    extraBuffer[138] = 1.0;
+    smoothMouse = springPos;
+  }
 
   let gridScale = 10.0 + u.zoom_params.x * 50.0 * (1.0 + bass * 0.15);
   let distortStrength = u.zoom_params.y * (1.0 + mids * 0.2);
@@ -84,28 +107,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let thickness = mix(0.03, 0.08, glowIntensity);
   let currentThickness = thickness + mouseInfluence * 0.08;
   let gridMask = 1.0 - smoothstep(currentThickness, currentThickness + 0.05, gridLine);
-
-  // New idea: chromatic line split — R and B grid lines are drawn from UVs
-  // pushed further / less along the warp, so lines fringe red/blue where the
-  // cursor bends the lattice hardest.
-  let splitAmt = abs(distortion) * 0.05;
-  let gUVr = gridUV + (uv - smoothMouse) * splitAmt * 4.0;
-  let gUVb = gridUV - (uv - smoothMouse) * splitAmt * 4.0;
-  let lineR = min(abs(fract(gUVr.x * gridScale) - 0.5), abs(fract(gUVr.y * gridScale) - 0.5));
-  let lineB = min(abs(fract(gUVb.x * gridScale) - 0.5), abs(fract(gUVb.y * gridScale) - 0.5));
-  let maskR = 1.0 - smoothstep(currentThickness, currentThickness + 0.05, lineR);
-  let maskB = 1.0 - smoothstep(currentThickness, currentThickness + 0.05, lineB);
-
-  // New idea: data packets — short bright dashes sliding along the grid
-  // lines; each line has a hashed speed and direction, treble speeds them up.
-  let cellId = floor(gridUV * gridScale);
-  let onV = gridX < gridY;  // nearer a vertical line → packet runs along y
-  let laneId = select(cellId.y, cellId.x, onV);
-  let laneH = hash12(vec2<f32>(laneId, select(3.1, 7.7, onV)));
-  let laneDir = select(-1.0, 1.0, laneH > 0.5);
-  let along = select(gridUV.x, gridUV.y, onV) * gridScale;
-  let packetPh = fract(along * 0.25 - time * laneDir * (0.6 + laneH * 1.4) * (1.0 + treble * 1.5) + laneH * 13.0);
-  let packet = smoothstep(0.0, 0.03, packetPh) * (1.0 - smoothstep(0.03, 0.12, packetPh)) * gridMask * step(0.35, laneH);
 
   let spatialSigmaBase = mix(0.08, 0.9, 0.5 - u.zoom_params.y * 0.25);
   let colorSigma = mix(0.04, 0.8, 0.35 + mids * 0.2);
@@ -174,17 +175,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor = glowColor * totalGlow * 1.5;
   }
 
-  // New idea: cell occupancy fill — each lattice cell samples the image at
-  // its centre and lights a faint quantised tint, like a coarse LED panel.
-  let cellUV = (cellId + 0.5) / gridScale;
-  let cellLum = dot(textureSampleLevel(readTexture, u_sampler, clamp(cellUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-  let occupancy = floor(cellLum * 4.0) / 4.0;
-  finalColor += glowColor * occupancy * (1.0 - gridMask) * 0.12 * (0.6 + glowIntensity);
-
-  finalColor += vec3<f32>(1.0, 0.1, 0.3) * max(maskR - gridMask, 0.0) * totalGlow * 0.9;
-  finalColor += vec3<f32>(0.2, 0.3, 1.0) * max(maskB - gridMask, 0.0) * totalGlow * 0.9;
-  finalColor += vec3<f32>(1.0, 1.0, 0.85) * packet * (1.2 + treble * 0.8);
-
   finalColor += glowColor * nodeDischarge * 1.4;
   finalColor += vec3<f32>(0.2, 0.95, 1.0) * seamSnap * totalGlow * 0.35;
 
@@ -192,15 +182,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dreamMix = mix(0.06, 0.22, u.zoom_params.z) * (1.0 - gridMask * 0.6);
   finalColor = mix(finalColor, prevDream, dreamMix);
 
-  // Rescue: A used to hold the ACES display while C fed it back pre-ACES
-  // (re-grade loop). A now stores pre-grade linear colour.
-  let lin = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(4.0));
-  finalColor = acesToneMap(lin * (0.95 + bass * 0.06));
+  finalColor = acesToneMap(finalColor * (0.95 + bass * 0.06));
 
   let alpha = clamp(center.a * (1.0 - gridMask * 0.2) + gridMask * totalGlow * 0.35 + nodeDischarge * 0.25 + seamSnap * 0.12 + mouseInfluence * 0.1, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
-  textureStore(dataTextureA, coord, vec4<f32>(lin, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(finalColor, alpha));
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

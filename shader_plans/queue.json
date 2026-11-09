@@ -751,16 +751,6 @@
       "filename": "2026-11-06_ethereal-neon-bismuth-origami.md",
       "title": "Ethereal Neon-Bismuth Origami",
       "added": "2026-11-06T16:35:45.248463"
-    },
-    {
-      "filename": "2026-11-08_cymatic-void-glass-geode.md",
-      "title": "Cymatic Void-Glass Geode",
-      "added": "2026-11-08T16:20:00.517204"
-    },
-    {
-      "filename": "2026-11-09_hyperdimensional-chrono-glass-spindle.md",
-      "title": "Hyperdimensional Chrono-Glass Spindle",
-      "added": "2026-11-09T16:32:44.885806"
     }
   ],
   "current": null,
@@ -1028,6 +1018,13 @@
       "id": "prismatic-quantum-loom",
       "status": "completed",
       "completed_at": "2026-11-08T09:09:44.900351+00:00"
+    },
+    {
+      "filename": "2026-11-08_cymatic-void-glass-geode.md",
+      "title": "Cymatic Void-Glass Geode",
+      "added": "2026-11-08T16:20:00.517204",
+      "status": "completed",
+      "completed_at": "2026-11-09T08:51:04.331924+00:00"
     }
   ],
   "completed": [

@@ -9474,6 +9474,64 @@
     "feedbackPacking": "A/C = final ACES display RGBA; exact quantum-silk persistence history"
   },
   {
+    "id": "gen-cymatic-void-glass-geode",
+    "name": "Cymatic Void-Glass Geode",
+    "type": "generative",
+    "category": "generative",
+    "url": "shaders/gen-cymatic-void-glass-geode.wgsl",
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "tags": [
+      "raymarching",
+      "fractal",
+      "iridescent",
+      "cymatics",
+      "glass"
+    ],
+    "description": "A mesmerizing, infinite hollow geode formed of shimmering, iridescent void-glass that continuously fractures and reforms based on rhythmic cymatic frequencies.",
+    "params": [
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.x"
+      },
+      {
+        "id": "cymatic-freq",
+        "name": "Cymatic Freq",
+        "default": 1,
+        "min": 0.1,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.y"
+      },
+      {
+        "id": "cymatic-amp",
+        "name": "Cymatic Amp",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.z"
+      },
+      {
+        "id": "gravity-strength",
+        "name": "Gravity Strength",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1,
+        "mapping": "zoom_params.w"
+      }
+    ]
+  },
+  {
     "name": "Peter de Jong Attractor",
     "category": "generative",
     "tags": [
@@ -13631,7 +13689,7 @@
       "music",
       "reactive"
     ],
-    "description": "Infinite interlocking brass gears stepping one tooth per escapement tick on a shadowed walnut workbench, with ruby jewel bearings, engraved faces, oil weep, hairsprings and amber dust haze. Mouse orbits the camera.",
+    "description": "Infinite interlocking brass gears rotating in perfect mechanical sync, stepping one tooth per escapement tick around ruby jewel bearings. Steampunk raymarched masterpiece with metallic PBR shading and mouse orbit control. Oil weeps along the mesh, and a hairspring sits in each axle bore.",
     "workgroup_size": [
       16,
       16,
@@ -13685,12 +13743,13 @@
       "mouse-driven",
       "upgraded-rgba",
       "raymarched-gears",
+      "sprung-orbit-camera",
       "click-torque-waves",
       "multi-band-material-lighting",
       "temporal-feedback",
       "depth-output"
     ],
-    "feedbackPacking": "dataTextureA/C = pre-ACES linear RGB (0..4) + alpha"
+    "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history; extraBuffer[133..138] = sprung orbit state"
   },
   {
     "name": "Fractal Ember Lattice",
@@ -17716,7 +17775,7 @@
       "audio-reactive",
       "storm"
     ],
-    "description": "Recursive Koch snowflakes with self-similar offspring and 22° ice halos tumbling through a storm sky of parallax snowfall, rime-feathered bodies and bass-driven thundersnow flashes.",
+    "description": "Recursive Koch snowflake fractals animated with domain-warped fBm turbulence. Ice crystal aesthetic with subsurface scattering, HDR corner bloom, and chromatic dispersion on refracted edges.",
     "workgroup_size": [
       16,
       16,
@@ -29883,6 +29942,7 @@
       "temporal",
       "chromatic",
       "audio-reactive",
+      "sprung-mouse-vortex",
       "guarded-click-swirls",
       "depth-output"
     ],
