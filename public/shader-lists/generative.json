@@ -14406,7 +14406,9 @@
       "temporal-feedback",
       "semantic-alpha",
       "aces-tone-map",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "mouse-driven",
+      "audio-reactive"
     ],
     "feedbackPacking": "dataTextureA/C = tone-mapped display RGBA history"
   },

@@ -1,31 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Holographic Entropy Vortex — Visualist Enhanced Edition
 //  Category: generative
-//  Upgraded: 2026-09-27
-//  Ideas: Rayleigh/Mie atmosphere column from Atmosphere Density; entropy caustics
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-09
+//  Ideas: Rayleigh/Mie atmosphere column from Atmosphere Density; entropy caustics; logarithmic spiral arms that order the entropy field (low entropy in-arm, noise between); thin-film fringes whose film thickness IS the local entropy, so holographic bands ride the swirl
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=VortexSpeed, y=EntropyScale, z=HolographicIntensity, w=AtmosphereDensity
-  ripples: array<vec4<f32>, 50>
-};
+#include "_prelude.wgsl"
+// zoom_params: x=VortexSpeed, y=EntropyScale, z=HolographicIntensity, w=AtmosphereDensity
 
 // ── Color Science ─────────────────────────────────────────────────
 fn srgbToLinear(c: vec3<f32>) -> vec3<f32> { return pow(c, vec3<f32>(2.2)); }
@@ -136,42 +119,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
   if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
   
-  if (gid.x == 0u && gid.y == 0u) {
-    // Persistent state strictly in extraBuffer[133..138] (single-writer)
-    let targetX = u.zoom_config.y;
-    let targetY = u.zoom_config.z;
-    let currX = extraBuffer[133];
-    let currY = extraBuffer[134];
-    let velX = extraBuffer[135];
-    let velY = extraBuffer[136];
-    
-    // bounded spring
-    let springForceX = (targetX - currX) * 0.05;
-    let springForceY = (targetY - currY) * 0.05;
-    let newVelX = clamp((velX + springForceX) * 0.85, -0.1, 0.1);
-    let newVelY = clamp((velY + springForceY) * 0.85, -0.1, 0.1);
-    extraBuffer[133] = clamp(currX + newVelX, 0.0, 1.0);
-    extraBuffer[134] = clamp(currY + newVelY, 0.0, 1.0);
-    extraBuffer[135] = newVelX;
-    extraBuffer[136] = newVelY;
-    
-    // capped click fronts
-    let clicks = u.config.y;
-    var front = extraBuffer[138];
-    if (extraBuffer[137] != clicks) {
-       extraBuffer[137] = clicks;
-       front = 0.0;
-    } else {
-       front = min(front + 0.015, 2.0); // capped
-    }
-    extraBuffer[138] = front;
-  }
-
   let uv = vec2<f32>(gid.xy) / dims;
   let t = u.config.x;
   
-  let springMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  let clickFront = extraBuffer[138];
+  // Rescue: HEAD kept a spring + click front in extraBuffer[133..138], which is
+  // re-zeroed every frame -> pointer pinned to (0,0) and the click ring frozen.
+  // Use the live pointer and the newest ripple's age instead.
+  let springMouse = u.zoom_config.yz;
+  let nRip = min(u32(u.config.y), 50u);
+  var clickFront = 2.0;
+  if (nRip > 0u) { clickFront = clamp((t - u.ripples[nRip - 1u].z) * 0.9, 0.0, 2.0); }
   
   // Truthful three-band audio + bins
   let bass = plasmaBuffer[0].x;
@@ -198,7 +155,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let vortexUV = vec2<f32>(cos(angle), sin(angle)) * r + 0.5;
 
   let n1 = fbm(vortexUV * 4.0 * entropyScale + t * 0.5);
-  let entropy = (n1 + interact * 0.5) * (0.5 + mids * 0.5);
+  // ── Idea 3: logarithmic spiral arms. Two arms wound by the same angular
+  // shear as the vortex: inside an arm the field is ordered (smooth, bright),
+  // between arms raw fbm noise remains — entropy literally rises off-arm.
+  let armPhase = 2.0 * angle - log(max(r, 1e-3)) * (3.0 + entropyScale);
+  let arm = pow(0.5 + 0.5 * cos(armPhase), 3.0);
+  let ordered = mix(n1, 0.55 + 0.25 * arm, arm * 0.6);
+  let entropy = (ordered + interact * 0.5) * (0.5 + mids * 0.5);
 
   let paletteT = entropy * 2.0 + t * 0.1 + bass * 1.0;
   let paletteA = palette(paletteT,
@@ -227,8 +190,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   rgb = rgb + vec3<f32>(1.0, 0.9, 0.8) * ripple;
   
   // Optical/Prismatic feel (holographic)
-  let fresnel = pow(1.0 - r * 1.2, 3.0) * holoIntensity * (0.5 + treble * 0.5);
-  let iridColor = iridescent(r, 40.0 + bass * 20.0, t * 2.0, fresnel);
+  // Rescue: pow(1 - 1.2r, 3) had a negative base (NaN) past r≈0.83.
+  let fresnel = pow(max(1.0 - r * 1.2, 0.0), 3.0) * holoIntensity * (0.5 + treble * 0.5);
+  // ── Idea 4: thin-film thickness = local entropy, so the fringes follow the
+  // swirling field instead of sitting as fixed concentric rings around r.
+  let filmD = r * 0.35 + entropy * 0.65;
+  let iridColor = iridescent(filmD, 40.0 + bass * 20.0, t * 2.0, fresnel);
   rgb = rgb + iridColor * entropy * 0.8;
   
   rgb = mix(rgb, pastC.rgb, 0.1); // feedback from C

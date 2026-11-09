@@ -1,47 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Luma Pixel Sort — Swarm Optimizer Upgrade (2026-07-21)
+//  Luma Pixel Sort
 //  Category: post-processing
-//  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware,
-//            branchless-sort, threshold-early-exit, param-sort-angle,
-//            cosine-palette-tint
+//  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware, branchless-sort
 //  Complexity: Medium
-//  Upgraded: 2026-07-08 (Phase B) → 2026-07-21 (Optimizer pass)
-//
-//  Optimizer notes (2026-07-21):
-//  • Sort direction is now param-wired: Param3 (0–1) maps to 0–180°
-//    and rotates the Fibonacci disk sampling axis, so sorted spans can
-//    be steered instead of staying on a fixed orientation.
-//  • Audio-reactive threshold refinement: bass energy smoothly lowers
-//    the luma threshold (on top of the existing treble/mids terms) so
-//    beats extend the sorted spans into darker material.
-//  • Cosine-palette tint on sorted spans, blended by Param4 (Palette
-//    Mix). 0 disables the tint; small values grade the spans subtly.
-//  • Depth Blend and Noise Mix are now tuned constants (the two least
-//    interactive sliders), freeing Param3/Param4 for angle + palette.
-//  • UNCHANGED: the 25-comparator sorting network, the threshold
-//    early exit, the zero-radius early exit, and all write paths.
+//  Upgraded: 2026-11-09
+//  Ideas: anisotropic span axis (Sort Angle steers a streak, not an isotropic disk);
+//         sticky spans latched from C (last frame's sorted alpha lowers the threshold)
+//  A packing: ACES display RGBA; .a = sorted coverage (read back as span latch)
+//  History: Phase B 2026-07-08; optimizer pass 2026-07-21 (25-comparator network,
+//           param-wired angle, bass threshold drop, cosine tint on spans)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -138,7 +108,13 @@ fn sortByLuma(lumas: ptr<function, array<f32, 9>>, colors: ptr<function, array<v
 
 // Convenience writer used by every early-exit path so that all three
 // required outputs are always populated.
-fn writeOutputs(pixel: vec2<i32>, color: vec4<f32>, depth: f32) {
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn writeOutputs(pixel: vec2<i32>, colorIn: vec4<f32>, depth: f32) {
+  // FIX: HEAD claimed upgraded-rgba with no tone map. Unit exposure.
+  let color = vec4<f32>(acesToneMap(max(colorIn.rgb, vec3<f32>(0.0))), colorIn.a);
   textureStore(writeTexture, pixel, color);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, pixel, color);
@@ -187,7 +163,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // before, and bass now smoothly drops it further so beats extend spans.
   // smoothstep keeps the bass term soft instead of twitchy.
   let bassDrop = smoothstep(0.15, 1.2, bass) * BASS_THRESHOLD_DROP;
-  let localThreshold = clamp(threshold - treble * 0.25 - mids * 0.1 - bassDrop, 0.0, 1.0);
+  // Idea 2: sticky spans — a pixel that was sorted last frame (C.a = sorted coverage > 0.3)
+  // keeps sorting at a lower cutoff, so spans latch and creep instead of flickering at the edge.
+  let prevA = textureLoad(dataTextureC, pixel, 0).a;
+  let latch = smoothstep(0.3, 0.8, select(0.0, prevA, prevA == prevA)) * 0.08;
+  let localThreshold = clamp(threshold - treble * 0.25 - mids * 0.1 - bassDrop - latch, 0.0, 1.0);
 
   // Early exit: dark pixels never get sorted, so skip the whole kernel.
   let aboveThreshold = centerLuma >= localThreshold;
@@ -225,7 +205,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   lumas[0] = centerLuma;
 
   for (var i: u32 = 0u; i < SAMPLES; i = i + 1u) {
-    let diskOffset = fibonacciDiskOffset(i, sortLength);
+    // Idea 1: anisotropic span axis — FIX: rotating an isotropic golden-angle disk is a no-op,
+    // so Sort Angle was dead. Squash the disk across the axis (0.15) so taps form a streak
+    // the angle can steer; bass widens it a touch.
+    let diskOffset = fibonacciDiskOffset(i, sortLength) * vec2<f32>(1.0, 0.15 + bass * 0.1);
     let offset = rotateOffset(diskOffset, sortAngle);
     let n = (hash21(uv + f32(i) + time * 0.1) - 0.5) * noiseScale;
     let sampleUV = clamp(uv + (offset + n) * invRes, vec2<f32>(0.0), vec2<f32>(1.0));

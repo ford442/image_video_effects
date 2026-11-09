@@ -4,8 +4,9 @@
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, depth-aware, semantic-alpha,
 //            temporal-feedback, sorting-network
 //  Complexity: Medium
-//  Upgraded: 2026-10-06
-//  Ideas: interval-bounded spans; melt drip overrun from C; rank ramp shading
+//  Upgraded: 2026-11-09
+//  Ideas: interval-bounded spans; melt drip overrun from C; rank ramp shading;
+//         sorted-tap contact occlusion; far-end aerial haze along the span
 //  A packing: linear pre-ACES RGB; .a = centre depth
 //  History: architect upgrade 2026-07-08; optimizer pass 2026-07-21 (slider wiring, seam accent)
 // ═══════════════════════════════════════════════════════════════════
@@ -228,6 +229,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rankT = f32(rank) / f32(max(spanN - 1u, 1u));
   let rampGain = select(1.0, mix(1.08, 0.92, rankT), spanN > 1u);
   sortedColor = sortedColor * mix(1.0, rampGain, hasSpan);
+
+  // Idea 4: sorted-tap contact occlusion — the sorted run already tells us how many taps sit
+  // NEARER than this pixel and by how much; a pixel buried behind a much nearer run reads as
+  // occluded and darkens (screen-space AO from the sort's own depths, no extra taps).
+  var occl = 0.0;
+  for (var i: u32 = 0u; i < MAX_SAMPLES; i = i + 1u) {
+    let gap = centerDepth - depths[i];
+    occl = occl + f32(depths[i] < 1.5) * smoothstep(0.02, 0.15, gap) * (1.0 - smoothstep(0.15, 0.4, gap));
+  }
+  let aoT = clamp(occl / f32(spanN), 0.0, 1.0);
+  sortedColor = sortedColor * mix(1.0, 1.0 - 0.35 * aoT, hasSpan);
+
+  // Idea 5: far-end aerial haze — picks from the FAR end of the sorted run (high rank) lose
+  // contrast toward the span's depth-weighted average, as if the sort pulled them into distance.
+  let hazeT = rankT * rankT * smoothstep(0.05, 0.3, abs(depths[spanN - 1u] - depths[0]));
+  let hazeCol = mix(vec3<f32>(luma(avgColor)), avgColor, 0.6);
+  sortedColor = mix(sortedColor, hazeCol, 0.3 * hazeT * hasSpan);
   sortedColor = mix(bg.rgb, sortedColor, hasSpan);
 
   // Directional chromatic aberration at depth boundaries (far end = last ACTIVE tap)
