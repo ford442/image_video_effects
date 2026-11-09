@@ -284,8 +284,17 @@
       ]
     },
     "chroma-depth-tunnel-prismatic": {
-      "hash": "da1e8aab58bc1d36",
-      "history": []
+      "hash": "2c693db1829b1efe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "2c693db1829b1efe",
+          "prev_hash": "da1e8aab58bc1d36",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
+        }
+      ]
     },
     "chroma-kinetic-blackbody": {
       "hash": "32e3af819eb0f144",
@@ -705,8 +714,17 @@
       "history": []
     },
     "divine-light-iridescence": {
-      "hash": "ce9de66bd94edefd",
-      "history": []
+      "hash": "f650e8f6fcd85a75",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "f650e8f6fcd85a75",
+          "prev_hash": "ce9de66bd94edefd",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
+        }
+      ]
     },
     "double-exposure-hdr": {
       "hash": "c8494e7fffe4dea4",
@@ -3054,8 +3072,17 @@
       ]
     },
     "static-reveal": {
-      "hash": "bd073c44d04fac9e",
-      "history": []
+      "hash": "2a04c13a1b3dfa88",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "2a04c13a1b3dfa88",
+          "prev_hash": "bd073c44d04fac9e",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
+        }
+      ]
     },
     "stella-orbit": {
       "hash": "b64cb64c446c953c",
@@ -3328,7 +3355,7 @@
       ]
     },
     "fractal-kaleidoscope": {
-      "hash": "d32aea7ad893a37c",
+      "hash": "491ff644110146cd",
       "history": [
         {
           "event": "upgraded",
@@ -3337,6 +3364,14 @@
           "prev_hash": "fe62d673e8d77ce6",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "491ff644110146cd",
+          "prev_hash": "d32aea7ad893a37c",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
         }
       ]
     },
@@ -3593,7 +3628,7 @@
       ]
     },
     "luminescent-glass-tiles": {
-      "hash": "f993fdbe5defe061",
+      "hash": "69c2f0ff73a44e16",
       "history": [
         {
           "event": "upgraded",
@@ -3610,6 +3645,14 @@
           "prev_hash": "7b4da1ac10708139",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "69c2f0ff73a44e16",
+          "prev_hash": "f993fdbe5defe061",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
         }
       ]
     },
@@ -4464,7 +4507,7 @@
       ]
     },
     "gen-apollonian-gasket": {
-      "hash": "84579a72cfcb6adf",
+      "hash": "edff95b152a969ee",
       "history": [
         {
           "event": "upgraded",
@@ -4473,6 +4516,14 @@
           "prev_hash": "d83973055fa9e1b0",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "edff95b152a969ee",
+          "prev_hash": "84579a72cfcb6adf",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
         }
       ]
     },
@@ -4652,8 +4703,17 @@
       ]
     },
     "gen-belousov-zhabotinsky": {
-      "hash": "393ac413af1063d1",
-      "history": []
+      "hash": "ca5f1d04dee3eda2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "ca5f1d04dee3eda2",
+          "prev_hash": "393ac413af1063d1",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
+        }
+      ]
     },
     "gen-bifurcation-diagram": {
       "hash": "1b6c07f1d208a04f",
@@ -14590,7 +14650,7 @@
       ]
     },
     "interactive-kuwahara": {
-      "hash": "852f36738c9e0f66",
+      "hash": "9538b6600b6df743",
       "history": [
         {
           "event": "upgraded",
@@ -14599,6 +14659,14 @@
           "prev_hash": "ca998f2a48c384b4",
           "commit": "9f26f634",
           "note": "2026-10-04 print-craft-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-print-craft-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "9538b6600b6df743",
+          "prev_hash": "852f36738c9e0f66",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
         }
       ]
     },
@@ -16051,7 +16119,7 @@
       ]
     },
     "selective-color": {
-      "hash": "97911e61de4baf93",
+      "hash": "7115531b98ba93ff",
       "history": [
         {
           "event": "upgraded",
@@ -16060,6 +16128,14 @@
           "prev_hash": "2a9e410068b696ee",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "7115531b98ba93ff",
+          "prev_hash": "97911e61de4baf93",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
         }
       ]
     },
@@ -18250,7 +18326,7 @@
       ]
     },
     "aero-chromatics": {
-      "hash": "88e1ee1c3ecfe9f1",
+      "hash": "f07dc331c8d57828",
       "history": [
         {
           "event": "upgraded",
@@ -18259,6 +18335,14 @@
           "prev_hash": "e8a5431287fafc32",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T22:26:51.220Z",
+          "hash": "f07dc331c8d57828",
+          "prev_hash": "88e1ee1c3ecfe9f1",
+          "commit": "7c39b38b",
+          "note": "2026-11-09 sonnet/batch-29 glass/iridescence/kaleidoscope optical ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-29/NOTES.md"
         }
       ]
     },
