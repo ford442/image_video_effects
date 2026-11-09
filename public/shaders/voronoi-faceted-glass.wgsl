@@ -8,34 +8,29 @@
 //            2. chamfer bevel — a band along the F2−F1 border bends the image outward
 //               and catches a lit rim on the side facing the light
 //            3. facet glints — Shimmer flashes whole facets as a light orbits overhead
+//            4. bevel dispersion (Cauchy, section 12.2F) — R / B taps split along the rim
+//               normal, blue bending harder than red, strongest in the chamfer band
+//            5. frosted panes — a third of the panes (hash of the cell) scatter through a
+//               4-tap rotated blur whose radius follows Refraction; clear panes keep one tap
+//  Upgraded: 2026-11-09
+//  A packing: ACES display RGBA (C read as display colour)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Density, y=Refraction, z=Shimmer, w=EdgeSoftness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Density, y=Refraction, z=Shimmer, w=EdgeSoftness
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
   var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
   p3 += dot(p3, p3.yzx + 33.33);
   return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+// Cauchy n(lambda) = A + B/lambda^2 at 650 / 550 / 450 nm, relative to green: (<1, 1, >1).
+fn cauchyScale(b: f32) -> vec3<f32> {
+  let lam = vec3<f32>(0.650, 0.550, 0.450);
+  let n = vec3<f32>(1.0) + vec3<f32>(b) / (lam * lam);
+  return n / n.y;
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -149,7 +144,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bevelRim = bevel * max(dot(outDir, normalize(vec2<f32>(-0.6, -0.8))), 0.0);
 
   sampleUV = clamp(sampleUV, vec2<f32>(0.001), vec2<f32>(0.999));
-  let sampled = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+  // ── Idea 4: bevel dispersion. A pane bends blue harder than red, and the glass is steepest in the
+  // chamfer band, so the R / B taps split along the rim normal (outDir) there, with a small
+  // always-on fringe from each pane's own tilt. G stays on the refracted position.
+  let cs = cauchyScale(0.2);
+  let dispDir = (outDir * (0.25 + 0.75 * bevel) + tilt * 0.12) * vec2<f32>(1.0 / aspect, 1.0) * refraction * 1.25;
+  let uvR = clamp(sampleUV + dispDir * (cs.x - 1.0), vec2<f32>(0.001), vec2<f32>(0.999));
+  let uvB = clamp(sampleUV + dispDir * (cs.z - 1.0), vec2<f32>(0.001), vec2<f32>(0.999));
+  var sampled = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b);
+
+  // ── Idea 5: frosted panes. hash(cellId) picks ~1/3 of the panes; those scatter the image
+  // through four taps on a rotated cross (angle per pane), radius ~ the Refraction magnitude.
+  // Branch is by pane, constant inside it; textureSampleLevel has no derivative requirement.
+  let frostHash = hash22(cellId + vec2<f32>(21.7, 9.3));
+  let frostPane = step(0.66, frostHash.x);
+  if (frostPane > 0.5) {
+    let fa = frostHash.y * 6.2831853;
+    let fr = refraction * (0.6 + 0.8 * frostHash.y) * vec2<f32>(1.0 / aspect, 1.0);
+    var acc = vec3<f32>(0.0);
+    for (var k = 0; k < 4; k = k + 1) {
+      let ang = fa + f32(k) * 1.5707963;
+      let o = vec2<f32>(cos(ang), sin(ang)) * fr;
+      acc = acc + textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + o, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+    }
+    sampled = mix(sampled, acc * 0.25, 0.85);
+  }
 
   let shade = 1.0 - smoothstep(0.25 + edgeSoftness * 0.15, 0.6, minDist);
   let facetEdge = smoothstep(0.01, 0.08, edgeGap);

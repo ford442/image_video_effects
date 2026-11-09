@@ -9,29 +9,17 @@
 //               border, its width set by Facet Sharpness
 //            3. facet-normal dispersion — R/B split along each facet's own tilt, widening
 //               toward the seams (replaces the cosine-palette iridescence)
+//            4. Beer-Lambert wedge absorption (section 12.2F) — the thick side of every
+//               facet tints cool, the thin side stays clear
+//            5. internal-reflection twin — oblique facets and seams mix in one mirrored
+//               tap of the scene across the facet tilt axis (Schlick-weighted)
+//  Upgraded: 2026-11-09 (colour clamped >= 0 before ACES)
+//  A packing: ACES display RGBA (C read as display colour)
 //  Complexity: High
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=CrystalScale, y=Distortion, z=FacetSharpness, w=ChromaticSep
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=CrystalScale, y=Distortion, z=FacetSharpness, w=ChromaticSep
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -161,6 +149,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bSample = sampleBicubic(readTexture, u_sampler, distortedUV - chromaDir, res).b;
   var color = vec3<f32>(rSample, gSample, bSample);
 
+  // ── Idea 5: internal-reflection twin. Light inside an oblique facet is also reflected off the
+  // far face: a second, mirrored image of the scene. The mirror axis is the facet's own tilt
+  // axis (c' = c - 2(c.t)t), a single bilinear tap, weighted by steepness and by the Schlick
+  // factor the seams already use (computed here from the same seam / border values).
+  let twinUV = clamp(distortedUV - tiltDir * (2.0 * wedge / crystalScale) * vec2<f32>(1.0 / aspect, 1.0),
+                     vec2<f32>(0.001), vec2<f32>(0.999));
+  let twinCol = textureSampleLevel(readTexture, u_sampler, twinUV, 0.0).rgb;
+  let twinSchlick = 0.04 + 0.96 * pow(1.0 - mix(1.0, 0.15, seam), 5.0);
+  let twinMix = clamp(0.22 * smoothstep(0.15, 0.6, abs(wedge)) + twinSchlick * seam * 0.5, 0.0, 0.45);
+  color = mix(color, twinCol, twinMix);
+
+  // ── Idea 4: Beer-Lambert absorption through the wedge. Thickness grows along the tilt axis
+  // (wedge in [-0.7, 0.7] cell units), so the thin edge is clear and the thick edge filters
+  // red/green harder than blue: T = exp(-sigma * thickness). Magnitude rides Distortion.
+  let thickness = clamp(wedge + 0.7, 0.0, 1.4) * 0.5;
+  let sigmaAbs = vec3<f32>(1.40, 0.55, 0.15) * (0.4 + 1.5 * distortion);
+  color = color * exp(-sigmaAbs * thickness);
+
   // Facet centre glow. The base is clamped: corners sit past 0.5, and a
   // negative base to a fractional power gave NaN speckles at HEAD.
   let edgeGlow = pow(max(1.0 - distFromCenter * 2.0, 0.0), facetSharp) * 0.35 * (1.0 + treble * 0.5);
@@ -176,7 +182,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Exact dataTextureC persistence, blended in display space (C holds ACES output).
   let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
-  let finalRGB = mix(aces(color), prevC, 0.07);
+  let finalRGB = mix(aces(max(color, vec3<f32>(0.0))), prevC, 0.07);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let alpha = clamp(facetEdge * 0.7 + edgeGlow * 0.4 + seamF * seam * 0.3 + mouseInfluence * 0.15 + 0.25, 0.1, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);

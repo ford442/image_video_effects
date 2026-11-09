@@ -43,7 +43,6 @@
     "depth-aware",
     "exact-history",
     "raw-state-feedback",
-    "spring-interaction",
     "click-reactive",
     "aces-tone-map",
     "semantic-alpha"
