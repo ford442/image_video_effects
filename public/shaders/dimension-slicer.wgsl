@@ -6,8 +6,9 @@
 //            audio-slice-width, multi-axis-slicing, sdf-panel-borders,
 //            depth-aware-slice-intensity
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: 1) lit cut edges (sdBox border emitted as an R/G/B-split rim line) 2) slice drag memory (C read rotated back by each band's spin → sliding afterimage) 3) corridor parallax (x/|y| projection at three fogged receding planes)
+//  Upgraded: 2026-11-09
+//  Ideas: 4) lifted-band drop shadow 5) running glint along each cut 6) torn cut edge (noise-jittered band width)
+//  Ideas (2026-10-05): 1) lit cut edges (sdBox border emitted as an R/G/B-split rim line) 2) slice drag memory (C read rotated back by each band's spin → sliding afterimage) 3) corridor parallax (x/|y| projection at three fogged receding planes)
 //  A packing: ACES display RGBA (alpha = slice/rim coverage over source alpha)
 //
 //  Multiple rotating slice axes cut through the image, each with
@@ -38,11 +39,23 @@ fn sdBox(p: vec2<f32>, b: vec2<f32>) -> f32 {
   return length(max(d, vec2<f32>(0.0))) + min(max(d.x, d.y), 0.0);
 }
 
+fn hash11(n: f32) -> f32 { return fract(sin(n * 127.1) * 43758.5453); }
+
+// 1-D value noise along the band axis (torn edge).
+fn vnoise1(x: f32) -> f32 {
+  let i = floor(x);
+  let f = fract(x);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(hash11(i), hash11(i + 1.0), w);
+}
+
 struct SliceOut {
   color: vec3<f32>,
   mask: f32,      // inSlice + edgeGlow * 0.6 (HEAD's mixing weight)
   rim: vec3<f32>, // chromatically split lit cut edge
   inSlice: f32,
+  shadow: f32,    // idea 4 occlusion outside the band
+  glint: f32,     // idea 5 running highlight
 };
 
 fn sampleSplit(
@@ -69,13 +82,19 @@ fn sliceAxis(
   tex: texture_2d<f32>,
   samp: sampler,
   chromaAmount: f32,
-  treble: f32
+  treble: f32,
+  idx: f32,
+  time: f32,
+  bass: f32
 ) -> SliceOut {
   let p = uv - vec2<f32>(0.5);
   let rotP = rot2D(angle) * p;
   let sliceDist = rotP.y;
 
-  let sliceWidth = width * (1.0 + treble * 0.4);
+  // Idea 6: torn cut edge — half-width jittered by value noise along the band (two octaves),
+  // so the rip is ragged; every derived edge (rim, glow, shadow) follows the tear.
+  let tear = vnoise1(rotP.x * 38.0 + idx * 17.0) * 0.65 + vnoise1(rotP.x * 110.0 + idx * 5.0) * 0.35;
+  let sliceWidth = width * (1.0 + treble * 0.4) * (0.8 + 0.4 * tear);
   let inSlice = smoothstep(sliceWidth, sliceWidth * 0.5, abs(sliceDist));
 
   // Floor |y| at a tenth of the band so x/|y| cannot blow up on the band's centre line.
@@ -107,7 +126,17 @@ fn sliceAxis(
   let eB = smoothstep(rimW, 0.0, abs(sdBox(rotP - vec2<f32>(0.0, rimShift), vec2<f32>(0.48, halfW))));
   let rim = vec3<f32>(eR, eG, eB) * smoothstep(0.0, 0.3, inSlice + edgeGlow);
 
-  return SliceOut(color, inSlice + edgeGlow * 0.6, rim, inSlice);
+  // Idea 4: lifted-band drop shadow — the band, displaced toward screen-down (perpendicular
+  // component of a fixed light), occludes the photo just outside the cut.
+  let shOff = 0.012 * (1.0 + bass * 0.3);
+  let shY = rotP.y - shOff * sign(cos(angle) + 1e-4);
+  let shadow = smoothstep(sliceWidth * 1.6, sliceWidth * 0.6, abs(shY)) * (1.0 - inSlice);
+
+  // Idea 5: running glint — a highlight races along the band's length; bass speeds it.
+  let run = fract(time * (0.25 + bass * 0.2) + idx / 3.0) * 1.2 - 0.6;
+  let glint = exp(-pow((rotP.x - run) / 0.035, 2.0)) * inSlice;
+
+  return SliceOut(color, inSlice + edgeGlow * 0.6, rim, inSlice, shadow, glint);
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -164,9 +193,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       readTexture,
       u_sampler,
       chromaticAmount,
-      treble
+      treble,
+      f32(i),
+      time,
+      bass
     );
+    color = color * (1.0 - result.shadow * 0.45);
     color = mix(color, result.color, result.mask * 0.45);
+    color = color + vec3<f32>(1.0, 0.95, 0.85) * result.glint * 0.9;
     sliceMask = max(sliceMask, result.mask);
     edgeAccum = edgeAccum + result.mask;
     rimAccum = rimAccum + result.rim;
