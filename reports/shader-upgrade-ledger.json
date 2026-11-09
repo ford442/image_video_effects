@@ -556,8 +556,17 @@
       ]
     },
     "cyber-scan-gabor": {
-      "hash": "12fc12c41c68f56e",
-      "history": []
+      "hash": "6152bd5295e6f1c3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "6152bd5295e6f1c3",
+          "prev_hash": "12fc12c41c68f56e",
+          "commit": "c9497d58",
+          "note": null
+        }
+      ]
     },
     "cyber-trace-structure": {
       "hash": "c11867c3e5fe787c",
@@ -620,8 +629,17 @@
       "history": []
     },
     "deep-workgroup-multi-effect-blend": {
-      "hash": "5cede523f5ed0f8b",
-      "history": []
+      "hash": "7c5dbf41a2702cb8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "7c5dbf41a2702cb8",
+          "prev_hash": "5cede523f5ed0f8b",
+          "commit": "c9497d58",
+          "note": null
+        }
+      ]
     },
     "digital-decay-rgba": {
       "hash": "d7f3846eb952aef5",
@@ -1792,8 +1810,17 @@
       ]
     },
     "vhs-tracking-bilateral": {
-      "hash": "cfe9e440b7ea958b",
-      "history": []
+      "hash": "56eb85b29bc69165",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "56eb85b29bc69165",
+          "prev_hash": "cfe9e440b7ea958b",
+          "commit": "c9497d58",
+          "note": null
+        }
+      ]
     },
     "viscous-drag-bilateral": {
       "hash": "79f2c025e4cec803",
@@ -3739,8 +3766,17 @@
       ]
     },
     "radial-rgb": {
-      "hash": "8a9fab9c725a7f6c",
-      "history": []
+      "hash": "ce985fd7a38b25f7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "ce985fd7a38b25f7",
+          "prev_hash": "8a9fab9c725a7f6c",
+          "commit": "c9497d58",
+          "note": null
+        }
+      ]
     },
     "refraction-tunnel": {
       "hash": "b5c470ec26e0f59a",
@@ -12933,7 +12969,7 @@
       ]
     },
     "pixel-scattering": {
-      "hash": "50886f0b5d1c04b9",
+      "hash": "89ae83d2ef267624",
       "history": [
         {
           "event": "upgraded",
@@ -12941,6 +12977,14 @@
           "hash": "50886f0b5d1c04b9",
           "prev_hash": "52b9ddef1b39a664",
           "commit": "9cace4aa",
+          "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "89ae83d2ef267624",
+          "prev_hash": "50886f0b5d1c04b9",
+          "commit": "c9497d58",
           "note": null
         }
       ]
@@ -14848,7 +14892,7 @@
       ]
     },
     "luma-slice-interactive": {
-      "hash": "9ab617cb6eed38d7",
+      "hash": "5b29cba2fa9176b4",
       "history": [
         {
           "event": "upgraded",
@@ -14856,6 +14900,14 @@
           "hash": "9ab617cb6eed38d7",
           "prev_hash": "f165dab849d4caf4",
           "commit": "9cace4aa",
+          "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "5b29cba2fa9176b4",
+          "prev_hash": "9ab617cb6eed38d7",
+          "commit": "c9497d58",
           "note": null
         }
       ]
@@ -15222,8 +15274,17 @@
       "history": []
     },
     "nano-repair": {
-      "hash": "0bee27ddf05fc727",
-      "history": []
+      "hash": "85ce11cc2a03375a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "85ce11cc2a03375a",
+          "prev_hash": "0bee27ddf05fc727",
+          "commit": "c9497d58",
+          "note": null
+        }
+      ]
     },
     "neon-contour-drag": {
       "hash": "d372aa7f395a15dd",
@@ -17363,8 +17424,17 @@
       "history": []
     },
     "pp-sharpen": {
-      "hash": "e1a6c914bfc82fd6",
-      "history": []
+      "hash": "81f1a3040532c566",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "81f1a3040532c566",
+          "prev_hash": "e1a6c914bfc82fd6",
+          "commit": "c9497d58",
+          "note": null
+        }
+      ]
     },
     "pp-ssao": {
       "hash": "4b5537999105d021",
@@ -17375,8 +17445,17 @@
       "history": []
     },
     "pp-vignette": {
-      "hash": "5079e09e82da6095",
-      "history": []
+      "hash": "7a60f4698f053beb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "7a60f4698f053beb",
+          "prev_hash": "5079e09e82da6095",
+          "commit": "c9497d58",
+          "note": null
+        }
+      ]
     },
     "radial-blur": {
       "hash": "f910334f518045ca",
@@ -19074,7 +19153,7 @@
       ]
     },
     "data-scanner": {
-      "hash": "6ff16c3c2c9fd745",
+      "hash": "35efe7317a46bc45",
       "history": [
         {
           "event": "upgraded",
@@ -19083,6 +19162,14 @@
           "prev_hash": "6f57b7a449cd5ce2",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T21:59:09.521Z",
+          "hash": "35efe7317a46bc45",
+          "prev_hash": "6ff16c3c2c9fd745",
+          "commit": "c9497d58",
+          "note": null
         }
       ]
     },

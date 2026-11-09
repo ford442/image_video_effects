@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-06
-//  Ideas: advected history tails along own velocity; vacated-home gaps that refill
+//  Upgraded: 2026-10-06, 2026-11-09
+//  Ideas: advected history tails along own velocity; vacated-home gaps that refill; bass-detonated cell launches; lit square rims on refilling cells
 //  A packing: linear pre-ACES RGB; .a = 2 + vacancy (0..1); .a outside [2,3] reads as no vacancy
 //  Motion: curl velocity field advection + Fibonacci scatter + click shock rings
 //  History: hygiene/motion pass 2026-09-06
@@ -147,7 +147,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Velocity excitation glow
   let glowPalette = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + velMag * 80.0 + time * 2.0);
-  let glow = glowPalette * velMag * (12.0 + treble * 8.0) * (mouseInteraction + rippleScatter * 0.8);
+  // FIX 2026-11-09: gate the pointer glow on mouse down — the idle pointer parks at the frame
+  // centre, which painted a permanent rainbow halo there.
+  let glow = glowPalette * velMag * (12.0 + treble * 8.0) * (mouseInteraction * select(0.0, 1.0, held) + rippleScatter * 0.8);
 
   var hdr = blurred + glow;
 
@@ -169,7 +171,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   //   (a) Fibonacci launch: every 0.5 s a chaos-gated ~8%*chaos of the 45-grid cells are blown out
   let launchEpoch = floor(time * 2.0);
   let launchHash = hash12(fibCell * 1.37 + vec2<f32>(launchEpoch * 17.13, launchEpoch * 3.71));
-  let launch = step(1.0 - chaos * 0.08, launchHash) * exp(-fract(time * 2.0) * 8.0);
+  // Idea: bass-detonated cell launches — a bass hit multiplies the share of cells blown out
+  // that epoch (up to ~4x), so drops visibly burst the photo into flying squares.
+  let launch = step(1.0 - chaos * 0.08 * (1.0 + bass * 3.0), launchHash) * exp(-fract(time * 2.0) * 8.0);
   //   (b) the eye of the pointer vortex is emptied while held (idle pointer parks at the frame
   //       centre, so an always-on eye would stamp a permanent dark disc there)
   let eye = mouseInteraction * smoothstep(0.06, 0.0, distSpring) * select(0.0, 1.0, held);
@@ -177,7 +181,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let excite = clamp(max(launch, max(eye, rippleScatter * 1.2)), 0.0, 1.0);
   let vacancy = clamp(max(vacPrev * 0.94, excite), 0.0, 1.0);
   let refillGlint = 4.0 * vacancy * (1.0 - vacancy);
-  let shown = mix(hdr, hdr * 0.15, vacancy * 0.8) + hdr * refillGlint * 0.18;
+  // Idea: lit square rims — a refilling cell shows its 45-grid square edge as a thin bright
+  // border (the rim of the hole the pixel block left), fading as the cell refills.
+  let cellF = fract(uv * 45.0);
+  let rimDist = min(min(cellF.x, 1.0 - cellF.x), min(cellF.y, 1.0 - cellF.y));
+  let rim = smoothstep(0.16, 0.0, rimDist) * refillGlint * (0.6 + treble * 0.6);
+  let shown = mix(hdr, hdr * 0.15, vacancy * 0.8) + hdr * refillGlint * 0.18 + vec3<f32>(rim * 0.35) * (0.5 + hdr);
 
   let finalRGB = acesToneMap(max(shown, vec3<f32>(0.0)));
   let semanticAlpha = clamp(0.70 + velMag * 15.0 + mouseInteraction * 0.25 + rippleScatter * 0.3, 0.0, 1.0)

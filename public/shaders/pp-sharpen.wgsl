@@ -3,36 +3,27 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-06, 2026-09-21
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-09-06, 2026-09-21, 2026-11-09
+//  A packing: pre-tonemap linear RGB + semantic alpha (C history)
 //  Motion: interactive clarity lens + traveling sharpness wavefronts
 //  Ideas (2026-09-21): anti-halo overshoot clamp; luminance-only sharpening
 //         (both on the photographic modes 0/1; mode 2 untouched)
+//  Ideas (2026-11-09): clarity band (4x-radius midtone local contrast);
+//         tonal protection (no sharpening in deep shadow / clipped highlight)
+//  Rescues (2026-11-09): (SDR shoulder replaces ACES re-grade; lens gated on
+//         hold; dead extraBuffer spring removed)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Amount, y=Radius, z=EdgeThreshold, w=Mode
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Amount, y=Radius, z=EdgeThreshold, w=Mode
-  ripples: array<vec4<f32>, 50>,
-};
-
+// HEAD ran the full ACES fit over an SDR photo: whites landed at 0.80 and
+// mids were lifted (0.18 -> 0.27), a re-grade on a utility filter. Keep
+// SDR identity below 0.8 and roll only overshoot into a soft shoulder.
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+  let v = max(x, vec3<f32>(0.0));
+  let over = max(v - vec3<f32>(0.8), vec3<f32>(0.0));
+  return min(v, vec3<f32>(0.8)) + 0.2 * over / (over + vec3<f32>(0.2));
 }
 
 fn getLuma(c: vec3<f32>) -> f32 {
@@ -60,33 +51,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let treble = plasmaBuffer[0].z;
   let binA = plasmaBuffer[3].x;
 
-  // Single-writer spring cursor in extraBuffer[133..138]
-  var spring = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var pos = spring;
-    var vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      pos = mouse;
-      vel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 14.0;
-      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
-      vel = clamp(vel, vec2<f32>(-4.0), vec2<f32>(4.0));
-      pos += vel * dt;
-    }
-    extraBuffer[133] = pos.x;
-    extraBuffer[134] = pos.y;
-    extraBuffer[135] = vel.x;
-    extraBuffer[136] = vel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    spring = pos;
-  }
+  // HEAD kept a spring cursor in extraBuffer[133..138]; that range is
+  // re-uploaded (zeroed) every frame so it never persisted. Use the cursor.
+  let spring = mouse;
 
   // Four saved controls preserved
   let amountParam = u.zoom_params.x;
@@ -100,7 +67,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Proximity to spring inspection lens
   let distMouse = length((uv - spring) * aspectVec);
-  let lensInfluence = smoothstep(0.40, 0.04, distMouse) * select(1.0, 1.5, held);
+  // Idle cursor parks at the centre; the lens only exists while held.
+  let lensInfluence = smoothstep(0.40, 0.04, distMouse) * select(0.0, 1.5, held);
 
   // Click ripple wavefronts that trigger traveling clarity surges
   var rippleSurge = 0.0;
@@ -158,6 +126,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   blurCol = blurCol / max(totalWeight, 1e-4);
 
+  // ── Idea 3: clarity band ──────────────────────────────────────────
+  // A second, wider (4x radius) ring gives a mid-frequency local-contrast
+  // band — Lightroom-style "Clarity". It is weighted to the midtones so it
+  // adds punch to texture and form without crunching skies or shadows.
+  var wideCol = vec3<f32>(0.0);
+  for (var k = 0; k < 8; k = k + 1) {
+    let wUV = clamp(uv + offsets[k] * effectiveRadius * 4.0, vec2<f32>(0.0), vec2<f32>(1.0));
+    wideCol += textureSampleLevel(readTexture, u_sampler, wUV, 0.0).rgb * spatialWeights[k];
+  }
+  wideCol = wideCol / 0.9;
+  let midWeight = smoothstep(0.08, 0.35, centerLuma) * (1.0 - smoothstep(0.65, 0.92, centerLuma));
+  let clarity = getLuma(blurCol - wideCol) * midWeight * amountParam * 0.9 * (1.0 + mids * 0.3);
+
   // High-pass detail vector
   let highPass = centerCol - blurCol;
   let edgeStrength = maxGradient;
@@ -196,6 +177,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let haloRoom = 0.015 + amountParam * 0.03;
     let clampedLuma = clamp(getLuma(sharpened), minLuma - haloRoom, maxLuma + haloRoom);
     sharpened = centerCol + vec3<f32>(clampedLuma - centerLuma);
+
+    // ── Idea 4: tonal protection ──────────────────────────────────────
+    // Noise lives in the deep shadows and detail is gone in clipped
+    // highlights; sharpening either only amplifies grain or grey fringes.
+    // The luma delta is faded out at both tonal ends.
+    let tonalGuard = smoothstep(0.02, 0.12, centerLuma) * (1.0 - smoothstep(0.9, 0.99, centerLuma));
+    sharpened = centerCol + (sharpened - centerCol) * tonalGuard + vec3<f32>(clarity);
   }
 
   // Exact previous frame history load from dataTextureC for temporal anti-jitter
