@@ -196,7 +196,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // ── Idea 2: shutter-open dwell (long exposure while the pointer is held) ──
   // A camera held open integrates light. While the pointer is held the history weight rises toward long-exposure
-  // integration (0.25 + 0.75 * 0.78 = 0.83 at most, HEAD's weight on release), so the rotating exposure 2 smears into
+  // integration (total history weight <= 0.28 + 0.72 * 0.78 = 0.84, HEAD's weight on release), so the rotating exposure 2 smears into
   // trails. The extra history is read back to scene-referred light (acesInverse of the ACES-ed C) and EMA-ed in
   // that space, so the held steady state equals HEAD's fixed point (no brightness step at press or release) and
   // only the time constant changes. No new state: it is the exact C this file already loads.
