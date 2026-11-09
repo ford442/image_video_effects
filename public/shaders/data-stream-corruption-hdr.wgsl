@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Data Stream Corruption HDR — Batch 67
-//  fp128 rain phase, exact C persistence, racing column packets,
-//  HDR bloom, capped ripple flashes, held brush, ACES + semantic alpha.
+//  Data Stream Corruption HDR
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-09
+//  Ideas: glyph phosphor trails; white-hot packet glyphs; stream-light bloom; corruption frontier seam
+//  A packing: [corruption, glyph trail energy, 0, alphaHistory] (C read as fields)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 struct Fp128 {
   base: f32,
@@ -99,7 +84,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   corruption = clamp(corruption * persistence, 0.0, 1.0);
   alphaHistory = alphaHistory * persistence;
 
-  textureStore(dataTextureA, pixel, vec4<f32>(corruption, 0.0, 0.0, alphaHistory));
 
   let effectiveCorruption = corruption * maxCorruption;
 
@@ -113,6 +97,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let charRandom = hash12(vec2<f32>(colIndex, rowIndex));
   let isChar = step(0.4, charRandom);
   let packet = column_packet(colIndex, time, bass);
+
+  // Idea 2: white-hot packet glyphs — leading edge of each glyph cell in hot packet columns
+  let rowFrac = fract(rainPhase * numRows + 0.5);
+  let headGlyph = isChar * packet * smoothstep(0.75, 1.0, rowFrac);
+  let glyphEmit = isChar * effectiveCorruption * colRandom * (0.7 + packet * 0.6);
+
+  // Idea 1: glyph phosphor trails — decaying emission field in A.g
+  let trail = max(oldState.g * 0.9, glyphEmit);
+
+  // Idea 3: corruption frontier seam — gradient of the corruption field
+  let cR = textureLoad(dataTextureC, min(pixel + vec2<i32>(1, 0), vec2<i32>(resolution) - 1), 0).r;
+  let cU = textureLoad(dataTextureC, min(pixel + vec2<i32>(0, 1), vec2<i32>(resolution) - 1), 0).r;
+  let frontier = clamp(length(vec2<f32>(cR - oldState.r, cU - oldState.r)) * resolution.y * 0.11, 0.0, 1.0) * maxCorruption;
+
+  textureStore(dataTextureA, pixel, vec4<f32>(corruption, trail, 0.0, alphaHistory));
 
   var sampleUV = uv;
   var finalColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
@@ -146,7 +145,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   finalColor = vec4<f32>(finalColor.rgb, clamp(finalColor.a, 0.0, 1.0));
 
-  let sourceColor = finalColor.rgb;
+  // Idea 2: head glyph burns near-white (HDR), only where corrupted
+  let headHot = headGlyph * effectiveCorruption;
+  let sourceColor = finalColor.rgb + vec3<f32>(0.9, 1.4, 1.0) * headHot * 1.6;
   let maxChannel = max(sourceColor.r, max(sourceColor.g, sourceColor.b));
   let exposure = max(0.0, maxChannel - 1.0);
 
@@ -155,21 +156,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let bloomSamples = 12;
   let bloomRadius = 0.02 + effectiveCorruption * 0.04;
 
+  // Rescue: HEAD thresholded readTexture at >1.0 (never true for LDR input) → bloom dead.
+  // Bloom now gathers the glyph-trail emission field from C (stream light).
   for (var i = 0; i < bloomSamples; i = i + 1) {
     let angle = f32(i) * 6.283185307 / f32(bloomSamples);
     let radius = bloomRadius * (1.0 + f32(i % 4) * 0.5);
     let offset = vec2<f32>(cos(angle), sin(angle)) * radius;
     let sampleUV2 = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-    let neighbor = textureSampleLevel(readTexture, u_sampler, sampleUV2, 0.0).rgb;
-    let neighborMax = max(neighbor.r, max(neighbor.g, neighbor.b));
-    let neighborExposure = max(0.0, neighborMax - 1.0);
+    let np = clamp(vec2<i32>(sampleUV2 * resolution), vec2<i32>(0), vec2<i32>(resolution) - 1);
+    let em = textureLoad(dataTextureC, np, 0).g;
     let weight = exp(-f32(i % 4) * 0.5);
-    bloom += neighbor * neighborExposure * weight;
-    totalWeight += neighborExposure * weight;
+    bloom += vec3<f32>(0.35, 1.0, 0.5) * em * weight;
+    totalWeight += weight;
   }
-
   if (totalWeight > 0.001) {
     bloom /= totalWeight;
+    bloom *= maxCorruption;
   }
   bloom *= bloomIntensity;
 
@@ -188,11 +190,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  let prevSmear = textureLoad(dataTextureC, pixel, 0).rgb;
-  hdrColor = mix(hdrColor, prevSmear * 0.88, effectiveCorruption * 0.08 * (0.4 + packet));
+  // Idea 1 (draw): phosphor trail re-emits behind falling glyphs (replaces HEAD's C.rgb
+  // "smear", which read the corruption mask as colour — packing lie).
+  hdrColor += vec3<f32>(0.1, 0.75, 0.3) * oldState.g * (0.4 + packet) * 0.6;
 
-  let band = min(u32(uv.x * 8.0), 7u);
-  hdrColor += vec3<f32>(0.04, 0.12, 0.08) * plasmaBuffer[band + 1u].x * effectiveCorruption * 0.15;
+  // Idea 3 (draw): cyan bit-flip seam on the corruption boundary, treble flicker
+  hdrColor += vec3<f32>(0.2, 0.9, 1.0) * frontier * (0.6 + treble * 0.8);
 
   let toneMapExp = 0.8 + effectiveCorruption;
   let ldrColor = toneMapACES(hdrColor * toneMapExp);

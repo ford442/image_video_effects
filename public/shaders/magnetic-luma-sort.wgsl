@@ -1,32 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Magnetic Luma Sort
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, spring-interaction
-//  Upgraded: 2026-09-09
-//  Ideas: dipole field-line offset; luma domains
-//  A packing: ACES display RGBA
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-09
+//  Ideas: dipole field-line offset; luma domains; comparator sort taps; magnetic hysteresis
+//  A packing: pre-grade trail RGB (linear) + trail energy in .a (hysteresis)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn get_luma(color: vec3<f32>) -> f32 {
     return dot(color, vec3(0.299, 0.587, 0.114));
@@ -40,14 +20,6 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
     return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
 }
-
-// Persistent spring state lives in extraBuffer[133..138] (shader-owned region
-// is [133..255]; [0..4] reserved, [5..132] = engine FFT bins):
-//   [133] = smoothed magnet x, [134] = smoothed magnet y
-//   [135] = spring velocity x, [136] = spring velocity y
-//   [137] = last frame timestamp, [138] = initialization flag
-// Every invocation integrates the SAME previous state, so all threads agree on
-// the result; only thread (0,0) writes the advanced state back.
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -67,42 +39,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let decay = u.zoom_params.z;
     let repel = step(0.5, u.zoom_params.w); // 0 or 1
 
-    // --- Critically-damped spring attractor ---
-    // The raw mouse stays the spring TARGET; the magnet itself glides.
+    // HEAD rescue: the extraBuffer[133..138] spring was zeroed every frame, so it
+    // never integrated (magnet == raw pointer). The fake state is removed.
     let time = u.config.x;
-    let rawMouse = u.zoom_config.yz;
-    let hasSpring = arrayLength(&extraBuffer) >= 139u;
-    var prevTime = time;
-    var initialized = false;
-    if (hasSpring) { prevTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
-    let dt = clamp(time - prevTime, 0.001, 0.05);
-
-    var magnetPos = rawMouse;
-    var magnetVel = vec2<f32>(0.0);
-    if (hasSpring) {
-        magnetPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        magnetVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    }
-    if (!initialized) {
-        // First frame after init: snap to the cursor so we don't glide in from origin.
-        magnetPos = rawMouse;
-        magnetVel = vec2<f32>(0.0, 0.0);
-    }
-
-    // Critical damping: accel = omega^2 * (target - pos) - 2 * omega * vel.
-    let omega = 14.0;
-    let springAccel = omega * omega * (rawMouse - magnetPos) - 2.0 * omega * magnetVel;
-    magnetVel = magnetVel + springAccel * dt;
-    magnetPos = magnetPos + magnetVel * dt;
-
-    if (hasSpring && global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = magnetPos.x;
-        extraBuffer[134] = magnetPos.y;
-        extraBuffer[135] = magnetVel.x;
-        extraBuffer[136] = magnetVel.y;
-        extraBuffer[137] = time;
-        extraBuffer[138] = 1.0;
-    }
+    let magnetPos = u.zoom_config.yz;
 
     var mousePos = magnetPos;
     let aspect = resolution.x / resolution.y;
@@ -132,9 +72,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let domain = abs(fract(luma * 6.0) - 0.5);
     let domainGate = smoothstep(0.22, 0.08, domain);
 
+    // Idea 4 — magnetic hysteresis (remanence): pixels whose trail was already
+    // moving (energy in C.a) keep sorting below the luma gate.
+    let historyDims = vec2<i32>(textureDimensions(dataTextureC));
+    let remanence = clamp(textureLoad(dataTextureC, historyCoord(uv, historyDims), 0).a, 0.0, 1.0);
+    let gate = threshold * (1.0 - 0.45 * remanence);
+
     var speed = 0.0;
-    if (luma > threshold) {
-        speed = pullStrength * (luma - threshold) / (1.0 - threshold + 0.001) * mix(0.35, 1.0, domainGate);
+    if (luma > gate) {
+        speed = pullStrength * (luma - gate) / (1.0 - gate + 0.001) * mix(0.35, 1.0, domainGate);
     }
 
     // Per-row read-only FFT voice lives in engine slots [5..132].
@@ -177,8 +123,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Sample history at the upstream position
     let historyUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-    let historyDims = vec2<i32>(textureDimensions(dataTextureC));
-    let historyColor = textureLoad(dataTextureC, historyCoord(historyUV, historyDims), 0);
+    // Idea 3 — comparator sort taps: compare-swap over three taps along the pull,
+    // the brightest upstream run wins, so streaks read as sorted, not blurred.
+    var historyColor = textureLoad(dataTextureC, historyCoord(historyUV, historyDims), 0);
+    var bestL = get_luma(historyColor.rgb);
+    for (var k = 1; k <= 2; k = k + 1) {
+        let tapUV = clamp(uv + offset * (1.0 + 0.5 * f32(k)), vec2<f32>(0.0), vec2<f32>(1.0));
+        let tap = textureLoad(dataTextureC, historyCoord(tapUV, historyDims), 0);
+        let tl = get_luma(tap.rgb);
+        if (tl > bestL + 0.02 && speed > 0.0) { historyColor = tap; bestL = tl; }
+    }
 
     // Combine
     // If we are just moving the image, we should primarily see the history moving.
@@ -204,17 +158,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Let's stick to the feedback loop approach.
     // New Value = (Old Value at Upstream P) * Decay + (Current Input) * Blend
 
-    let mixed = mix(srcColor, historyColor, decay);
-    let trailEnergy = clamp(length(mixed.rgb - srcColor.rgb) * 1.5 + speed * 7.0, 0.0, 1.0);
+    let mixed = mix(srcColor.rgb, historyColor.rgb, decay);
+    let trailEnergy = clamp(length(mixed - srcColor.rgb) * 1.5 + speed * 7.0, 0.0, 1.0);
     let alpha = clamp(srcColor.a + (1.0 - srcColor.a) * trailEnergy, 0.0, 1.0);
-    let display = vec4<f32>(acesToneMap(max(mixed.rgb, vec3<f32>(0.0))), alpha);
+    // HEAD rescue: A held ACES display that C fed back → re-graded every frame.
+    // A now keeps the linear trail colour; ACES is applied on display only.
+    let display = vec4<f32>(acesToneMap(max(mixed, vec3<f32>(0.0)) * 1.12), alpha);
 
     // If luma is low, we don't move history much?
     // Actually, if luma is low (speed 0), offset is 0. So we sample history at current UV.
     // This results in a standard feedback trail.
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), display);
-    textureStore(dataTextureA, global_id.xy, display);
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(mixed, max(trailEnergy, historyColor.a * decay * 0.92)));
 
     // Pass depth
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

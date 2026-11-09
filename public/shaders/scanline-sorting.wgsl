@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Scanline Sorting — Batch 62
-//  Bitonic luminance sort band: spring scan center, held widen, capped
-//  click sort bursts, regional FFT palette, ACES + semantic alpha.
+//  Scanline Sorting
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-09
+//  Ideas: threshold run streak; sort-front tear; sorted-rank tint
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -42,6 +27,9 @@ fn fast_exp(x: f32) -> f32 { return exp(clamp(x, -80.0, 0.0)); }
 // ── Shared scanline tile ─────────────────────────────────────────
 var<workgroup> s_tile: array<vec3<f32>, 256>;
 var<workgroup> s_active: atomic<u32>;
+var<workgroup> s_flag: u32;
+
+fn hash11(x: f32) -> f32 { return fract(sin(x * 127.1) * 43758.5453); }
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
@@ -65,32 +53,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
     let held = u.zoom_config.w > 0.5;
     let mouse            = u.zoom_config.yz;
 
-    var smoothMouse = mouse;
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[138] > 0.5) {
-      smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-      var springPos = smoothMouse;
-      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-      if (extraBuffer[138] <= 0.5) {
-        springPos = mouse;
-        springVel = vec2<f32>(0.0);
-      } else {
-        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-        let omega = 9.0;
-        let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-        springVel += accel * dt;
-        springPos += springVel * dt;
-      }
-      extraBuffer[133] = springPos.x;
-      extraBuffer[134] = springPos.y;
-      extraBuffer[135] = springVel.x;
-      extraBuffer[136] = springVel.y;
-      extraBuffer[137] = time;
-      extraBuffer[138] = 1.0;
-      smoothMouse = springPos;
-    }
+    let smoothMouse = mouse;
     let mouseDown = select(u.zoom_config.w, 1.0, held);
 
     var rippleBoost = 0.0;
@@ -136,7 +99,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
     }
     workgroupBarrier();
 
-    let tile_active = atomicLoad(&s_active) > 0u;
+    if (li == 0u) { s_flag = atomicLoad(&s_active); }
+    let tile_active = workgroupUniformLoad(&s_flag) > 0u;
 
     // ── Early tile-wide exit: most tiles are outside the scan band ─
     if (!tile_active) {
@@ -181,8 +145,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
                         * (1.0 + cursorBoost);
 
     let sorted = s_tile[base + lane * stride];
+    // Idea 3 — sorted-rank tint: cool at the dark end of the run, warm at the bright end
+    let rank = f32(lane) / 15.0;
+    let rankTint = mix(vec3<f32>(0.85, 0.95, 1.15), vec3<f32>(1.15, 1.0, 0.82), rank);
     let sortMix = band_t * clamp(sort_strength * 0.05, 0.0, 1.0);
-    color = mix(color, sorted, sortMix);
+    color = mix(color, sorted * mix(vec3<f32>(1.0), rankTint, 0.6), sortMix);
+
+    // Idea 1 — threshold run streak: drag the brightest above-threshold texel along the sort axis
+    let axis = mix(vec2<f32>(0.0, 1.0 / res.y), vec2<f32>(1.0 / res.x, 0.0), direction_toggle);
+    var streak = vec3<f32>(0.0);
+    var streakL = 0.0;
+    for (var k = 1; k <= 8; k = k + 1) {
+        let su = clamp(uv - axis * f32(k) * (2.0 + bass * 2.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let sc = textureSampleLevel(readTexture, u_sampler, su, 0.0).rgb;
+        let w = smoothstep(sort_threshold, min(sort_threshold + 0.25, 1.0), luma(sc)) * (1.0 - f32(k) / 9.0);
+        if (luma(sc) * w > streakL) { streakL = luma(sc) * w; streak = sc * w; }
+    }
+    color = max(color, mix(color, streak, band_t * 0.85));
+
+    // Idea 2 — sort-front tear: hashed row/column shift on the band's leading edge
+    let lead = scan_pos + scan_width * 0.7;
+    let front = smoothstep(scan_width * 0.2, 0.0, abs(coord_along - lead)) * (0.6 + mouseDown * 0.4);
+    let rowId = floor(coord_along * res.y * 0.25 + time * 7.0);
+    let tearOff = (hash11(rowId) - 0.5) * 0.12 * (1.0 + mids) * front;
+    let tuv = select(vec2<f32>(fract(uv.x + tearOff), uv.y), vec2<f32>(uv.x, fract(uv.y + tearOff)), direction_toggle > 0.5);
+    let torn = textureSampleLevel(readTexture, u_sampler, tuv, 0.0).rgb;
+    color = mix(color, torn, front * step(0.5, hash11(rowId + 3.1)));
 
     // ── Chromatic edge shift ───────────────────────────────────────
     let pix = mix(vec2<f32>(0.0, -1.0 / res.y),
@@ -197,11 +185,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>,
     let b2 = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
     color = mix(color, vec3<f32>(r2, color.g, b2), band_t * 0.4);
 
-    // ── Palette overlay ────────────────────────────────────────────
-    let pIdx = u32(clamp((lf + sort_strength * 0.005) * 255.0, 0.0, 255.0));
-    let bandBin = min(u32(uv.x * 8.0), 7u) + 1u;
-    let palette = plasmaBuffer[pIdx].rgb * (1.0 + plasmaBuffer[bandBin].x * 0.15);
-    color = mix(color, color * (0.6 + palette * 0.8), band_t * 0.5);
 
     // ── Tone map & semantic alpha ──────────────────────────────────
     let lf2 = luma(color);

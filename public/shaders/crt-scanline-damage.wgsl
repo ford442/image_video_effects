@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: misconvergence swirl (degauss rings pull the R/G/B rasters apart radially with a rotating magenta/green purity blotch that settles); flyback retrace lines (faint diagonal retrace sweeps during the dark-band fault); radial chromatic barrel (RGB split grows radially toward the tube edges)
+//  Upgraded: 2026-11-09
+//  Ideas: misconvergence swirl (degauss rings pull the R/G/B rasters apart radially with a rotating magenta/green purity blotch that settles); flyback retrace lines (faint diagonal retrace sweeps during the dark-band fault); radial chromatic barrel (RGB split grows radially toward the tube edges); burnt phosphor patch (fixed FBM-shaped worn region: dimmer, brown-desaturated, coarser smeared raster); HV arc flash (rare treble-gated high-voltage arcs: blue-white row streak, frame brightness pop, momentary raster shrink)
 //  A packing: pre-ACES linear display RGB + semantic alpha (opaque bezel outside the warp); C read back as that linear colour for phosphor persistence
 // ═══════════════════════════════════════════════════════════════════
 
@@ -23,6 +23,14 @@ fn hash11(p: f32) -> f32 {
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn vnoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), w.x),
+               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
 }
 
 fn sampleClamped(uv: vec2<f32>) -> vec4<f32> {
@@ -55,7 +63,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let r4 = r2 * r2;
     let depthDistortion = distortionAmount * (1.0 + depth * 0.5);
     let distortion = 1.0 + depthDistortion * r2 + depthDistortion * 0.5 * r4;
-    var distortedUV = centered * distortion + vec2<f32>(0.5);
+    // IDEA 5 — HV arc flash. Arc events are hashed per 1/8 s slot and gated by treble; each
+    // arc briefly collapses the EHT, so the raster shrinks and the frame pops brighter.
+    let arcSlot = floor(time * 8.0);
+    let arcAge = fract(time * 8.0);
+    let arcOn = step(0.93 - clamp(treble, 0.0, 1.5) * 0.08, hash11(arcSlot * 1.37 + 5.0));
+    let arcEnv = arcOn * exp(-arcAge * 6.0);
+    let arcRow = hash11(arcSlot + 33.0);
+    var distortedUV = centered * distortion * (1.0 + arcEnv * 0.035) + vec2<f32>(0.5);
 
     // Clicks bruise the tube locally and launch degauss rings through the
     // sampling coordinates. Ripple positions are normalized canvas UVs.
@@ -128,8 +143,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Real raster: HEAD evaluated sin(k*pi) at texel centres, a constant 0.5. A 4-row beam
     // profile on integer screen rows averages to the same 0.925 at the default slider.
     let scanline = sin(f32(global_id.y) * PI * 0.5) * 0.5 + 0.5;
-    let scanlineMask = mix(1.0, 0.85 + scanline * 0.15, scanlineIntensity);
+    // IDEA 4 — burnt phosphor patch: a fixed worn region on the tube face (in tube space, so it
+    // stays put while the picture moves). Dead phosphor there is dimmer and brown-desaturated,
+    // and the raster is coarser and smeared (every other beam row has burnt out).
+    let tubeP = distortedUV * vec2<f32>(aspectVec.x, 1.0);
+    let burnN = vnoise(tubeP * 3.0 + vec2<f32>(7.3, 2.1)) * 0.65 + vnoise(tubeP * 9.0) * 0.35;
+    let burn = smoothstep(0.50, 0.68, burnN) * smoothstep(0.6, 0.15, length(distortedUV - vec2<f32>(0.38, 0.62)));
+    let burntRow = sin(f32(global_id.y) * PI * 0.25) * 0.5 + 0.5;
+    let rowShape = mix(scanline, burntRow, burn);
+    let scanlineMask = mix(1.0, 0.85 + rowShape * 0.15, scanlineIntensity) * (1.0 - burn * 0.35 * scanlineIntensity);
     col = col * scanlineMask;
+
+    let burnLuma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
+    col = mix(col, burnLuma * vec3<f32>(0.78, 0.60, 0.40), burn * 0.7);
 
     let pixelX = f32(global_id.x) % 3.0;
     let phosphorR = select(1.0, 0.85, pixelX != 0.0);
@@ -152,6 +178,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let retraceLine = smoothstep(0.06, 0.0, abs(retracePhase - 0.5));
     let retraceGain = select(0.0, 1.0, rollTrigger) * (0.08 + smoothstep(0.25, 0.0, abs(uv.y - rollOffset)) * 0.14) * (1.0 + mids * 0.6);
     col += vec3<f32>(0.9, 0.95, 1.0) * retraceLine * retraceGain;
+
+    // IDEA 5 — arc streak: one horizontal band lights blue-white with a hot core, and
+    // the whole frame pops brighter for the arc's few-frame life.
+    let streak = exp(-abs(uv.y - arcRow) * 140.0) * (0.6 + 0.4 * hash21(vec2<f32>(floor(uv.x * 40.0), arcSlot)));
+    col = col * (1.0 + arcEnv * 0.35) + vec3<f32>(0.75, 0.85, 1.1) * streak * arcEnv * 1.4;
 
     // Treble now drives genuinely damaged static: sparse bright/dark snow and
     // short horizontal scar bands, rather than being a dead aggregate read.

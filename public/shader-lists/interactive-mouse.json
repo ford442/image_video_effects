@@ -1446,7 +1446,7 @@
     "name": "Cyber Glitch Hologram",
     "category": "interactive-mouse",
     "url": "shaders/cyber-glitch-hologram.wgsl",
-    "description": "Block-based datamoshing with structure-tensor motion estimation, holographic cosine interference fringes, cyan/magenta color separation, chromatic aberration on glitch blocks, and ACES tone mapping.",
+    "description": "Block-swap datamosh with structure-tensor motion, holographic interference fringes, swapped-macroblock seams, depth-slice contour lines and scan-carrier projector dropout around the pointer, ACES tone mapping.",
     "params": [
       {
         "id": "hologramIntensity",
@@ -5960,7 +5960,7 @@
     "id": "magnetic-luma-sort",
     "name": "Magnetic Luma Sort",
     "url": "shaders/magnetic-luma-sort.wgsl",
-    "description": "Luma-gated magnetic sorting with a guarded spring, canonical plasma bands and read-only FFT voices, exact-load trail advection, bounded click vortices, ACES, and semantic trail alpha.",
+    "description": "Luma-gated magnetic sorting: compare-swap sort taps along the pull, magnetic hysteresis that keeps moving pixels sorting below the gate, dipole field lines, click vortices, linear trail feedback with ACES on display.",
     "params": [
       {
         "id": "pullStrength",
@@ -5996,7 +5996,6 @@
       "audio-reactive",
       "temporal",
       "exact-history",
-      "spring-interaction",
       "click-reactive",
       "aces-tone-map",
       "semantic-alpha",
@@ -10646,13 +10645,11 @@
       "mouse-driven",
       "sorting",
       "audio-reactive",
-      "palette-mapped",
       "chromatic-edge",
       "upgraded-rgba",
       "aces-tone-map",
       "click-reactive",
       "held-drag",
-      "spring-cursor",
       "shared-memory",
       "bitonic-sort"
     ],

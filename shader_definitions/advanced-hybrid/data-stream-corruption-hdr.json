@@ -2,7 +2,7 @@
   "id": "data-stream-corruption-hdr",
   "name": "Data Stream Corruption Hdr",
   "url": "shaders/data-stream-corruption-hdr.wgsl",
-  "description": "Data Stream Corruption Hdr",
+  "description": "Paint corruption into the image: column glitches, RGB split and green glyph rain with phosphor trails, white-hot packet glyphs, stream-light bloom and a cyan bit-flip seam on the corruption frontier.",
   "tags": [
     "mouse-driven",
     "data-stream-corruption",
@@ -13,7 +13,9 @@
     "mouse-driven",
     "data-stream-corruption",
     "hdr-bloom",
-    "temporal"
+    "temporal",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

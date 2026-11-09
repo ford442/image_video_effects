@@ -50,13 +50,11 @@
     "mouse-driven",
     "sorting",
     "audio-reactive",
-    "palette-mapped",
     "chromatic-edge",
     "upgraded-rgba",
     "aces-tone-map",
     "click-reactive",
     "held-drag",
-    "spring-cursor",
     "shared-memory",
     "bitonic-sort"
   ],
