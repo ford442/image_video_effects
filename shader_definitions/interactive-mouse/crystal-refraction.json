@@ -2,7 +2,7 @@
   "id": "crystal-refraction",
   "name": "Crystal Refraction",
   "url": "shaders/crystal-refraction.wgsl",
-  "description": "Interactive faceted crystal lens with a flat brilliant-cut table window in the centre, IOR-based chromatic dispersion, Fresnel reflection and thickness-dependent transmission. Facets throw spectral fire flashes as they turn past the light; bass makes the stone sparkle.",
+  "description": "Interactive faceted crystal lens with a flat brilliant-cut table window in the centre, IOR-based chromatic dispersion, Fresnel reflection and thickness-dependent transmission. Facets throw spectral fire flashes that spill into their neighbours, a frosted girdle outlines the stone, and a click ignites the facets in sequence.",
   "params": [
     {
       "id": "facetScale",
@@ -39,6 +39,7 @@
   ],
   "features": [
     "mouse-driven",
+    "upgraded-rgba",
     "alpha-transmission",
     "chromatic-aberration",
     "physical-refraction",

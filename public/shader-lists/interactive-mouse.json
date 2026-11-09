@@ -1288,7 +1288,7 @@
     "id": "crystal-refraction",
     "name": "Crystal Refraction",
     "url": "shaders/crystal-refraction.wgsl",
-    "description": "Interactive faceted crystal lens with a flat brilliant-cut table window in the centre, IOR-based chromatic dispersion, Fresnel reflection and thickness-dependent transmission. Facets throw spectral fire flashes as they turn past the light; bass makes the stone sparkle.",
+    "description": "Interactive faceted crystal lens with a flat brilliant-cut table window in the centre, IOR-based chromatic dispersion, Fresnel reflection and thickness-dependent transmission. Facets throw spectral fire flashes that spill into their neighbours, a frosted girdle outlines the stone, and a click ignites the facets in sequence.",
     "params": [
       {
         "id": "facetScale",
@@ -1325,6 +1325,7 @@
     ],
     "features": [
       "mouse-driven",
+      "upgraded-rgba",
       "alpha-transmission",
       "chromatic-aberration",
       "physical-refraction",
@@ -3202,7 +3203,7 @@
     "name": "Glass Shatter",
     "category": "interactive-mouse",
     "url": "shaders/glass-shatter.wgsl",
-    "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. Crack energy accumulates in dataTextureC so repeated clicks progressively craze the glass rather than each producing an isolated ring. Fixes a mask-as-colour hazard where dataTextureA held a mask tuple that nothing read, and adds ACES in place of a hard clamp.",
+    "description": "Voronoi facets with stress birefringence: residual stress concentrates at the facet boundaries and under load, and the resulting retardation produces per-wavelength polariscope fringes along the cracks. A press or click fragments the glass into finer shards at the impact, with fracture hairlines on the real shard borders and a faint display-space ghost of the previous frame; ACES output.",
     "params": [
       {
         "id": "scale",
@@ -3249,8 +3250,7 @@
       "voronoi-facets",
       "stress-birefringence",
       "fresnel",
-      "crack-propagation",
-      "temporal-crack-memory"
+      "crack-propagation"
     ],
     "tags": [
       "glass",
@@ -4670,7 +4670,7 @@
     "name": "Interactive Voronoi Lens",
     "url": "shaders/interactive-voronoi-lens.wgsl",
     "category": "interactive-mouse",
-    "description": "Voronoi cells act as audio-reactive lenses with mouse-driven focus, temporal trail accumulation, depth-aware edge fog, and neon cell-boundary accents.",
+    "description": "Voronoi cells act as audio-reactive lenslets with depth parallax, cursor refocus, glassy seam catch-lights, a spring-damped gravity well, click shockwaves and temporal trails.",
     "tags": [
       "voronoi",
       "lens",
@@ -10125,7 +10125,7 @@
     "name": "Refraction Shards",
     "category": "interactive-mouse",
     "url": "shaders/refraction-shards.wgsl",
-    "description": "Voronoi crystalline shards refract and Cauchy-disperse the source image. Features continuous orbital facet drift, acoustic stress birefringence, spring cursor deflection, click fracture wavefronts, exact-C temporal persistence, and ACES tonemapping.",
+    "description": "Voronoi crystalline shards refract and Cauchy-disperse the source image. Features continuous orbital facet drift, per-shard Snell tilt with Cauchy dispersion and glass tint, spring cursor deflection, click fracture wavefronts, exact-C temporal persistence, and ACES tonemapping.",
     "features": [
       "mouse-driven",
       "audio-reactive",

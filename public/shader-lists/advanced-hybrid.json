@@ -1473,7 +1473,6 @@
       "lens-distortion",
       "temporal",
       "audio-reactive",
-      "depth-aware",
       "upgraded-rgba"
     ],
     "params": [
@@ -3715,7 +3714,8 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,

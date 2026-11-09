@@ -6,29 +6,16 @@
 //  Ideas:    1. TIR flash — facets tilted past asin(1/n) mirror the far side of the gem
 //            2. Beer-Lambert body colour — Crystal Thickness tints the light path
 //            3. crown/pavilion rings — radial tiers with half-offset sectors (kite cut)
+//            4. scintillation sweep — TIR facets mirror a fixed lamp as the gem turns: bright flash <-> dark extinction
+//            5. cloudy inclusion facets — Fracture Density picks which facets are milky; a cloudy facet loses its brilliance
 //  Complexity: High
+//  Upgraded: 2026-11-09
+//  Rescued: facet hash seam through the atan2 branch cut (sector index now wrapped mod facetCount before hashing); refraction direction now follows the facet's true screen azimuth (HEAD leaked `rotation` into it and used the facet's lower edge, so it drifted a full turn after ~63 s)
+//  A packing: ACES display RGBA (unchanged); C is the 6 % display ghost
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=FacetCount, y=RefractiveIndex, z=FractureDensity, w=CrystalThickness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FacetCount, y=RefractiveIndex, z=FractureDensity, w=CrystalThickness
 
 const IOR_GLASS: f32 = 1.50;
 const IOR_DIAMOND: f32 = 2.42;
@@ -106,13 +93,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sectorWidth = 6.2831853 / facetCount;
   let rawSector = angle / sectorWidth + ring * 0.5;
   let sector = floor(rawSector);
-  let sectorAngle = (sector - ring * 0.5) * sectorWidth;
+  // Rescue R1: atan2's branch cut jumps `sector` by exactly facetCount, which split one facet into two
+  // different hashes (a seam on the left of the gem). Hash the index modulo facetCount instead.
+  let sectorWrap = sector - facetCount * floor(sector / facetCount + 0.5);
+  // Rescue R2: the facet's true screen azimuth (centre of its sector, rotation removed). HEAD used the
+  // facet's lower edge in rotated angle space, so the fringe direction drifted away from its facet.
+  let facetAz = (sector + 0.5 - ring * 0.5) * sectorWidth - rotation;
 
-  let facetID = sector + ring * 37.0;
+  let facetID = sectorWrap + ring * 37.0;
   let randomTilt = (hash11(facetID) - 0.5) * 2.0;
   let facetFracture = hash11(facetID + 100.0);
 
-  let offsetDir = vec2<f32>(cos(sectorAngle), sin(sectorAngle));
+  let offsetDir = vec2<f32>(cos(facetAz), sin(facetAz));
   let rOffset = offsetDir * refraction * (1.0 + randomTilt * 0.5);
   let gOffset = offsetDir * refraction * 0.5;
   let bOffset = offsetDir * refraction * (0.0 - randomTilt * 0.5);
@@ -123,6 +115,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let g_val = textureSampleLevel(readTexture, u_sampler, clamp(baseUV - gOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
   let b_val = textureSampleLevel(readTexture, u_sampler, clamp(baseUV - bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var color = vec3<f32>(r_val, g_val, b_val);
+
+  // Idea 5: cloudy inclusion facets. Fracture Density now also picks WHICH facets carry inclusions
+  // (the per-facet hash `facetFracture` that HEAD only used for purity): above a density-driven
+  // threshold the facet is milky — the picture is seen through four wide scatter taps — and a cloudy
+  // stone is dull, so it loses its flash and sparkle. 0 = none, default 0.2 = ~1 in 5, 1 = most.
+  let cloudThresh = 1.0 - fractureDensity * 0.9;
+  let cloud = smoothstep(cloudThresh, cloudThresh + 0.12, facetFracture);
+  if (cloud > 0.01) {
+    let hz = 0.016 * (1.0 + ring * 0.3);
+    var milk = vec3<f32>(0.0);
+    for (var k = 0; k < 4; k = k + 1) {
+      let o = vec2<f32>(f32(k & 1) * 2.0 - 1.0, f32(k >> 1) * 2.0 - 1.0) * hz;
+      milk += textureSampleLevel(readTexture, u_sampler, clamp(baseUV + o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    }
+    milk = milk * 0.25 * vec3<f32>(0.96, 0.98, 1.0) + vec3<f32>(0.05);
+    color = mix(color, milk, 0.85 * cloud);
+  }
 
   let angleToNormal = abs(fract(rawSector) - 0.5) * 2.0;
   let cosTheta = cos(angleToNormal * 1.570796);
@@ -135,11 +144,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // than glass does.
   let sinI = clamp(0.16 + ring * 0.05 + randomTilt * randomTilt * 0.4 + bass * 0.05, 0.0, 0.99);
   let criticalSin = 1.0 / ior;
-  let tir = smoothstep(criticalSin * 0.92, criticalSin, sinI);
+  let tir = smoothstep(criticalSin * 0.92, criticalSin, sinI) * (1.0 - 0.85 * cloud);
   let mirrorUV = clamp(center - dir / vec2<f32>(aspect, 1.0) * 0.7 + offsetDir * refraction,
                        vec2<f32>(0.0), vec2<f32>(1.0));
   let mirrored = textureSampleLevel(readTexture, u_sampler, mirrorUV, 0.0).rgb;
-  color = mix(color, mirrored * vec3<f32>(1.25, 1.28, 1.35) + vec3<f32>(0.10, 0.12, 0.16), tir * 0.85);
+  // Idea 4: scintillation sweep. The stone turns (`rotation`) under a fixed lamp: a facet mirrors the lamp
+  // when its azimuth lines up with it (cos^6 lobe, the pavilion sees the lamp from further round), so the
+  // mirrored facets alternate bright flash <-> dark extinction as it passes. The mean mirror brightness
+  // stays near HEAD's flat 1.25x (mean gain ~1.08); only the contrast between facets is new.
+  let lampAz = -2.2 + ring * 1.1;
+  let lobe = pow(0.5 + 0.5 * cos(facetAz - lampAz), 6.0);
+  let mirrorGain = mix(0.7, 2.4, lobe);
+  color = mix(color, mirrored * vec3<f32>(1.25, 1.28, 1.35) * mirrorGain + vec3<f32>(0.10, 0.12, 0.16) * (0.4 + 0.6 * lobe), tir * 0.85);
 
   // Idea 2: Beer-Lambert body colour. The path length through the facet follows
   // its tilt, and the stone absorbs blue a little more than red.
@@ -161,13 +177,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let transmission = absorption * (1.0 - fresnel) * purity;
   let specular = edgeFactor * fresnel * 0.85;
   color += vec3<f32>(specular);
+  // (Idea 4, transmitting facets) the same lamp lobe glints on the facets that are not total-reflecting.
+  color += vec3<f32>(0.90, 0.95, 1.0) * lobe * (0.06 + 0.75 * fresnel) * (1.0 - tir) * (1.0 - 0.8 * cloud);
 
   let internalScatter = mix(vec3<f32>(1.0), vec3<f32>(0.9, 0.95, 1.0), fractureDensity);
   color = color * internalScatter;
 
   let causticPulse = 1.0 + bass * 0.6 + sin(time * 6.0 + facetID) * treble * 0.4;
   let internalTint = vec3<f32>(1.0 + mids * 0.15, 1.0 - mids * 0.08, 1.0 - mids * 0.12);
-  let sparkle = pow(hash11(facetID + time * 12.0), 8.0) * treble * 1.5;
+  let sparkle = pow(hash11(facetID + time * 12.0), 8.0) * treble * 1.5 * (1.0 - 0.8 * cloud);
 
   color = color * internalTint * causticPulse + vec3<f32>(0.85, 0.92, 1.0) * sparkle * (edgeFactor + tir * 0.5);
 
@@ -180,10 +198,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let transmittanceAlpha = transmission * dot(abs_val, vec3<f32>(0.3333)) * purity;
   let fresnelBoost = fresnel * edgeFactor * 0.4;
 
-  let alpha = clamp(mix(transmittanceAlpha, volumetricAlpha, 0.45) + fresnelBoost + tir * 0.12 + held * 0.1, 0.1, 1.0);
+  let alpha = clamp(mix(transmittanceAlpha, volumetricAlpha, 0.45) + fresnelBoost + tir * 0.12 + cloud * 0.15 + held * 0.1, 0.1, 1.0);
 
   // Exact dataTextureC persistence, blended in display space (C holds ACES output).
-  let prev_c = textureLoad(dataTextureC, pixel, 0).rgb;
+  let prev_c = clamp(textureLoad(dataTextureC, pixel, 0).rgb, vec3<f32>(0.0), vec3<f32>(1.0));   // inherited-C safe
   let finalRGB = mix(aces(color), prev_c, 0.06);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let finalPixel = vec4<f32>(finalRGB, alpha);
