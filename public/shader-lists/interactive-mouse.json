@@ -1620,7 +1620,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9212,7 +9213,8 @@
       "depth",
       "lighting",
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -9265,6 +9267,7 @@
       "depth-aware",
       "exact-history",
       "raw-state-feedback",
+      "spring-interaction",
       "click-reactive",
       "aces-tone-map",
       "semantic-alpha"

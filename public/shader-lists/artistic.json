@@ -1585,7 +1585,7 @@
     "id": "echo-trace",
     "name": "Temporal Velocity Echo",
     "url": "shaders/echo-trace.wgsl",
-    "description": "Kalman-filtered cursor paints advected image echoes: lag ghosts behind the motion, dashed prediction trails, a 2σ uncertainty ellipse, and echoes that redshift as they age.",
+    "description": "4D Kalman mouse estimator with covariance-driven Mahalanobis dashed trails, held brush tightening, capped click spark echoes, oil-slick psychedelic tint, exact-load C feedback, and ACES display. Kalman state lives in extraBuffer[133..141].",
     "updated": true,
     "params": [
       {
@@ -1619,14 +1619,20 @@
     ],
     "features": [
       "mouse-driven",
-      "click-reactive",
       "temporal-persistence",
       "audio-reactive",
       "structure-tensor",
       "flow-advection",
+      "multi-octave-echo",
       "velocity-sensing",
+      "predictive-echo",
       "feedback-displacement",
       "kalman-filter",
+      "mahalanobis-trails",
+      "held-brush-tighten",
+      "bounded-click-sparks",
+      "oil-slick-trails",
+      "exact-history-advection",
       "aces-tone-mapping",
       "upgraded-rgba"
     ],
@@ -3993,7 +3999,7 @@
     "id": "quantum-fractal",
     "name": "Quantum Fractal",
     "url": "shaders/quantum-fractal.wgsl",
-    "description": "Two entangled quantum Julia fractals interfere over the image with dark nodal lines and a glowing tunnelling halo; the cursor collapses the superposition to the photo.",
+    "description": "Fractal quantum interference patterns.",
     "tags": [
       "filter",
       "image-processing",
@@ -5423,7 +5429,7 @@
     "id": "vortex-prism",
     "name": "Vortex Prism",
     "url": "shaders/vortex-prism.wgsl",
-    "description": "Twists the image around a precessing eye at the cursor, fanning colors into rainbow arcs that wind into two spiral arms, edged by a spectral dispersion rim.",
+    "description": "Twists the image around the mouse cursor, fanning colors into smooth rainbow arcs like a prism. Smoothness sets a calm Rankine eye, shear caustics streak the outer band, and bass tightens the twist.",
     "params": [
       {
         "id": "twist",
