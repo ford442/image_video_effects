@@ -144,7 +144,9 @@
     "supportsDepth": true,
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ascii",
+      "lens"
     ],
     "updated": true
   },
@@ -1083,8 +1085,7 @@
       "crossover",
       "mouse-driven",
       "spectral-rendering",
-      "audio-reactive",
-      "upgraded-rgba"
+      "audio-reactive"
     ],
     "params": [
       {
@@ -2475,7 +2476,6 @@
       "audio-reactive",
       "upgraded-rgba",
       "depth-aware",
-      "fast-motion",
       "spring-cursor",
       "held-drag",
       "bounded-click-ripples",
@@ -2525,7 +2525,6 @@
       "double-exposure",
       "zoom",
       "overlay",
-      "fast-motion",
       "audio-reactive",
       "aces"
     ]
@@ -9530,12 +9529,13 @@
     "features": [
       "mouse-driven",
       "distortion",
-      "audio-reactive",
-      "upgraded-rgba"
+      "audio-reactive"
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "quantum",
+      "chromatic"
     ],
     "updated": true
   },

@@ -1,33 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Flux
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  Swarm upgrade: 2026-08-02 (sprung flux center, click decoherence
-//  bursts, per-sector FFT jitter voices)
+//  Upgraded: 2026-05-23, 2026-08-02, 2026-11-09
+//  Ideas: per-channel jitter + RGB split; radial standing wave; hue drift; interference scanlines;
+//         click decoherence bursts; per-sector FFT jitter voices;
+//         radial probability shells (jitter x standing-wave psi^2, §12.1 T2/T3);
+//         quantum-jump hue (6 energy levels, plateau-then-jump)
+//  A packing: display RGBA; texel (0,0) = (glide.x, glide.y, 7 marker, fract(time)) cursor state (not display data)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
     let K = vec4<f32>(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
@@ -46,6 +30,35 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
 
 fn rand(co: vec2<f32>) -> f32 {
     return fract(sin(dot(co, vec2<f32>(12.9898, 78.233))) * 43758.5453);
+}
+
+// ── Rescue R1: cursor glide in A texel (0,0) ─────────────────────────
+// extraBuffer[133..] is re-uploaded zeroed every frame, so the spring could never persist.
+// State = A(0,0) = (glide.x, glide.y, GLIDE_MARK, fract(time)); every pixel reads the same C texel and
+// integrates the same step, only pixel (0,0) stores it. First-order glide (a velocity cannot be stored
+// f16-safely); at rest it snaps exactly onto the cursor.
+const GLIDE_MARK: f32 = 7.0;
+fn glideStep(st: vec4<f32>, raw: vec2<f32>, time: f32, rate: f32) -> vec2<f32> {
+    // w can round up to exactly 1.0 in f16 (fract(time) > 0.9997): accept it.
+    let ok = abs(st.z - GLIDE_MARK) < 0.01 && st.w >= 0.0 && st.w <= 1.0;
+    let dt = clamp(fract(time - st.w), 0.001, 0.05);
+    let g = st.xy + (raw - st.xy) * (1.0 - exp(-rate * dt));
+    let snapped = select(g, raw, length(raw - g) < 0.003);   // exact at rest even through f16 rounding
+    return select(raw, snapped, ok);
+}
+
+// ── Rescue R2: engine FFT bins (extraBuffer[5 + bin], 0..1) ──────────
+// HEAD read plasmaBuffer[1..8].x per sector; the host never uploads those (always 0).
+fn fftBin(bin: u32) -> f32 {
+    let idx = 5u + min(bin, 127u);
+    return select(0.0, extraBuffer[min(idx, arrayLength(&extraBuffer) - 1u)], arrayLength(&extraBuffer) > idx);
+}
+// The 8 sector voices spread over the bins where the energy is: {0,1,2,4,7,11,19,32}.
+fn fftVoice(v: u32) -> f32 {
+    let lo = vec4<u32>(0u, 1u, 2u, 4u);
+    let hi = vec4<u32>(7u, 11u, 19u, 32u);
+    let k = v & 3u;
+    return fftBin(select(lo[k], hi[k], v >= 4u));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -69,36 +82,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let driftSpeed = u.zoom_params.z * (1.0 + mids * 0.5);
     let radiusParam = u.zoom_params.w * (1.0 + bass * 0.3);
 
-    // ─── Sprung flux center (critically-damped spring, zeta = 1) ───
-    // The raw cursor is only the spring TARGET; the influence zone trails
-    // it like a probability cloud that cannot collapse instantly.
-    // Persistent state in extraBuffer (engine reserves [0..4], FFT bins
-    // live in [5..132], shader state stays in [133..255]):
-    //   [133..134] sprung center, [135..136] spring velocity,
-    //   [137] init flag, [138] last integration time.
+    // ─── Gliding flux center (Rescue R1, rate 9 = HEAD omega) ───
+    // The raw cursor is only the glide TARGET; the influence zone trails it like a
+    // probability cloud that cannot collapse instantly. HEAD's critically-damped spring
+    // lived in extraBuffer[133..138], which the host re-uploads zeroed every frame, so
+    // the centre always sat on the raw cursor. The state now lives in A texel (0,0).
     let mouse = u.zoom_config.yz;
-    var fPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var fVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    let springInitialized = extraBuffer[137] >= 0.5;
-    if (!springInitialized) {
-        fPos = mouse;
-        fVel = vec2<f32>(0.0, 0.0);
-    }
-    let dt = select(0.0, clamp(time - extraBuffer[138], 0.0005, 0.05), springInitialized);
-    let omega = 9.0;
-    let fAcc = omega * omega * (mouse - fPos) - 2.0 * omega * fVel;
-    fVel = fVel + fAcc * dt;
-    fPos = fPos + fVel * dt;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = fPos.x;
-        extraBuffer[134] = fPos.y;
-        extraBuffer[135] = fVel.x;
-        extraBuffer[136] = fVel.y;
-        extraBuffer[137] = 1.0;
-        extraBuffer[138] = time;
-    }
-    // All pixels use the same locally integrated center for this frame.
-    let fluxCenter = fPos;
+    let glideState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let fluxCenter = glideStep(glideState, mouse, time, 9.0);
 
     let aspect = resolution.x / resolution.y;
     let uvCorrected = vec2<f32>(uv.x * aspect, uv.y);
@@ -109,14 +100,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let influence = smoothstep(influenceRadius, 0.0, dist);
 
     // ─── Per-sector FFT voices ───
-    // The influence zone is sliced into 8 angular sectors around the sprung
+    // The influence zone is sliced into 8 angular sectors around the glided
     // center; each wedge's jitter magnitude rides its own FFT bin, so
     // different directions vibrate to different frequencies.
     let delta = uvCorrected - mouseCorrected;
     let angle = atan2(delta.y, delta.x);
     let sectorF = floor((angle + 3.14159265) / 6.2831853 * 8.0);
     let sector = u32(sectorF) % 8u;
-    let sectorVoice = plasmaBuffer[(sector % 8u) + 1u].x * 0.3;
+    // Rescue R2: sector -> engine FFT bin (extraBuffer[5 + bin]) instead of plasmaBuffer[1..8].
+    let sectorVoice = fftVoice(sector) * 0.3;
 
     // ─── Click decoherence bursts ───
     // Each live ripple (a click) spikes the jitter locally at its click
@@ -136,15 +128,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    // Local jitter magnitude: slider base, voiced by this wedge's FFT bin,
-    // spiked by click decoherence bursts.
-    let jitterAmount = jitterBase * (1.0 + sectorVoice) + clickBurst;
+    // The radial standing-wave phase (kept from HEAD's `wave`), shared with Idea 1.
+    let phi = dist * (freq * 50.0) - time * 5.0;
+
+    // ── Idea 1: radial probability shells (jitter x psi^2) ───────────────
+    // HEAD's jitter amplitude was flat inside the cloud, but a probability density
+    // has structure. The wave phase phi is a standing wave; psi^2 = sin^2(phi) is its
+    // density. Uncertainty (jitter + split) piles into the antinode shells, which
+    // travel outward with the wave, and the photo is crisp at the nodes. The
+    // weight 0.35 + 1.3 sin^2(phi) has mean 1.0, so the default strength is kept.
+    // At Wave Freq -> 0 there are no spatial shells, so the weight fades to 1.
+    let psi = sin(phi);
+    let shell = mix(1.0, 0.35 + 1.3 * psi * psi, smoothstep(0.0, 0.08, freq));
+
+    // Local jitter magnitude: slider base, voiced by this wedge's FFT bin and
+    // shaped by the probability shells, spiked by click decoherence bursts
+    // (the bursts sit at the click point, not on the shells, so they stay unweighted).
+    let jitterAmount = jitterBase * (1.0 + sectorVoice) * shell + clickBurst;
 
     let seed = uv + vec2<f32>(time * 0.1, time * 0.1);
     let noiseX = (rand(seed) - 0.5) * 2.0;
     let noiseY = (rand(seed + vec2<f32>(1.0, 1.0)) - 0.5) * 2.0;
     let jitter = vec2<f32>(noiseX, noiseY) * jitterAmount * 0.05 * influence;
-    let wave = sin(dist * (freq * 50.0) - time * 5.0) * 0.02 * influence;
+    let wave = psi * 0.02 * influence;
 
     let split = jitterAmount * 0.02 * influence;
     let uvR = clamp(uv + jitter + vec2<f32>(wave + split, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -161,6 +167,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Hue drift (branchless via mix on influence)
     var hsv = rgb2hsv(color);
     hsv.x = fract(hsv.x + (time * driftSpeed * 0.5) + (dist * 2.0));
+    // ── Idea 2: quantum-jump hue ─────────────────────────────────────────
+    // A quantum system's colour is quantised, but HEAD's hue drift was continuous.
+    // The drifted hue is snapped to 6 energy levels with a fast smoothstep between
+    // them: plateau-then-jump hue steps over time, and (through the existing
+    // dist * 2 term) concentric hue shells around the flux centre. Drift Speed keeps
+    // its role (how fast the levels advance, and the mask below).
+    let hueL = hsv.x * 6.0;
+    hsv.x = fract((floor(hueL) + smoothstep(0.78, 1.0, fract(hueL))) / 6.0);
     hsv.y = min(1.0, hsv.y + influence * 0.2);
     let driftedColor = hsv2rgb(hsv);
     let driftMask = clamp(driftSpeed * 10.0, 0.0, 1.0) * smoothstep(0.0, 0.01, influence);
@@ -178,5 +192,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, coord, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(color, alpha));
+    // dataTextureA = display RGBA, except texel (0,0): cursor-glide state (Rescue R1).
+    // The display pixel at (0,0) still goes to writeTexture above.
+    var aOut = vec4<f32>(color, alpha);
+    if (global_id.x == 0u && global_id.y == 0u) {
+        aOut = vec4<f32>(fluxCenter, GLIDE_MARK, fract(time));
+    }
+    textureStore(dataTextureA, coord, aOut);
 }
