@@ -2,7 +2,7 @@
   "id": "sim-decay-system-rgba",
   "name": "Sim: Decay System RGBA",
   "url": "shaders/sim-decay-system-rgba.wgsl",
-  "description": "Four-layer material decay simulation with cross-coupling. Paint integrity, metal corrosion, organic rot, and structural integrity each decay at different rates. When one layer fails, others decay faster. Mouse interaction can restore/repair.",
+  "description": "Four-layer material decay sim — paint peels and blisters, metal rusts and bleeds, rot drips down into tide-line water stains, structure fails; click or hold to restore.",
   "tags": [
     "simulation",
     "decay",

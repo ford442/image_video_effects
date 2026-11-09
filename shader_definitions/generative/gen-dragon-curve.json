@@ -11,7 +11,7 @@
     "abstract",
     "colorful"
   ],
-  "description": "Heighway dragon curve — a space-filling fractal created by repeatedly folding a strip of paper in half. Rendered as a glowing neon filament with iteration-depth coloring from red to violet, upgraded with thin-film iridescence, a warm-key / cool-fill two-temperature glow rig, split-tone grading, atmospheric depth haze, and ACES tone mapping. Audio drives fold depth and FFT-shimmered halo, mouse zooms into detail, and depth controls line thickness perspective.",
+  "description": "Heighway dragon curve — a folded paper strip rendered as a glowing neon filament with thin-film iridescence and a warm/cool glow rig. The strip unrolls along the curve with a hinge flare at its tip, beside its 180° twin dragon.",
   "workgroup_size": [
     16,
     16,

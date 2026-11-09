@@ -11,7 +11,7 @@
     "mouse-driven",
     "chromatic"
   ],
-  "description": "A broadcast studio control room aesthetic with live video preview, audio VU meters, waveform scopes, vector scopes, scanlines, chromatic separation, and a blinking LIVE indicator.",
+  "description": "A broadcast control-room overlay: video preview, VU meters, waveform and vector scopes, scanlines and a blinking LIVE tally. A running HH:MM:SS:FF timecode, a lower-third strap that wipes in, and tape-dropout tears on bass hits.",
   "workgroup_size": [
     16,
     16,

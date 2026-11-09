@@ -4,7 +4,8 @@
 //  Features: mouse-driven, held-drag, bounded-click-ripples, audio-reactive,
 //            per-band-fft, blackbody, plasma-arcs, thermal-diffusion,
 //            depth-aware, upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 60)
+//  Upgraded: 2026-11-09 (opus/batch-23)
+//  Ideas: cell-to-cell conduction, arc breakdown toward hottest neighbour
 // ═══════════════════════════════════════════════════════════════════════════════
 //  BUG FIXED IN THIS PASS — the shader was catalogued `mouse-driven` but never
 //  read the mouse. `zoom_config` appeared exactly once in the file: in the
@@ -109,7 +110,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // array behaves like a filament spectrum analyser instead of one grid all
     // pulsing together.
     let bandIdx = u32(h.x * 8.0) % 8u;
-    let band = plasmaBuffer[bandIdx + 1u].x;
+    // RESCUE: plasmaBuffer[1..8] is never uploaded (only index 0), so every
+    // band read 0 and ownership was dead. Synthesise eight bins from the
+    // uploaded bass/mid/treble: bins 0-2 bass→mid, 3-5 mid→treble, 6-7 treble.
+    let a0 = plasmaBuffer[0];
+    let bf = f32(bandIdx) / 7.0;
+    let band = mix(mix(a0.x, a0.y, saturate(bf * 2.0)), a0.z, saturate(bf * 2.0 - 1.0))
+             * (0.75 + 0.5 * fract(h.x * 8.0));
 
     let osc  = 0.5 + 0.5 * sin(time * (1.0 + h.x * 3.0 + band * 4.0) + h.y * 6.28318);
     let audioBoost = bass * audioHeat + mids * audioHeat * 0.3 + treble * audioHeat * 0.15
@@ -150,7 +157,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let radiative = 0.06 + 0.32 * t2 * t2;                  // ~T^4 cooling
     let heating = 0.55;
     let rate = select(radiative, heating, targetT > prevT);
-    let T = mix(prevT, targetT, clamp(rate, 0.02, 1.0));
+    var T = mix(prevT, targetT, clamp(rate, 0.02, 1.0));
+
+    // ── Idea 1: cell-to-cell conduction ──────────────────────────────────────
+    // Read the four neighbouring cells' centre temperatures from C and relax
+    // toward their mean, so heat bleeds across the array as walking fronts.
+    let cellPx = resolution.y / gridN;
+    let dirs = array<vec2<f32>, 4>(vec2<f32>(1.0, 0.0), vec2<f32>(-1.0, 0.0),
+                                   vec2<f32>(0.0, 1.0), vec2<f32>(0.0, -1.0));
+    var nSum = 0.0;
+    var hotT = 0.0;
+    var hotDir = vec2<f32>(1.0, 0.0);
+    for (var k = 0; k < 4; k = k + 1) {
+        let dk = dirs[k];
+        let cpx = (cell + dk + 0.5) * cellPx;
+        let cc = clamp(vec2<i32>(i32(cpx.x), i32(cpx.y)), vec2<i32>(0), dimsI - 1);
+        let nT = textureLoad(dataTextureC, cc, 0).r * 20000.0;
+        nSum += nT;
+        if (nT > hotT) { hotT = nT; hotDir = dk; }
+    }
+    let nMean = nSum * 0.25;
+    T = T + max(nMean - T, 0.0) * 0.12;
 
     // Distance from cell centre: multiple emission shapes
     let centre = vec2<f32>(0.5);
@@ -178,11 +205,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flicker = 0.85 + 0.15 * sin(time * (5.0 + h.x * 20.0) + h.y * 100.0);
     emitted *= flicker;
 
-    // Plasma arc: thin bright lines connecting neighbouring cells (high treble)
+    // ── Idea 2: arc breakdown toward the hottest neighbour ───────────────────
+    // When this cell and its hottest neighbour both pass breakdown, a
+    // jittering filament strikes from centre to that neighbour's centre
+    // (was an always-horizontal treble line in every cell).
+    let breakdownT = 7000.0;
+    let ionise = smoothstep(breakdownT, breakdownT + 3000.0, min(T, hotT));
     let arcUV  = frac - 0.5;
-    let arcLine = exp(-abs(arcUV.y) * 25.0 / max(treble * 0.5 + 0.1, 0.1));
-    let arcGlow = arcLine * treble * 0.4;
-    emitted += blackbody(18000.0) * arcGlow * h.x;
+    let along  = dot(arcUV, hotDir);
+    let perp   = dot(arcUV, vec2<f32>(-hotDir.y, hotDir.x));
+    let jitter = (sin(along * 31.0 + time * 23.0 + h.y * 40.0) * 0.6
+                + sin(along * 67.0 - time * 41.0) * 0.4) * 0.05 * smoothstep(0.0, 0.25, along) ;
+    let arcLine = exp(-abs(perp - jitter) * 40.0) * step(0.0, along) * step(along, 0.5);
+    let arcGlow = arcLine * ionise * (1.0 + treble * 1.5);
+    emitted += blackbody(18000.0) * arcGlow;
 
     // Read background for compositing with depth
     let bg    = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;

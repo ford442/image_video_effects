@@ -11,8 +11,14 @@
 //    - Analog hum-bar roll & treble-driven scanline jitter
 //    - Mouse curvature modulation + degauss wobble on click
 //
+//  Upgraded: 2026-11-09 (opus/batch-23)
+//  Ideas: P22 split-decay trails; beam halation bleed; phosphor burn-in ghost
+//  Rescue: degauss trigger lived in extraBuffer[133] (never persists) -> click
+//          was dead; trigger time now kept in dataTextureA texel (0,0).a.
+//          Mouse read zoom_config.xy as px (x is time) -> now .yz uv.
+//
 //  Audio contract (plasmaBuffer[0]): x=bass, y=mid, z=treble, w=level
-//  Mouse contract (zoom_config): xy=mouse pos (px), zw=mouse-down uv, w=down flag
+//  Mouse contract (zoom_config): yz=mouse uv, w=down flag
 //
 //  Target: 4.6★ rating
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -21,9 +27,8 @@
 
 const PI: f32 = 3.14159265359;
 
-// Persistent shader state lives in extraBuffer[133..255] only.
-// Slot 133: timestamp of the last degauss (mouse-down) trigger.
-const DEGAUSS_TIME_SLOT: u32 = 133u;
+// Persistent state: texel (0,0) of dataTextureA/.a holds the last degauss
+// trigger time (read back next frame through dataTextureC).
 // Never re-trigger a degauss more often than this (seconds).
 const DEGAUSS_RETRIGGER_GAP: f32 = 0.35;
 
@@ -154,18 +159,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trebleEnergy = clamp(spectrum.z, 0.0, 1.0);      // treble drives analog noise
 
     // ── Mouse state ──
-    let mouseUV = clamp(u.zoom_config.xy / max(resolution, vec2<f32>(1.0, 1.0)),
-                        vec2<f32>(0.0, 0.0), vec2<f32>(1.0, 1.0));
+    let mouseUV = clamp(u.zoom_config.yz, // fix: was zoom_config.xy/px (time/res -> curvature crept with time)
+                    vec2<f32>(0.0, 0.0), vec2<f32>(1.0, 1.0));
     let mouseDown = step(0.5, u.zoom_config.w);
 
-    // Degauss trigger bookkeeping (persistent state slot 133, written by thread 0)
-    if (global_id.x == 0u && global_id.y == 0u) {
-        let lastTrigger = extraBuffer[DEGAUSS_TIME_SLOT];
-        if (mouseDown > 0.5 && time - lastTrigger > DEGAUSS_RETRIGGER_GAP) {
-            extraBuffer[DEGAUSS_TIME_SLOT] = time;
-        }
+    // Degauss trigger bookkeeping: every thread derives the same value from
+    // the state texel, thread (0,0) persists it into dataTextureA.a.
+    var lastTrigger = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).a;
+    if (lastTrigger > time + 0.5 || lastTrigger <= 1.0) { lastTrigger = -100.0; } // fresh / reset / sentinel
+    if (mouseDown > 0.5 && time - lastTrigger > DEGAUSS_RETRIGGER_GAP) {
+        lastTrigger = time;
     }
-    let degaussAge = max(time - extraBuffer[DEGAUSS_TIME_SLOT], 0.0);
+    let degaussAge = max(time - lastTrigger, 0.0);
 
     // ── Slider parameters (saved-preset contract: zoom_params.x/y/z/w) ──
     // param1 "Curvature"    -> barrel distortion strength
@@ -202,10 +207,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color *= interlaceFlicker(uv, time, flickerIntensity);
 
     // Temporal phosphor persistence — bass pumps the afterglow decay.
-    // Capped at 0.93 (max(current, prev*decay) cannot blow out; decay <= 0.95).
+    // Idea 1 — P22 split decay: each phosphor fades at its own rate
+    // (blue fastest, green longest), so moving light leaves green-amber trails.
+    // Every channel stays <= 0.95.
     let prevFrame = textureLoad(dataTextureC, coord, 0).rgb;
-    let decay = 0.85 + audioPulse * 0.08;
-    color = phosphorGlow(color, prevFrame, decay);
+    let decay = vec3<f32>(0.86, 0.93, 0.74) + audioPulse * vec3<f32>(0.06, 0.02, 0.1);
+    color = max(color, prevFrame * min(decay, vec3<f32>(0.95)));
+
+    // Idea 2 — Beam halation: bright beam energy from neighbouring columns
+    // of the previous frame bleeds sideways through the faceplate glass.
+    var halo = vec3<f32>(0.0);
+    let maxC = vec2<i32>(resolution) - vec2<i32>(1);
+    for (var k: i32 = 1; k <= 4; k = k + 1) {
+        let w = exp(-f32(k) * 0.6);
+        let l = textureLoad(dataTextureC, clamp(coord - vec2<i32>(k * 2, 0), vec2<i32>(0), maxC), 0).rgb;
+        let r = textureLoad(dataTextureC, clamp(coord + vec2<i32>(k * 2, 0), vec2<i32>(0), maxC), 0).rgb;
+        halo += (max(l - vec3<f32>(0.45), vec3<f32>(0.0)) + max(r - vec3<f32>(0.45), vec3<f32>(0.0))) * w;
+    }
+    color += halo * (0.35 + audioPulse * 0.3);
+
+    // Idea 3 — Phosphor burn-in: every texel's alpha integrates its own
+    // long-run luminance (~20 s), and that worn phosphor shows as a faint
+    // brown-amber ghost of whatever sat on screen — a degauss can't clear it.
+    let prevBurn = select(textureLoad(dataTextureC, coord, 0).a, 0.0, coord.x == 0 && coord.y == 0);
+    let burnPrev = select(prevBurn, 0.0, prevBurn > 1.0 || time < 0.1);
+    let burn = mix(burnPrev, dot(color, vec3<f32>(0.3, 0.55, 0.15)), 0.0015 + audioPulse * 0.002);
+    color = color * (1.0 - burn * 0.18) + vec3<f32>(0.55, 0.38, 0.18) * burn * 0.22;
 
     // Film grain
     color *= filmGrain(uv, time);
@@ -229,5 +256,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureStore(writeDepthTexture, coord, vec4<f32>(0.0, 0.0, 0.0, 1.0));
 
     // Store for persistence
-    textureStore(dataTextureA, coord, vec4<f32>(color, 1.0));
+    let stateA = select(clamp(burn, 0.0, 1.0), lastTrigger, coord.x == 0 && coord.y == 0);
+    textureStore(dataTextureA, coord, vec4<f32>(color, stateA));
 }

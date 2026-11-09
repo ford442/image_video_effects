@@ -1,5 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Scanline Wave — Batch 62
+//  Upgraded: 2026-11-09 (opus/batch-23)
+//  Ideas: phosphor triad decay, beam-current bloom, retrace ringing
 //  CRT phosphor aurora: spring cursor, held local distortion, capped
 //  click shockwaves, exact C envelope trail, ACES + premultiplied alpha.
 // ═══════════════════════════════════════════════════════════════════
@@ -90,32 +92,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let held = u.zoom_config.w > 0.5;
     let isMouseDown = select(u.zoom_config.w, 1.0, held);
 
-    var smoothMouse = mouse;
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[138] > 0.5) {
-      smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-      var springPos = smoothMouse;
-      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-      if (extraBuffer[138] <= 0.5) {
-        springPos = mouse;
-        springVel = vec2<f32>(0.0);
-      } else {
-        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-        let omega = 9.0;
-        let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-        springVel += accel * dt;
-        springPos += springVel * dt;
-      }
-      extraBuffer[133] = springPos.x;
-      extraBuffer[134] = springPos.y;
-      extraBuffer[135] = springVel.x;
-      extraBuffer[136] = springVel.y;
-      extraBuffer[137] = time;
-      extraBuffer[138] = 1.0;
-      smoothMouse = springPos;
-    }
+    // RESCUE: the extraBuffer 133..138 spring was never persisted (zeroed
+    // each frame) and raced against thread 0; use the cursor directly.
+    let smoothMouse = mouse;
 
     let bass   = plasmaBuffer[0].x;
     let mids   = plasmaBuffer[0].y;
@@ -157,7 +136,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Horizontal scanline warp with bass pulse
     let lissajous = sin(uv01.y * TAU * 5.0 - time * 3.2)
                    * cos(uv01.x * TAU * 3.0 + time * 2.1);
-    let offset = (sin(linePhase) + lissajous * 0.45 + clickWave * 0.8)
+    // Idea 3 — Retrace ringing: damped deflection overshoot as the beam
+    // starts each line at the left edge (lines alternate phase).
+    let lineParity = select(1.0, -1.0, fract(lineIdx * 0.5) > 0.25);
+    let ringing = exp(-uv01.x * 14.0) * sin(uv01.x * 90.0 + lineIdx * 0.7)
+                * lineParity * (0.6 + drive * 1.4);
+    let offset = (sin(linePhase) + lissajous * 0.45 + clickWave * 0.8 + ringing)
                * localWave * 0.02 * (1.0 + drive * 0.5);
     let waveUV = clamp(uv01 + vec2<f32>(offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
@@ -169,12 +153,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var crt = vec3<f32>(r, base.g, b);
 
     // Temporal persistence with audio-driven blend
-    let decay = persistence * 0.85 + 0.1;
-    let trail = mix(prev.rgb * decay, crt, 0.15 + isMouseDown * 0.2 + mouseBoost * 0.2 + drive * 0.15);
+    // Idea 1 — Phosphor triad decay: P22-style per-channel persistence,
+    // green phosphor lingers longest, blue dies fastest, so trails fringe.
+    let decay = (persistence * 0.85 + 0.1) * vec3<f32>(0.93, 1.0, 0.82);
+    let fresh = 0.15 + isMouseDown * 0.2 + mouseBoost * 0.2 + drive * 0.15;
+    let trail = mix(max(prev.rgb * decay, crt), crt, fresh);
 
     // Scanline intensity modulation in OkLab
     let scanline = sin(uv01.y * lineCount * PI) * 0.5 + 0.5;
-    let dimColor = trail * mix(1.0, 0.62, scanline * localWave);
+    // Idea 2 — Beam-current bloom: Gaussian beam per line whose width grows
+    // with the pixel's brightness, so bright content swells its scanlines.
+    let lineY = fract(uv01.y * lineCount) - 0.5;
+    let beamW = mix(0.16, 0.48, clamp(luma(trail), 0.0, 1.0));
+    let beam  = exp(-lineY * lineY / (2.0 * beamW * beamW));
+    let dimColor = trail * mix(1.0, beam * 1.15, clamp(0.35 + localWave * 0.6, 0.0, 1.0));
 
     // Audio vertical roll driven by smoothed bass
     let rollOffset = fract(uv01.y + drive * 0.05 * audioMix) - uv01.y;
@@ -216,7 +208,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bloomWeight = pow(max(0.0, lum - 0.55), 2.0) * 2.5;
     let effectAlpha = clamp(localWave * 0.25 + drive * 0.08 + bloomWeight, 0.0, 1.0);
 
-    textureStore(writeTexture, pixel, vec4<f32>(color * effectAlpha, effectAlpha));
-    textureStore(dataTextureA, pixel, vec4<f32>(color * effectAlpha, drive));
+    // RESCUE: colour was premultiplied by a ~0.27 alpha and re-read as the
+    // trail, compounding to black. Straight RGB out and as trail state.
+    color = max(color, vec3<f32>(0.0));
+    textureStore(writeTexture, pixel, vec4<f32>(color, max(effectAlpha, 0.5)));
+    textureStore(dataTextureA, pixel, vec4<f32>(color, drive));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

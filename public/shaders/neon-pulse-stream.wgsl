@@ -8,7 +8,8 @@
 //  Complexity: High
 //  Chunks From: curl2D, warpedFBM, bass_env, Fresnel-tube
 //  Created: 2026-05-23
-//  Upgraded: 2026-08-23 (Batch 56 — Turbulent Vortex)
+//  Upgraded: 2026-11-09
+//  Ideas: gas-column banding; comet-tail packets; junction arcs
 // ═══════════════════════════════════════════════════════════════════
 //  The previous version had a single scrolling band field: one `fract()` stripe
 //  across the whole frame, no pointer input, no click response, no read-back.
@@ -157,10 +158,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var coreMax = 0.0;
     var rimMax = 0.0;
     var packetMax = 0.0;
+    var coreSum = 0.0;
 
     for (var k = 0u; k < STREAMS; k = k + 1u) {
         let fk = f32(k);
-        let band = plasmaBuffer[(k % 8u) + 1u].x;
+        // Rescue: plasmaBuffer[1..8] is never uploaded (only [0]), so the
+        // per-tube band was always 0. Each tube now weights bass/mid/treble.
+        let wk = fk / f32(STREAMS - 1u);
+        let band = bass * (1.0 - wk) * (1.0 - wk) + mids * 2.0 * wk * (1.0 - wk) + treble * wk * wk;
 
         // Centreline: sinusoid + curl perturbation + pointer attraction.
         let freq = 1.2 + fk * 0.55;
@@ -183,12 +188,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Packets running along arc length; density sets their spacing.
         let s = advectUV.x * streamDensity * 0.35 - time * streamSpeed * (0.6 + band * 0.5) + phase;
         let pk = fract(s) - 0.5;
-        let packet = exp(-pk * pk * 42.0) * exp(-nd * nd * 0.6);
+        // Idea 2: comet-tail packets — a sharp head with an exponential tail
+        // trailing behind the direction of travel (packets move toward +s).
+        let tail = select(exp(-pk * pk * 42.0), exp(pk * 7.0), pk < 0.0);
+        let packet = max(exp(-pk * pk * 42.0), tail * 0.55) * exp(-nd * nd * 0.6);
+        // Idea 1: gas-column banding — standing bright/dark bands along the
+        // core like a real neon column; packets push them forward.
+        let stri = 0.65 + 0.35 * sin(advectUV.x * TAU * (18.0 + fk * 4.0) - time * streamSpeed * 2.0 + packet * 3.0);
 
         let hue = fk * 0.17 + time * 0.03 + band * 0.25 + bass * 0.08;
         let tint = palette(hue);
 
-        streamColor += tint * (core * 1.5 + rim * 1.1 + bloom) * depthFade;
+        streamColor += tint * (core * 1.5 * stri + rim * 1.1 + bloom) * depthFade;
+        coreSum += core;
         streamColor += tint * packet * (1.4 + treble * 1.6);
 
         coreMax = max(coreMax, core);
@@ -196,7 +208,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         packetMax = max(packetMax, packet);
     }
 
-    let tubeMask = clamp(coreMax + rimMax * 0.6 + packetMax * 0.8, 0.0, 1.0);
+    // Idea 3: junction arcs — where two tubes cross (core sum exceeds the
+    // brightest core) a white-hot flickering arc jumps between them.
+    let junction = clamp(coreSum - coreMax, 0.0, 1.0);
+    let arcFlick = 0.6 + 0.4 * hash21(vec2<f32>(floor(time * 24.0), floor(uv.x * 40.0)));
+    streamColor += vec3<f32>(0.9, 0.95, 1.0) * junction * arcFlick * (1.6 + bass * 1.5);
+
+    let tubeMask = clamp(coreMax + rimMax * 0.6 + packetMax * 0.8 + junction * 0.5, 0.0, 1.0);
 
     // ── Plate, with chromatic split proportional to tube rim energy ──────────
     let ca = (0.0015 + treble * 0.005) * (rimMax + clickFlare);

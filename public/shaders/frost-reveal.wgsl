@@ -8,6 +8,8 @@
 //  upgraded-rgba
 //  Unique idea: dendritic ice crystals with hexagonal 6-fold symmetry that branch
 //  from nucleation points and grow inward from cold screen edges (real window frost).
+//  Upgraded: 2026-11-09
+//  Ideas: Meltwater Run-Off, Regrowth Rime Fringe, Condensation Beads
 // ═══════════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -147,6 +149,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Read previous mask state — exact load (dataTextureC is rgba32float).
     let prevState = textureLoad(dataTextureC, coord, 0);
     let prev_mask = prevState.r;
+    let dimsM = dimsI - vec2<i32>(1);
+    // Neighbour mask taps for the rime fringe (gradient of last frame's frost).
+    let mR = textureLoad(dataTextureC, clamp(coord + vec2<i32>(2, 0), vec2<i32>(0), dimsM), 0).r;
+    let mL = textureLoad(dataTextureC, clamp(coord - vec2<i32>(2, 0), vec2<i32>(0), dimsM), 0).r;
+    let mD = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 2), vec2<i32>(0), dimsM), 0).r;
+    let mU = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 2), vec2<i32>(0), dimsM), 0).r;
 
     var mask = prev_mask;
 
@@ -174,6 +182,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     burstFlash = min(burstFlash, 1.5);
     mask = mix(mask, 0.0, clickMelt);
 
+    // ── Idea 1: Meltwater Run-Off ────────────────────────────────────────────
+    // Melted frost becomes water (A.a) that runs straight down the pane one
+    // texel-row per frame along hashed rivulet columns, slowly evaporating.
+    // Wet glass refuses to refreeze, so drips carve clear trails through the ice.
+    let colId = floor(f32(coord.x) / 3.0);
+    let rivulet = step(0.72, hash12(vec2<f32>(colId, 17.0)));
+    let dripStep = 1 + i32(hash12(vec2<f32>(colId, 5.0)) * 2.0);  // 1–2 px/frame
+    let wetAbove = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, dripStep), vec2<i32>(0), dimsM), 0).a;
+    let wetSource = max(melt, clickMelt);  // the melt footprint is wet glass
+    let wet = clamp(max(wetSource * rivulet, wetAbove * rivulet * (0.994 - treble * 0.004)), 0.0, 1.0);
+    mask = min(mask, 1.0 - wet * 0.92);
+
     // ── FAST MOTION 1: crystallisation wavefronts ────────────────────────────
     // Nucleation sweeps inward from the frame edges at a clamped analytic rate;
     // frost only advances where the front has already passed.
@@ -188,7 +208,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let maskVel = clamp(abs(mask - prev_mask) * 40.0, 0.0, 1.0);
 
     // A carries the FROST MASK state (r = mask, g = velocity for the streaks).
-    textureStore(dataTextureA, coord, vec4<f32>(mask, maskVel, burstFlash, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(mask, maskVel, burstFlash, wet));
 
     // Generate Frost Visuals
     let frost_pattern = fbm(uv * 10.0 + vec2<f32>(0.0, 0.0)); // Static pattern
@@ -208,7 +228,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let offset = (vec2<f32>(frost_pattern, frost_detail) - 0.5) * distortion_amt * mask;
     let distorted_uv = uv + offset;
 
-    let clear_color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    // ── Idea 3: Condensation Beads ───────────────────────────────────────────
+    // In the half-melted band (and along wet trails) the glass fogs into a field
+    // of tiny water beads; each bead is a little lens that magnifies the view.
+    let beadG = uv * vec2<f32>(aspect, 1.0) * 46.0;
+    let beadCell = floor(beadG);
+    let beadC = beadCell + 0.5 + (vec2<f32>(hash12(beadCell), hash12(beadCell + 9.3)) - 0.5) * 0.5;
+    let beadR = 0.18 + hash12(beadCell + 4.1) * 0.22;
+    let beadD = beadG - beadC;
+    let beadIn = 1.0 - smoothstep(beadR * 0.85, beadR, length(beadD));
+    let beadZone = clamp(smoothstep(0.05, 0.3, mask) * smoothstep(0.85, 0.45, mask) + wet * 0.8, 0.0, 1.0);
+    let bead = beadIn * beadZone * step(0.35, hash12(beadCell + 2.2));
+    let beadUV = uv - beadD / (vec2<f32>(aspect, 1.0) * 46.0) * 0.9 * bead;
+    let clear_color = textureSampleLevel(readTexture, u_sampler, beadUV, 0.0);
 
     // ── FAST MOTION 2: radial shatter streaks ────────────────────────────────
     // Integrate the refracted sample along a radial direction whose length
@@ -246,10 +278,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Click light-bursts flash the ferns full-spectrum.
     final_rgb += spectrum(fract(iceHue + 0.5)) * burstFlash * (0.8 + bass * 0.9);
 
+    // Bead specular: a tiny highlight up-left in each bead, dark meniscus rim.
+    let beadSpec = exp(-dot(beadD + vec2<f32>(0.3, 0.3) * beadR, beadD + vec2<f32>(0.3, 0.3) * beadR) / (beadR * beadR * 0.04));
+    let beadRim = smoothstep(beadR * 0.6, beadR * 0.95, length(beadD)) * beadIn;
+    final_rgb = final_rgb * (1.0 - beadRim * bead * 0.35) + vec3<f32>(0.9, 0.95, 1.0) * beadSpec * bead * 0.6;
+
+    // ── Idea 2: Regrowth Rime Fringe ─────────────────────────────────────────
+    // Where the frost edge is moving, ice re-nucleates as a bright feathered
+    // ridge of rime along the mask boundary, broken up by the dendrite pattern.
+    let maskGrad = length(vec2<f32>(mR - mL, mD - mU));
+    let rime = smoothstep(0.03, 0.25, maskGrad) * (0.45 + crystal * 1.2 + frost_detail * 0.5) * max_opacity;
+    final_rgb = mix(final_rgb, vec3<f32>(0.93, 0.97, 1.0) * (1.1 + treble * 0.4), clamp(rime, 0.0, 0.9));
+
     final_rgb = acesFilm(final_rgb);
 
     // Semantic alpha: frost coverage is the content.
-    let alpha = clamp(mix(clear_color.a, 1.0, visibility) + burstFlash * 0.25, 0.0, 1.0);
+    let alpha = clamp(mix(clear_color.a, 1.0, visibility) + burstFlash * 0.25 + rime * 0.5, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(final_rgb, alpha));
 

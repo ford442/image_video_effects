@@ -2,7 +2,7 @@
   "id": "scanline-wave",
   "name": "Scanline Wave",
   "url": "shaders/scanline-wave.wgsl",
-  "description": "CRT phosphor aurora with sprung cursor, held local distortion, capped click shockwaves, exact C bass-envelope trail, ACES premultiplied alpha. Preserves [premultipliedRGB, drive] A packing.",
+  "description": "CRT scanlines that wave with the bass: chromatic beam split, per-channel phosphor decay trails, beam-current bloom that swells bright lines, retrace ringing at the left edge, and Lissajous aurora bands.",
   "workgroup_size": [
     16,
     16,
@@ -19,12 +19,13 @@
     "HDR-color-grading",
     "ACES-tone-map",
     "IGN-dither",
-    "premultiplied-alpha",
     "phosphor-aurora",
     "lissajous-bands",
     "bounded-click-ripples",
-    "spring-cursor",
-    "held-drag"
+    "held-drag",
+    "phosphor-decay",
+    "beam-bloom",
+    "retrace-ringing"
   ],
   "updated": true,
   "params": [
