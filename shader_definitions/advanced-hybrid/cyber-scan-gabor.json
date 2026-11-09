@@ -2,7 +2,7 @@
   "id": "cyber-scan-gabor",
   "name": "Cyber Scan Gabor",
   "url": "shaders/cyber-scan-gabor.wgsl",
-  "description": "Catalog entry for Cyber Scan Gabor.",
+  "description": "Cursor-row scan band that runs a Gabor filter bank: orientation-hued sheen, needle glyphs along the dominant stripe direction, null-cross tints and phosphor afterglow.",
   "tags": [
     "cyber-scan",
     "gabor-filter-bank",
@@ -13,7 +13,9 @@
     "cyber-scan",
     "gabor-filter-bank",
     "advanced-convolution",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

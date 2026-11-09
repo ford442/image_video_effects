@@ -2,7 +2,7 @@
   "id": "vortex-prism",
   "name": "Vortex Prism",
   "url": "shaders/vortex-prism.wgsl",
-  "description": "Twists the image around a precessing eye at the cursor, fanning colors into rainbow arcs that wind into two spiral arms, edged by a spectral dispersion rim.",
+  "description": "Twists the image around the mouse cursor, fanning colors into smooth rainbow arcs like a prism. Smoothness sets a calm Rankine eye, shear caustics streak the outer band, and bass tightens the twist.",
   "params": [
     {
       "id": "twist",

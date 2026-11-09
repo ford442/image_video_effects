@@ -3,15 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-11-09
-//  Ideas: phase fringes of the first wavefunction; photo pulled by the second phase; nodal lines; tunnelling halo; measurement collapse
+//  Upgraded: 2026-10-16
+//  Ideas: phase fringes of the first wavefunction; photo pulled by the second phase
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
-
-// Idea 4 helper: normalised escape iteration of the last quantumFractal call.
-var<private> g_escape: f32 = 1.0;
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -40,7 +37,6 @@ fn waveFunctionMagnitude(wf: WaveFunction) -> f32 {
 fn quantumFractal(z_in: vec2<f32>, c: vec2<f32>, maxIter: u32, time: f32, zoom_params_w: f32) -> WaveFunction {
   var psi = WaveFunction(z_in.x, z_in.y);
   var potential = WaveFunction(0.0, 0.0);
-  g_escape = 1.0;
   
   for (var i = 0u; i < maxIter; i = i + 1u) {
     // Schrödinger evolution step
@@ -64,18 +60,11 @@ fn quantumFractal(z_in: vec2<f32>, c: vec2<f32>, maxIter: u32, time: f32, zoom_p
     
     // Escape condition with quantum uncertainty
     if (waveFunctionMagnitude(psi) > 4.0 + sin(time * 0.1 * zoom_params_w) * 0.5) {
-      g_escape = f32(i) / f32(maxIter);
       break;
     }
   }
   
   return potential;
-}
-
-// Screen-space width estimate without derivatives (compute stage): a fixed
-// fraction of the local value scale keeps the seam ~1–2 px wide.
-fn fwidthFree(v: f32) -> f32 {
-  return 0.015 + abs(v) * 0.01;
 }
 
 fn colormap(t: f32) -> vec3<f32> {
@@ -107,8 +96,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let entanglementStrength = u.zoom_params.z; // Default ~1.0
   let zoom_params_w = u.zoom_params.w; // Edge glow / animation speed
   
-  // RESCUE: slider is 0..1, so u32(max(10, slider)) was always 10 (dead).
-  let maxIter = u32(mix(10.0, 90.0, clamp(iterParam, 0.0, 1.0)));
+  let maxIter = u32(max(10.0, iterParam));
 
   // Animate fractal center
   var center = vec2<f32>(
@@ -141,7 +129,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Calculate primary quantum fractal
   let psi1 = quantumFractal(z, c1, maxIter, time, zoom_params_w);
   let mag1 = waveFunctionMagnitude(psi1);
-  let escape1 = g_escape;
   
   // Secondary entangled fractal with phase shift
   let phaseShift = vec2<f32>(sin(time * 0.5 * zoom_params_w), cos(time * 0.5 * zoom_params_w)) * 0.1;
@@ -189,42 +176,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fringeMix = clamp(fringe * (0.28 + treble * 0.12 + decoherence), 0.0, 1.0);
   color = mix(color, color * vec3<f32>(0.72, 0.88, 1.2), fringeMix);
 
-  // Idea 3 — nodal lines: thin dark seams where the two magnitudes cancel.
-  let nodeW = fwidthFree(mag1 - mag2);
-  let nodal = 1.0 - smoothstep(0.0, nodeW, abs(mag1 - mag2));
-  color = color * (1.0 - 0.55 * nodal);
-
-  // Idea 4 — tunnelling halo: late-escaping orbits (near the set boundary,
-  // escape1 → 1 but < 1) glow violet-white; Edge Glow scales it.
-  let late = smoothstep(0.25, 0.9, escape1) * (1.0 - step(0.999, escape1));
-  color = color + vec3<f32>(0.75, 0.6, 1.0) * late * (0.25 + zoom_params_w * 0.9);
-
   // Mix with source image (instead of feedback) to ground it
   color = mix(color, src, 0.2 + bass * 0.04);
   
   // Output with HDR for glow effects
-  // RESCUE: ×1.5 pushed the ~0.5..1 palette into ACES' shoulder → pastel
-  // wash (HEAD stdL 0.06). ×0.9 keeps the palette saturated.
-  color = color * (0.9 + sin(time * 0.5 * zoom_params_w) * 0.12);
+  color = color * (1.5 + sin(time * 0.5 * zoom_params_w) * 0.2);
   
   // Add infinite regression effect (Simulated by sampling source at different scale)
   let regressUV = fract(uv * exp(sin(time * 0.1 * zoom_params_w) * 0.5) + time * 0.01 * zoom_params_w);
   let regress = textureSampleLevel(readTexture, u_sampler, regressUV, 0.0).rgb * 0.1;
   color = color + regress;
   
-  // Idea 5 — measurement collapse: a disk around the pointer collapses the
-  // superposition to the plain photo, edged by a bright fringed rim.
-  let pd = (uv - clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0))) * vec2<f32>(aspect, 1.0);
-  let collapseR = 0.09 * (1.0 + bass * 0.6);
-  let pl = length(pd);
-  // Gated on mouse down (zoom_config.w): the idle pointer parks at centre.
-  let held = step(0.5, u.zoom_config.w);
-  let inside = (1.0 - smoothstep(collapseR * 0.85, collapseR, pl)) * held;
-  let rimX = (pl - collapseR) / (collapseR * 0.12);
-  let rimGlow = exp(-rimX * rimX) * (0.6 + 0.4 * cos(phase1 * 4.0)) * held;
-  color = mix(color, textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, inside);
-  color = color + vec3<f32>(0.6, 0.8, 1.1) * rimGlow * 0.5;
-
   let alpha = clamp(0.35 + fringe * 0.25 + clamp(probability, 0.0, 1.0) * 0.3 + entanglementStrength * 0.1, 0.0, 1.0);
   let display = aces(max(color, vec3<f32>(0.0)));
   let pixel = vec2<i32>(global_id.xy);

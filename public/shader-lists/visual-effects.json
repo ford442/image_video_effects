@@ -958,7 +958,8 @@
       "particles",
       "glow"
     ],
-    "name": "Data Scanner"
+    "name": "Data Scanner",
+    "description": "Racing scan fronts analyse the image into voronoi data blocks, with per-row readout ticks and a decaying decode wake behind the lead front."
   },
   {
     "id": "elastic-chromatic",

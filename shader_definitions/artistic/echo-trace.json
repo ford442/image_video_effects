@@ -2,7 +2,7 @@
   "id": "echo-trace",
   "name": "Temporal Velocity Echo",
   "url": "shaders/echo-trace.wgsl",
-  "description": "Kalman-filtered cursor paints advected image echoes: lag ghosts behind the motion, dashed prediction trails, a 2σ uncertainty ellipse, and echoes that redshift as they age.",
+  "description": "4D Kalman mouse estimator with covariance-driven Mahalanobis dashed trails, held brush tightening, capped click spark echoes, oil-slick psychedelic tint, exact-load C feedback, and ACES display. Kalman state lives in extraBuffer[133..141].",
   "updated": true,
   "params": [
     {
@@ -36,14 +36,20 @@
   ],
   "features": [
     "mouse-driven",
-    "click-reactive",
     "temporal-persistence",
     "audio-reactive",
     "structure-tensor",
     "flow-advection",
+    "multi-octave-echo",
     "velocity-sensing",
+    "predictive-echo",
     "feedback-displacement",
     "kalman-filter",
+    "mahalanobis-trails",
+    "held-brush-tighten",
+    "bounded-click-sparks",
+    "oil-slick-trails",
+    "exact-history-advection",
     "aces-tone-mapping",
     "upgraded-rgba"
   ],
