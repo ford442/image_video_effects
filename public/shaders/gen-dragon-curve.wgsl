@@ -2,8 +2,8 @@
 //  Heighway Dragon Curve
 //  Category: generative
 //  Features: upgraded-rgba, mouse-driven, audio-reactive, temporal
-//  Upgraded: 2026-10-10
-//  Ideas: paper crease at closest fold; generation thickness (early segments thicker); paper selvedge; fold-generation bands
+//  Upgraded: 2026-11-09 (2nd pass; 1st 2026-10-10)
+//  Ideas: paper crease at closest fold; generation thickness (early segments thicker); paper selvedge; fold-generation bands; Unrolling Strip Tip; Twin Dragon Tiling
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 const PI=3.14159265358979323846; const TAU=6.28318530717958647692;
@@ -119,7 +119,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let aspect = f32(dims.x) / max(f32(dims.y), 1.0);
     let mp = (mouse - 0.5) * vec2<f32>(aspect, 1.0) * 0.45 * held;
-    var p = ((uv - 0.5) * vec2<f32>(aspect, 1.0) - mp) * zoom * 40.0 + vec2<f32>(16.0, 8.0);
+    // HEAD bug (blank, alpha 0): p was scaled ×40 around (16,8) — unit-segment space —
+    // while the curve is built from 0.08-length segments, so the whole dragon sat in
+    // a sub-pixel corner. Work in segment space: ~×40×0.05 = ×1.9 around the curve centroid (the old (16,8) also put the kaleido pivot off the curve).
+    let curveC = vec2<f32>(0.52, 0.20);  // centroid of the 256-segment dragon
+    var p = ((uv - 0.5) * vec2<f32>(aspect, 1.0) - mp) * zoom * 1.9 + curveC;
 
     var clickEnergy = 0.0;
     var clickWarp = vec2<f32>(0.0);
@@ -135,12 +139,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         clickWarp += delta / max(rippleDistance, 0.001) * front;
     }
     clickEnergy = clamp(clickEnergy, 0.0, 1.0);
-    p += clickWarp * (1.4 + zoom * 0.35);
+    p += clickWarp * (1.4 + zoom * 0.35) * 0.08;
 
     // Kaleidoscope symmetry + Clifford strange-attractor warp
     let kSegs = mix(2.0, 8.0, sin(time * 0.28) * 0.5 + 0.5);
-    p = kaleido(p - vec2<f32>(16.0, 8.0), kSegs) + vec2<f32>(16.0, 8.0);
-    let cW = clifford(p * 0.05, 1.5 + time*0.03, -1.7, 1.3, -1.1) * 0.3 * sin(time*0.2);
+    p = kaleido(p - curveC, kSegs) + curveC;
+    let cW = clifford(p * 0.625, 1.5 + time*0.03, -1.7, 1.3, -1.1) * 0.024 * sin(time*0.2);
     p = p + cW;
 
     let maxSeg = u32(mix(256.0, 512.0, clamp(bass * 1.2, 0.0, 1.0)));
@@ -151,10 +155,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var minDist = 1e9;
     var closestIdx = 0u;
     var closestTurn = false;
+    // Idea: Twin Dragon Tiling — the same strip rotated 180° about the start
+    // point is the classic twin dragon; the two tile the plane edge to edge.
+    var twinDist = 1e9;
+    // Idea: Unrolling Strip Tip — the strip lays itself down along the curve
+    // (8 s cycle, bass pushes it), with a hot hinge glow at the leading tip.
+    let unroll = smoothstep(0.0, 0.8, fract(u.config.x / 8.0));
+    let visibleSeg = max(u32(f32(maxSeg) * clamp(unroll + bass * 0.15, 0.02, 1.0)), 1u);
+    var tipPos = vec2<f32>(0.0);
 
     for (var i = 0u; i < maxSeg; i = i + 1u) {
         let a = pos; pos = pos + dir; let b = pos;
-        let d = segDist(p, a, b);
+        // Not-yet-laid paper is a faint ghost: push it out by a few glow widths.
+        let ghost = select(0.0, glowWidth * 3.0, i >= visibleSeg);
+        let d = segDist(p, a, b) + ghost;
+        twinDist = min(twinDist, segDist(p, -a, -b) + ghost);
+        if (i + 1u == visibleSeg) { tipPos = b; }
         if d < minDist {
             minDist = d;
             closestIdx = i;
@@ -221,6 +237,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let genBand = fract(log2(f32(closestIdx) + 1.0));
     color *= 1.0 + (step(0.7, genBand) - 0.5) * 0.22 * saturate(coreGlow);
 
+    // Twin dragon: complementary hue, cool-fill only, so it reads as the
+    // second sheet of paper rather than a copy of the hero line.
+    let twinCore = exp(-twinDist / width) * 0.75 + exp(-twinDist / (width * 6.0)) * 0.3;
+    color += hsv2rgb(fract(hue + 0.5), 0.8, 1.0) * twinCore * coolFill * 1.1;
+    // Unrolling tip: hinge flare where the strip is still being laid down.
+    let tipD = length(p - tipPos);
+    let tipFlare = exp(-tipD / (width * 3.0)) * 2.2 + exp(-tipD / (width * 14.0)) * 0.4;
+    color += warmKey * tipFlare * (1.0 - step(0.999, unroll)) * (0.8 + bass * 0.6);
+
     // Chromatic aberration on tight folds
     let fold = select(0.0, 1.0, t1 != t2) * smoothstep(0.0, width * 3.0, coreGlow);
     color = vec3<f32>(color.r * (1.0 + fold * caAmt), color.g,
@@ -249,8 +274,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Depth controls line thickness perspective
     let curveDensity = exp(-minDist / (width * (1.0 + depth)));
-    let alpha = clamp(curveDensity * turnIntensity * (0.3 + depth * 0.7)
-      + clickEnergy * halo * 0.18, 0.0, 1.0);
+    let alpha = clamp(curveDensity * turnIntensity * (0.6 + depth * 0.4)
+      + halo * 0.6 + twinCore * 0.6 + clickEnergy * halo * 0.18, 0.0, 1.0);
 
     textureStore(writeTexture, coord, vec4<f32>(color, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(curveDensity * depth, 0.0, 0.0, 0.0));
