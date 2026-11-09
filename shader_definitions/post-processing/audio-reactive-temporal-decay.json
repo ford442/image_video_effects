@@ -3,7 +3,7 @@
   "name": "Audio Reactive Temporal Decay",
   "url": "shaders/audio-reactive-temporal-decay.wgsl",
   "category": "post-processing",
-  "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range, now enhanced with spectral visualization overlay, chromatic aberration on trails, multi-pass bloom on bright areas, anamorphic streaks, film grain, scanlines, color grading with lift/gamma/gain, and vignette. Low-band energy \u2192 long ghostly trails; high-band energy \u2192 fast fade with spectral color highlights.",
+  "description": "Feedback trail effect whose per-pixel decay rate is modulated by the energy of a selectable FFT frequency bin range, now enhanced with spectral visualization overlay, chromatic aberration on trails, multi-pass bloom on bright areas, row anamorphic streaks, per-channel spectral persistence, bass-pushed trails, film grain, scanlines, color grading with lift/gamma/gain, and vignette. Low-band energy \u2192 long ghostly trails; high-band energy \u2192 fast fade with spectral color highlights.",
   "tags": [
     "audio-reactive",
     "temporal",
@@ -24,7 +24,8 @@
     "scanlines",
     "color-grading",
     "anamorphic-streaks",
-    "vignette"
+    "vignette",
+    "upgraded-rgba"
   ],
   "params": [
     {

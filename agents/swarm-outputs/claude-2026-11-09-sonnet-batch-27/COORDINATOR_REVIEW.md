@@ -2,6 +2,9 @@
 
 Evidence is structural plus SwiftShader renders (see each `NOTES-*.md`). **No real-GPU visual QA is claimed.** Cards: `BRIEFS.md` (written before any WGSL; deviations are recorded below and in the per-fork notes, not silently).
 
+## Process note — PR #1654 merged mid-batch
+PR #1654 was merged by the repo owner at 08:02:52 UTC while fork B was still editing. `main` therefore received an unreviewed, **compile-valid WIP snapshot** of cyber-magnifier, multi-fractal-compositor-lens and interactive-fisheye (labelled `wip(...)` in history), plus the finished versions of the other 7 shaders. The reviewed final versions of those three, the regenerated lists / search index, the upgrade-ledger entries and this review land in the follow-up PR. Lesson: a labelled WIP push into an already ready-for-review PR can be merged as-is; hold unfinished files back until they are reviewed.
+
 ## Verdict per file (§9 checklist + §12.7 additions)
 
 | Shader | Card before diff | Each idea pointable | KEEP VERBATIM holds | Not ≥70 % boilerplate | No shared overlay | A packing matches C read | `params` byte-exact | Springs / ripples only if native | Naga + extraBuffer + dead sliders | Verdict |

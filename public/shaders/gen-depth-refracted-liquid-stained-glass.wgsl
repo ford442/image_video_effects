@@ -4,15 +4,19 @@
 //  Features: facet-refraction, depth-aware, chromatic-aberration, upgraded-rgba,
 //            temporal-rotation, audio-refraction, chromatic-edge-dispersion
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-11-09
 //  Ideas: leaded-came specular highlight along facet seams; depth-driven caustic
-//         focus glow where steep bevels concentrate the refraction; lead came structural lattice; solder joint nodes
+//         focus glow where steep bevels concentrate the refraction; lead came structural lattice; solder joint nodes;
+//         Beer-Lambert pigment absorption (§12.2F: path = deeper melt x oblique slope, so far/steep glass is richer and near/flat glass paler);
+//         antique-glass wisps (domain-warped streaks in folded photo space tint and thin/thicken each piece);
+//         grisaille trace line (dry-brush dark vitreous paint along the depth contours)
 //  A packing: A/C = final ACES display RGBA; exact stained-glass tint history
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
+const BL_REF_PATH: f32 = 0.65;     // Idea 5: mean melt path at the default look; absorption is expressed relative to it
 
 fn rot2D(angle: f32) -> mat2x2<f32> {
     let c = cos(angle);
@@ -33,6 +37,18 @@ fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+// Smooth value noise (Idea 6). Interpolated lattice, not per-block hash, so it stays smooth at any resolution.
+fn vnoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * (3.0 - 2.0 * f);
+    let a = hash12(i);
+    let b = hash12(i + vec2<f32>(1.0, 0.0));
+    let c = hash12(i + vec2<f32>(0.0, 1.0));
+    let d = hash12(i + vec2<f32>(1.0, 1.0));
+    return mix(mix(a, b, w.x), mix(c, d, w.x), w.y);
 }
 
 fn hue2rgb(h: f32) -> vec3<f32> {
@@ -174,16 +190,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // tessellated palette turn source depth into visible material structure.
     let fresnel = pow(1.0 - max(normal.z, 0.0), 4.0);
     let tileCell = floor(sample_uv * facetCount);
-    let materialHue = fract(hash12(tileCell) + floor((sourceAngle + drift) / angleStep) * 0.071 + mids * 0.08);
+    // ── Idea 6: antique-glass wisps ─────────────────────────────────────
+    // Hand-rolled cathedral glass is streaky: colour and thickness wander inside one piece. Domain-warped value
+    // noise in the FOLDED photo space (so the wisps mirror with the facets) nudges each piece's hue by +-0.10 and,
+    // below, its melt thickness by +-55 %. Second-order of the per-cell hue: constant per cell -> wispy per cell.
+    let wispWarp = vec2<f32>(vnoise(sample_uv * 2.3 + vec2<f32>(3.1, 7.7)), vnoise(sample_uv * 2.3 + vec2<f32>(11.4, 2.9)));
+    let wisp = vnoise(sample_uv * 5.0 + wispWarp * 2.0);
+    let materialHue = fract(hash12(tileCell) + floor((sourceAngle + drift) / angleStep) * 0.071 + mids * 0.08 + (wisp - 0.5) * 0.20);
     let glassTint = hue2rgb(materialHue) * mix(0.35, 0.85, chromaParam);
     let lighting = threePointLighting(normal);
     let ornament = ornamentSample(sample_uv, facetCount, drift);
     let film = thinFilmTint(normal.z, chromaParam + treble * 0.15);
     col = col * lighting * mix(vec3<f32>(1.0), glassTint + 0.45, 0.24 + chromaParam * 0.24);
+
+    // ── Idea 5: Beer-Lambert pigment absorption (§12.2F) ────────────────
+    // Coloured glass is an absorbing medium: T = exp(-sigma * L). sigma comes from the piece's own pigment hue
+    // (the channel the pigment passes has sigma 0), L is the melt path: deeper where the scene is farther (the same
+    // (1 - depth) axis that already scales the refraction), longer on oblique slopes (1 / cos), thicker inside a wisp.
+    // Relative to BL_REF_PATH so the default average stays near HEAD: far / steep glass richer and darker,
+    // near / flat glass paler.
+    let pigment = hue2rgb(materialHue);
+    let meltPath = (0.30 + 0.70 * (1.0 - depth_val)) * (0.45 + 1.1 * wisp) / max(normal.z, 0.35);
+    let pigmentSigma = (vec3<f32>(1.0) - pigment) * mix(0.35, 1.1, chromaParam);
+    col = col * clamp(exp(-pigmentSigma * (meltPath - BL_REF_PATH)), vec3<f32>(0.2), vec3<f32>(1.6));
     col += glassTint * (fresnel * (0.35 + treble * 0.25) + edgeFactor * (0.22 + bass * 0.18));
     col += mix(glassTint, film, 0.55) * ornament.y * (0.05 + chromaParam * 0.14);
     col += film * abs(clickWave) * (0.12 + treble * 0.18);
     col *= 1.0 - ornament.x * 0.18;
+
+    // ── Idea 7: grisaille trace line ────────────────────────────────────
+    // Painted glass carries dark vitreous-paint outlines that draw the picture's own contours. The depth slope
+    // (gradient per uv, normalised by the sampling radius so the Bevel slider only widens the line) is large only at
+    // object contours; paint it brown-black. Width rides the existing bevel radius.
+    let depthSlope = length(gradient / (2.0 * eps));
+    // A brush does not lay paint evenly: density wanders along the line (dry-brush), which also hides the
+    // depth-texel stair-stepping of a hard depth edge.
+    let paintDensity = 0.55 + 0.45 * vnoise(sample_uv * 70.0);
+    let grisaille = smoothstep(2.5, 8.0, depthSlope) * paintDensity;
+    // multiplicative, so the chromatic-edge fringe (the Chromatic slider) still tints the line instead of being overpainted
+    col = col * mix(vec3<f32>(1.0), vec3<f32>(0.26, 0.19, 0.14), grisaille * 0.85);
 
     let seamKey = max(dot(normal, normalize(vec3<f32>(0.55, 0.75, 0.8))), 0.0);
 
@@ -210,7 +255,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = mix(col, prevTint * 0.9, 0.04 + mids * 0.02);
 
     let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-    let materialCoverage = clamp(edgeFactor * 0.35 + fresnel * 0.3 + luma * 0.35 + abs(clickWave) * 0.12 + leadHighlight * 0.2 + causticStrength * 0.15, 0.0, 1.0);
+    let materialCoverage = clamp(edgeFactor * 0.35 + fresnel * 0.3 + luma * 0.35 + abs(clickWave) * 0.12 + leadHighlight * 0.2 + causticStrength * 0.15 + grisaille * 0.2, 0.0, 1.0);
     let alpha = max(sourceAlpha, materialCoverage);
 
     let reliefDepth = clamp(depth_val + edgeFactor * 0.1 + length(gradient) * mix(0.5, 2.0, bevelParam), 0.0, 1.0);

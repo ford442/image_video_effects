@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: column lead-char bloom; EM wiper skew
-//  A packing: ACES display RGBA in A
+//  Upgraded: 2026-11-09
+//  Ideas: column lead-char bloom; EM wiper skew; Lorentz glyph curl; wiper meniscus lens; ionisation glyph density
+//  A packing: ACES display RGBA in A; texel (0,0) = cursor state [mouse.xy, time, 0.777]
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 struct Fp128 {
   base: f32,
@@ -103,38 +84,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let wiperSize = u.zoom_params.w * 0.5 * select(1.0, 1.3, held);
 
   let rawMouse = u.zoom_config.yz;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  var mousePos = rawMouse;
+  // Rescue: extraBuffer springs are zeroed every frame; pointer velocity comes from
+  // the previous cursor stored in A texel (0,0) (sentinel alpha 0.777).
+  let mousePos = rawMouse;
   var mouseVel = vec2<f32>(0.0);
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-  }
-  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-    var springPos = mousePos;
-    var springVel = mouseVel;
-    if (extraBuffer[138] <= 0.5) {
-      springPos = rawMouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 9.0;
-      let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    mouseVel = springVel;
+  let cur = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  if (abs(cur.a - 0.777) < 0.002) {
+    let dtc = clamp(time - cur.z, 0.008, 0.1);
+    mouseVel = clamp((rawMouse - cur.xy) / dtc, vec2<f32>(-3.0), vec2<f32>(3.0));
   }
 
   let distVec = (uv - mousePos) * vec2<f32>(aspect, 1.0);
   let dist = length(distVec);
   let wiper = smoothstep(wiperSize, wiperSize * 0.8, dist);
+  // Idea 4 — wiper meniscus lens: thin water ring at the wiper rim refracts outward
+  let rimD = (dist - wiperSize * 0.9) / max(wiperSize * 0.12, 0.002);
+  let meniscus = exp(-rimD * rimD) * step(0.001, wiperSize);
+  let radial = select(vec2<f32>(0.0), distVec / max(dist, 1e-4) / vec2<f32>(aspect, 1.0), dist > 1e-4);
 
   let eField = electricField(uv, mousePos, chargeStrength);
   var totalE = eField;
@@ -173,14 +139,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
   blurredColor = blurredColor / f32(samples);
 
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let lensUV = clamp(uv - radial * meniscus * rimD * 0.012 * (1.0 + bass * 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
+  let baseColor = textureSampleLevel(readTexture, u_sampler, lensUV, 0.0).rgb;
   var finalColor = mix(baseColor, blurredColor, rainIntensity * 0.8);
   finalColor = mix(finalColor, mix(finalColor, prev.rgb * 0.88, 0.12), packet * 0.25);
 
   // Idea 2 — EM wiper skew: shear rain columns along local E-field from mouse velocity
   let emSkew = dot(mouseVel, fieldDir) * fieldMag * 12.0;
   let rainPhase = fp128_sum(fp128_mul(fp128(time), fp128(10.0 * rainIntensity)), fp128(fieldDir.x * fieldMag * 5.0));
-  let rainUV = uv * vec2<f32>(20.0, 2.0) + vec2<f32>(fieldDir.x * fieldMag * 5.0 + emSkew, fp128_val(rainPhase));
+  // Idea 3 — Lorentz glyph curl: v×B bends columns sideways around a moving charge
+  let lorentz = clamp(totalB * 0.04, -1.5, 1.5) * (1.0 - uv.y * 0.5);
+  let rainUV = uv * vec2<f32>(20.0, 2.0) + vec2<f32>(fieldDir.x * fieldMag * 5.0 + emSkew + lorentz, fp128_val(rainPhase));
   let colId = floor(rainUV.x);
   let colFrac = fract(rainUV.y);
   let rainNoise = hash12(vec2<f32>(colId, floor(rainUV.y)));
@@ -192,7 +161,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let headWrap = min(headDist, 1.0 - headDist);
   let leadBloom = exp(-headWrap * headWrap * 180.0) * (1.0 + smoothstep(0.08, 0.0, headWrap) * 2.5);
   let phosphorTail = exp(-max(headWrap - 0.02, 0.0) * 28.0) * smoothstep(0.35, 0.0, headWrap);
-  let glyphMask = smoothstep(0.88, 0.94, rainNoise) * rainIntensity * (1.0 - wiper);
+  // Idea 5 — ionisation glyph density: strong |E| (+treble) lowers the glyph threshold
+  let ion = clamp(fieldMag * 0.02, 0.0, 1.0) * (0.6 + treble * 0.6);
+  let gTh = 0.88 - ion * 0.3;
+  let glyphMask = smoothstep(gTh, gTh + 0.06, rainNoise) * rainIntensity * (1.0 - wiper);
   let drop = glyphMask * (leadBloom * 1.8 + phosphorTail * 0.55);
 
   let rainColor = hueShift(vec3<f32>(0.5, 0.7, 1.0), totalB * 2.0 + mids * 0.5);
@@ -207,15 +179,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let coreGlow = exp(-dist * dist * 400.0) * chargeStrength;
   finalColor += vec3<f32>(0.6, 0.9, 1.0) * coreGlow * fieldVis;
+  finalColor += vec3<f32>(0.7, 0.9, 1.0) * meniscus * (0.08 + max(rimD, 0.0) * 0.2);
 
-  let band = min(u32(uv.x * 8.0), 7u);
-  finalColor += vec3<f32>(0.04, 0.1, 0.14) * plasmaBuffer[band + 1u].x * fieldMag * 0.15;
 
-  finalColor = acesToneMap(finalColor);
+  finalColor = acesToneMap(max(finalColor, vec3<f32>(0.0)));
   let alpha = clamp(fieldMag * 0.35 + drop * 0.4 + leadBloom * glyphMask * 0.25 + packet * 0.2 + bass * 0.08, 0.06, 0.96);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
   textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
-  textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
+  if (pixel.x == 0 && pixel.y == 0) {
+    textureStore(dataTextureA, pixel, vec4<f32>(rawMouse, time, 0.777));
+  } else {
+    textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
+  }
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

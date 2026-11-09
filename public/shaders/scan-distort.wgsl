@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: sync-tear band (rows inside the glitch pulse slide along a sawtooth ramp and drag the stale row from C); DCT-basis garble (garbled blocks show hashed cosine basis patterns and the garbled set re-rolls with time); MV arrows from temporal gradient (per-block arrows along -grad(L)*(L-Lprev) from C, dots on still content)
+//  Upgraded: 2026-11-09
+//  Ideas: 4:2:0 chroma macroblock bleed (Cb/Cr averaged over 2x2 half-blocks, full-res luma); P-frame macroblock skip (still blocks freeze to C during glitch pulses); sync-tear band (rows inside the glitch pulse slide along a sawtooth ramp and drag the stale row from C); DCT-basis garble (garbled blocks show hashed cosine basis patterns and the garbled set re-rolls with time); MV arrows from temporal gradient (per-block arrows along -grad(L)*(L-Lprev) from C, dots on still content)
 //  A packing: pre-ACES linear display RGB + semantic alpha; C read back as that linear colour (feedback smear, tear-band stale rows, temporal-gradient flow)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -121,6 +121,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let isEdge = step(0.1, edgeDetect);
   color = mix(quantized, color, isEdge * 0.3);
 
+  // IDEA (2026-11-09) — 4:2:0 chroma macroblock bleed. Luma stays at full resolution while
+  // Cb/Cr come from the average of a 2x2 group of half-block cells, so colour spills across
+  // edges like a subsampled codec. Fewer quant levels -> coarser chroma cells.
+  let chromaCells = blockSize * mix(1.0, 2.0, u.zoom_params.y);
+  let cCell = (floor(uv * chromaCells) + 0.5) / chromaCells;
+  let cOff = 0.25 / chromaCells;
+  var cAvg = vec3<f32>(0.0);
+  cAvg += textureSampleLevel(readTexture, u_sampler, clamp(cCell + vec2<f32>(-cOff, -cOff), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  cAvg += textureSampleLevel(readTexture, u_sampler, clamp(cCell + vec2<f32>( cOff, -cOff), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  cAvg += textureSampleLevel(readTexture, u_sampler, clamp(cCell + vec2<f32>(-cOff,  cOff), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  cAvg += textureSampleLevel(readTexture, u_sampler, clamp(cCell + vec2<f32>( cOff,  cOff), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  cAvg *= 0.25;
+  let yFull = dot(color, LUMA);
+  let chromaBleed = yFull + (cAvg - vec3<f32>(dot(cAvg, LUMA)));
+  color = mix(color, max(chromaBleed, vec3<f32>(0.0)), 0.85);
+
   let edgeFactor = blockEdgeFactor(uv, blockSize);
   let edgeNoise = hash2(uv * 1000.0 + time) * 0.1;
   color = color * (1.0 - edgeFactor * 0.3) + vec3<f32>(edgeFactor * edgeNoise);
@@ -129,6 +145,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let blockIdx = floor(uv * blockSize);
   let blockUV = fract(uv * blockSize) - 0.5;
 
+  var blockStill = 0.0;
   if (mvVisibility > 0.01) {
     // IDEA 3 — MV arrows from a per-block temporal gradient. One-pixel Lucas-Kanade at the
     // block centre: spatial gradient from the source (4 taps), temporal difference against C
@@ -158,6 +175,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let headMask = smoothstep(0.09, 0.03, length(blockUV - tip)) * step(0.05, arrowLen);
     let dotMask = smoothstep(0.15, 0.1, length(blockUV));
     let arrowMask = max(dotMask, max(shaft, headMask) * step(0.05, arrowLen));
+    blockStill = 1.0 - smoothstep(0.02, 0.15, abs(dt));
     let mvColor = vec3<f32>(0.5 + flow.x * 0.125, 0.5 + flow.y * 0.125, 0.3);
     color = mix(color, mvColor, arrowMask * mvVisibility * 0.5);
   }
@@ -200,6 +218,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let stale = max(textureLoad(dataTextureC, vec2<i32>(staleX, coord.y), 0).rgb, vec3<f32>(0.0));
     let tearEdge = smoothstep(0.0, 0.02, bandT) * smoothstep(1.0, 0.98, bandT);
     color = mix(color, stale * (1.0 + ramp * 0.3), inBand * tearEdge * 0.9);
+
+    // IDEA (2026-11-09) — P-frame macroblock skip. The decoder reuses the reference for
+    // blocks it thinks did not move: still blocks (near-zero LK residual) are copied whole
+    // from C for the pulse, a hashed subset only, so frozen tiles sit beside refreshed ones.
+    let skipPick = step(hash2(blockIdx + vec2<f32>(pulseIdx * 3.7, 0.5)), 0.45 + bass * 0.2);
+    let skipMask = skipPick * max(blockStill, select(0.0, 0.5, mvVisibility <= 0.01));
+    color = mix(color, max(prevFrame.rgb, vec3<f32>(0.0)), skipMask);
   }
 
   let distortionMag = abs(totalVOffset) * 4.0;
