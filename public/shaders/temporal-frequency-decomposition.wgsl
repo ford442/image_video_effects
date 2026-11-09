@@ -3,8 +3,8 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-02 (Algorithmist — swarm b26), 2026-09-21, 2026-11-09
-//  Ideas: Hann-windowed DFT; DFT phase -> glow hue; DC notch; second-harmonic voice; treble shimmer bands
+//  Upgraded: 2026-08-02 (Algorithmist — swarm b26), 2026-09-21
+//  Ideas: Hann-windowed DFT; DFT phase -> glow hue
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
@@ -18,11 +18,15 @@
 //  The result is overlaid on the current frame.
 //
 //  Interaction (the 'mouse-driven' tag is now honestly wired):
-//    - Analysis lens: inside a soft disc around the cursor the
-//      frequency response is sharpened and the glow widened.
+//    - Sprung analysis lens: the raw cursor is the target of a
+//      critically-damped spring; inside the lens the frequency
+//      response is sharpened and the glow widened — a Fourier
+//      microscope that focuses wherever the pointer roams.
 //    - Click tuning-fork pings: each click injects a decaying
-//      oscillation at the target frequency into the DFT accumulators.
-//    - Treble shimmer bands: 8 vertical bands flicker with treble.
+//      oscillation at the target frequency into the DFT accumulators,
+//      so clicks light up even in perfectly static scenes.
+//    - Per-region FFT voices: 8 vertical bands each ride their own
+//      spectrum bin, so the glow shimmers spatially with audio.
 //
 //  zoom_params layout:
 //    x = target frequency (0→0.05 cycles/frame, 1→0.5, default 0.25→~0.18)
@@ -30,15 +34,41 @@
 //    z = glow color hue   (0→red/orange, 0.5→cyan, 1→red again, default 0.17→yellow)
 //    w = base blend       (0→glow only, 1→base+glow, default 0.8)
 //
-//  extraBuffer: only [4] = historyHead is read. Audio = plasmaBuffer[0].
+//  extraBuffer layout (engine contract — do NOT reinterpret):
+//    [0..4]    reserved by engine — [4] = historyHead (READ-ONLY here)
+//    [5..132]  engine FFT bins (NOT shader state)
+//    [133..255] persistent shader state ONLY:
+//      [133]=lensPosX  [134]=lensPosY  [135]=lensVelX  [136]=lensVelY
+//      [137]=springInitialized
+//  NOTE: extraBuffer[0..2] are NOT bass/mid/treble. Audio lives in
+//  plasmaBuffer: [0] = global levels, [1..8] = per-voice FFT bins.
 // ═══════════════════════════════════════════════════════════════════
 
-#include "_prelude.wgsl"
-// zoom_params: x=freq, y=glowBright, z=glowHue, w=baseBlend
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
+
+struct Uniforms {
+  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
+  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
+  zoom_params: vec4<f32>, // x=freq, y=glowBright, z=glowHue, w=baseBlend
+  ripples: array<vec4<f32>, 50>,
+};
 
 const TAU: f32 = 6.28318530718;
 const MAX_FRAMES: u32 = 8u;  // current + up to 7 history layers
+const SPRING_DT: f32 = 0.0166667;  // fixed 60 Hz integration step
 const LENS_RADIUS: f32 = 0.35;     // aspect-corrected lens radius
 const PING_RADIUS: f32 = 0.2;      // aspect-corrected click ping radius
 
@@ -70,10 +100,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let glowHue    = fract(u.zoom_params.z + mids * 0.15);
   let baseBlend  = u.zoom_params.w;
 
-  // Rescue: the extraBuffer[133..137] spring was zeroed every frame by
-  // the engine upload, so it was a no-op — the lens follows the raw cursor.
-  let lensPos = u.zoom_config.yz;
-  let treble = plasmaBuffer[0].z;
+  // ── Sprung analysis lens ─────────────────────────────────────────
+  // Critically-damped spring chasing the raw mouse; persistent state
+  // lives in extraBuffer[133..136] ONLY ([0..4] reserved, [5..132] FFT).
+  let mouseRaw = u.zoom_config.yz;             // normalised 0..1
+  var lensPos  = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+  var lensVel  = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+  let springInitialized = extraBuffer[137] > 0.5;
+  if (!springInitialized) {                    // cold start: snap to cursor
+    lensPos = mouseRaw;
+    lensVel = vec2<f32>(0.0, 0.0);
+  }
+  let omega = 9.0;                             // spring natural frequency
+  let stiff = omega * omega;                   // k
+  let damp  = 2.0 * omega;                     // critical damping c = 2·√k
+  lensVel += ((mouseRaw - lensPos) * stiff - lensVel * damp) * SPRING_DT;
+  lensPos += lensVel * SPRING_DT;
+  // One invocation persists the shared state; every invocation computes the
+  // same local step so this frame's lens remains spatially coherent.
+  if (global_id.x == 0u && global_id.y == 0u) {
+    extraBuffer[133] = lensPos.x;
+    extraBuffer[134] = lensPos.y;
+    extraBuffer[135] = lensVel.x;
+    extraBuffer[136] = lensVel.y;
+    extraBuffer[137] = 1.0;
+  }
 
   // Aspect-corrected lens mask (~0.35 radius, soft edge)
   let lensVec  = (uv - lensPos) * vec2<f32>(aspect, 1.0);
@@ -96,42 +147,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // barely selects. A Hann window pushes the sidelobes to ~31 dB. It is
   // normalised by the window's own sum so a pure tone keeps HEAD's scale.
   // Real part (cosine weights) and imaginary part (sine weights).
-  // ── New idea: DC notch ────────────────────────────────────────────
-  // Pass 1 gathers the windowed temporal mean; pass 2 runs the DFT on
-  // (sample - mean). A static pixel now cancels EXACTLY instead of leaking
-  // through the window sidelobes — and on a 1-layer ring (VRAM floor) the
-  // old single-sample "DFT" was just the frame itself, so the whole picture
-  // glowed (yellow wash). With the notch it correctly reads as silence.
   let w0 = 0.5 - 0.5 * cos(TAU * 0.5 / fN);
-  var samples: array<vec3<f32>, 8>;
-  var weights: array<f32, 8>;
-  samples[0] = current.rgb;
-  weights[0] = w0;
-  var meanAcc = current.rgb * w0;
+  var realAcc = current.rgb * w0;   // cos(0) = 1
+  var imagAcc = vec3<f32>(0.0);     // sin(0) = 0
   var sumW = w0;
+
   for (var age: u32 = 1u; age < frames; age = age + 1u) {
     let layer = (historyHead + histDepth - age) % histDepth;
     let hist  = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
-    let w     = 0.5 - 0.5 * cos(TAU * (f32(age) + 0.5) / fN);
-    samples[age] = hist.rgb;
-    weights[age] = w;
-    meanAcc += hist.rgb * w;
+    let t     = f32(age);
+    let w     = 0.5 - 0.5 * cos(TAU * (t + 0.5) / fN);
+    realAcc += hist.rgb * w * cos(TAU * freq * t);
+    imagAcc += hist.rgb * w * sin(TAU * freq * t);
     sumW += w;
-  }
-  let dcMean = meanAcc / max(sumW, 1e-4);
-
-  var realAcc = vec3<f32>(0.0);
-  var imagAcc = vec3<f32>(0.0);
-  // ── New idea: second-harmonic voice (2 × freq bin, same samples) ──
-  var real2 = vec3<f32>(0.0);
-  var imag2 = vec3<f32>(0.0);
-  for (var age: u32 = 0u; age < frames; age = age + 1u) {
-    let t = f32(age);
-    let v = (samples[age] - dcMean) * weights[age];
-    realAcc += v * cos(TAU * freq * t);
-    imagAcc += v * sin(TAU * freq * t);
-    real2   += v * cos(TAU * freq * 2.0 * t);
-    imag2   += v * sin(TAU * freq * 2.0 * t);
   }
   // Pings were tuned against a /8 normalisation; keep their brightness.
   let pingScale = sumW / fN;
@@ -163,14 +191,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var energyFocused = energy * (1.0 + lensMask * 0.8);
   energyFocused = pow(clamp(energyFocused, 0.0, 4.0), 1.0 - lensMask * 0.25);
 
-  // ── New idea: treble shimmer bands ───────────────────────────────
-  // Rescue: HEAD read plasmaBuffer[1..8] per band, but only index 0 is
-  // ever uploaded, so the band voices were dead. Each of 8 vertical bands
-  // now flickers on its own hashed clock, gated by real treble.
-  let band       = floor(uv.x * 8.0);
-  let flick      = 0.5 + 0.5 * sin(time * (9.0 + band * 3.7) + band * 2.3);
-  let voice      = treble * flick * 0.5;
-  let voiceBoost = 1.0 + bass * 0.6 + voice;
+  // ── Per-region FFT voices: 8 vertical bands ride their own bins ──
+  let band       = min(u32(uv.x * 8.0), 7u);
+  let voice      = plasmaBuffer[(band % 8u) + 1u].x * 0.4;
+  let voiceBoost = 1.0 + bass * 0.6 + voice;   // band voice + global bass
 
   // ── Idea 2: DFT phase -> glow hue ─────────────────────────────────
   // HEAD computed the phase and threw it away. Rotating the glow hue by it
@@ -182,14 +206,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let phase   = atan2(dot(imagAcc, lumaW), dot(realAcc, lumaW)) / TAU;   // -0.5..0.5
   let phaseHue = fract(glowHue + phase * 0.5 * smoothstep(0.01, 0.06, energy));
 
-  // Harmonic share: energy in the 2× bin pushes the glow toward the
-  // complementary hue — hard strobes (rich in harmonics) read magenta/blue
-  // against smooth sine motion's base hue.
-  let mag2      = sqrt(real2 * real2 + imag2 * imag2) / max(sumW, 1e-4);
-  let energy2   = (mag2.r + mag2.g + mag2.b) / 3.0;
-  let harmShare = clamp(energy2 / max(energy + energy2, 1e-4), 0.0, 1.0);
-  let hueCol    = mix(hue2rgb(phaseHue), hue2rgb(phaseHue + 0.5), harmShare * 0.8);
-  let glowColor = hueCol * (energyFocused + energy2 * 0.6) * glowBright * voiceBoost;
+  let glowColor = hue2rgb(phaseHue) * energyFocused * glowBright * voiceBoost;
 
   // Composite: base + glow
   let base   = current.rgb * baseBlend;

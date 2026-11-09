@@ -2,7 +2,7 @@
   "id": "quantum-fractal",
   "name": "Quantum Fractal",
   "url": "shaders/quantum-fractal.wgsl",
-  "description": "Two entangled quantum Julia fractals interfere over the image with dark nodal lines and a glowing tunnelling halo; the cursor collapses the superposition to the photo.",
+  "description": "Fractal quantum interference patterns.",
   "tags": [
     "filter",
     "image-processing",

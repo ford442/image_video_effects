@@ -4,14 +4,9 @@
 //  Features: advanced-alpha, prismatic, feedback, chromatic, multi-pass,
 //            mouse-driven, audio-reactive, depth-aware
 //  Complexity: High
-//  Upgraded: 2026-07-30, 2026-11-09 (Batch 18 - Algorithmist: honest slider rewiring,
+//  Upgraded: 2026-07-30 (Batch 18 - Algorithmist: honest slider rewiring,
 //            click prism bursts, glow term, feedback blowout guard)
 //  Batch 68: exact raw accumulation, sprung held deformation, ACES display
-//  Ideas: prism echo (history re-read through the same prism, compounding
-//         fringes); Cauchy-weighted taps (§12.2F: blue refracts harder than red)
-//  Rescue: dead extraBuffer[133..138] spring -> first-order glide in A(0,0)
-//  A packing: raw accumulated RGBA (C read as colour+alpha); texel (0,0) =
-//             (glide.xy, 7, fract(time)), masked as zero when C is read
 //
 //  Slider contract (ids/defaults are the saved-preset contract - the WGSL
 //  now honors the LABELS, not the legacy mislabeled roles):
@@ -21,17 +16,32 @@
 //    w = "Chromatic Spread" -> r/b separation angle fan-out
 // ═══════════════════════════════════════════════════════════════════
 
-#include "_prelude.wgsl"
-// zoom_params: x=Feedback, y=BlurRadius, z=GlowIntensity, w=ChromaticSpread
+@group(0) @binding(0) var u_sampler: sampler;
+@group(0) @binding(1) var readTexture: texture_2d<f32>;
+@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(3) var<uniform> u: Uniforms;
+@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
+@group(0) @binding(5) var non_filtering_sampler: sampler;
+@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
+@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
+@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
+@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
+@group(0) @binding(11) var comparison_sampler: sampler_comparison;
+@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+
+struct Uniforms {
+  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
+  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
+  zoom_params: vec4<f32>,  // x=Feedback, y=BlurRadius, z=GlowIntensity, w=ChromaticSpread
+  ripples: array<vec4<f32>, 50>,
+};
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 
 // Ripple burst lifetime (seconds) - clicks shatter the prism locally.
 const RIPPLE_LIFE: f32 = 1.5;
-
-// Marker in A(0,0).z that says "this texel holds the cursor glide, not colour".
-const GLIDE_MARK: f32 = 7.0;
 
 // Fixed trail accumulation rate for accumulativeAlpha() (the x slider
 // now honestly drives the feedback mix, per its "Feedback" label).
@@ -59,46 +69,6 @@ fn rot2(v: vec2<f32>, angle: f32) -> vec2<f32> {
     let c = cos(angle);
     let s = sin(angle);
     return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
-}
-
-// ── Rescue R1: cursor glide in A texel (0,0) ─────────────────────────
-// extraBuffer[133..] is re-uploaded zeroed every frame, so HEAD's spring could never
-// persist. State = A(0,0) = (glide.x, glide.y, GLIDE_MARK, fract(time)); every pixel
-// reads the same C texel and integrates the same step, only pixel (0,0) stores it.
-// First-order glide; the lag vector (raw - glide) is the velocity proxy.
-fn glideStep(st: vec4<f32>, raw: vec2<f32>, time: f32, rate: f32) -> vec2<f32> {
-    let ok = abs(st.z - GLIDE_MARK) < 0.01 && st.w >= 0.0 && st.w < 1.0;
-    let dt = clamp(fract(time - st.w), 0.001, 0.05);
-    let g = st.xy + (raw - st.xy) * (1.0 - exp(-rate * dt));
-    let snapped = select(g, raw, length(raw - g) < 0.003);
-    return select(raw, snapped, ok);
-}
-
-// History load, exact, with texel (0,0) masked (it holds the glide state, not colour).
-fn loadHist(c: vec2<i32>, hi: vec2<i32>) -> vec4<f32> {
-    let cc = clamp(c, vec2<i32>(0), hi);
-    let v = textureLoad(dataTextureC, cc, 0);
-    return select(vec4<f32>(0.0), v, any(cc != vec2<i32>(0)));
-}
-
-// Exact 4-tap bilinear over the history (no filtering sampler on rgba32float).
-fn histBilinear(uvp: vec2<f32>, res: vec2<f32>, hi: vec2<i32>) -> vec4<f32> {
-    let pp = clamp(uvp, vec2<f32>(0.0), vec2<f32>(1.0)) * res - vec2<f32>(0.5);
-    let b = floor(pp);
-    let f = pp - b;
-    let c0 = vec2<i32>(b);
-    let a = loadHist(c0, hi);
-    let bb = loadHist(c0 + vec2<i32>(1, 0), hi);
-    let c = loadHist(c0 + vec2<i32>(0, 1), hi);
-    let d = loadHist(c0 + vec2<i32>(1, 1), hi);
-    return mix(mix(a, bb, f.x), mix(c, d, f.x), f.y);
-}
-
-// Cauchy n(lambda) = 1 + B/lambda^2 at 650/550/450 nm, relative to green: (<1, 1, >1).
-fn cauchyScale(bCoef: f32) -> vec3<f32> {
-    let lam = vec3<f32>(0.650, 0.550, 0.450);
-    let n = vec3<f32>(1.0) + vec3<f32>(bCoef) / (lam * lam);
-    return n / n.y;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -134,16 +104,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let historyDims = vec2<i32>(textureDimensions(dataTextureC));
-    let hi = historyDims - vec2<i32>(1);
-    let prev = loadHist(coord, hi);
+    let prev = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), historyDims - vec2<i32>(1)), 0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
-    // ── Rescue R1: glide (HEAD omega 10) + lag vector as the velocity proxy ──
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    let omega = 10.0;
-    let glideState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
-    let prismFocus = glideStep(glideState, rawMouse, time, omega);
-    let springVel = (rawMouse - prismFocus) * omega;
+    let hasSpring = arrayLength(&extraBuffer) >= 139u;
+    var prismFocus = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
+    if (hasSpring) { prismFocus = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
+    if (!initialized) { prismFocus = rawMouse; springVel = vec2<f32>(0.0); }
+    let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
+    let omega = 10.0; let springDecay = exp(-omega * dt); let springDelta = prismFocus - rawMouse; let springTemp = (springVel + omega * springDelta) * dt;
+    springVel = (springVel - omega * springTemp) * springDecay; prismFocus = rawMouse + (springDelta + springTemp) * springDecay;
+    if (hasSpring && global_id.x == 0u && global_id.y == 0u) { extraBuffer[133] = prismFocus.x; extraBuffer[134] = prismFocus.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
 
     // ── Prismatic chromatic separation ───────────────────────────────
     // The legacy z-slider rotation is now a slow constant drift so the
@@ -183,13 +155,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    // ── Idea 2: Cauchy-weighted taps (§12.2F) ───────────────────────────
-    // Blue refracts harder than red (n = A + B/lambda^2); G stays undeviated. Applies to the
-    // live taps, click kicks and the echo below.
-    let cz = cauchyScale(0.2);
-    rOffset = rOffset * cz.x;
-    bOffset = bOffset * cz.z;
-
     let rUV = clamp(uv + rOffset, vec2<f32>(0.0), vec2<f32>(1.0));
     let gUV = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
     let bUV = clamp(uv - bOffset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -203,17 +168,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Guarded temporal feedback ────────────────────────────────────
     // x slider mixes toward the previous frame; result clamped to [0,1]
     // so runaway feedback blowout is impossible.
-    // ── Idea 1: prism echo ────────────────────────────────────────────
-    // The history goes back through the same prism: R from C displaced with the red
-    // tap, B from C displaced against the blue tap, G in place. Fringes compound frame
-    // by frame; k scales with the Feedback slider so Feedback 0 is still HEAD's exact
-    // freeze. The blend below is convex, so values stay in [0,1].
-    let echoK = 0.3 * feedbackMix;
-    let echoR = histBilinear(uv + rOffset * echoK, resolution, hi).r;
-    let echoB = histBilinear(uv - bOffset * echoK, resolution, hi).b;
-    let echo = vec3<f32>(echoR, prev.g, echoB);
     let blended = clamp(
-        mix(echo, prismColor, feedbackMix),
+        mix(prev.rgb, prismColor, feedbackMix),
         vec3<f32>(0.0), vec3<f32>(1.0)
     );
 
@@ -226,10 +182,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // glow baked in - so the A-write / C-read loop stays symmetric and
     // stable across frames.
     let accumulated = accumulativeAlpha(blended, newAlpha, prev.rgb, prev.a, ACCUM_RATE);
-    // Texel (0,0) stores the glide state (the display pixel below is still real).
-    let isOrigin = all(coord == vec2<i32>(0));
-    textureStore(dataTextureA, coord,
-        select(accumulated, vec4<f32>(prismFocus, GLIDE_MARK, fract(time)), isOrigin));
+    textureStore(dataTextureA, coord, accumulated);
 
     // ── Glow term (output only) ──────────────────────────────────────
     // Brightness lift of the accumulated trails: soft-knee luminance of

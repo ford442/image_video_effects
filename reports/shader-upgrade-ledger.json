@@ -505,17 +505,8 @@
       ]
     },
     "cyber-lattice-bilateral": {
-      "hash": "2a02ceeeed86d4a4",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "2a02ceeeed86d4a4",
-          "prev_hash": "3bfe8469993074bd",
-          "commit": "46056616",
-          "note": null
-        }
-      ]
+      "hash": "3bfe8469993074bd",
+      "history": []
     },
     "cyber-organic-ecosystem": {
       "hash": "9803c40573cc4ab6",
@@ -1353,17 +1344,8 @@
       "history": []
     },
     "interactive-origami-coupled": {
-      "hash": "34efcb8168456afc",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "34efcb8168456afc",
-          "prev_hash": "03834a24074b69b7",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
-        }
-      ]
+      "hash": "03834a24074b69b7",
+      "history": []
     },
     "interactive-pixel-wind-structure": {
       "hash": "be2fb6b7a69a145d",
@@ -1445,17 +1427,8 @@
       ]
     },
     "multi-fractal-compositor-lens": {
-      "hash": "493462737649d5dc",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "493462737649d5dc",
-          "prev_hash": "69cbb79e86de1501",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
-        }
-      ]
+      "hash": "69cbb79e86de1501",
+      "history": []
     },
     "multi-fractal-compositor": {
       "hash": "e4ce2a6ca79fb57f",
@@ -2271,17 +2244,8 @@
       "history": []
     },
     "echo-trace": {
-      "hash": "5586ef1bb191fd30",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "5586ef1bb191fd30",
-          "prev_hash": "271c4787ee570b90",
-          "commit": "46056616",
-          "note": null
-        }
-      ]
+      "hash": "271c4787ee570b90",
+      "history": []
     },
     "encaustic-wax": {
       "hash": "dce413794a13f750",
@@ -2835,7 +2799,7 @@
       ]
     },
     "quantum-fractal": {
-      "hash": "9f616feacf246bc8",
+      "hash": "c53d97147ffb0e81",
       "history": [
         {
           "event": "upgraded",
@@ -2844,14 +2808,6 @@
           "prev_hash": "33cf9465c17f4d4f",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "9f616feacf246bc8",
-          "prev_hash": "c53d97147ffb0e81",
-          "commit": "46056616",
-          "note": null
         }
       ]
     },
@@ -3151,7 +3107,7 @@
       "history": []
     },
     "vortex-prism": {
-      "hash": "878fc810095c1b2b",
+      "hash": "db7723bbf50aa4e7",
       "history": [
         {
           "event": "upgraded",
@@ -3160,14 +3116,6 @@
           "prev_hash": "83b5cfe3baa75b38",
           "commit": "86d8f696",
           "note": "2026-10-05 chromatic & spectral ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-chromatic-spectral-ten/BRIEFS.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "878fc810095c1b2b",
-          "prev_hash": "db7723bbf50aa4e7",
-          "commit": "46056616",
-          "note": null
         }
       ]
     },
@@ -3262,7 +3210,7 @@
       ]
     },
     "dimension-slicer": {
-      "hash": "1fd06315af85f33b",
+      "hash": "fd3f7d4ec218b4a9",
       "history": [
         {
           "event": "upgraded",
@@ -3271,14 +3219,6 @@
           "prev_hash": "11fbdb4ac01e37f0",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "1fd06315af85f33b",
-          "prev_hash": "fd3f7d4ec218b4a9",
-          "commit": "46056616",
-          "note": null
         }
       ]
     },
@@ -3507,17 +3447,8 @@
       "history": []
     },
     "interactive-zoom-blur": {
-      "hash": "46b36cd142bd3ff0",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "46b36cd142bd3ff0",
-          "prev_hash": "399fdbf17be564e2",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
-        }
-      ]
+      "hash": "399fdbf17be564e2",
+      "history": []
     },
     "julia-warp": {
       "hash": "c1f82c32be405ab5",
@@ -3872,7 +3803,7 @@
       ]
     },
     "spec-bicubic-crystal": {
-      "hash": "d6534334554df26f",
+      "hash": "492cdcb79ea69e22",
       "history": [
         {
           "event": "upgraded",
@@ -3881,14 +3812,6 @@
           "prev_hash": "265a0e8a2cf289f2",
           "commit": "136ae335",
           "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "d6534334554df26f",
-          "prev_hash": "492cdcb79ea69e22",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
         }
       ]
     },
@@ -3953,7 +3876,7 @@
       ]
     },
     "voronoi-chaos": {
-      "hash": "2f898cdf4cb69aa1",
+      "hash": "7c90824aa3d5f90e",
       "history": [
         {
           "event": "upgraded",
@@ -3962,19 +3885,11 @@
           "prev_hash": "fdcf43abdb953c60",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "2f898cdf4cb69aa1",
-          "prev_hash": "7c90824aa3d5f90e",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
         }
       ]
     },
     "voronoi-faceted-glass": {
-      "hash": "3b1d311ef794f44e",
+      "hash": "29fd87468196feda",
       "history": [
         {
           "event": "upgraded",
@@ -3983,14 +3898,6 @@
           "prev_hash": "599494d238cb7a26",
           "commit": "136ae335",
           "note": "2026-10-04 glass-facets-eight (claude-opus-5-5): idea cards in agents/swarm-outputs/claude-2026-10-04-glass-facets-eight/BRIEFS.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "3b1d311ef794f44e",
-          "prev_hash": "29fd87468196feda",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
         }
       ]
     },
@@ -6948,7 +6855,7 @@
       ]
     },
     "gen-fractal-clockwork": {
-      "hash": "6f5805568898b9cb",
+      "hash": "1fdf7b366d1d7b1f",
       "history": [
         {
           "event": "upgraded",
@@ -6957,14 +6864,6 @@
           "prev_hash": "d285b97cf093c71a",
           "commit": "3e0dde9d",
           "note": "2026-10-11 crackle-echo nine (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-crackle-echo-nine"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "6f5805568898b9cb",
-          "prev_hash": "1fdf7b366d1d7b1f",
-          "commit": "46056616",
-          "note": null
         }
       ]
     },
@@ -7811,17 +7710,8 @@
       ]
     },
     "gen-koch-snowflake-storm": {
-      "hash": "6d18194091f2966b",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "6d18194091f2966b",
-          "prev_hash": "19eedeadc073dfd5",
-          "commit": "46056616",
-          "note": null
-        }
-      ]
+      "hash": "19eedeadc073dfd5",
+      "history": []
     },
     "gen-kryonic-quantum-aether-fractal-core": {
       "hash": "bd683c26c7e6ef0f",
@@ -9267,17 +9157,8 @@
       "history": []
     },
     "gen-prismatic-mobius-helix": {
-      "hash": "f62b858afbde7677",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "f62b858afbde7677",
-          "prev_hash": "7ec52f733b3808a8",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
-        }
-      ]
+      "hash": "7ec52f733b3808a8",
+      "history": []
     },
     "gen-prismatic-quantum-fractal-nautilus-engine": {
       "hash": "a4526d16039f972f",
@@ -10861,17 +10742,8 @@
       ]
     },
     "generative-psy-swirls": {
-      "hash": "5d12d4dacefd7722",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "5d12d4dacefd7722",
-          "prev_hash": "699c87088e3da26a",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
-        }
-      ]
+      "hash": "699c87088e3da26a",
+      "history": []
     },
     "generative-turing-veins": {
       "hash": "82edecfb2adf7656",
@@ -11187,7 +11059,7 @@
       ]
     },
     "psy-swirls": {
-      "hash": "914c93fcf69dc13b",
+      "hash": "f125fe83d4d9170c",
       "history": [
         {
           "event": "upgraded",
@@ -11196,14 +11068,6 @@
           "prev_hash": "5b7162f3d71f82db",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "914c93fcf69dc13b",
-          "prev_hash": "f125fe83d4d9170c",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
         }
       ]
     },
@@ -12781,7 +12645,7 @@
       ]
     },
     "heat-haze-mirage": {
-      "hash": "178b7fc6209eb9e7",
+      "hash": "3cba33e714acd125",
       "history": [
         {
           "event": "upgraded",
@@ -12790,14 +12654,6 @@
           "prev_hash": "a9846d7d8a318713",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "178b7fc6209eb9e7",
-          "prev_hash": "3cba33e714acd125",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
         }
       ]
     },
@@ -13035,7 +12891,7 @@
       ]
     },
     "page-curl-interactive": {
-      "hash": "ba2e2045faf31876",
+      "hash": "f016d40edf8c44e5",
       "history": [
         {
           "event": "upgraded",
@@ -13044,14 +12900,6 @@
           "prev_hash": "e3a4a74f55c01b10",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "ba2e2045faf31876",
-          "prev_hash": "f016d40edf8c44e5",
-          "commit": "46056616",
-          "note": null
         }
       ]
     },
@@ -13624,17 +13472,8 @@
       ]
     },
     "anamorphic-flare": {
-      "hash": "cbc75f447978956d",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "cbc75f447978956d",
-          "prev_hash": "93a2712f22dd73b8",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
-        }
-      ]
+      "hash": "93a2712f22dd73b8",
+      "history": []
     },
     "ascii-decode": {
       "hash": "8a03aa47fd8c0e7b",
@@ -13658,17 +13497,8 @@
       ]
     },
     "ascii-lens": {
-      "hash": "8a0ce648b36d57f2",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "8a0ce648b36d57f2",
-          "prev_hash": "53f9881b6c85a3af",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
-        }
-      ]
+      "hash": "53f9881b6c85a3af",
+      "history": []
     },
     "bio-touch": {
       "hash": "0a07c0acc73f45de",
@@ -13904,17 +13734,8 @@
       ]
     },
     "cross-mouse-spec-dispersion-lens": {
-      "hash": "9965ddd9b865beeb",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "9965ddd9b865beeb",
-          "prev_hash": "8412e3a36239cce4",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
-        }
-      ]
+      "hash": "8412e3a36239cce4",
+      "history": []
     },
     "cross-stitch": {
       "hash": "a19a6db803fa5d6c",
@@ -14033,7 +13854,7 @@
       ]
     },
     "cyber-magnifier": {
-      "hash": "8344fc9faec2d954",
+      "hash": "486157189ec1fcba",
       "history": [
         {
           "event": "upgraded",
@@ -14050,14 +13871,6 @@
           "prev_hash": "3efaba3039e551c1",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "8344fc9faec2d954",
-          "prev_hash": "486157189ec1fcba",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
         }
       ]
     },
@@ -14255,17 +14068,8 @@
       ]
     },
     "double-exposure": {
-      "hash": "d6576b67f1caf003",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "d6576b67f1caf003",
-          "prev_hash": "77e8793123617b5f",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
-        }
-      ]
+      "hash": "77e8793123617b5f",
+      "history": []
     },
     "dynamic-halftone": {
       "hash": "0a040819fbd327f1",
@@ -14656,7 +14460,7 @@
       ]
     },
     "interactive-fisheye": {
-      "hash": "42013ca2639ecafd",
+      "hash": "44412883830c1090",
       "history": [
         {
           "event": "upgraded",
@@ -14665,14 +14469,6 @@
           "prev_hash": "710596b473e8bb3d",
           "commit": "1008b956",
           "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
-        },
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "42013ca2639ecafd",
-          "prev_hash": "44412883830c1090",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
         }
       ]
     },
@@ -15940,30 +15736,12 @@
       ]
     },
     "prismatic-3d-compositor": {
-      "hash": "04ce9f137f4381c7",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "04ce9f137f4381c7",
-          "prev_hash": "ef53dab57c4d4538",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
-        }
-      ]
+      "hash": "ef53dab57c4d4538",
+      "history": []
     },
     "prismatic-feedback-loop": {
-      "hash": "d105945dde52aa00",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "d105945dde52aa00",
-          "prev_hash": "879f48c6344f7761",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
-        }
-      ]
+      "hash": "879f48c6344f7761",
+      "history": []
     },
     "psychedelic-noise-flow": {
       "hash": "ee9f7309202f5492",
@@ -16000,17 +15778,8 @@
       ]
     },
     "quantum-flux": {
-      "hash": "794bc9adcf72fd17",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:29:21.451Z",
-          "hash": "794bc9adcf72fd17",
-          "prev_hash": "2edb14a3f9c3f594",
-          "commit": "0a141fe7",
-          "note": "2026-11-09 sonnet/batch-27 optical lenses (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-27/"
-        }
-      ]
+      "hash": "2edb14a3f9c3f594",
+      "history": []
     },
     "quantum-prism": {
       "hash": "88aac87d7b93d1ac",
@@ -17644,17 +17413,8 @@
       ]
     },
     "spatio-temporal-3d-conv": {
-      "hash": "39a7a3a069431e57",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "39a7a3a069431e57",
-          "prev_hash": "7fb0bf5c5acdeb77",
-          "commit": "46056616",
-          "note": null
-        }
-      ]
+      "hash": "7fb0bf5c5acdeb77",
+      "history": []
     },
     "temporal-decay-multiresolution": {
       "hash": "ddd8ea7d4335e6f3",
@@ -17683,17 +17443,8 @@
       ]
     },
     "temporal-frequency-decomposition": {
-      "hash": "739df7e5ee18996b",
-      "history": [
-        {
-          "event": "upgraded",
-          "date": "2026-11-09T08:13:17.211Z",
-          "hash": "739df7e5ee18996b",
-          "prev_hash": "547aaa9b4e04233c",
-          "commit": "46056616",
-          "note": null
-        }
-      ]
+      "hash": "547aaa9b4e04233c",
+      "history": []
     },
     "temporal-halation-freeze": {
       "hash": "85e39f4a2fa27ca4",
@@ -20241,42 +19992,6 @@
           "hash": "60ac4136061c7d64",
           "commit": "33ae9962",
           "note": "2026-11-09 compile fix: swizzle assignment rd.xy += in mouse-gravity branch (main gate verify:naga-wasm:all) — no look change at idle cursor"
-        }
-      ]
-    },
-    "murmuration": {
-      "hash": "daee5a05750b08c2",
-      "history": [
-        {
-          "event": "added",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "daee5a05750b08c2",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
-        }
-      ]
-    },
-    "murmuration-flock": {
-      "hash": "04da30ed107e0416",
-      "history": [
-        {
-          "event": "added",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "04da30ed107e0416",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
-        }
-      ]
-    },
-    "murmuration-render": {
-      "hash": "172623ca0a107663",
-      "history": [
-        {
-          "event": "added",
-          "date": "2026-11-09T08:22:13.886Z",
-          "hash": "172623ca0a107663",
-          "commit": "97d5c8dc",
-          "note": "2026-11-09 sonnet/batch-28 organic/prismatic/voronoi-glass (claude sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-28"
         }
       ]
     }

@@ -3,10 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-11-09
-//  Ideas: next-page underlay (aged desaturated sheet beneath, with the curl's cast shadow); paper thickness lip (cream turn-over edge + dark under-edge); gloss crest streak (sharp treble-lit specular stripe on the cylinder)
-//  Ideas (2026-09-08): backside peek of the curled sheet; paper fiber along curl tangent
-//  A packing: linear pre-grade hdr RGB + alpha (rescue: HEAD fed sRGB ACES back into linear hdr)
+//  Upgraded: 2026-09-08
+//  Ideas: backside peek of the curled sheet; paper fiber along curl tangent
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -180,38 +179,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let normalZ = cos(theta);
   let key = warmLight(treble) * pow(max(normalZ, 0.0), 2.0) * 0.55;
   let fill = coolLight(0.0) * pow(max(-normalZ * 0.5 + 0.5, 0.0), 2.0) * 0.25;
-  // Gloss crest streak: sharp specular stripe where the cylinder faces the key light.
-  let crest = exp(-pow((theta - 0.35) * 9.0, 2.0)) * curlMask;
-  let gloss = vec3<f32>(1.0, 0.97, 0.9) * crest * (0.35 + treble * 0.9);
   let rim = mixOkLab(warmLight(0.0), coolLight(0.0), mids) * pow(1.0 - abs(normalZ), 3.0) * 0.4;
   curlLin = curlLin * (1.0 + (key + fill) * curlMask) + rim * curlMask;
 
   // Fold shadow into curl (previously computed but discarded)
   let foldShadow = smoothstep(0.0, radius * 0.3, dx) * shadowIntensity;
-  curlLin = curlLin * (1.0 - foldShadow * curlMask) + gloss;
-
-  // Paper thickness lip: cream edge where the sheet turns over, dark under-edge just past it.
-  let pxW = 1.5 / res.x;
-  let lip = smoothstep(pxW * 2.0, 0.0, abs(dx - radius + pxW)) ;
-  let underEdge = smoothstep(pxW * 4.0, 0.0, abs(dx - radius - pxW * 2.5)) * step(radius, dx);
+  curlLin = curlLin * (1.0 - foldShadow * curlMask);
 
   // Background
   let bgDark = vec3<f32>(0.02, 0.025, 0.035);
   let bgEdge = smoothstep(0.0, 0.6, uv.y + sin(uv.x * TAU + time * 0.2) * 0.05);
   let pageTunnel = pow(0.5 + 0.5 * sin((abs(dx) / rSafe) * 24.0 - time * 3.0), 8.0);
-  var bgLin = mixOkLab(bgDark, vec3<f32>(0.08, 0.1, 0.14), bgEdge * 0.6);
-  // Next-page underlay: aged, desaturated sheet beneath with the curl's cast shadow.
-  let under = srgb_to_linear(textureSampleLevel(readTexture, u_sampler, vec2<f32>(uv.x, uv.y), 1.5).rgb);
-  let aged = mix(vec3<f32>(luma(under)), under, 0.35) * vec3<f32>(1.0, 0.93, 0.8) * 0.75;
-  let castShadow = 1.0 - exp(-max(dx - radius, 0.0) / (rSafe * 0.9)) ;
-  let castAmt = mix(1.0, castShadow, 0.55 + shadowIntensity * 0.4);
-  bgLin = mix(bgLin, aged * castAmt, 0.85);
-  bgLin = bgLin * (1.0 - underEdge * 0.6)
-        + vec3<f32>(0.12, 0.05, 0.22) * pageTunnel * (1.0 - frontMask) * 0.7;
+  let bgLin = mixOkLab(bgDark, vec3<f32>(0.08, 0.1, 0.14), bgEdge * 0.6)
+            + vec3<f32>(0.12, 0.05, 0.22) * pageTunnel * (1.0 - frontMask) * 0.7;
 
   // Branchless blend: front > curl > background
   var rgb = mixOkLab(bgLin, curlLin, curlMask);
-  rgb = mix(rgb, vec3<f32>(0.95, 0.9, 0.78), lip * 0.8);
   rgb = mixOkLab(rgb, frontRGB, frontMask);
 
   // Temporal feedback (weaker on front page to keep it crisp)
@@ -234,5 +217,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   textureStore(writeTexture, coord, vec4<f32>(outRGB * alpha, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, vec4<f32>(hdr, alpha));
+  textureStore(dataTextureA, coord, vec4<f32>(outRGB, alpha));
 }

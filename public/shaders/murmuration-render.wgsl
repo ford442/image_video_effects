@@ -3,11 +3,9 @@
 //  blurs and fades it into the next trail field (dataA), and composites it
 //  over a dusk sky made from the source image:
 //    · murmur silhouette   — a flock is dark against a sunset: crowded birds smoke the sky they fly over
-//    · iridescent rim      — heading-tinted light on the flock's edges and fading wake (Trail Length);
-//                            the rim is brightest on the edges that face the horizon sun
+//    · iridescent rim      — heading-tinted light on the flock's edges and fading wake (Trail Length)
 //    · chromatic wake      — red / blue taps split along the radial direction
-//  Ideas: sunward rim (edge normal vs the sunset's horizon glow)
-//  A/C packing: .rgb emission, .a energy (unchanged)
+//  A/C packing: .rgb emission, .a energy
 //  zoom_params: .w trail length
 
 #include "_prelude.wgsl"
@@ -88,15 +86,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ink = tint * 0.10 + vec3<f32>(0.03, 0.015, 0.07);
   col = mix(col, ink, 0.96 * smoothstep(0.30, 0.75, e));
   // Iridescent rim light on the flock's edge, and a faint haze of its wake in the sky.
-  // ── Idea 2: sunward rim ──────────────────────────────────────────
-  // `sunset()` puts its glow low in the frame (uv.y -> 1, y grows downward). `grad` points into
-  // the flock, so the outward edge normal is -grad: edges facing the horizon catch the light, the
-  // far side stays dark against the sky. (Wake haze below is not directional.)
-  let outN = -grad / (length(grad) + 1e-5);
-  let sunDir = vec2<f32>(0.24, 0.97);
-  let sunward = smoothstep(-0.2, 0.6, dot(outN, sunDir));
-  let rimGain = 0.3 + 0.9 * sunward;
-  col = col + tint * (edge * rimGain * (1.1 + treble * 0.9) + 0.12 * clamp(near.a * 6.0, 0.0, 1.0) * (1.0 - e));
+  col = col + tint * (edge * (1.1 + treble * 0.9) + 0.12 * clamp(near.a * 6.0, 0.0, 1.0) * (1.0 - e));
 
   textureStore(writeTexture, p, vec4<f32>(aces(col), 1.0));
 }
