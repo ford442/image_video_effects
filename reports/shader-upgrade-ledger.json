@@ -292,8 +292,17 @@
       "history": []
     },
     "chroma-lens-iridescence": {
-      "hash": "d9e16eab12f7f171",
-      "history": []
+      "hash": "d60cf0e3f919a7e4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "d60cf0e3f919a7e4",
+          "prev_hash": "d9e16eab12f7f171",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
+        }
+      ]
     },
     "chroma-threads-gabor": {
       "hash": "0dc639abbd5e11e0",
@@ -841,8 +850,17 @@
       "history": []
     },
     "frost-reveal-crystal": {
-      "hash": "ce7a4864bd5b306a",
-      "history": []
+      "hash": "3c439a9f75098366",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "3c439a9f75098366",
+          "prev_hash": "ce7a4864bd5b306a",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
+        }
+      ]
     },
     "frosted-glass-lens-iridescence": {
       "hash": "9f10fe5228726933",
@@ -1029,8 +1047,17 @@
       ]
     },
     "glass-bead-curtain-iridescence": {
-      "hash": "f7be30a926908330",
-      "history": []
+      "hash": "08c1e94554a34cab",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "08c1e94554a34cab",
+          "prev_hash": "f7be30a926908330",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
+        }
+      ]
     },
     "glass-refraction-prismatic": {
       "hash": "d525d5ea51031d54",
@@ -1059,8 +1086,17 @@
       ]
     },
     "glass-wall-prismatic": {
-      "hash": "07b8c0ae28725521",
-      "history": []
+      "hash": "aba826e2150e8517",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "aba826e2150e8517",
+          "prev_hash": "07b8c0ae28725521",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
+        }
+      ]
     },
     "glass-wipes-coupled": {
       "hash": "4e38f08061151890",
@@ -5752,7 +5788,7 @@
       ]
     },
     "gen-depth-refracted-liquid-stained-glass": {
-      "hash": "725ff255c9063ba1",
+      "hash": "5f416d406c03ae45",
       "history": [
         {
           "event": "upgraded",
@@ -5761,6 +5797,14 @@
           "prev_hash": "11ec3092bb2f64f1",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "5f416d406c03ae45",
+          "prev_hash": "725ff255c9063ba1",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
         }
       ]
     },
@@ -11254,7 +11298,7 @@
       ]
     },
     "crystal-mosaic": {
-      "hash": "0d9b9c9f9f0a5147",
+      "hash": "71279fae2c3c621d",
       "history": [
         {
           "event": "upgraded",
@@ -11263,6 +11307,14 @@
           "prev_hash": "1b79b861a1240628",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "71279fae2c3c621d",
+          "prev_hash": "0d9b9c9f9f0a5147",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
         }
       ]
     },
@@ -12204,7 +12256,7 @@
       ]
     },
     "crystalline-shatter": {
-      "hash": "f62e04844a68cc83",
+      "hash": "13ff76e52a98f534",
       "history": [
         {
           "event": "upgraded",
@@ -12213,6 +12265,14 @@
           "prev_hash": "cacbaf5281016b1e",
           "commit": "0910248e",
           "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "13ff76e52a98f534",
+          "prev_hash": "f62e04844a68cc83",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
         }
       ]
     },
@@ -13536,7 +13596,7 @@
       ]
     },
     "chromatic-mosaic-projector": {
-      "hash": "b0dd85d7317f866b",
+      "hash": "57da26407546fd3d",
       "history": [
         {
           "event": "upgraded",
@@ -13545,6 +13605,14 @@
           "prev_hash": "7c7648e09fc33d1b",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "57da26407546fd3d",
+          "prev_hash": "b0dd85d7317f866b",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
         }
       ]
     },
@@ -13651,7 +13719,7 @@
       ]
     },
     "crystal-illuminator": {
-      "hash": "8ddeba0df63dca39",
+      "hash": "94e6483d6b1bc7a5",
       "history": [
         {
           "event": "upgraded",
@@ -13660,6 +13728,14 @@
           "prev_hash": "96651ceaab76aa8f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "94e6483d6b1bc7a5",
+          "prev_hash": "8ddeba0df63dca39",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
         }
       ]
     },
@@ -14083,8 +14159,17 @@
       ]
     },
     "glass-bead-curtain": {
-      "hash": "955a626dd81bdf38",
-      "history": []
+      "hash": "081e61afc59dc9d8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-09T04:21:19.146Z",
+          "hash": "081e61afc59dc9d8",
+          "prev_hash": "955a626dd81bdf38",
+          "commit": "67bc2312",
+          "note": "2026-11-09 sonnet/batch-25 optical crystal/glass/bead/lens/frost ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-25"
+        }
+      ]
     },
     "glass-shatter": {
       "hash": "b6c6d5bd0f435094",

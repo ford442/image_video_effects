@@ -5,6 +5,8 @@
   "description": "Faceted glass/gemstone surface with physical light transmission. Features Voronoi-based facets with mouse-controlled lighting, Fresnel reflection, and purity-based scattering for realistic crystal appearance.",
   "features": [
     "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
     "alpha-transmission",
     "physical-refraction"
   ],
@@ -50,5 +52,39 @@
     "voronoi",
     "physical",
     "mouse-driven"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Crystal Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 1,
+          "name": "Refractive Index",
+          "default": 0.3,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 2,
+          "name": "Light Intensity",
+          "default": 0.6,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "index": 3,
+          "name": "Crystal Purity",
+          "default": 0.8,
+          "min": 0,
+          "max": 1
+        }
+      ]
+    }
+  }
 }

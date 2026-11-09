@@ -74,7 +74,9 @@
     "mouse-driven",
     "click-reactive",
     "aces-tonemap",
-    "semantic-alpha"
+    "semantic-alpha",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = final ACES display RGBA; exact stained-glass tint history",
   "x-meta": {

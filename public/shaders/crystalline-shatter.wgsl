@@ -3,8 +3,10 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, semantic-alpha
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-05
-//  Ideas: facet tilt Fresnel + light flash; conchoidal ribs; stress-line crack branching
+//  Upgraded: 2026-10-05, 2026-11-09
+//  Ideas: facet tilt Fresnel + light flash; conchoidal ribs; stress-line crack branching;
+//         wedge-scaled Cauchy dispersion (§12.2F); light-piping crack halo with energy taken from the facet (§12.2F)
+//  Fix: mouse-proximity shatter zone aspect-corrected (round on wide screens)
 //  A packing: ACES display RGBA (C not read)
 // ═══════════════════════════════════════════════════════════════════
 //  Voronoi cell decomposition gives each fragment an independent
@@ -107,7 +109,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Mouse proximity increases shatter
     let mouse      = u.zoom_config.yz;
-    let mouseDist  = length(uv - mouse);
+    let mouseDist  = length((uv - mouse) * vec2<f32>(dims.x / max(dims.y, 1.0), 1.0));  // aspect-corrected: round zone on wide screens
     let mouseStr   = 1.0 - smoothstep(0.0, 0.5, mouseDist);
 
     let vor = voronoi(uv * cellScale);
@@ -133,10 +135,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let baseUV = uv + refVec * refStr + radial * ribAmt * refStr * 0.04;
 
     // Chromatic aberration: sample R/G/B at slightly offset UVs
+    // Idea 4: wedge-scaled Cauchy dispersion (§12.2F). refVec is the facet's slope, i.e. the
+    // prism wedge angle: a flat facet barely disperses, a steep one fringes hard. R/G/B spacing
+    // follows n(λ) = A + B/λ² relative to green (1/λ²: 2.37 / 3.31 / 4.94 µm⁻² at 650/550/450 nm
+    // → R −0.73 : G 0 : B +1.27 once normalised to mean magnitude 1), so blue is thrown further
+    // than red. |refVec| averages ~0.77, so `wedge` averages ~1 and the default amplitude holds.
+    let wedge = clamp(0.25 + 0.95 * length(refVec), 0.25, 1.6);
     let caDir = normalize(refVec + vec2<f32>(0.0001));
-    let rUV = clamp(baseUV + caDir * chromatic,        vec2<f32>(0.0), vec2<f32>(1.0));
-    let gUV = clamp(baseUV,                             vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(baseUV - caDir * chromatic,        vec2<f32>(0.0), vec2<f32>(1.0));
+    let rUV = clamp(baseUV + caDir * chromatic * 0.73 * wedge, vec2<f32>(0.0), vec2<f32>(1.0));
+    let gUV = clamp(baseUV,                                     vec2<f32>(0.0), vec2<f32>(1.0));
+    let bUV = clamp(baseUV - caDir * chromatic * 1.27 * wedge, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let r_ = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
     let gS = textureSampleLevel(readTexture, u_sampler, gUV, 0.0);
@@ -173,6 +181,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let glintPulse = 0.4 + 0.6 * sin(cell * 314.1 + time * 3.0 + bass * 5.0);
     col = mix(col, crackTint * glintPulse, edgeMask);
 
+    // Idea 5: light-piping crack halo (§12.2F energy-conserving bloom, analytic from edgeDist —
+    // no new taps). A fracture traps and leaks light into both walls; that glow is light taken
+    // from the glass beside it: the facet gives up `piped` of its own light and receives about the
+    // same in crack tint (a mid-grey facet nets ~0, a dark one brightens, a bright one dims).
+    // Only cracks that are carrying light glow: glintPulse < 0 is HEAD's dark-crack subset (black
+    // fracture lines, kept), and those leak nothing.
+    let carry  = clamp(glintPulse, 0.0, 1.0);
+    let halo   = exp(-edgeDist * 5.0) * edgeGlow * carry;
+    let piped  = halo * 0.75;
+    col = col * (1.0 - piped) + crackTint * (0.30 + 0.55 * carry) * piped * 0.85;
+
     // Idea 3: Stress-line branching — finer hairline cracks that only grow close
     // to the primary cracks, in a hashed subset of cells; bass widens the subset.
     let branchEdge = voronoiEdge3(uv * cellScale * 3.0);
@@ -192,7 +211,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col = mix(col, col * iri * 1.2, 0.12 * (1.0 + mid));
 
     // Semantic alpha: source coverage, cracks (incl. branches) raise it
-    let alpha = clamp(a + (edgeMask + branchMask * 0.5) * 0.5, 0.0, 1.0);
+    let alpha = clamp(a + (edgeMask + branchMask * 0.5) * 0.5 + piped * 0.1, 0.0, 1.0);
 
     let display  = aces(clamp(col, vec3<f32>(0.0), vec3<f32>(1.5)));
     let outColor = vec4<f32>(display, alpha);
