@@ -1234,6 +1234,8 @@
     "description": "Faceted glass/gemstone surface with physical light transmission. Features Voronoi-based facets with mouse-controlled lighting, Fresnel reflection, and purity-based scattering for realistic crystal appearance.",
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
       "alpha-transmission",
       "physical-refraction"
     ],
