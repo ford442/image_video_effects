@@ -2,35 +2,36 @@
 //  Glass Bead Curtain Iridescence — Spherical Thin-Film Lenses
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, refraction, thin-film-interference,
-//            spectral-render, semantic-alpha, ACES
+//            spectral-render, semantic-alpha, ACES, upgraded-rgba, temporal-state
 //  Complexity: Very High
+//  Upgraded: 2026-11-09
+//  Ideas: drained film wedge (§12.2F thin-film phase: film thicker toward the bottom of every bead, 2–3 interference bands per bead, slow creep, visible body sheen); inter-bead contact fringe (grazing-angle film of the bead hugs its rim into the gaps); swing wake (the cursor spring's velocity drags the parted beads along the travel and they swing back). Rescued: the extraBuffer spring was zeroed every frame (= raw cursor) → critically damped spring in two A texels; singular parting at the cursor (normalize(0) folded a flower into the centre) → displacement ramps in from 0; film colour was dark/muddy (raw spectral average peaks ~0.4 luma) → divided by its white reference so the fringes are real rainbow colour. Review fixes: film is luma-matched (hue from the film, luminance from the photo; the first-pass bright film lifted meanL +0.04..0.11 and cut stdL by up to 0.07); the contact fringe reads a continuous lattice-space field (value noise + a once-per-row drain) instead of a per-cell hash, which stepped ~5x harder across cell borders than inside a cell; wake clamp 0.08 -> 0.04 (0.08 folded the parting map, min det -0.10).
+//  A packing: ACES display RGBA (HEAD). Texels (0,0) = (cursor centre.xy, velocity.xy) and (1,0) = (fract(lastTime), 0, 0, 0.7371 sentinel) are STATE, not pixels (top-left corner, invisible); C reads of those texels are masked.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+const SENT: f32 = 0.7371;
+// mean of wavelengthToRGB over the 13 film taps 380..680 nm step 25 (white reference of thinFilmColor)
+const FILM_WHITE: vec3<f32> = vec3<f32>(0.4694, 0.3936, 0.2601);
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
   p3 = p3 + dot(p3, p3.yzx + 33.33);
   return fract((p3.x + p3.y) * p3.z);
+}
+
+// Smooth value noise: the contact fringe reads its film thickness from this (continuous across cell borders)
+// instead of the per-cell hash, whose steps showed as hard colour seams where two beads meet.
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  let a = hash12(i);
+  let b = hash12(i + vec2<f32>(1.0, 0.0));
+  let c = hash12(i + vec2<f32>(0.0, 1.0));
+  let d = hash12(i + vec2<f32>(1.0, 1.0));
+  return mix(mix(a, b, w.x), mix(c, d, w.x), w.y);
 }
 
 fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
@@ -54,7 +55,10 @@ fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
     color += wavelengthToRGB(lambda) * interference;
     sampleCount += 1.0;
   }
-  return color / max(sampleCount, 1.0);
+  // The raw spectral average peaks near 0.4 luma with a warm bias (muddy fringes, the film only ever
+  // greyed the rim). Divide by the film's own white reference (same taps, I = 1): constructive at every
+  // wavelength = white, fringes carry real saturation.
+  return color / max(sampleCount, 1.0) / FILM_WHITE;
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -86,45 +90,47 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let iridescenceIntensity = mix(0.1, 1.8, iridParam) * (1.0 + mids * 0.4);
   let filmThicknessBase = mix(220.0, 780.0, thickParam) * (1.0 + treble * 0.25);
 
-  // Critically damped spring cursor in extraBuffer[133..138]
-  let rawMouse = u.zoom_config.yz;
+  // ── Sprung cursor, persisted in two A texels ─────────────────────
+  // HEAD kept this critically damped spring (stiffness 36, damping 12) in extraBuffer[133..138], which is
+  // re-uploaded zeroed every frame — on the first-frame branch it collapsed to the raw cursor. Texel (0,0)
+  // = (pos.xy, vel.xy), texel (1,0) = (fract(lastTime), 0, 0, SENT). Every thread integrates the same
+  // step from the stored state; the sentinel guards the first frame / inherited C.
+  let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
   let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
-  let isWriter = (global_id.x == 0u && global_id.y == 0u);
-  let hasState = (arrayLength(&extraBuffer) > 138u);
-
-  var mouse = rawMouse;
-  if (hasState && extraBuffer[138] > 0.5) {
-    mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-
-  if (isWriter && hasState) {
-    let lastTime = extraBuffer[137];
-    let dt = clamp(time - lastTime, 0.0, 0.1);
-    var sPos = mouse;
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] < 0.5) {
-      sPos = rawMouse;
-      sVel = vec2<f32>(0.0);
-    }
-    let stiffness = 36.0;
-    let damping = 12.0;
-    let accel = (rawMouse - sPos) * stiffness - sVel * damping;
-    sVel = sVel + accel * dt;
-    sPos = sPos + sVel * dt;
-    extraBuffer[133] = sPos.x;
-    extraBuffer[134] = sPos.y;
-    extraBuffer[135] = sVel.x;
-    extraBuffer[136] = sVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-  }
+  let isStateTexel = (pixel.y == 0 && pixel.x < 2);
+  let st0 = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let st1 = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
+  let stateOk = abs(st1.w - SENT) < 0.001;
+  var mouse = select(rawMouse, st0.xy, stateOk);
+  var mouseVel = select(vec2<f32>(0.0), st0.zw, stateOk);
+  let springDt = select(0.016, clamp(fract(time - st1.x), 0.001, 0.05), stateOk);
+  mouseVel = mouseVel + ((rawMouse - mouse) * 36.0 - mouseVel * 12.0) * springDt;
+  mouse = mouse + mouseVel * springDt;
+  // f16 rest-snap (A is rgba16float on most tiers): settle exactly once near and slow.
+  let settled = all(abs(rawMouse - mouse) < vec2<f32>(0.004)) && length(mouseVel) < 0.06;
+  mouse = select(mouse, rawMouse, settled);
+  mouseVel = select(mouseVel, vec2<f32>(0.0), settled);
 
   // Interactive bead curtain parting
   let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let dist = length(distVec);
   let repelRadius = 0.35 * (1.0 + held * 0.3);
   let interact = smoothstep(repelRadius, 0.0, dist);
-  let curtainPart = normalize(distVec + vec2<f32>(0.0001)) * interact * 0.18;
+  // HEAD pushed with normalize(distVec)·interact·0.18, singular at the cursor (every pixel inside r<0.18
+  // folded across the centre → a flower in the middle of the parting). The push now ramps in from 0
+  // (slope < 1, so the map r → r − push(r) stays monotone).
+  let partRamp = smoothstep(0.0, 0.25, dist);
+  var curtainPart = normalize(distVec + vec2<f32>(0.0001)) * interact * partRamp * 0.18;
+
+  // ── Idea 3: swing wake ───────────────────────────────────────────
+  // A hand pushed through a curtain drags the beads along its travel, and they swing back when it stops.
+  // The sprung cursor's real velocity (alive now) displaces the lattice along the motion; the
+  // critically-damped lag is the swing-back.
+  // The clamp is what keeps the lattice map one-to-one: with parting 0.18 ramping over 0.25 and the wake scaled by
+  // aspect, ±0.08 flips the Jacobian (min det -0.10 over 8 wake directions, aspect 1 and 16:9, held and idle);
+  // ±0.05 only just clears 0 (0.001), ±0.04 keeps det >= 0.02.
+  let wake = clamp(mouseVel * 0.07, vec2<f32>(-0.04), vec2<f32>(0.04));
+  curtainPart = curtainPart + wake * vec2<f32>(aspect, 1.0) * interact;
 
   // Click ripple dispersion
   let rippleCount = min(u32(u.config.y), 50u);
@@ -173,23 +179,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Load background through bead
     let beadSample = textureSampleLevel(readTexture, u_sampler, refractUV, 0.0).rgb;
 
-    // Exact dataTextureC temporal ghost reflection inside bead
+    // Exact dataTextureC temporal ghost reflection inside bead (state texels are not colour)
     let prevCoord = clamp(vec2<i32>(refractUV * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
-    let prevC = textureLoad(dataTextureC, prevCoord, 0).rgb;
+    let prevCRaw = textureLoad(dataTextureC, prevCoord, 0).rgb;
+    let prevC = select(prevCRaw, beadSample, prevCoord.y == 0 && prevCoord.x < 2);
     let beadBase = mix(beadSample, prevC, 0.15) * glassColor;
 
     // Thin-film interference on bead surface
     let cosThetaFilm = sqrt(max(1.0 - rCell * rCell * 1.5, 0.02));
     let filmNoise = hash12(cellIndex * 13.7 + time * 0.05) * 0.4;
-    let filmThickness = filmThicknessBase * (0.8 + filmNoise);
+    // ── Idea 1: drained film wedge (§12.2F thin-film phase) ─────────
+    // A bead's film drains: thicker toward the bottom (cellUV.y grows downward), thinner at the top, so every
+    // bead shows 2–3 horizontal interference bands instead of one flat colour; the film creeps slowly per bead.
+    let creep = 0.08 * sin(time * 0.4 + hash12(cellIndex * 7.1) * 6.28318);
+    let drain = 1.0 + 0.8 * cellUV.y + creep;
+    let filmThickness = filmThicknessBase * (0.8 + filmNoise) * drain;
     let filmIOR = 1.48;
-    let iridescent = thinFilmColor(filmThickness, cosThetaFilm, filmIOR) * iridescenceIntensity;
+    // Luma-matched: the film supplies the HUE, the photo keeps its LUMINANCE (blending a near-constant bright
+    // film over the photo was a milky wash: meanL +0.04..+0.11, stdL -0.04..-0.07). Only the Fresnel rim takes the
+    // film's own brightness; the slider scales how much of the tint is mixed in.
+    let filmN = thinFilmColor(filmThickness, cosThetaFilm, filmIOR);
+    let lumaW = vec3<f32>(0.2126, 0.7152, 0.0722);
+    let filmLuma = max(dot(filmN, lumaW), 0.05);
+    let baseLuma = dot(beadBase, lumaW);
+    let iridescent = filmN / filmLuma * mix(baseLuma, filmLuma, fresnel);
 
     // Specular highlight on bead dome
     let lightDir = normalize(vec3<f32>(-0.6, -0.6, 0.9));
     let spec = pow(max(dot(normal, lightDir), 0.0), 24.0) * (0.65 + treble * 0.35);
 
-    color = mix(beadBase, iridescent, fresnel * iridescenceIntensity * 0.65) + vec3<f32>(1.0, 0.98, 0.95) * spec;
+    // Film reflectance had only the Fresnel^5 rim (≈ 0.03 at the bead centre → plain grey glass); a small
+    // floor keeps the bands visible across the bead body (0.15, hue-only so it no longer lifts the photo).
+    let filmMix = clamp(max(fresnel, 0.15) * iridescenceIntensity * 1.6, 0.0, 0.9);
+    color = mix(beadBase, iridescent, filmMix) + vec3<f32>(1.0, 0.98, 0.95) * spec;
 
     // Bead shadow rim
     let rimShadow = smoothstep(0.48, 0.44, rCell);
@@ -201,19 +223,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gapShadow = smoothstep(0.0, 0.1, gapDist);
     color = src.rgb * (0.88 + 0.12 * gapShadow);
     alpha = clamp(src.a * 0.9, 0.3, 1.0);
+
+    // ── Idea 2: inter-bead contact fringe ───────────────────────────
+    // Coated beads show their film at grazing incidence along the rim that faces the gap, hugging the bead and
+    // fading with gapDist. Thickness is a CONTINUOUS field of lattice position (value noise + a periodic drain
+    // that repeats once per row), so the colour is the same on both sides of a cell border — a per-cell hash
+    // stepped there (fringe jumped ~5x more across borders than inside a cell). Hue only: the gap keeps its own
+    // luminance, so the fringe tints the backdrop instead of whitening it.
+    let lat = pxActive / beadSize;
+    let gapDrain = 1.0 + 0.35 * sin(lat.y * 6.28318 + 1.0);
+    let gapThickness = filmThicknessBase * (0.8 + valueNoise(lat * 0.9 + vec2<f32>(time * 0.03, 0.0)) * 0.4) * gapDrain;
+    let rimN = thinFilmColor(gapThickness, 0.18, 1.48);
+    let rimTint = rimN / max(dot(rimN, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.05) * dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+    color = mix(color, rimTint, exp(-gapDist * 12.0) * 0.8 * clamp(iridescenceIntensity * 0.6, 0.0, 1.0));
   }
 
-  // Exact dataTextureC persistence
-  let prev = textureLoad(dataTextureC, pixel, 0).rgb;
+  // Exact dataTextureC persistence (state texels are not colour)
+  let prevRaw = textureLoad(dataTextureC, pixel, 0).rgb;
+  let prev = select(prevRaw, color, isStateTexel);
   color = mix(color, prev, 0.06);
 
   // ACES Tonemap
-  let finalRGB = aces(color);
+  let finalRGB = aces(max(color, vec3<f32>(0.0)));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
+  // State texels carry the sprung cursor instead of pixels (writeTexture is unaffected).
+  var aOut = finalPixel;
+  if (pixel.y == 0 && pixel.x == 0) { aOut = vec4<f32>(mouse, mouseVel); }
+  if (pixel.y == 0 && pixel.x == 1) { aOut = vec4<f32>(fract(time), 0.0, 0.0, SENT); }
+
   textureStore(writeTexture, pixel, finalPixel);
-  textureStore(dataTextureA, pixel, finalPixel);
+  textureStore(dataTextureA, pixel, aOut);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

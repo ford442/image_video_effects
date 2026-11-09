@@ -5,9 +5,15 @@
 //            crystal-refraction, caustics, rim-lighting, subsurface-scattering,
 //            upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: facet crease along u=v; lead came at triangle borders
+//  Upgraded: 2026-09-09, 2026-11-09
+//  Ideas: facet crease along u=v; lead came at triangle borders;
+//         chamfered tessera refraction with edge dispersion; chamfer faces lit by the cursor lamp;
+//         hand-set tesserae (per-tile rotation + tint jitter)
 //  A packing: ACES display RGBA
+//  Rescue: rotation pivot / mouse-influence centre drifted off the tile (triCenter y, odd-row shift);
+//          "edge" mask was the tile core (chromatic split moved to the real chamfer); dead radial chromaticAberration() branch removed;
+//          per-frame hash sparkle strobe replaced by a smooth per-tile blink
+//          mouse-influence zone aspect-corrected (round on wide screens); lamp has a reach (fades by 0.55)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -51,7 +57,7 @@ fn caustics(uv: vec2<f32>, time: f32, intensity: f32) -> vec3<f32> {
   caustic = caustic + sin(p.x * 2.0 - p.y * 3.0 + time * 2.0) * 0.5;
   caustic = caustic + sin(length(p) * 4.0 - time * 3.0) * 0.3;
   caustic = caustic * 0.5 + 0.5;
-  caustic = pow(caustic, 3.0); // Sharpen caustic bands
+  caustic = pow(max(caustic, 0.0), 3.0); // Sharpen caustic bands
 
   // Warm caustic color: golden + cyan mix
   let warmCaustic = vec3<f32>(1.0, 0.85, 0.5) * caustic * intensity;
@@ -79,27 +85,13 @@ fn lightAttenuation(d: f32, k: f32, q: f32) -> f32 {
   return 1.0 / (1.0 + k * d + q * d * d);
 }
 
-// ═══ Chromatic Aberration at Tile Edges ═══
-fn chromaticAberration(uv: vec2<f32>, edgeStrength: f32, radialOffset: f32) -> vec3<f32> {
-  let center = vec2<f32>(0.5);
-  let d = uv - center;
-  let radialDist = length(d);
-  let offset = radialDist * radialOffset * edgeStrength;
-  let rUV = uv + d * offset * 1.0;
-  let gUV = uv + d * offset * 0.5;
-  let bUV = uv + d * offset * 1.5;
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(bUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  return vec3<f32>(r, g, b);
-}
-
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
     let uv = vec2<f32>(global_id.xy) / resolution;
+    let aspect = resolution.x / resolution.y;
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
@@ -123,13 +115,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Triangle inside rhombus
     let triID = vec2<f32>(i + f32(rowParity) * 0.5, j);
-    let triCenter = (triID + vec2<f32>(0.5, 0.57735)) / density;
+    // R1: the true centre of the DRAWN tile. HEAD used (j + 0.57735)/density for y (drifts
+    // 0.1547·j/density down the screen) and shifted odd rows half a tile the grid never had,
+    // so the rotation pivot and the mouse-influence centre sat off their own tile.
+    let tileCell = vec2<f32>(i, j);
+    let triCenter = (tileCell + vec2<f32>(0.5)) / vec2<f32>(density, density * 0.8660254);
 
-    let dToMouse = length(triCenter - mousePos);
+    // aspect-corrected (HEAD's influence zone was an ellipse on wide screens)
+    let dToMouse = length((triCenter - mousePos) * vec2<f32>(aspect, 1.0));
     let influence = smoothstep(0.4, 0.0, dToMouse) * mouseInfluence;
 
+    // ── Idea 3: hand-set tesserae ───────────────────────────────────────
+    // Real mosaic tiles are set one by one, never at the same angle. Each tile gets its own
+    // rotation offset (amplitude = the Rotation slider, so 0 keeps the grid aligned) and a
+    // small brightness / warm-cool tint, so neighbours stop rotating in lockstep.
+    let tileH = hash21(tileCell + vec2<f32>(7.3, 19.1));
+    let tileT = hash21(tileCell + vec2<f32>(41.7, 5.3));
+    let jitter = (tileH - 0.5) * rotationAmt * 1.4;
+    let tileTint = (0.93 + 0.14 * tileT) * mix(vec3<f32>(1.02, 0.99, 0.95), vec3<f32>(0.95, 0.99, 1.03), tileT);
+
     // Rotate triangle based on mouse + audio
-    let rot = (rotationAmt + influence + bass * 0.1) * 0.5;
+    let rot = (rotationAmt + influence + bass * 0.1) * 0.5 + jitter;
     let localUV = uv - triCenter;
     let c = cos(rot);
     let s_rot = sin(rot);
@@ -138,73 +144,110 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         localUV.x * s_rot + localUV.y * c
     ) + triCenter + vec2<f32>(depthShift, depthShift);
 
-    // Edge factor for chromatic aberration
-    let edge = smoothstep(0.15, 0.0, abs(v_frac - 0.5) + abs(u_frac - 0.5) * 0.5);
+    // Distance to the nearest tile border (tile units) and which side it is
+    let du = min(u_frac, 1.0 - u_frac);
+    let dv = min(v_frac, 1.0 - v_frac);
+    let borderDist = min(du, dv);
 
-    // ═══ CRYSTAL REFRACTION SAMPLING ═══
-    // Apply chromatic aberration at tile edges
-    var refractedColor = chromaticAberration(rotatedUV, edge * chromaticEdge * (1.0 + bass), 0.02);
+    // R2: HEAD's "edge" is 1 at the tile CORE (a flat diamond), not at the edges. Caustics,
+    // sparkle, env-Fresnel, rim and the SSS thickness keep it under its real name (a domed tile
+    // focuses light in the middle; their strengths were tuned to that small core). Only the
+    // chromatic split, which is named for edges, moves to the chamfer band below.
+    let core = smoothstep(0.15, 0.0, abs(v_frac - 0.5) + abs(u_frac - 0.5) * 0.5);
 
-    // Standard RGB split for comparison
-    let rUV = clamp(rotatedUV + vec2<f32>(chromaticEdge * edge * (1.0 + bass), 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
-    let bUV = clamp(rotatedUV - vec2<f32>(chromaticEdge * edge * (1.0 + treble), 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    // ── Idea 1: chamfered tessera refraction + edge dispersion ──────────
+    // A glass tessera has a chamfer just inside the lead came: a planar prism wedge. It deviates
+    // the image toward the tile centre (small-angle thin-prism shift, scaled by tile size) and
+    // splits R/B along that slope — the Chromatic Edge slider is the dispersion amplitude,
+    // now where its name says (HEAD's radial branch was ~4e-5 uv and its live split sat
+    // in the tile core).
+    let useU = step(du, dv);
+    let dirIn = mix(vec2<f32>(0.0, select(-1.0, 1.0, v_frac < 0.5)),
+                    vec2<f32>(select(-1.0, 1.0, u_frac < 0.5), 0.0), useU);
+    let bevel = 1.0 - smoothstep(0.17, 0.21, borderDist);
+    let bevelDir = dirIn * bevel;
+    let chamfer = bevelDir * (0.12 / density);
+    let disp = bevelDir * chromaticEdge * 1.6;
+
+    let rUV = clamp(rotatedUV + chamfer + disp * (1.0 + bass), vec2<f32>(0.0), vec2<f32>(1.0));
+    let gUV = clamp(rotatedUV + chamfer, vec2<f32>(0.0), vec2<f32>(1.0));
+    let bUV = clamp(rotatedUV + chamfer - disp * (1.0 + treble), vec2<f32>(0.0), vec2<f32>(1.0));
     let r = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, rotatedUV, 0.0).g;
+    let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
-    // Blend refracted and standard sampling based on edge strength
-    var color = mix(vec3<f32>(r, g, b), refractedColor, edge * 0.5);
+    var color = vec3<f32>(r, g, b) * tileTint;
 
     // ═══ CAUSTICS LIGHTING ═══
     // Project caustics onto tile surfaces, animated by time
     let causticIntensity = 0.5 + mids * 0.5 + influence * 0.3;
     let causticColor = caustics(triCenter + time * 0.05, time, causticIntensity);
-    color = color + causticColor * edge * (0.3 + bass * 0.2);
+    color = color + causticColor * core * (0.3 + bass * 0.2);
 
     // ═══ CRYSTAL FRESNEL REFLECTIONS ═══
     // Build approximate normal from tile orientation
-    let tileNormal = normalize(vec3<f32>(cos(rot), sin(rot), 0.5 + edge * 0.5));
+    let tileNormal = normalize(vec3<f32>(cos(rot), sin(rot), 0.5 + core * 0.5));
     let viewDir = normalize(vec3<f32>(uv.x - 0.5, uv.y - 0.5, 1.0));
     let cosTheta = max(dot(viewDir, tileNormal), 0.0);
     let fresnel = crystalFresnel(cosTheta, 0.04); // Glass F0
     // Reflect environment color based on fresnel
     let envReflect = vec3<f32>(0.6, 0.7, 0.8) * fresnel * (0.5 + treble * 0.3);
-    color = color + envReflect * edge;
+    color = color + envReflect * core;
 
-    // ═══ RIM LIGHTING ON TILE EDGES ═══
+    // ═══ RIM LIGHTING (tile core, as HEAD) ═══
     let rim = rimLighting(viewDir, tileNormal, 1.0 + bass * 1.5);
-    let rimColor = vec3<f32>(0.8, 0.9, 1.0) * rim * edge * (0.5 + influence * 0.5);
+    let rimColor = vec3<f32>(0.8, 0.9, 1.0) * rim * core * (0.5 + influence * 0.5);
     color = color + rimColor;
+
+    // ── Idea 2: chamfer faces lit by the cursor lamp ────────────────────
+    // The four chamfer faces of a tile lean outward (they slope down to the came). The lamp is
+    // the cursor (the file already owns it): faces turned toward it brighten over what a flat
+    // tile gets, faces turned away darken, and a Blinn glint runs on the faces whose tilt
+    // matches the half-vector. Pointer strength rides Mouse Influence over its WHOLE range
+    // (0 = no lamp, 1 = twice the default) and the lamp has a reach: it fades out by 0.55
+    // (height units) so the picture far from the cursor stays as it was (review fix).
+    let lampVec = vec3<f32>((mousePos - uv) * vec2<f32>(aspect, 1.0), 0.25);
+    let lampDir = lampVec / max(length(lampVec), 1e-4);
+    let chamferN = normalize(vec3<f32>(-dirIn * 0.55, 1.0));
+    let lamb = max(dot(chamferN, lampDir), 0.0);
+    let halfV = normalize(lampDir + vec3<f32>(0.0, 0.0, 1.0));
+    let glint = pow(max(dot(chamferN, halfV), 0.0), 28.0);
+    let lampReach = smoothstep(0.55, 0.10, length(lampVec.xy));
+    let lampAmt = mouseInfluence * 2.0 * lampReach;
+    color = color * max(1.0 + bevel * (lamb - lampDir.z) * 1.3 * lampAmt, 0.35);
+    color = color + vec3<f32>(1.0, 0.96, 0.88) * bevel * glint * (0.3 + treble * 0.5) * lampAmt;
 
     // ═══ SUBSURFACE SCATTERING GLOW ═══
     // Light penetrates thin crystal edges
-    let thickness = 1.0 - edge; // Thinner at edges
+    let thickness = 1.0 - core; // Thinner at edges
     let sssGlow = subsurfaceGlow(uv, mousePos, thickness, 0.8 + mids * 0.5);
     let sssColor = mix(vec3<f32>(0.9, 0.6, 0.3), vec3<f32>(0.3, 0.6, 0.9), sin(time + triID.x * 0.5) * 0.5 + 0.5);
     color = color + sssColor * sssGlow * influence * 0.4;
 
     // Tile border highlight with light attenuation
-    let borderDist = min(min(u_frac, 1.0 - u_frac), min(v_frac, 1.0 - v_frac));
     let border = smoothstep(0.05, 0.0, borderDist) * mids;
     let borderAtten = lightAttenuation(borderDist * 20.0, 0.1, 0.05);
     color = color + vec3<f32>(0.3, 0.2, 0.4) * border * borderAtten;
 
     // ═══ AUDIO-REACTIVE SPARKLE ON CRYSTAL FACETS ═══
-    let sparkle = hash21(triID + time * 0.2) * treble * edge * 0.5;
+    // R4: smooth per-tile blink (HEAD re-hashed every frame, which strobed under treble).
+    let blinkRate = 3.0 + 4.0 * hash21(triID);
+    let blink = max(sin(time * blinkRate + TAU * hash21(triID.yx)), 0.0);
+    let sparkle = blink * blink * blink * blink * treble * core * 0.6;
     color = color + vec3<f32>(1.0, 0.95, 0.85) * sparkle;
 
-    // Idea 1: facet crease — rhombus splits into two flat faces along u=v.
+    // Idea 1 (2026-09): facet crease — rhombus splits into two flat faces along u=v.
     let crease = 1.0 - smoothstep(0.0, 0.045, abs(u_frac - v_frac));
     color = color * (1.0 - crease * 0.28);
 
-    // Idea 2: lead came — dark grout at triangle borders.
-    let came = 1.0 - smoothstep(0.0, 0.07, min(min(u_frac, 1.0 - u_frac), min(v_frac, 1.0 - v_frac)));
+    // Idea 2 (2026-09): lead came — dark grout at triangle borders.
+    let came = 1.0 - smoothstep(0.0, 0.07, borderDist);
     color = mix(color, color * vec3<f32>(0.12, 0.10, 0.14), came * 0.72);
 
     let srcA = textureSampleLevel(readTexture, u_sampler, clamp(rotatedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).a;
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(0.85 + border * 0.15 + luma * 0.2 + bass * 0.05 + edge * 0.1 + srcA * 0.05, 0.0, 1.0);
-    let mapped = acesToneMap(color);
+    let alpha = clamp(0.85 + border * 0.15 + luma * 0.2 + bass * 0.05 + core * 0.1 + srcA * 0.05, 0.0, 1.0);
+    let mapped = acesToneMap(clamp(color, vec3<f32>(0.0), vec3<f32>(4.0)));
     let outCol = vec4<f32>(mapped, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), outCol);

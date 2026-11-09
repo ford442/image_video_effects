@@ -21,7 +21,8 @@
     "audio-reactive",
     "exact-feedback",
     "temporal-state",
-    "ACES-tonemapped"
+    "ACES-tonemapped",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -57,7 +58,7 @@
       "step": 0.01
     }
   ],
-  "feedbackPacking": "A/C = display RGBA with tilted tile prismatic refraction and Fresnel highlights",
+  "feedbackPacking": "A/C = display RGBA with tilted tile prismatic refraction and Fresnel highlights; A texels (0,0) and (1,0) carry the pointer spring state (pos, vel, fract(time), click impulse, prevDown, sentinel) and are masked when C is read",
   "updated": true,
   "x-meta": {
     "upgrade": {
