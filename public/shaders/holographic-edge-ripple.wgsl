@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: grating streaks (iridescence smeared 3 taps along edgeNormal, length by Holographic Shift); interference orders (thin-film phase cosTheta*(edgeConf+depth) with 3 orders so bands repeat across the edge width); true depth parallax (layer 2 sampled at uv + (uv-0.5)*baseSep*depth with its own edge mask)
+//  Upgraded: 2026-11-09
+//  Ideas: grating streaks (iridescence smeared 3 taps along edgeNormal, length by Holographic Shift); interference orders (thin-film phase cosTheta*(edgeConf+depth) with 3 orders so bands repeat across the edge width); true depth parallax (layer 2 sampled at uv + (uv-0.5)*baseSep*depth with its own edge mask); ±1 diffraction-order ghosts (rainbow edge copies along a pointer-rotated grating axis); wavefront dispersion (edge-wave displacement split per R/G/B); pointer-sliding reconstruction speckle on the iridescence
 //  A packing: linear pre-ACES RGBA (30% edge-gated exact-C feedback)
 //  Chunks From: edge-detect, holographic-foil, damped-wave
 //  Created: 2026-05-30
@@ -186,11 +186,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let holoPlus = fresnelIridescence(cosTheta, shiftBase + 0.12, film);
   let holoMinus = fresnelIridescence(cosTheta, shiftBase - 0.12, film);
   let gratingMask = clamp(max(edgeMask, max(maskPlus, maskMinus) * 0.8), 0.0, 1.0);
+  // IDEA 6 (2026-11-09): reconstruction speckle — coherent light granulates on the edges;
+  // the speckle field slides with the pointer like it does when you tilt a real hologram.
+  let spk = floor(vec2<f32>(global_id.xy) * 0.5 + mouse * resolution * 0.15);
+  let speckle = mix(0.55, 1.45, hash21(spk * 0.0173 + vec2(3.1, 7.7)));
   let smeared = holo * edgeMask + (holoPlus * maskPlus + holoMinus * maskMinus) * 0.55;
-  let diffraction = smeared * (1.0 + wave * 0.5) * depthSep;
+  let diffraction = smeared * speckle * (1.0 + wave * 0.5) * depthSep;
 
-  let displacedUV = uv + edgeNormal.xy * wave * 0.02 * edgeMask;
-  let displaced = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+  // IDEA 5 (2026-11-09): wavefront dispersion — the edge wave bends each wavelength by a
+  // different amount, so the displaced photo sample splits R/G/B along the edge normal.
+  let dispBase = edgeNormal.xy * wave * 0.02 * edgeMask;
+  let dispersion = 1.0 + 0.6 * u.zoom_params.w;
+  let displaced = vec3<f32>(
+      textureSampleLevel(readTexture, u_sampler, uv + dispBase * dispersion, 0.0).r,
+      textureSampleLevel(readTexture, u_sampler, uv + dispBase, 0.0).g,
+      textureSampleLevel(readTexture, u_sampler, uv + dispBase / dispersion, 0.0).b);
+
+  // IDEA 4 (2026-11-09): ±1 diffraction orders — a hologram's grating throws faint rainbow
+  // copies of the edge map to either side; the grating axis turns with pointer x and the
+  // order separation grows with Holographic Shift (and mids).
+  let gAng = (mouse.x - 0.5) * PI + 0.35;
+  let gAxis = vec2<f32>(cos(gAng), sin(gAng) * aspect) * (0.012 + 0.03 * u.zoom_params.w) * (1.0 + mid * 0.3);
+  var orders = vec3<f32>(0.0);
+  for (var k = 0; k < 2; k = k + 1) {
+      let sgn = f32(k) * 2.0 - 1.0;
+      for (var c = 0; c < 3; c = c + 1) {
+          // red diffracts furthest, blue least (grating equation sin θ = mλ/d)
+          let lam = 1.0 - f32(c) * 0.22;
+          let ouv = clamp(uv - gAxis * sgn * lam, vec2(0.0), vec2(1.0));
+          let oc = smoothstep(edgeThreshold * 0.3, edgeThreshold, laplacianEdge(ouv, ps));
+          orders[c] += oc;
+      }
+  }
+  let orderLight = orders * 0.22 * (1.0 - edgeMask) * (0.7 + 0.3 * heldRamp);
+
 
   let secondaryRipple = sin(edgeConf * 80.0 + time * rippleSpeed * 1.3) * 0.3 * edgeMask * mouseAttract;
   let caustic = max(0.0, secondaryRipple) * diffractionHue(edgeConf * 6.0, holoShift) * 0.5 * (1.0 + treble * 0.4);
@@ -213,6 +242,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                + diffraction * (0.6 + bass * 0.4)
                + caustic
                + layerMix
+               + orderLight
                + grain
                + clickRipples * vec3(0.2, 0.5, 1.0) * (1.0 + treble * 0.5);
 
@@ -223,7 +253,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let tonemapped = aces_tonemap(emission);
 
   // Semantic alpha
-  var alpha = gratingMask * length(diffraction) * 2.5 + abs(clickRipples) * 2.0;
+  var alpha = gratingMask * length(diffraction) * 2.5 + length(orderLight) + abs(clickRipples) * 2.0;
   alpha = clamp(alpha + bg.a * (1.0 - edgeMask * 0.5), 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(tonemapped, alpha));

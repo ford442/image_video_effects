@@ -144,7 +144,9 @@
     "supportsDepth": true,
     "tags": [
       "filter",
-      "image-processing"
+      "image-processing",
+      "ascii",
+      "lens"
     ],
     "updated": true
   },
@@ -1083,8 +1085,7 @@
       "crossover",
       "mouse-driven",
       "spectral-rendering",
-      "audio-reactive",
-      "upgraded-rgba"
+      "audio-reactive"
     ],
     "params": [
       {
@@ -1234,6 +1235,8 @@
     "description": "Faceted glass/gemstone surface with physical light transmission. Features Voronoi-based facets with mouse-controlled lighting, Fresnel reflection, and purity-based scattering for realistic crystal appearance.",
     "features": [
       "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
       "alpha-transmission",
       "physical-refraction"
     ],
@@ -1446,7 +1449,7 @@
     "name": "Cyber Glitch Hologram",
     "category": "interactive-mouse",
     "url": "shaders/cyber-glitch-hologram.wgsl",
-    "description": "Block-based datamoshing with structure-tensor motion estimation, holographic cosine interference fringes, cyan/magenta color separation, chromatic aberration on glitch blocks, and ACES tone mapping.",
+    "description": "Block-swap datamosh with structure-tensor motion, holographic interference fringes, swapped-macroblock seams, depth-slice contour lines and scan-carrier projector dropout around the pointer, ACES tone mapping.",
     "params": [
       {
         "id": "hologramIntensity",
@@ -2391,7 +2394,7 @@
     "id": "directional-glitch",
     "name": "Directional Glitch",
     "url": "shaders/directional-glitch.wgsl",
-    "description": "SDF-masked Voronoi-ridge and FBM domain-warped glitch bands radiate from the mouse, driven by curl-noise displacement, audio-reactive cosine palette, chromatic aberration, depth-aware masking, and kaleidoscope temporal feedback.",
+    "description": "SDF mouse zone where voronoi/FBM glitch cells tear along the cursor heading in block-pitch steps, with compass-snapped per-cell headings, RGB split on the tear axis, leading-edge overrun slivers, audio palette, and a local kaleidoscope echo.",
     "params": [
       {
         "id": "intensity",
@@ -2476,7 +2479,6 @@
       "audio-reactive",
       "upgraded-rgba",
       "depth-aware",
-      "fast-motion",
       "spring-cursor",
       "held-drag",
       "bounded-click-ripples",
@@ -2526,7 +2528,6 @@
       "double-exposure",
       "zoom",
       "overlay",
-      "fast-motion",
       "audio-reactive",
       "aces"
     ]
@@ -5961,7 +5962,7 @@
     "id": "magnetic-luma-sort",
     "name": "Magnetic Luma Sort",
     "url": "shaders/magnetic-luma-sort.wgsl",
-    "description": "Luma-gated magnetic sorting with a guarded spring, canonical plasma bands and read-only FFT voices, exact-load trail advection, bounded click vortices, ACES, and semantic trail alpha.",
+    "description": "Luma-gated magnetic sorting: compare-swap sort taps along the pull, magnetic hysteresis that keeps moving pixels sorting below the gate, dipole field lines, click vortices, linear trail feedback with ACES on display.",
     "params": [
       {
         "id": "pullStrength",
@@ -5997,7 +5998,6 @@
       "audio-reactive",
       "temporal",
       "exact-history",
-      "spring-interaction",
       "click-reactive",
       "aces-tone-map",
       "semantic-alpha",
@@ -9531,12 +9531,13 @@
     "features": [
       "mouse-driven",
       "distortion",
-      "audio-reactive",
-      "upgraded-rgba"
+      "audio-reactive"
     ],
     "tags": [
       "mouse-driven",
-      "interactive"
+      "interactive",
+      "quantum",
+      "chromatic"
     ],
     "updated": true
   },
@@ -10646,13 +10647,11 @@
       "mouse-driven",
       "sorting",
       "audio-reactive",
-      "palette-mapped",
       "chromatic-edge",
       "upgraded-rgba",
       "aces-tone-map",
       "click-reactive",
       "held-drag",
-      "spring-cursor",
       "shared-memory",
       "bitonic-sort"
     ],

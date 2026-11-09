@@ -1,30 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Glitch Hologram — Batch 66
-//  fp128 fringe phase, structure-tensor datamosh, dual-layer parallax,
-//  C smear trails, racing scan carriers, capped click bursts, held widens
-//  glitch halo, ACES + semantic alpha.
+//  Cyber Glitch Hologram
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-09
+//  Ideas: swapped-macroblock seams; depth-slice contour lines; racer projector dropout
+//  A packing: linear smear RGB + display alpha (C read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -139,6 +123,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let blockHash = hash12(blockUV * 13.37 + vec2<f32>(sin(blockPhase), cos(blockPhase * 1.37)));
   let swapTrigger = step(0.88 - bass * 0.22, blockHash);
   let swapDir = hash22(blockUV * 7.91 + vec2<f32>(blockPhase * 0.7, blockPhase * 0.4)) - 0.5;
+  // Idea 1: swapped-macroblock seams — border distance inside the block cell
+  let cellF = fract(uv * blockScale);
+  let edgeD = min(min(cellF.x, 1.0 - cellF.x), min(cellF.y, 1.0 - cellF.y));
+  let seam = swapTrigger * smoothstep(0.12, 0.0, edgeD) * glitchAmount;
   let swapOffset = swapDir * swapTrigger * glitchAmount * 0.07;
 
   let motion = structure_tensor(uv, resolution);
@@ -203,12 +191,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   hdr = hdr * (1.0 - deadZoneMask) + vec3<f32>(0.05, 0.12, 0.15) * deadZoneMask;
   hdr = hdr + vec3<f32>(0.35, 0.9, 1.0) * clickBurst * (0.4 + bass * 0.3);
 
-  let band = min(u32(uv.x * 8.0), 7u);
-  hdr = hdr + vec3<f32>(0.04, 0.1, 0.14) * plasmaBuffer[band + 1u].x * mouseInfluence * 0.12;
+  // Rescue: plasmaBuffer[1..8] is never uploaded — treble-driven fringe sparkle instead.
+  hdr = hdr + vec3<f32>(0.04, 0.1, 0.14) * treble * fringe * mouseInfluence * 0.6;
+
+  // Idea 1 (draw): seams glow cyan, stronger inside the hologram
+  hdr = hdr + vec3<f32>(0.2, 0.9, 1.0) * seam * (0.35 + mouseInfluence * 0.8);
+
+  // Idea 2: depth-slice contour lines, scrolled by the scan, coloured by the fringe
+  let slicePhase = fract(depth * 14.0 - time * scanSpeed * 0.6);
+  let slice = smoothstep(0.08, 0.0, abs(slicePhase - 0.5) - 0.42) * mouseInfluence;
+  hdr = hdr + mix(vec3<f32>(1.0, 0.1, 0.8), vec3<f32>(0.1, 0.9, 1.0), fringe) * slice * 0.35;
+
+  // Idea 3: racer projector dropout — hologram loses lock as the carrier passes
+  let lockHash = hash12(vec2<f32>(floor(uv.y * resolution.y * 0.25), floor(time * 24.0)));
+  let dropout = racer * step(0.55 - bass * 0.3, lockHash) * mouseInfluence;
+  hdr = mix(hdr, hdr * vec3<f32>(0.35, 0.6, 0.7), dropout * 0.8);
 
   let tonemapped = aces_tonemap(hdr);
   let confidence = mouseInfluence * (1.0 - deadZone * 0.6);
-  let alpha = clamp(confidence * (1.0 - glitchCorruption) * 0.85 + banding * 0.3 + bass * 0.04 + clickBurst * 0.15, 0.06, 0.92);
+  let alpha = clamp(confidence * (1.0 - glitchCorruption) * 0.85 + banding * 0.3 + bass * 0.04 + clickBurst * 0.15 + seam * 0.2 - dropout * 0.4, 0.06, 0.92);
   let outDepth = clamp(depth + mouseInfluence * 0.06, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(tonemapped, alpha));

@@ -1,29 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Pixel Sort Glitch — Batch 61
-//  Edge-aware threshold sort + spring epicenter, held, ripples, audio,
-//  ACES display, semantic alpha. A: edgeDir.xy packed, edgeMag, mask.
+//  Pixel Sort Glitch
+//  Category: distortion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-09
+//  Ideas: anchored span rank sort (per-line hashed span phase, pixel takes the k-th luma of its span); FFT-banded span length (column band's bin lengthens its drips); span-end channel slip (R/B tear along sortDir at the bright end)
+//  A packing: edgeDir.xy*0.5+0.5, edgeMag, threshold mask (C unread)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn luminance(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
@@ -65,36 +50,38 @@ fn edgeDirection(grad: vec2<f32>) -> vec2<f32> {
     return grad / mag;
 }
 
-fn sortWindow(uv: vec2<f32>, resolution: vec2<f32>,
-              sortDir: vec2<f32>, windowSize: i32,
-              currentLuma: f32, currentColor: vec3<f32>) -> vec3<f32> {
-    var samples: array<vec4<f32>, 32>;
-    var count: i32 = 0;
-    let halfWindow = windowSize / 2;
-    for (var i: i32 = -halfWindow; i <= halfWindow; i = i + 1) {
-        if (count >= 32) { break; }
-        let sampleUV = uv + sortDir * f32(i) / resolution;
-        let col = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(0.999)), 0.0).rgb;
-        samples[count] = vec4<f32>(col, luminance(col));
-        count = count + 1;
+// IDEA 1: anchored span rank sort. Spans of `spanLen` pixels are laid along sortDir with a
+// per-line hashed phase; every pixel of a span reads the same samples and outputs the
+// element whose luma rank equals its own position in the span -> a true ascending sort.
+// (HEAD did one bubble pass, then returned the sample nearest its own luma = identity.)
+// Returns rgb + position-in-span t (0 = dark end, 1 = bright end).
+fn spanSort(uv: vec2<f32>, resolution: vec2<f32>, sortDir: vec2<f32>, spanLen: i32) -> vec4<f32> {
+    let pix = uv * resolution;
+    let along = dot(pix, sortDir);
+    let across = dot(pix, vec2<f32>(-sortDir.y, sortDir.x));
+    let n = clamp(spanLen, 2, 32);
+    let fn_ = f32(n);
+    let phase = hash12(vec2<f32>(floor(across), 17.0)) * fn_;
+    let local = along + phase;
+    let pos = i32(clamp(floor(local - floor(local / fn_) * fn_), 0.0, fn_ - 1.0));
+    let start = along - f32(pos);
+    var cols: array<vec3<f32>, 32>;
+    var lums: array<f32, 32>;
+    for (var i: i32 = 0; i < n; i = i + 1) {
+        let p = pix + sortDir * (start + f32(i) - along);
+        let c = textureSampleLevel(readTexture, u_sampler, clamp(p / resolution, vec2<f32>(0.0), vec2<f32>(0.999)), 0.0).rgb;
+        cols[i] = c;
+        lums[i] = luminance(c) + f32(i) * 1e-5; // strict order for ties
     }
-    for (var j: i32 = 0; j < count - 1; j = j + 1) {
-        if (samples[j].w > samples[j + 1].w) {
-            let temp = samples[j];
-            samples[j] = samples[j + 1];
-            samples[j + 1] = temp;
+    var result = cols[pos];
+    for (var i: i32 = 0; i < n; i = i + 1) {
+        var rank = 0;
+        for (var j: i32 = 0; j < n; j = j + 1) {
+            if (lums[j] < lums[i]) { rank = rank + 1; }
         }
+        if (rank == pos) { result = cols[i]; }
     }
-    var result = currentColor;
-    var minDiff: f32 = 1000.0;
-    for (var k: i32 = 0; k < count; k = k + 1) {
-        let diff = abs(samples[k].w - currentLuma);
-        if (diff < minDiff) {
-            minDiff = diff;
-            result = samples[k].rgb;
-        }
-    }
-    return result;
+    return vec4<f32>(result, f32(pos) / (fn_ - 1.0));
 }
 
 fn flowSort(uv: vec2<f32>, resolution: vec2<f32>,
@@ -139,21 +126,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeInfluence = u.zoom_params.w;
 
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-
-    if (global_id.x == 0u && global_id.y == 0u) {
-        if (mousePos.x == 0.0 && mousePos.y == 0.0 && currentTime < 2.0) {
-            mousePos = rawMouse;
-            mouseVel = vec2<f32>(0.0);
-        }
-        mouseVel = (mouseVel + (rawMouse - mousePos) * 0.16) * 0.74;
-        mousePos = mousePos + mouseVel;
-        extraBuffer[133] = mousePos.x;
-        extraBuffer[134] = mousePos.y;
-        extraBuffer[135] = mouseVel.x;
-        extraBuffer[136] = mouseVel.y;
-    }
+    // FIX: the extraBuffer[133..136] spring is re-zeroed every frame, so the epicenter sat
+    // near (0,0) and the pointer-y threshold term was always ~0. Use the live pointer.
+    let mousePos = rawMouse;
 
     let mouseDist = length((uv - mousePos) * vec2<f32>(aspect, 1.0));
     let epicenterBoost = (1.0 - smoothstep(0.0, 0.45, mouseDist)) * select(1.0, 1.4, held);
@@ -196,16 +171,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let maskSmooth = smoothstep(effectiveThreshold - 0.1, effectiveThreshold + 0.1, currentLuma);
 
     var outputColor: vec3<f32>;
+    // IDEA 2: FFT-banded span length — the pixel's column band reads one FFT bin
+    // (extraBuffer[5..132]); loud bands grow longer drips. Replaces dead plasmaBuffer[1..8].
+    let band = u32(clamp(uv.x * 8.0, 0.0, 7.0));
+    let blockVoice = clamp(extraBuffer[5u + band * 6u], 0.0, 1.0);
+    var tSpan = 0.5;
     if (mask) {
-        let iWindowSize = i32(clamp(windowSize, 1.0, 32.0));
+        let iWindowSize = i32(clamp(windowSize * (1.0 + blockVoice * 0.8 + bass * 0.3), 2.0, 32.0));
         let flowStrength = (currentLuma - effectiveThreshold) / (1.0 - effectiveThreshold + 0.001);
         if (flowStrength > 0.5 && edgeInfluence > 0.5) {
             outputColor = flowSort(sortUV, resolution, sortDir, flowStrength * 50.0, effectiveThreshold);
         } else {
-            outputColor = sortWindow(sortUV, resolution, sortDir, iWindowSize, currentLuma, currentColor);
+            let sorted = spanSort(sortUV, resolution, sortDir, iWindowSize);
+            outputColor = sorted.rgb;
+            tSpan = sorted.w;
+            // IDEA 3: span-end channel slip — at the bright end of each span the R and B
+            // channels tear along sortDir by a couple of pixels (treble widens the tear).
+            let slip = smoothstep(0.7, 1.0, tSpan) * (1.5 + treble * 3.0) / resolution;
+            let rS = textureSampleLevel(readTexture, u_sampler, clamp(sortUV + sortDir * slip, vec2<f32>(0.0), vec2<f32>(0.999)), 0.0).r;
+            let bS = textureSampleLevel(readTexture, u_sampler, clamp(sortUV - sortDir * slip, vec2<f32>(0.0), vec2<f32>(0.999)), 0.0).b;
+            let slipAmt = smoothstep(0.7, 1.0, tSpan) * 0.6;
+            outputColor = vec3<f32>(mix(outputColor.r, rS, slipAmt), outputColor.g, mix(outputColor.b, bS, slipAmt));
         }
-        let binIndex = (u32(uv.x * 8.0) % 8u) + 1u;
-        let blockVoice = plasmaBuffer[binIndex].x;
         let noise = fract(sin(dot(sortUV * currentTime, vec2<f32>(12.9898, 78.233))) * 43758.5453);
         let glitchAmount = (currentLuma - effectiveThreshold) * 0.1 * noise * (1.0 + treble * 0.5 + blockVoice * 0.3);
         outputColor = mix(currentColor, outputColor, maskSmooth);
@@ -219,7 +206,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     outputColor = outputColor * (1.0 + bass * 0.04 + mids * 0.02);
     outputColor = clamp(outputColor, vec3<f32>(0.0), vec3<f32>(4.0));
 
-    let alpha = clamp(maskSmooth * 0.55 + edgeMag * 0.25 + epicenterBoost * 0.15 + bass * 0.05, 0.0, 1.0);
+    // Semantic alpha: opaque picture, sorted coverage reads as full; untouched areas 0.85.
+    let alpha = clamp(0.85 + maskSmooth * 0.15 + edgeMag * 0.05, 0.0, 1.0);
     let displayRgb = acesToneMap(outputColor);
 
     textureStore(writeTexture, coord, vec4<f32>(displayRgb, alpha));

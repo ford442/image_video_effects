@@ -128,7 +128,7 @@
     "id": "byte-mosh",
     "name": "Byte-Mosh Glitch",
     "url": "shaders/byte-mosh-mangle.wgsl",
-    "description": "LFSR/GF(2) datamosh corruption with spring cursor, held burst, capped ripple packets, wired zoom_params, regional FFT edges, and ACES output.",
+    "description": "8-bit byte-word datamosh: block-hashed xor / bit-rotate / byte-mask corruption with motion-vector block copy, per-block bit-plane severity, and macroblock seam ringing in the render pass, ACES output.",
     "workgroup_size": [
       16,
       16,
@@ -172,16 +172,9 @@
       "aces-tone-map",
       "audio-reactive",
       "chromatic-aberration",
-      "click-reactive",
       "glitch",
       "graph-runner",
-      "held-drag",
-      "interactive",
-      "mouse-driven",
       "multi-pass",
-      "physics",
-      "simulation",
-      "spring-cursor",
       "upgraded-rgba"
     ],
     "tags": [
@@ -1651,7 +1644,7 @@
     "id": "scan-distort",
     "name": "Scan Distort",
     "url": "shaders/scan-distort.wgsl",
-    "description": "CRT scanline tear with block quantization, held glitch bursts, exact C smear, capped click ripples, three-band audio, and ACES output. Upgraded with a sync-tear band (rows inside the glitch pulse slide along a sawtooth ramp and show stale rows from C), DCT-basis garble (corrupted blocks decode as hashed cosine basis patterns and the garbled set re-rolls with time), and MV arrows from a per-block temporal gradient (dots on still content).",
+    "description": "CRT scanline tear over a block-quantised codec picture: sync-tear band from C, DCT-basis garble, temporal-gradient MV arrows, 4:2:0 chroma macroblock bleed, and P-frame macroblock skip that freezes still blocks during glitch pulses.",
     "workgroup_size": [
       16,
       16,

@@ -1846,7 +1846,9 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba",
+      "semantic-alpha"
     ],
     "params": [
       {
@@ -1886,7 +1888,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "feedbackPacking": "A/C = display RGBA with chromatic lens magnification and iridescent sheen history",
+    "feedbackPacking": "A/C = display RGBA with chromatic lens magnification and iridescent sheen history; texels (0,0) and (1,0) hold the sprung lens state (not pixels)",
     "updated": true
   },
   {
@@ -1964,7 +1966,7 @@
     "features": [
       "chroma-vortex",
       "fluid-coupling",
-      "spring-dynamics",
+      "audio-reactive",
       "cauchy-dispersion",
       "strain-birefringence",
       "mouse-driven",
@@ -2597,7 +2599,7 @@
     "id": "crt-tv-stipple",
     "name": "CRT TV Stipple",
     "url": "shaders/crt-tv-stipple.wgsl",
-    "description": "CRT phosphor physics with blue-noise stipple aperture grille, spring focus, held bulge, capped ripples, exact C persistence, and three-band audio.",
+    "description": "CRT with blue-noise stipple triads, per-channel phosphor afterglow, a rolling hum bar and corner misconvergence.",
     "workgroup_size": [
       16,
       16,
@@ -2614,7 +2616,6 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "temporal-feedback",
       "upgraded-rgba"
@@ -2939,7 +2940,6 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "temporal-feedback",
       "upgraded-rgba"
@@ -3233,7 +3233,7 @@
     "id": "data-stream-corruption-hdr",
     "name": "Data Stream Corruption Hdr",
     "url": "shaders/data-stream-corruption-hdr.wgsl",
-    "description": "Data Stream Corruption Hdr",
+    "description": "Paint corruption into the image: column glitches, RGB split and green glyph rain with phosphor trails, white-hot packet glyphs, stream-light bloom and a cyan bit-flip seam on the corruption frontier.",
     "tags": [
       "mouse-driven",
       "data-stream-corruption",
@@ -3244,7 +3244,9 @@
       "mouse-driven",
       "data-stream-corruption",
       "hdr-bloom",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3547,7 +3549,7 @@
     "id": "digital-decay-rgba",
     "name": "Digital Decay RGBA",
     "url": "shaders/digital-decay-rgba.wgsl",
-    "description": "MPEG block corruption seeds a 4-species reaction-diffusion system with spring injection, held corrupt bursts, capped ripples, exact C Laplacian, and spectral RD visualization.",
+    "description": "MPEG block corruption seeds a 4-species reaction-diffusion system with pointer injection, held corrupt bursts, capped ripples, exact C Laplacian, and spectral RD visualization. Corruption seams seed the reaction-diffusion rot, dense rot erodes bit depth, and corrupted macroblocks bleed block-centre chroma.",
     "features": [
       "advanced-hybrid",
       "digital-decay",
@@ -3621,7 +3623,7 @@
     "id": "digital-glitch-explosion",
     "name": "Digital Glitch Explosion",
     "url": "shaders/digital-glitch-explosion.wgsl",
-    "description": "Bitwise corruption meets prismatic chromatic shockwaves with spring cursor, held burst, capped ripples, exact C smear, and three-band audio.",
+    "description": "Bitwise corruption and prismatic chromatic shockwaves with macroblock datamosh, bit-plane slices and a bass shard burst from the cursor.",
     "workgroup_size": [
       16,
       16,
@@ -3635,7 +3637,6 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "upgraded-rgba",
       "temporal-feedback"
@@ -6117,7 +6118,8 @@
       "audio-reactive",
       "exact-feedback",
       "temporal-state",
-      "ACES-tonemapped"
+      "ACES-tonemapped",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6153,7 +6155,7 @@
         "step": 0.01
       }
     ],
-    "feedbackPacking": "A/C = display RGBA with tilted tile prismatic refraction and Fresnel highlights",
+    "feedbackPacking": "A/C = display RGBA with tilted tile prismatic refraction and Fresnel highlights; A texels (0,0) and (1,0) carry the pointer spring state (pos, vel, fract(time), click impulse, prevDown, sentinel) and are masked when C is read",
     "updated": true
   },
   {

@@ -5,9 +5,9 @@
 //            upgraded-rgba, scanline-bloom, halation-glow,
 //            fbm-phosphor-mask, per-channel-decay
 //  Complexity: Medium
-//  Upgraded: 2026-10-04 (prev 2026-06-28)
-//  Ideas: revived scanline beam (3-px Gaussian rows that swell with brightness); age-softened afterglow
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-11-09 (prev 2026-10-04, 2026-06-28)
+//  Ideas: revived scanline beam (3-px Gaussian rows that swell with brightness); age-softened afterglow; static burn-in ghost (A.a wear EMA); high-voltage raster sag on bright bass hits
+//  A packing: [phosphor energy RGB (pre-scanline/mask/ACES, 0..1.5), burn-in wear EMA stored as -(wear+0.001)]
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -144,7 +144,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let maskStrength = zp.w * 0.5;
   let lumFloor = zp.w * 0.10 + mids * 0.02;
 
-  let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // Idea 4 — high-voltage raster sag: a bright bass hit loads the EHT supply and
+  // the raster blooms outward around the screen centre (sample pulled inward).
+  let sag = bass * 0.022 * (0.5 + zp.w);
+  let sagUV = 0.5 + (uv - 0.5) * (1.0 - sag);
+  let current = textureSampleLevel(readTexture, u_sampler, sagUV, 0.0);
   let historyHead = u32(extraBuffer[4]);
 
   let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -170,6 +174,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // frames (fewer on a device that only got 4 or 1 layers).
   let historyDims = vec2<i32>(textureDimensions(dataTextureC));
   let immediate = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), historyDims - vec2<i32>(1)), 0);
+  // RESCUE (2026-11-09): HEAD stored the graded display (bloom × mask × ACES) in A
+  // and decayed it back in here, so every frame re-graded the last one and the
+  // picture washed to pink-white within ~30 frames. A now carries phosphor
+  // energy taken before scanline/mask/ACES, so C decays the raw glow.
   var burned = max(current.rgb, vec3<f32>(immediate.r * decayR, immediate.g * decayG, immediate.b * decayB));
   for (var age: u32 = 1u; age <= min(7u, maxAge); age = age + 1u) {
     // Idea 2 — age-softened afterglow: older frames are read through a widening
@@ -205,6 +213,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
   burned += vec3<f32>(1.0, 0.45 + mids * 0.2, 0.12 + treble * 0.2) * (beamBurn + clickBurn);
 
+  let energy = clamp(burned, vec3<f32>(0.0), vec3<f32>(1.5));
+
+  // Idea 3 — static burn-in ghost: A.a is a very slow EMA of phosphor luma. Content
+  // held on screen for many seconds wears the phosphor; the worn image shows as a
+  // faint warm-brown ghost in whatever dark scene follows (stronger with Mask).
+  // Stored negated (sentinel): a non-negative C.a is another shader's alpha, not wear.
+  let wearPrev = select(0.0, clamp(-immediate.a - 0.001, 0.0, 1.0), immediate.a < 0.0);
+  let wear = mix(wearPrev, clamp(rgbToLuma(energy), 0.0, 1.0), 0.004);
+  let darkness = 1.0 - smoothstep(0.05, 0.45, rgbToLuma(burned));
+  burned += vec3<f32>(0.55, 0.42, 0.26) * wear * darkness * (0.18 + zp.w * 0.3);
+
   // Halation glow around bright edges
   let curLuma = rgbToLuma(current.rgb);
   let glow = halationGlow(uv, readTexture, u_sampler, 3.0);
@@ -221,12 +240,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Alpha: luminance of burn excess above current, boosted by bass
   let burnLuma = dot(max(burned - current.rgb, vec3<f32>(0.0)), vec3<f32>(0.299, 0.587, 0.114));
-  let burnEnergy = clamp(burnLuma * 2.0 + beamBurn + clickBurn + immediate.a * 0.25, 0.0, 1.0);
+  let burnEnergy = clamp(burnLuma * 2.0 + beamBurn + clickBurn + wear * 0.25, 0.0, 1.0);
   let alpha = clamp(current.a + (1.0 - current.a) * burnEnergy, 0.0, 1.0);
   let finalOut = vec4<f32>(acesToneMap(max(burned, vec3<f32>(0.0))), alpha);
   let depth = textureLoad(readDepthTexture, coord, 0).r;
 
   textureStore(writeTexture, coord, finalOut);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, finalOut);
+  textureStore(dataTextureA, coord, vec4<f32>(energy, -(wear + 0.001)));
 }

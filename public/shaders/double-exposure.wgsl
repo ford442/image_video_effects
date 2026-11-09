@@ -1,35 +1,39 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Double Exposure Warp
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  A packing: ACES display RGBA
-//  Motion: spring-anchored secondary exposure warp + rotational ripple shockwaves
+//  Upgraded: 2026-09-06, 2026-11-09
+//  Ideas: exposure-2 image circle (cos⁴ vignetting, §12.2 A); shutter-open dwell (held pointer integrates the exact-C history in scene-referred light)
+//  A packing: ACES display RGBA; texel (0,0) = (glide.x, glide.y, 7 marker, fract(time)) cursor-glide state (masked wherever C is read as colour)
+//  Motion: glide-anchored secondary exposure warp + rotational ripple shockwaves
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=ZoomLevel, y=Rotation, z=Opacity, w=WarpStrength
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=ZoomLevel, y=Rotation, z=Opacity, w=WarpStrength
 
 const PI: f32 = 3.141592653589793;
+
+// ── Rescue R1: cursor glide in A texel (0,0) ─────────────────────────
+// extraBuffer[133..] is re-uploaded zeroed every frame, so HEAD's spring could never persist (every pixel fell
+// back to the raw cursor). State = A(0,0) = (glide.x, glide.y, GLIDE_MARK, fract(time)); every pixel reads the same
+// C texel and integrates the same step, only pixel (0,0) stores it. First-order glide (a velocity cannot be stored
+// f16-safely). Replaces the dead critically-damped spring (omega 13) with rate 13.
+const GLIDE_MARK: f32 = 7.0;
+fn glideStep(st: vec4<f32>, raw: vec2<f32>, time: f32, rate: f32) -> vec2<f32> {
+  let ok = abs(st.z - GLIDE_MARK) < 0.01 && st.w >= 0.0 && st.w <= 1.0;
+  let dt = clamp(fract(time - st.w), 0.001, 0.05);
+  let g = st.xy + (raw - st.xy) * (1.0 - exp(-rate * dt));
+  let snapped = select(g, raw, length(raw - g) < 0.003);   // exact at rest even through f16 rounding
+  return select(raw, snapped, ok);
+}
+
+// ── Rescue R2: engine FFT bin (extraBuffer[5 + bin], 0..1, read-only). plasmaBuffer[1..] is never uploaded. ──
+fn fftBin(i: u32) -> f32 {
+  let idx = 5u + i;
+  if (idx >= arrayLength(&extraBuffer)) { return 0.0; }
+  return extraBuffer[idx];
+}
 
 fn hash21(p: vec2<f32>) -> vec2<f32> {
   let n = sin(dot(p, vec2<f32>(127.1, 311.7)));
@@ -69,6 +73,16 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Inverse of the Narkowicz fit above (positive root of (a-cx)y² + (b-dx)y - ex = 0), x clamped below the 1.033 asymptote.
+// Lets the dwell integrate scene-referred light instead of re-tone-mapping the already tone-mapped history.
+fn acesInverse(x: vec3<f32>) -> vec3<f32> {
+  let xc = clamp(x, vec3<f32>(0.0), vec3<f32>(0.995));
+  let qa = 2.51 - 2.43 * xc;
+  let qb = 0.03 - 0.59 * xc;
+  let disc = max(qb * qb + 4.0 * qa * 0.14 * xc, vec3<f32>(0.0));
+  return (sqrt(disc) - qb) / (2.0 * qa);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
@@ -87,36 +101,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
-  let binA = plasmaBuffer[3].z;
-  let binB = plasmaBuffer[7].y;
+  // Rescue R2: HEAD read plasmaBuffer[3].z / [7].y (never uploaded -> always 0). Live per-bin FFT instead:
+  // binA (old voice 2) rides the chroma split, binB (old voice 6) rides the flash hue. Zero audio => HEAD's idle look.
+  let binA = fftBin(2u);
+  let binB = fftBin(19u);
 
-  // Single-writer spring cursor in extraBuffer[133..138]
-  var spring = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    spring = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (gid.x == 0u && gid.y == 0u && hasSpring) {
-    var pos = spring;
-    var vel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      pos = mouse;
-      vel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 13.0;
-      vel += ((mouse - pos) * (omega * omega) - vel * (2.0 * omega)) * dt;
-      vel = clamp(vel, vec2<f32>(-4.0), vec2<f32>(4.0));
-      pos += vel * dt;
-    }
-    extraBuffer[133] = pos.x;
-    extraBuffer[134] = pos.y;
-    extraBuffer[135] = vel.x;
-    extraBuffer[136] = vel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    spring = pos;
-  }
+  // ── Rescue R1: pivot glide (rate 13 = HEAD omega) ────────────────────
+  let isCorner = gid.x == 0u && gid.y == 0u;
+  let gState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+  let glide = glideStep(gState, mouse, time, 13.0);
 
   // Four saved controls preserved
   let zoomLevel = mix(0.4, 2.8, u.zoom_params.x) * (1.0 + bass * 0.22);
@@ -146,9 +139,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Base exposure (layer 1)
   let c1 = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-  // Transform secondary layer relative to spring pivot
-  var p = (uv - spring) * aspectVec;
-  let totalAngle = rotationParam + time * (0.15 + mids * 0.2) + rippleRotation + select(0.0, 0.25, held);
+  // Transform secondary layer relative to the glided pivot
+  var p = (uv - glide) * aspectVec;
+  // Rescue R3: HEAD's time * (0.15 + mids * 0.2) let audio scale a growing phase (rotation jumped with every mids change).
+  // The audio term is now a bounded wobble; identical to HEAD at mids = 0.
+  let totalAngle = rotationParam + time * 0.15 + mids * 0.2 * sin(time * 0.7) + rippleRotation + select(0.0, 0.25, held);
   p = rotate2d(p, totalAngle);
   p = p / max(zoomLevel * depthParallax, 0.01);
 
@@ -158,7 +153,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   p += vec2<f32>(cos(time * 0.6 + wVal * 6.28), sin(time * 0.5 + wVal * 6.28)) * wVal;
 
   p.x = p.x / aspect;
-  let uv2 = clamp(p + spring, vec2<f32>(0.0), vec2<f32>(1.0));
+  let uv2 = clamp(p + glide, vec2<f32>(0.0), vec2<f32>(1.0));
 
   // Sample secondary exposure with chromatic aberration
   let chromaOffset = (warpStrength * 0.008 + length(p) * 0.004) * (1.0 + treble * 0.7 + binA * 0.4);
@@ -167,13 +162,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let b2 = textureSampleLevel(readTexture, u_sampler, clamp(uv2 - vec2<f32>(chromaOffset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   let c2 = vec3<f32>(r2, g2, b2);
 
+  // ── Idea 1: exposure-2 image circle (cos⁴ vignetting) ────────────────
+  // Exposure 2 is a lens projection pivoted on the cursor: the optical axis passes through the pivot, focal length
+  // f grows with the zoom, and off-axis light falls as cos⁴θ, θ = atan(r / f). cos⁴(atan(r/f)) = (f² / (f² + r²))²
+  // exactly, so no trig. Exposure 2 is full strength on the axis and rolls off to 35 % at the frame edge (a "porthole").
+  let rAxis = length((uv - glide) * aspectVec);
+  let fLen = max(zoomLevel, 0.05) * 0.55;
+  let cosT2 = (fLen * fLen) / (fLen * fLen + rAxis * rAxis);
+  let ex2 = mix(0.35, 1.0, cosT2 * cosT2);
+
   // Cellular interference mask modulating exposure interaction
   let voroPattern = sin(uv.x * 14.0 + time) * cos(uv.y * 14.0 - time * 0.8) * 0.5 + 0.5;
   let layerMix = opacity * (0.75 + voroPattern * 0.25) * (1.0 + held_bonus(held));
 
   // Photographic Screen / Soft-Light exposure blend
-  let screenBlend = 1.0 - (1.0 - c1) * (1.0 - c2 * layerMix);
-  let overlayBlend = mix(c1 * (c2 * 2.0), 1.0 - 2.0 * (1.0 - c1) * (1.0 - c2), step(vec3<f32>(0.5), c1));
+  // Exposure 2 enters both blends through its image circle: screen adds less light, overlay's neutral grey is 0.5.
+  let c2s = c2 * ex2;
+  let c2o = mix(vec3<f32>(0.5), c2, ex2);
+  let screenBlend = 1.0 - (1.0 - c1) * (1.0 - c2s * layerMix);
+  let overlayBlend = mix(c1 * (c2o * 2.0), 1.0 - 2.0 * (1.0 - c1) * (1.0 - c2o), step(vec3<f32>(0.5), c1));
   var composite = mix(screenBlend, overlayBlend, 0.35);
 
   // Flash tint at ripple fronts
@@ -181,9 +188,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   composite += flashColor * rippleFlash * 0.35;
 
   // Exact previous frame history load from dataTextureC for ghost trails
+  // Rescue R4: C(0,0) holds the glide state, never colour: pixel (0,0) uses the current value as its history.
   let hist = textureLoad(dataTextureC, coord, 0);
+  let histRGB = select(hist.rgb, composite, isCorner);
   let feedbackWeight = mix(0.05, 0.25, layerMix);
-  var hdr = mix(composite, hist.rgb, feedbackWeight);
+  var hdr = mix(composite, histRGB, feedbackWeight);
+
+  // ── Idea 2: shutter-open dwell (long exposure while the pointer is held) ──
+  // A camera held open integrates light. While the pointer is held the history weight rises toward long-exposure
+  // integration (total history weight <= 0.28 + 0.72 * 0.78 = 0.84, HEAD's weight on release), so the rotating exposure 2 smears into
+  // trails. The extra history is read back to scene-referred light (acesInverse of the ACES-ed C) and EMA-ed in
+  // that space, so the held steady state equals HEAD's fixed point (no brightness step at press or release) and
+  // only the time constant changes. No new state: it is the exact C this file already loads.
+  let histLin = select(acesInverse(hist.rgb), composite, isCorner);
+  // C.a >= 0.7 once a frame has been written (semantic alpha), so the first frame after a shader switch has no dwell.
+  hdr = mix(hdr, histLin, select(0.0, 0.78, held && hist.a > 0.5));
 
   let finalRGB = acesToneMap(hdr);
   let luma = dot(finalRGB, vec3<f32>(0.2126, 0.7152, 0.0722));
@@ -191,7 +210,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let outCol = vec4<f32>(finalRGB, semanticAlpha);
 
   textureStore(writeTexture, coord, outCol);
-  textureStore(dataTextureA, coord, outCol);
+  // A: display RGBA, except texel (0,0) = glide state (R1). writeTexture keeps the real pixel there.
+  textureStore(dataTextureA, coord, select(outCol, vec4<f32>(glide, GLIDE_MARK, fract(time)), isCorner));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(mix(depth, 0.3 + luma * 0.5, 0.35), 0.0, 1.0), 0.0, 0.0, 0.0));
 }
 
