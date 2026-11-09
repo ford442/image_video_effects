@@ -2,7 +2,7 @@
   "id": "dimension-slicer",
   "name": "Dimension Slicer",
   "url": "shaders/dimension-slicer.wgsl",
-  "description": "Opens a dimensional rift with temporal slice rotation memory, chromatic inside-slice dispersion, audio-driven slice width modulation, depth-aware zoom warp, and edge glow.",
+  "description": "Rotating dimensional rift bands with chromatic dispersion, torn lit edges, drop shadows and running glints, audio-driven width and depth-aware warp.",
   "features": [
     "chromatic-aberration",
     "audio-reactive",

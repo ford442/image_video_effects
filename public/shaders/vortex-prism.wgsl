@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: continuous 7-tap spectrum fan; Rankine core (smoothness = core radius); shear caustics
+//  Upgraded: 2026-11-09
+//  Ideas: continuous 7-tap spectrum fan; Rankine core (smoothness = core radius); shear caustics; spiral-arm interference; precessing eye; dispersion rim
 //  A packing: ACES display RGBA
 //
 //  Twisting vortex effect that separates colors prismatically with physical deformation.
@@ -85,6 +85,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (f32(global_id.x) >= resolution.x || f32(global_id.y) >= resolution.y) { return; }
     // ═══ AUDIO REACTIVITY ═══ (HEAD read zoom_config.x = time as "audio")
     let audioBass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let audioMids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+    let time = u.config.x;
 
     // Params — bass adds up to +30% twist
     let twistAmount = (u.zoom_params.x - 0.5) * 20.0 * (1.0 + 0.3 * audioBass); // -10 to 10
@@ -100,6 +102,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (mouseX == 0.0 && mouseY == 0.0) {
         center = vec2<f32>(0.5, 0.5);
     }
+    // Idea 5: Precessing eye — the core orbits the pointer on a small circle
+    // (mids widen it), like a real vortex core wandering about its mean.
+    let precR = radius * (0.04 + 0.04 * audioMids);
+    center = center + vec2<f32>(cos(time * 0.9), sin(time * 0.9)) * precR / vec2<f32>(resolution.x / resolution.y, 1.0);
 
     // Aspect Ratio Correction
     let aspect = resolution.x / resolution.y;
@@ -118,7 +124,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // smoothstep falloff to within ~0.05 at mid-radius.
     let rc = radius * mix(0.05, 0.6, smoothness);
     let falloff = rankineProfile(dist, rc, radius);
-    let twistAngle = falloff * twistAmount;
+    // Idea 4: Spiral-arm interference — a two-armed log-spiral term
+    // sin(k·ln r − 2θ) modulates the twist outside the eye, so the swirl
+    // winds into arms instead of a uniform smear.
+    let theta = atan2(d.y, d.x);
+    let armBand = smoothstep(rc * 0.8, rc * 1.6, dist) * (1.0 - smoothstep(radius * 0.7, radius, dist));
+    let arms = sin(6.0 * log(max(dist, 1e-4) / max(radius, 1e-4)) - 2.0 * theta + time * 0.6);
+    let twistAngle = falloff * twistAmount * (1.0 + 0.22 * arms * armBand);
 
     // Idea 3: Shear caustics — radial shear of the twist, r·|dθ/dr| (rotation
     // per log-radius). Zero in the solid-body eye, steep in the 1/r band.
@@ -179,6 +191,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Compose final color (Idea 3: caustic streaks added on top of the fan)
     var color = vec4<f32>(fanColor + caustic * 0.35, avgAlpha);
+
+    // Idea 6: Dispersion rim — a thin spectral ring where light exits the
+    // vortex at the effect radius: red just outside, blue just inside.
+    let rimW = max(radius * 0.03, 0.004);
+    let rimX = (dist - radius) / rimW;
+    let rim = exp(-rimX * rimX) * clamp(prismStrength * 12.0, 0.0, 1.0) * smoothstep(0.3, 3.0, abs(twistAmount));
+    color = vec4<f32>(color.rgb + spectralResponse(clamp(0.5 - rimX * 0.35, 0.0, 1.0)) * rim * 0.3, color.a);
 
     // Add subtle glow at center with alpha
     if (dist < 0.05 * radius) {
