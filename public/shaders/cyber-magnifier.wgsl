@@ -93,13 +93,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // rolls off: the local magnification is mag * s(r) with s = 1 + k1 r^2 + k2 r^4, r = aspect-corrected
     // distance / lens radius. k1, k2 scale with (mag - 1), so the mapping is the identity at magnification 1;
     // both are negative (barrel roll-off toward the rim; monotone, no fold-over). s is clamped >= 0.4 and the
-    // distortion is faded out beyond the lens (inLens) so the area outside the loupe maps exactly as before.
+    // distortion is faded out beyond the lens (inLens) so the area outside the loupe maps exactly as before, and
+    // with pixAmt (gone by pixAmt 0.5, ~2.9x): past ~2.5x the loupe is a DIGITAL zoom (exact square texels, Idea 1), not glass.
     // gUV, the Sobel taps, the texel grid and the CA taps below all follow uvZoomed.
+    let pixAmt = smoothstep(2.2, 3.6, magnification);   // Idea 1's digital-zoom blend (hoisted: Idea 4/5 fade with it)
     let rLens = dist / max(radius, 0.001);
     let rLens2 = rLens * rLens;
     let bcK1 = -0.10 * (magnification - 1.0);
     let bcK2 = -0.03 * (magnification - 1.0);
-    let bcScale = mix(1.0, max(1.0 + bcK1 * rLens2 + bcK2 * rLens2 * rLens2, 0.4), inLens);
+    let bcScale = mix(1.0, max(1.0 + bcK1 * rLens2 + bcK2 * rLens2 * rLens2, 0.4), inLens * (1.0 - smoothstep(0.1, 0.5, pixAmt)));
     let uvZoomed = clamp((uv - mouse) / (magnification * bcScale) + mouse, vec2<f32>(0.001, 0.001), vec2<f32>(0.999, 0.999));
     let safeDir = distVecAspect / max(dist, 0.0001);
     let aberrationOffset = vec2<f32>(safeDir.x / aspect, safeDir.y) *
@@ -117,7 +119,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1: digital zoom. Past ~2.5x the magnifier stops interpolating and
     // shows the source texels themselves, each one outlined by the texel grid.
     let texRes = vec2<f32>(textureDimensions(readTexture));
-    let pixAmt = smoothstep(2.2, 3.6, magnification);
     let snapR = (floor(rUV * texRes) + vec2<f32>(0.5)) / texRes;
     let snapG = (floor(gUV * texRes) + vec2<f32>(0.5)) / texRes;
     let snapB = (floor(bUV * texRes) + vec2<f32>(0.5)) / texRes;
@@ -131,15 +132,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ── Idea 5: autofocus defocus keyed to the rangefinder ───────────
     // The depth under the lens centre (the value the rangefinder arc reads out) is the focal plane. Circle of
-    // confusion = |depth(gUV) - centreDepth| (small dead-band against depth-map noise), scaled to full at ~0.22
-    // of depth. The smooth lens colour blends to a 4-tap cross blur by CoC (tap radius also grows with CoC, up
-    // to ~4 screen px). A pixel-view loupe is not defocused: CoC fades out with pixAmt. Flat depth -> CoC 0.
+    // confusion = |depth(gUV) - centreDepth| (small dead-band against depth-map noise), full at ~0.14 of depth.
+    // The smooth lens colour blends to a 4-tap cross blur by CoC (tap radius also grows with CoC, up to 1.8% of
+    // the frame height on screen). A pixel-view loupe is not defocused: CoC fades out with pixAmt. Flat depth
+    // -> CoC 0 (inert); the depth is read at the magnified source position gUV, so a depth ramp spans
+    // only ~1/mag of the lens radius.
     let centreDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, mouse, 0.0).r;
     let depthG = textureSampleLevel(readDepthTexture, non_filtering_sampler, gUV, 0.0).r;
-    let coc = clamp((abs(depthG - centreDepth) - 0.02) * 5.0, 0.0, 1.0) * (1.0 - pixAmt) * inLens;
+    let coc = clamp((abs(depthG - centreDepth) - 0.015) * 8.0, 0.0, 1.0) * (1.0 - pixAmt) * inLens;
     var focusLens = smoothLens;
     if (coc > 0.002) {
-        let bs = coc * 4.0 / (resolution * magnification);
+        let bs = coc * 0.018 * vec2<f32>(1.0 / aspect, 1.0) / magnification;   // screen-space radius <= 1.8% of the frame height
         let blurred = 0.2 * (smoothLens
             + textureSampleLevel(readTexture, u_sampler, clamp(gUV + vec2<f32>(bs.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb
             + textureSampleLevel(readTexture, u_sampler, clamp(gUV - vec2<f32>(bs.x, 0.0), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb

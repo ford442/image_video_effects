@@ -193,13 +193,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // (cos_i -> 1: bend -> 1 - eta, |T.z| -> 1) the shift is exactly HEAD's 0.12*h*normal.xy (calibration), while a
   // steep meniscus bends non-linearly (up to ~3.5x per unit normal.xy at grazing incidence). Direction is kept as
   // in HEAD (displacement along +normal.xy). eta < 1 (air -> water): no total internal reflection is possible,
-  // the sqrt is guarded anyway, and the shift is length-capped so the steep rim can never sample far away.
+  // the sqrt is guarded anyway, and the shift is length-capped to 0.25*h (<= ~2x HEAD's small-angle maximum
+  // 0.12*h) so a steep, tall transient meniscus can tear the picture at most about twice as hard as HEAD did.
   let cos_i = clamp(normal.z, 0.0, 1.0);
   let cos_t = sqrt(max(1.0 - SNELL_ETA * SNELL_ETA * (1.0 - cos_i * cos_i), 0.0));
   let bend = cos_t - SNELL_ETA * cos_i;
   let lateral = bend / max(SNELL_ETA + bend * cos_i, 0.2);
   var snell_shift = normal.xy * (0.12 / (1.0 - SNELL_ETA) * new_h * lateral);
-  snell_shift = snell_shift * min(1.0, 0.3 / max(length(snell_shift), 1e-5));
+  snell_shift = snell_shift * min(1.0, (0.25 * new_h) / max(length(snell_shift), 1e-5));   // <= ~2x HEAD's small-angle maximum, and 0 where there is no water
   let refr_vec = snell_shift + splash_disp;
   let uv_r = clamp(uv + refr_vec * 1.06, vec2<f32>(0.001), vec2<f32>(0.999));
   let uv_g = clamp(uv + refr_vec, vec2<f32>(0.001), vec2<f32>(0.999));
