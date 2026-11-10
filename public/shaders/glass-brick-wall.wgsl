@@ -8,29 +8,16 @@
 //            2. dome caustic — each brick focuses its own light into a hot-spot
 //            3. green block edges — Beer-Lambert path grows toward the side walls
 //            4. wall reflection — side walls mirror the brick interior (internal reflection)
+//            5. cast-block variation — every block has its own iron tint, dome tilt and focus jitter
+//            6. hollow-core cavity — inner frame at the cavity wall: weaker refraction inside, lit wall line
+//            7. lamp-driven caustic focus — near the pointer lamp each dome focuses on its far side
 //  Complexity: High
+//  Upgraded: 2026-11-09
+//  A packing: ACES display RGBA (unchanged); C is the 7 % display ghost
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,  // x=BrickSize, y=Distortion, z=MortarSize, w=GlassDensity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BrickSize, y=Distortion, z=MortarSize, w=GlassDensity
 
 fn hash12(p: vec2<f32>) -> f32 {
   let h = sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453;
@@ -94,6 +81,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gridUV = uv * vec2<f32>(brickSize * aspect, brickSize);
   let cellId = floor(gridUV);
   let cell = fract(gridUV) - 0.5;
+  let edgeMax = max(abs(cell.x), abs(cell.y));
+
+  // Idea 5: cast-block variation. Glass blocks are pressed one by one: each has its own iron content,
+  // dome tilt and thickness, so the wall reads hand-laid instead of stamped from one tile.
+  let blockH = vec3<f32>(hash12(cellId + vec2<f32>(17.3, 5.1)),
+                         hash12(cellId + vec2<f32>(41.7, 29.9)),
+                         hash12(cellId + vec2<f32>(83.1, 61.3)));
+
+  // Idea 6: hollow-core cavity. A glass block is two fused halves around an air gap; its inner wall is a
+  // frame inside the frame. Inside it the ray crosses air, so the dome refracts less (a refractive step).
+  let inCavity = 1.0 - smoothstep(0.322, 0.338, edgeMax);
 
   // FBM-perturbed normal for organic glass surface
   let normalNoise = fbm(cell * 4.0 + cellId * 0.5 + time * 0.05, 5) * 0.15;
@@ -119,7 +117,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let refractOffset = normal.xy * distortion * (1.0 - mortarMask) * (1.0 + bass * 0.35 + ptr_influence * 0.2 + click_wave * 0.5);
+  let castTilt = (blockH.xy - 0.5) * 0.10;   // Idea 5: per-block dome tilt
+  let refractOffset = (normal.xy + castTilt) * mix(1.0, 0.55, inCavity) * distortion * (1.0 - mortarMask) * (1.0 + bass * 0.35 + ptr_influence * 0.2 + click_wave * 0.5);
   let frontUV = clamp(uv + refractOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let gridScale = vec2<f32>(brickSize * aspect, brickSize);
@@ -140,7 +139,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea 4: wall reflection. Near the side walls of a block, total internal
   // reflection shows the brick's own interior flipped across the wall it
   // faces, compressed into the band.
-  let edgeMax = max(abs(cell.x), abs(cell.y));
   let wallBand = smoothstep(0.30, 0.46 - mortarSize * 0.5, edgeMax) * (1.0 - mortarMask);
   var cellR = cell;
   if (abs(cell.x) > abs(cell.y)) { cellR.x = -cell.x * 0.6; } else { cellR.y = -cell.y * 0.6; }
@@ -151,34 +149,49 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var finalAlpha = base_a;
   let lightDir = normalize(vec3<f32>(0.0, 0.0, 1.0));
   let spec = pow(max(dot(normal, lightDir), 0.0), 32.0) * (0.5 + mids);
-  let glassColor = vec3<f32>(0.85, 0.94, 1.0) * (1.0 - glassDensity * 0.15);
+  let glassColor = vec3<f32>(0.85, 0.94, 1.0) * (1.0 - glassDensity * 0.15) * (1.0 + (blockH - 0.5) * vec3<f32>(0.05, 0.03, 0.06));
 
   // Idea 3: green block edges. The light path runs longest through a glass
   // block near its walls, and iron in the glass absorbs red and blue there,
   // which turns the edges bottle-green. Glass Density scales the path.
   let pathLen = glassDensity * (0.3 + edgeMax * edgeMax * 4.8);
-  let blockTint = exp(-vec3<f32>(0.35, 0.08, 0.22) * pathLen * 0.6);
+  let ironVar = 0.75 + 0.5 * blockH.z;      // Idea 5: iron content differs block to block
+  let blockTint = exp(-vec3<f32>(0.35, 0.08, 0.22) * pathLen * 0.6 * ironVar);
 
   // Idea 2: dome caustic. The domed face focuses light from the whole brick
   // into a soft hot-spot that drifts with the FBM surface, and bass pumps it.
-  let focusPt = vec2<f32>(0.10, -0.08) + vec2<f32>(normalNoise, -normalNoise) * 0.6;
+  // Idea 7: lamp-driven focus. A dome focuses on the side AWAY from its light, so inside the pointer's
+  // halo each block's hot-spot slides to the far side of the dome from the cursor and burns a little
+  // brighter; outside the halo (and with the pointer far away) it keeps HEAD's fixed focus.
+  let lampDir = (uv - mouse) * vec2<f32>(aspect, 1.0) / max(p_dist, 1e-3);
+  let lampMix = clamp(ptr_influence, 0.0, 1.0);
+  let focusHead = vec2<f32>(0.10, -0.08) + vec2<f32>(normalNoise, -normalNoise) * 0.6;
+  let focusPt = mix(focusHead + (blockH.xy - 0.5) * 0.12, lampDir * 0.22, lampMix);   // Idea 5 jitter fades near the lamp
   let spotD = length(cell - focusPt);
   let caustic = exp(-spotD * spotD * 60.0) * (1.0 - mortarMask);
   let brickLight = textureSampleLevel(readTexture, u_sampler, brickCenterUV, 0.0).rgb;
-  let causticCol = brickLight * caustic * (0.45 + bass * 0.4) * (0.6 + distortion * 5.0);
+  let causticCol = brickLight * caustic * (0.45 + bass * 0.4) * (0.6 + distortion * 5.0) * (0.85 + 0.3 * blockH.x) * (1.0 + 0.8 * lampMix);
 
-  let glassCol = color * glassColor * blockTint + spec + causticCol;
+  // Idea 6 (cont.): the cavity wall is a thin lit line, bright on the walls that face the lamp
+  // (upper-left) and nearly dark on the far walls.
+  let wallN = select(vec2<f32>(0.0, sign(cell.y)), vec2<f32>(sign(cell.x), 0.0), abs(cell.x) > abs(cell.y));
+  let cavLit = max(dot(wallN, vec2<f32>(-0.6, -0.8)), 0.0);
+  let cavLine = (1.0 - smoothstep(0.0, 0.024, abs(edgeMax - 0.33))) * (1.0 - mortarMask);
+  let cavityGlow = cavLine * (0.05 + 0.28 * cavLit) * (0.8 + 0.4 * mids);
+
+  let glassCol = color * glassColor * blockTint + spec + causticCol + vec3<f32>(0.85, 0.95, 1.0) * cavityGlow;
   let mortarCol = color * 0.3; // mortar is dark
   let mortarW = smoothstep(0.4, 0.6, mortarMask);
   color = mix(glassCol, mortarCol, mortarW);
   finalAlpha = mix(mix(0.85, 0.3, 1.0 - mortarMask), 0.95, mortarW);
+  finalAlpha = finalAlpha - 0.08 * inCavity * (1.0 - mortarW) + cavityGlow * 0.3;   // the air gap transmits more
 
   // HEAD scaled this by mids alone, so the pointer halo vanished without audio.
   color += ptr_influence * vec3<f32>(0.2, 0.4, 0.8) * (0.2 + mids);
   color += click_wave * vec3<f32>(1.0, 0.85, 0.5);
 
   // Exact dataTextureC persistence, blended in display space (C holds ACES output).
-  let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
+  let prevC = clamp(textureLoad(dataTextureC, pixel, 0).rgb, vec3<f32>(0.0), vec3<f32>(1.0));   // inherited-C safe
   let finalRGB = mix(aces(color), prevC, 0.07);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, frontUV, 0.0).r;
   let finalPixel = vec4<f32>(finalRGB, clamp(finalAlpha + ptr_influence * 0.1, 0.1, 1.0));

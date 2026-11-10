@@ -18,7 +18,8 @@
     "audio-reactive",
     "click-ripples",
     "held-drag",
-    "aces-tone-map"
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "workgroup_size": [
     16,

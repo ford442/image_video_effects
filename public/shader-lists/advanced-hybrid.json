@@ -1476,7 +1476,6 @@
       "lens-distortion",
       "temporal",
       "audio-reactive",
-      "depth-aware",
       "upgraded-rgba"
     ],
     "params": [
@@ -2795,7 +2794,7 @@
     "id": "cyber-lattice-bilateral",
     "name": "Cyber Lattice Bilateral",
     "url": "shaders/cyber-lattice-bilateral.wgsl",
-    "description": "Mouse-warped cyber grid with travelling data packets and chromatic line split over an edge-preserving bilateral dream blur, with click ripples, held hue flip and three-band audio.",
+    "description": "Mouse-warped cyber grid with edge-preserving bilateral dream smoothing, spring cursor, held hue flip, capped ripples, exact C blend, and three-band audio.",
     "workgroup_size": [
       16,
       16,
@@ -2809,6 +2808,7 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
+      "spring-cursor",
       "aces-tone-map",
       "upgraded-rgba",
       "temporal-feedback"
@@ -3057,7 +3057,7 @@
     "id": "cyber-scan-gabor",
     "name": "Cyber Scan Gabor",
     "url": "shaders/cyber-scan-gabor.wgsl",
-    "description": "Catalog entry for Cyber Scan Gabor.",
+    "description": "Cursor-row scan band that runs a Gabor filter bank: orientation-hued sheen, needle glyphs along the dominant stripe direction, null-cross tints and phosphor afterglow.",
     "tags": [
       "cyber-scan",
       "gabor-filter-bank",
@@ -3068,7 +3068,9 @@
       "cyber-scan",
       "gabor-filter-bank",
       "advanced-convolution",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3499,7 +3501,7 @@
     "id": "deep-workgroup-multi-effect-blend",
     "name": "Deep-Workgroup Multi-Effect Blend",
     "url": "shaders/deep-workgroup-multi-effect-blend.wgsl",
-    "description": "Uses a 16×16×4 workgroup (1024 invocations) to run four effects simultaneously in Z-lanes — edge detection, bloom, hue-shift, and phosphor glow — then blends them via workgroup shared memory. Requires a GPU with maxComputeInvocationsPerWorkgroup ≥ 1024 (Apple M1+, NVIDIA RTX, AMD RDNA2+).",
+    "description": "16×16×4 workgroup runs edge, bloom, hue-shift and phosphor lanes in parallel, then blends them by per-pixel content votes; phosphor leaves a decaying afterglow, and holding the pointer solos one lane per quadrant.",
     "tags": [
       "deep-workgroup",
       "advanced",
@@ -3511,7 +3513,11 @@
       "shared-memory"
     ],
     "features": [
-      "deep-workgroup"
+      "deep-workgroup",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "temporal-feedback"
     ],
     "requiresDeepWorkgroup": true,
     "params": [
@@ -3712,7 +3718,8 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,
@@ -4048,7 +4055,8 @@
       "mouse-driven",
       "audio-reactive",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7425,7 +7433,7 @@
         "mapping": "zoom_params.w"
       }
     ],
-    "feedbackPacking": "A/C = vx, vy, curl, density. Texel (0,0) holds the previous pointer (x, y, marker 7, fract(time)) and is masked as zero on fluid reads.",
+    "feedbackPacking": "A/C = vx, vy, vorticity, density. Prev mouse extraBuffer[133..134].",
     "updated": true
   },
   {
@@ -7992,6 +8000,8 @@
     "description": "Multi-layer fractal compositor with mouse-controlled gravitational lensing. Mouse mass bends UV coordinates; ripples create temporary mass concentrations with Einstein ring glow.",
     "features": [
       "advanced-hybrid",
+      "mandelbrot",
+      "julia",
       "mouse-driven",
       "gravitational-lens",
       "interactive",
@@ -9834,7 +9844,7 @@
     "id": "vhs-tracking-bilateral",
     "name": "VHS Tracking Bilateral",
     "url": "shaders/vhs-tracking-bilateral.wgsl",
-    "description": "VHS signal chain with AR(1) capstan jitter, chroma phase noise, control-track dropouts, tracking-band bilateral smoothing, spring bar, held freeze, click dropout pulses, and exact C smear.",
+    "description": "VHS signal chain: capstan jitter, lagging low-bandwidth chroma, dropout comet streaks, bass tape-stretch wow, and bilateral smoothing in the tracking band at the cursor row.",
     "workgroup_size": [
       16,
       16,
@@ -9851,7 +9861,6 @@
       "audio-reactive",
       "click-ripples",
       "held-drag",
-      "spring-cursor",
       "aces-tone-map",
       "temporal-feedback",
       "upgraded-rgba"

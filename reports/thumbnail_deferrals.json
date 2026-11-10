@@ -53,6 +53,13 @@
       "failure_note": "New shader requires GPU capture for thumbnail"
     },
     {
+      "id": "gen-cymatic-void-glass-geode",
+      "added_by": "defer-thumbnail",
+      "deferred_at": "2026-11-09",
+      "expires": "2026-12-09",
+      "reason": "other"
+    },
+    {
       "id": "gen-ethereal-neon-bismuth-origami",
       "added_by": "defer-thumbnail",
       "deferred_at": "2026-11-07",

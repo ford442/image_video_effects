@@ -3,6 +3,12 @@
 //  fp128 scan phase, triple racing scan fronts, C smear residue,
 //  voronoi data blocks, capped click bursts, held widens band,
 //  ACES + semantic alpha.
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-09
+//  A packing: RGB = C smear residue (decays outside the bands), A = semantic alpha
+//  Ideas (2026-11-09): row readout ticks (per-row luma histogram bars riding
+//         the lead front); decode wake (edge map fading behind the front in
+//         its direction of travel); bass replaces dead plasmaBuffer[1..8] tint
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -165,6 +171,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   analyzed = mix(analyzed, analyzed + block_color, in_scan * param4);
   analyzed = analyzed + vec3<f32>(0.1, 0.95, 0.85) * vpacket * (0.2 + treble * 0.3);
 
+  // ── Idea 2: decode wake ───────────────────────────────────────────
+  // The lead front moves +x; just behind it the analysed edge map lingers
+  // and fades with distance, so the scan reads as a sweep with direction.
+  let behind = fract(scan1 - wuv.x);
+  let wake = exp(-behind * 18.0) * (1.0 - in_scan * 0.5);
+  analyzed = analyzed + edge_color * clamp(edge * 3.0, 0.0, 1.0) * wake * 0.8;
+
+  // ── Idea 1: row readout ticks ─────────────────────────────────────
+  // A scanner reports what it reads: on the lead front, each data row
+  // (48 rows) draws a horizontal tick whose length is that row's luma at
+  // the front, like a live histogram trace riding the sweep.
+  let rowY = (floor(uv.y * 48.0) + 0.5) / 48.0;
+  let rowLum = get_luminance(textureSampleLevel(readTexture, u_sampler, vec2<f32>(scan1, rowY), 0.0).rgb);
+  let tickLen = 0.01 + rowLum * 0.07 * (1.0 + bass * param2);
+  let rowGap = step(0.25, fract(uv.y * 48.0));
+  let tick = step(0.0, uv.x - scan1) * step(uv.x - scan1, tickLen) * rowGap;
+  analyzed = analyzed + vec3<f32>(0.5, 1.0, 0.85) * tick * 0.7;
+
   let audioPulse = 1.0 + bass * param2 * 4.0 + mids * param2 * 2.0;
   let borderGlow = 0.005 * (1.0 + bass * param2 * 0.5 + treble * 0.2);
   let border_line = smoothstep(scan_width - borderGlow, scan_width, dist1) *
@@ -187,8 +211,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let dimAmount = 0.4 * (1.0 + (param1 - 0.5) * 0.4);
   color = mix(color * dimAmount, mix(analyzed, smear, 0.25), in_scan * intensity);
 
-  let band = min(u32(uv.x * 8.0), 7u);
-  color = color + vec3<f32>(0.03, 0.08, 0.12) * plasmaBuffer[band + 1u].x * in_scan * 0.15;
+  // HEAD read plasmaBuffer[1..8] per column; only index 0 is ever uploaded.
+  color = color + vec3<f32>(0.03, 0.08, 0.12) * bass * in_scan * 0.15;
 
   color = acesToneMap(color);
   let alpha = clamp(mix(0.4 + lum * 0.4, 0.95, in_scan * (0.5 + edge * 2.0) * (1.0 + bass * param2 * 0.5 + mids * 0.1)) + clickBurst * 0.1, 0.06, 0.98);

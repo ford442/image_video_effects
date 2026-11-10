@@ -3502,7 +3502,7 @@
       "bounded-click-ripples",
       "held-drag"
     ],
-    "description": "Pointer-driven page curl with aurora-marbled backside, a glossy crest and paper lip, revealing an aged next page under the curl's cast shadow; click shockwaves and optional trails.",
+    "description": "Impossible-page tunnel curl with aurora-marbling on the backside, held curl-radius and projection twist, bounded chromatic fold shockwaves, studio lighting, exact-load A/C trails, and depth-aware premultiplied composition.",
     "updated": true,
     "params": [
       {
@@ -3601,7 +3601,7 @@
     "name": "Pixel Scattering",
     "category": "image",
     "url": "shaders/pixel-scattering.wgsl",
-    "description": "Curl-noise, pointer-vortex and Fibonacci scatter advect the photo with travelling history tails and blown-out gaps that refill.",
+    "description": "Curl-noise, pointer-vortex and Fibonacci scatter advect the photo with travelling tails; bass detonates square cells whose lit rims fade as they refill.",
     "features": [
       "mouse-driven",
       "audio-reactive",

@@ -433,7 +433,7 @@
     "id": "dimension-slicer",
     "name": "Dimension Slicer",
     "url": "shaders/dimension-slicer.wgsl",
-    "description": "Rotating dimensional rift bands with chromatic dispersion, torn lit edges, drop shadows and running glints, audio-driven width and depth-aware warp.",
+    "description": "Opens a dimensional rift with temporal slice rotation memory, chromatic inside-slice dispersion, audio-driven slice width modulation, depth-aware zoom warp, and edge glow.",
     "features": [
       "chromatic-aberration",
       "audio-reactive",
@@ -2649,7 +2649,7 @@
     "id": "radial-rgb",
     "name": "Radial RGB",
     "url": "shaders/radial-rgb.wgsl",
-    "description": "Spectral chromatic aberration with lens distortion, anamorphic stretch, single-sample spectral tint via mix(), alpha translucency blending, and vignette.",
+    "description": "Brown-model lens with radial chromatic aberration, tangential astigmatism smear and a cat's-eye vignette; hold to decentre the optical axis onto the pointer.",
     "params": [
       {
         "id": "k1",
@@ -3277,9 +3277,7 @@
       "continuous-motion",
       "held-pointer",
       "click-reactive",
-      "psychedelic-color",
-      "upgraded-rgba",
-      "temporal"
+      "psychedelic-color"
     ],
     "tags": [
       "warp",

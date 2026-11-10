@@ -2,7 +2,7 @@
   "id": "nano-repair",
   "name": "Nano-Tech Repair",
   "url": "shaders/nano-repair.wgsl",
-  "description": "The image is corrupted by digital rot. Use the mouse to deploy nano-bots that repair the image.",
+  "description": "The image is corrupted by creeping digital rot. Deploy nano-bots with the mouse: an orbiting swarm welds pixels back, leaving a fading scar lattice.",
   "params": [
     {
       "id": "radius",
@@ -37,7 +37,8 @@
     "mouse-driven",
     "feedback",
     "audio-reactive",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "semantic-alpha"
   ],
   "tags": [
     "filter",

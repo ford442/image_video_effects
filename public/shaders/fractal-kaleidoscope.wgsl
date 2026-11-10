@@ -4,10 +4,12 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware,
 //            facet-seams, held-drag, bounded-click-ripples
 //  Complexity: High
-//  Upgraded: 2026-10-05
+//  Upgraded: 2026-10-05, 2026-11-09
 //  Ideas: 1) nested mirror chambers (Detail = recursive fold levels);
 //         2) reflection loss (reflectance^bounces dimming + cool tint per bounce);
-//         3) integer wedge crossfade (floor/ceil segment counts, no atan2 tear)
+//         3) integer wedge crossfade (floor/ceil segment counts, no atan2 tear);
+//         4) seam-weighted dispersion (R/B split grows toward each branch's facet seam);
+//         5) per-bounce defocus (reflected copies soften with their mirror-bounce count)
 //  A packing: ACES display RGBA (alpha = mirror-path transmission)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -105,6 +107,24 @@ fn reflectionLoss(bounces: f32) -> vec3<f32> {
   return pow(vec3<f32>(0.942, 0.95, 0.958), vec3<f32>(bounces));
 }
 
+// Idea 5: per-bounce defocus. Every mirror bounce lengthens the optical path of the
+// reflected copy, which sits further from the object cell and out of focus; the first
+// wedge (0 bounces) stays crisp. Four taps on a ring whose radius grows with the bounce
+// count, rotated per pixel (interleaved gradient noise) so a sparse ring reads as soft
+// grain, not as four ghosts; the 0.26 feedback mix finishes the smoothing.
+fn sampleSoft(finalUV: vec2<f32>, chromaticOffset: f32, bounces: f32, ringAngle: f32) -> vec3<f32> {
+  let sharp = sampleSplit(finalUV, chromaticOffset);
+  let ringR = 0.0009 * min(bounces, 6.0);
+  let soften = clamp(bounces * 0.16, 0.0, 0.7);
+  var ring = vec3<f32>(0.0);
+  for (var k: i32 = 0; k < 4; k = k + 1) {
+    let a = ringAngle + f32(k) * 1.57079633;
+    let tapUV = clamp(finalUV + vec2<f32>(cos(a), sin(a)) * ringR, vec2<f32>(0.0), vec2<f32>(1.0));
+    ring += textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
+  }
+  return mix(sharp, ring * 0.25, soften);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixel = vec2<i32>(global_id.xy);
@@ -142,8 +162,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2: each branch carries its own reflection loss before blending.
   let transLo = reflectionLoss(chLo.bounces);
   let transHi = reflectionLoss(chHi.bounces);
-  let colLo = sampleSplit(chLo.uv, chromaticOffset) * transLo;
-  let colHi = sampleSplit(chHi.uv, chromaticOffset) * transHi;
+  // Idea 4: seam-weighted dispersion. A mirror edge is a glass edge, so the R/B split of
+  // each branch grows toward that branch's facet seam: prismatic fringes gather on the seams.
+  let dispLo = chromaticOffset * (1.0 + 2.5 * chLo.seam);
+  let dispHi = chromaticOffset * (1.0 + 2.5 * chHi.seam);
+  let ringAngle = fract(52.9829189 * fract(dot(vec2<f32>(global_id.xy), vec2<f32>(0.06711056, 0.00583715)))) * 6.28318530718;
+  let colLo = sampleSoft(chLo.uv, dispLo, chLo.bounces, ringAngle) * transLo;
+  let colHi = sampleSoft(chHi.uv, dispHi, chHi.bounces, ringAngle) * transHi;
   let transmission = mix(transLo, transHi, segT);
   var finalColor = mix(colLo, colHi, segT) * (0.8 + depth * 0.4);
 

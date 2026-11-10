@@ -3,33 +3,16 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-04
-//  Ideas: generalised variance-weighted sector blend; impasto ridges lit from the sector-mean gradient; canvas weave through thin paint
+//  Upgraded: 2026-10-04, 2026-11-09
+//  Ideas: generalised variance-weighted sector blend; impasto ridges lit from the sector-mean gradient; canvas weave through thin paint;
+//         structure-tensor sector alignment (§12.2A: sectors follow the edge, coherence-gated);
+//         stroke-edge pigment pooling (paint-patch boundaries darken, from the sector weight spread)
 //  A packing: ACES display RGBA (C read back as colour for the wet trail)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -85,6 +68,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let radius = min(i32(max(effectiveRadius, 1.0)), 10);
   let pixelSize = vec2<f32>(1.0 / max(resolution.x, 1.0), 1.0 / max(resolution.y, 1.0));
 
+  // ── Idea 4: structure-tensor sector alignment (§12.2A) ───────────────────
+  // The four Kuwahara sectors were axis-aligned squares for every pixel, which leaves blocky
+  // mosaic seams on diagonal edges. A 3x3 luma grid (1.5 px apart) gives four 2x2 gradients;
+  // the mean of their outer products is the structure tensor J, whose dominant angle is the
+  // local edge orientation and whose coherence says how trustworthy it is. The sector frame is
+  // rotated by that angle, weighted by coherence x gradient energy, so flat and noisy regions
+  // keep HEAD's axis-aligned sectors and only real edges steer the paint.
+  let tapStep = pixelSize * 1.5;
+  var gridLuma: array<f32, 9>;
+  for (var gj = 0; gj < 3; gj++) {
+    for (var gi = 0; gi < 3; gi++) {
+      let go = vec2<f32>(f32(gi - 1), f32(gj - 1)) * tapStep;
+      gridLuma[gj * 3 + gi] = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + go, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    }
+  }
+  var jxx = 0.0;
+  var jyy = 0.0;
+  var jxy = 0.0;
+  for (var cb = 0; cb < 2; cb++) {
+    for (var ca = 0; ca < 2; ca++) {
+      let g00 = gridLuma[cb * 3 + ca];
+      let g10 = gridLuma[cb * 3 + ca + 1];
+      let g01 = gridLuma[(cb + 1) * 3 + ca];
+      let g11 = gridLuma[(cb + 1) * 3 + ca + 1];
+      let cellGx = ((g10 + g11) - (g00 + g01)) * 0.5;
+      let cellGy = ((g01 + g11) - (g00 + g10)) * 0.5;
+      jxx += cellGx * cellGx;
+      jyy += cellGy * cellGy;
+      jxy += cellGx * cellGy;
+    }
+  }
+  jxx *= 0.25;
+  jyy *= 0.25;
+  jxy *= 0.25;
+  let tensorTrace = jxx + jyy;
+  let tensorDisc = sqrt(max((jxx - jyy) * (jxx - jyy) * 0.25 + jxy * jxy, 0.0));
+  let coherence = 2.0 * tensorDisc / max(tensorTrace, 1e-6);
+  let orientEnergy = smoothstep(1e-4, 5e-3, tensorTrace);
+  let sectorAngle = 0.5 * atan2(2.0 * jxy, (jxx - jyy) + 1e-9) * smoothstep(0.25, 0.75, coherence) * orientEnergy;
+  let sectorCos = cos(sectorAngle);
+  let sectorSin = sin(sectorAngle);
+
   var mean: array<vec3<f32>, 4>;
   var sigma: array<vec3<f32>, 4>;
   for (var i = 0; i < 4; i++) {
@@ -102,7 +127,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let start = offsets[k];
     for (var j = 0; j <= radius; j++) {
       for (var i = 0; i <= radius; i++) {
-        let sampleUV = clamp(uv + vec2<f32>(f32(start.x + i), f32(start.y + j)) * pixelSize, vec2<f32>(0.0), vec2<f32>(1.0));
+        let sectorOff = vec2<f32>(f32(start.x + i), f32(start.y + j));
+        let alignedOff = vec2<f32>(sectorCos * sectorOff.x - sectorSin * sectorOff.y, sectorSin * sectorOff.x + sectorCos * sectorOff.y);
+        let sampleUV = clamp(uv + alignedOff * pixelSize, vec2<f32>(0.0), vec2<f32>(1.0));
         let col = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
         mean[k] += col;
         sigma[k] += col * col;
@@ -121,12 +148,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var weightSum = 0.0;
   var weighted = vec3<f32>(0.0);
   var varSum = 0.0;
+  var weightMax = 0.0;
+  var weightMin = 1e9;
   var sectorLuma: array<f32, 4>;
   for (var k = 0; k < 4; k++) {
     let v = sigma[k].r + sigma[k].g + sigma[k].b;
     let w = 1.0 / (1.0 + pow(sqrt(v) * 25.5, 8.0));
     weighted += mean[k] * w;
     weightSum += w;
+    weightMax = max(weightMax, w);
+    weightMin = min(weightMin, w);
     varSum += v;
     sectorLuma[k] = dot(mean[k], vec3<f32>(0.2126, 0.7152, 0.0722));
   }
@@ -146,9 +177,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // painted surface. Busy (high-variance) regions carry thick paint; a fixed
   // studio light from the upper left catches the ridges.
   let stylization = clamp(effectiveRadius / 12.0, 0.0, 1.0);
-  let paintSlope = vec2<f32>(
+  // The sector means now live in the rotated frame of Idea 4; rotate the slope back to screen
+  // space so the studio light still comes from the upper left.
+  let paintSlopeSector = vec2<f32>(
     (sectorLuma[1] + sectorLuma[3]) - (sectorLuma[0] + sectorLuma[2]),
     (sectorLuma[2] + sectorLuma[3]) - (sectorLuma[0] + sectorLuma[1])
+  );
+  let paintSlope = vec2<f32>(
+    sectorCos * paintSlopeSector.x - sectorSin * paintSlopeSector.y,
+    sectorSin * paintSlopeSector.x + sectorCos * paintSlopeSector.y
   );
   let thickness = clamp(sqrt(varSum * 0.25) * 6.0, 0.0, 1.0) * stylization;
   let ridge = dot(paintSlope, vec2<f32>(-0.6, -0.8)) * 2.2;
@@ -163,6 +200,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let weave = mix(warp, weft, over);
   let thinPaint = (1.0 - thickness) * stylization;
   finalRGB = finalRGB * (1.0 - (1.0 - weave) * 0.10 * thinPaint);
+  // ── Idea 5: stroke-edge pigment pooling ───────────────────────────────────
+  // Wet paint settles and darkens where one patch ends and the next begins. The sector weights
+  // already say how decisively one sector won: (wmax - wmin) / wmax is 0 in flat or uniformly
+  // busy areas and 1 where a patch boundary splits the sectors. Scaled by stylisation, so the
+  // photo-real region around the pointer is untouched.
+  // A single speck of noise also makes one sector "decisive", so the weight spread alone is gated
+  // by the tonal spread of the sector means: a speck barely moves a mean, a real boundary does.
+  let sectorSpread = max(max(sectorLuma[0], sectorLuma[1]), max(sectorLuma[2], sectorLuma[3]))
+                   - min(min(sectorLuma[0], sectorLuma[1]), min(sectorLuma[2], sectorLuma[3]));
+  let strokeEdge = smoothstep(0.5, 1.0, (weightMax - weightMin) / max(weightMax, 1e-4)) * smoothstep(0.05, 0.18, sectorSpread);
+  finalRGB = finalRGB * (1.0 - 0.2 * strokeEdge * stylization);
   finalRGB = mix(finalRGB, finalRGB * slick * 1.18, 0.14 + wetRunner * 0.2);
   finalRGB += slick * (packets * 0.12 + clickClarity * 0.22);
   finalRGB = aces(max(finalRGB, vec3<f32>(0.0)) * 0.8);

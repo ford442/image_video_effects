@@ -6,28 +6,14 @@
 //  Chunks From: aero-chromatics
 //  Created: 2026-05-31
 //  By: Copilot CLI (tactical swarm)
+//  Upgraded: 2026-11-09
+//  Ideas: edge-tangent flow (smoke slides along object silhouettes instead of through them);
+//         spiral outflow (the pointer wind gains a swirl so repulsion curls into arms)
+//  A packing: raw smoke colour trail + alpha (no ACES: the trail is its own history);
+//             texel (0,0) = (windSource.xy, 7, fract(time)) wind-source glide state, masked on read
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // Use for persistence/trail history
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>; // Or generic object data
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Aero Chromatics
 // P1: Wind Speed / Force
@@ -35,49 +21,56 @@ struct Uniforms {
 // P3: Chromatic Split (Aberration amount)
 // P4: Source Mix (How much new video is injected vs history)
 
-// Sprung wind source state lives in extraBuffer[133..137]:
-//   [133..134] = spring position (eased mouse)
-//   [135..136] = spring velocity
-//   [137] = initialized flag
-// extraBuffer[0..4] is reserved and [5..132] belongs to the engine FFT,
-// so persistent shader state stays in [133..255] only.
+// Rescue R1 — the sprung wind source used to live in extraBuffer[133..137]. The host re-uploads
+// extraBuffer every frame (zero beyond the FFT bins), so that state never persisted and the
+// "spring" was the raw cursor with a same-dispatch write race. The eased source now lives in
+// texel (0,0) of A, read back through an exact C load: every pixel computes the same glide,
+// only (0,0) stores it, and that one texel is masked out of the smoke history.
+
+// History reads are exact textureLoad with a manual bilinear (no filtering sampler on feedback).
+// The sample position convention is HEAD's on purpose: uv = pixel / res (no +0.5) means every
+// frame averages a texel with its up-left neighbour, which is where the smoke's diffusion comes from.
+fn historyTexel(c: vec2<i32>, hi: vec2<i32>) -> vec4<f32> {
+    let cc = clamp(c, vec2<i32>(0), hi);
+    let isState = f32(cc.x == 0 && cc.y == 0);
+    return textureLoad(dataTextureC, cc, 0) * (1.0 - isState);
+}
+
+fn historyBilinear(uvp: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+    let p = clamp(uvp, vec2<f32>(0.0), vec2<f32>(1.0)) * res - vec2<f32>(0.5);
+    let i0 = vec2<i32>(floor(p));
+    let f = p - floor(p);
+    let hi = vec2<i32>(res) - vec2<i32>(1);
+    let a = historyTexel(i0, hi);
+    let b = historyTexel(i0 + vec2<i32>(1, 0), hi);
+    let c = historyTexel(i0 + vec2<i32>(0, 1), hi);
+    let d = historyTexel(i0 + vec2<i32>(1, 1), hi);
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = vec2<f32>(global_id.xy) / resolution;
     let aspect = resolution.x / resolution.y;
-    var mouse = u.zoom_config.yz;
+    let time = u.config.x;
+    let rawMouse = u.zoom_config.yz;
 
-    // Sprung wind source: a critically-damped spring chases the raw mouse
-    // (the raw mouse stays the spring target), so the repulsion source
-    // drifts like a slow fan instead of snapping to the cursor.
-    // Every invocation computes the same local step; thread (0,0) persists it.
-    let springK = 60.0;
-    let springDamp = 2.0 * sqrt(springK); // critical damping
-    let springDt = 0.016;
-    var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) {
-        sPos = mouse; // wake up on the mouse, not the corner
-        sVel = vec2<f32>(0.0);
-    }
-    let sAccel = (mouse - sPos) * springK - sVel * springDamp;
-    sVel = sVel + sAccel * springDt;
-    sPos = sPos + sVel * springDt;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        extraBuffer[133] = sPos.x;
-        extraBuffer[134] = sPos.y;
-        extraBuffer[135] = sVel.x;
-        extraBuffer[136] = sVel.y;
-        extraBuffer[137] = 1.0;
-    }
-    let windSource = sPos;
+    // Wind source: first-order glide chasing the raw cursor (rate 8 ~ HEAD's critically damped
+    // spring), state carried in A(0,0) = (x, y, 7, fract(time)).
+    let glideState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let hasGlide = abs(glideState.z - 7.0) < 0.01;
+    let frameT = fract(time);
+    let glideDt = clamp(frameT - glideState.w + select(0.0, 1.0, frameT < glideState.w), 0.0, 0.1);
+    let glideK = 1.0 - exp(-8.0 * glideDt);
+    let windSource = select(rawMouse, glideState.xy + (rawMouse - glideState.xy) * glideK, hasGlide);
 
-    // Audio: bass energy from the spectrum buffer (previously never sampled)
-    let bass = plasmaBuffer[1].x;
+    // Audio — rescue R2: HEAD read plasmaBuffer[1..8], which is not audio. Bass/mids/treble live in [0].
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Params
     var windStrength = mix(0.5, 5.0, u.zoom_params.x);
@@ -88,31 +81,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Bass gusts: the wind rides the low end, so drops push the smoke
     windStrength = windStrength * (1.0 + bass * 0.6);
 
-    // Calculate drag based on current image luma
-    // Lighter pixels = lighter weight = move faster (or vice versa?)
-    // Let's say Light = Smoke = Fast. Dark = Heavy = Slow.
+    // Light = smoke = fast. Dark = heavy = slow.
     let currentFrame = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let luma = dot(currentFrame.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    // Wind Vector
-    // Base wind flows diagonally or follows mouse?
-    // Let's make wind blow AWAY from mouse.
+
+    // Wind blows AWAY from the source.
     let dVec = uv - windSource;
     let dist = length(vec2<f32>(dVec.x * aspect, dVec.y));
-
-    // Mouse influence falls off
     let mouseInfluence = smoothstep(0.5, 0.0, dist);
 
-    // Combine base drift with mouse wind
-    // Base drift (upwards slightly like smoke)
+    // Base drift (upwards slightly like smoke) + mouse wind
     let baseWind = vec2<f32>(0.0, -0.001);
     let dVecAspect = dVec * vec2<f32>(aspect, 1.0);
     let mouseDirAspect = dVecAspect / max(dist, 0.0001);
     let mouseDir = mouseDirAspect / vec2<f32>(aspect, 1.0);
     let mouseWind = mouseDir * 0.01 * mouseInfluence * windStrength;
 
-    // Final velocity for this pixel
-    // If luma is high, it moves more.
-    var velocity = (baseWind + mouseWind) * (luma * 2.0);
+    // ── Idea 2: spiral outflow ───────────────────────────────────────
+    // A fan or blower does not push purely radially: the stream leaves with swirl, so the
+    // repulsion curls into spiral arms. Same falloff, same Wind Force scaling, 40 % of the
+    // radial push; the perpendicular is taken in aspect-corrected space so arms stay round.
+    let swirlAspect = vec2<f32>(-mouseDirAspect.y, mouseDirAspect.x);
+    let swirlWind = (swirlAspect / vec2<f32>(aspect, 1.0)) * 0.01 * mouseInfluence * windStrength * 0.4;
+
+    // Final velocity for this pixel. If luma is high, it moves more.
+    var velocity = (baseWind + mouseWind + swirlWind) * (luma * 2.0);
 
     // Click gust bursts: each live ripple adds a decaying radial gust from
     // its click point, so clicks blow puffs of smoke (~1.5s lifetime).
@@ -131,35 +124,49 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    // Per-band flutter: 8 horizontal bands each wobble their velocity
-    // perpendicular component, so the trail flickers across the spectrum.
+    // ── Idea 1: edge-tangent flow ────────────────────────────────────
+    // Smoke cannot cross a dark, heavy object — it slides along its outline. The luma gradient
+    // of the live frame (4 taps, 2 px apart) is the edge normal; the velocity component along
+    // it is removed in proportion to edge strength. Done in pixel space, then converted back.
+    let tap = 2.0 / resolution;
+    let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+    let lumaR = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(tap.x, 0.0), 0.0).rgb, lumaW);
+    let lumaL = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(tap.x, 0.0), 0.0).rgb, lumaW);
+    let lumaD = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, tap.y), 0.0).rgb, lumaW);
+    let lumaU = dot(textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, tap.y), 0.0).rgb, lumaW);
+    let lumaGrad = vec2<f32>(lumaR - lumaL, lumaD - lumaU) * 0.5;
+    let gradMag = length(lumaGrad);
+    let edgeNormal = lumaGrad / max(gradMag, 0.0001);
+    let edgeStrength = smoothstep(0.015, 0.12, gradMag);
+    let velPix = velocity * resolution;
+    velocity = (velPix - edgeNormal * dot(velPix, edgeNormal) * edgeStrength * 0.85) / resolution;
+
+    // Per-band flutter: 8 horizontal bands each wobble their velocity perpendicular component,
+    // so the trail flickers across the spectrum. Rescue R2: bands now follow the real audio —
+    // low bands ride bass, middle bands mids, high bands treble — with alternating sign.
     let band = min(u32(uv.y * 8.0), 7u);
-    let flutter = plasmaBuffer[(band % 8u) + 1u].x * 0.003;
+    let bandT = f32(band) / 7.0;
+    let bandAudio = mix(mix(bass, mids, smoothstep(0.0, 0.5, bandT)), treble, smoothstep(0.5, 1.0, bandT));
+    let flutter = bandAudio * select(-1.0, 1.0, (band & 1u) == 0u) * 0.003;
     let flowLen = max(length(velocity), 0.00001);
     let perpDir = vec2<f32>(-velocity.y, velocity.x) / flowLen;
     velocity = velocity + perpDir * flutter;
 
-    // To simulate advection, we sample FROM (uv - velocity)
-    // Because the smoke at (uv) came from (uv - velocity).
-
+    // To simulate advection, we sample FROM (uv - velocity): the smoke at uv came from there.
     // Chromatic Advection: Sample R, G, B from slightly different locations
     let offsetR = velocity * (1.0 + chromaSplit);
     let offsetG = velocity;
     let offsetB = velocity * (1.0 - chromaSplit);
 
-    let prevR = textureSampleLevel(dataTextureC, u_sampler, uv - offsetR, 0.0).r;
-    let prevG = textureSampleLevel(dataTextureC, u_sampler, uv - offsetG, 0.0).g;
-    let prevB = textureSampleLevel(dataTextureC, u_sampler, uv - offsetB, 0.0).b;
+    let prevR = historyBilinear(uv - offsetR, resolution).r;
+    let prevG = historyBilinear(uv - offsetG, resolution).g;
+    let prevB = historyBilinear(uv - offsetB, resolution).b;
     let historyColor = vec3<f32>(prevR, prevG, prevB);
 
-    // Mix new source
-    // If it's bright, we inject more source (smoke generation).
-    // If dark, we inject less (transparent).
+    // Mix new source. Bright = inject more source (smoke generation); dark = less (transparent).
     let injectAmount = sourceMix * luma;
 
     var finalColor = mix(historyColor * decay, currentFrame.rgb, injectAmount);
-
-    // Clamp
     finalColor = max(vec3<f32>(0.0), finalColor);
 
     // Sample depth for alpha calculation
@@ -170,10 +177,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = mix(0.7, 1.0, lumaFinal);
     let finalAlpha = mix(alpha * 0.8, alpha, depth);
 
-    // Store to history (A) and Display (Write)
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
+    // Store to history (A) and Display (Write). Texel (0,0) of A carries the wind-source glide.
+    let isStateTexel = global_id.x == 0u && global_id.y == 0u;
+    let trail = vec4<f32>(finalColor, finalAlpha);
+    let aOut = select(trail, vec4<f32>(windSource, 7.0, frameT), isStateTexel);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), aOut);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), trail);
 
     // Pass depth
-    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4(depth, 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

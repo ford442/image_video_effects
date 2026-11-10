@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //  Deep-Workgroup Multi-Effect Blend
 //  Category: advanced-hybrid
-//  Features: deep-workgroup, shared-memory, workgroup-barrier
+//  Features: deep-workgroup, shared-memory, workgroup-barrier, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-11-09
+//  Ideas: content-arbitrated lane weights; phosphor afterglow decay from C history; held-pointer lane solo lens
+//  A packing: display RGB; .a = phosphor afterglow luminance (read back from C next frame)
 //  requiresDeepWorkgroup: true
 //  Requires: maxComputeInvocationsPerWorkgroup >= 1024 (16×16×4)
 //
@@ -23,27 +26,8 @@
 //  AMD RDNA2+).  The JSON entry carries "requiresDeepWorkgroup": true.
 // ═══════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-// ── Uniforms ─────────────────────────────────────────────────────────────────
-struct Uniforms {
-    config      : vec4<f32>,  // x=time, y=clickCount, z=resX, w=resY
-    zoom_config : vec4<f32>,  // x=time, y=mouseX, z=mouseY, w=mouseDown
-    zoom_params : vec4<f32>,  // x=blend, y=hueSpeed, z=bloomThresh, w=phosphorAmt
-    ripples     : array<vec4<f32>, 50>,
-}
+#include "_prelude.wgsl"
+// zoom_params: x=blend, y=hueSpeed, z=bloomThresh, w=phosphorAmt
 
 // ── Shared memory tile ───────────────────────────────────────────────────────
 // Layout: shared[z][y][x]  — 4 effect lanes × 16 × 16 = 1024 vec4 entries
@@ -74,7 +58,9 @@ fn hsv_to_rgb(c: vec3<f32>) -> vec3<f32> {
 
 // ── Main entry point ─────────────────────────────────────────────────────────
 
-@compute @workgroup_size(16, 16, 1)
+// FIX 2026-11-09: restored @workgroup_size(16, 16, 4). A blanket 16x16x1 rewrite left lid.z
+// always 0, so only the edge lane ran and lanes 1..3 blended in as zero (a 1/4-brightness image).
+@compute @workgroup_size(16, 16, 4)
 fn main(
     @builtin(global_invocation_id)   gid: vec3<u32>,
     @builtin(local_invocation_id)    lid: vec3<u32>,
@@ -99,6 +85,8 @@ fn main(
 
     // Base colour for this pixel
     let base = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
 
     var lane_result = vec4<f32>(0.0);
 
@@ -120,7 +108,8 @@ fn main(
 
         // Colour edges with a neon cyan tint
         let edgeColour = vec3<f32>(0.0, edge, edge * 0.8);
-        lane_result = vec4<f32>(mix(base.rgb, edgeColour, edge * blendMix), base.a);
+        // .a carries this lane's arbitration weight (Idea: content-arbitrated lane weights).
+        lane_result = vec4<f32>(mix(base.rgb, edgeColour, edge * blendMix), 0.6 + edge * 2.0);
     }
 
     // ── Z=1  Bloom (bright-pass + local average) ─────────────────────────────
@@ -134,17 +123,20 @@ fn main(
         let blurred = (c0 + c1 + c2 + c3 + c4) / 5.0;
 
         // Keep only bright parts (bright-pass filter)
-        let bright = max(vec3<f32>(0.0), blurred - bloomThresh) / (1.0 - bloomThresh);
-        let bloom  = base.rgb + bright * 1.5;
-        lane_result = vec4<f32>(mix(base.rgb, clamp(bloom, vec3<f32>(0.0), vec3<f32>(1.2)), blendMix), base.a);
+        let thresh = bloomThresh * (1.0 - bass * 0.25);
+        let bright = max(vec3<f32>(0.0), blurred - thresh) / (1.0 - thresh);
+        let bloom  = base.rgb + bright * 1.5 * (1.0 + bass * 0.5);
+        lane_result = vec4<f32>(mix(base.rgb, clamp(bloom, vec3<f32>(0.0), vec3<f32>(1.2)), blendMix),
+                                0.6 + luminance(bright) * 3.0);
     }
 
     // ── Z=2  Hue shift ───────────────────────────────────────────────────────
     if (lid.z == 2u) {
         var hsv = rgb_to_hsv(base.rgb);
-        hsv.x = fract(hsv.x + time * hueSpeed * 0.05);
+        hsv.x = fract(hsv.x + time * hueSpeed * 0.05 * (1.0 + mids * 0.5));
         let shifted = hsv_to_rgb(hsv);
-        lane_result = vec4<f32>(mix(base.rgb, shifted, blendMix), base.a);
+        // Saturated pixels show the hue rotation, so they vote for this lane.
+        lane_result = vec4<f32>(mix(base.rgb, shifted, blendMix), 0.6 + hsv.y * 1.2);
     }
 
     // ── Z=3  Phosphor scanline glow ──────────────────────────────────────────
@@ -161,8 +153,18 @@ fn main(
 
         // Add faint horizontal scan glow
         let glow = vec3<f32>(0.0, 0.05 * scanline, 0.0) * luminance(base.rgb);
-        let result = clamp(phosphor + glow, vec3<f32>(0.0), vec3<f32>(1.5));
-        lane_result = vec4<f32>(mix(base.rgb, result, phosphorAmt * blendMix), base.a);
+        // Idea: phosphor afterglow — the green trace decays from last frame's A.a (read via C),
+        // so motion leaves a P1-style persistence tail instead of an instant scanline tint.
+        let dims = vec2<i32>(i32(resX), i32(resY));
+        let prev = textureLoad(dataTextureC, clamp(vec2<i32>(gid.xy), vec2<i32>(0), dims - vec2<i32>(1)), 0).a;
+        let prevGlow = select(0.0, clamp(prev, 0.0, 1.5), prev == prev);
+        let decay = 0.85 * phosphorAmt;
+        let afterglow = max(luminance(base.rgb) * 1.4 * scanline, prevGlow * decay);
+        let result = clamp(phosphor + glow + vec3<f32>(0.1, 1.0, 0.25) * max(afterglow - luminance(base.rgb) * 1.4 * scanline, 0.0),
+                           vec3<f32>(0.0), vec3<f32>(1.5));
+        // .a = afterglow (its vote is uniform, computed in the blend). The tile stays at
+        // 16 KiB: a separate afterglow array would exceed maxComputeWorkgroupStorageSize.
+        lane_result = vec4<f32>(mix(base.rgb, result, phosphorAmt * blendMix), afterglow);
     }
 
     // Write this lane's result into shared memory
@@ -178,17 +180,31 @@ fn main(
         let hue_out      = shared_tile[2][lid.y][lid.x];
         let phosphor_out = shared_tile[3][lid.y][lid.x];
 
-        // Equal-weight blend of the four lanes
-        let blended = (edge_out + bloom_out + hue_out + phosphor_out) * 0.25;
+        // Idea: content-arbitrated lane weights — each lane's .a is a vote (edge strength,
+        // bloom energy, saturation, phosphor amount), so edges read as neon, highlights bloom
+        // and flat colour hue-shifts instead of a uniform 25% wash of everything.
+        var w = vec4<f32>(edge_out.a, bloom_out.a, hue_out.a, 0.6 + phosphorAmt * 0.6);
 
-        // Composite over original using blendMix
-        let final_colour = vec4<f32>(
-            mix(base.rgb, blended.rgb, blendMix),
-            base.a
-        );
+        // Idea: held-pointer lane solo lens — while held, a disc under the pointer solos the
+        // lane chosen by angle around it (4 quadrants = 4 lanes), a live A/B of the workers.
+        let aspect = f32(resX) / max(f32(resY), 1.0);
+        let toM = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0);
+        let held = u.zoom_config.w > 0.5;
+        let lensMask = select(0.0, smoothstep(0.2, 0.17, length(toM)), held);
+        let quad = u32(floor((atan2(toM.y, toM.x) / 6.2831853 + 0.5) * 4.0)) % 4u;
+        let solo = vec4<f32>(f32(quad == 0u), f32(quad == 1u), f32(quad == 2u), f32(quad == 3u)) * 8.0;
+        w = mix(w, solo + 1e-3, lensMask);
+
+        let blended = (edge_out.rgb * w.x + bloom_out.rgb * w.y + hue_out.rgb * w.z + phosphor_out.rgb * w.w)
+                    / max(w.x + w.y + w.z + w.w, 1e-4);
+
+        let rgb = mix(base.rgb, blended, blendMix);
+        let alpha = clamp(base.a * (0.8 + 0.2 * blendMix) + lensMask * 0.1, 0.0, 1.0);
+        let final_colour = vec4<f32>(rgb, alpha);
 
         textureStore(writeTexture, vec2<i32>(gid.xy), final_colour);
-    let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
+        textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(rgb, phosphor_out.a));
+        let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+        textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
     }
 }
