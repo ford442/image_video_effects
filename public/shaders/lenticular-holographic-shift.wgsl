@@ -8,6 +8,11 @@
 //  By: Grok (new image/video effect — holographic lenticular print that shifts color and perspective with mouse and audio rhythm)
 //  Upgraded: 2026-07-31 — Visualist: A-slot role fix (display color → A, mask quad → B),
 //            critically-damped view spring, click holo flashes, vertical view tilt, print grain.
+//  Upgraded: 2026-11-10 — Ideas: (1) depth parallax per lens — each strip samples
+//            the image shifted by depth x view angle, so near layers slide past far
+//            ones like a real 3D lenticular; (2) cylindrical lens ridge specular —
+//            a highlight line rides across every lenticule as the view rocks;
+//            (3) ACES on display RGB.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -81,6 +86,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var col = vec3<f32>(r, g, b);
 
+    // Idea 1: depth parallax — the lenticule selects a view whose offset
+    // scales with scene depth (near = larger shift), quantised per strip.
+    let stripId = floor(uv.x * freq + viewAngle * shiftAmt * 1.8 + tiltPhase);
+    let stripCenterUV = vec2<f32>((stripId + 0.5 - viewAngle * shiftAmt * 1.8 - tiltPhase) / freq, uv.y);
+    let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(stripCenterUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let parallaxUV = clamp(uv + vec2<f32>(viewAngle * shiftAmt * (sceneDepth - 0.5) * 0.04, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let parallaxCol = textureSampleLevel(readTexture, u_sampler, parallaxUV, 0.0).rgb;
+    col = mix(col, parallaxCol, 0.55 * band);
+
     // Strong moiré interference when view + audio align
     let moire = sin(strip * 38.0 + viewAngle * 14.0 + time * beat * 4.0) * 0.5 + 0.5;
     let moireMask = pow(moire * band, 1.6) * (0.4 + mids * 0.5);
@@ -122,6 +136,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = mix(col, holo, flashMask * 0.6);
     col += holo * flashMask * 0.5 * (0.4 + 0.6 * luma);
 
+    // Idea 2: cylindrical lens ridge — normal across the strip, specular
+    // peak slides with view angle.
+    let lensX = strip * 2.0 - 1.0;
+    let lensN = normalize(vec3<f32>(lensX, 0.0, sqrt(max(1.0 - lensX * lensX, 0.0)) + 0.2));
+    let viewDir = normalize(vec3<f32>(viewAngle * 0.8, tiltPhase, 1.0));
+    let lensSpec = pow(max(dot(reflect(-viewDir, lensN), vec3<f32>(0.0, 0.0, 1.0)), 0.0), 48.0);
+    col += holo * lensSpec * (0.12 + beat * 0.15);
+
     // Subtle vignette for print feel
     let vign = smoothstep(0.72, 0.38, length(uv - 0.5));
     col *= 0.7 + vign * 0.3;
@@ -129,6 +151,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Fine print grain — hash21 dither keeps the foil from banding.
     let grain = hash21(uv * res + vec2<f32>(time, time * 0.7)) - 0.5;
     col += grain * 0.015 * (0.5 + moireMask);
+
+    // Idea 3: ACES on display RGB.
+    col = max(col, vec3<f32>(0.0));
+    col = clamp((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Semantic alpha — higher on strong holographic bands
     let semantic_alpha = clamp(0.68 + moireMask * 0.55, 0.55, 1.0);

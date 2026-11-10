@@ -3,32 +3,17 @@
 //  Animated Voronoi cells refracting the source as bevelled glass tiles,
 //  with mouse-attracted cell points and audio-swelled density.
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-11
+//  Upgraded: 2026-11-10
 //  Ideas: bass-triggered per-cell facet-fracture crackle; exact-C breath-fog
 //         trail that thickens with refraction activity
+//         (2026-11-10) bevel IOR dispersion — R/G/B refract with slightly
+//         different strength so tile bevels split into prism fringes;
+//         Beer-Lambert pane tint — each cell is a pane of its own thickness
+//         and faint tint, absorbing more toward its thick centre.
 //  A packing: display RGBA (unchanged; now also read back for the fog trail)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -122,7 +107,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let shatterOffset = normal.xy * clickShatter * refraction_strength * 2.0;
   let refract_uv = clamp(uv + normal.xy * refraction_strength + shatterOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  var color = textureSampleLevel(readTexture, u_sampler, refract_uv, 0.0).rgb;
+  // Bevel IOR dispersion: per-channel refraction strength.
+  let bevel = smoothstep(0.15, 0.6, m_dist);
+  let dispersion = normal.xy * refraction_strength * (0.18 + bevel * 0.35);
+  let rC = textureSampleLevel(readTexture, u_sampler, clamp(refract_uv + dispersion, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let gb = textureSampleLevel(readTexture, u_sampler, refract_uv, 0.0).gb;
+  let bC = textureSampleLevel(readTexture, u_sampler, clamp(refract_uv - dispersion, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  var color = vec3<f32>(rC, gb.x, bC);
+
+  // Beer-Lambert pane tint: per-cell thickness + faint tint.
+  let paneSeed = hash22(i_st + floor(m_point * 7.0) + vec2<f32>(17.0, 3.0));
+  let thickness = (0.4 + paneSeed.x * 0.8) * (1.0 - m_dist * 0.6);
+  let absorb = mix(vec3<f32>(0.05, 0.03, 0.01), vec3<f32>(0.01, 0.03, 0.05), paneSeed.y);
+  color *= exp(-absorb * thickness * 6.0);
 
   color += vec3<f32>(0.1) * (1.0 - m_dist);
   color -= vec3<f32>(0.25) * grout;

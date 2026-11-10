@@ -3,8 +3,12 @@
 //  Category: image
 //  Features: audio-reactive, temporal, upgraded-rgba, semantic-alpha
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
+//  Upgraded: 2026-11-10
 //  Ideas: pigment granulation in paper valleys; C-history backrun cauliflower
+//         (2026-11-10) coffee-ring pigment pooling — pigment collects at the
+//         wash boundary (src vs bloom mismatch) and darkens subtractively;
+//         wet-on-wet subtractive bleed — a neighbouring wash downstream of
+//         the flow mixes in multiplicatively, like real pigments.
 //  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Applies a soft, feathered watercolor bloom using multi-tap
@@ -119,6 +123,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Wet-edge darkening: darken near the brightest/darkest transition
     let edgeDark = 1.0 - wetEdge * smoothstep(0.3, 0.7, luma) * 0.5;
     col *= edgeDark;
+
+    // Coffee-ring pooling: where the sharp source disagrees with the bloomed
+    // wash we are at the drying boundary; pigment pools there (subtractive).
+    let boundary = smoothstep(0.03, 0.18, length(src.rgb - bloom.rgb));
+    let pooled = col * mix(vec3<f32>(1.0), clamp(bloom.rgb * 1.2, vec3<f32>(0.25), vec3<f32>(1.0)), 0.6);
+    col = mix(col, pooled * 0.82, boundary * wetEdge * 0.7);
+
+    // Wet-on-wet bleed: a neighbouring wash multiplies in (pigment, not light).
+    let bleedDir = normalize(vec2<f32>(sin(uv.y * 18.0 + time * 2.0), -1.0));
+    let neighbour = textureSampleLevel(readTexture, u_sampler, clamp(uv - bleedDir * bloomR * 3.0, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+    let bleedAmt = (0.18 + wetBrush * 0.35 + mid * 0.1) * smoothstep(0.02, 0.2, length(neighbour - src.rgb));
+    col = mix(col, col * clamp(neighbour * 1.35, vec3<f32>(0.2), vec3<f32>(1.2)), bleedAmt);
 
     // Advect wet pigment along a smooth diagonal flow, then let it dry.
     let wetFlow = vec2<f32>(sin(uv.y * 18.0 + time * 2.0), -1.0) * (1.0 + wetBrush * 2.0 + mid);
