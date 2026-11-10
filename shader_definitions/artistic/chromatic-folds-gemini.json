@@ -5,7 +5,8 @@
   "description": "An advanced geometric color folding and warping effect with dynamic, time-driven animation, fractal layering, and interactive, mouse-driven vortex manipulation.",
   "features": [
     "mouse-driven",
-    "time-driven"
+    "time-driven",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

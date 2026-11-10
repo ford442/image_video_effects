@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-09
-//  Ideas: branch-cut hue jump where the fold wraps; darkening at fold zeros
+//  Upgraded: 2026-11-10
+//  Ideas: branch-cut hue jump where the fold wraps; darkening at fold zeros; prismatic fold dispersion; origami crease lighting
 //  A packing: pre-ACES display RGB in A (C is color history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -84,28 +84,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pivotHue = u.zoom_params.y;
   let satScale = u.zoom_params.z * 0.5 + 0.75;
   let depthInfluence = u.zoom_params.w;
-  let noiseAmount = u.zoom_config.x * 0.003;
-  let feedbackStrength = u.zoom_config.y * 0.15 + 0.8;
-  let rippleStrength = u.zoom_config.z * 0.005;
+  // RESCUE: HEAD read zoom_config.x (= TIME) as noise amount, so the jitter grew without
+  // bound and scrambled the frame to flat grey after a few minutes; it also read mouse X/Y as
+  // feedback / ripple strength. Use the mid values of HEAD's intended ranges instead.
+  let noiseAmount = 0.0015;
+  let feedbackStrength = 0.875;
+  let rippleStrength = 0.0025;
+  let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
   let vortexStrength = u.zoom_params.x * 0.1; // Tied to fold strength
 
   let srcColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
   let depthVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   // ✨ GEMINI UPGRADE: Apply vortex to UV
-  var work_uv = applyVortex(uv, u.ripples[0].xy, vortexStrength, time);
+  // RESCUE: vortex was centred on ripples[0] (= (0,0) with no click); the advertised
+  // mouse-driven vortex now sits under the pointer.
+  var work_uv = applyVortex(uv, mouse, vortexStrength, time);
 
   // ✨ GEMINI UPGRADE: Fractal folding (3 layers)
   var totalDisp = vec2<f32>(0.0);
   for (var i: i32 = 0; i < 3; i = i + 1) {
     let scale = pow(2.0, f32(i));
     let texel = 1.0 / (dims * scale);
+    // RESCUE: uv*2 / uv*4 ran off the texture (clamped → zero gradient outside the top-left
+    // quadrant). Mirror-repeat so every octave folds the whole frame.
+    let fuv = vec2<f32>(1.0) - abs(fract(work_uv * scale * 0.5) * 2.0 - vec2<f32>(1.0));
     
-    let h = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale, 0.0).rgb).x;
-    let hR = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale + vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
-    let hL = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale - vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
-    let hU = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale + vec2<f32>(0.0, texel.y), 0.0).rgb).x;
-    let hD = rgb2hsv(textureSampleLevel(readTexture, u_sampler, work_uv * scale - vec2<f32>(0.0, texel.y), 0.0).rgb).x;
+    let h = rgb2hsv(textureSampleLevel(readTexture, u_sampler, fuv, 0.0).rgb).x;
+    let hR = rgb2hsv(textureSampleLevel(readTexture, u_sampler, fuv + vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
+    let hL = rgb2hsv(textureSampleLevel(readTexture, u_sampler, fuv - vec2<f32>(texel.x, 0.0), 0.0).rgb).x;
+    let hU = rgb2hsv(textureSampleLevel(readTexture, u_sampler, fuv + vec2<f32>(0.0, texel.y), 0.0).rgb).x;
+    let hD = rgb2hsv(textureSampleLevel(readTexture, u_sampler, fuv - vec2<f32>(0.0, texel.y), 0.0).rgb).x;
     
     let gradX = wrapMod(hR - hL + 1.5, 1.0) - 0.5;
     let gradY = wrapMod(hU - hD + 1.5, 1.0) - 0.5;
@@ -115,6 +124,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     totalDisp += hueGrad * foldStrength * 0.05 * (1.0 + curvature) / scale;
   }
   
+  // Fold-only vector (before jitter/ripples): the facet that the prism + crease light use.
+  let hueFold = totalDisp;
+  let hueFoldMag = length(hueFold);
   let noise = hash2(work_uv * 100.0 + time);
   let noiseDisp = vec2<f32>(sin(time + noise * 6.28), cos(time + noise * 6.28)) * noiseAmount;
   totalDisp += noiseDisp;
@@ -135,7 +147,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let displacedUV = clamp(work_uv + totalDisp, vec2<f32>(0.0), vec2<f32>(1.0));
-  let displacedColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
+  // Idea 3: prismatic fold dispersion — each primary follows its own share of the fold vector.
+  // The split is a fixed prism width along the fold direction, gated by how much it folds.
+  let foldMag = length(totalDisp);
+  let facet = hueFold / max(hueFoldMag, 1e-6) * smoothstep(0.0, 0.0008, hueFoldMag);
+  let prism = facet * (0.004 + foldStrength * 0.006);
+  let dispUV_R = clamp(displacedUV - prism, vec2<f32>(0.0), vec2<f32>(1.0));
+  let dispUV_B = clamp(displacedUV + prism, vec2<f32>(0.0), vec2<f32>(1.0));
+  let displacedColor = vec3<f32>(
+    textureSampleLevel(readTexture, u_sampler, dispUV_R, 0.0).r,
+    textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).g,
+    textureSampleLevel(readTexture, u_sampler, dispUV_B, 0.0).b);
   
   var hsv = rgb2hsv(displacedColor);
   let wrapped = foldHue(hsv.x, pivotHue, foldStrength);
@@ -144,11 +166,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let branch = smoothstep(0.07, 0.0, cutDist);
   hsv.x = fract(wrapped + branch * 0.5 + sin(time * 0.1) * 0.1);
   // Darken where this fold's displacement collapses.
-  let foldMag = length(totalDisp);
-  let zeroDark = smoothstep(0.02, 0.0, foldMag);
-  hsv.z = hsv.z * (1.0 - zeroDark * 0.7);
+  // RESCUE: HEAD's 0.02 threshold only cleared while the runaway time-noise inflated foldMag;
+  // with a fixed jitter it dimmed ~70% of the frame by 0.7. Measure the fold alone, cap at 0.4.
+  let zeroDark = smoothstep(0.0015, 0.0, hueFoldMag);
+  hsv.z = hsv.z * (1.0 - zeroDark * 0.4);
   hsv.y = clamp(hsv.y * satScale, 0.0, 1.0);
-  let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z);
+  // Idea 4: origami crease lighting — the fold vector is a facet tilt; faces turned toward the
+  // upper-left key light brighten, faces turned away fall into the crease shadow.
+  let keyLight = dot(facet, normalize(vec2<f32>(-0.6, -0.8)));
+  let foldedColor = hsv2rgb(hsv.x, hsv.y, hsv.z) * (1.0 + keyLight * 0.55);
 
   let histSize = vec2<i32>(textureDimensions(dataTextureC));
   let prev = textureLoad(dataTextureC, clamp(vec2<i32>(gid.xy), vec2<i32>(0), histSize - vec2<i32>(1)), 0).rgb;
