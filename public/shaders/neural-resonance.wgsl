@@ -12,28 +12,13 @@
 //      the mask quad moved to dataTextureB (same fix as spore-galaxy).
 //    - Spring-dampered mouse mask via extraBuffer[133..136].
 //    - Click resonance rings from u.ripples injected into feedback.
+//  Upgraded: 2026-11-09
+//  Ideas: streamline-aligned persistence (feedback gathered along the curl direction, exact bilinear C); eddy-core synapse glow (tint rides |curl|)
+//  A packing: display RGB + alpha, raw clamp (HEAD's; read back as C); B = mask quad (HEAD's)
 // ================================================================
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, z=resW, w=resH
-  zoom_config: vec4<f32>,  // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>,  // x=Amplification, y=CurlStrength, z=FeedbackMix, w=ChromaticDrift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Amplification, y=CurlStrength, z=FeedbackMix, w=ChromaticDrift
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -57,6 +42,20 @@ fn curlField(p: vec2<f32>, t: f32) -> vec2<f32> {
   let n3 = noise(p + vec2<f32>(e, 0.0) - t);
   let n4 = noise(p - vec2<f32>(e, 0.0) - t);
   return vec2<f32>(n1 - n2, -(n3 - n4)) / (2.0 * e);
+}
+
+// Exact bilinear read of the display history (texel centres at +0.5, clamped).
+fn historyAt(uv: vec2<f32>, dims: vec2<f32>) -> vec4<f32> {
+  let p = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * dims - vec2<f32>(0.5);
+  let i0 = floor(p);
+  let f = p - i0;
+  let a = vec2<i32>(i0);
+  let hi = vec2<i32>(dims) - vec2<i32>(1);
+  let c00 = textureLoad(dataTextureC, clamp(a, vec2<i32>(0), hi), 0);
+  let c10 = textureLoad(dataTextureC, clamp(a + vec2<i32>(1, 0), vec2<i32>(0), hi), 0);
+  let c01 = textureLoad(dataTextureC, clamp(a + vec2<i32>(0, 1), vec2<i32>(0), hi), 0);
+  let c11 = textureLoad(dataTextureC, clamp(a + vec2<i32>(1, 1), vec2<i32>(0), hi), 0);
+  return mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -110,13 +109,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aspectUV = uv * vec2<f32>(aspect, 1.0);
   let mouseDelta = (uv - springPos) * vec2<f32>(aspect, 1.0);
   let mouseMask = 1.0 - smoothstep(0.0, 0.65, length(mouseDelta));
-  let curl = curlField(aspectUV * (2.0 + amplification), time * 0.15) * curlStrength;
-  let warpedUV = clamp(uv + curl / vec2<f32>(aspect, 1.0) * (0.4 + mouseMask * 1.2), vec2<f32>(0.0), vec2<f32>(1.0));
+  let curlRaw = curlField(aspectUV * (2.0 + amplification), time * 0.15);
+  let curl = curlRaw * curlStrength;
+  let warpDisp = curl / vec2<f32>(aspect, 1.0) * (0.4 + mouseMask * 1.2);
+  let warpedUV = clamp(uv + warpDisp, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let source = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0);
   // dataTextureC = previous frame's dataTextureA = previous DISPLAY color
   // (after the Batch 18 plumbing fix this is real color, not masks).
-  let feedback = textureSampleLevel(dataTextureC, u_sampler, warpedUV, 0.0);
+  // ── Idea 1: streamline-aligned persistence ──
+  // HEAD gathered the history at ONE warped point (magnitude only). Feedback
+  // in a real flow smears along the streamlines (ink in turbulence, iron
+  // filings), so gather three exact-bilinear taps along the curl direction —
+  // spread = 1.5 × the displacement this pixel already has, centre-weighted.
+  let feedback = historyAt(warpedUV, dims) * 0.5
+    + historyAt(warpedUV + warpDisp * 1.5, dims) * 0.25
+    + historyAt(warpedUV - warpDisp * 1.5, dims) * 0.25;
   let split = curl * chromaticDrift * (0.8 + audio.z * 0.6);
   let chroma = vec3<f32>(
     textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + split, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r,
@@ -126,7 +134,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let synapseTint = mix(vec3<f32>(0.10, 0.75, 1.0), vec3<f32>(1.0, 0.35, 0.85), 0.5 + 0.5 * sin(time * 0.7 + noise(aspectUV * 4.0) * 6.28318));
   var finalColor = mix(chroma, feedback.rgb, feedbackMix * (0.4 + mouseMask * 0.6));
-  finalColor = mix(finalColor, finalColor + synapseTint * (0.08 + audio.y * 0.18), 0.55);
+  // ── Idea 2: eddy-core synapse glow ──
+  // |curl| was exported to B but never shown, and the synaptic tint was
+  // uniform. Normalised by Curl Strength it marks where the noise flow winds
+  // up; the tint flares at those cores and stays HEAD's in laminar regions.
+  let eddy = smoothstep(0.8, 3.0, length(curlRaw));
+  finalColor = mix(finalColor, finalColor + synapseTint * (0.08 + audio.y * 0.18) * (1.0 + 1.1 * eddy), 0.55);
 
   // --- Click resonance rings ---
   // Each live ripple injects a decaying, expanding synapseTint band

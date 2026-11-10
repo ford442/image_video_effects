@@ -4,29 +4,13 @@
 //  Features: multi-slice, hyperbolic-decay, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-23, 2026-11-09
+//  Ideas: slit-scan stretch (content pulled toward the winning slice's centre column); per-channel slit aperture (R/B slice masks shifted by Aberration → coloured edge fringe)
+//  A packing: display RGBA (HEAD's)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Width, y=OffsetScale, z=Aberration, w=BgDimming
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Width, y=OffsetScale, z=Aberration, w=BgDimming
 
 const PI:  f32 = 3.14159265358979323846;
 const PHI: f32 = 1.61803398874989484820;
@@ -83,6 +67,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var maxBand = 0.0;
     var bestOffset = 0.0;
     var bestIndex = 0.0;
+    var bestCenter = mouse.x;          // centre + half-width (uv.x) of the winning slice —
+    var bestHalfW = sliceWidthBase;    // the intermediates the competition used to throw away
+    var bestLive = 0.0;                // 1 when the winner is an active slice / a live click
 
     for (var i = 0; i < 7; i++) {
         let sliceIndex = f32(i) - 0.5 * f32(sliceCount - 1);
@@ -103,6 +90,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         maxBand = mix(maxBand, effectiveBand, isBetter);
         bestOffset = mix(bestOffset, candidateOffset, isBetter);
         bestIndex = mix(bestIndex, sliceIndex, isBetter);
+        bestCenter = mix(bestCenter, center, isBetter);
+        bestHalfW = mix(bestHalfW, max(width, 1e-4), isBetter);
+        bestLive = mix(bestLive, activeMask, isBetter);
     }
 
     // Clicks stamp short-lived independent scan slices at normalized ripple
@@ -122,10 +112,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         maxBand = mix(maxBand, clickBand, clickIsBetter);
         bestOffset = mix(bestOffset, clickOffset, clickIsBetter);
         bestIndex = mix(bestIndex, f32(ri % 7u) - 3.0, clickIsBetter);
+        bestCenter = mix(bestCenter, rp.x, clickIsBetter);
+        bestHalfW = mix(bestHalfW, max(clickWidth / max(aspect, 0.001), 1e-4), clickIsBetter);
+        bestLive = mix(bestLive, live, clickIsBetter);
         clickGlow = max(clickGlow, clickBand);
     }
 
-    let sampleUV = clamp(uv + vec2<f32>(0.0, bestOffset), vec2<f32>(0.0), vec2<f32>(1.0));
+    // ── Idea 1: slit-scan stretch ──
+    // The device is a slit camera: the slit records one column, repeatedly, so
+    // content inside it smears sideways toward the slit's centre column. x is
+    // pulled toward the winning slice's centre by 1 − 0.45·band² (no change at
+    // the slice edge or outside, bounded to a 1.8× stretch at the centre).
+    let slitK = 1.0 - 0.45 * maxBand * maxBand;
+    let slitX = bestCenter + (uv.x - bestCenter) * slitK;
+    let sampleUV = clamp(vec2<f32>(slitX, uv.y + bestOffset), vec2<f32>(0.0), vec2<f32>(1.0));
     let abAmt = aberration * (0.4 + maxBand * 0.6);
     let rUV = clamp(sampleUV + vec2<f32>(abAmt, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let bUV = clamp(sampleUV - vec2<f32>(abAmt, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -147,8 +147,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let desat = mix(bgCol, vec3<f32>(gray), dimming);
     let bgFinal = desat * (1.0 - dimming * 0.6);
 
+    // ── Idea 2: per-channel slit aperture ──
+    // A three-line CCD has a sensor line per colour, so the R/G/B slit
+    // apertures are not coincident. R and B test the winning slice's aperture
+    // at x shifted by the Aberration offset (capped to a third of the slit),
+    // leaving a coloured fringe that straddles the slice boundary instead of
+    // only living inside it. G keeps HEAD's mask.
     let isSlice = step(0.001, maxBand);
-    var finalColor = mix(bgFinal, sliceCol, isSlice);
+    let fringe = min(abAmt * 0.8, 0.35 * bestHalfW);
+    let apertureR = step(0.001, max(0.0, 1.0 - abs(uv.x - fringe - bestCenter) / bestHalfW)) * bestLive;
+    let apertureB = step(0.001, max(0.0, 1.0 - abs(uv.x + fringe - bestCenter) / bestHalfW)) * bestLive;
+    let sliceMask = vec3<f32>(apertureR, isSlice, apertureB);
+    var finalColor = mix(bgFinal, sliceCol, sliceMask);
     let peak = max(max(finalColor.r, finalColor.g), finalColor.b);
     finalColor = max(finalColor, vec3<f32>(0.0)) * min(1.0, 1.8 / max(peak, 0.001));
 
