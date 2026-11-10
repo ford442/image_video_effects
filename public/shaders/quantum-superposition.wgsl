@@ -1,32 +1,17 @@
-// --- COPY PASTE THIS HEADER INTO EVERY NEW SHADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
+#include "_prelude.wgsl"
+// zoom_params: x=ChaosSpeed, y=ChaosAmount, z=StabilityRadius, w=RGBSplit
 
 // ═══════════════════════════════════════════════════════════════
 //  Quantum Superposition
 //  Mouse-stabilised glitch field; bass collapses the wavefunction
 //  into blocky chaos, mids widen the RGB split.
 //  Features: glitch, block-displacement, mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-10
+//  Ideas: (1) superposed ghost state — glitch blocks show two displaced
+//         eigenstates blended by a per-block interference phase;
+//         (2) decoherence fringe — interference bands ripple the image
+//         along the observation-radius boundary; (3) ACES display.
 // ═══════════════════════════════════════════════════════════════
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=ChaosSpeed, y=ChaosAmount, z=StabilityRadius, w=RGBSplit
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn hash13(p: vec3<f32>) -> f32 {
     var p3  = fract(p * .1031);
@@ -107,11 +92,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let g = textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g;
         let b = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b;
 
+        // Idea 1: superposition — a second eigenstate with an independent
+        // shift; the block's phase sets how much of each state is "observed".
+        let shift2 = (random2(blockUV.yx + vec2<f32>(chaosTime * 1.37 + 7.0)) - vec2<f32>(0.5)) * 0.1 * effectiveStability;
+        let ghost = textureSampleLevel(readTexture, u_sampler, clamp(uv + shift2, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        let psi = 0.5 + 0.5 * cos(rnd * 6.2831853 + time * chaosSpeed * 0.15);
+        let superposed = mix(vec3<f32>(r, g, b), ghost, psi * 0.5);
+
         // Occasional color inversion
         if (rnd < 0.2) {
-            finalColor = vec4<f32>(1.0 - r, 1.0 - g, 1.0 - b, 1.0);
+            finalColor = vec4<f32>(vec3<f32>(1.0) - superposed, 1.0);
         } else {
-            finalColor = vec4<f32>(r, g, b, 1.0);
+            finalColor = vec4<f32>(superposed, 1.0);
         }
 
         // Add some noise overlay
@@ -119,7 +111,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     } else {
         // Stable Mode (Clean Image)
-        finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+        // Idea 2: decoherence fringe — near the observation boundary the
+        // clean image wobbles with interference bands before it collapses.
+        let edge = effectiveStability * (1.0 - effectiveStability) * 4.0;
+        let fringe = sin(dist * 180.0 - time * (3.0 + chaosSpeed * 0.2));
+        let fUV = clamp(uv + normalize(mouseVec + vec2<f32>(1e-5)) * fringe * edge * (0.003 + rgbSplitStr * 0.15), vec2<f32>(0.0), vec2<f32>(1.0));
+        finalColor = textureSampleLevel(readTexture, u_sampler, fUV, 0.0);
+        finalColor = vec4<f32>(finalColor.rgb * (1.0 + fringe * edge * 0.08), finalColor.a);
     }
 
     // Pass-through depth, nudged forward where the field has collapsed
@@ -133,7 +131,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     var clickFront = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
     let screenUV = vec2<f32>(vec2<i32>(global_id.xy)) / vec2<f32>(u.config.z, u.config.w);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let event = u.ripples[i];
@@ -144,7 +141,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = outColor.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, outColor.a));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, outColor.a));
+    let rawRGB = max(outColor.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25), vec3<f32>(0.0));
+    // Idea 3: ACES on display RGB.
+    let finalRGB = clamp((rawRGB * (2.51 * rawRGB + 0.03)) / (rawRGB * (2.43 * rawRGB + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, outColor.a));
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, outColor.a));
 }

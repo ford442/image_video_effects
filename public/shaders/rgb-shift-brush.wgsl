@@ -2,8 +2,8 @@
 //  RGB Shift Brush - Feedback-based RGB displacement with spectral alpha
 //  Category: artistic
 //  Features: feedback, brush-dispersion, wavelength-dependent-alpha
-//  Upgraded: 2026-10-04
-//  Ideas: chromatic tail lag (slow long-wave mask in A.g); 7-tap prism fan on the WAVELENGTH_* bands
+//  Upgraded: 2026-10-04, 2026-11-09
+//  Ideas: chromatic tail lag (slow long-wave mask in A.g); 7-tap prism fan on the WAVELENGTH_* bands; edge-oriented dispersion (stroke rim disperses along the mask normal, §12.2A direction-not-magnitude); Cauchy-spaced prism fan (700-400 nm taps at 1/lambda^2 + 1/lambda^4 offsets anchored on red, blue spreads ~2x red; fan gate opened to the rim/tail, §12.2F)
 //  A packing: raw mask state — r = fast trail mask, g = slow tail mask, b = 0, a = 1
 //
 //  STYLIZED SPECTRAL MODEL:
@@ -11,26 +11,7 @@
 //  - Named wavelength bands provide a stable artistic color ordering
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════
 //  SPECTRAL BAND CONSTANTS
@@ -50,11 +31,20 @@ fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
 
 // Gaussian response of each display channel to a wavelength (nm), centred on the
 // file's named bands, used to weight the prism-fan taps.
+// (d*d, not pow(d, 2.0): d is negative below each band centre and pow() of a negative base is NaN-prone)
 fn bandResponse(lambda: f32) -> vec3<f32> {
-    let r = exp(-pow((lambda - WAVELENGTH_RED) / 55.0, 2.0));
-    let g = exp(-pow((lambda - WAVELENGTH_GREEN) / 50.0, 2.0));
-    let b = exp(-pow((lambda - WAVELENGTH_BLUE) / 45.0, 2.0));
-    return vec3<f32>(r, g, b);
+    let dr = (lambda - WAVELENGTH_RED) / 55.0;
+    let dg = (lambda - WAVELENGTH_GREEN) / 50.0;
+    let db = (lambda - WAVELENGTH_BLUE) / 45.0;
+    return vec3<f32>(exp(-dr * dr), exp(-dg * dg), exp(-db * db));
+}
+
+// Cauchy dispersion: n(lambda) = A + B/lambda^2 + C/lambda^4. Offset from green (lambda_G): zero at green,
+// negative on the red side, positive on the blue side, growing faster toward blue; the 1/lambda^4 term (second
+// Cauchy coefficient) steepens the blue side so blue spreads clearly more than red.
+fn cauchyOffset(lambda: f32) -> f32 {
+    let s2 = (WAVELENGTH_GREEN / lambda) * (WAVELENGTH_GREEN / lambda);
+    return (s2 - 1.0) + 0.5 * (s2 * s2 - 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -87,7 +77,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let aspect = resolution.x / resolution.y;
     let dVec = (uv - mouse) * vec2(aspect, 1.0);
     let dist = length(dVec);
-    let brush = smoothstep(brushSize, brushSize * 0.5, dist) * mix(0.12, 1.0, held);
+    // Hover deposit scales with (1 - decay) so a parked cursor settles at a faint ~0.35 peak whatever the Decay slider
+    // says (HEAD's fixed 0.12 reached 0.12/(1-decay) = 5 -> clamped to 1: an idle cursor painted a full-strength
+    // disc). Held painting is unchanged (weight 1.0).
+    let brush = smoothstep(brushSize, brushSize * 0.5, dist) * mix(0.35 * (1.0 - decay), 1.0, held);
 
     var clickFront = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -116,7 +109,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Shift direction based on time
     let angle = time * (2.0 + audio.y * 1.4) + ribbonRunner * 0.45;
-    var dir = vec2(cos(angle), sin(angle));
+    let dirT = vec2(cos(angle), sin(angle));
+
+    // ── Idea 3: edge-oriented dispersion (§12.2A direction-not-magnitude) ──────────────────
+    // The time-rotating direction ignores the stroke. A prism/lens disperses ALONG the surface
+    // gradient and hardest at its EDGE, hardly at all in the flat interior. The previous-frame mask
+    // (exact C.r, +-3 texels) gives the stroke normal n and an edge strength e (0 in the flat interior and
+    // far from the stroke, 1 on the brush rim, partial along fading trails). The rotating shift is stretched
+    // along n and squeezed along the rim tangent: M = I + e*(2.0 n n^T - 0.75 t t^T), i.e. x3 along the normal
+    // and x0.25 along the tangent at the rim. n n^T and t t^T are sign-invariant, so the rotation stays
+    // continuous (no R/B flip when dirT crosses the normal) and e = 0 is exactly HEAD. |dir| <= 3, UVs clamped.
+    let cmax = vec2<i32>(resolution) - vec2<i32>(1);
+    let gR = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>(3, 0), vec2<i32>(0), cmax), 0).r;
+    let gL = textureLoad(dataTextureC, clamp(historyCoord - vec2<i32>(3, 0), vec2<i32>(0), cmax), 0).r;
+    let gD = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>(0, 3), vec2<i32>(0), cmax), 0).r;
+    let gU = textureLoad(dataTextureC, clamp(historyCoord - vec2<i32>(0, 3), vec2<i32>(0), cmax), 0).r;
+    let gradPix = vec2<f32>(gR - gL, gD - gU) * (1.0 / 6.0);          // mask change per pixel
+    let gradLen = length(gradPix);
+    let nPix = gradPix / max(gradLen, 1e-6);
+    let tPix = vec2<f32>(-nPix.y, nPix.x);
+    // the brush ramp has max slope ~3/brushSize per uv-height; normalise so the rim reads ~1, and start
+    // early so fading trail slopes disperse too (wide rim measure)
+    let edge = smoothstep(0.04, 0.4, gradLen * resolution.y * brushSize * (1.0 / 3.0));
+    let dIso = vec2<f32>(dirT.x * aspect, dirT.y);                    // work in square-pixel space
+    let dEdge = dIso + edge * (2.0 * nPix * dot(nPix, dIso) - 0.75 * tPix * dot(tPix, dIso));
+    let dir = vec2<f32>(dEdge.x / aspect, dEdge.y);
 
     let r_uv = clamp(uv + dir * shift, vec2<f32>(0.0), vec2<f32>(1.0));
     let b_uv = clamp(uv - dir * shiftSlow, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -125,18 +142,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var g = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
     var b = textureSampleLevel(readTexture, u_sampler, b_uv, 0.0).b;
 
-    // Idea 2 — prism fan: in the dense trail the 3-tap split opens into seven taps from
-    // 650 nm (at +shift) to 450 nm (at -shiftSlow), each weighted by bandResponse, so a
+    // Idea 2 — prism fan: along the rim and fading tail the 3-tap split opens into seven taps across the
+    // visible band (Idea 4 below sets their spacing), each weighted by bandResponse, so a
     // strong shift smears into a continuous spectrum instead of three hard ghosts.
-    let fanMix = smoothstep(0.25, 0.9, newSlow) * smoothstep(0.004, 0.02, shift + shiftSlow);
+    // Gate widened (HEAD: smoothstep(0.25, 0.9, newSlow) * smoothstep(0.004, 0.02, ..)): the fan now opens along the
+    // whole rim and fading tail, where the stroke is still transparent enough to see it, not only in the dense
+    // (strongly absorbed, nearly black) interior.
+    let fanMix = smoothstep(0.05, 0.5, newSlow) * smoothstep(0.002, 0.012, shift + shiftSlow);
     if (fanMix > 0.001) {
         var acc = vec3<f32>(0.0);
         var wsum = vec3<f32>(0.0);
+        let oR = cauchyOffset(WAVELENGTH_RED);
         for (var k: i32 = 0; k < 7; k = k + 1) {
-            let t = f32(k) / 6.0;
-            let lambda = mix(WAVELENGTH_RED, WAVELENGTH_BLUE, t);
+            // ── Idea 4: Cauchy-spaced fan (§12.2F). Seven taps still, but now 700 -> 400 nm (50 nm apart: the
+            // named red/blue bands +-50 nm) so each channel's Gaussian is covered on both sides (HEAD's 650 -> 450
+            // fan cut the red and blue Gaussians off toward green). Tap offsets follow n(lambda) - n(green)
+            // (1/lambda^2 + 1/lambda^4 terms) in units of the file's own shifts, anchored on RED: 650 nm lands at
+            // +shift exactly as before, 550 nm at 0, and blue/violet follow the law relative to red -- 450 nm at
+            // 2.1x and 400 nm at 4.1x of -shiftSlow, 700 nm at 1.3x of +shift -- so blue spreads ~2x red.
+            // (Anchoring blue at exactly -shiftSlow as well was measured and is invisible: it only re-spaces
+            // interior taps by ~5 %.)
+            let lambda = WAVELENGTH_RED + 50.0 - 50.0 * f32(k);
             let w = bandResponse(lambda);
-            let tapUV = clamp(uv + dir * mix(shift, -shiftSlow, t), vec2<f32>(0.0), vec2<f32>(1.0));
+            let cOff = cauchyOffset(lambda);
+            let tapShift = select(shift, shiftSlow, cOff > 0.0) * (cOff / oR);   // oR < 0: red side +, blue side -
+            let tapUV = clamp(uv + dir * tapShift, vec2<f32>(0.0), vec2<f32>(1.0));
             acc += textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb * w;
             wsum += w;
         }

@@ -2,7 +2,7 @@
   "id": "digital-reveal-guided",
   "name": "Digital Reveal Guided",
   "url": "shaders/digital-reveal-guided.wgsl",
-  "description": "Matrix rain reveals image through depth-guided filter: spring brush, held widen, glyph geometry, capped click ripples, exact C trail mask, and audio density.",
+  "description": "Matrix rain reveals image through depth-guided filter: spring brush, held widen, glyph geometry, capped click ripples, exact C trail mask, and audio density. Rain falls as head and tail columns; the reveal front steps in glyph cells.",
   "tags": [
     "mouse-driven",
     "digital-reveal",
@@ -19,7 +19,8 @@
     "click-ripples",
     "held-drag",
     "aces-tone-map",
-    "temporal-feedback"
+    "temporal-feedback",
+    "upgraded-rgba"
   ],
   "workgroup_size": [
     16,

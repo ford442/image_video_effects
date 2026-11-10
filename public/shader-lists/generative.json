@@ -9529,6 +9529,10 @@
         "step": 0.1,
         "mapping": "zoom_params.w"
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven"
     ]
   },
   {

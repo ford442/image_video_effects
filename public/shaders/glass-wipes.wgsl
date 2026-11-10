@@ -1,5 +1,8 @@
 // Rainy Window — persistent wetness/rivulet field with a sprung hand wiper.
 // Raw A ownership: R=wetness, G=downward flow, B=thickness, A=coverage.
+// Upgraded: 2026-11-10
+// Ideas: inverted drop-lens on falling beads (§12.2F thin-lens inversion); squeegee residue line on the sweep's trailing edge
+// A packing: raw (wetness, flow, thickness, coverage); ACES only on writeTexture
 //
 // Batch 67 — fast motion / psychedelic / high energy:
 //   A. Elastic wiper sweep. An autonomous blade crosses the glass on a timed
@@ -115,6 +118,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                  * smoothstep(0.0, 0.08, uv.y) * smoothstep(1.0, 0.92, uv.y);
   let sweepStrength = sweepBlade * (0.55 + rainIntensity * 0.3);
   wetness *= 1.0 - sweepStrength; flow *= 1.0 - sweepStrength;
+
+  // ── Idea 2: squeegee residue line ────────────────────────────────────
+  // A real blade never wipes perfectly: a thin line of water stays along its
+  // trailing edge. The stroke is a triangle (right for sweepT < 0.5, then left),
+  // so the trailing edge is on the opposite side of the blade's travel. The line
+  // is deposited into the raw wetness field, so it persists, runs and dries with
+  // the rest of the film. It sits just outside the blade's soft footprint
+  // (0.9 * wiperRadius) so the blade does not immediately wipe it away.
+  let sweepDir = select(-1.0, 1.0, sweepT < 0.5);
+  let trailX = sweepX - sweepDir * (wiperRadius * 0.97 / aspectVec.x);
+  let trailDist = abs(uv.x - trailX) * aspectVec.x;
+  let residueSigma = max(wiperRadius * 0.08, 0.004);
+  let residueLine = exp(-(trailDist * trailDist) / (residueSigma * residueSigma))
+                  * smoothstep(0.0, 0.08, uv.y) * smoothstep(1.0, 0.92, uv.y);
+  wetness = clamp(wetness + residueLine * (0.4 + rainIntensity * 0.4), 0.0, 1.0);
   thickness = clamp(mix(thickness, wetness + flow * 0.22, 0.12) + splash * 0.04, 0.0, 1.0);
   let coverage = clamp(max(c.a * (0.988 - drySpeed * 0.006), wetness), 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(wetness, flow, thickness, coverage));
@@ -122,7 +140,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gradient = vec2<f32>(l.r - r.r, d.r - t.r) * (4.0 + distortion * 16.0);
   let normal = normalize(vec3<f32>(gradient + vec2<f32>(0.0, flow * 0.18), 0.3));
   let sourceUV = clamp(uv + normal.xy * (0.006 + distortion * 0.045) * thickness / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999));
-  let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+  let sourceBase = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+  // ── Idea 1: inverted drop-lens (§12.2F thin-lens inversion) ──────────
+  // Every water bead on glass is a tiny fish-eye lens: it shows the scene
+  // upside down and minified. The bead's centre is rebuilt from the same rain
+  // cell state that placed it (cell, seed, fall); inside the bead's core the
+  // source is sampled mirrored about that centre, 2.6x wider than the bead.
+  let dropCentreUV = (cell + vec2<f32>(0.18 + seed * 0.64, fall)) / vec2<f32>(rainScale, rainScale * 0.62);
+  let invUV = clamp(dropCentreUV - (uv - dropCentreUV) * 2.6, vec2<f32>(0.001), vec2<f32>(0.999));
+  let beadLens = smoothstep(0.35, 0.85, drop);
+  let source = mix(sourceBase, textureSampleLevel(readTexture, u_sampler, invUV, 0.0), beadLens * 0.7);
   let fresnel = 0.02 + 0.98 * pow(clamp(1.0 - normal.z, 0.0, 1.0), 5.0);
   let light = normalize(vec3<f32>(-0.45, 0.55, 0.75));
   let specular = pow(max(dot(normal, light), 0.0), 44.0) * thickness;

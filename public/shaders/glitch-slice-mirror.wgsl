@@ -1,30 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Glitch Slice Mirror — Batch 62
-//  fp128 seam integration, spring mass [133..138], racing horizontal
-//  fracture packet, capped click bands, held widens glitch halo,
-//  ACES + semantic alpha.
+//  Category: glitch
+//  Features: mouse-driven, audio-reactive, upgraded-rgba, click-reactive, held-drag, aces-tone-map
+//  Upgraded: 2026-11-09
+//  Ideas: macroblock hold (block quantization, §12.2B); interlace comb at the seam (field interlace, §12.2B)
+//  A packing: ACES display RGBA (C only read for the packet echo)
+//  fp128 seam integration, racing horizontal fracture packet, capped click
+//  bands, held widens glitch halo, per-block tears, ACES applied once + semantic alpha.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 struct Fp128 {
   base: f32,
@@ -55,6 +40,12 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+// Reflect t back into [0,1] (t in [-1,2] is enough here: seam in [0,1], uv in [0,1], small tears).
+fn pingPong01(t: f32) -> f32 {
+  let a = abs(t);
+  return clamp(1.0 - abs(1.0 - a), 0.0, 1.0);
+}
+
 fn fracture_packet(uv: vec2<f32>, time: f32, speed: f32) -> f32 {
   let head = fract(time * (1.8 + speed * 5.0));
   let d = abs(uv.x - head);
@@ -65,37 +56,13 @@ fn fracture_packet(uv: vec2<f32>, time: f32, speed: f32) -> f32 {
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
     let coords = vec2<i32>(global_id.xy);
-    var uv = vec2<f32>(global_id.xy) / u.config.zw;
+    let uv = vec2<f32>(global_id.xy) / u.config.zw;
     let time = u.config.x;
     let aspect = u.config.z / max(u.config.w, 0.001);
     let held = u.zoom_config.w > 0.5;
-    let rawMouse = u.zoom_config.yz;
-
-    let hasSpringState = arrayLength(&extraBuffer) > 138u;
-    var mouse = rawMouse;
-    if (hasSpringState && extraBuffer[138] > 0.5) {
-      mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasSpringState) {
-      var springPos = mouse;
-      var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-      if (extraBuffer[138] <= 0.5) {
-        springPos = rawMouse;
-        springVel = vec2<f32>(0.0);
-      } else {
-        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-        let omega = 11.0;
-        let accel = (rawMouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-        springVel += accel * dt;
-        springPos += springVel * dt;
-      }
-      extraBuffer[133] = springPos.x;
-      extraBuffer[134] = springPos.y;
-      extraBuffer[135] = springVel.x;
-      extraBuffer[136] = springVel.y;
-      extraBuffer[137] = time;
-      extraBuffer[138] = 1.0;
-    }
+    // Rescue R3: HEAD's spring lived in extraBuffer[133..138], which the host zeroes every frame, so its
+    // guard (extraBuffer[138] > 0.5) was never true and `mouse` was already the raw cursor. Dead block removed.
+    let mouse = u.zoom_config.yz;
 
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
     let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
@@ -115,7 +82,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let rp = u.ripples[i];
       let age = time - rp.z;
       let safeAge = max(age, 0.0);
-      let live = step(0.0, age) * (1.0 - step(1.4, age));
+      // fades 0.9 -> 1.4 s and is exactly 0 at the cutoff (HEAD cut at exp(-2.8) = 0.06 with a step: a visible pop)
+      let live = step(0.0, age) * (1.0 - smoothstep(0.9, 1.4, age));
       let yBand = 1.0 - smoothstep(0.012, 0.085, abs(uv.y - rp.y));
       let xWindow = 1.0 - smoothstep(0.12, 0.75, abs(uv.x - rp.x) * aspect);
       let damage = yBand * (0.3 + xWindow * 0.7) * exp(-safeAge * 2.0) * live;
@@ -134,49 +102,80 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let glitch_width = 0.1 * max(paramIntensity * 2.0, 0.001) * select(1.0, 1.3, held);
     let dist_to_seam = abs(uv.x - seamX);
-    let inGlitch = dist_to_seam < glitch_width || clickDamage > 0.02 || packet > 0.05;
 
     let seamIntensity = clamp(1.0 - dist_to_seam / max(glitch_width, 0.001), 0.0, 1.0) * audioBoost;
-    let intensity = max(seamIntensity, clickDamage * audioBoost) * f32(inGlitch);
+    // Soft gate (HEAD: binary `dist < width || click > 0.02 || packet > 0.05`): the halo, the click bands and the
+    // fracture packet fade the glitch in over their first 0.05 of strength, so scanline bars and the mix do not
+    // start/stop abruptly at the halo edge. Interior of the halo is unchanged.
+    let glitchAmt = smoothstep(0.0, 0.05, max(seamIntensity, max(clickDamage, packet)));
+    let intensity = max(seamIntensity, clickDamage * audioBoost) * glitchAmt;
 
-    let block_size = vec2<f32>(
+    let block_size = max(vec2<f32>(
         0.02 + paramScale * 0.06,
         0.01 + paramScale * 0.02
-    );
-    let seed = floor(uv / max(block_size, vec2<f32>(0.001))) + time * (0.15 + paramSpeed * 2.5);
-    let blockBin = (u32(abs(floor(seed.x)) + abs(floor(seed.y))) % 8u) + 1u;
-    let fftBlock = plasmaBuffer[blockBin].x;
-    let noise = fract(hash(fract(seed)) + fftBlock * 0.17 + treble * clickDamage * 0.25);
+    ), vec2<f32>(0.001));
+    // Rescue R5: HEAD hashed fract(floor(uv/block) + time*k) = fract(time*k) for EVERY block (the integer cell
+    // drops out of fract), so the "block tears" were one whole-frame flicker. Hash the block id plus a step
+    // that advances at the Speed-driven cadence instead, so blocks tear independently. R4: the FFT read
+    // plasmaBuffer[1..8] is out of range (single-vec4 buffer), replaced by the real bass.
+    let blockId = floor(uv / block_size);
+    let seedStep = floor(time * (0.15 + paramSpeed * 2.5));
+    let noise = fract(hash(blockId + vec2<f32>(seedStep, seedStep * 0.37)) + bass * 0.17 + treble * clickDamage * 0.25);
 
     let bigNoise = noise > 0.8;
-    target_uv.x = select(target_uv.x, target_uv.x + (noise - 0.5) * 0.1 * intensity, bigNoise);
-    target_uv = clamp(target_uv, vec2<f32>(0.0), vec2<f32>(1.0));
+    let tearX = select(0.0, (noise - 0.5) * 0.1 * intensity, bigNoise);
+    target_uv.x = target_uv.x + tearX;
+
+    // ── Idea 2: interlace comb at the seam (§12.2B field interlace) ──
+    // A broadcast tear starts as an interlace field offset: even rows shift one way, odd rows the other,
+    // inside the glitch halo and the click bands. Static per row parity — no per-frame strobing.
+    let rowSign = select(-1.0, 1.0, (global_id.y & 1u) == 0u);
+    target_uv.x = target_uv.x + rowSign * (0.003 + paramDetail * 0.02) * intensity;
+    // Ping-pong fold: with the seam left of 0.5 the mirrored column goes below 0 and HEAD clamped it to column 0,
+    // painting a flat stripe over uv.x > 2*seam (20 % of the frame at seam 0.4). Reflect it back instead.
+    target_uv = vec2<f32>(pingPong01(target_uv.x), clamp(target_uv.y, 0.0, 1.0));
 
     let split = (0.005 + paramDetail * 0.03) * (intensity + clickDamage * 0.8 + packet * 0.5) * noise;
     let r = textureSampleLevel(readTexture, u_sampler, clamp(target_uv + vec2<f32>(split, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, target_uv, 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(target_uv - vec2<f32>(split, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-    let lum = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
-    var glitchColor = vec4<f32>(acesToneMap(vec3<f32>(r, g, b)), clamp(lum, 0.3, 1.0));
+    // ── Idea 1: macroblock hold (§12.2B block quantization) ──
+    // A torn block is a failed macroblock: it stops being a continuous picture and holds ONE colour, posterised.
+    // One tap at the block centre (mirrored and torn the same way as its pixels), Q from Scale, strength
+    // from the existing seam/click intensity.
+    var blockTap = (blockId + 0.5) * block_size;
+    blockTap.x = select(blockTap.x, seamX - (blockTap.x - seamX), blockTap.x > seamX);
+    blockTap = vec2<f32>(pingPong01(blockTap.x + tearX), clamp(blockTap.y, 0.0, 1.0));
+    let levels = mix(8.0, 4.0, paramScale);
+    let blockQ = floor(clamp(textureSampleLevel(readTexture, u_sampler, blockTap, 0.0).rgb, vec3<f32>(0.0), vec3<f32>(1.0)) * levels + 0.5) / levels;
+    let holdAmt = clamp(intensity, 0.0, 1.0) * 0.75 * f32(bigNoise);
+    let tornRgb = mix(vec3<f32>(r, g, b), blockQ, holdAmt);
+
+    let lum = dot(tornRgb, vec3<f32>(0.299, 0.587, 0.114));
+    var glitchColor = vec4<f32>(tornRgb, clamp(lum, 0.3, 1.0));
 
     let scanline = sin(uv.y * (50.0 + paramDetail * 300.0));
     let inScanline = scanline > 0.9;
     glitchColor = select(glitchColor, vec4<f32>(glitchColor.rgb * 0.5, glitchColor.a), inScanline);
 
     let baseColor = textureSampleLevel(readTexture, u_sampler, target_uv, 0.0);
-    var finalColor = mix(baseColor, glitchColor, f32(inGlitch));
+    let finalColor = mix(baseColor, glitchColor, glitchAmt);
 
+    // Rescue R2: HEAD ran ACES on the glitch colour AND again on the composite, so the halo was lifted and
+    // flattened twice (brighter, lower contrast than the picture around it). ACES now runs once, on the
+    // composite (clamped >= 0 first).
+    let toned = acesToneMap(max(finalColor.rgb * (0.96 + mids * 0.04), vec3<f32>(0.0)));
     let prev = textureLoad(dataTextureC, coords, 0);
-    finalColor = mix(finalColor, prev, packet * 0.12);
-
-    finalColor.rgb = acesToneMap(finalColor.rgb * (0.96 + mids * 0.04));
-    let finalLum = dot(finalColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    finalColor.a = clamp(0.5 + intensity * 0.3 + finalLum * 0.2 + packet * 0.1, 0.06, 0.98);
+    let displayRgb = mix(toned, prev.rgb, packet * 0.12);
+    let finalLum = dot(displayRgb, vec3<f32>(0.299, 0.587, 0.114));
+    let finalAlpha = clamp(0.5 + intensity * 0.3 + finalLum * 0.2 + packet * 0.1, 0.06, 0.98);
+    // Rescue R1: HEAD assigned `finalColor.rgb = …` (swizzle assignment — naga rejects it); built whole here.
+    let outColor = vec4<f32>(displayRgb, finalAlpha);
 
     let depth = textureLoad(readDepthTexture, coords, 0).r;
 
-    textureStore(writeTexture, coords, finalColor);
-    textureStore(dataTextureA, coords, finalColor);
+    textureStore(writeTexture, coords, outColor);
+    textureStore(dataTextureA, coords, outColor);
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

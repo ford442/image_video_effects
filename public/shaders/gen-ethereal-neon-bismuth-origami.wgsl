@@ -1,6 +1,12 @@
 // ----------------------------------------------------------------
 // Ethereal Neon-Bismuth Origami
 // Category: generative
+// Upgraded: 2026-11-10
+// Ideas: (1) hopper-crystal oxide terraces — stepped film thickness along
+//        the hit depth gives bismuth's banded staircase iridescence;
+//        (2) origami crease glow — normal discontinuity between neighbouring
+//        surface points lights the folds in neon; (3) floor: ACES display,
+//        coverage alpha, depth + dataTextureA writes.
 // ----------------------------------------------------------------
 #include "_prelude.wgsl"
 
@@ -127,7 +133,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Thin-film interference (iridescence) based on viewing angle
         let fresnel = 1.0 - max(dot(n, view_dir), 0.0);
-        col = palette(fresnel * u.zoom_params.z + time * 0.1); // u.zoom_params.z is Iridescence Rate
+        // Idea 1: hopper terraces — film thickness is quantised into steps.
+        let terraceCoord = (p.z + p.x * 0.35) * 9.0;
+        let terrace = floor(terraceCoord) / 9.0;
+        let riser = smoothstep(0.85, 1.0, fract(terraceCoord));
+        col = palette(fresnel * u.zoom_params.z + terrace * 1.7 + time * 0.1); // u.zoom_params.z is Iridescence Rate
+        col = col * (1.0 - riser * 0.35);
 
         col = col * (diff * 0.8 + 0.2); // Apply diffuse lighting
 
@@ -135,13 +146,25 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let edge = smoothstep(0.4, 0.5, fract(p.x * 5.0)) + smoothstep(0.4, 0.5, fract(p.y * 5.0));
         col = col + vec3<f32>(0.2, 0.8, 1.0) * edge * 0.5;
 
+        // Idea 2: origami crease glow — compare normals across a small step.
+        let tang = normalize(cross(n, vec3<f32>(0.0, 1.0, 0.0001)));
+        let n2 = getNormal(p + tang * 0.03, time, mouse_pos);
+        let crease = clamp((1.0 - dot(n, n2)) * 6.0, 0.0, 1.0);
+        col = col + vec3<f32>(1.0, 0.3, 0.85) * crease * 0.8;
+
     }
 
     // Add volumetric glow
     col = col + vec3<f32>(0.8, 0.2, 0.9) * glow * 0.05;
 
-    // Gamma correction
+    // ACES display tone map, then gamma correction (kept).
+    col = clamp((col * (2.51 * col + 0.03)) / (col * (2.43 * col + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
     col = pow(col, vec3<f32>(0.4545));
 
-    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
+    let hit = select(0.0, 1.0, t < 10.0);
+    let alpha = clamp(hit + glow * 0.04, 0.0, 1.0);
+    let outC = vec4<f32>(col, alpha);
+    textureStore(writeTexture, id.xy, outC);
+    textureStore(dataTextureA, id.xy, outC);
+    textureStore(writeDepthTexture, id.xy, vec4<f32>(select(0.0, 1.0 - t / 10.0, t < 10.0), 0.0, 0.0, 0.0));
 }

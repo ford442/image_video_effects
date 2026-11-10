@@ -12,8 +12,17 @@
       "history": []
     },
     "alucinate-hdr": {
-      "hash": "2026d78e575fbca2",
-      "history": []
+      "hash": "6527e533b7634a89",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "6527e533b7634a89",
+          "prev_hash": "2026d78e575fbca2",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "ambient-liquid-coupled": {
       "hash": "c3f3fa66e9dafe9b",
@@ -217,8 +226,17 @@
       ]
     },
     "block-distort-em": {
-      "hash": "320f7f756d6cffcb",
-      "history": []
+      "hash": "4b8e48c6b12e55b2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "4b8e48c6b12e55b2",
+          "prev_hash": "320f7f756d6cffcb",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "blueprint-reveal-guided": {
       "hash": "57cce30575b1eb5e",
@@ -246,8 +264,17 @@
       ]
     },
     "breathing-kaleidoscope-morph": {
-      "hash": "c971f6fbc6b83d8e",
-      "history": []
+      "hash": "c66df090e588a4b9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "c66df090e588a4b9",
+          "prev_hash": "c971f6fbc6b83d8e",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        }
+      ]
     },
     "bubble-lens-coupled": {
       "hash": "5f631aa7fe84bb15",
@@ -643,8 +670,17 @@
       ]
     },
     "datamosh-brush-diffusion": {
-      "hash": "6754d2f4cff84e95",
-      "history": []
+      "hash": "bb72731a763222b6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "bb72731a763222b6",
+          "prev_hash": "6754d2f4cff84e95",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "deep-workgroup-multi-effect-blend": {
       "hash": "7c5dbf41a2702cb8",
@@ -720,8 +756,17 @@
       ]
     },
     "digital-reveal-guided": {
-      "hash": "0f951bb6c990aeb0",
-      "history": []
+      "hash": "446f4efd452d666c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "446f4efd452d666c",
+          "prev_hash": "0f951bb6c990aeb0",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "dimension-slicer-guided": {
       "hash": "08986ebd8f9ce51c",
@@ -1641,12 +1686,30 @@
       ]
     },
     "retro-phosphor-hdr": {
-      "hash": "a4e9b6943ab6b328",
-      "history": []
+      "hash": "e6bf9957faf81786",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "e6bf9957faf81786",
+          "prev_hash": "a4e9b6943ab6b328",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "retro-phosphor-stipple": {
-      "hash": "52ceafe8018456ed",
-      "history": []
+      "hash": "021dc8a11b7e0050",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "021dc8a11b7e0050",
+          "prev_hash": "52ceafe8018456ed",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "sim-heat-haze-blackbody": {
       "hash": "eea7991e4641e2b0",
@@ -1890,8 +1953,17 @@
       ]
     },
     "vortex-warp-coupled": {
-      "hash": "b0bc7d97512c9b3c",
-      "history": []
+      "hash": "d6239fe158167d59",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "d6239fe158167d59",
+          "prev_hash": "b0bc7d97512c9b3c",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "warp-drive-blackbody": {
       "hash": "ad29c5e75e16b92d",
@@ -3505,8 +3577,17 @@
       ]
     },
     "glitch-slice-mirror": {
-      "hash": "d85ad0f2bc4be1c9",
-      "history": []
+      "hash": "77c68ac148887658",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "77c68ac148887658",
+          "prev_hash": "d85ad0f2bc4be1c9",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "gravity-well": {
       "hash": "92042e6afd042eb1",
@@ -8562,7 +8643,7 @@
       ]
     },
     "gen-mushroom-mandala-garden": {
-      "hash": "5477d8da46c13f49",
+      "hash": "55f7b9124685a372",
       "history": [
         {
           "event": "upgraded",
@@ -8571,6 +8652,14 @@
           "prev_hash": "d89bd3131371ad4a",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "55f7b9124685a372",
+          "prev_hash": "5477d8da46c13f49",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
         }
       ]
     },
@@ -13108,7 +13197,7 @@
       ]
     },
     "optical-illusion-spin": {
-      "hash": "aff3f540faae8c8f",
+      "hash": "f4a59f46e96b7143",
       "history": [
         {
           "event": "upgraded",
@@ -13117,6 +13206,14 @@
           "prev_hash": "5eb7671f89f38054",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "f4a59f46e96b7143",
+          "prev_hash": "aff3f540faae8c8f",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
         }
       ]
     },
@@ -13514,7 +13611,7 @@
       ]
     },
     "steampunk-gear-lens": {
-      "hash": "4d28d2ca6fd7627c",
+      "hash": "0b327a627f8f752f",
       "history": [
         {
           "event": "upgraded",
@@ -13523,6 +13620,14 @@
           "prev_hash": "ec0599463e27b011",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "0b327a627f8f752f",
+          "prev_hash": "4d28d2ca6fd7627c",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
         }
       ]
     },
@@ -13743,8 +13848,17 @@
       "history": []
     },
     "biomimetic-scales": {
-      "hash": "af1ed181ba0b4253",
-      "history": []
+      "hash": "57652fd24d55d379",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "57652fd24d55d379",
+          "prev_hash": "af1ed181ba0b4253",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        }
+      ]
     },
     "block-distort-interactive": {
       "hash": "1fd6d67498e9a76b",
@@ -14425,8 +14539,17 @@
       ]
     },
     "fiber-optic-weave": {
-      "hash": "b785d8ae6ce4793a",
-      "history": []
+      "hash": "ea8d3bda2c0fbbf7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "ea8d3bda2c0fbbf7",
+          "prev_hash": "b785d8ae6ce4793a",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        }
+      ]
     },
     "flux-core": {
       "hash": "3a93dd7963014bc3",
@@ -15515,8 +15638,17 @@
       ]
     },
     "mouse-wormhole-lens": {
-      "hash": "77d01082666e5314",
-      "history": []
+      "hash": "420c2f1786b6696b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "420c2f1786b6696b",
+          "prev_hash": "77d01082666e5314",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        }
+      ]
     },
     "nano-repair": {
       "hash": "85ce11cc2a03375a",
@@ -16253,7 +16385,7 @@
       ]
     },
     "rgb-shift-brush": {
-      "hash": "d9a658686f70f2e6",
+      "hash": "a0f177481629963f",
       "history": [
         {
           "event": "upgraded",
@@ -16262,6 +16394,14 @@
           "prev_hash": "e4b43e8e2ef9e3ac",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "a0f177481629963f",
+          "prev_hash": "d9a658686f70f2e6",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
         }
       ]
     },
@@ -16603,8 +16743,17 @@
       ]
     },
     "synthwave-grid-warp": {
-      "hash": "7f4adb3cc2bd3a55",
-      "history": []
+      "hash": "c061d8aa60e56b00",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:29:34.694Z",
+          "hash": "c061d8aa60e56b00",
+          "prev_hash": "7f4adb3cc2bd3a55",
+          "commit": "dac77dfc",
+          "note": "2026-11-09 sonnet/batch-30 glitch/phosphor/warp/HDR distortion ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-09-sonnet-batch-30"
+        }
+      ]
     },
     "temporal-rift": {
       "hash": "babb1d1d68c699e2",
@@ -17167,7 +17316,7 @@
       ]
     },
     "glass-wipes": {
-      "hash": "aa68c98ed1e71c67",
+      "hash": "a05e173a679a8375",
       "history": [
         {
           "event": "upgraded",
@@ -17176,6 +17325,14 @@
           "prev_hash": "cfa31684e4d92a53",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "a05e173a679a8375",
+          "prev_hash": "aa68c98ed1e71c67",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
         }
       ]
     },
@@ -20417,6 +20574,30 @@
           "hash": "60ac4136061c7d64",
           "commit": "33ae9962",
           "note": "2026-11-09 compile fix: swizzle assignment rd.xy += in mouse-gravity branch (main gate verify:naga-wasm:all) — no look change at idle cursor"
+        }
+      ]
+    },
+    "gen-magnetic-liquid-glyphs": {
+      "hash": "3195c534156cc5bf",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "3195c534156cc5bf",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        }
+      ]
+    },
+    "gen-cymatic-void-glass-geode": {
+      "hash": "e2b60f49f0ec83dc",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-10T01:33:03.584Z",
+          "hash": "e2b60f49f0ec83dc",
+          "commit": "798d840",
+          "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
         }
       ]
     }
