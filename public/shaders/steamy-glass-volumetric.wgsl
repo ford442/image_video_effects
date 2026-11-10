@@ -1,27 +1,14 @@
 // Steamy Glass Volumetric — Codex (g) depth-layered condensation volume.
 // A/C packing: steam density, optical depth, droplets, vertical flow.
 // B and extraBuffer are intentionally unused; C reads are exact and bounded.
+// Upgraded: 2026-11-10
+// Ideas: (1) running droplet trails — heavy droplets slide down and wipe a
+//        clear track through the steam (stored in A.r/A.b sim state);
+//        (2) frosted scatter — the scene behind is disc-blurred by steam
+//        optical depth instead of only dimmed; (3) droplet lens glint —
+//        specular from the droplet height gradient.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -85,6 +72,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     max(steam - 0.4, 0.0) * dropletGain * 0.006;
   var verticalFlow = mix(advected.a, flow.y, 0.08);
 
+  // Idea 1: running droplet trails — a heavy droplet above runs down into
+  // this pixel, carrying water and wiping steam off the glass behind it.
+  let above = stateAt(pixel + vec2<i32>(0, -2), dims);
+  let heavyAbove = smoothstep(0.32, 0.6, above.b);
+  let heavyHere = smoothstep(0.32, 0.6, state.b);
+  droplets += heavyAbove * 0.05 - heavyHere * 0.035;
+  steam *= 1.0 - (heavyAbove + heavyHere) * 0.12;
+  verticalFlow = mix(verticalFlow, -0.01, heavyAbove * 0.5);
+
   let p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
   let mouseP = (u.zoom_config.yz - 0.5) * vec2<f32>(aspect, 1.0);
   let mouseDistance = length(p - mouseP);
@@ -136,10 +132,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       stateAt(pixel + vec2<i32>(0, -1), dims).b);
   let sourceUV = clamp(uv + gradient * (0.02 + droplets * 0.03),
     vec2<f32>(0.0), vec2<f32>(1.0));
-  let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+  // Idea 2: frosted scatter — steam diffuses what is behind the glass.
+  let scatterR = clamp(opticalDepth, 0.0, 3.0) * 0.004 * (1.0 - clearing);
+  var source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+  var blurred = source.rgb;
+  for (var k = 0; k < 6; k = k + 1) {
+    let a = f32(k) * 1.0471976 + hash12(vec2<f32>(pixel)) * 1.0471976;
+    let tapUV = clamp(sourceUV + vec2<f32>(cos(a), sin(a) * aspect) * scatterR, vec2<f32>(0.0), vec2<f32>(1.0));
+    blurred += textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
+  }
+  source = vec4<f32>(blurred / 7.0, source.a);
   var rgb = source.rgb * transmittance + integratedColor;
   rgb += vec3<f32>(0.55, 0.82, 1.0) *
     (droplets * 0.18 + clickFront * 0.08 + audio.z * 0.025);
+  // Idea 3: droplet lens glint from the height gradient.
+  let dn = normalize(vec3<f32>(-gradient * 6.0, 1.0));
+  let glint = pow(max(dot(dn, normalize(vec3<f32>(-0.4, -0.6, 1.0))), 0.0), 40.0);
+  rgb += vec3<f32>(1.0, 0.97, 0.92) * glint * droplets * 1.5;
   let alpha = clamp(source.a * transmittance + (1.0 - transmittance) * 0.9 +
     droplets * 0.06, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(aces(rgb), alpha));

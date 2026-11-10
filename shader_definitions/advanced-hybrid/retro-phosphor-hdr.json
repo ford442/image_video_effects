@@ -2,14 +2,15 @@
   "id": "retro-phosphor-hdr",
   "name": "Retro Phosphor HDR",
   "url": "shaders/retro-phosphor-hdr.wgsl",
-  "description": "Authentic CRT phosphor simulation enhanced with HDR bloom chain. RGB triads, barrel distortion, scanlines, and temporal persistence combine with exposure-based bloom and ACES tone mapping for dramatic glowing phosphors.",
+  "description": "Authentic CRT phosphor simulation enhanced with HDR bloom chain. RGB triads, barrel distortion, scanlines, and temporal persistence combine with exposure-based bloom and ACES tone mapping for dramatic glowing phosphors. Energy-conserving faceplate bloom and a rolling hum bar.",
   "features": [
     "advanced-hybrid",
     "crt-phosphor",
     "hdr-bloom",
     "temporal-persistence",
     "audio-reactive",
-    "randomization-safe"
+    "randomization-safe",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -68,6 +69,42 @@
     ],
     "performance_target": "50 FPS (GTX 1060)",
     "created_by": "Agent CB-13 — Retro & Glitch Enhancer",
-    "created_date": "2026-04-18"
+    "created_date": "2026-04-18",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Screen Curvature",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Phosphor Size",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Scanline Intensity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "HDR Bloom",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }

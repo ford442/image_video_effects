@@ -3,8 +3,11 @@
 //  Category: geometric (distortion)
 //  Features: hyperbolic-geometry, depth-aware, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-11
+//  Upgraded: 2026-11-10
 //  Ideas: angular tiling from tile_count; curved-space chroma + geodesic glow
+//         (2026-11-10) woven warp/weft — radial geodesic spokes cross the
+//         hyperbolic rings with alternating over/under shading; tile-seam
+//         threads — a fine bright thread runs along each mirror seam.
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -133,7 +136,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chroma = vec3<f32>(sampleR.r, sampleG.g, sampleB.b);
 
     let geoRing = abs(sin(hyperDist * 8.0 - time * 1.4));
-    let glow = vec3<f32>(0.35, 0.65, 1.0) * geoRing * glowIntensity * 0.22 * (1.0 - lodFactor);
+    var glow = vec3<f32>(0.35, 0.65, 1.0) * geoRing * glowIntensity * 0.22 * (1.0 - lodFactor);
+
+    // Woven warp/weft: spokes (warp) x hyperbolic rings (weft), over/under checker.
+    let spokeCoord = ang / 6.28318 * tileCount * 2.0;
+    let ringCoord = hyperDist * 4.0 - time * 0.7;
+    let warpLine = 1.0 - smoothstep(0.0, 0.12, abs(fract(spokeCoord) - 0.5));
+    let weftLine = 1.0 - smoothstep(0.0, 0.12, abs(fract(ringCoord) - 0.5));
+    let overUnder = select(0.6, 1.0, (i32(floor(spokeCoord)) + i32(floor(ringCoord))) % 2 == 0);
+    let weave = max(warpLine * overUnder, weftLine * (1.6 - overUnder));
+    glow += vec3<f32>(0.9, 0.75, 1.0) * weave * glowIntensity * 0.12 * (1.0 - lodFactor);
+
+    // Tile-seam threads along each angular mirror edge.
+    let seamPhase = fract(ang / 6.28318 * tileCount);
+    let seam = 1.0 - smoothstep(0.0, 0.015 + lodFactor * 0.02, min(seamPhase, 1.0 - seamPhase));
+    glow += vec3<f32>(1.0, 0.9, 0.7) * seam * (0.15 + glowIntensity * 0.25) * (0.5 + 0.5 * sin(hyperDist * 20.0 - time * 3.0));
 
     let peak = max(max(chroma.r, chroma.g), max(chroma.b, 0.001));
     let enhanced = chroma * (1.0 + hyperDist * 0.2 * (1.0 - lodFactor));

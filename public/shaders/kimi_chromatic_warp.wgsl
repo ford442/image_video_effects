@@ -3,29 +3,14 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
+//  Upgraded: 2026-11-10
+//  Ideas: (1) 5-tap spectral dispersion — yellow/cyan intermediate taps
+//         between the existing R/G/B offsets; (2) Cauchy caustic fringe —
+//         per-channel focus bands where the warp lens slope peaks;
+//         (3) ACES on display RGB before the history max.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // Kimi Chromatic Warp - RGB channel separation based on mouse distance
 // Creates prismatic distortion effects that intensify near the cursor
@@ -102,7 +87,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     let origAlpha = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
 
-    var color = vec3<f32>(r, g, b);
+    // Idea 1: spectral dispersion — intermediate yellow/cyan taps fill the gaps
+    // between the three channel offsets so wide spreads smear like a prism.
+    let yS = textureSampleLevel(readTexture, u_sampler, clamp(uv - (rOffset + gOffset) * 0.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let cS = textureSampleLevel(readTexture, u_sampler, clamp(uv - (gOffset + bOffset) * 0.5, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    var color = vec3<f32>(r * 0.62 + yS.r * 0.38, g * 0.5 + yS.g * 0.25 + cS.g * 0.25, b * 0.62 + cS.b * 0.38);
+
+    // Idea 2: Cauchy caustic fringe — the lens focuses light where falloff slope
+    // peaks; each wavelength focuses at a slightly different radius.
+    let cw = 0.035 + chromaticSpread * 0.4;
+    let focusR = warpRadius * 0.5;
+    let cR = exp(-pow((dist - focusR * (1.0 + chromaticSpread * 2.0)) / cw, 2.0));
+    let cG = exp(-pow((dist - focusR) / cw, 2.0));
+    let cB = exp(-pow((dist - focusR * (1.0 - chromaticSpread * 2.0)) / cw, 2.0));
+    color += vec3<f32>(cR, cG, cB) * warpStrength * 2.5 * (1.0 + treble * 0.3);
 
     // Prismatic ring glow
     let ringWidth = 0.02;
@@ -133,6 +131,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let maxCoord = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
     let historyOffset = vec2<i32>(round(uvRotDir * resolution * (0.006 + warpStrength * 0.04)));
     let history = textureLoad(dataTextureC, clamp(coord - historyOffset, vec2<i32>(0), maxCoord), 0);
+    // Idea 3: ACES on display RGB.
+    color = clamp((color * (2.51 * color + 0.03)) / (color * (2.43 * color + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
     color = max(color, clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(2.5)) * (0.62 + radialRunner * 0.12));
 
     color = clamp(color, vec3<f32>(0.0), vec3<f32>(1.0));
