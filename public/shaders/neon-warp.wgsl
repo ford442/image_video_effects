@@ -3,9 +3,9 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, semantic-alpha, depth-aware
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: convective plume (heat sources elongated upward by Diffusion); schlieren bands (rising sin bands modulate refraction inside a plume); inferior mirage (vertically mirrored tap about the hottest source where heat > 0.6)
-//  A packing: linear pre-ACES RGBA, heat energy in alpha (18% advected exact-C history)
+//  Upgraded: 2026-10-05, 2026-11-10
+//  Ideas: convective plume (heat sources elongated upward by Diffusion); schlieren bands (rising sin bands modulate refraction inside a plume); inferior mirage (vertically mirrored tap about the hottest source where heat > 0.6); Gladstone–Dale density refraction (native: deflection ∝ ∇ρ with ρ ∝ 1/(1+g·heat), so the shoulder refracts more than the incandescent core); Planck-cooling afterglow (native: a decaying heat memory, rate keyed to Cooling, re-enters the blackbody ramp so a moving ember's trail cools white→orange→red)
+//  A packing: linear pre-ACES RGB (18% advected exact-C history) + A.a = 10 + heat memory in 0..2 (validity band 9.5–12.5; HEAD stored the output alpha there and nothing read it). Output alpha is still the semantic heat-energy alpha.
 //  Heat field is closed-form from pointer/ripples — not a raw A simulation
 // ═══════════════════════════════════════════════════════════════════
 
@@ -55,6 +55,19 @@ fn addSource(uv: vec2<f32>, center: vec2<f32>, aspect: f32, sigma: f32, amp: f32
 fn safeRGB(v: vec3<f32>) -> vec3<f32> {
   return clamp(select(vec3<f32>(0.0), v, v == v), vec3<f32>(0.0), vec3<f32>(16.0));
 }
+
+// Idea 4 tuning (Gladstone–Dale): ρ ∝ 1/(1 + GD_G·heat); GD_REF is the heat at which the
+// deflection equals HEAD's (≈ the shoulder of a held source); GD_MAX caps the shoulder gain.
+const GD_G: f32 = 1.5;
+const GD_REF: f32 = 0.5;
+const GD_MAX: f32 = 3.0;
+// Idea 5 tuning (Planck-cooling afterglow): per-second heat-memory decay = Cooling · CA_RATE
+// (60 fps cadence, like HEAD's 18 % history); CA_FLOOR is a linear floor so an rgba16float
+// history (step 2^-7 at 10..16) cannot stall a faint trail; CA_MAX bounds the memory.
+const CA_RATE: f32 = 1.3;
+const CA_FLOOR: f32 = 0.008;
+const CA_MAX: f32 = 2.0;
+const CA_ON: f32 = 1.0;
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -118,7 +131,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let whip = vec2<f32>(-field.grad.y, field.grad.x) * (0.35 + treble * 0.25);
   let advect = field.grad * 0.015 + whip * 0.02;
   let temperature = 300.0 + field.heat * 6000.0 + bass * 900.0;
-  let displacedUV = clamp(uv + (field.grad * (-0.3) + whip) * refractionStrength * schlieren, vec2<f32>(0.0), vec2<f32>(1.0));
+  // ── Idea 4: Gladstone–Dale density refraction (native) ──────────────
+  // Light bends with the density gradient, n−1 ∝ ρ ∝ 1/T, not with the temperature gradient:
+  // deflection ∝ ∇heat/(1+g·heat)². HEAD displaced ∝ ∇heat everywhere; this rescales the same
+  // vector by f(heat) = ((1+g·ref)/(1+g·heat))² (f = 1 at `ref`), so the cool shoulder of every
+  // plume refracts harder and the white-hot core flattens. Refraction Strength keeps its role.
+  let gdNum = 1.0 + GD_G * GD_REF;
+  let gdDen = 1.0 + GD_G * heat;
+  let gdScale = min((gdNum * gdNum) / (gdDen * gdDen), GD_MAX);
+  let displacedUV = clamp(uv + (field.grad * (-0.3) + whip) * refractionStrength * schlieren * gdScale, vec2<f32>(0.0), vec2<f32>(1.0));
 
   var displaced = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
@@ -132,21 +153,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let histCoord = vec2<i32>(clamp(uv - advect, vec2<f32>(0.0), vec2<f32>(0.999)) * dims);
   let hist = safeRGB(textureLoad(dataTextureC, histCoord, 0).rgb);
+
+  // ── Idea 5: Planck-cooling afterglow (native) ───────────────────────
+  // A heated spot cools through the blackbody sequence. Keep a per-pixel heat memory
+  // (A.a = 10 + memory, exact C load at this pixel, no advection) that decays at a rate keyed to
+  // Cooling, and read the trail's colour off the SAME blackbody ramp at the decayed temperature:
+  // white → yellow → orange → red → dark falls out of the ramp, no tint hack. mem is the max of
+  // the live field and the decayed memory, so it is bounded by CA_MAX and never feeds above it.
+  let memTexel = textureLoad(dataTextureC, coord, 0).a;
+  let memValid = select(0.0, 1.0, memTexel > 9.5 && memTexel < 12.5);
+  let memPrev = clamp(memTexel - 10.0, 0.0, CA_MAX) * memValid;
+  let memDecay = exp(-cooling * CA_RATE / 60.0);
+  let mem = max(min(field.heat, CA_MAX), max(memPrev * memDecay - CA_FLOOR, 0.0));
   // FIX: depth is the displaced depth lifted by the heat.
   let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, displacedUV, 0.0).r + heat * 0.05, 0.0, 1.0);
 
   let spectral = blackbodyRGB(temperature);
-  let thermalGlow = spectral * smoothstep(0.06, 0.65, field.heat) * glowGain * (0.35 + 0.65 * field.pulse + 0.4 * bass) * (1.0 + 0.15 * bands * min(heat, 1.0));
+  var thermalGlow = spectral * smoothstep(0.06, 0.65, field.heat) * glowGain * (0.35 + 0.65 * field.pulse + 0.4 * bass) * (1.0 + 0.15 * bands * min(heat, 1.0));
+  // Idea 5 (cont.): the cooled trail glows from the decayed temperature; max keeps the live ember as is.
+  // Only evaluated where the memory clears the glow threshold (a coherent region, most pixels skip it).
+  if (mem > 0.06) {
+    let trailGlow = blackbodyRGB(300.0 + mem * 6000.0) * smoothstep(0.06, 0.65, mem) * glowGain * (0.35 + 0.65 * min(mem, 1.0));
+    thermalGlow = max(thermalGlow, trailGlow * CA_ON);
+  }
   let fogGlow = blackbodyRGB(temperature * 0.55 + 900.0) * field.heat * (0.03 + 0.07 * mids + mids * 0.04);
   var hdr = mix(displaced.rgb + thermalGlow + fogGlow, hist, 0.18);
   hdr = hdr + spectral * length(whip) * (0.12 + treble * 0.08);
   let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));
   hdr = luma + (hdr - vec3<f32>(luma)) * 1.18;
   hdr = max(hdr, vec3<f32>(0.0));
-  let alpha = clamp(displaced.a * 0.4 + field.heat * 0.55 + field.pulse * 0.2, 0.08, 0.98);
+  let alpha = clamp(displaced.a * 0.4 + max(field.heat, mem * CA_ON) * 0.55 + field.pulse * 0.2, 0.08, 0.98);
 
-  // A holds the linear pre-ACES colour (read back as history); ACES on display only.
-  textureStore(dataTextureA, coord, vec4<f32>(hdr, alpha));
+  // A holds the linear pre-ACES colour (read back as history) and, in .a, 10 + the heat memory
+  // that Idea 5 re-reads; ACES on display only. The semantic alpha goes to writeTexture.
+  textureStore(dataTextureA, coord, vec4<f32>(hdr, 10.0 + mem));
   let rgb = acesToneMap(hdr * 1.05);
   textureStore(writeTexture, coord, vec4<f32>(rgb, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

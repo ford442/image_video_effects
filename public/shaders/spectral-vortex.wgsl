@@ -3,30 +3,27 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: 1) isophote advection of the phase/curl/energy state 2) signed spectral arms (counter-spinning hue by curl × radial) 3) depth-shelved curl gain
+//  Upgraded: 2026-10-05, 2026-11-10
+//  Ideas: 1) isophote advection of the phase/curl/energy state 2) signed spectral arms (counter-spinning hue by curl × radial) 3) depth-shelved curl gain 4) Lamb–Oseen pointer vortex (calm eye, 1/r arms) 5) luma-preserving hue spin (YIQ chroma rotation)
 //  A packing: raw sim state (phase, curl.xy, energy) — Batch 58D state ownership; ACES only on writeTexture; B unwritten
+//  The pointer is the raw cursor: the old extraBuffer spring never persisted (the buffer is re-zeroed every frame) and was removed.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
-fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
-  let mx = max(max(c.r, c.g), c.b); let mn = min(min(c.r, c.g), c.b); let d = mx - mn;
-  var h = 0.0;
-  if (d > 0.00001) {
-    if (mx == c.r) { h = (c.g - c.b) / d + select(0.0, 6.0, c.g < c.b); }
-    else if (mx == c.g) { h = (c.b - c.r) / d + 2.0; }
-    else { h = (c.r - c.g) / d + 4.0; }
-    h /= 6.0;
-  }
-  return vec3<f32>(h, select(0.0, d / mx, mx > 0.0), mx);
-}
-
-fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
-  let k = abs(fract(hsv.x + vec3<f32>(0.0, 0.6666667, 0.3333333)) * 6.0 - vec3<f32>(3.0));
-  return hsv.z * mix(vec3<f32>(1.0), clamp(k - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+// Rotate the chroma plane (I,Q) of YIQ about the luma axis by `turns` full turns:
+// a hue spin that keeps Y, unlike HSV hue rotation at constant V.
+fn spinChroma(c: vec3<f32>, turns: f32) -> vec3<f32> {
+  let y = dot(c, vec3<f32>(0.299, 0.587, 0.114));
+  let i = dot(c, vec3<f32>(0.596, -0.274, -0.322));
+  let q = dot(c, vec3<f32>(0.211, -0.523, 0.312));
+  let ang = turns * TAU;
+  let ca = cos(ang); let sa = sin(ang);
+  let i2 = i * ca - q * sa;
+  let q2 = i * sa + q * ca;
+  return vec3<f32>(y + 0.956 * i2 + 0.621 * q2, y - 0.272 * i2 - 0.647 * q2, y - 1.106 * i2 + 1.703 * q2);
 }
 
 // Exact bilinear read of the raw C state at a fractional pixel position
@@ -69,21 +66,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let colorShift = u.zoom_params.z; let curlAmp = u.zoom_params.w;
 
   let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-  let hasSpring = arrayLength(&extraBuffer) >= 139u;
-  var springPos = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
-  if (hasSpring) {
-    springPos = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5;
-  }
-  if (!initialized) { springPos = rawMouse; springVel = vec2<f32>(0.0); }
-  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
-  let omega = 8.5; let decay = exp(-omega * dt); let springDelta = springPos - rawMouse;
-  let temp = (springVel + omega * springDelta) * dt;
-  springVel = (springVel - omega * temp) * decay; springPos = rawMouse + (springDelta + temp) * decay;
-  if (hasSpring && gid.x == 0u && gid.y == 0u) {
-    extraBuffer[133] = springPos.x; extraBuffer[134] = springPos.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time; extraBuffer[138] = 1.0;
-  }
 
   let left = textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
   let right = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
@@ -99,9 +81,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let shelfGain = mix(0.65, 1.45, shelf);
   var curl = vec2<f32>(gy, -gx) * mix(1.0, 20.0, curlAmp) * shelfGain * (1.0 + bass * 2.0);
 
-  let pointerDelta = (uv - springPos) * aspectVec; let pointerDist = length(pointerDelta);
+  let pointerDelta = (uv - rawMouse) * aspectVec; let pointerDist = length(pointerDelta);
   let held = select(0.35, 1.0, u.zoom_config.w > 0.5);
-  curl += vec2<f32>(-pointerDelta.y, pointerDelta.x) / max(pointerDist, 0.001) * exp(-pointerDist * 6.0) * held * (0.4 + mids);
+  // ── Idea 4: Lamb–Oseen pointer vortex (native) ──
+  // HEAD's swirl was a unit tangent × exp(−6d):
+  // full strength with an undefined direction at d→0 (a point sink of curl).
+  // A real vortex has a calm eye: v ∝ (1 − exp(−d²/rc²))/d, zero on the axis, peak
+  // at ≈1.12·rc, 1/d beyond. Normalised to peak 1; the exp(−2.5d) envelope keeps
+  // the far field local.
+  let rc = 0.12;
+  let lamb = (1.0 - exp(-pointerDist * pointerDist / (rc * rc))) * (1.567 * rc / max(pointerDist, 1e-4)) * exp(-pointerDist * 2.5);
+  curl += vec2<f32>(-pointerDelta.y, pointerDelta.x) / max(pointerDist, 0.001) * lamb * held * (0.4 + mids);
   var clickEnergy = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i++) {
@@ -138,17 +128,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let offset = rotatedCurl * distortionStep * (0.003 + energy * 0.018);
   let distortedUv = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
   let source = textureSampleLevel(readTexture, u_sampler, distortedUv, 0.0);
-  var hsv = rgb2hsv(max(source.rgb, vec3<f32>(0.0)));
-  // Idea 2: signed spectral arms — the sign of curl × radial (around the sprung
-  // pointer) picks the hue-rotation direction, so neighbouring arms counter-spin.
+  // Idea 2: signed spectral arms — the sign of curl × radial (around the pointer) picks
+  // the hue-rotation direction, so neighbouring arms counter-spin.
   let radial = pointerDelta / max(pointerDist, 0.001);
   let armCross = curlState.x * radial.y - curlState.y * radial.x;
   let armDir = clamp(armCross * 6.0, -1.0, 1.0);
   let armSign = select(-1.0, 1.0, armCross >= 0.0);
   let spin = mix(armSign, armDir, 0.35);
-  hsv.x = fract(hsv.x + phase * colorShift * spin + time * colorShift * 0.03 + treble * 0.05 + 1.0);
-  hsv.z *= 1.0 + energy * 1.2;
-  var hdr = hsv2rgb(hsv);
+  // ── Idea 5: luma-preserving hue spin (native) ──
+  // HEAD rotated H in HSV at constant V, which swings
+  // luminance between yellow and blue; the same turn count now rotates the chroma plane
+  // of YIQ about the luma axis, so the spectral cycle keeps its brightness.
+  let turns = phase * colorShift * spin + time * colorShift * 0.03 + treble * 0.05;
+  var hdr = spinChroma(max(source.rgb, vec3<f32>(0.0)), turns) * (1.0 + energy * 1.2);
+  hdr = max(hdr, vec3<f32>(0.0));
   hdr += (vec3<f32>(0.5) + vec3<f32>(0.5) * cos(vec3<f32>(phase * TAU * armSign) + vec3<f32>(0.0, 2.09, 4.18))) * energy * 0.35;
   let effectEnergy = clamp(energy + length(offset) * 18.0 + clickEnergy * 0.25, 0.0, 1.0);
   let alpha = clamp(source.a + (1.0 - source.a) * effectEnergy, 0.0, 1.0);

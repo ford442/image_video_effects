@@ -2117,7 +2117,7 @@
       "upgraded-rgba"
     ],
     "url": "shaders/rgb-distance-split.wgsl",
-    "description": "RGB split that grows with distance from the cursor: a 7-wavelength rainbow fringe plus faint diffraction-grating ghosts far from the pointer.",
+    "description": "RGB split that grows with distance from the cursor: a 7-wavelength rainbow fringe plus faint diffraction-grating ghosts far from the pointer. Secondary-spectrum purple fringe and axial defocus.",
     "params": [
       {
         "id": "split",

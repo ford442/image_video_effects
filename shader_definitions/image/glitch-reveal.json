@@ -1,7 +1,7 @@
 {
   "id": "glitch-reveal",
   "name": "Glitch Reveal",
-  "description": "Chaotic block-scatter glitch with datamosh holds and tear bands, stabilized by a block-snapped cursor reveal window; held widens it, clicks punch clear holes.",
+  "description": "Chaotic block-scatter glitch with datamosh holds and tear bands, stabilized by a block-snapped cursor reveal window; held widens it, clicks punch clear holes. Blocks re-key out of step; tears shear.",
   "url": "shaders/glitch-reveal.wgsl",
   "workgroup_size": [
     16,

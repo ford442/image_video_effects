@@ -354,7 +354,7 @@
   {
     "id": "circular-pixelate",
     "name": "Circular Pixelate",
-    "description": "A hexagonal compound-eye field refracts the image through deep lenslets, with chromatic aperture glints, held dilation, and age-guarded click propagation.",
+    "description": "A hexagonal compound-eye field refracts the image through deep lenslets, with chromatic aperture glints, held dilation, and age-guarded click propagation. Cells integrate a hex PSF; edge lenslets turn cat's-eye.",
     "url": "shaders/circular-pixelate.wgsl",
     "params": [
       {
@@ -2490,7 +2490,7 @@
   {
     "id": "glitch-reveal",
     "name": "Glitch Reveal",
-    "description": "Chaotic block-scatter glitch with datamosh holds and tear bands, stabilized by a block-snapped cursor reveal window; held widens it, clicks punch clear holes.",
+    "description": "Chaotic block-scatter glitch with datamosh holds and tear bands, stabilized by a block-snapped cursor reveal window; held widens it, clicks punch clear holes. Blocks re-key out of step; tears shear.",
     "url": "shaders/glitch-reveal.wgsl",
     "workgroup_size": [
       16,
@@ -4047,7 +4047,7 @@
     "id": "rgb-ripple-distortion",
     "name": "RGB Ripple Distortion",
     "url": "shaders/rgb-ripple-distortion.wgsl",
-    "description": "A ripple effect that separates RGB channels based on distance from mouse.",
+    "description": "A ripple effect that separates RGB channels based on distance from mouse. Clicks spread into dispersive ripple trains; Cauchy RGB split.",
     "params": [
       {
         "id": "freq",
@@ -4079,7 +4079,10 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "depth-aware"
     ],
     "tags": [
       "filter",

@@ -2,16 +2,20 @@
   "id": "data-scanner-gabor",
   "name": "Data Scanner Gabor",
   "url": "shaders/data-scanner-gabor.wgsl",
-  "description": "Catalog entry for Data Scanner Gabor.",
+  "description": "Cursor scan bar: a Gabor energy bank colour-codes stripe direction; orientation needles on the grid.",
   "tags": [
     "mouse-driven",
     "gabor-filter-bank",
-    "edge-detection"
+    "edge-detection",
+    "orientation-field",
+    "audio-reactive"
   ],
   "features": [
     "mouse-driven",
     "gabor-filter-bank",
-    "edge-detection"
+    "edge-detection",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -52,6 +56,42 @@
     }
   ],
   "x-meta": {
-    "seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Frequency",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Sigma",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Gabor Response",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Scan Width",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }

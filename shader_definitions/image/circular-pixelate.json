@@ -1,7 +1,7 @@
 {
   "id": "circular-pixelate",
   "name": "Circular Pixelate",
-  "description": "A hexagonal compound-eye field refracts the image through deep lenslets, with chromatic aperture glints, held dilation, and age-guarded click propagation.",
+  "description": "A hexagonal compound-eye field refracts the image through deep lenslets, with chromatic aperture glints, held dilation, and age-guarded click propagation. Cells integrate a hex PSF; edge lenslets turn cat's-eye.",
   "url": "shaders/circular-pixelate.wgsl",
   "params": [
     {

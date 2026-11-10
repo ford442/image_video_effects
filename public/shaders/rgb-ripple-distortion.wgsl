@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  RGB Ripple Distortion
 //  Category: image
-//  Features: upgraded-rgba, depth-aware, audio-reactive
+//  Features: depth-aware, audio-reactive
 //  Complexity: High
 //  Scientific: Photoelastic birefringence from principal-stress eigenmodes with Maxwell stress modulation, isochromatic fringe orders, and polarized-light isoclinics
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-23, 2026-11-10
+//  Ideas: Cauchy dispersion on the R/G/B taps (§12.2F); two-wave deep-water ripple dispersion, long wave leads and a slower short train trails (§12.2D)
+//  A packing: raw displacement field (rg), fringe/10, stressMag — read back as C as a FIELD (no tone-map); B = stress/angle/isoclinic (HEAD-owned). Output is LDR (no ACES): rest is an exact pass-through
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -23,8 +25,9 @@ fn safeNormalize(v: vec2<f32>) -> vec2<f32> {
   return v * inverseSqrt(len2);
 }
 
-fn fieldAt(uv: vec2<f32>) -> vec4<f32> {
-  return textureSampleLevel(dataTextureC, u_sampler, clampUV(uv), 0.0);
+// Exact load of the displacement/stress field (rgba32float history: no filtering sampler).
+fn fieldAtPx(p: vec2<i32>, maxP: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), maxP), 0);
 }
 
 fn fringePalette(order: f32) -> vec3<f32> {
@@ -58,6 +61,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     return;
   }
 
+  let coord = vec2<i32>(global_id.xy);
+  let maxP = vec2<i32>(resolution) - vec2<i32>(1);
   let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
   let texel = 1.0 / resolution;
   let time = u.config.x;
@@ -73,7 +78,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let speed = 1.0 + 8.0 * clamp(u.zoom_params.z, 0.0, 1.0);
   let stressOptic = 0.05 + 0.45 * clamp(u.zoom_params.w, 0.0, 1.0);
 
-  let previous = fieldAt(uv);
+  let previous = fieldAtPx(coord, maxP);
   var displacement = previous.rg * 0.94;
 
   let mouse = u.zoom_config.yz;
@@ -93,16 +98,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     let delta = (uv - ripple.xy) * aspectVec;
     let r = length(delta);
+    let radial = safeNormalize(delta);
+    // HEAD's single ring (long wave): unchanged.
     let phase = r * freq - age * speed * 4.0;
     let envelope = exp(-r * 9.0 - age * 0.9);
-    let radial = safeNormalize(delta);
-    displacement += radial * sin(phase) * envelope * amp * (1.0 + 1.2 * bass);
+    // ── Idea 2: deep-water ripple dispersion (§12.2D) ──────────────────
+    // Water waves disperse: ω² ∝ k, so a wave of 1.8× the wavenumber runs at
+    // c ∝ 1/√k = 0.75× the phase speed. The short component can only exist
+    // behind its own (slower) front, so one click spreads into a leading long
+    // wave plus a trailing finer train.
+    let w1 = speed * 4.0;
+    let k2 = freq * 1.8;
+    let w2 = w1 * 1.3416;
+    let behind = smoothstep(0.0, 0.05, (w2 / k2) * age - r);
+    let train = 0.7 * sin(r * k2 - age * w2) * exp(-r * 13.0 - age * 1.3) * behind;
+    displacement += radial * (sin(phase) * envelope + train) * amp * (1.0 + 1.2 * bass);
   }
 
-  let left = fieldAt(uv - vec2<f32>(texel.x, 0.0)).rg;
-  let right = fieldAt(uv + vec2<f32>(texel.x, 0.0)).rg;
-  let up = fieldAt(uv - vec2<f32>(0.0, texel.y)).rg;
-  let down = fieldAt(uv + vec2<f32>(0.0, texel.y)).rg;
+  let left = fieldAtPx(coord - vec2<i32>(1, 0), maxP).rg;
+  let right = fieldAtPx(coord + vec2<i32>(1, 0), maxP).rg;
+  let up = fieldAtPx(coord - vec2<i32>(0, 1), maxP).rg;
+  let down = fieldAtPx(coord + vec2<i32>(0, 1), maxP).rg;
 
   let dux_dx = (right.x - left.x) / (2.0 * texel.x);
   let dux_dy = (down.x - up.x) / (2.0 * texel.y);
@@ -140,15 +156,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let photoelastic = fringeColor * spectral * (0.15 + 0.85 * isoclinic);
 
   let stressMag = clamp(abs(sigma1 - sigma2) * 0.05, 0.0, 1.0);
-  let chromaShift = displacement * (0.6 + 0.8 * stressMag + 0.6 * treble);
-  let r = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement - chromaShift * 0.4), 0.0).r;
+  // Color Separation now also drives the channel split (it was dead for it: HEAD's
+  // sub-pixel split ignored it). Default 0.5 ⇒ 3× HEAD's chromaShift so the
+  // dispersion is actually visible on ripples; 0 ⇒ 0.5×, 1 ⇒ 5.5×.
+  let sepGain = 0.5 + 5.0 * clamp(u.zoom_params.w, 0.0, 1.0);
+  let chromaShift = displacement * (0.6 + 0.8 * stressMag + 0.6 * treble) * sepGain;
+  // ── Idea 1: Cauchy dispersion (§12.2F) ─────────────────────────────
+  // n(λ) = 1 + B/λ² at 650/550/450 nm, measured from green: red bends less
+  // than blue is pushed (−0.29 : +0.51) instead of HEAD's symmetric ±0.4.
+  // Normalised so the mean R/B spread stays HEAD's 0.4·chromaShift.
+  let lam = vec3<f32>(0.650, 0.550, 0.450);
+  let nIdx = vec3<f32>(1.0) + 0.3 / (lam * lam);
+  let dev = nIdx - vec3<f32>(nIdx.y);
+  let cauchy = dev * (0.4 / max(0.5 * (abs(dev.x) + abs(dev.z)), 1e-4));
+  let r = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement + chromaShift * cauchy.x), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement + chromaShift * 0.4), 0.0).b;
+  let b = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement + chromaShift * cauchy.z), 0.0).b;
   let base = vec3<f32>(r, g, b);
 
-  let finalColor = clamp(mix(base, base * 0.35 + photoelastic, clamp(0.35 + 0.55 * stressMag + 0.20 * bass, 0.0, 1.0)), vec3<f32>(0.0), vec3<f32>(1.0));
+  // Rest is an exact pass-through: HEAD darkened an undisturbed frame by ×0.78
+  // (mix 0.35 toward base·0.35) and held alpha at 0.82. The polariscope term now
+  // scales in with the stress that makes it.
+  let restGate = 1.0 - exp(-stressMag * 40.0);
+  let finalColor = clamp(mix(base, base * 0.35 + photoelastic, clamp((0.35 + 0.55 * stressMag + 0.20 * bass) * restGate, 0.0, 1.0)), vec3<f32>(0.0), vec3<f32>(1.0));
+  let srcAlpha = textureSampleLevel(readTexture, u_sampler, clampUV(uv + displacement), 0.0).a;
   let depthSample = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampUV(uv + displacement * 0.2), 0.0).r;
-  let alpha = clamp(0.82 + 0.12 * stressMag + 0.06 * isoclinic, 0.0, 1.0);
+  let alpha = clamp(mix(srcAlpha, 0.82 + 0.12 * stressMag + 0.06 * isoclinic, restGate), 0.0, 1.0);
   let depthProxy = clamp(depthSample * 0.45 + stressMag * 0.45 + clamp(fringeOrder * 0.08, 0.0, 0.3), 0.0, 1.0);
 
   textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, alpha));

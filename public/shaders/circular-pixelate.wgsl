@@ -3,9 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-16
-//  Ideas: hex diaphragm on the round lenslet; grout seam between cells
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-16, 2026-11-10
+//  Ideas: hex diaphragm on the round lenslet; grout seam between cells; aperture-shaped PSF integration (7-tap hex rosette instead of one point sample); cat's-eye optical vignetting (second pupil disc toward the frame edge)
+//  A packing: ACES display RGBA (unchanged)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -72,7 +72,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
 
   let coord = vec2<i32>(gid.xy);
-  let uv = vec2<f32>(gid.xy) / resolution;
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
   let aspect = resolution.x / max(resolution.y, 1.0);
   let aspectVec = vec2<f32>(aspect, 1.0);
   let time = u.config.x;
@@ -111,7 +111,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                              bass * 0.035 + clickWave * 0.04, 0.045, 0.62);
   let distanceToCenter = length(local) * 1.15;
   // Idea 1 — hex diaphragm clips the round dome.
-  let stopDist = mix(distanceToCenter, hexBlade(local) * 1.35, 0.72);
+  var stopDist = mix(distanceToCenter, hexBlade(local) * 1.35, 0.72);
+  // ── Idea 4: cat's-eye optical vignetting ────────────────────────────────
+  // Away from the optical axis the barrel clips the entrance pupil: a second
+  // disc, shifted toward the frame centre, is intersected with the diaphragm
+  // (intersection of two shapes = max of their stop distances), so cells near
+  // the frame edge turn lemon-shaped, long axis tangential. The centre of the
+  // frame has no shift, so centre cells are exactly the hex diaphragm above.
+  // (local axes are isotropic: local = physical * density / aspect.)
+  let frameOff = (cellCenterUV - vec2<f32>(0.5)) * aspectVec;
+  // Fades out as the aperture fills the cell (Radius → 1): a pupil that already
+  // touches the lattice walls has no room to turn into a lemon, and the shifted
+  // disc would just be clipped into diagonal staircases.
+  let catRoom = 1.0 - smoothstep(0.34, 0.54, apertureRadius);
+  let vig = smoothstep(0.02, 0.30, dot(frameOff, frameOff)) * 0.85 * catRoom;
+  let toCentre = -frameOff / max(length(frameOff), 1e-4);
+  let pupil2 = local - toCentre * vig * apertureRadius;
+  let stopDist2 = mix(length(pupil2) * 1.15, hexBlade(pupil2) * 1.35, 0.72);
+  // Shape, not coverage: the two-disc overlap loses area f(vig) ≈ 1 − 0.74·vig + 0.22·vig²
+  // (exact lens-intersection area, fitted), so the stop radius is widened by 1/√f — the
+  // cells turn lemon-shaped at ~HEAD's average coverage instead of just dimming at the edge.
+  let catArea = max(1.0 - 0.74 * vig + 0.22 * vig * vig, 0.3);
+  stopDist = max(stopDist, stopDist2) * sqrt(catArea);
   let edgeWidth = mix(0.10, 0.008, hardness);
   let aperture = 1.0 - smoothstep(max(apertureRadius - edgeWidth, 0.0),
                                   apertureRadius + edgeWidth, stopDist);
@@ -122,12 +143,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sampleBase = clamp(cellCenterUV + refraction, vec2<f32>(0.0), vec2<f32>(1.0));
   let chromaAmount = (0.0015 + mids * 0.003 + treble * 0.002) * aperture;
   let chromaDir = normalize(local + vec2<f32>(0.0001));
-  let red = textureSampleLevel(readTexture, u_sampler,
-                               clamp(sampleBase + chromaDir * chromaAmount, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let green = textureSampleLevel(readTexture, u_sampler, sampleBase, 0.0).g;
-  let blue = textureSampleLevel(readTexture, u_sampler,
-                                clamp(sampleBase - chromaDir * chromaAmount, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-  let sampled = textureSampleLevel(readTexture, u_sampler, sampleBase, 0.0);
+  // ── Idea 3: aperture-shaped PSF integration ─────────────────────────────
+  // HEAD read ONE point sample per pixel; a lenslet spot has a finite
+  // footprint shaped like its aperture. Seven taps (centre + six hex
+  // neighbours at a radius that grows with the Radius slider) are averaged,
+  // so textured photos stop speckling at high Density. The red/blue CA taps
+  // stay as a differential about this mean (CA magnitude unchanged).
+  let psfRadius = clamp(apertureRadius * 0.9, 0.04, 0.40);
+  let centreTap = textureSampleLevel(readTexture, u_sampler, sampleBase, 0.0);
+  var psfSum = centreTap;
+  for (var k = 0; k < 6; k = k + 1) {
+    let ang = f32(k) * 1.0471976;
+    let ringOff = vec2<f32>(cos(ang), sin(ang)) * psfRadius / gridScale;
+    psfSum = psfSum + 0.7 * textureSampleLevel(readTexture, u_sampler,
+                                              clamp(sampleBase + ringOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  }
+  let sampled = psfSum / (1.0 + 6.0 * 0.7);
+  let redTap = textureSampleLevel(readTexture, u_sampler,
+                                  clamp(sampleBase + chromaDir * chromaAmount, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let blueTap = textureSampleLevel(readTexture, u_sampler,
+                                   clamp(sampleBase - chromaDir * chromaAmount, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let red = sampled.r + (redTap - centreTap.r);
+  let green = sampled.g;
+  let blue = sampled.b + (blueTap - centreTap.b);
   let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let history = historyAt(sampleBase - chromaDir * clickWave * 0.004, resolution);
 

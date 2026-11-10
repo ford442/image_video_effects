@@ -7,8 +7,13 @@
 //               axis in proportion to (λ − 550 nm), so the fringe is a rainbow, not 3 copies
 //            2. ±1st-order diffraction ghosts — faint grating copies far from the cursor,
 //               where red diffracts further than blue (the opposite of a prism)
+//            3. secondary spectrum — the per-wavelength offset is a parabola (k + 0.3·k²),
+//               not a line, so red and blue land on the same side of green (purple fringe)
+//            4. longitudinal CA — red and blue planes are also defocused (perpendicular
+//               2-tap disc at each channel's centroid, radius ∝ distance·split); green stays sharp
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-05-23, 2026-11-10
+//  A packing: ACES display RGBA (A = finalOut, write-only)
 //
 //  Distance-based RGB separation with wavelength-dependent Beer-Lambert alpha.
 //  Red (650nm): lowest absorption; Blue (450nm): highest absorption.
@@ -50,7 +55,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   let coord = vec2<i32>(global_id.xy);
   if (coord.x >= i32(resolution.x) || coord.y >= i32(resolution.y)) { return; }
-  var uv = vec2<f32>(global_id.xy) / resolution;
+  var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
 
   let bass = plasmaBuffer[0].x;
   let mids = plasmaBuffer[0].y;
@@ -99,15 +104,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   for (var i = 0; i < 7; i = i + 1) {
       let lambda = 400.0 + f32(i) * 50.0;
       let k = (lambda - 550.0) / 100.0;
-      let tapUV = clamp(uv + rotSeparation * k, vec2<f32>(0.0), vec2<f32>(1.0));
-      var c = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
+      // ── Idea 3: secondary spectrum (§12.2F, Cauchy-family non-linear dispersion) ──
+      // HEAD's offset is linear in k; the dispersion
+      // of a real lens is non-linear in λ, so add c₂·k² along the same axis
+      // (k=0 stays on green; R gets 1.3×, B −0.7×: same mean spread, one side).
+      let kOff = k + 0.3 * k * k;
+      let tapUV = clamp(uv + rotSeparation * kOff, vec2<f32>(0.0), vec2<f32>(1.0));
+      var tapCol = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
       let cb = textureSampleLevel(readTexture, u_sampler, clamp(tapUV + bOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-      c = mix(c, (c + cb) * 0.5, doBlur);
+      tapCol = mix(tapCol, (tapCol + cb) * 0.5, doBlur);
       let w = wavelengthRGB(lambda);
-      spec += c * w;
+      spec += tapCol * w;
       wsum += w;
   }
   spec = spec / max(wsum, vec3<f32>(1e-3));
+
+  // ── Idea 4: longitudinal CA (native lens physics) ──
+  // Red and violet focus off the green plane, so their planes are also defocused
+  // across the split axis (green stays sharp): a perpendicular 2-tap disc at each
+  // channel's spectral centroid (red ≈ +1.3, blue ≈ −0.7 after the secondary
+  // spectrum), radius ∝ distance·split. 4 extra loads in total.
+  let perpAxis = vec2<f32>(-rotSeparation.y, rotSeparation.x);
+  let perpDir = perpAxis / max(length(perpAxis), 1e-6);
+  let defR = 1.2 * effectFactor * strength;
+  let defMix = clamp(0.9 * effectFactor, 0.0, 0.9);
+  let redUV = uv + rotSeparation * 1.3;
+  let blueUV = uv - rotSeparation * 0.7;
+  let defRed = (textureSampleLevel(readTexture, u_sampler, clamp(redUV + perpDir * defR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r
+              + textureSampleLevel(readTexture, u_sampler, clamp(redUV - perpDir * defR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r);
+  let defBlue = (textureSampleLevel(readTexture, u_sampler, clamp(blueUV + perpDir * defR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b
+               + textureSampleLevel(readTexture, u_sampler, clamp(blueUV - perpDir * defR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b);
+  spec = vec3<f32>(mix(spec.r, (spec.r + defRed) * (1.0 / 3.0), defMix), spec.g, mix(spec.b, (spec.b + defBlue) * (1.0 / 3.0), defMix));
   var r = spec.r;
   var g = spec.g;
   var b = spec.b;

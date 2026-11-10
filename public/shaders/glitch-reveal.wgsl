@@ -3,9 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: datamosh block hold from C along the block vector; horizontal tear bands; block-snapped window edge
-//  A packing: ACES display RGB + .a = 10 + alpha validity sentinel (C read as colour for the block hold / ghost)
+//  Upgraded: 2026-10-05, 2026-11-10
+//  Ideas: datamosh block hold from C along the block vector; horizontal tear bands; block-snapped window edge; staggered block re-key (per-block phase: the all-at-once flash every 1/speed s becomes continuous churn at the same mean rate); sheared head-switch tear (§12.2B sync-pulse timing: mean-preserving 0.4x..1.6x ramp across the band + exponential tail)
+//  A packing: ACES display RGB + .a = 10 + alpha validity sentinel (C read as colour for the block hold / ghost) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -50,20 +50,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
   let effectiveRadius = revealRadius * mix(0.6, 1.4, depth);
-  let tick = floor(time * speed * (1.0 + mids));
+  let tickRate = time * speed * (1.0 + mids);
+  let tick = floor(tickRate);   // global tick: the tear bands (rows) stay on it
 
   // Idea 2: horizontal tear bands — a slower hash over row strips shears whole rows of blocks
   // sideways (sync-tear axis on top of the per-block scatter); bass makes tears more frequent.
   let bandH = max(blockSize * 0.45, 0.004);
-  let bandId = floor(uv.y / bandH);
+  let bandCoord = uv.y / bandH;
+  let bandId = floor(bandCoord);
+  let bandPos = bandCoord - bandId;                       // 0 at the band's top row … 1 at its bottom
+  let tearGate = 0.86 - bass * 0.15;
   let bandRand = hash22(vec2<f32>(bandId * 1.37 + 11.0, floor(tick * 0.5) + 3.0));
-  let tearOn = step(0.86 - bass * 0.15, bandRand.x);
-  let tearShift = tearOn * (bandRand.y - 0.5) * 0.3 * scatter;
+  let tearOn = step(tearGate, bandRand.x);
+  let tearBase = tearOn * (bandRand.y - 0.5) * 0.3 * scatter;
+  // ── Idea 5: sheared head-switch tear (§12.2B sync-pulse timing) ─────────
+  // A real sync tear is not a rigid slide: the offset ramps along the lines
+  // of the band (here 0.4×…1.6×, mean = the rigid shift) and, past the
+  // band's last line, relaxes back with an exponential tail into the rows
+  // below — the bent top-of-frame of a tape head switch. Bands that are off
+  // are untouched except for the tail of an active band above them.
+  let prevRand = hash22(vec2<f32>((bandId - 1.0) * 1.37 + 11.0, floor(tick * 0.5) + 3.0));
+  let prevTear = step(tearGate, prevRand.x) * (prevRand.y - 0.5) * 0.3 * scatter;
+  let skew = 1.0 + 1.2 * (bandPos - 0.5);
+  let tail = prevTear * 1.6 * exp(-bandPos * 6.0) * (1.0 - tearOn);
+  let tearShift = tearBase * skew + tail;
   let tornUV = vec2<f32>(uv.x + tearShift, uv.y);
 
   let gridUV = floor(tornUV / blockSize);
   let cellUV = fract(tornUV / blockSize);
-  let seed = gridUV + tick;
+  // ── Idea 4: staggered block re-key (block phase) ────────────────────────
+  // HEAD re-rolled every block on the same tick (a whole-frame strobe). Each
+  // block now owns a phase, so blocks re-key one by one in a rolling pattern
+  // (codec intra-refresh staggering). Jitter Speed keeps its role: it is the
+  // mean re-key rate of a block.
+  let blockPhase = hash22(gridUV * 1.31 + vec2<f32>(3.7, 9.1)).x;
+  let tickB = floor(tickRate + blockPhase);
+  let seed = gridUV + tickB;
   let rand = hash22(seed);
   var blockOffset = (rand - 0.5) * scatter;
 
@@ -78,7 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let centerDepth = textureLoad(readDepthTexture, centerCoord, 0).r;
   let centerRadius = revealRadius * mix(0.6, 1.4, centerDepth);
   let dCenter = length((blockCenter - mouse) * vec2<f32>(aspect, 1.0));
-  let edgeDither = (hash22(gridUV * 1.7 + vec2<f32>(tick, 5.0)).x - 0.5) * blockSize * 0.9;
+  let edgeDither = (hash22(gridUV * 1.7 + vec2<f32>(tickB, 5.0)).x - 0.5) * blockSize * 0.9;
   let blockMask = smoothstep(centerRadius * 0.85, centerRadius, dCenter + edgeDither);
   var mask = min(smoothMask, blockMask);
 
