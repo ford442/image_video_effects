@@ -3,8 +3,9 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: honest A echo; range ticks along the beam
+//  Upgraded: 2026-11-10
+//  Ideas: honest A echo; range ticks along the beam; incidence-angle return
+//         intensity; dual-return ghost beam
 //  A packing: echo in A.r (was B). Display ACES RGB.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -95,7 +96,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dist_to_scan = abs(depth - scan_pos);
     let in_beam = 1.0 - smoothstep(0.0, beam_width, dist_to_scan);
     let beam_falloff = 1.0 - smoothstep(0.0, beam_width * 2.0, dist_to_scan);
-    let points = point_cloud(uv, depth, time) * in_beam;
+    // Idea 3 — incidence-angle return: grazing surfaces (steep depth slope) return less.
+    let incidence = 1.0 / (1.0 + edge_val * 18.0);
+    // Idea 4 — dual-return ghost: a weaker second echo trails the first slice.
+    let ghostPos = fract(scan_pos - 0.12 - beam_width);
+    let ghost = (1.0 - smoothstep(0.0, beam_width * 0.7, abs(depth - ghostPos))) * 0.45;
+    let points = point_cloud(uv, depth, time) * in_beam * mix(0.35, 1.0, incidence);
 
     let prev_echo = textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), dims - vec2<i32>(1)), 0).r;
     let new_echo = in_beam * (1.0 - depth);
@@ -103,8 +109,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1 — echo lives in A (HEAD wrote B and never A)
     textureStore(dataTextureA, pixel, vec4<f32>(echo, in_beam, dist_to_scan, 1.0));
 
-    let grid_line = smoothstep(0.48, 0.5, fract(uv.x * 20.0)) +
-                    smoothstep(0.48, 0.5, fract(uv.y * 20.0));
+    // HEAD smoothstep(0.48,0.5,fract) lit half of every cell; thin lines now.
+    let grid_line = 1.0 - smoothstep(0.0, 0.06, abs(fract(uv.x * 20.0) - 0.5)) +
+                    1.0 - smoothstep(0.0, 0.06, abs(fract(uv.y * 20.0) - 0.5));
     let grid = grid_line * 0.3 * (1.0 - depth * 0.5);
 
     let height_color = mix(vec3<f32>(0.0, 0.2, 0.8), vec3<f32>(0.0, 1.0, 0.8), depth);
@@ -119,14 +126,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr += grid;
     hdr = mix(hdr, edge_color * 0.5, is_contour);
     hdr = mix(hdr, edge_color, is_edge * (0.5 + beam_falloff * 0.5));
-    hdr += beam_color * in_beam * 0.5;
+    hdr += beam_color * in_beam * 0.5 * mix(0.4, 1.2, incidence);
+    hdr += vec3<f32>(0.6, 0.05, 0.25) * ghost * incidence;
     hdr = mix(hdr, beam_color, points);
     hdr += vec3<f32>(0.5, 0.2, 0.0) * echo * persistence;
     hdr += vec3<f32>(1.0, 0.85, 0.4) * tick * 0.55;
     hdr += hash12(uv * 100.0 + time) * 0.05 * (1.0 - depth);
 
     let mapped = aces(hdr);
-    let alpha = clamp(srcA * 0.25 + in_beam * 0.4 + echo * 0.25 + is_edge * 0.2 + tick * 0.2, 0.0, 1.0);
+    let alpha = clamp(srcA * 0.25 + in_beam * 0.4 + echo * 0.25 + is_edge * 0.2 + tick * 0.2 + ghost * 0.15, 0.0, 1.0);
     textureStore(writeTexture, pixel, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

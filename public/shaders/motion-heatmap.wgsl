@@ -3,11 +3,17 @@
 //  Category: image
 //  Features: motion-detection, heatmap, mouse-driven, temporal-feedback, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-11-10
+//  Ideas: thermal conduction (Laplacian diffusion); FLIR isotherm contours; ACES display
+//  A packing: raw sim state (R heat, A previous luma)
 //  By: Agent 1a - Alpha Channel Specialist
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
+
+fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn get_heat_color(t: f32, shift: f32) -> vec3<f32> {
     // Manual gradient for "Heat"
@@ -72,7 +78,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let advectedCoord = clamp(coord - flowPixels, vec2<i32>(0), maxCoord);
     let history = textureLoad(dataTextureC, advectedCoord, 0);
     let localHistory = textureLoad(dataTextureC, coord, 0);
-    let prevHeat = history.r;
+    // Thermal conduction: 4-neighbour Laplacian of the advected heat field.
+    let hL = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(-1, 0), vec2<i32>(0), maxCoord), 0).r;
+    let hR = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(1, 0), vec2<i32>(0), maxCoord), 0).r;
+    let hD = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(0, -1), vec2<i32>(0), maxCoord), 0).r;
+    let hU = textureLoad(dataTextureC, clamp(advectedCoord + vec2<i32>(0, 1), vec2<i32>(0), maxCoord), 0).r;
+    let prevHeat = history.r + 0.18 * (hL + hR + hD + hU - 4.0 * history.r);
     let prevLuma = localHistory.a;
 
     // Calculate Motion
@@ -124,7 +135,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let heatColor = get_heat_color(displayHeat, color_shift);
 
     // Composite: Additive, preserving input alpha
-    let finalColor = clamp(currColor.rgb + heatColor * displayHeat, vec3<f32>(0.0), vec3<f32>(4.0));
+    var finalColor = clamp(currColor.rgb + heatColor * displayHeat, vec3<f32>(0.0), vec3<f32>(4.0));
+
+    // FLIR isotherms: thin contour lines at fixed heat bands (screen-space width via fwidth-free diff).
+    let bands = displayHeat * 6.0;
+    let bandGrad = max(abs(hR - hL), abs(hU - hD)) * 3.0 + 0.02;
+    let iso = 1.0 - smoothstep(0.0, bandGrad, abs(fract(bands + 0.5) - 0.5));
+    finalColor += vec3<f32>(1.0, 0.95, 0.85) * iso * smoothstep(0.08, 0.25, displayHeat) * 0.45;
+    finalColor = acesTonemap(finalColor);
 
     textureStore(writeTexture, coord, vec4<f32>(finalColor, currColor.a));
 

@@ -2,6 +2,9 @@
 // Electrical arc reactor anchored to the cursor: fbm-perturbed lightning bolts
 // conduct through bright areas of the source image.
 // Features: electrical, arcs, glow, distortion, mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-10
+//  Ideas: luma-gradient steering; forked branches; ionization contact tint
+//  A packing: ACES display RGBA
 
 #include "_prelude.wgsl"
 
@@ -36,14 +39,12 @@ fn fbm(p: vec2<f32>) -> f32 {
     return v;
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    // Evaluate unused parameters
-    let unused_x = u.zoom_params.x;
-    let unused_y = u.zoom_params.y;
-    let unused_z = u.zoom_params.z;
-    let unused_w = u.zoom_params.w;
-
     let dims = vec2<i32>(textureDimensions(writeTexture));
     if (global_id.x >= u32(dims.x) || global_id.y >= u32(dims.y)) {
         return;
@@ -80,12 +81,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Use angle and distance to create lightning bolts emanating from center
     // Perturb angle with noise based on distance and time
     let angle_noise = fbm(vec2<f32>(dist * 5.0 - time * 2.0, angle * 2.0));
-    let bolt_path = abs(sin(angle * (10.0 + mids * 6.0) + angle_noise * 5.0));
+    // Idea 1: luma-gradient steering — the bolt bends toward brighter neighbours,
+    // so arcs visibly seek out conductive (bright) edges in the plate.
+    let px = 2.0 / vec2<f32>(dims);
+    let lw = vec3<f32>(0.299, 0.587, 0.114);
+    let gx = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(px.x, 0.0), 0.0).rgb - textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(px.x, 0.0), 0.0).rgb, lw);
+    let gy = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, px.y), 0.0).rgb - textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(0.0, px.y), 0.0).rgb, lw);
+    let tangent = vec2<f32>(-sin(angle), cos(angle));
+    let steer = dot(vec2<f32>(gx, gy), tangent) * (2.0 + u.zoom_params.y * 6.0);
+    let bolt_path = abs(sin(angle * (10.0 + mids * 6.0) + angle_noise * 5.0 + steer));
 
     // Sharpen the bolt — bass widens the arc so beats throw thicker lightning
     let arcSharp = mix(0.9, 0.98, u.zoom_params.x);
     let boltEdge = arcSharp - bass * 0.08;
-    let bolt = smoothstep(boltEdge, boltEdge + 0.03, bolt_path);
+    let mainBolt = smoothstep(boltEdge, boltEdge + 0.03, bolt_path);
+    // Idea 2: forked branches — a thinner, faster-flickering bolt that only
+    // exists where the main arc is already near, so it reads as forking.
+    let branchNoise = fbm(vec2<f32>(dist * 11.0 - time * 3.7, angle * 5.0 + 7.0));
+    let branchPath = abs(sin(angle * (23.0 + mids * 9.0) + branchNoise * 9.0 + steer * 1.5));
+    let nearMain = smoothstep(boltEdge - 0.25, boltEdge, bolt_path);
+    let branch = smoothstep(arcSharp + 0.01, arcSharp + 0.02, branchPath) * nearMain * smoothstep(0.03, 0.12, dist);
+    let bolt = max(mainBolt, branch * 0.6);
 
     // Fade bolts with distance, but allow them to connect to bright spots
     // If luma is high, the bolt can travel further or be brighter
@@ -96,7 +112,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fluxColor = vec3<f32>(0.4, 0.8, 1.0); // Cyan
     let hotColor = vec3<f32>(1.0, 1.0, 1.0); // White core
 
-    var finalBolt = mix(fluxColor, hotColor, bolt) * bolt * attenuation * 5.0;
+    // Idea 3: ionization tint — where the arc strikes a bright surface the
+    // discharge shifts violet (contact plasma) instead of open-air cyan.
+    let contact = smoothstep(0.55, 0.9, luma) * bolt;
+    let arcColor = mix(fluxColor, vec3<f32>(0.75, 0.45, 1.0), contact);
+    var finalBolt = mix(arcColor, hotColor, mainBolt) * bolt * attenuation * 5.0 + arcColor * contact * attenuation * 1.5;
 
     // 3. Distortion Shockwave
     // Distort the background image based on the bolt intensity
@@ -120,7 +140,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Alpha: electrical energy above the source plate
     let boltEnergy = bolt * attenuation + smoothstep(0.05, 0.0, dist);
     let alpha = clamp(baseColorSample.a + boltEnergy * (0.5 + bass * 0.5), 0.0, 1.0);
-    let outColor = vec4<f32>(finalColor, alpha);
+    let outColor = vec4<f32>(acesToneMap(max(finalColor, vec3<f32>(0.0))), alpha);
 
     textureStore(writeTexture, coord, outColor);
     textureStore(dataTextureA, coord, outColor);

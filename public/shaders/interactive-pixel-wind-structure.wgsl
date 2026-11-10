@@ -5,6 +5,8 @@
 //  Complexity: High
 //  Chunks From: interactive-pixel-wind.wgsl, conv-structure-tensor-flow.wgsl
 //  Created: 2026-04-18
+//  Upgraded: 2026-11-10
+//  Ideas: coherence-gated wind; real LIC streaks along flow; held-pointer gust
 //  By: Agent CB-25
 // ═══════════════════════════════════════════════════════════════════
 //  Wind direction is driven by the dominant texture orientation
@@ -76,6 +78,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let det = Jxx * Jyy - Jxy * Jxy;
     let diff = sqrt(max((Jxx - Jyy) * (Jxx - Jyy) + 4.0 * Jxy * Jxy, 0.0));
     let lambda1 = (trace + diff) * 0.5;
+    let lambda2 = (trace - diff) * 0.5;
+    // Idea 1: coherence gate — textured / edged areas stream, flat areas stay calm
+    let coherence = clamp((lambda1 - lambda2) / (lambda1 + lambda2 + 1e-4), 0.0, 1.0);
+    let windGate = 0.25 + 0.75 * smoothstep(0.05, 0.6, coherence);
     var eigenvec = vec2<f32>(1.0, 0.0);
     if (abs(Jxy) > 0.0001 || abs(Jxx - lambda1) > 0.0001) {
         eigenvec = normalize(vec2<f32>(lambda1 - Jyy, Jxy));
@@ -83,10 +89,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse vortex disturbance
     let mouseDist = length(uv - mousePos);
-    let mouseFactor = exp(-mouseDist * mouseDist * 8.0);
+    // Idea 3: held pointer = gust (wider, stronger vortex)
+    let held = step(0.5, u.zoom_config.w);
+    let mouseFactor = exp(-mouseDist * mouseDist * mix(8.0, 3.0, held)) * (1.0 + held * 0.6);
     let mouseAngle = atan2(uv.y - mousePos.y, uv.x - mousePos.x);
     let vortex = vec2<f32>(-sin(mouseAngle), cos(mouseAngle)) * mouseFactor;
-    eigenvec = normalize(mix(eigenvec, vortex, mouseFactor));
+    eigenvec = normalize(mix(eigenvec, vortex, clamp(mouseFactor, 0.0, 1.0)));
 
     // Ripple turbulence
     var rippleTurb = vec2<f32>(0.0);
@@ -106,7 +114,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Wind vector follows texture flow
     let n = noise(uv * 10.0 + vec2<f32>(time));
     let turbOffset = (vec2<f32>(n) - 0.5) * turbulence * 0.05;
-    let offset = eigenvec * strength + turbOffset;
+    let offset = eigenvec * strength * max(windGate, clamp(mouseFactor, 0.0, 1.0)) + turbOffset;
 
     // Sample with wind offset
     var color = textureSampleLevel(readTexture, u_sampler, uv - offset, 0.0);
@@ -118,10 +126,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let b = textureSampleLevel(readTexture, u_sampler, uv - blueOffset, 0.0).b;
     color = vec4<f32>(r, color.g, b, color.a);
 
+    // Idea 2: line integral convolution — 6 taps upwind along the flow direction
+    var lic = vec3<f32>(0.0);
+    var licW = 0.0;
+    for (var k = 1; k <= 6; k++) {
+        let fk = f32(k);
+        let w = 1.0 - fk / 7.0;
+        lic += textureSampleLevel(readTexture, u_sampler, uv - offset - eigenvec * pixelSize * fk * (2.0 + strength * 40.0), 0.0).rgb * w;
+        licW += w;
+    }
+    lic /= licW;
+    let licMix = clamp(turbulence * 0.7 * windGate, 0.0, 0.85);
+    color = vec4<f32>(mix(color.rgb, lic, licMix), color.a);
+
     // Feedback trail
     let historyUV = uv - offset * 0.5;
-    let history = textureSampleLevel(dataTextureC, u_sampler, historyUV, 0.0);
-    let finalColor = mix(color, history, trails);
+    let hc = clamp(vec2<i32>(historyUV * resolution), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+    let history = textureLoad(dataTextureC, hc, 0);
+    let trailAmt = clamp(trails + held * clamp(mouseFactor, 0.0, 1.0) * 0.25, 0.0, 0.97);
+    var finalColor = mix(color, history, trailAmt);
+    // semantic alpha: streaming coverage (calm areas stay opaque source, streams slightly translucent)
+    finalColor = vec4<f32>(finalColor.rgb, clamp(mix(1.0, 0.8 + 0.2 * color.a, licMix), 0.0, 1.0));
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
     textureStore(dataTextureA, global_id.xy, finalColor);

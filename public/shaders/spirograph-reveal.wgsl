@@ -3,8 +3,8 @@
 //  Category: artistic
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: pen-head trace; ink pooling at crossings; ballpoint pressure
+//  Upgraded: 2026-11-10
+//  Ideas: pen-head trace; ink pooling at crossings; ballpoint pressure; paper tooth; wet-ink persistence
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -96,7 +96,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     totalDensity = totalDensity + density * (0.6 - g * 0.15);
   }
 
-  totalDensity = clamp(totalDensity, 0.0, 1.0);
+  // Idea 4: paper tooth — fibrous grain (stretched along x) lets the ballpoint
+  // skip in the valleys; the heavier the stroke, the less it skips.
+  let fiber = hash12(floor(uv * resolution * vec2<f32>(0.5, 1.5))) * 0.6 + hash12(floor(uv * resolution * 0.25)) * 0.4;
+  let tooth = mix(1.0, smoothstep(0.15, 0.55, fiber + totalDensity * 0.3), 0.35);
+  totalDensity = clamp(totalDensity * tooth, 0.0, 1.0);
 
   // Idea 1: pen-head trace — a pen orbits the centre drawing the figure; the
   // lines it has just passed glow (angular trail behind a bright head).
@@ -144,7 +148,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depthOcclusion = 1.0 - depth * 0.5;
   let alpha = clamp(totalDensity * depthOcclusion * fade + totalBloom * 0.3, 0.0, 1.0);
 
-  let display = acesToneMap(max(outColor, vec3<f32>(0.0)));
+  var display = acesToneMap(max(outColor, vec3<f32>(0.0)));
+  // Idea 5: wet-ink persistence — last frame's lines (exact C load, display RGBA)
+  // linger as a drying ghost wherever the current gears have moved off.
+  let prev = textureLoad(dataTextureC, coord, 0);
+  let wet = clamp(prev.a - finalMask, 0.0, 1.0) * 0.55;
+  display = mix(display, prev.rgb * vec3<f32>(0.96, 0.94, 1.0), wet * 0.5);
   textureStore(writeTexture, coord, vec4<f32>(display, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, coord, vec4<f32>(display, alpha));
