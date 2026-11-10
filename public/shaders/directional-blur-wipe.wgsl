@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: wipe-front ramp; shutter-weighted comet kernel; long-exposure highlight streaks
+//  Upgraded: 2026-11-10
+//  Ideas: wipe-front ramp; shutter-weighted comet kernel; long-exposure highlight streaks; luma-keyed wipe front; stroboscopic multi-exposure; exposure persistence from C
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -27,7 +27,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids   = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
 
-    let uv = vec2<f32>(global_id.xy) / resolution;
+    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
     let aspect = resolution.x / resolution.y;
     let time = u.config.x;
 
@@ -55,7 +55,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p_line = mouse + normal * (split_pos_param - 0.5) * 0.6;
     let uv_aspect = vec2<f32>(uv.x * aspect, uv.y);
     let p_line_aspect = vec2<f32>(p_line.x * aspect, p_line.y);
-    let dist = dot(uv_aspect - p_line_aspect, normal);
+    // Idea 4: luma-keyed wipe front — bright pixels are swept further past
+    // the line, dark ones lag, so the seam bends around image content like
+    // a classic luminance wipe instead of a ruler edge.
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let srcLuma = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let lumaKey = (srcLuma - 0.5) * 0.3 * (0.5 + strength_param);
+    let dist = dot(uv_aspect - p_line_aspect, normal) + lumaKey;
 
     // ── Click wipe flashes ──────────────────────────────────────────
     // Each live ripple (guarded) briefly brightens the wipe line in its
@@ -81,7 +87,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     clickGlow = min(clickGlow, 2.0);
     clickKick = min(clickKick, 1.5);
 
-    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     var color = vec4<f32>(0.0);
     if (dist < 0.0) {
         color = src;
@@ -123,7 +128,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             accum = accum + tap * w;
             weight = weight + w;
         }
-        let blurRGB = accum / weight;
+        var blurRGB = accum / weight;
+
+        // Idea 5: stroboscopic multi-exposure — three discrete ghost
+        // exposures trail past the end of the comet at fixed strobe steps,
+        // so edges and highlights repeat as fading copies (strobe photo).
+        // Mids deepen the strobe. Ghosts arrive with the wipe ramp.
+        let strobeGain = (0.55 + mids * 0.3) * ramp;
+        var ghostAcc = vec3<f32>(0.0);
+        var ghostW = 0.0;
+        for (var g = 1; g <= 3; g = g + 1) {
+            let gk = f32(g);
+            let gUV = clamp(uv + dir * (0.02 + strength * 1.5) * (0.6 + 0.9 * gk), vec2<f32>(0.0), vec2<f32>(1.0));
+            let gw = 0.6 / gk;
+            ghostAcc = ghostAcc + textureSampleLevel(readTexture, u_sampler, gUV, 0.0).rgb * gw;
+            ghostW = ghostW + gw;
+        }
+        blurRGB = mix(blurRGB, ghostAcc / ghostW, clamp(strobeGain * 0.6, 0.0, 0.75));
 
         // Per-channel blur for chromatic dispersion
         let rUV = clamp(uv + dir * strength * 1.1, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -151,7 +172,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // ACES on display RGB; semantic alpha = clean-side transmission, blurred
     // coverage, seam/flash boost.
-    let rgb = acesToneMap(max(color.rgb, vec3<f32>(0.0)));
+    var rgb = acesToneMap(max(color.rgb, vec3<f32>(0.0)));
+    // Idea 6: exposure persistence — the blurred side keeps a decaying
+    // long-exposure memory (exact C load, display domain, no re-tonemap),
+    // so moving the wipe leaves a fading trail on the blur side only.
+    if (dist >= 0.0) {
+        let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+        let persist = clamp(0.78 + bass * 0.1, 0.0, 0.9) * smoothstep(0.0, 0.08, dist) * step(0.001, prev.a);
+        rgb = mix(rgb, prev.rgb, persist);
+    }
     let seam = 1.0 - smoothstep(0.0, 0.005 * (1.0 + clickGlow * 6.0), abs(dist));
     let alpha = clamp(color.a + seam * 0.25, 0.0, 1.0);
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(rgb, alpha));

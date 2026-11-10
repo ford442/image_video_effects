@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, semantic-alpha
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: coherence-gated ribbon sharpness (exponent mix(4,12,coherence)); two-scale cross-hatch (fine and broad tangents carry opposite-sign ribbon phase); contour-steered click fronts (front vector projected onto the tangent)
+//  Upgraded: 2026-11-10
+//  Ideas: coherence-gated ribbon sharpness (exponent mix(4,12,coherence)); two-scale cross-hatch (fine and broad tangents carry opposite-sign ribbon phase); contour-steered click fronts (front vector projected onto the tangent); streamline (LIC) injection along the tangent; luma iso-line ink contours
 //  A packing: linear pre-ACES painting RGBA (exact-C tangent-advection history); ACES on display only
 // ═══════════════════════════════════════════════════════════════════
 // Multiscale tangent advection with coherent history ribbons. B and extraBuffer are unused.
@@ -122,7 +122,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let history0 = historyAt(advectUV, resolution);
   let history1 = historyAt(advectUV - tangent * texel * (2.0 + flowSize * 2.0), resolution);
   let history2 = historyAt(advectUV + tangent * texel * (3.0 + flowSize), resolution);
-  let current = textureSampleLevel(readTexture, u_sampler, advectUV, 0.0);
+  // IDEA 4: streamline integration — inject the source averaged along a short walk of the
+  // tangent field (LIC), so new paint already lies along the contour, not as a point.
+  let licStep = tangent * texel * (1.5 + flowSize * 2.0);
+  var current = textureSampleLevel(readTexture, u_sampler, advectUV, 0.0);
+  var licSum = current.rgb;
+  for (var k = 1; k <= 3; k = k + 1) {
+    let o = licStep * f32(k);
+    licSum += textureSampleLevel(readTexture, u_sampler, clamp(advectUV + o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    licSum += textureSampleLevel(readTexture, u_sampler, clamp(advectUV - o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  }
+  current = vec4<f32>(licSum / 7.0, current.a);
 
   // History is linear (up to 6) now; measure coherence in display range so the
   // brightest edges are not always read as incoherent.
@@ -151,8 +161,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr += spectral(time * 0.05 + pointerDist) * abs(contourFront) * (0.25 + bass * 0.5);
   hdr += (history1.rgb + history2.rgb) * 0.08 * edge;
   hdr = max(hdr, vec3<f32>(0.0));
-  let display = aces(hdr);   // ACES on display only; A keeps the linear painting
-  let alpha = clamp(current.a * 0.25 + edge * 0.42 + ribbons * 0.28 + heldMask * 0.12 + abs(contourFront) * 0.18, 0.0, 1.0);
+  // IDEA 5: contour iso-lines — luma level sets of the source, drawn as thin ink lines whose
+  // width is held near one texel by dividing by the local luma slope.
+  let isoLevels = 3.0 + flowSize * 4.0;
+  let isoL = luma(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb) * isoLevels;
+  let isoDist = abs(fract(isoL + 0.5) - 0.5) / max(fineMag * 0.5 * isoLevels, 1e-4);
+  let isoLine = (1.0 - smoothstep(0.35, 1.1, isoDist)) * smoothstep(0.004, 0.02, fineMag);
+  let display = aces(hdr) * (1.0 - isoLine * (0.32 + mids * 0.15));   // ACES on display only; A keeps the linear painting
+  let alpha = clamp(current.a * 0.25 + isoLine * 0.2 + edge * 0.42 + ribbons * 0.28 + heldMask * 0.12 + abs(contourFront) * 0.18, 0.0, 1.0);
 
   textureStore(writeTexture, coord, vec4<f32>(display, alpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth + edge * 0.05, 0.0, 1.0), 0.0, 0.0, 0.0));
