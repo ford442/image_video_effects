@@ -3,6 +3,9 @@
 //  Category: advanced-hybrid
 //  Features: kaleidoscope, morphological, erosion-dilation, mouse-driven, audio-reactive
 //  Complexity: Very High
+//  Upgraded: 2026-11-10
+//  Ideas: mirror-seam bevel along every reflecting edge; white top-hat detail re-injection
+//  A packing: display RGB + top-hat luma in alpha
 //  Chunks From: breathing-kaleidoscope, conv-morphological-erosion-dilation
 //  Created: 2026-04-18
 //  By: Agent CB-15 — Visual Effects & Distortion Enhancer
@@ -128,7 +131,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Blend based on breathing cycle and segment
   let morphBlend = clamp(erosionDilationBlend, 0.0, 1.0);
   let blendRGB = mix(erosion, dilation, morphBlend);
-  let finalRGB = blendRGB + gradient * 0.3;
+  // ── Idea 2: white top-hat detail re-injection ───────────────────────
+  // topHat = centre - erosion is the small bright structure the erosion
+  // removed. It was only feeding alpha; here it is added back on the
+  // dilation side of the per-segment blend (morphBlend), scaled by the breath,
+  // so eroded segments stay eroded and dilated ones keep their fine highlights.
+  let detail = clamp(topHat, vec3<f32>(0.0), vec3<f32>(1.0)) * morphBlend * (0.2 + 0.3 * strength);
+  var finalRGB = blendRGB + gradient * 0.3 + detail;
+
+  // ── Idea 1: mirror-seam bevel ───────────────────────────────────────
+  // A mirror tube shows a bright bevelled line wherever two reflecting
+  // mirrors meet. mirroredAngle is 1 on a wedge boundary and 0 on the
+  // in-wedge mirror, so both seams are min(m, 1 - m) away from 0. Distance is
+  // converted to arc length in pixels so the line keeps a constant width at any
+  // radius, fades at the apex, and only exists while the kaleidoscope does.
+  let seamAngle = min(mirroredAngle, 1.0 - mirroredAngle) * segmentAngle * 0.5;
+  let seamPx = seamAngle * radius * resolution.y;
+  let seam = exp(-seamPx * 0.7) * smoothstep(0.005, 0.04, radius) * blend;
+  finalRGB += (vec3<f32>(0.9, 0.95, 1.0) * 0.5 + centerSample.rgb * 0.5) * seam * 0.45;
 
   let topHatLuma = dot(topHat, vec3<f32>(0.299, 0.587, 0.114));
 

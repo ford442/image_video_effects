@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: inverse-square lensing; exact-C throat ghost
+//  Upgraded: 2026-09-09, 2026-11-10
+//  Ideas: inverse-square lensing; exact-C throat ghost; Doppler-beamed photon ring; gravitational redshift at the throat
 //  A packing: ACES display RGBA (mouse stash extraBuffer[133..134])
 // ═══════════════════════════════════════════════════════════════════
 
@@ -93,14 +93,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
   let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
 
+  var photonRing = 0.0;
   if (inPortal > 0.01) {
     let hueRot = localAngle * 0.5 + time * 0.3;
     color = hueShift(color, hueRot * colorShiftAmt);
     color = mix(color, vec3<f32>(0.1, 0.0, 0.2), (1.0 - inPortal) * 0.3);
 
+    // Idea 4 — gravitational redshift at the throat
+    // Light climbing out of the throat loses energy: the deeper the sample
+    // (small normalised radius), the redder and dimmer it arrives. The depth
+    // of the well is the Lens Strength slider, the file's own "gravity".
+    let throatDepth = 1.0 - clamp(localDist / max(portalRadius, 0.001), 0.0, 1.0);
+    let redshift = clamp(throatDepth * throatDepth * lensStrength * 1.2, 0.0, 1.0);
+    color = color * vec3<f32>(1.0, 1.0 - 0.5 * redshift, 1.0 - 0.8 * redshift) * (1.0 - 0.4 * redshift);
+
     // Idea 2 — exact-C throat ghost
     let prev = textureLoad(dataTextureC, coord, 0);
     color = mix(color, prev.rgb, inPortal * (0.18 + treble * 0.12));
+
+    // Idea 3 — Doppler-beamed photon ring
+    // A thin ring orbits just inside the rim at the spiral's own angular rate
+    // (the sample angle advances by time*0.5, so the pattern turns at -0.5).
+    // Relativistic beaming makes the approaching side far brighter than the
+    // receding side: intensity ~ (1 + beta*cos(phi))^3, normalised to <= 1.
+    let ringNd = localDist / max(portalRadius, 0.001);
+    let ringShape = exp(-pow((ringNd - 0.52) / 0.045, 2.0));
+    let doppler = 1.0 + 0.65 * cos(localAngle + time * 0.5);
+    photonRing = ringShape * (doppler * doppler * doppler) / 4.49 * inPortal;
+    color = color + vec3<f32>(1.0, 0.86, 0.62) * photonRing * 1.3 * (1.0 + bass * 0.35);
   }
 
   let glowColor = vec3<f32>(0.4, 0.7, 1.0);
@@ -128,8 +148,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = color + glowColor * rEdge * 0.5;
   }
 
-  let mapped = acesToneMap(color);
-  let alpha = clamp(abs(edge) * 2.0 + inPortal * 0.3 + srcA * 0.2, 0.05, 1.0);
+  let mapped = acesToneMap(max(color, vec3<f32>(0.0)));
+  let alpha = clamp(abs(edge) * 2.0 + inPortal * 0.3 + srcA * 0.2 + photonRing * 0.25, 0.05, 1.0);
   let outCol = vec4<f32>(mapped, alpha);
 
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
