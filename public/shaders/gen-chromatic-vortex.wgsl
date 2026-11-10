@@ -3,10 +3,12 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal, chromatic, depth-aware
 //  Complexity: High
-//  Upgraded: 2026-10-05
+//  Upgraded: 2026-10-05, 2026-11-09
 //  Ideas: 1) mirror-fold sectors with a glint on the fold line;
 //         2) breathing radial dispersion (per-channel radius offset by d/dr of the warp);
-//         3) hue-carrying arms (arm streak tinted by its sector's rotated YUV chroma)
+//         3) hue-carrying arms (arm streak tinted by its sector's rotated YUV chroma);
+//         4) depth-sheared twist (swirl rate varies with depth: a funnel, flat depth = unchanged);
+//         5) azimuthal comet trails (history read back along the arm's own rotation, exact bilinear C)
 //  A packing: ACES display RGBA (alpha = vortex arm/glint coverage)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -42,6 +44,20 @@ fn mirrorFold(f: f32) -> f32 {
     return 1.0 - abs(m - 1.0);
 }
 
+// Exact bilinear read of the display history (texel centres at +0.5, clamped).
+fn historyAt(uv: vec2<f32>, res: vec2<f32>) -> vec4<f32> {
+    let p = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * res - vec2<f32>(0.5);
+    let i0 = floor(p);
+    let f = p - i0;
+    let a = vec2<i32>(i0);
+    let hi = vec2<i32>(res) - vec2<i32>(1);
+    let c00 = textureLoad(dataTextureC, clamp(a, vec2<i32>(0), hi), 0);
+    let c10 = textureLoad(dataTextureC, clamp(a + vec2<i32>(1, 0), vec2<i32>(0), hi), 0);
+    let c01 = textureLoad(dataTextureC, clamp(a + vec2<i32>(0, 1), vec2<i32>(0), hi), 0);
+    let c11 = textureLoad(dataTextureC, clamp(a + vec2<i32>(1, 1), vec2<i32>(0), hi), 0);
+    return mix(mix(c00, c10, f.x), mix(c01, c11, f.x), f.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = u.config.zw;
@@ -69,7 +85,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let r = length(delta);
     let theta = atan2(delta.y, delta.x);
 
-    let spiral = theta + swirlStrength * r * radiusScale + time * 0.3;
+    // ── Idea 4: depth-sheared twist ──
+    // A funnel does not wind at one rate: nearer water turns faster. The swirl
+    // rate is scaled by the depth map around mid-depth, so foreground winds
+    // tighter than background (differential rotation). Flat depth 0.5 leaves
+    // the swirl exactly as before.
+    let funnel = 1.0 + 0.12 * (depth - 0.5);
+    let spiral = theta + swirlStrength * funnel * r * radiusScale + time * 0.3;
     let warpPhase = spiral * 3.0 + time;
     let warpedR = r + polarDistort * sin(warpPhase) * 0.1;
 
@@ -87,7 +109,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Idea 2: breathing radial dispersion — d/dr of sin(spiral*3 + t) is
     // cos(..) * 3 * dSpiral/dr; R and B radii slide apart along the arms
     // with that slope, so the split pulses outward even with silent audio.
-    let dSpiralDr = swirlStrength * radiusScale;
+    let dSpiralDr = swirlStrength * funnel * radiusScale;
     let slope = cos(warpPhase) * min(3.0 * dSpiralDr, 6.0) / 6.0;
     let breathe = 0.0045 * (1.0 + polarDistort) * (1.0 + treble * 1.5 + bass * 0.5);
     let warpedRR = warpedR + slope * breathe;
@@ -151,8 +173,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var display = acesToneMap(max(outCol, vec3<f32>(0.0)));
 
     // Temporal persistence blend (display to display, exact texel load)
-    let prev = textureLoad(dataTextureC, vec2<i32>(id.xy), 0);
-    display = mix(display, prev.rgb * 0.92, 0.04 + mids * 0.02);
+    // ── Idea 5: azimuthal comet trails ──
+    // HEAD read the history at the same pixel: a ghost that sits still while
+    // the arms turn. The arm pattern rotates at (0.3 + 2/sectors) rad/s, so the
+    // place a point on an arm came from is the pixel rotated back about the
+    // vortex centre; read the history there (exact bilinear) and lift the
+    // persistence under the arm streak, so each arm drags a curved tail.
+    let trailAng = 0.09 * (1.0 + 0.5 * mids) * (0.3 + 2.0 / sectors) / 0.55;
+    let cT = cos(trailAng);
+    let sT = sin(trailAng);
+    let prevUV = center + vec2<f32>(delta.x * cT - delta.y * sT, delta.x * sT + delta.y * cT) / aspectV;
+    let prev = historyAt(prevUV, res);
+    let trailW = clamp(0.04 + mids * 0.02 + 0.45 * streak * smoothstep(0.02, 0.12, r), 0.0, 0.6);
+    display = mix(display, prev.rgb * 0.92, trailW);
 
     // Semantic alpha: source coverage x how much arm/glint structure is here.
     let effectStrength = clamp(armAmt * 2.0 + glint + r * 0.5, 0.0, 1.0);

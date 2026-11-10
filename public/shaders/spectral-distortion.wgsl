@@ -14,28 +14,14 @@
 //      B offset rides plasmaBuffer[7].x so the chromatic tear shimmers
 //      across the spectrum instead of one global split.
 //  All per-pixel logic is branchless (select/step/smoothstep only).
+//
+//  Upgraded: 2026-11-09
+//  Ideas: Cauchy-ordered dispersion of the warp offsets (§12.2F); per-channel spectral lag from exact C history
+//  A packing: display RGBA (HEAD's); C read back as colour, so the lag is truthful
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Separation, y=WarpScale, z=MouseInfluence, w=Speed
-  ripples: array<vec4<f32>, 50>, // xy=click UV, z=click time, w=unused
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Separation, y=WarpScale, z=MouseInfluence, w=Speed
 
 fn noise(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -49,6 +35,14 @@ fn value_noise(st: vec2<f32>) -> f32 {
                    noise(i + vec2<f32>(1.0, 0.0)), u.x),
                mix(noise(i + vec2<f32>(0.0, 1.0)),
                    noise(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
+// Cauchy n(λ) = 1 + B/λ² at 650 / 550 / 450 nm, relative to green: red bends
+// least, blue most — a wavelength-ordered scale instead of equal-and-opposite.
+fn cauchyScale(b: f32) -> vec3<f32> {
+    let lam = vec3<f32>(0.650, 0.550, 0.450);
+    let n = vec3<f32>(1.0) + vec3<f32>(b) / (lam * lam);
+    return n / n.y;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -140,9 +134,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sepR = separation * (0.6 + binR * 0.8);
   let sepB = separation * (0.6 + binB * 0.8);
 
-  let offR = vec2<f32>(nR - 0.5, value_noise(uv * warpScale + 100.0) - 0.5) * warpStr + vec2<f32>(sepR, 0.0);
+  // ── Idea 1: Cauchy-ordered dispersion (§12.2F) ──
+  // The three warp fields keep their independent noise taps, but the amplitude
+  // each channel is bent by now follows n(λ): red least, blue most. The
+  // dispersion constant B rides RGB Separation (0 → all channels equal).
+  let disp = cauchyScale(separation * 6.0);
+  let offR = vec2<f32>(nR - 0.5, value_noise(uv * warpScale + 100.0) - 0.5) * warpStr * disp.x + vec2<f32>(sepR, 0.0);
   let offG = vec2<f32>(nG - 0.5, value_noise(uv * warpScale + 200.0) - 0.5) * warpStr;
-  let offB = vec2<f32>(nB - 0.5, value_noise(uv * warpScale + 300.0) - 0.5) * warpStr - vec2<f32>(sepB, 0.0);
+  let offB = vec2<f32>(nB - 0.5, value_noise(uv * warpScale + 300.0) - 0.5) * warpStr * disp.z - vec2<f32>(sepB, 0.0);
 
   let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + offG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
@@ -153,7 +152,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let warpMag = length(offR - offB);
   let luma = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(warpMag * 8.0 + separation * 6.0 + clickBoost * 4.0 + luma * 0.2, 0.0, 1.0);
-  let finalColor = vec4<f32>(r, g, b, alpha);
+
+  // ── Idea 2: per-channel spectral lag ──
+  // The feature tag says "temporal-persistence" but C was never read. A is the
+  // display colour, so C read back is the previous displayed frame: low-pass
+  // each channel against it at its own rate (red fastest, blue slowest — like
+  // a three-chip camera / phosphor lag), amount riding RGB Separation, so
+  // motion leaves a red→blue colour ramp behind it. Separation 0 = no lag.
+  let hist = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
+  let lag = vec3<f32>(0.14, 0.26, 0.40) * clamp(separation * 12.0, 0.0, 1.0);
+  let finalColor = vec4<f32>(mix(vec3<f32>(r, g, b), hist, lag), alpha);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 

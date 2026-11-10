@@ -209,7 +209,9 @@
     "name": "Biomimetic Scales",
     "url": "shaders/biomimetic-scales.wgsl",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

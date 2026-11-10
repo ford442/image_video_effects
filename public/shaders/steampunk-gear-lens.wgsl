@@ -6,7 +6,9 @@
 //  Complexity: Medium
 //  Phase A Upgrade Swarm
 //  Created: 2026-05-10
-//  Upgraded: 2026-08-01 (Batch 23)
+//  Upgraded: 2026-08-01 (Batch 23), 2026-11-10
+//  Ideas: Brown-Conrady barrel magnification inside the gear (§12.2B); turned-brass anisotropic rim highlight
+//  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -104,10 +106,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let toothLight = clamp(0.42 + tooth * 0.75 + treble * 0.08, 0.0, 1.25);
     let rimFlare = rim * min(rimKick * 0.75 + localFlare * 0.55, 1.25);
 
+    // ── Idea 1: Brown-Conrady barrel magnification (§12.2B) ─────────────
+    // HEAD's lens only rotated the picture. A real brass loupe magnifies, and
+    // barrel distortion compresses toward the rim: r' = r (1 + k1 rho^2). With
+    // k1 = M - 1 the position is p (1 + (M - 1) rho^2) / M, i.e. M x magnified at
+    // the centre and exactly 1 x at the rim, so the lens meets the picture
+    // outside it without a seam. A smaller gear is a stronger loupe.
+    let rho = clamp(r / max(gear_r, 0.001), 0.0, 1.0);
+    let magnification = 1.0 + 1.2 * (1.0 - clamp(u.zoom_params.x, 0.0, 1.0));
+    let p_barrel = p * (1.0 + (magnification - 1.0) * rho * rho) / magnification;
+
     // Lens UVs
     let c = cos(rot);
     let s = sin(rot);
-    let p_rot = vec2<f32>(p.x * c - p.y * s, p.x * s + p.y * c);
+    let p_rot = vec2<f32>(p_barrel.x * c - p_barrel.y * s, p_barrel.x * s + p_barrel.y * c);
     let uv_lens = clamp(center + p_rot / aspectVec, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Sample both inside and outside
@@ -121,7 +133,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var col = mix(col_lens, vec4<f32>(sepia_col, sepiaAlpha), sepia_str);
 
     // Add Metallic Rim
-    let metalRGB = vec3<f32>(0.72, 0.48, 0.20) * (0.72 + toothLight * 0.48)
+    // ── Idea 2: turned-brass anisotropic rim ────────────────────────────
+    // A lathe-turned rim carries concentric machining grooves and an anisotropic
+    // highlight: a bow-tie along the diameter that points at the light. The light
+    // is fixed in the world, so the highlight stays put while the teeth spin
+    // (`a` is the un-rotated angle; the grooves are rotationally symmetric).
+    let grooves = 0.88 + 0.12 * fract(sin(floor(r * 520.0) * 12.9898) * 43758.5453);
+    let lightAng = 2.35;
+    let aniso = pow(abs(cos(a - lightAng)), 8.0);
+    let metalRGB = vec3<f32>(0.72, 0.48, 0.20) * (0.72 + toothLight * 0.48) * grooves
+      + vec3<f32>(1.0, 0.78, 0.45) * aniso * 0.55 * (0.9 + treble * 0.2)
       + vec3<f32>(1.0, 0.62, 0.20) * rimFlare * (0.6 + mids * 0.25);
     let metal = vec4<f32>(metalRGB, 0.9);
     col = mix(col, metal, clamp(rim + rimFlare * 0.45, 0.0, 1.0));

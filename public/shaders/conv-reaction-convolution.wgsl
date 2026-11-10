@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal
 //  Convolution Type: gray-scott-reaction-diffusion-filter
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: C.rg chemical persistence; Pearson F/k from feed slider
+//  Upgraded: 2026-09-08, 2026-11-09
+//  Ideas: C.rg chemical persistence; Pearson F/k from feed slider; isotropic 9-point Laplacian of the stored chemicals (§12.2D); luma-painted Pearson regime
 //  A packing: A, B, mixed-blue, activity (C.rg = chemicals)
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -37,6 +37,11 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let d = 0.59;
   let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Stored chemicals (A,B) at a clamped texel — exact load, never filtered.
+fn chemAt(p: vec2<i32>, hi: vec2<i32>) -> vec2<f32> {
+    return clamp(textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0).rg, vec2<f32>(0.0), vec2<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -95,8 +100,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let eEdge = length(e.rgb - inputColor) + length(e.rgb - textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(scaledPixelSize.x * 2.0, 0.0), 0.0).rgb);
     let wEdge = length(w.rgb - inputColor) + length(w.rgb - textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-scaledPixelSize.x * 2.0, 0.0), 0.0).rgb);
 
-    let lapA = (nLuma + sLuma + eLuma + wLuma) * 0.25 - inputLuma;
-    let lapB = (nEdge + sEdge + eEdge + wEdge) * 0.25 - edge * 2.0;
+    let lapAImg = (nLuma + sLuma + eLuma + wLuma) * 0.25 - inputLuma;
+    let lapBImg = (nEdge + sEdge + eEdge + wEdge) * 0.25 - edge * 2.0;
+
+    // ── Idea 1: isotropic 9-point Laplacian of the STORED chemicals (§12.2D) ──
+    // HEAD's Laplacians only see the photo, so the chemicals in C.rg never
+    // diffused: the "PDE" was a relaxation toward the picture and fronts could
+    // not travel. The same operator on the stored state (weights 0.2 edges /
+    // 0.05 corners, no 5-point axis bias) lets fronts actually propagate; it is
+    // blended with the image term so the photo still seeds and steers the
+    // pattern. Weights sum to 1, so this is the same avg − centre scale.
+    let hiPix = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
+    let chemEdge = chemAt(pixel + vec2<i32>(1, 0), hiPix) + chemAt(pixel + vec2<i32>(-1, 0), hiPix)
+                 + chemAt(pixel + vec2<i32>(0, 1), hiPix) + chemAt(pixel + vec2<i32>(0, -1), hiPix);
+    let chemCorner = chemAt(pixel + vec2<i32>(1, 1), hiPix) + chemAt(pixel + vec2<i32>(-1, 1), hiPix)
+                   + chemAt(pixel + vec2<i32>(1, -1), hiPix) + chemAt(pixel + vec2<i32>(-1, -1), hiPix);
+    let lapChem = 0.2 * chemEdge + 0.05 * chemCorner - clamp(prevChem.rg, vec2<f32>(0.0), vec2<f32>(1.0));
+    let lapA = mix(lapAImg, lapChem.x, 0.55);
+    let lapB = mix(lapBImg, lapChem.y, 0.55);
 
     let mouseDist = length(uv - mousePos);
     let mouseFactor = exp(-mouseDist * mouseDist * 15.0) * mouseInfluence;
@@ -116,7 +137,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let effectiveFeed = feedBase + rippleFeed + mouseFactor * 0.03;
+    // ── Idea 2: luma-painted Pearson regime ──
+    // Pearson's map: F (with k on the same line) decides spots vs stripes vs
+    // mitosis. A single global F gives one regime for the whole frame; scaling
+    // the local F by the source luma paints bright areas toward spots and dark
+    // areas toward labyrinth stripes. Feed Rate keeps its role (global F).
+    let feedLocal = feedBase * mix(0.80, 1.20, inputLuma);
+    let effectiveFeed = feedLocal + rippleFeed + mouseFactor * 0.03;
     let pearsonK = mix(effectiveFeed + 0.04, effectiveFeed * 0.5, u.zoom_params.z);
     let kill = pearsonK + mouseFactor * 0.02;
     let reaction = centerA * centerB * centerB;

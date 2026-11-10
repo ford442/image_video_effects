@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: lamellulae gill tiers; Buller's-drop spores; partial-veil annulus; universal-veil warts
+//  Upgraded: 2026-10-10, 2026-11-10
+//  Ideas: lamellulae gill tiers; Buller's-drop spores; partial-veil annulus; universal-veil warts; striate translucent cap margin; hyphal anastomosis nodes with nutrient pulses
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -117,7 +117,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sporeLane = fract(radius * (8.0 + gillDetail * 16.0) - time * (0.7 + breatheRate * 2.5));
     let spores = exp(-pow((sporeLane - 0.5) / 0.08, 2.0)) * pow(hash21(floor(p * 40.0 + 70.0)), 5.0);
     let myceliumPhase = sin(p.x * (24.0 + gillDetail * 26.0) + sin(p.y * 13.0 - time * breatheRate * 2.0) * 3.0);
-    let mycelium = pow(1.0 - abs(myceliumPhase), 14.0) * smoothstep(0.72, 0.08, radius);
+    let myceliumReach = smoothstep(0.72, 0.08, radius);
+    let mycelium = pow(1.0 - abs(myceliumPhase), 14.0) * myceliumReach;
+    // ── IDEA 6: hyphal anastomosis nodes ──
+    // A network is more than one line family: hyphae grow toward each other and
+    // fuse. A second, crossing family of bridging hyphae meets the first at fusion
+    // nodes, and a nutrient pulse travels along each family's own direction
+    // (HEAD's lines run along y, the bridges along x). Pulses ride mids.
+    let hyphaPhaseB = sin(p.y * (21.0 + gillDetail * 22.0) + sin(p.x * 11.0 + time * breatheRate * 1.6) * 3.0);
+    let hyphaLineA = 1.0 - abs(myceliumPhase);
+    let hyphaLineB = 1.0 - abs(hyphaPhaseB);
+    let hyphaCross = pow(hyphaLineB, 14.0) * myceliumReach;
+    let fusionNode = pow(hyphaLineA, 5.0) * pow(hyphaLineB, 5.0) * myceliumReach;
+    let nutrientRate = 0.8 + mids * 2.0;
+    let nutrientA = pow(0.5 + 0.5 * sin(p.y * 7.0 - time * nutrientRate), 4.0) * pow(hyphaLineA, 14.0);
+    let nutrientB = pow(0.5 + 0.5 * sin(p.x * 7.0 - time * nutrientRate * 0.8 + 1.7), 4.0) * pow(hyphaLineB, 14.0);
+    let nutrient = (nutrientA + nutrientB) * myceliumReach;
     let fairyRing = exp(-abs(fract(radius * (7.0 + capCount * 9.0) - time * 0.18) - 0.5) * 24.0) * (0.5 + 0.5 * cos(angle * segments));
 
     var clickSpores = 0.0;
@@ -135,19 +150,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let hue = angle / TAU + radius * 0.55 + time * 0.08 + bioluminescence * 0.35;
-    var hdr = palette(hue) * cap * (0.9 + bioluminescence * 2.1 + mids * 0.5);
+    // ── IDEA 5: striate translucent cap margin ──
+    // In thin-fleshed caps the gills show through the margin as radial pleats
+    // (Mycena, Parasola). gillPhase's own lamella pattern darkens the cap flesh,
+    // fading in over the outward side of each cap band (ringCoord > 0).
+    let marginStria = smoothstep(0.0, 0.16, ringCoord) * lamella;
+    let capShade = cap * (1.0 - 0.45 * marginStria);
+    var hdr = palette(hue) * capShade * (0.9 + bioluminescence * 2.1 + mids * 0.5);
     hdr += palette(hue + 0.28) * (gills * 1.8 + stem * 0.8) * (0.6 + treble * 0.5);
     hdr += palette(hue + 0.6) * (spores * 1.2 + clickSpores * 1.8);
     hdr += palette(hue + 0.72) * buller.x * (0.5 + bioluminescence * 0.9) * (1.0 + treble * 0.4);
     hdr += vec3<f32>(1.0, 0.95, 0.85) * buller.y * (1.2 + bass * 0.5);
     hdr += palette(hue + 0.46) * (mycelium * 0.75 + fairyRing * 0.55) * (0.5 + mids * 0.5);
+    hdr += palette(hue + 0.52) * (hyphaCross * 0.3 + fusionNode * (1.1 + nutrient * 1.6) + nutrient * 0.35)
+        * (0.4 + mids * 0.8) * (0.5 + bioluminescence * 0.6);
     hdr += vec3<f32>(0.95, 0.91, 0.78) * annulus * (0.7 + bioluminescence * 0.8);
     hdr += vec3<f32>(0.96, 0.94, 0.9) * wart * (0.55 + bioluminescence * 0.35);
     hdr += vec3<f32>(0.4, 1.0, 0.65) * dragMask * (0.5 + bioluminescence);
     let historyUV = clamp(uv + vec2<f32>(sin(angle) / max(aspect, 0.001), -cos(angle)) * (0.002 + breatheRate * 0.006), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + bioluminescence * 0.16 + dragMask * 0.14, 0.0, 0.40));
-    let structure = clamp(cap + gills * 0.5 + spores + mycelium * 0.3 + clickSpores * 0.45 + buller.x * 0.4 + buller.y * 0.3 + annulus * 0.35 + wart * 0.25, 0.0, 1.0);
+    let structure = clamp(cap + gills * 0.5 + spores + mycelium * 0.3 + clickSpores * 0.45 + buller.x * 0.4 + buller.y * 0.3 + annulus * 0.35 + wart * 0.25 + fusionNode * 0.2, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(hdr * (1.0 + bass * 0.15)), clamp(0.12 + structure * 0.86, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);

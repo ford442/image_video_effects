@@ -4,6 +4,9 @@
 //  Features: audio-reactive, mouse-driven, depth-aware, magnetic-liquid,
 //            sdf, smin-blend, aces-tone-map, ign-dither, premultiplied-alpha
 //  Complexity: High
+//  Upgraded: 2026-11-10
+//  Ideas: meniscus bevel normal from the true SDF gradient; Rosensweig spikes along the field
+//  A packing: (bassEnv, trebEnv, pre-spike d, alpha) raw envelopes + distance
 //  Chunks From: warpedFBM, smin, bass_env, hue_preserve_clamp, ign
 //  Created: 2026-07-17
 //  By: Kimi swarm (manual completion after kimi-cli timeout)
@@ -73,6 +76,18 @@ fn glyphD(p: vec2<f32>, seed: f32) -> f32 {
     return d;
 }
 
+// The glyph wheel: 6 runes on a ring + a central rune, fused as liquid.
+// (Moved out of main unchanged so the surface gradient can re-evaluate it.)
+fn wheelD(p: vec2<f32>, blendK: f32) -> f32 {
+    var d = glyphD(p, 7.0);
+    for (var k = 0; k < 6; k = k + 1) {
+        let ang = f32(k) / 6.0 * TAU;
+        let gp = rot(-ang) * (p - vec2<f32>(cos(ang), sin(ang)) * 0.42);
+        d = smin(d, glyphD(gp, f32(k) * 3.7 + 1.0), blendK);
+    }
+    return d;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
@@ -105,22 +120,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let p = rot(fieldAngle) * (wp / glyphScale);
 
     // glyph wheel: 6 runes on a ring + central rune, blended as liquid
-    var d = glyphD(p, 7.0);
-    for (var k = 0; k < 6; k = k + 1) {
-        let ang = f32(k) / 6.0 * TAU;
-        let gp = rot(-ang) * (p - vec2<f32>(cos(ang), sin(ang)) * 0.42);
-        d = smin(d, glyphD(gp, f32(k) * 3.7 + 1.0), 0.09 + warpAmt * 0.15);
-    }
+    let blendK = 0.09 + warpAmt * 0.15;
+    let d0 = wheelD(p, blendK);
+
+    // True spatial gradient of the wheel SDF (forward differences, 2 extra taps).
+    // HEAD differenced the distance VALUE (d +/- e) instead of the position, so
+    // gy was identically 0 and the metal was lit by a one-axis bump.
+    let ge = 0.003;
+    let gradP = vec2<f32>(wheelD(p + vec2<f32>(ge, 0.0), blendK) - d0,
+                          wheelD(p + vec2<f32>(0.0, ge), blendK) - d0) / ge;
+
+    // ── Idea 2: Rosensweig spikes along the field ───────────────────────
+    // p.x is the applied-field axis (p = rot(fieldAngle) * ...). Above a critical
+    // field a ferrofluid rises into spikes parallel to the field on every
+    // surface that faces it; spikes sit on a lattice across the field (p.y).
+    // Height follows a sqrt law above a threshold of the bass envelope.
+    let facing = smoothstep(0.55, 0.95, abs(gradP.x) / max(length(gradP), 1e-4));
+    let spikeK = TAU / (0.05 + 0.02 * (1.0 - clamp(bassEnv, 0.0, 1.0)));
+    let spikeC = 0.5 + 0.5 * cos(p.y * spikeK);
+    let spikeH = 0.004 + 0.013 * sqrt(clamp((bassEnv - 0.12) / 0.88, 0.0, 1.0));
+    let d = d0 - spikeH * pow(spikeC, 4.0) * facing;
+    // the lattice's own slope, so the shading follows the spike flanks
+    let spikeSlope = 4.0 * pow(spikeC, 3.0) * (-0.5 * spikeK * sin(p.y * spikeK));
+    let gradS = gradP - vec2<f32>(0.0, spikeH * facing * spikeSlope);
 
     // liquid surface + edge
     let mask = smoothstep(0.012, -0.012, d);
     let edge = exp(-abs(d) * 90.0);
 
-    // gradient normal for metal shading
-    let e = vec2<f32>(0.004, 0.0);
-    let gx = smoothstep(0.012, -0.012, d + e.x) - smoothstep(0.012, -0.012, d - e.x);
-    let gy = smoothstep(0.012, -0.012, d + e.y) - smoothstep(0.012, -0.012, d - e.y);
-    let n = normalize(vec3<f32>(-vec2<f32>(gx, gy) * 2.0, 1.0));
+    // ── Idea 1: meniscus bevel normal ───────────────────────────────────
+    // Surface tension rounds the liquid at its contour: the normal tilts outward
+    // along the true SDF gradient, strongest at the rim and flattening inside
+    // (strokes read as tubes of metal). Gradient is rotated back to screen space
+    // so the light, which follows the field, stays consistent.
+    let tilt = exp(-max(-d, 0.0) * 38.0);
+    let gUnit = gradS / max(length(gradS), 1e-4);
+    let gScreen = rot(-fieldAngle) * gUnit;
+    let n = normalize(vec3<f32>(gScreen * tilt * 1.6, 1.0));
     let light = normalize(vec3<f32>(cos(fieldAngle), sin(fieldAngle), 0.7));
     let diff = max(dot(n, light), 0.0);
     let spec = pow(max(dot(n, normalize(light + vec3<f32>(0.0, 0.0, 1.0))), 0.0), 60.0);
@@ -154,5 +190,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     textureStore(writeTexture, pixel, vec4<f32>(outColor * alpha, alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(mix(depth, 0.3, mask), 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, pixel, vec4<f32>(bassEnv, trebEnv, d, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(bassEnv, trebEnv, d0, alpha));
 }
