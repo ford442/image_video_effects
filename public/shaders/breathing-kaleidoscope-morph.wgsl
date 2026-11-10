@@ -3,6 +3,9 @@
 //  Category: advanced-hybrid
 //  Features: kaleidoscope, morphological, erosion-dilation, mouse-driven, audio-reactive
 //  Complexity: Very High
+//  Upgraded: 2026-11-10
+//  Ideas: mirror-seam bevel along every reflecting edge; white top-hat detail re-injection
+//  A packing: display RGB + top-hat luma in alpha
 //  Chunks From: breathing-kaleidoscope, conv-morphological-erosion-dilation
 //  Created: 2026-04-18
 //  By: Agent CB-15 — Visual Effects & Distortion Enhancer
@@ -13,26 +16,7 @@
 //  that pulses between erosion and dilation with the breathing cycle.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn ping_pong(t: f32) -> f32 {
   return 1.0 - abs(fract(t * 0.5) * 2.0 - 1.0);
@@ -147,7 +131,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Blend based on breathing cycle and segment
   let morphBlend = clamp(erosionDilationBlend, 0.0, 1.0);
   let blendRGB = mix(erosion, dilation, morphBlend);
-  let finalRGB = blendRGB + gradient * 0.3;
+  // ── Idea 2: white top-hat detail re-injection ───────────────────────
+  // topHat = centre - erosion is the small bright structure the erosion
+  // removed. It was only feeding alpha; here it is added back on the
+  // dilation side of the per-segment blend (morphBlend), scaled by the breath,
+  // so eroded segments stay eroded and dilated ones keep their fine highlights.
+  let detail = clamp(topHat, vec3<f32>(0.0), vec3<f32>(1.0)) * morphBlend * (0.2 + 0.3 * strength);
+  var finalRGB = blendRGB + gradient * 0.3 + detail;
+
+  // ── Idea 1: mirror-seam bevel ───────────────────────────────────────
+  // A mirror tube shows a bright bevelled line wherever two reflecting
+  // mirrors meet. mirroredAngle is 1 on a wedge boundary and 0 on the
+  // in-wedge mirror, so both seams are min(m, 1 - m) away from 0. Distance is
+  // converted to arc length in pixels so the line keeps a constant width at any
+  // radius, fades at the apex, and only exists while the kaleidoscope does.
+  let seamAngle = min(mirroredAngle, 1.0 - mirroredAngle) * segmentAngle * 0.5;
+  let seamPx = seamAngle * radius * resolution.y;
+  let seam = exp(-seamPx * 0.7) * smoothstep(0.005, 0.04, radius) * blend;
+  finalRGB += (vec3<f32>(0.9, 0.95, 1.0) * 0.5 + centerSample.rgb * 0.5) * seam * 0.45;
 
   let topHatLuma = dot(topHat, vec3<f32>(0.299, 0.587, 0.114));
 

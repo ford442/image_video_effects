@@ -1,6 +1,10 @@
 // ----------------------------------------------------------------
 // Cymatic Void-Glass Geode
 // Category: generative
+// Features: audio-reactive, mouse-driven, raymarched, depth-aware
+// Upgraded: 2026-11-10
+// Ideas: Chladni nodal sand-lines on the cymatic surface (§12.2E promote the wave); step-count ambient occlusion (§12.2E)
+// A packing: display RGB in writeTexture (no A write, as HEAD)
 // ----------------------------------------------------------------
 #include "_prelude.wgsl"
 
@@ -18,6 +22,13 @@ fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+// The cymatic standing wave (unscaled). `map()` multiplies it by the amplitude;
+// the shading reads its zero set (the nodal lines) from the same function.
+fn cymaticWave(p: vec3<f32>, t: f32) -> f32 {
+    let freq = u.zoom_params.y * 10.0; // Frequency param
+    return sin(length(p) * freq - t) * cos(atan2(p.y, p.x) * 4.0);
 }
 
 // SDF with Apollonian fractal and Cymatic displacement
@@ -54,14 +65,15 @@ fn map(p: vec3<f32>) -> vec2<f32> { // returns vec2(distance, orbit_trap)
 
     let base_sdf = (length(q) - 0.25) / scale;
 
-    // Audio reactivity mapping from dataTextureC
-    let audio_sample = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).x;
-    let audio_mod = 1.0 + audio_sample * 2.0; // Moderate effect
+    // Audio reactivity. RESCUE: HEAD read dataTextureC(0,0), which nothing in this
+    // file ever writes, so the audio claim was dead. Bass is plasmaBuffer[0].x.
+    // The factor is kept moderate so a loud bass cannot overstep the march.
+    let audio_sample = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    let audio_mod = 1.0 + audio_sample * 0.8;
 
     // Cymatic displacement
-    let freq = u.zoom_params.y * 10.0; // Frequency param
     let amp = u.zoom_params.z * 0.1 * audio_mod;   // Amplitude param mod with audio
-    let disp = sin(length(p) * freq - time) * cos(atan2(p.y, p.x) * 4.0) * amp;
+    let disp = cymaticWave(p, time) * amp;
 
     return vec2<f32>(base_sdf + disp, orb);
 }
@@ -90,6 +102,20 @@ fn calcNormal(p: vec3<f32>) -> vec3<f32> {
         map(p + e.yxy).x - map(p - e.yxy).x,
         map(p + e.yyx).x - map(p - e.yyx).x
     ));
+}
+
+// ── Idea 2: step-count ambient occlusion (§12.2E) ─────────────────────
+// Five taps of the file's own map() along the normal; a crevice between folds
+// reports a distance smaller than the step, and the deficit accumulates.
+fn aoFive(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 5; i = i + 1) {
+        let h = 0.01 + 0.12 * f32(i) / 5.0;
+        occ += (h - map(p + n * h).x) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -139,7 +165,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Inner Glow (Veins)
         let glow = exp(-orb * 5.0) * vec3<f32>(0.2, 0.8, 1.0);
 
-        col = (diff * 0.2 + iri_color * 0.8) * (1.0 - fresnel * 0.5) + glow;
+        let ao = aoFive(p, n);
+        col = (diff * 0.2 + iri_color * 0.8) * (1.0 - fresnel * 0.5) * mix(0.35, 1.0, ao)
+            + glow * mix(0.6, 1.0, ao);
+
+        // ── Idea 1: Chladni nodal lines ─────────────────────────────────
+        // Cymatics is defined by its nodal lines: where the plate does not move,
+        // sand collects. That zero set is exactly cymaticWave() == 0 on the surface.
+        // Width follows the wave's slope (closed form) so lines stay crisp; they
+        // exist only while the plate vibrates (Cymatic Amp / Freq above zero).
+        let waveT = time * u.zoom_params.x;
+        let wave = cymaticWave(p, waveT);
+        let waveFreq = u.zoom_params.y * 10.0;
+        let waveR = max(length(p), 0.05);
+        let wavePhase = waveR * waveFreq - waveT;
+        let waveTheta = atan2(p.y, p.x) * 4.0;
+        let waveSlope = max(abs(waveFreq * cos(wavePhase) * cos(waveTheta))
+                          + abs(4.0 / waveR * sin(wavePhase) * sin(waveTheta)), 0.3);
+        let nodal = exp(-pow(wave / (waveSlope * 0.035), 2.0))
+                  * smoothstep(0.0, 0.3, u.zoom_params.z) * smoothstep(0.05, 0.4, u.zoom_params.y);
+        col += vec3<f32>(0.55, 0.95, 1.0) * nodal * (0.45 + clamp(plasmaBuffer[0].x, 0.0, 1.0) * 0.5);
 
         // Subsurface scattering approximation based on step count
         col += vec3<f32>(0.1, 0.05, 0.2) * (steps / f32(MAX_STEPS));
@@ -149,7 +194,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     }
 
     // Gamma correction
-    col = pow(col, vec3<f32>(0.4545));
+    col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(0.4545));
 
     textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Truthful relief depth: the nearer the geode surface, the higher the value.
+    textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(select(0.0, 1.0 - clamp(d / MAX_DIST, 0.0, 1.0), d < MAX_DIST), 0.0, 0.0, 0.0));
 }

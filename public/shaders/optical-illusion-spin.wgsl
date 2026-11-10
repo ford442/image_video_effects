@@ -3,7 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-08-30
+//  Upgraded: 2026-08-30, 2026-11-10
+//  Ideas: asymmetric four-step luminance ramp (Kitaoka drift cue); peripheral gain / fixation dead-zone
 //  A packing: ACES display RGBA
 //  Motion: counter-rotating ring packets + Fraser-spiral whip
 // ═══════════════════════════════════════════════════════════════════
@@ -37,6 +38,27 @@ fn snakePattern(coord: vec2<f32>, rings: f32, t: f32, dir: f32) -> f32 {
   let edge = 1.0 - smoothstep(0.38, 0.50, abs(wedge - 0.5));
   let ringEdge = 1.0 - smoothstep(0.42, 0.50, abs(ringPhase - 0.5));
   return edge * ringEdge;
+}
+
+// ── Idea 1 helper: the drift cue ──────────────────────────────────────
+// Rotating-snakes (Fraser-Wilcox / Kitaoka) drifts because each wedge holds a
+// repeating ASYMMETRIC luminance ramp: black, dark, white, light grey. The ramp
+// mirrors on alternating rings (the same `alt` snakePattern uses), so adjacent
+// rings drift opposite ways. Same wedge phase as snakePattern.
+fn snakeRamp(coord: vec2<f32>, rings: f32, t: f32, dir: f32) -> f32 {
+  let radius = length(coord);
+  let angle = atan2(coord.y, coord.x);
+  let ringIndex = floor(radius * rings);
+  let alt = select(-1.0, 1.0, fract(ringIndex * 0.5) >= 0.5);
+  let snakeAngle = angle + dir * t * 1.6 + ringIndex * 0.35 * alt;
+  let wedge = fract(snakeAngle * 3.0 / TAU);
+  let w = select(1.0 - wedge, wedge, alt > 0.0);
+  var r = 0.05;
+  r = mix(r, 0.35, smoothstep(0.20, 0.30, w));
+  r = mix(r, 1.00, smoothstep(0.45, 0.55, w));
+  r = mix(r, 0.70, smoothstep(0.70, 0.80, w));
+  r = mix(r, 0.05, smoothstep(0.92, 1.00, w));
+  return r;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -119,8 +141,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let spun = rotate(centered, twist + packetPulse + holdSpin);
   let sampleUV = clamp(spun / vec2<f32>(aspect, 1.0) + spring, vec2<f32>(0.0), vec2<f32>(1.0));
 
-  let patA = snakePattern(centered, ringCount, time * bassSpeed, dirA);
-  let patB = snakePattern(centered * 1.03 + vec2<f32>(0.01, 0.0), ringCount, time * bassSpeed * 0.94, dirB);
+  // ── Idea 2: peripheral gain / fixation dead-zone ──────────────────
+  // The illusion is a peripheral effect: it vanishes at the fixation point
+  // (here the pointer). Contrast relaxes toward the centre, which also removes
+  // the aliasing where the rings get smaller than a pixel.
+  let periph = smoothstep(0.04, 0.32, radius);
+  let fixation = mix(0.35, 1.0, periph);
+  let patA = snakePattern(centered, ringCount, time * bassSpeed, dirA) * fixation;
+  let patB = snakePattern(centered * 1.03 + vec2<f32>(0.01, 0.0), ringCount, time * bassSpeed * 0.94, dirB) * fixation;
+  let rampA = snakeRamp(centered, ringCount, time * bassSpeed, dirA);
+  let rampB = snakeRamp(centered * 1.03 + vec2<f32>(0.01, 0.0), ringCount, time * bassSpeed * 0.94, dirB);
+  let ramp = (patA * rampA + patB * rampB) / max(patA + patB, 0.001);
+  let driftCue = mix(1.0, 0.45 + 1.1 * ramp, 0.75 * periph);
   let moire = abs(patA - patB) * 2.0;
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
@@ -133,7 +165,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let opA = mix(vec3<f32>(0.05, 0.82, 0.95), vec3<f32>(0.95, 0.92, 0.05), 0.5 + 0.5 * sin(angle * 4.0 + time * bassSpeed + binA));
   let opB = mix(vec3<f32>(0.95, 0.25, 0.05), vec3<f32>(0.15, 0.95, 0.42), 0.5 + 0.5 * cos(angle * 3.0 - time * bassSpeed * 0.8 + binB));
-  let opArt = mix(opA, opB, moire) * (patA + patB + moire * 0.5 + packetPulse);
+  let opArt = mix(opA, opB, moire) * (patA + patB + moire * 0.5 + packetPulse) * driftCue;
 
   var hdr = mix(baseColor.rgb, opArt, clamp((patA + patB) * 0.35, 0.0, 0.68));
   hdr = mix(hdr, afterimage, 0.12 * (patA + patB));
