@@ -5,8 +5,9 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-10
-//  Ideas: bedding-contact highlights; intra-layer cross-beds; ripple marks; iron concretions
+//  Upgraded: 2026-11-10
+//  Ideas: bedding-contact highlights; intra-layer cross-beds; ripple marks; iron concretions;
+//         creeping normal faults with gouge; desert-varnish drips; pool reflection below the water line
 //  A packing: ACES display RGBA
 //  By: Kimi Code CLI
 // ═══════════════════════════════════════════════════════════════════
@@ -55,6 +56,17 @@ fn voronoi(p: vec2<f32>, seed: f32) -> vec2<f32> {
   return vec2<f32>(sqrt(md), sqrt(md2));
 }
 
+fn bandColor(lm: f32, era: f32) -> vec3<f32> {
+  let sienna = vec3<f32>(0.886, 0.345, 0.133);
+  let ochre = vec3<f32>(0.8, 0.467, 0.133);
+  let shale = vec3<f32>(0.294, 0.294, 0.294);
+  let slate = vec3<f32>(0.439, 0.502, 0.565);
+  let sand = vec3<f32>(0.957, 0.643, 0.376);
+  let c0 = select(select(select(select(shale, slate, lm < 0.8), sand, lm < 0.6), ochre, lm < 0.4), sienna, lm < 0.2);
+  let c1 = select(select(select(select(sienna, ochre, lm < 0.8), sand, lm < 0.6), slate, lm < 0.4), shale, lm < 0.2);
+  return mix(c0, c1, era);
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
@@ -90,7 +102,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let wuv = uv + warp * erosion * 0.3;
   let freq = mix(6.0, 24.0, density);
   let lnoise = fbm(wuv * vec2<f32>(freq * 0.5, freq) + vec2<f32>(0.0, t * 0.02 * (1.0 + bass * 0.5)));
-  let lh = wuv.y + lnoise * 0.15;
+  // Idea 5 — creeping normal faults: two slanted planes drop the layer stack on the
+  // hanging-wall side; throw creeps slowly and jolts with bass. Dark gouge along each plane.
+  var throwSum = 0.0;
+  var gouge = 0.0;
+  for (var k = 0; k < 2; k++) {
+    let fk = f32(k);
+    let fx = 0.32 + 0.38 * fk + 0.04 * sin(t * 0.07 + fk * 2.0);
+    let slope = mix(0.38, -0.45, fk);
+    let sd = wuv.x - fx - (wuv.y - 0.5) * slope;
+    let creep = 0.7 + 0.3 * sin(t * 0.11 + fk * 3.1) + bass * 0.35;
+    throwSum += smoothstep(-0.003, 0.003, sd) * (0.035 + 0.02 * fk) * creep;
+    gouge = max(gouge, 1.0 - smoothstep(0.0, 0.005 + erosion * 0.004, abs(sd)));
+  }
+  let lh = wuv.y + lnoise * 0.15 - throwSum;
   let li = floor(lh * freq);
   let lf = fract(lh * freq);
   let cnoise = fbm(wuv * vec2<f32>(8.0, 2.0) + vec2<f32>(t * 0.03 * (1.0 + bass), 0.0));
@@ -103,15 +128,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let v = voronoi(wuv * vec2<f32>(mix(12.0, 30.0, veins), mix(4.0, 12.0, veins)) + vec2<f32>(li * 3.1, 0.0), li);
   let vein = smoothstep(0.0, 0.08 * (1.0 + treble * 2.0), v.y - v.x) * veins * exposed;
   let era = fract(mids * 0.5 + t * 0.03);
-  let sienna = vec3<f32>(0.886, 0.345, 0.133);
-  let ochre = vec3<f32>(0.8, 0.467, 0.133);
-  let shale = vec3<f32>(0.294, 0.294, 0.294);
-  let slate = vec3<f32>(0.439, 0.502, 0.565);
-  let sand = vec3<f32>(0.957, 0.643, 0.376);
   let lm = fract(li * 0.17 + h12(vec2<f32>(li, 0.0)));
-  var col = select(select(select(select(shale, slate, lm < 0.8), sand, lm < 0.6), ochre, lm < 0.4), sienna, lm < 0.2);
-  col = mix(col, select(select(select(select(sienna, ochre, lm < 0.8), sand, lm < 0.6), slate, lm < 0.4), shale, lm < 0.2), era);
-  let wet = smoothstep(mix(water, u.zoom_config.z, 0.5), mix(water, u.zoom_config.z, 0.5) - 0.15, uv.y);
+  var col = bandColor(lm, era);
+  // Rescue: water line in y-up (screen y=0 is the top); pointer y raises/lowers it.
+  let waterLine = mix(water, 1.0 - u.zoom_config.z, 0.5);
+  let yUp = 1.0 - uv.y;
+  let wet = smoothstep(waterLine, waterLine - 0.15, yUp);
   let sss = wet * exposed * (1.0 + bass * 0.8) * 0.4;
   col = col * (0.3 + exposed * 0.7) * weather;
   col = mix(col, vec3<f32>(0.15, 0.12, 0.08), erAmt * 0.5);
@@ -139,6 +161,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = mix(col, vec3<f32>(0.55, 0.22, 0.08), conc * sandBed * exposed * 0.7);
   let fossil = smoothstep(0.12, 0.0, length(fract(wuv * 15.0 + li * 4.0) - vec2<f32>(h12(vec2<f32>(li, 3.0)), h12(vec2<f32>(li, 4.0))))) * smoothstep(0.7, 1.0, h12(vec2<f32>(li, 2.0))) * exposed;
   col *= 1.0 - fossil * 0.4;
+  // Idea 6 — desert varnish: dark manganese drips hanging from each bed's top contact,
+  // stronger on faces the erosion channels exposed.
+  // Drips start where the bed face turns exposed (lf≈0.22) and run down-bed.
+  let dripLen = 0.25 + 0.5 * n2(vec2<f32>(wuv.x * 60.0, li * 3.7));
+  let dripCol = smoothstep(0.4, 0.7, n2(vec2<f32>(wuv.x * 150.0, li * 5.1)));
+  let dripRun = smoothstep(0.12, 0.22, lf) * max(1.0 - (lf - 0.22) / dripLen, 0.0);
+  let drip = clamp(dripCol * dripRun * (0.7 + erAmt), 0.0, 1.0);
+  col = col * (1.0 - drip * 0.7) + vec3<f32>(0.06, 0.035, 0.02) * drip;
+  // Idea 5 (gouge) — crushed fault breccia.
+  col = mix(col, vec3<f32>(0.07, 0.055, 0.045), gouge * 0.8);
+  // Idea 7 — pool reflection: below the water line, mirror the band colour of the
+  // reflected height with a ripple wobble (cheap band lookup, no full re-shade).
+  let mirrorUp = 2.0 * waterLine - 0.15 - yUp;
+  let wob = sin(uv.x * 90.0 + t * 1.7 + yUp * 40.0) * 0.006 * (1.0 + bass);
+  let lhR = (1.0 - mirrorUp) + wob + lnoise * 0.15 - throwSum;
+  let liR = floor(lhR * freq);
+  let lfR = fract(lhR * freq);
+  let lmR = fract(liR * 0.17 + h12(vec2<f32>(liR, 0.0)));
+  let reflCol = bandColor(lmR, era) * (0.45 + 0.4 * smoothstep(0.0, 0.25, min(lfR, 1.0 - lfR)));
+  col = mix(col, reflCol * vec3<f32>(0.75, 0.85, 0.95), wet * 0.55);
   col += vec3<f32>(0.08, 0.06, 0.04) * fossil;
   col += vec3<f32>(0.95, 0.48, 0.14) * quake * vein * (0.4 + treble);
   col += vec3<f32>(0.12, 0.32, 0.42) * exp(-pointerDist * 8.0) * held * (0.3 + bass * 0.4);
@@ -152,7 +194,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
   col = acesToneMap(col * 1.2);
-  let alpha = exposed * weather * (1.0 - haze * 0.5) + quake * 0.18 + held * exp(-pointerDist * 8.0) * 0.1;
+  let alpha = max(exposed * weather * (1.0 - haze * 0.5), wet * 0.55) + quake * 0.18 + held * exp(-pointerDist * 8.0) * 0.1;
   let a = clamp(alpha, 0.0, 1.0);
   textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(col * a, a));
   textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(mix(0.2, 0.9, depth * (1.0 - wet * 0.3)), 0.0, 0.0, 0.0));

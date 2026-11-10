@@ -3,14 +3,16 @@
   "name": "Alucinate HDR",
   "url": "shaders/alucinate-hdr.wgsl",
   "category": "advanced-hybrid",
-  "description": "When Alucinate (AI VJ) mode is active, this serves as a visual 'conductor's baton' — elegant, minimal music-reactive glyphs and a living spectrogram that represent the current vibe stack. The psychedelic warp + HDR bloom provides a rich atmospheric underlayer. Mouse acts as the conductor's hand.",
+  "description": "When Alucinate (AI VJ) mode is active, this serves as a visual 'conductor's baton' — elegant, minimal music-reactive glyphs and a living spectrogram that represent the current vibe stack. The psychedelic warp + HDR bloom provides a rich atmospheric underlayer. Mouse acts as the conductor's hand. LED-ladder bars with a clip zone; bass breathes the warp.",
   "features": [
     "ai-vj-conductor",
     "music-reactive-glyphs",
     "living-spectrogram",
     "hdr-atmosphere",
     "meta-visualizer",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "ai-vj",
@@ -63,5 +65,43 @@
       "mapping": "zoom_params.w",
       "description": "How strongly the conductor glyphs and spectrogram overlay the atmosphere"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Atmosphere Bloom",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Bloom Intensity",
+          "default": 0.6,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Tone Map Exposure",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Glyph Prominence",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

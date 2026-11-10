@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: cooperative-workgroup, histogram, CLAHE, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: highlight shoulder; exact-C temporal mix
+//  Upgraded: 2026-11-10
+//  Ideas: highlight shoulder; exact-C temporal mix; sub-bin CDF interpolation; honest edge-tile census; chroma compensation
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Real-Time Histogram Equalization via Workgroup Reduction
@@ -27,6 +27,7 @@ fn acesTonemap(x: vec3<f32>) -> vec3<f32> {
 }
 
 var<workgroup> localHistogram: array<atomic<u32>, 256>;
+var<workgroup> tileCount: atomic<u32>;
 
 @compute @workgroup_size(16, 16, 1)
 fn main(
@@ -79,15 +80,21 @@ fn main(
     for (var i = lidx; i < 256u; i = i + 256u) {
         atomicStore(&localHistogram[i], 0u);
     }
+    if (lidx == 0u) { atomicStore(&tileCount, 0u); }
     workgroupBarrier();
 
     // Read color and compute luma
     let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let luma = clamp(dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
-    let bin = u32(luma * 255.0);
+    let lumaBins = luma * 255.0;
+    let bin = min(u32(lumaBins), 255u);
+    let binFrac = lumaBins - f32(bin);
 
-    // Phase 2: Vote into histogram
-    atomicAdd(&localHistogram[bin], 1u);
+    // Phase 2: Vote into histogram — only lanes on real pixels (edge tiles are partial).
+    if (inBounds) {
+        atomicAdd(&localHistogram[bin], 1u);
+        atomicAdd(&tileCount, 1u);
+    }
     workgroupBarrier();
 
     // Phase 3: REAL CLAHE — clip each bin, redistribute the excess.
@@ -96,9 +103,10 @@ fn main(
     //   excess  = sum over all i of (count[i] - min(count[i], clipU))
     // The excess is spread uniformly over all 256 bins, so the
     // redistributed CDF at bin b additionally gains excess*(b+1)/256.
-    let totalPixels = 256u; // 16x16 workgroup
+    let totalPixels = max(atomicLoad(&tileCount), 1u); // true pixel count of this tile
     var cdfClip = 0u;
     var excess = 0u;
+    var ownClipped = 0u;
     for (var i = 0u; i < 256u; i = i + 1u) {
         let cnt = atomicLoad(&localHistogram[i]);
         let clipped = min(cnt, clipU);
@@ -106,8 +114,12 @@ fn main(
             cdfClip = cdfClip + clipped;
         }
         excess = excess + (cnt - clipped);
+        if (i == bin) { ownClipped = clipped; }
     }
-    let cdfNorm = (f32(cdfClip) + f32(excess) * f32(bin + 1u) / 256.0) / f32(totalPixels);
+    let cdfHi = (f32(cdfClip) + f32(excess) * f32(bin + 1u) / 256.0) / f32(totalPixels);
+    let cdfLo = (f32(cdfClip - ownClipped) + f32(excess) * f32(bin) / 256.0) / f32(totalPixels);
+    // Sub-bin interpolation: walk the CDF step continuously instead of snapping to the bin top.
+    let cdfNorm = mix(cdfLo, cdfHi, binFrac);
     let shoulder = smoothstep(0.88, 1.0, luma);
     let equalizedLuma = mix(clamp(cdfNorm, 0.0, 1.0), luma, shoulder);
 
@@ -121,6 +133,10 @@ fn main(
     if (colorPreserve > 0.5) {
         // Preserve hue, adjust luminance
         outColor = color.rgb * scaleMix;
+        // Chroma compensation: a big luma lift washes chroma out; ease it back around the new luma.
+        let newL = dot(outColor, vec3<f32>(0.299, 0.587, 0.114));
+        let chromaK = pow(clamp(scaleMix, 0.25, 4.0), -0.25);
+        outColor = vec3<f32>(newL) + (outColor - vec3<f32>(newL)) * mix(1.0, chromaK, step(1.0, scaleMix));
     } else {
         outColor = mix(color.rgb, color.rgb * scaleFactor, strengthEff);
     }

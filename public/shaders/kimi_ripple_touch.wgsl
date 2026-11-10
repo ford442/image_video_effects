@@ -1,32 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Kimi Ripple Touch
 //  Category: interactive-mouse
-//  Features: upgraded-rgba, depth-aware, audio-reactive
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Very High
 //  Scientific: Dispersive de Broglie-style wave packets use gravity-capillary group and phase velocities to spread interactive ripples with spectral interference.
-//  Upgraded: 2026-05-23
+//  Upgraded: 2026-11-10
+//  Ideas: caustic focusing from surface curvature; low-sun specular glint; crest foam memory in A.b
+//  A packing: raw sim state — r=h*0.5+0.5, g=v*0.5+0.5 (v = dh*8), b=crest foam, a=phase
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -40,6 +23,11 @@ fn clamp_coord(c: vec2<i32>, max_coord: vec2<i32>) -> vec2<i32> {
 
 fn load_signed(coord: vec2<i32>, max_coord: vec2<i32>) -> vec4<f32> {
   let s = textureLoad(dataTextureC, clamp_coord(coord, max_coord), 0);
+  // A zero-cleared history means "flat water", not h = v = -1 (HEAD decoded
+  // the cleared texture as a full trough: a dark-blue wash for seconds).
+  if (all(s == vec4<f32>(0.0))) {
+    return vec4<f32>(0.0);
+  }
   return vec4<f32>(s.r * 2.0 - 1.0, s.g * 2.0 - 1.0, s.b, s.a);
 }
 
@@ -81,6 +69,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let h = state.r;
   let v = state.g;
+  let foamPrev = state.b;
   let lap = left + right + up + down - 4.0 * h;
   let grad = vec2<f32>(right - left, down - up) * 0.5;
   let kLocal = clamp(6.0 + abs(lap) * 40.0 + treble * 28.0 + u.zoom_params.x * 12.0, 0.6, 72.0);
@@ -95,7 +84,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sigma0 = mix(0.02, 0.09, u.zoom_params.z);
   let amp0 = mix(0.04, 0.16, u.zoom_params.w);
 
-  for (var i: u32 = 0u; i < 50u; i = i + 1u) {
+  let rippleCount = min(u32(u.config.y), 50u);
+  for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let ripple = u.ripples[i];
     let src = vec2<f32>(ripple.x * aspect, ripple.y);
     let age = u.config.x - ripple.z;
@@ -103,15 +93,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   sourceTerm = sourceTerm + packet_source(pos, mouse, 0.0, k0 * 1.1, amp0 * 1.4 * mouseDown, sigma0 * 0.7, gravity, capillary);
-  let bassWave = packet_source(pos, vec2<f32>(0.5 * aspect, 0.5), max(u.config.x * 0.15, 0.0), 4.0 + bass * 5.0, 0.06 * bass, 0.18, gravity, capillary * 0.3);
+  // HEAD aged this packet by time*0.15 forever, so it died after ~a minute;
+  // re-launch it every 8 s instead.
+  let bassWave = packet_source(pos, vec2<f32>(0.5 * aspect, 0.5), fract(u.config.x * 0.125) * 1.2, 4.0 + bass * 5.0, 0.06 * bass, 0.18, gravity, capillary * 0.3);
   let trebleWave = packet_source(pos, mouse, 0.0, 22.0 + treble * 24.0, 0.04 * mouseDown + 0.03 * treble, 0.03, gravity * 0.6, capillary * 1.6);
   sourceTerm = sourceTerm + bassWave + trebleWave;
 
-  let prevHeight = h - v * (1.0 / 60.0);
-  let accel = lap * (0.25 * vg + 0.12 * vp) + sourceTerm - h * 0.018;
-  var hNext = 2.0 * h - prevHeight + accel * (1.0 / 3600.0);
-  hNext = hNext * 0.995;
-  let vNext = clamp((hNext - h) * 60.0, -1.0, 1.0);
+  // Rescue: HEAD scaled the whole update by 1/3600 (dt^2 with c ~0.2), so
+  // waves never left the pixel and h settled near 0.004 — a passthrough.
+  // Keep the dispersive local speed, but as a CFL-bounded c^2 per frame.
+  let prevHeight = h - v * (1.0 / 8.0);
+  let c2 = clamp(0.25 * vg + 0.12 * vp, 0.02, 0.45);
+  let accel = lap * c2 + sourceTerm * 0.12 - h * 0.002;
+  var hNext = 2.0 * h - prevHeight + accel;
+  hNext = clamp(hNext * 0.99, -1.0, 1.0);
+  let vNext = clamp((hNext - h) * 8.0, -1.0, 1.0);
 
   let kR = kLocal * 0.78;
   let kG = kLocal;
@@ -134,6 +130,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
   );
 
+  // Idea 1: caustic focusing — a convex crest (lap < 0) acts as a lens and
+  // concentrates sunlight on the photo below; troughs spread it thin.
+  let caustic = clamp(-lap * 30.0, -0.45, 1.4);
+  color = color * (1.0 + caustic) + vec3<f32>(0.9, 0.95, 1.0) * max(caustic - 0.6, 0.0) * 0.35;
+
+  // Idea 2: low-sun specular glint off the surface normal (grad of h);
+  // treble tightens the lobe into sparkles.
+  let nrm = normalize(vec3<f32>(-grad * 30.0, 1.0));
+  let halfV = normalize(normalize(vec3<f32>(-0.6, -0.8, 0.6)) + vec3<f32>(0.0, 0.0, 1.0));
+  let glint = pow(max(dot(nrm, halfV), 0.0), 36.0 + treble * 200.0) * (1.4 + treble);
+
   let phase = atan2(vNext, hNext + 1e-4);
   let slope = clamp(length(grad) * 18.0, 0.0, 1.0);
   let peak = smoothstep(0.01, 0.09, hNext);
@@ -144,6 +151,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   phaseColor = phaseColor + vec3<f32>(1.0, 0.55, 0.15) * slope * (0.5 + 0.5 * sin(phase + 1.2));
   color = mix(color, phaseColor, clamp(abs(hNext) * 4.0 + slope * 0.35, 0.0, 0.75));
   color = mix(color, base.rgb, 0.18);
+  color = color + vec3<f32>(1.0, 0.95, 0.85) * glint;
+
+  // Idea 3: crest foam memory — steep crests break into white foam that
+  // stays where the wave broke and fades over ~1 s (A.b, unread at HEAD).
+  let crest = smoothstep(0.05, 0.14, hNext) * smoothstep(0.1, 0.45, slope);
+  let foam = clamp(max(foamPrev * 0.965, crest), 0.0, 1.0);
+  color = mix(color, vec3<f32>(0.95, 0.98, 1.0), foam * 0.75);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   color = color * mix(0.75, 1.0, depth);
@@ -153,7 +167,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(dataTextureA, coord, vec4<f32>(
     clamp(hNext * 0.5 + 0.5, 0.0, 1.0),
     clamp(vNext * 0.5 + 0.5, 0.0, 1.0),
-    clamp(vg / 2.5, 0.0, 1.0),
+    foam,
     clamp((phase / PI) * 0.5 + 0.5, 0.0, 1.0)
   ));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * 0.85 + abs(hNext) * 0.35 + slope * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));
