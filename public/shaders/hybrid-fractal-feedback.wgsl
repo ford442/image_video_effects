@@ -124,7 +124,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // integrates the same step from the stored state; the sentinel guards the first frame / inherited C.
     let st0 = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
     let st1 = textureLoad(dataTextureC, vec2<i32>(1, 0), 0);
-    let stateOk = abs(st1.w - SENT) < 0.001;
+    // Own marker only: sentinel in .w, exact zeros in .yz, fract(time) in .x, and a sane (pos, vel) in
+    // texel (0,0) — another shader's leftover C (cyber-lens stores (mouse, time, 0.7371) there) fails it.
+    let stateOk = abs(st1.w - SENT) < 0.001 && st1.y == 0.0 && st1.z == 0.0 && st1.x >= 0.0 && st1.x < 1.0
+        && all(st0.xy > vec2<f32>(-0.5)) && all(st0.xy < vec2<f32>(1.5)) && all(abs(st0.zw) < vec2<f32>(4.0));
     var mouse = select(rawMouse, st0.xy, stateOk);
     var mouseVel = select(vec2<f32>(0.0), st0.zw, stateOk);
     let springDt = select(0.016, clamp(fract(time - st1.x), 0.001, 0.05), stateOk);
@@ -206,12 +209,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let trapD = trap * (0.5 / TRAP_R);
     let vein = exp(-trapD * VEIN_K);
     let veinShade = mix(1.0, 0.50 + 0.50 * vein, VEIN_ON);
-    // Bounded palette with per-region audio shimmer. plasmaBuffer is a single vec4 (HEAD indexed
-    // bins 1..8 out of range, which read as zero); each 4×4 region now listens to one of bass/mids/treble.
+    // Bounded palette with audio shimmer. plasmaBuffer is a single vec4 (HEAD indexed bins 1..8 out of
+    // range, which read as zero). The three voices (bass / mids / treble) now share the frame as soft
+    // diagonal bands, cosine weights that sum to 1 — HEAD's (x + 3y) % 3 was really x % 3, hard vertical
+    // columns with a 1-px luminance step. At audio 0 the picture is unchanged.
     let palettePhase = fract(fractalValue * PHI + trapD * 0.35 * VEIN_ON + time * mix(0.02, 0.18, colorCycle));
     let palette = 0.55 + 0.45 * cos(TAU * (palettePhase + vec3<f32>(0.00, 0.33, 0.67)));
-    let regionIdx = (u32(floor(uv.x * 4.0)) + u32(floor(uv.y * 4.0)) * 3u) % 3u;
-    let regionVoice = select(select(treble, mids, regionIdx == 1u), bass, regionIdx == 0u);
+    let bandPh = TAU * 1.5 * (uv.x + uv.y);
+    let regionVoice = (bass * (0.5 + 0.5 * cos(bandPh)) + mids * (0.5 + 0.5 * cos(bandPh - TAU / 3.0)) + treble * (0.5 + 0.5 * cos(bandPh + TAU / 3.0))) * (1.0 / 1.5);
     let fractalColor = palette * fractalValue * veinShade * (0.7 + bass * 0.35 + mids * 0.15 + regionVoice * 0.2 + clickGlow * 0.2);
 
     // The RGB-delay slider now samples distinct temporal offsets for red/blue.

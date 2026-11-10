@@ -69,3 +69,31 @@ Default-look (meanL HEAD → NEW, 192 px, P = 0.4,0.7,0.3,0.5): idle 0.323 → 0
 - Frame-rate dependence: neon-warp's afterglow decay and hybrid's alpha shed are per-frame (60 fps cadence), like HEAD's own history.
 - A foreign shader's C.a in 10..12 gives a brief neon-warp afterglow after a switch.
 - Search index not touched (coordinator).
+
+---
+
+## Round 2 — reviewer-C fixes (finished by the coordinator; fork D stopped responding mid-round)
+
+Measured by the coordinator on the committed files, SwiftShader, 576 px, alternating HEAD/NEW runs, default sliders. No real-GPU claims.
+
+### neon-warp
+| Reviewer finding | Fix | Measured now |
+|---|---|---|
+| A.a = 10 + mem collides with glitch-reveal / pixel-reveal / mosaic-reveal band | marker moved to `A.a = 13 + mem`, validity band 12.5–15.5 (`CA_BASE`); mem ≤ 2 keeps an rgba16float A at step 2⁻⁷ | `SEEDC=0.4,0.4,0.4,10.7` (a reveal-shader leftover): new vs HEAD 7.14 % px > 0.02, identical to the no-seed idle run (7.14 %) → no milky whiteout |
+| held-drag trail blows out ~half the frame | trail glow scaled by `CA_GAIN = 0.55`, mask opens at `CA_LO = 0.02` and saturates at `CA_HI = 0.30` | held-drag meanL 0.589 (HEAD) → 0.594; 0.0 % of pixels > 0.95 in HEAD and NEW |
+| idea 5 invisible for hover | free-moving unheld ember (0.15) now leaves a faint dim-red smear | hover run: 8.8 % px differ from HEAD vs 7.1 % idle → the smear adds ~1.6 % of the frame (faint by design); static pointer and bass alone still give none (a trail needs motion) |
+| idle ember 2.4× HEAD (idea 4) | `GD_MAX` 3.0 → 1.3 | idle meanL 0.521 → 0.522 |
+| decay per-frame, not per-second | disclosed in the header (trail length scales with fps like HEAD's 18 % history) | — |
+
+Cost: HEAD median 57 ms, NEW median 65 ms ≈ **1.15×** (5 alternating runs at 576 px).
+
+### hybrid-fractal-feedback
+| Reviewer finding | Fix | Measured now |
+|---|---|---|
+| cyber-lens leftover C misread as spring state | `stateOk` also requires `st1.y == st1.z == 0`, `st1.x ∈ [0,1)`, (pos, vel) in sane ranges | structural — not re-rendered with a cyber-lens seed |
+| audio shimmer was hard columns | three voices on soft diagonal cosine bands (weights sum to 1); audio 0 unchanged | structural + fork D's earlier renders |
+| frameMs 1.5–1.6× HEAD | R/B delay taps now read off the shared four-texel bilerp (8 fewer loads) | HEAD median 50 ms, NEW median 65 ms ≈ **1.30×** (5 alternating runs at 576 px) — at the limit, not under it |
+
+**OPEN (not fixed):** the RGB Channel Delay slider is live but weaker than at HEAD. Slider 0 → 1, 60 frames, held pointer, 576 px: HEAD 1.54 % of pixels > 0.02 (mean |Δ| 0.0012); NEW 0.23 % (mean |Δ| 0.0008). At the default 0.3 the effect is 0.02 % (HEAD 0.20 %), i.e. invisible. Cause: the delay reaches ~3.5 texels at 576 px but the shared-bilerp shortcut clamps to the four texels' range. Restoring full separate bilerps costs the 8 loads back (≈ the 1.5× that was trimmed). Left as an explicit owner trade-off: cost or slider strength.
+
+Gates on both files: precommit ✅, `verify-naga-wasm --files` ✅, `audit:dead-sliders` ✅ (0), `audit:extrabuffer` ✅ (0). The `wgsl_validation.json knownFailures.ratchet is 5 but ids lists 4` line that appears under precommit is the existing main failure.
