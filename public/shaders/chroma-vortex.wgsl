@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, audio-driven,
 //            spiral-sdf, multi-vortex, spectral-ramp, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-06-28, 2026-11-09
+//  Ideas: counter-rotating third vortex (a dipole with the orbiter); rotation-phase hue (ramp follows iso-rotation contours)
+//  A packing: pre-ACES colour RGBA (HEAD's); A is not read back
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -96,14 +98,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let c1 = mousePos;
     let c2 = vec2<f32>(0.5) + 0.35 * vec2<f32>(cos(time * 0.4 + bass * 2.0),
                                                  sin(time * 0.3 + mids * 2.0));
-    let centers = array<vec2<f32>, 2>(c1, c2);
-    let weights = array<f32, 2>(1.0, 0.6);
+    // ── Idea 1: counter-rotating third vortex ──
+    // Vortices come in dipoles: the orbiter gets an opposite-circulation
+    // partner on the far side of the frame centre (point reflection of c2).
+    let c3 = vec2<f32>(1.0) - c2;
+    let centers = array<vec2<f32>, 3>(c1, c2, c3);
+    let weights = array<f32, 3>(1.0, 0.6, 0.45);
+    let circulation = array<f32, 3>(1.0, 1.0, -1.0);
 
     var accColor = vec3<f32>(0.0);
     var accWeight = 0.0;
     var totalFactor = 0.0;
+    var accAngle = 0.0;
 
-    for (var i = 0; i < 2; i = i + 1) {
+    for (var i = 0; i < 3; i = i + 1) {
         let center = centers[i];
         let diff = uv - center;
         let dist = length(vec2<f32>(diff.x * aspect, diff.y));
@@ -112,10 +120,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let power = centerBias * 4.8 + 0.2;
         factor = pow(factor, power);
 
-        let angleBase = factor * twist;
-        let angleR = angleBase - spread * factor * 10.0;
+        let circ = circulation[i];
+        let angleBase = circ * factor * twist;
+        let angleR = angleBase - circ * spread * factor * 10.0;
         let angleG = angleBase;
-        let angleB = angleBase + spread * factor * 10.0;
+        let angleB = angleBase + circ * spread * factor * 10.0;
 
         let diffA = vec2<f32>(diff.x * aspect, diff.y);
         let rotR_sq = rotate(diffA, angleR);
@@ -138,6 +147,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let w = weights[i] * (0.3 + factor);
         accColor = accColor + col * w;
         accWeight = accWeight + w;
+        accAngle = accAngle + angleG * w;   // Idea 2: the rotation actually applied here
         totalFactor = totalFactor + factor * weights[i];
     }
 
@@ -149,9 +159,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                               8.0 + twist * 0.5);
     let spiralMask = smoothstep(0.15, 0.0, spiralDist);
 
-    // Spectral ramp driven by depth and vortex intensity
-    let ramp = spectralRamp(depth + totalFactor * 0.5 + time * 0.02);
-    color = mix(color, color * ramp + ramp * 0.2, spiralMask * 0.5 + totalFactor * 0.3);
+    // ── Idea 2: rotation-phase hue ──
+    // The ramp that colours the swirl was keyed to depth (flat on most photos)
+    // and intensity. Add the weighted rotation angle each pixel was actually
+    // turned by, so the rainbow bands run along iso-rotation contours of the
+    // swirl (and reverse hue direction inside the counter-rotating vortex).
+    let rotPhase = accAngle / max(accWeight, 1e-4) / TAU;
+    let ramp = spectralRamp(depth + totalFactor * 0.5 + time * 0.02 + rotPhase * 0.35);
+    color = mix(color, color * ramp + ramp * 0.2, clamp(spiralMask * 0.5 + totalFactor * 0.3, 0.0, 1.0));
 
     // Alpha: preserve input transparency while blending vortex intensity
     let finalAlpha = mix(baseColor.a, 1.0, clamp(totalFactor * 0.7, 0.0, 1.0));

@@ -11,6 +11,10 @@
 //  Connections pulse between nearby activated cells. Click ripples
 //  send activation waves propagating through the neural network.
 //  Alpha channel stores neuron activation level.
+//
+//  Upgraded: 2026-11-09
+//  Ideas: impulse packets running along the synapses (source = more active cell); Hebbian trace (A.g keeps lit wires)
+//  A packing: raw sim state — A = (activation, connection memory, 0, 0); C.r / C.g read back as exactly that
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -60,6 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Base activation from mouse proximity
   let mouseToNeuron = length((neuronCenter - mousePos) * vec2<f32>(aspect, 1.0));
   var activation = smoothstep(activationRadius, 0.0, mouseToNeuron);
+  let selfMouseAct = activation;   // pointer-only activation: decides the impulse direction on each wire
 
   // Mouse down boosts activation
   activation = activation * (1.0 + mouseDown * 2.0);
@@ -77,16 +82,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // Decay from previous state
-  let prevActivation = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).r;
+  // Decay from previous state (exact load: C holds raw activation, never filtered)
+  let prevState = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  let prevActivation = prevState.r;
   activation = max(activation, prevActivation * 0.95);
   activation = clamp(activation, 0.0, 2.0);
 
-  // Store activation
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(activation, 0.0, 0.0, 0.0));
-
   // Synapse connections: check neighboring neurons
   var connectionGlow = 0.0;
+  var connectionBase = 0.0;   // HEAD's glow, without the packets (what the Hebbian trace remembers)
+  var packetCore = 0.0;
   for (var dx: i32 = -1; dx <= 1; dx = dx + 1) {
     for (var dy: i32 = -1; dy <= 1; dy = dy + 1) {
       if (dx == 0 && dy == 0) { continue; }
@@ -104,9 +109,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let perpDist = length(toPixel - lineDirNorm * projection);
 
       let onLine = step(0.0, projection) * step(projection, lineLen) * smoothstep(0.003, 0.0, perpDist);
-      connectionGlow = connectionGlow + onLine * activation * neighborAct * synapseStrength * 2.0;
+      let lineEnergy = onLine * activation * neighborAct * synapseStrength * 2.0;
+      connectionBase = connectionBase + lineEnergy;
+
+      // ── Idea 1: impulse packets on the synapse ──
+      // A real synapse carries directed impulses. The more pointer-active end
+      // is the source (tie → fixed axis order, so both cells that draw the
+      // wire agree); s runs 0→1 from source to target and is continuous across
+      // the cell boundary. The packet rides Pulse Speed and is phase-seeded
+      // per wire so the network does not pulse in unison. It only brightens
+      // wires that are already lit (same lineEnergy gate as HEAD).
+      let isSource = (selfMouseAct > neighborAct) || (selfMouseAct == neighborAct && (f32(dx) * 1.0 + f32(dy) * 0.37) > 0.0);
+      let tAlong = clamp(projection / max(lineLen, 0.001), 0.0, 1.0);
+      let sAlong = select(1.0 - tAlong, tAlong, isSource);
+      let srcId = select(neighborId, neuronId, isSource);
+      let dirKey = select(-vec2<f32>(f32(dx), f32(dy)), vec2<f32>(f32(dx), f32(dy)), isSource);
+      let wireSeed = hash12(srcId * 0.1 + dirKey * 0.37 + 31.0);
+      let packetPos = fract(time * pulseSpeed * 0.3 + wireSeed);
+      let packetD = (sAlong - packetPos) * 7.0;
+      let packet = exp(-packetD * packetD) * smoothstep(0.0, 0.1, packetPos) * smoothstep(1.0, 0.9, packetPos);
+      connectionGlow = connectionGlow + lineEnergy * (1.0 + 2.0 * packet);
+      packetCore = packetCore + lineEnergy * packet;
     }
   }
+
+  // ── Idea 2: Hebbian trace ──
+  // Wires that fired together stay faintly lit: A.g keeps a slowly decaying
+  // max of the wire glow (exact C load), and is redrawn at a fraction of its
+  // value wherever the wire is not lit right now.
+  let lineMemory = clamp(max(min(connectionBase, 2.0), prevState.g * 0.99), 0.0, 2.0);
+  let traceGlow = lineMemory * 0.22 * (1.0 - clamp(connectionBase, 0.0, 1.0));
+  connectionGlow = connectionGlow + traceGlow;
 
   // Neuron body glow
   let neuronGlow = smoothstep(0.02, 0.0, distToNeuron) * activation;
@@ -127,7 +160,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Combine: neurons and synapses overlaid on image
   var finalColor = baseImage * 0.6;
   finalColor = finalColor + actColor * neuronGlow;
-  finalColor = finalColor + vec3<f32>(0.4, 0.8, 1.0) * connectionGlow;
+  finalColor = finalColor + vec3<f32>(0.4, 0.8, 1.0) * connectionGlow + vec3<f32>(0.9, 0.97, 1.0) * packetCore * 0.6;
 
   // Global network pulse
   let globalPulse = sin(time * pulseSpeed) * 0.5 + 0.5;
@@ -137,6 +170,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let alpha = clamp(activation * 0.5 + connectionGlow, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(activation, lineMemory, 0.0, 0.0));
 
   // Depth passthrough
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

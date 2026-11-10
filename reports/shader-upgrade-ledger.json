@@ -893,8 +893,17 @@
       "history": []
     },
     "fluid-grid-rgba-fluid": {
-      "hash": "fdc5ccfaae601a3e",
-      "history": []
+      "hash": "8a18d3ff1a344a75",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "8a18d3ff1a344a75",
+          "prev_hash": "fdc5ccfaae601a3e",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
+        }
+      ]
     },
     "fractal-boids-field-coupled": {
       "hash": "f89a371df03fae8d",
@@ -2739,8 +2748,17 @@
       ]
     },
     "neural-resonance": {
-      "hash": "f4215b0d7cd193e6",
-      "history": []
+      "hash": "bc8428256b905f61",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "bc8428256b905f61",
+          "prev_hash": "f4215b0d7cd193e6",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
+        }
+      ]
     },
     "parallax_depth_layers": {
       "hash": "922f3e87cefc87ee",
@@ -3424,7 +3442,7 @@
       ]
     },
     "gen-chromatic-vortex": {
-      "hash": "22fbf638182711b1",
+      "hash": "4e69484e9c0e2d2f",
       "history": [
         {
           "event": "upgraded",
@@ -3433,6 +3451,14 @@
           "prev_hash": "9a77e450eb37031e",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "4e69484e9c0e2d2f",
+          "prev_hash": "22fbf638182711b1",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
         }
       ]
     },
@@ -12312,7 +12338,7 @@
       ]
     },
     "conv-reaction-convolution": {
-      "hash": "884bfd3b134ef0e1",
+      "hash": "660bd7dc43868d03",
       "history": [
         {
           "event": "upgraded",
@@ -12321,6 +12347,14 @@
           "prev_hash": "5a1974a76a8a17f8",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "660bd7dc43868d03",
+          "prev_hash": "884bfd3b134ef0e1",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
         }
       ]
     },
@@ -15355,8 +15389,17 @@
       "history": []
     },
     "mouse-neural-dreamscape": {
-      "hash": "32c34282cd95806b",
-      "history": []
+      "hash": "e844c1cc19b45900",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "e844c1cc19b45900",
+          "prev_hash": "32c34282cd95806b",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
+        }
+      ]
     },
     "mouse-paint-splatter": {
       "hash": "983177cd6ba466d7",
@@ -15593,8 +15636,17 @@
       ]
     },
     "neural-nexus": {
-      "hash": "2b3ce2b220d6f57f",
-      "history": []
+      "hash": "e8ac80d72785eea1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "e8ac80d72785eea1",
+          "prev_hash": "2b3ce2b220d6f57f",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
+        }
+      ]
     },
     "night-vision-scope": {
       "hash": "9c767fd48c26b381",
@@ -15738,7 +15790,7 @@
       ]
     },
     "phosphor-magnifier": {
-      "hash": "2d43bbd11a7c6dd2",
+      "hash": "401784e8917ca83b",
       "history": [
         {
           "event": "upgraded",
@@ -15747,6 +15799,14 @@
           "prev_hash": "128876325f4c945d",
           "commit": "1008b956",
           "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "401784e8917ca83b",
+          "prev_hash": "2d43bbd11a7c6dd2",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
         }
       ]
     },
@@ -16153,8 +16213,17 @@
       ]
     },
     "scan-slice": {
-      "hash": "6c5a03b31102c9f4",
-      "history": []
+      "hash": "721aad733a982b3f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "721aad733a982b3f",
+          "prev_hash": "6c5a03b31102c9f4",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
+        }
+      ]
     },
     "scanline-sorting": {
       "hash": "aac0018fdd10faaa",
@@ -16362,8 +16431,17 @@
       ]
     },
     "spectral-distortion": {
-      "hash": "6368c1e9876a08c7",
-      "history": []
+      "hash": "68d0cc13e7f23d3b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "68d0cc13e7f23d3b",
+          "prev_hash": "6368c1e9876a08c7",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
+        }
+      ]
     },
     "spectral-smear": {
       "hash": "036053ba8a3bb773",
@@ -19215,7 +19293,7 @@
       ]
     },
     "chroma-vortex": {
-      "hash": "4fce1b1dbee273fa",
+      "hash": "6a13eb57861808df",
       "history": [
         {
           "event": "upgraded",
@@ -19224,6 +19302,14 @@
           "prev_hash": "06ac0c75372a76b5",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T00:24:40.115Z",
+          "hash": "6a13eb57861808df",
+          "prev_hash": "4fce1b1dbee273fa",
+          "commit": "b765c43e",
+          "note": "2026-11-09 neural-vortex-ten (sonnet) — agents/swarm-outputs/claude-2026-11-09-sonnet-neural-vortex-ten"
         }
       ]
     },

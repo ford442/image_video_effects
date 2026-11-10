@@ -14,6 +14,10 @@
 //      B offset rides plasmaBuffer[7].x so the chromatic tear shimmers
 //      across the spectrum instead of one global split.
 //  All per-pixel logic is branchless (select/step/smoothstep only).
+//
+//  Upgraded: 2026-11-09
+//  Ideas: Cauchy-ordered dispersion of the warp offsets (§12.2F); per-channel spectral lag from exact C history
+//  A packing: display RGBA (HEAD's); C read back as colour, so the lag is truthful
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -31,6 +35,14 @@ fn value_noise(st: vec2<f32>) -> f32 {
                    noise(i + vec2<f32>(1.0, 0.0)), u.x),
                mix(noise(i + vec2<f32>(0.0, 1.0)),
                    noise(i + vec2<f32>(1.0, 1.0)), u.x), u.y);
+}
+
+// Cauchy n(λ) = 1 + B/λ² at 650 / 550 / 450 nm, relative to green: red bends
+// least, blue most — a wavelength-ordered scale instead of equal-and-opposite.
+fn cauchyScale(b: f32) -> vec3<f32> {
+    let lam = vec3<f32>(0.650, 0.550, 0.450);
+    let n = vec3<f32>(1.0) + vec3<f32>(b) / (lam * lam);
+    return n / n.y;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -122,9 +134,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let sepR = separation * (0.6 + binR * 0.8);
   let sepB = separation * (0.6 + binB * 0.8);
 
-  let offR = vec2<f32>(nR - 0.5, value_noise(uv * warpScale + 100.0) - 0.5) * warpStr + vec2<f32>(sepR, 0.0);
+  // ── Idea 1: Cauchy-ordered dispersion (§12.2F) ──
+  // The three warp fields keep their independent noise taps, but the amplitude
+  // each channel is bent by now follows n(λ): red least, blue most. The
+  // dispersion constant B rides RGB Separation (0 → all channels equal).
+  let disp = cauchyScale(separation * 6.0);
+  let offR = vec2<f32>(nR - 0.5, value_noise(uv * warpScale + 100.0) - 0.5) * warpStr * disp.x + vec2<f32>(sepR, 0.0);
   let offG = vec2<f32>(nG - 0.5, value_noise(uv * warpScale + 200.0) - 0.5) * warpStr;
-  let offB = vec2<f32>(nB - 0.5, value_noise(uv * warpScale + 300.0) - 0.5) * warpStr - vec2<f32>(sepB, 0.0);
+  let offB = vec2<f32>(nB - 0.5, value_noise(uv * warpScale + 300.0) - 0.5) * warpStr * disp.z - vec2<f32>(sepB, 0.0);
 
   let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + offR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + offG, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
@@ -135,7 +152,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let warpMag = length(offR - offB);
   let luma = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
   let alpha = clamp(warpMag * 8.0 + separation * 6.0 + clickBoost * 4.0 + luma * 0.2, 0.0, 1.0);
-  let finalColor = vec4<f32>(r, g, b, alpha);
+
+  // ── Idea 2: per-channel spectral lag ──
+  // The feature tag says "temporal-persistence" but C was never read. A is the
+  // display colour, so C read back is the previous displayed frame: low-pass
+  // each channel against it at its own rate (red fastest, blue slowest — like
+  // a three-chip camera / phosphor lag), amount riding RGB Separation, so
+  // motion leaves a red→blue colour ramp behind it. Separation 0 = no lag.
+  let hist = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).rgb;
+  let lag = vec3<f32>(0.14, 0.26, 0.40) * clamp(separation * 12.0, 0.0, 1.0);
+  let finalColor = vec4<f32>(mix(vec3<f32>(r, g, b), hist, lag), alpha);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 

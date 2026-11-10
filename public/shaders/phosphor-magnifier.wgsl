@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: per-channel phosphor persistence from exact C; brightness-driven beam blooming across the aperture grille
+//  Upgraded: 2026-10-04, 2026-11-09
+//  Ideas: per-channel phosphor persistence from exact C; brightness-driven beam blooming across the aperture grille; vertical beam-spot growth that fills the scan-line gaps; held-pointer magnet bending the raster
 //  A packing: ACES display RGBA (C read back as the phosphor afterimage)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -66,7 +66,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depthMag = mix(1.0, 1.0 + depth * 2.5, lensMask);
 
   let barrel = centered * (1.0 + 0.18 * lensMask * length(centered) * length(centered));
-  let displaced = barrel / vec2<f32>(aspect, 1.0) + mouse;
+  // ── Idea 4: held-pointer magnet bends the raster ──
+  // HEAD already treats a held pointer as degauss. The other half of that
+  // story is the magnet itself: a magnetised tube shows a wavy, S-bent raster.
+  // While held, the picture inside the lens is displaced by a slow travelling
+  // wave (graded by heldPressure², so it is strongest at the cursor and zero at
+  // the lens rim; zero when not held). Scaled by zoom so it survives the
+  // divide-by-zoom below.
+  let magnet = heldPressure * heldPressure;
+  let bend = vec2<f32>(0.5 * sin(centered.y * 13.0 - time * 1.3), sin(centered.x * 16.0 + time * 1.7)) * 0.010 * zoomLevel * magnet;
+  let displaced = barrel / vec2<f32>(aspect, 1.0) + mouse + bend;
 
   let caStrength = 0.004 * lensMask * zoomLevel;
   let sampleR = clamp(displaced + vec2<f32>(caStrength, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -109,7 +118,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let aurora = 0.5 + 0.5 * cos(TAU * (vec3<f32>(snappedG.y * 6.0 + time * 0.3) + vec3<f32>(0.0, 0.33, 0.67)));
   let rasterBeam = exp(-abs(fract(snappedG.y - time * 0.18) - 0.5) * 36.0);
   let degauss = sin(dist * 90.0 - time * 5.0) * (heldPressure + clickShell) * 0.18;
-  let scanLine = 0.55 + 0.45 * sin(snappedG.y * dims.y * 0.55 + time * 6.0 + degauss * 9.0);
+  // ── Idea 3: vertical beam-spot growth ──
+  // HEAD's beam blooming widens a spot sideways; the same beam current also
+  // grows the spot vertically until the dark gap between two scan lines
+  // fills in. Bright content (beamLuma) lifts the scan-line trough toward full
+  // brightness; dark content keeps HEAD's full-depth scan lines.
+  let spotFill = 0.30 * smoothstep(0.5, 1.0, beamLuma);
+  let scanLine = mix(0.55 + 0.45 * sin(snappedG.y * dims.y * 0.55 + time * 6.0 + degauss * 9.0), 1.0, spotFill);
   let scanBeat = 1.0 + audio.z * 0.3 * sin(snappedG.y * 40.0 + time * 12.0);
   var phosphor = sampleColor * mask * excitation * scanLine * scanBeat;
   phosphor = phosphor + aurora * runner * lensMask * 0.08;

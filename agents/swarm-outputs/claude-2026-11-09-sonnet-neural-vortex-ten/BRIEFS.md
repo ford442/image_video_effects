@@ -255,3 +255,23 @@ A PACKING: ACES display RGBA (HEAD's); C read back as the afterimage.
 ROWS: none.
 ```
 
+---
+## Amendments found while implementing (cards above are the pre-edit originals; these are the changes, with the evidence)
+
+**A1 — fluid-grid-rgba-fluid: a third idea was needed (stirring).** HEAD's only pointer force is radial
+(`normalize(uv − mouse) · −0.3`) and the ripple injection is radial too — both curl-free. With vorticity ≈ 0, the carded
+confinement and tile-spin rendered identical to HEAD in the harness (meanL 0.4333 vs 0.4329). Added **Idea 1: tangential
+stirring** (same falloff and hold gate as the radial force, ×0.2), and renumbered confinement → Idea 2 and spun tiles →
+Idea 3. Still 3 ideas, all in the solver's own vocabulary.
+
+**A2 — phosphor-magnifier: the carded ideas were re-picked.** `shadowMask(snappedG, …)` is evaluated at the *snapped*
+coordinate, so `fract(snapped·pixelSize) ≈ 0` and the mask is (0,1,0) everywhere. R and B are multiplied by 0, so HEAD's
+lens is a green-phosphor look; the per-channel R/B sampling (and so the carded edge-growing convergence error, and HEAD's
+own "beam blooming across the grille") has no visible effect. Not repaired (un-greening the lens would change the picture's
+identity) — **reported for the coordinator / real-GPU QA**. The two replacement ideas act on live paths: **Idea 3 vertical
+beam-spot growth** (scan-line gaps fill with beam current) and **Idea 4 held-pointer magnet bending the raster** (the other
+half of HEAD's held = degauss story). Numbering continues HEAD's 1–2.
+
+**A3 — ACES policy line.** The policy above said neural-additive composites would tone-map the additive layer only. On
+inspection a low-end-preserving shoulder is a look change in its own right, so neural-nexus and mouse-neural-dreamscape
+keep HEAD's output stage (no tone-map), like the photo resamplers. ACES stays where HEAD has it.
