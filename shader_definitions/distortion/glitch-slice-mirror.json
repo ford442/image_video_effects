@@ -2,7 +2,7 @@
   "id": "glitch-slice-mirror",
   "name": "Glitch Slice Mirror",
   "url": "shaders/glitch-slice-mirror.wgsl",
-  "description": "Mirrors the image at a sprung cursor seam with fp128 integration, racing fracture packets, capped click slice bands, regional FFT blocks, and ACES composite.",
+  "description": "Mirrors the image at the cursor seam with fp128 integration, racing fracture packets, capped click slice bands, per-block tears with macroblock hold, interlace comb at the seam, and ACES composite.",
   "workgroup_size": [
     16,
     16,
@@ -14,7 +14,6 @@
     "upgraded-rgba",
     "click-reactive",
     "held-drag",
-    "spring-cursor",
     "aces-tone-map"
   ],
   "tags": [

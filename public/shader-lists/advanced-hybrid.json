@@ -126,14 +126,16 @@
     "name": "Alucinate HDR",
     "url": "shaders/alucinate-hdr.wgsl",
     "category": "advanced-hybrid",
-    "description": "When Alucinate (AI VJ) mode is active, this serves as a visual 'conductor's baton' — elegant, minimal music-reactive glyphs and a living spectrogram that represent the current vibe stack. The psychedelic warp + HDR bloom provides a rich atmospheric underlayer. Mouse acts as the conductor's hand.",
+    "description": "When Alucinate (AI VJ) mode is active, this serves as a visual 'conductor's baton' — elegant, minimal music-reactive glyphs and a living spectrogram that represent the current vibe stack. The psychedelic warp + HDR bloom provides a rich atmospheric underlayer. Mouse acts as the conductor's hand. LED-ladder bars with a clip zone; bass breathes the warp.",
     "features": [
       "ai-vj-conductor",
       "music-reactive-glyphs",
       "living-spectrogram",
       "hdr-atmosphere",
       "meta-visualizer",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "ai-vj",
@@ -1246,12 +1248,13 @@
     "id": "block-distort-em",
     "name": "Block Distort EM",
     "url": "shaders/block-distort-em.wgsl",
-    "description": "Grid blocks pushed by mouse proximity, distorted by electromagnetic field lines. Electric field displaces UVs, magnetic field rotates hue. Click ripples spawn orbiting secondary charges.",
+    "description": "Grid blocks pushed by mouse proximity, distorted by electromagnetic field lines. Electric field displaces UVs, magnetic field rotates hue. Click ripples spawn orbiting secondary charges. Blocks twist with the magnetic term and shade as hinged facets.",
     "features": [
       "mouse-driven",
       "field-simulation",
       "chromatic",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3421,7 +3424,7 @@
     "id": "datamosh-brush-diffusion",
     "name": "Datamosh Brush Diffusion",
     "url": "shaders/datamosh-brush-diffusion.wgsl",
-    "description": "Perona-Malik anisotropic diffusion merged with datamosh brush: spring cursor heat source, held paint freeze, capped click ripples, exact C neighbor loads, oil-slick palette, and audio.",
+    "description": "Perona-Malik anisotropic diffusion merged with datamosh brush: gliding cursor heat source, motion-carry smear with chroma bleed, held paint freeze, capped click ripples, exact C loads, oil-slick palette, and audio.",
     "features": [
       "advanced-hybrid",
       "datamosh",
@@ -3432,7 +3435,8 @@
       "click-ripples",
       "held-drag",
       "aces-tone-map",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,
@@ -3835,7 +3839,7 @@
     "id": "digital-reveal-guided",
     "name": "Digital Reveal Guided",
     "url": "shaders/digital-reveal-guided.wgsl",
-    "description": "Matrix rain reveals image through depth-guided filter: spring brush, held widen, glyph geometry, capped click ripples, exact C trail mask, and audio density.",
+    "description": "Matrix rain reveals image through depth-guided filter: spring brush, held widen, glyph geometry, capped click ripples, exact C trail mask, and audio density. Rain falls as head and tail columns; the reveal front steps in glyph cells.",
     "tags": [
       "mouse-driven",
       "digital-reveal",
@@ -3852,7 +3856,8 @@
       "click-ripples",
       "held-drag",
       "aces-tone-map",
-      "temporal-feedback"
+      "temporal-feedback",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,
@@ -8684,14 +8689,15 @@
     "id": "retro-phosphor-hdr",
     "name": "Retro Phosphor HDR",
     "url": "shaders/retro-phosphor-hdr.wgsl",
-    "description": "Authentic CRT phosphor simulation enhanced with HDR bloom chain. RGB triads, barrel distortion, scanlines, and temporal persistence combine with exposure-based bloom and ACES tone mapping for dramatic glowing phosphors.",
+    "description": "Authentic CRT phosphor simulation enhanced with HDR bloom chain. RGB triads, barrel distortion, scanlines, and temporal persistence combine with exposure-based bloom and ACES tone mapping for dramatic glowing phosphors. Energy-conserving faceplate bloom and a rolling hum bar.",
     "features": [
       "advanced-hybrid",
       "crt-phosphor",
       "hdr-bloom",
       "temporal-persistence",
       "audio-reactive",
-      "randomization-safe"
+      "randomization-safe",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8748,7 +8754,7 @@
     "id": "retro-phosphor-stipple",
     "name": "Retro Phosphor Stipple",
     "url": "shaders/retro-phosphor-stipple.wgsl",
-    "description": "CRT phosphor simulation with blue-noise stippled dot triads. Authentic barrel distortion, scanlines, and temporal persistence combined with perceptually optimal blue-noise dot placement for each RGB channel.",
+    "description": "CRT phosphor simulation with blue-noise stippled dot triads. Authentic barrel distortion, scanlines, and temporal persistence combined with perceptually optimal blue-noise dot placement for each RGB channel. P22 per-channel phosphor persistence and beam-width scanlines.",
     "features": [
       "advanced-hybrid",
       "crt-simulation",
@@ -9961,7 +9967,7 @@
     "id": "vortex-warp-coupled",
     "name": "Vortex Warp Coupled",
     "url": "shaders/vortex-warp-coupled.wgsl",
-    "description": "Catalog entry for Vortex Warp Coupled.",
+    "description": "Cursor twirl coupled to a viscous dye/velocity field: motion dye wake, vorticity confinement, dye meniscus lens.",
     "tags": [
       "vortex-warp",
       "fluid-simulation",

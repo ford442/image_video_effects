@@ -10448,7 +10448,7 @@
     "id": "rgb-shift-brush",
     "name": "RGB Shift Brush",
     "url": "shaders/rgb-shift-brush.wgsl",
-    "description": "Held-pointer RGB separation brush with exact advected mask history, rapid spectral ribbons, stylized channel transmission, three-band audio response, and bounded click fronts. A slower long-wave tail mask leaves a lingering blue fringe behind the trail, and dense trail regions open into a seven-tap prism fan.",
+    "description": "Held-pointer RGB separation brush with exact advected mask history, rapid spectral ribbons, stylized channel transmission, three-band audio response, and bounded click fronts. A slower long-wave tail mask leaves a lingering blue fringe behind the trail, and dense trail regions open into a seven-tap prism fan. Stroke rims disperse along the mask normal; fan taps follow Cauchy 1/λ² spacing.",
     "params": [
       {
         "id": "shift",
@@ -11884,10 +11884,10 @@
     "id": "synthwave-grid-warp",
     "name": "Synthwave Grid Warp",
     "url": "shaders/synthwave-grid-warp.wgsl",
-    "description": "3D perspective-projected synthwave floor with atmospheric fog, sun, and mountain silhouettes.",
+    "description": "3D perspective-projected synthwave floor with atmospheric fog, sun, and mountain silhouettes. Streaming grid, slatted sun, ground swell.",
     "features": [
-      "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
