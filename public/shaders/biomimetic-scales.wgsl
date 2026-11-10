@@ -3,31 +3,20 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
+//  Upgraded: 2026-11-10
+//  Ideas: circuli growth ridges on each scale; imbricate contact shadow from the scale above
+//  A packing: raw lighting terms (diff, spec, 1, alpha); display RGB in writeTexture only
 //  Chunks From: biomimetic-scales
 //  Created: 2026-05-30
 //  By: Copilot CLI
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=ScaleSize, y=Roughness, z=ReactionRadius, w=LiftStrength
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ResX, z=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=ScaleSize, y=Roughness, z=ReactionRadius, w=LiftStrength
-  ripples: array<vec4<f32>, 50>,
-};
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -82,7 +71,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Correct back to UV space for distance check
             // cellCenter is in "Aspect Corrected" UV space (0..aspect, 0..1) approx
 
-            let distVec = scaleUV - (cellCenter * gridSize); // vector from center to pixel in grid units
+            // RESCUE: HEAD subtracted a grid-unit centre from a UV-unit position (`scaleUV`),
+            // so only ~0.3% of pixels ever landed inside a scale. Both sides are in grid units now.
+            let distVec = baseGrid - (cellCenter * gridSize); // vector from center to pixel in grid units
             let dist = length(distVec);
 
             // Scale radius. Overlap required.
@@ -102,7 +93,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
                     // Calculate Normal
                     // Base curvature (dome)
-                    let localN = normalize(vec3<f32>(distVec.x, distVec.y, sqrt(max(0.0, radius*radius - dist*dist))));
+                    // ── Idea 1: circuli growth ridges ───────────────────────────
+                    // Fish scales carry concentric growth rings. They tilt the dome
+                    // normal along the radial direction; the ridge amplitude rides
+                    // Roughness (rougher scales read more ridged) and fades toward
+                    // the smooth centre so the nucleus stays clean.
+                    let dirR = distVec / max(dist, 0.0001);
+                    let ridge = sin(dist * 40.0) * smoothstep(0.08, 0.24, dist);
+                    let ridgeAmp = 0.05 + roughness * 0.12;
+                    let localN = normalize(vec3<f32>(distVec + dirR * ridge * ridgeAmp, sqrt(max(0.0, radius*radius - dist*dist))));
 
                     // Mouse Interaction
                     // Vector from Mouse to Scale Center
@@ -125,10 +124,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     if (hit) {
+        // ── Idea 2: imbricate contact shadow ────────────────────────────
+        // Scales on rows above the visible one (higher index = drawn on top) do not
+        // contain this pixel, but each casts a soft shadow just outside its rim,
+        // displaced away from the light (light comes from the upper left).
+        var contact = 0.0;
+        for (var sy = -1; sy <= 1; sy++) {
+            for (var sx = -1; sx <= 1; sx++) {
+                let ci = baseCell + vec2<f32>(f32(sx), f32(sy));
+                if (ci.y > maxLayer) {
+                    var ccx = ci.x + 0.5;
+                    if (abs(ci.y % 2.0) >= 0.5) { ccx += 0.5; }
+                    let casterDist = length(baseGrid - (vec2<f32>(ccx, ci.y + 0.5) + vec2<f32>(0.10, 0.10)));
+                    contact = max(contact, smoothstep(0.65 + 0.24, 0.65, casterDist));
+                }
+            }
+        }
+
         // Lighting
         let lightDir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
-        let diff = max(dot(finalNormal, lightDir), 0.0);
-        let spec = pow(max(dot(reflect(-lightDir, finalNormal), vec3<f32>(0.0, 0.0, 1.0)), 0.0), 20.0);
+        let diff = max(dot(finalNormal, lightDir), 0.0) * (1.0 - 0.55 * contact);
+        let spec = pow(max(dot(reflect(-lightDir, finalNormal), vec3<f32>(0.0, 0.0, 1.0)), 0.0), 20.0) * (1.0 - contact);
 
         // Sampling
         // Use normal to refract sample
@@ -141,7 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Add subtle edge darkening for scale definition
         // (Implicit in the curvature normal, but we can boost it)
 
-        finalColor = texColor * lighting;
+        finalColor = acesToneMap(max(texColor * lighting, vec3<f32>(0.0)));
         let alpha = clamp(0.22 + diff * 0.25 + spec * 0.2 + bass * 0.08, 0.1, 0.92);
         let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r + spec * 0.05, 0.0, 1.0);
         textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));

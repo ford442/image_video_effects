@@ -4,32 +4,25 @@
 //  Features: woven-fibers, mouse-pluck, audio-reactive, signal-pulse, upgraded-rgba
 //  Complexity: Medium
 //  Phase B / Interactivist
+//  Upgraded: 2026-11-10
+//  Ideas: chromatic pulse dispersion (§12.2F Cauchy); macrobend leakage at plucked bends
+//  A packing: display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Density, y=Glow, z=Force, w=Fray
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Density, y=Glow, z=Force, w=Fray
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
 const PHI: f32 = 1.61803398874989484820;
+
+// Cauchy group-delay vector n(λ)/n(550nm) - 1 at 650/550/450 nm (λ in µm).
+// Normal dispersion: red is the faster group (negative), blue the slower.
+fn cauchyDelay(b: f32) -> vec3<f32> {
+    let lam = vec3<f32>(0.650, 0.550, 0.450);
+    let n = vec3<f32>(1.0) + vec3<f32>(b) / (lam * lam);
+    return n / n.y - vec3<f32>(1.0);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -114,8 +107,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let weavePhase = uv.y * 20.0 + time * 2.0 * (1.0 + bass * 0.3) + stripIndex * PHI;
     let weaveAmt = sin(weavePhase) * 0.005 * fray;
     var offsetX = select(-weaveAmt, weaveAmt, isOdd);
-    offsetX += pluck * sin((uv.x - mouse.x) * 50.0 + time * 8.0) * 0.02;
-    offsetX += clickPluck * sin((uv.x - mouse.x) * 70.0 - time * 10.0) * 0.025 * force;
+    let pluckWave = sin((uv.x - mouse.x) * 50.0 + time * 8.0);
+    let clickWave = sin((uv.x - mouse.x) * 70.0 - time * 10.0);
+    offsetX += pluck * pluckWave * 0.02;
+    offsetX += clickPluck * clickWave * 0.025 * force;
+
+    // ── Idea 2: macrobend leakage ───────────────────────────────────
+    // Light escapes the core where a fibre is bent hardest, long wavelengths
+    // first. The bends above are sinusoids, so |d2(offsetX)/dx2| is closed
+    // form: amplitude * k^2 * |sin|. Normalised so a full pluck reads ~1.
+    let bendCurvature = pluck * 0.02 * 2500.0 * abs(pluckWave)
+                      + clickPluck * 0.025 * force * 4900.0 * abs(clickWave);
+    let bendLeak = clamp(bendCurvature / 60.0, 0.0, 1.0);
 
     // Mouse repulsion (force param)
     let distVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
@@ -134,19 +137,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Signal pulse traveling along fiber — palette-mapped, golden-spaced per strip
     let pulsePos = fract(time * 0.4 + stripIndex * (PHI - 1.0));
-    let pulseDist = abs(uv.x - pulsePos);
-    let pulseGlow = exp(-pulseDist * 30.0) * (0.4 + bass * 0.6);
+    // ── Idea 1: chromatic pulse dispersion (§12.2F Cauchy) ──────────
+    // The packet has travelled `pulsePos` from the launch edge. Cauchy group
+    // delay slides the R/G/B components apart in proportion to that distance
+    // (red leads, blue trails) and the packet broadens as sqrt(distance),
+    // with a sharp leading edge and a longer trailing tail.
+    let channelPos = pulsePos - cauchyDelay(0.02) * pulsePos;
+    let spread = 1.0 + 1.6 * sqrt(pulsePos);
+    let pulseD = uv.x - channelPos;
+    let pulseRate = select(vec3<f32>(30.0 * 0.6), vec3<f32>(30.0 * 1.4), pulseD > vec3<f32>(0.0)) / spread;
+    let pulseRGB = exp(-abs(pulseD) * pulseRate)
+                 * ((0.4 + bass * 0.6) * (1.25 / sqrt(spread)));
+    let pulseGlow = pulseRGB.y;
     let fiberBin = (u32(abs(stripIndex)) % 8u) + 1u;
     let fiberVoice = plasmaBuffer[fiberBin].x;
     let pulseColor = mix(vec3<f32>(0.15, 0.65, 1.0), vec3<f32>(1.0, 0.35, 0.8), fract(stripIndex * (PHI - 1.0)));
 
     // Add fiber glow + signal pulse + cyan tint baseline
+    let bendCladding = mix(0.4, 1.0, smoothstep(0.3, 1.0, edge));
     let glowColor = vec3<f32>(0.2, 0.8, 1.0) * glowFactor * lum
-                  + pulseColor * (pulseGlow + clickPluck * 0.8) * glow * (1.0 + fiberVoice * 0.35);
+                  + pulseColor * (pulseRGB + vec3<f32>(clickPluck * 0.8)) * glow * (1.0 + fiberVoice * 0.35)
+                  + vec3<f32>(1.0, 0.38, 0.12) * bendLeak * bendCladding * glow * (0.35 + 0.65 * force);
     col = vec4<f32>(col.rgb + glowColor, col.a);
 
     // Semantic alpha: glow + pluck + signal pulse drive fiber compositing weight
-    let alpha = clamp(0.5 + glowFactor * 0.3 + pulseGlow * 0.4 + max(pluck, clickPluck) * 0.2 + lum * 0.1, 0.0, 1.0);
+    let alpha = clamp(0.5 + glowFactor * 0.3 + pulseGlow * 0.4 + max(pluck, clickPluck) * 0.2 + bendLeak * 0.1 + lum * 0.1, 0.0, 1.0);
 
     let peak = max(max(col.r, col.g), col.b);
     let finalRGB = max(col.rgb, vec3<f32>(0.0)) * min(1.0, 1.8 / max(peak, 0.001));

@@ -1,27 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Hyperbolic Crystal Symbiosis v6 — Strict Constraints
+//  Upgraded: 2026-11-10
+//  Ideas: (1) hyperbolic echo — a Poincaré-style r/(1-r²) remap repeats the
+//         crystal cluster in shrinking tiers toward the rim; (2) cut-gem
+//         facets — angular quantisation around each blob gives flat facet
+//         normals with a moving key light and sparkle; (3) click fronts
+//         now read real ripples (old loop gated on ripples.w, always 0).
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -99,20 +86,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let d2 = length(kuv - vec2<f32>(0.7, 0.4 - springBass * 0.1));
   let d3 = length(kuv - vec2<f32>(0.5, 0.7));
   
-  let d = smin(smin(d1, d2, 0.2), d3, 0.2 + p1 * 0.3);
+  var d = smin(smin(d1, d2, 0.2), d3, 0.2 + p1 * 0.3);
+
+  // Idea 1: hyperbolic echo tier — compress radius toward the disk rim.
+  let hc = uv - vec2<f32>(0.5);
+  let hr = length(hc);
+  let hr2 = clamp(hr * 1.8, 0.0, 0.97);
+  let hyp = hr2 / max(1.0 - hr2 * hr2, 0.03);
+  let huv = vec2<f32>(0.5) + normalize(hc + vec2<f32>(1e-5)) * fract(hyp * 0.5) * 0.5;
+  let kuv2 = kaleido(huv, segs);
+  let dh = min(min(length(kuv2 - vec2<f32>(0.3, 0.3)), length(kuv2 - vec2<f32>(0.7, 0.4))), length(kuv2 - vec2<f32>(0.5, 0.7)));
+  let tierFade = smoothstep(0.15, 0.45, hr);
+  d = smin(d, dh + 0.03, 0.12 * tierFade + 0.001) * tierFade + d * (1.0 - tierFade);
   let geometryEdge = smoothstep(0.1, 0.08, d);
 
   // Capped click fronts
   var clickFronts = 0.0;
-  for (var i: i32 = 0; i < 10; i++) {
+  let rippleCount = min(u32(u.config.y), 10u);
+  for (var i = 0u; i < rippleCount; i++) {
     let r = u.ripples[i];
-    if (r.w > 0.0) {
-      let age = time - r.z;
-      if (age > 0.0 && age < 3.0) {
-        let dist = length(uv - r.xy);
-        let wave = sin(max(0.0, age * 15.0 - dist * 40.0));
-        clickFronts += wave * exp(-age * 2.0) * r.w;
-      }
+    let age = time - r.z;
+    if (age > 0.0 && age < 3.0) {
+      let dist = length(uv - r.xy);
+      let wave = sin(max(0.0, age * 15.0 - dist * 40.0));
+      clickFronts += wave * exp(-age * 2.0);
     }
   }
   clickFronts = clamp(clickFronts, -1.0, 1.0); // Capped
@@ -122,6 +119,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let color2 = vec3<f32>(0.5 + 0.5 * sin(phase + vec3<f32>(1.0, 3.0, 5.0)));
   
   var rawColor = mix(color1, color2, geometryEdge);
+
+  // Idea 2: cut-gem facets — quantised angle around the nearest blob centre.
+  var cdir = kuv - vec2<f32>(0.3, 0.3 + heldPointer * 0.1);
+  if (d2 < d1 && d2 < d3) { cdir = kuv - vec2<f32>(0.7, 0.4 - springBass * 0.1); }
+  if (d3 < d1 && d3 < d2) { cdir = kuv - vec2<f32>(0.5, 0.7); }
+  let facetCount = 5.0 + floor(p3 * 7.0);
+  let fa = (floor(atan2(cdir.y, cdir.x) / TAU * facetCount) + 0.5) / facetCount * TAU;
+  let facetN = normalize(vec3<f32>(cos(fa), sin(fa), 1.2));
+  let keyL = normalize(vec3<f32>(cos(time * 0.4), sin(time * 0.4), 1.0));
+  let facetLit = max(dot(facetN, keyL), 0.0);
+  let sparkle = pow(facetLit, 24.0) * (1.0 + treble * 2.0);
+  rawColor *= mix(1.0, 0.55 + facetLit * 0.7, geometryEdge);
+  rawColor += vec3<f32>(sparkle) * geometryEdge * 0.6;
   
   // Mix audio bands visually
   rawColor += vec3<f32>(bass, mid, treble) * 0.2 * clickFronts;
