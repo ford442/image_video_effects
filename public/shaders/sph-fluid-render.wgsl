@@ -7,7 +7,12 @@
 //    · chrome rim        — a Fresnel edge and a specular highlight from a fixed light: liquid mercury
 //    · swirl iridescence — the vorticity the force pass stamped shifts the tint, thin-film style
 //    · foam front        — fast-moving surface particles whiten into spray
+//    · caustic focus     — LoG of the same gather: convex drops focus light into pools on the image
+//    · contact shadow    — coverage resampled up-light darkens the image beside each drop
+//    · compression shimmer — stamped rho / rho0 (.b) brightens pressure fronts in the liquid
 //  Then the stamp field fades into dataA (the next frame's force pass stamps on top: a short wake).
+//  Upgraded: 2026-11-10
+//  Ideas: caustic focus pools; contact shadow; compression shimmer from stamped rho
 //  A/C packing (written by sph-fluid-force): .r speed / VMAX, .g vorticity tint, .b rho / rho0, .a coverage
 
 #include "_prelude.wgsl"
@@ -53,6 +58,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var grad = vec2<f32>(0.0);
   var wsum = 0.0;
   var attr = vec3<f32>(0.0);
+  var lap = 0.0;
   for (var oy = -2; oy <= 2; oy = oy + 1) {
     for (var ox = -2; ox <= 2; ox = ox + 1) {
       let o = vec2<f32>(f32(ox), f32(oy));
@@ -65,6 +71,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       grad = grad + o * (w * s.a);             // derivative of Gaussian (up to -1 / sigma^2)
       wsum = wsum + w;
       attr = attr + w * s.a * s.rgb;
+      lap = lap + (dot(o, o) / 2.25 - 2.0) * w * s.a;   // Laplacian of Gaussian (unnormalised)
     }
   }
   t = t / wsum;
@@ -72,6 +79,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   attr = attr / max(t * wsum, 1e-4);
   let speed = attr.r;
   let swirl = attr.g - 0.5;
+  let compress = attr.b;   // rho / rho0 as stamped by the force pass
+  lap = lap / wsum;
 
   // The liquid: coverage above ~0.4 of the kernel, with a soft meniscus.
   let body = smoothstep(0.32, 0.55, t);
@@ -100,7 +109,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let edge = 1.0 - smoothstep(0.55, 0.9, t);
   liquid = mix(liquid, vec3<f32>(0.95, 0.98, 1.0), clamp(speed * speed * 1.6 * edge * body, 0.0, 0.85));
 
-  let bg = src * 0.82;
+  // Compression shimmer: liquid above rest density glints cool-white along pressure fronts.
+  let squeeze = clamp((compress - 1.05) * 2.5, 0.0, 1.0);
+  liquid = liquid + vec3<f32>(0.10, 0.16, 0.22) * squeeze * body;
+
+  // Contact shadow + caustic pool on the image beside each drop (light comes from -l.xy).
+  let lightOff = vec2<i32>(round(-l.xy * h * 0.9));
+  var shadowT = 0.0;
+  if (fresh) {
+    shadowT = textureLoad(dataTextureC, clamp(p + lightOff, vec2<i32>(0), hi), 0).a;
+  }
+  let shade = 1.0 - 0.35 * smoothstep(0.2, 0.7, shadowT) * (1.0 - body);
+  let caustic = clamp(-lap * 6.0, 0.0, 1.0) * (1.0 - body * 0.6);
+  let bg = src * 0.82 * shade + src * vec3<f32>(0.9, 0.97, 1.0) * caustic * (0.6 + treble * 0.4);
   let col = mix(bg, liquid, body);
   textureStore(writeTexture, p, vec4<f32>(aces(col * 1.05), 1.0));
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

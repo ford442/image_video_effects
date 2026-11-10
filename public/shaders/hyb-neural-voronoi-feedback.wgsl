@@ -3,8 +3,9 @@
 //  Category: hybrid
 //  Features: voronoi, fbm-noise, feedback-decay, neural-dust,
 //            alpha-passthrough, depth-passthrough, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-10
-//  Ideas: honest C echo along the FBM drift; F2 synapse glow
+//  Upgraded: 2026-11-10
+//  Ideas: honest C echo along the FBM drift; F2 synapse glow; action-potential
+//         pulses along synapse seams; soma firing flash per cell
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -130,6 +131,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let cellGlow = glow(voro.dist, 0.22, 0.5) * cellEdge;
     let synapse = 1.0 - smoothstep(0.0, 0.07 + treble * 0.03, voro.dist2 - voro.dist);
 
+    // Idea 3 — action-potential pulses: packets slide along each seam.
+    let cellHash = hash12(voro.cell);
+    let rel = uv * cellDensity - (voro.cell + voro.point);
+    let along = dot(rel, vec2<f32>(-sin(cellHash * 6.2831), cos(cellHash * 6.2831)));
+    let pulseT = fract(along * 1.5 - time * (0.6 + mids * 0.8) + cellHash * 7.0);
+    let ap = synapse * smoothstep(0.82, 0.97, pulseT) * (1.0 - smoothstep(0.97, 1.0, pulseT));
+
+    // Idea 4 — soma firing flash: each cell fires on its own period, then refracts.
+    let period = mix(2.5, 6.0, hash12(voro.cell + 3.1)) / (1.0 + bass * 0.8);
+    let firePh = fract(time / period + cellHash);
+    let fire = exp(-firePh * 9.0) * (1.0 - smoothstep(0.0, 0.35, voro.dist));
+    let somaRGB = iridescence(cellHash, time * 0.4) * fire * 0.6;
+
     let dustScale = mix(32.0, 96.0, clamp(u.zoom_params.z, 0.0, 1.0));
     let dustUV = uv * dustScale;
     let dId = floor(dustUV);
@@ -142,9 +156,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dustRGB = dCol * dMask * 2.0;
 
     let layerRGB = echoRGB + cellCol * 0.25 + cellGlow + dustRGB
-        + vec3<f32>(0.9, 0.7, 1.0) * synapse * (0.22 + bass * 0.25 + mids * 0.1);
+        + vec3<f32>(0.9, 0.7, 1.0) * synapse * (0.22 + bass * 0.25 + mids * 0.1)
+        + vec3<f32>(1.0, 0.95, 0.8) * ap * 1.2 + somaRGB;
     let outRGB = mix(src.rgb, layerRGB, effectMix);
-    let alpha = clamp(src.a + synapse * 0.2 + dMask * 0.15, 0.0, 1.0);
+    let alpha = clamp(src.a + synapse * 0.2 + ap * 0.2 + fire * 0.15 + dMask * 0.15, 0.0, 1.0);
     let outColor = vec4<f32>(acesToneMap(outRGB), alpha);
 
     textureStore(writeTexture, coord, outColor);
