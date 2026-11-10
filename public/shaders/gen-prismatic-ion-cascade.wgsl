@@ -3,31 +3,14 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-15
-//  Ideas: cyclotron gyration on existing streams; recombination glow shell
+//  Upgraded: 2026-11-10
+//  Ideas: cyclotron gyration on existing streams; recombination glow shell;
+//         avalanche beads riding the bands; magnetic-mirror pinch at the shell
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Stream Density, y=Cascade Speed, z=Spectral Spread, w=Ion Thickness
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Stream Density, y=Cascade Speed, z=Spectral Spread, w=Ion Thickness
 
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -81,7 +64,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let streamDensity = 4.0 + u.zoom_params.x * 16.0 + bass * 4.0;
     let cascadeSpeed = 0.3 + u.zoom_params.y * 2.0;
     let spectralSpread = 0.02 + u.zoom_params.z * 0.15;
-    let ionThickness = 0.005 + u.zoom_params.w * 0.06;
+    let ionThicknessBase = 0.005 + u.zoom_params.w * 0.06;
 
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z);
     let aspect = resolution.x / max(resolution.y, 1.0);
@@ -91,6 +74,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var theta = atan2(p.y, p.x);
     // Idea 1 — cyclotron gyration: B-field wobble grows with radius.
     theta = theta + 0.14 * sin(r * 8.0 - time * cascadeSpeed * 3.5) * (1.0 + bass * 0.35);
+
+    // Idea 4 — magnetic-mirror pinch: bands narrow crossing the recombination shell.
+    let recombR = mix(0.22, 0.52, 0.45 + mids * 0.55);
+    let pinch = exp(-abs(r - recombR) * 7.0);
+    let ionThickness = ionThicknessBase * (1.0 - 0.55 * pinch);
 
     let warp = fbm(vec2<f32>(theta * 2.0, time * cascadeSpeed * (1.0 + mids * 0.4)));
     let bandPhase = theta * streamDensity + warp * 3.0 + time * cascadeSpeed * (1.0 + bass * 0.5);
@@ -117,10 +105,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shimmer = fbm(p * 6.0 + vec2<f32>(time * 0.5, -time * 0.7)) * 0.5 + 0.5;
     let flicker = mix(0.7, 1.3, shimmer) * (1.0 + treble * 0.4);
 
-    var ionColor = vec3<f32>(ionR, ionG, ionB) * flicker;
+    var ionColor = vec3<f32>(ionR, ionG, ionB) * flicker * (1.0 + pinch * 0.8);
+
+    // Idea 3 — avalanche beads: charge packets ride outward along each band.
+    let beadPh = fract(r * (9.0 + bass * 6.0) - time * cascadeSpeed * 1.6 + hash21(vec2<f32>(floor(bandPhase / 6.2831), 1.0)));
+    let bead = smoothstep(0.86, 1.0, beadPh) * bandMask * (coreFall + outerFall * 0.6);
+    ionColor = ionColor + vec3<f32>(1.0, 0.95, 0.85) * bead * 0.9;
 
     // Idea 2 — recombination glow: charge-exchange shell where streams fade.
-    let recombR = mix(0.22, 0.52, 0.45 + mids * 0.55);
     let recomb = exp(-abs(r - recombR) * 10.0) * (1.0 - bandMask * 0.45);
     ionColor = ionColor + vec3<f32>(0.32, 0.72, 1.15) * recomb * (0.35 + treble * 0.45);
 
@@ -141,7 +133,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalRGB = finalRGB * depthScale;
 
     let ionStrength = (ionR + ionG + ionB) / 3.0;
-    let alpha = clamp(baseSample.a * 0.25 + ionStrength * 0.6 + coreFall * 0.3 + recomb * 0.2 + bass * 0.1, 0.0, 1.0);
+    let alpha = clamp(baseSample.a * 0.25 + ionStrength * 0.6 + coreFall * 0.3 + recomb * 0.2 + bead * 0.2 + bass * 0.1, 0.0, 1.0);
     let depthOut = clamp(1.0 - coreFall, 0.0, 1.0);
 
     finalRGB = acesToneMap(finalRGB * 1.1);

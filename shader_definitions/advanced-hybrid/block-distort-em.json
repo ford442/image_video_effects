@@ -2,12 +2,13 @@
   "id": "block-distort-em",
   "name": "Block Distort EM",
   "url": "shaders/block-distort-em.wgsl",
-  "description": "Grid blocks pushed by mouse proximity, distorted by electromagnetic field lines. Electric field displaces UVs, magnetic field rotates hue. Click ripples spawn orbiting secondary charges.",
+  "description": "Grid blocks pushed by mouse proximity, distorted by electromagnetic field lines. Electric field displaces UVs, magnetic field rotates hue. Click ripples spawn orbiting secondary charges. Blocks twist with the magnetic term and shade as hinged facets.",
   "features": [
     "mouse-driven",
     "field-simulation",
     "chromatic",
-    "temporal"
+    "temporal",
+    "upgraded-rgba"
   ],
   "params": [
     {
