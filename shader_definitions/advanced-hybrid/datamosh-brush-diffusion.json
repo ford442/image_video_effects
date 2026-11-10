@@ -2,7 +2,7 @@
   "id": "datamosh-brush-diffusion",
   "name": "Datamosh Brush Diffusion",
   "url": "shaders/datamosh-brush-diffusion.wgsl",
-  "description": "Perona-Malik anisotropic diffusion merged with datamosh brush: spring cursor heat source, held paint freeze, capped click ripples, exact C neighbor loads, oil-slick palette, and audio.",
+  "description": "Perona-Malik anisotropic diffusion merged with datamosh brush: gliding cursor heat source, motion-carry smear with chroma bleed, held paint freeze, capped click ripples, exact C loads, oil-slick palette, and audio.",
   "features": [
     "advanced-hybrid",
     "datamosh",
@@ -13,7 +13,8 @@
     "click-ripples",
     "held-drag",
     "aces-tone-map",
-    "randomization-safe"
+    "randomization-safe",
+    "upgraded-rgba"
   ],
   "workgroup_size": [
     16,
