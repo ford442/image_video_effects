@@ -3,34 +3,17 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-11-10
 //  Ideas: crushed-velvet pile patches under a turning light; nested log-octave wells sinking inward;
-//         counter-runner comet crossing the primary runner; seam glints where a runner crosses a plush well
+//         counter-runner comet crossing the primary runner; seam glints where a runner crosses a plush well;
+//         tufted buttons where arms pin the seams; breathing trance zoom; negative afterimage in the troughs
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
+const PI: f32 = 3.14159265359;
 
 fn palette(t: f32) -> vec3<f32> {
     return vec3<f32>(0.50, 0.47, 0.55) + vec3<f32>(0.50, 0.52, 0.45) *
@@ -81,6 +64,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dragMask = exp(-mouseDistance * (3.5 + spiralArms * 5.0)) * u.zoom_config.w;
     let tangent = vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDistance;
     p += tangent * dragMask * (0.08 + velvetSoftness * 0.20);
+    // Idea 6 — breathing trance zoom: the whole well inhales/exhales in log-radius,
+    // a slow dolly under the spin that bass deepens.
+    p *= exp(0.22 * sin(time * (0.3 + spinRate * 0.25)) + audio.x * 0.12);
 
     let radius = max(length(p), 0.002);
     let angle = atan2(p.y, p.x);
@@ -93,7 +79,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let runner = exp(-pow((runnerPhase - 0.5) / 0.07, 2.0)) * velvet;
     let core = exp(-radius * (6.0 + velvetSoftness * 6.0));
     let counterSpiral = pow(0.5 + 0.5 * sin(angle * (arms + 2.0) - log(radius + 0.03) * 7.0 + spin * 0.73), mix(10.0, 3.0, velvetSoftness));
-    let moire = pow(0.5 + 0.5 * cos(spiralPhase * 0.55 - angle * 3.0 + time * (0.4 + spinRate)), 14.0) * counterSpiral;
+    // Rescue: integer angular frequency, so the moire has no seam at angle = ±π.
+    let moirePhase = (spiralPhase - angle * arms) * 0.55 + angle * round(arms * 0.55 - 3.0);
+    let moire = pow(0.5 + 0.5 * cos(moirePhase + time * (0.4 + spinRate)), 14.0) * counterSpiral;
     let velvetWeave = pow(0.5 + 0.5 * cos(angle * (arms * 2.0 + 1.0) + radius * (44.0 + spiralArms * 38.0) - spin * 1.7), 18.0) * velvet;
 
     // Idea 1 — crushed-velvet pile: fibres lie along the arm (perpendicular to grad spiralPhase);
@@ -123,6 +111,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // a brief glint, tying the velvet pile and the sinking wells together.
     let seamGlint = (runner + runner2) * seamLip * 2.2;
 
+    // Idea 5 — tufted buttons: where an arm crosses an octave seam, the velvet is pinned
+    // like upholstery: a dimple shadow, four pinched pleats and a small button highlight.
+    let armLocal = fract(spiralPhase / TAU + 0.5) - 0.5;
+    let seamLocal = fract(octave + 0.5) - 0.5;
+    let tuftD = length(vec2<f32>(armLocal, seamLocal * 1.3));
+    let dimple = exp(-tuftD * tuftD / 0.018);
+    let pleat = pow(0.5 + 0.5 * cos(atan2(seamLocal, armLocal) * 4.0), 6.0) * smoothstep(0.3, 0.08, tuftD) * (1.0 - dimple);
+    let button = exp(-dot(vec2<f32>(armLocal, seamLocal) + vec2<f32>(0.025, 0.02), vec2<f32>(armLocal, seamLocal) + vec2<f32>(0.025, 0.02)) / 0.0012);
+
     var clickHalo = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -135,7 +132,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    let hue = angle / TAU + radius * 0.7 + saturation * 0.35 + time * (0.03 + spinRate * 0.12) + floor(octave) * 0.07;
+    // Rescue: mirrored angle, so the non-integer palette frequencies leave no ±π seam.
+    let hue = abs(angle) / PI + radius * 0.7 + saturation * 0.35 + time * (0.03 + spinRate * 0.12) + floor(octave) * 0.07;
     var hdr = palette(hue) * velvet * pileLight * (0.6 + saturation * 2.5 + audio.y);
     hdr += palette(hue + 0.08) * pileGlint * (0.35 + saturation * 0.5);
     hdr += palette(hue + 0.36) * rings * (0.25 + runner * 1.8 + audio.z * 0.45);
@@ -147,13 +145,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr += palette(hue + 0.82) * runner2 * (0.3 + audio.z * 0.9);
     hdr += vec3<f32>(1.4, 1.1, 1.6) * runnerCollision * (0.6 + audio.x * 0.6);
     hdr += palette(hue + 0.24) * seamGlint * (0.5 + audio.z * 0.7);
+    hdr *= 1.0 - dimple * 0.6 - pleat * 0.35;
+    hdr += palette(hue + 0.45) * button * (0.9 + audio.y * 0.6) + vec3<f32>(1.0, 0.9, 1.1) * pow(button, 4.0) * 0.8;
     let radialDirection = p / radius;
     let historyUV = clamp(uv - vec2<f32>(radialDirection.x / max(aspect, 0.001), radialDirection.y) * (0.003 + spinRate * 0.007) + vec2<f32>(-radialDirection.y / max(aspect, 0.001), radialDirection.x) * 0.002, vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
+    // Idea 7 — negative afterimage: in the dark troughs the complement of the C history glows,
+    // like the after-image left by staring at the spiral.
+    let histLum = dot(history.rgb, vec3<f32>(0.3333));
+    let afterImg = max(vec3<f32>(histLum) - history.rgb, vec3<f32>(0.0)) * (1.0 - velvet) * (1.0 - core);
+    hdr += afterImg * (1.0 + audio.y * 0.6);
     hdr = mix(hdr, history.rgb, clamp(0.10 + velvetSoftness * 0.19 + dragMask * 0.12, 0.0, 0.42));
     let structure = clamp(velvet * 0.7 + counterSpiral * 0.28 + rings * 0.35 + runner + runner2 * 0.6 + velvetWeave * 0.32 + clickHalo * 0.45 + core * 0.4 + runnerCollision * 0.5 + seamGlint * 0.4, 0.0, 1.0);
-    let output = vec4<f32>(acesToneMap(hdr), clamp(0.12 + structure * 0.86, 0.0, 1.0));
+    let output = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), clamp(0.12 + structure * 0.86, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);
-    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(0.12 + velvet * 0.48 + rings * 0.22 + core * 0.18 - seam * 0.1, 0.0, 0.95), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(0.12 + velvet * 0.48 + rings * 0.22 + core * 0.18 - seam * 0.1 - dimple * 0.12 + button * 0.1, 0.0, 0.95), 0.0, 0.0, 0.0));
 }
