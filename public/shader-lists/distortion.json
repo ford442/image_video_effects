@@ -2990,7 +2990,7 @@
     "id": "spectral-vortex",
     "name": "Spectral Vortex",
     "url": "shaders/spectral-vortex.wgsl",
-    "description": "Spectral curl distortion whose authoritative A feedback packs phase, curl, and energy; sprung pointer and bounded click vortices drive three-band motion while source depth passes through unchanged.",
+    "description": "Spectral curl distortion whose authoritative A feedback packs phase, curl, and energy; Lamb–Oseen pointer vortex and bounded click vortices drive three-band motion while source depth passes through unchanged.",
     "tags": [
       "filter",
       "image-processing"

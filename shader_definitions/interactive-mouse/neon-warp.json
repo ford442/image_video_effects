@@ -2,7 +2,7 @@
   "id": "neon-warp",
   "name": "Neon Warp",
   "url": "shaders/neon-warp.wgsl",
-  "description": "Heat-haze mirage: closed-form thermal plumes from the pointer, clicks and bass blobs refract the image with schlieren bands and an inferior mirage; blackbody glow, heat-energy alpha.",
+  "description": "Heat-haze mirage: closed-form thermal plumes from the pointer, clicks and bass blobs refract the image with schlieren bands and an inferior mirage; blackbody glow, heat-energy alpha; cooling afterglow trail.",
   "params": [
     {
       "id": "refraction_strength",

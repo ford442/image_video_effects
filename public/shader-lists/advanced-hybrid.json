@@ -1298,19 +1298,22 @@
     "id": "blueprint-reveal-guided",
     "name": "Blueprint Reveal + Guided Filter",
     "url": "shaders/blueprint-reveal-guided.wgsl",
-    "description": "Blueprint effect with depth-guided edge-aware filtering. The guided filter smooths the image using depth as guide before Sobel edge detection, creating blueprint lines that respect true object boundaries.",
+    "description": "Blueprint effect with depth-guided edge-aware filtering. Pen hairlines (heavier at depth steps) and tone hatching draw the photo; the cursor reveals the guided-filtered image.",
     "tags": [
       "blueprint",
       "guided-filter",
       "depth-aware",
       "edge-detection",
       "technical",
-      "convolution"
+      "convolution",
+      "hatching",
+      "line-art"
     ],
     "features": [
       "advanced-convolution",
       "depth-aware",
       "mouse-driven",
+      "upgraded-rgba",
       "randomization-safe"
     ],
     "params": [
@@ -3184,16 +3187,20 @@
     "id": "data-scanner-gabor",
     "name": "Data Scanner Gabor",
     "url": "shaders/data-scanner-gabor.wgsl",
-    "description": "Catalog entry for Data Scanner Gabor.",
+    "description": "Cursor scan bar: a Gabor energy bank colour-codes stripe direction; orientation needles on the grid.",
     "tags": [
       "mouse-driven",
       "gabor-filter-bank",
-      "edge-detection"
+      "edge-detection",
+      "orientation-field",
+      "audio-reactive"
     ],
     "features": [
       "mouse-driven",
       "gabor-filter-bank",
-      "edge-detection"
+      "edge-detection",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

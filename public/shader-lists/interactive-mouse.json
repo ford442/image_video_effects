@@ -254,16 +254,16 @@
     "category": "interactive-mouse",
     "url": "shaders/block-distort-interactive.wgsl",
     "icon": "grid",
-    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights. Enhanced with volumetric glow from mouse position, rim lighting on grid edges, audio-reactive light pulses, and warm/cool 3-point fill lighting.",
+    "description": "Cursor pressure shoves image blocks into a prismatic distortion field with beat-reactive grid highlights. Enhanced with volumetric glow from mouse position, rim lighting on grid edges, audio-reactive light pulses, and warm/cool 3-point fill lighting. Pushed tiles keep per-block chroma and relax back with lag.",
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba",
       "volumetric-glow",
       "rim-lighting",
       "3-point-lighting",
       "audio-reactive-pulse",
-      "bloom-weighted-alpha"
+      "bloom-weighted-alpha",
+      "exact-history"
     ],
     "params": [
       {
@@ -7928,7 +7928,7 @@
     "id": "neon-warp",
     "name": "Neon Warp",
     "url": "shaders/neon-warp.wgsl",
-    "description": "Heat-haze mirage: closed-form thermal plumes from the pointer, clicks and bass blobs refract the image with schlieren bands and an inferior mirage; blackbody glow, heat-energy alpha.",
+    "description": "Heat-haze mirage: closed-form thermal plumes from the pointer, clicks and bass blobs refract the image with schlieren bands and an inferior mirage; blackbody glow, heat-energy alpha; cooling afterglow trail.",
     "params": [
       {
         "id": "refraction_strength",

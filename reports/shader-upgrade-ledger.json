@@ -239,8 +239,17 @@
       ]
     },
     "blueprint-reveal-guided": {
-      "hash": "57cce30575b1eb5e",
-      "history": []
+      "hash": "c6447f89036f10db",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "c6447f89036f10db",
+          "prev_hash": "57cce30575b1eb5e",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
+        }
+      ]
     },
     "boids-rgba-ecosystem": {
       "hash": "87f9f96d81e86133",
@@ -627,8 +636,17 @@
       ]
     },
     "data-scanner-gabor": {
-      "hash": "3c1346e5438efc86",
-      "history": []
+      "hash": "3e56287440d67fd0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "3e56287440d67fd0",
+          "prev_hash": "3c1346e5438efc86",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
+        }
+      ]
     },
     "data-stream-corruption-hdr": {
       "hash": "49faa9663de9115f",
@@ -4053,7 +4071,7 @@
       ]
     },
     "spectral-vortex": {
-      "hash": "ebed47ea29d6379c",
+      "hash": "47e37309fcd5614e",
       "history": [
         {
           "event": "upgraded",
@@ -4062,6 +4080,14 @@
           "prev_hash": "42212982781fa111",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "47e37309fcd5614e",
+          "prev_hash": "ebed47ea29d6379c",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
         }
       ]
     },
@@ -12033,7 +12059,7 @@
       ]
     },
     "hybrid-fractal-feedback": {
-      "hash": "ad99fe969a9e3707",
+      "hash": "0074d64dc3ce354a",
       "history": [
         {
           "event": "upgraded",
@@ -12042,6 +12068,14 @@
           "prev_hash": "df5948fd53b8feef",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "0074d64dc3ce354a",
+          "prev_hash": "ad99fe969a9e3707",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
         }
       ]
     },
@@ -12252,7 +12286,7 @@
       ]
     },
     "circular-pixelate": {
-      "hash": "6671303743cc4138",
+      "hash": "6f815a7964551060",
       "history": [
         {
           "event": "upgraded",
@@ -12261,6 +12295,14 @@
           "prev_hash": "903f25d64f839c19",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "6f815a7964551060",
+          "prev_hash": "6671303743cc4138",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
         }
       ]
     },
@@ -12909,7 +12951,7 @@
       ]
     },
     "glitch-reveal": {
-      "hash": "d4e0aa99fe06bb2e",
+      "hash": "75e30a13a3107719",
       "history": [
         {
           "event": "upgraded",
@@ -12918,6 +12960,14 @@
           "prev_hash": "08f986a8dce7c0e5",
           "commit": "0910248e",
           "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "75e30a13a3107719",
+          "prev_hash": "d4e0aa99fe06bb2e",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
         }
       ]
     },
@@ -13478,7 +13528,7 @@
       ]
     },
     "rgb-ripple-distortion": {
-      "hash": "144a55ea50c984dc",
+      "hash": "b09e485e35a72037",
       "history": [
         {
           "event": "upgraded",
@@ -13487,6 +13537,14 @@
           "prev_hash": "11937941e2a4d50f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "b09e485e35a72037",
+          "prev_hash": "144a55ea50c984dc",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
         }
       ]
     },
@@ -13861,8 +13919,17 @@
       ]
     },
     "block-distort-interactive": {
-      "hash": "1fd6d67498e9a76b",
-      "history": []
+      "hash": "0736084a22b3cc42",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:06:37.388Z",
+          "hash": "0736084a22b3cc42",
+          "prev_hash": "1fd6d67498e9a76b",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
+        }
+      ]
     },
     "blueprint-reveal": {
       "hash": "f7c579622b3eb7ea",
@@ -15821,7 +15888,7 @@
       ]
     },
     "neon-warp": {
-      "hash": "2d2ea4bac5879afb",
+      "hash": "143605399fc9d774",
       "history": [
         {
           "event": "upgraded",
@@ -15830,6 +15897,14 @@
           "prev_hash": "ac657a8da3222279",
           "commit": "c9151d6f",
           "note": "2026-10-05 neon edge-glow twelve (fable) — agents/swarm-outputs/claude-2026-10-05-neon-edge-glow-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "143605399fc9d774",
+          "prev_hash": "2d2ea4bac5879afb",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
         }
       ]
     },
@@ -20097,7 +20172,7 @@
       ]
     },
     "rgb-distance-split": {
-      "hash": "293333974751e032",
+      "hash": "7c6edbb8b2df35d5",
       "history": [
         {
           "event": "upgraded",
@@ -20114,6 +20189,14 @@
           "prev_hash": "fe57fdb79debb70f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-10T04:03:38.028Z",
+          "hash": "7c6edbb8b2df35d5",
+          "prev_hash": "293333974751e032",
+          "commit": "1740c9a9",
+          "note": "2026-11-10 sonnet/batch-36 glitch/spectral/distortion/neon-warp (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-36/"
         }
       ]
     },

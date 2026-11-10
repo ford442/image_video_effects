@@ -2,6 +2,11 @@
 //  Data Scanner Gabor — Batch 67
 //  fp128 scan phase, Gabor orientation bank, vertical packet,
 //  capped click bursts, held widens bar, ACES + semantic alpha.
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-10
+//  Ideas: Gabor energy from the quadrature pair, DC-free, one shared tap loop (phase-invariant, no confetti); orientation needles from the four energies (dominant orientation + coherence)
+//  A packing: ACES display RGBA (C read as colour at in_scan·0.1) — unchanged. As in HEAD, prev.rgb*0.88 is post-ACES display colour fed back BEFORE the next ACES (ACES → C → ACES); kept per the card.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -26,22 +31,65 @@ fn fp128_mul(a: Fp128, b: Fp128) -> Fp128 {
 }
 fn fp128_val(x: Fp128) -> f32 { return x.base + x.mant; }
 
-fn gaborResponse(uv: vec2<f32>, theta: f32, freq: f32, sigma: f32, pixelSize: vec2<f32>) -> f32 {
-  var response = 0.0;
+const TAU: f32 = 6.28318530718;
+// Tuning constants: ENERGY_GAIN scales
+// the amplitude estimate into 0..1; NEEDLE_GAIN is the needle brightness.
+const ENERGY_GAIN: f32 = 6.0;
+const NEEDLE_GAIN: f32 = 1.0;
+const ENERGY_KNEE: f32 = 0.1;   // energy sum at which the hue is at half of HEAD's strength
+const SCAN_WASH: vec3<f32> = vec3<f32>(0.07, 0.15, 0.20); // faint cyan base where there is no stripe energy
+const PHOTO_FLOOR: f32 = 0.6;   // photo share kept inside the bar (HEAD: none, the hue filled everything)
+const LUMA: vec3<f32> = vec3<f32>(0.299, 0.587, 0.114);
+
+// ── Idea 1: Gabor energy from the quadrature pair ──────────────────────
+// HEAD summed only the cosine (even) phase per orientation: a signed value that
+// flips with the local stripe phase, so its hue read as confetti. The pair
+// (even, odd) gives a phase-invariant energy, and the even kernel is made
+// zero-mean so flat bright areas do not leak into the response (the odd kernel
+// is antisymmetric, already zero-mean). The four orientations share ONE tap
+// loop (HEAD re-fetched the same 169 texels per orientation): the gaussian is
+// isotropic, so only the phase differs, advanced per dx by a rotor.
+struct Bank {
+  even: vec4<f32>,   // DC-removed cosine-phase response, orientations 0..3
+  odd: vec4<f32>,    // sine-phase response
+  wsum: f32,         // kernel weight sum (amplitude normaliser)
+}
+
+fn gaborBank(pixel: vec2<i32>, maxP: vec2<i32>, rot: f32, freq: f32, sigma: f32) -> Bank {
   let maxRadius = min(i32(ceil(sigma * 3.0)), 6);
-  let cosTheta = cos(theta);
-  let sinTheta = sin(theta);
+  let ang = vec4<f32>(0.0, 0.785398, 1.570796, 2.356194) + vec4<f32>(rot);
+  let ct = cos(ang);
+  let st = sin(ang);
+  let kk = TAU * freq;
+  let stepAng = kk * ct;
+  let rc = cos(stepAng);
+  let rs = sin(stepAng);
+  let inv2s = 1.0 / (2.0 * sigma * sigma + 0.001);
+  var re = vec4<f32>(0.0);
+  var im = vec4<f32>(0.0);
+  var sWC = vec4<f32>(0.0);
+  var sW = 0.0;
+  var sWL = 0.0;
   for (var dy = -maxRadius; dy <= maxRadius; dy++) {
+    let ph0 = kk * (st * f32(dy) - ct * f32(maxRadius));
+    var c = cos(ph0);
+    var s = sin(ph0);
     for (var dx = -maxRadius; dx <= maxRadius; dx++) {
-      let xTheta = f32(dx) * cosTheta + f32(dy) * sinTheta;
-      let yTheta = -f32(dx) * sinTheta + f32(dy) * cosTheta;
-      let gaussian = exp(-(xTheta*xTheta + yTheta*yTheta) / (2.0 * sigma * sigma + 0.001));
-      let sinusoidal = cos(2.0 * 3.14159265 * freq * xTheta);
-      let luma = dot(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(f32(dx), f32(dy)) * pixelSize, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
-      response += luma * gaussian * sinusoidal;
+      let g = exp(-f32(dx * dx + dy * dy) * inv2s);
+      let luma = dot(textureLoad(readTexture, clamp(pixel + vec2<i32>(dx, dy), vec2<i32>(0), maxP), 0).rgb, LUMA);
+      let wl = g * luma;
+      re += wl * c;
+      im += wl * s;
+      sWC += g * c;
+      sW += g;
+      sWL += wl;
+      let cn = c * rc - s * rs;
+      s = s * rc + c * rs;
+      c = cn;
     }
   }
-  return response;
+  let dc = sWC / max(sW, 1e-4);
+  return Bank(re - dc * sWL, im, sW);
 }
 
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
@@ -57,8 +105,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
   if (gid.x >= u32(resolution.x) || gid.y >= u32(resolution.y)) { return; }
   let pixel = vec2<i32>(gid.xy);
-  let uv = vec2<f32>(gid.xy) / resolution;
-  let pixelSize = 1.0 / resolution;
+  let maxP = vec2<i32>(resolution) - vec2<i32>(1);
+  let uv = (vec2<f32>(gid.xy) + 0.5) / resolution;
   let time = u.config.x;
   let held = u.zoom_config.w > 0.5;
   let aspect = resolution.x / resolution.y;
@@ -80,30 +128,71 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let packet = pow(max(0.0, 1.0 - abs(uv.y - fract(time * (1.0 + bass * 2.0))) * 16.0), 5.0);
 
-  var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  // The photo outside the bar is dimmed to 0.4. The dim is applied as a continuous
+  // function of in_scan (HEAD dimmed only where in_scan == 0, so the bar's soft edge
+  // started from the UNDIMMED photo and showed up as a bright seam).
+  var color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb * mix(0.4, 1.0, in_scan);
 
   if (in_scan > 0.0) {
     let rot = time * 0.12 + mids * 0.4;
-    let r0 = gaborResponse(uv, 0.0 + rot, freq, sigma, pixelSize) * responseScale;
-    let r45 = gaborResponse(uv, 0.785398 + rot, freq, sigma, pixelSize) * responseScale;
-    let r90 = gaborResponse(uv, 1.570796 + rot, freq, sigma, pixelSize) * responseScale;
-    let r135 = gaborResponse(uv, 2.356194 + rot, freq, sigma, pixelSize) * responseScale;
+    let bank = gaborBank(pixel, maxP, rot, freq, sigma);
+    let angles = vec4<f32>(0.0, 0.785398, 1.570796, 2.356194) + vec4<f32>(rot);
 
-    var analyzed = palette(r0 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67)) * abs(r0);
-    analyzed += palette(r45 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.33, 0.67, 0.0)) * abs(r45);
-    analyzed += palette(r90 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.67, 0.0, 0.33)) * abs(r90);
-    analyzed += palette(r135 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.67, 0.33)) * abs(r135);
-    analyzed = analyzed / (abs(r0) + abs(r45) + abs(r90) + abs(r135) + 0.001) * 1.3;
+    // ── Idea 1: Gabor energy (quadrature) ─────────────────────────────
+    // amplitude of the local stripe in luma units, soft-saturated; Gabor Response
+    // keeps its role as the gain. Hue = orientation (the four HEAD palettes), a small
+    // phase wobble keeps the stripes readable; the energy weights the orientations against each
+    // other and sets how strongly the hue shows (HEAD's normalisation, see below).
+    let energy = sqrt(bank.even * bank.even + bank.odd * bank.odd);
+    let amp = 2.0 * energy / max(bank.wsum, 1e-3);
+    let E = vec4<f32>(1.0) - exp(-amp * responseScale * ENERGY_GAIN);
+    let wob = bank.even / (energy + vec4<f32>(1e-4));
+    let pal = vec3<f32>(0.5);
+    // HEAD's four palette offsets coincide at a fixed index (0° and 135° are both cyan),
+    // so each orientation gets its own index offset: cyan / orange / violet / lime.
+    let tOff = vec4<f32>(0.0, 0.15, 0.05, 0.75);
+    var analyzed = palette(0.5 + tOff.x + 0.10 * wob.x, pal, pal, vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67)) * E.x;
+    analyzed += palette(0.5 + tOff.y + 0.10 * wob.y, pal, pal, vec3<f32>(1.0), vec3<f32>(0.33, 0.67, 0.0)) * E.y;
+    analyzed += palette(0.5 + tOff.z + 0.10 * wob.z, pal, pal, vec3<f32>(1.0), vec3<f32>(0.67, 0.0, 0.33)) * E.z;
+    analyzed += palette(0.5 + tOff.w + 0.10 * wob.w, pal, pal, vec3<f32>(1.0), vec3<f32>(0.0, 0.67, 0.33)) * E.w;
+    let sumE = E.x + E.y + E.z + E.w;
+    // HEAD's normalisation restored: the energy-weighted palette average, divided by the
+    // energy sum and scaled by 1.3. The divisor's +ENERGY_KNEE lets the hue fade out
+    // where there is no stripe energy (HEAD's even-only response leaked flat areas into
+    // a full-strength random hue); the photo floor keeps the bar no darker than the
+    // dimmed surround on smooth content.
+    analyzed = analyzed * 1.3 / (sumE + ENERGY_KNEE) + color * PHOTO_FLOOR + SCAN_WASH * (ENERGY_KNEE / (sumE + ENERGY_KNEE));
 
     let grid = step(0.95, fract(uv * 40.0).x) + step(0.95, fract(uv * 40.0).y);
     analyzed = max(analyzed, vec3<f32>(0.0, 0.5, 0.0) * grid);
+
+    // ── Idea 2: orientation needles ───────────────────────────────────
+    // The four energies are an orientation field HEAD threw away. Doubled-angle sum
+    // gives the dominant stripe orientation and its coherence; every 1/40 grid cell
+    // gets a short tick along the stripe tangent, drawn by the pixels whose offset from
+    // the cell centre is parallel to their own orientation. Length scales with coherence.
+    let V = vec2<f32>(dot(E, cos(2.0 * angles)), dot(E, sin(2.0 * angles)));
+    let thetaStar = 0.5 * atan2(V.y, V.x + 1e-6);                    // wave-vector direction (dx, dy)
+    let coh = length(V) / max(sumE, 1e-3);
+    let tang = vec2<f32>(-sin(thetaStar), cos(thetaStar));       // along the stripe
+    let norm = vec2<f32>(cos(thetaStar), sin(thetaStar));
+    let cellPx = resolution / 40.0;
+    let offPx = (fract(uv * 40.0) - vec2<f32>(0.5)) * cellPx;
+    let along = dot(offPx, tang);
+    let across = dot(offPx, norm);
+    let cellMin = min(cellPx.x, cellPx.y);
+    let halfLen = 0.48 * cellMin * mix(0.5, 1.0, coh);
+    let halfW = max(1.0, 0.11 * cellMin);
+    let tick = (1.0 - smoothstep(halfW - 0.5, halfW + 0.5, abs(across))) * (1.0 - smoothstep(halfLen * 0.75, halfLen, abs(along)));
+    let needle = tick * smoothstep(0.08, 0.25, coh) * smoothstep(0.02, 0.10, sumE) * NEEDLE_GAIN;
+    let needleCol = (vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (vec3<f32>(thetaStar / 3.14159265) + vec3<f32>(0.0, 0.33, 0.67)))) * 1.4 + vec3<f32>(0.25);
+    analyzed = analyzed + needleCol * needle;
+
     let border = smoothstep(scanWidth - 0.005, scanWidth, dist) * (1.0 - smoothstep(scanWidth, scanWidth + 0.005, dist));
     analyzed += vec3<f32>(1.0) * border * (4.0 + treble);
     analyzed += vec3<f32>(0.2, 0.95, 0.85) * packet * 0.35;
 
     color = mix(color, analyzed, in_scan * 0.9);
-  } else {
-    color *= 0.4;
   }
 
   var clickBurst = 0.0;
@@ -121,11 +210,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prev = textureLoad(dataTextureC, pixel, 0);
   color = mix(color, prev.rgb * 0.88, in_scan * 0.1);
 
+  // Eight bands across the bar, read from the three audio bands (plasmaBuffer is one
+  // vec4; HEAD indexed [band + 1], out of range): low third bass, mid mids, high treble.
   let band = min(u32(uv.x * 8.0), 7u);
-  color += vec3<f32>(0.03, 0.08, 0.12) * plasmaBuffer[band + 1u].x * in_scan * 0.12;
+  let bandAudio = select(select(treble, mids, band < 5u), bass, band < 2u);
+  color += vec3<f32>(0.03, 0.08, 0.12) * bandAudio * in_scan * 0.12;
 
-  color = acesToneMap(color);
-  let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+  color = acesToneMap(max(color, vec3<f32>(0.0)));
+  let lum = dot(color, LUMA);
   let alpha = clamp(mix(0.35 + lum * 0.3, 0.95, in_scan) + clickBurst * 0.1 + packet * 0.08, 0.06, 0.98);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
 
