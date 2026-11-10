@@ -39,25 +39,35 @@ HEAD = 75dbf877. Harness: SwiftShader via a scratch copy of `agents/mr.mjs` (GPU
 
 ## 2. data-scanner-gabor
 
-**KEEP VERBATIM held:** 4 params and roles (Gabor Response = gain); fp128 scan phase; the four orientations (0/45/90/135° + rot) and the four cosine palettes; green grid; bar border; vertical packet; click bursts (code unchanged — the harness cannot inject ripples); held widening; outside dim 0.4; C feedback at in_scan·0.1; ACES; alpha formula; A = display RGBA.
+**KEEP VERBATIM held:** 4 params and roles (Gabor Response = gain); fp128 scan phase; the four orientations (0/45/90/135° + rot) and the four cosine palettes; green grid; bar border; vertical packet; click bursts (code unchanged — the harness cannot inject ripples); held widening; outside dim 0.4; C feedback at in_scan·0.1; ACES; alpha formula; A = display RGBA. Weighting is HEAD's again: energy-weighted palette average divided by the energy sum, ×1.3 (fix round).
 
-**A packing:** unchanged (ACES display RGBA, C read as colour).
+**A packing:** unchanged (ACES display RGBA, C read as colour). **Disclosed, not changed:** `prev.rgb*0.88` is post-ACES display colour fed back before the next ACES (ACES → C → ACES). HEAD does the same and the card says unchanged; noted in the header too.
 
-| Idea | Where | Measured |
+| Idea | Where | Measured (default sliders, held cursor 0.4/0.6) |
 |---|---|---|
-| 1 Gabor energy from the quadrature pair, DC-free even kernel, ONE shared tap loop (native) | `gaborBank`, `// ── Idea 1` | vs HEAD analysis, in-bar pixels > 0.02: 99.95 % (mean \|Δ\| 0.54 scene / 0.31 rock at 576). HEAD analysis was rainbow confetti (hue from the signed even response, brightness divided out); new = orientation hue, brightness = energy, photo faintly underneath, grid now visible |
-| 2 Orientation needles from the four energies (native) | `// ── Idea 2` | vs NEEDLE_GAIN=0 at 576: rock 6.9 % of the bar (2.8 % of frame) > 0.02, scene 2.8 % of the bar (1.1 % of frame; the scene is mostly flat so needles exist only on edges); at 192: 13–21 % of the bar |
+| 1 Gabor energy from the quadrature pair, DC-free even kernel, ONE shared tap loop (native) | `gaborBank`, `// ── Idea 1` | phase-invariant energy; HEAD's rainbow confetti (hue from the signed even response) is gone; orientation = hue |
+| 2 Orientation needles from the four energies (native) | `// ── Idea 2` | vs NEEDLE_GAIN=0 (frame % with max-ch \|Δ\| > 0.02, in-bar % in brackets): 576 scene 3.08 (7.7), rock 5.32 (13.0); 192 scene 9.1 (22.3), rock 11.3 (27.5); flat source 0 (no energy, no needle) |
 
-**Deviations / additions beyond the card (all inside idea 1):** HEAD's four palette offsets coincide at a fixed index (0° and 135° are both cyan), so each orientation gets its own index offset (cyan / orange / violet / lime); the `/ (Σ|r| + 0.001) · 1.3` normalisation (which discarded response magnitude) became `· 1.3 / (1 + 0.6ΣE)` plus an 18 % photo underlay. The look inside the bar changes from uniform pastel to dark-with-structure.
+**Fix round (reviewer): the default look inverted over smooth content.** Causes confirmed: the `color*0.18` floor and energy-weighted blend without HEAD's normalisation (brightness followed energy, so smooth content went dark).
+- Bar = `Σ palette·E · 1.3 / (ΣE + ENERGY_KNEE) + photo·PHOTO_FLOOR + SCAN_WASH·KNEE/(ΣE + KNEE)`; KNEE 0.1, floor 0.6 (reviewer's value), wash (0.07, 0.15, 0.20). The knee keeps hue from blowing up where E ≈ 0 (HEAD's even-only response leaked flat areas into a full-strength random hue); the wash is a faint cyan base on no-energy pixels so smooth content reads as an active band (trial without the wash and with knee 0.3: flat bar 0.544, scene@576 0.407; with knee 0.1 + wash: 0.626 / 0.560).
+- bar meanY / outside meanY (Rec.709 Y, clamped; bar = \|x−0.4\| < 0.18, outside = \|x−0.4\| > 0.23), HEAD → new (192 / 576):
+  - flat 0.6: bar 0.698 → 0.626 / 0.698 → 0.626; outside 0.360 = 0.360
+  - scene: bar 0.670 → 0.628 / 0.671 → 0.560; outside 0.181 / 0.180
+  - rock: bar 0.641 → 0.709 / 0.637 → 0.699; outside 0.081 / 0.083
+  - The bar is now brighter than its dimmed surround everywhere (before: flat 0.245 vs 0.36). Scene at 576 stays 0.11 under HEAD: HEAD's 0.67 on smooth content was the leak; we keep photo + wash instead. Rock is 0.06 over HEAD.
+- Look on the rock texture is now HEAD-like pastel (four palettes averaged); the "dark with structure" look of the first pass is gone — that was the inversion.
+
+**Fix round: needles on smooth content.** Gates relaxed `smoothstep(0.18,0.45,coh)·smoothstep(0.08,0.30,ΣE)` → `(0.08,0.25)·(0.02,0.10)`; tick `halfW max(0.8, 0.09·cell)` → `max(1.0, 0.11·cell)`, length 0.46 → 0.48·cell with coherence floor 0.45 → 0.5. Scene at 576: 0.76 % → 3.08 % of the frame (2.6 → 7.7 % of the bar); rock 2.6 → 5.3 %. At 192 the grid of ticks is dense (9–11 % of the frame; cell = 4.8 px) but regular. Flat areas still get no needle on purpose: with E = 0 there is no orientation to show. **Fix round: `atan2(V.y, V.x + 1e-6)`** — defined at E = 0 (flat source nan 0).
+
+**Deviations / additions beyond the card (all inside idea 1):** HEAD's four palette offsets coincide at a fixed index (0° and 135° are both cyan), so each orientation gets its own index offset (cyan / orange / violet / lime); the energy knee and the cyan wash above.
 
 **Rescues**
 - R1 seam: real but small. In a dark band at 576, with HEAD's dim ordering the two columns after the border measured 0.14 / 0.08 vs 0.09 / 0.06 with the continuous dim; border peak 0.41 vs 0.30. Fixed with `mix(0.4, 1.0, in_scan)`.
 - R2 `plasmaBuffer[band+1]` OOB: replaced by per-band bass/mids/treble. Magnitude ≤ 0.014, so not visible — no visibility claim.
 - R3 pixel-centre uv (taps are exact `textureLoad`). R4 cost: **fewer** taps — 169 luma fetches per bar pixel instead of 676.
 
-**Default-look change (rock, 192/576):** held meanL/stdL 0.303/0.276 → 0.239/0.206 (192), 0.305/0.276 → 0.244/0.210 (576); idle (no button) 0.244/0.258 → 0.195/0.190 (192). meanA unchanged.
-**frameMs HEAD → new (loaded VM, min of 2):** 192: 96 → 51; 576: 799 → 364 (≈0.5×).
-**Gates:** precommit ✓, verify-naga-wasm --files ✓, dead-sliders 0, extrabuffer 0. Sliders 0→1: Frequency 40 %, Sigma 40 %, Gabor Response 41 %, Scan Width 56 % of pixels > 0.02. nan 0 at 192/576, audio 0.8/0.5/0.9, A16=1, 60 frames (stats identical to 20), and slider extremes (0,0,1,0) / (1,1,1,1).
-**JSON:** both gain `upgraded-rgba` (ACES + cards implemented); scanner gains `audio-reactive` (bass/mids drive the scan wobble and speed, treble the border) and a real description (100 chars, was a 37-char stub); blueprint's false "lines respect true boundaries via guided Sobel" description replaced (188 chars, was 205); both get `x-meta.upgrade.params` aligned to the saved params. `params` byte-exact.
-**Open:** needles on a high-frequency texture (rock) are dense and only loosely aligned per pixel (orientation is read per pixel, not per cell); on a real GPU, check needle weight at 1080p (cell 27 px).
+**frameMs HEAD → new (loaded VM, min of 2, rock):** 192: 126 → 48; 576: 901 → 456 (≈0.4–0.5×).
+**Gates (fix round):** precommit ✓, dead-sliders 0, extrabuffer 0 new; naga validates the shader (`1 valid, 0 invalid`) but `verify-naga-wasm --files` exits 1 on `src/contracts/wgsl_validation.json` (knownFailures.ratchet 5 vs 4 ids; file touched 05:09 by someone else, not by fork C — not edited). Sliders 0→1 (192, rock/scene): Frequency 39 / 40 %, Sigma 38 / 38 %, Gabor Response 38 / 38 %, Scan Width 56 / 56 % of pixels > 0.02. nan 0: slider extremes (0,0,1,0) / (1,1,1,1) / (0,1,0,1) with audio 0.8/0.5/0.9, flat source (E = 0), A16=1.
+**JSON:** both gain `upgraded-rgba` (ACES + cards implemented); scanner gains `audio-reactive` (bass/mids drive the scan wobble and speed, treble the border) and a real description (100 chars, was a 37-char stub); blueprint's false "lines respect true boundaries via guided Sobel" description replaced (188 chars, was 205); both get `x-meta.upgrade.params` aligned to the saved params. `params` byte-exact. No JSON change in the fix round.
+**Open:** needles on a high-frequency texture (rock) are dense and only loosely aligned per pixel (orientation is read per pixel, not per cell); on a real GPU, check needle weight at 1080p (cell 27 px). Real-GPU look unverified.
 **§12.2 rows:** none used from the table; both ideas are native (kernel deepening; promote an intermediate; direction).

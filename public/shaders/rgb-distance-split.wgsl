@@ -8,9 +8,11 @@
 //            2. ±1st-order diffraction ghosts — faint grating copies far from the cursor,
 //               where red diffracts further than blue (the opposite of a prism)
 //            3. secondary spectrum — the per-wavelength offset is a parabola (k + 0.3·k²),
-//               not a line, so red and blue land on the same side of green (purple fringe)
+//               not a line, so the fringe is lopsided: red lands at +1.3 and blue at −0.7
+//               (opposite sides of green, red's side longer), not mirror images
 //            4. longitudinal CA — red and blue planes are also defocused (perpendicular
-//               2-tap disc at each channel's centroid, radius ∝ distance·split); green stays sharp
+//               2-tap line at each channel's centroid, half-width ∝ distance·split, capped at
+//               0.03 uv so the two copies stay inside a soft blur); green stays sharp
 //  Complexity: Medium
 //  Upgraded: 2026-05-23, 2026-11-10
 //  A packing: ACES display RGBA (A = finalOut, write-only)
@@ -107,7 +109,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       // ── Idea 3: secondary spectrum (§12.2F, Cauchy-family non-linear dispersion) ──
       // HEAD's offset is linear in k; the dispersion
       // of a real lens is non-linear in λ, so add c₂·k² along the same axis
-      // (k=0 stays on green; R gets 1.3×, B −0.7×: same mean spread, one side).
+      // (k=0 stays on green; R gets 1.3×, B −0.7×: lopsided, opposite sides of green).
       let kOff = k + 0.3 * k * k;
       let tapUV = clamp(uv + rotSeparation * kOff, vec2<f32>(0.0), vec2<f32>(1.0));
       var tapCol = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
@@ -123,10 +125,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Red and violet focus off the green plane, so their planes are also defocused
   // across the split axis (green stays sharp): a perpendicular 2-tap disc at each
   // channel's spectral centroid (red ≈ +1.3, blue ≈ −0.7 after the secondary
-  // spectrum), radius ∝ distance·split. 4 extra loads in total.
+  // spectrum), half-width ∝ distance·split but capped at 0.03 uv (the unclamped value
+  // reached ~0.06 uv ≈ 35 px at 576, where two taps read as ghost copies). 4 extra loads.
   let perpAxis = vec2<f32>(-rotSeparation.y, rotSeparation.x);
   let perpDir = perpAxis / max(length(perpAxis), 1e-6);
-  let defR = 1.2 * effectFactor * strength;
+  let defR = min(1.2 * effectFactor * strength, 0.03);
   let defMix = clamp(0.9 * effectFactor, 0.0, 0.9);
   let redUV = uv + rotSeparation * 1.3;
   let blueUV = uv - rotSeparation * 0.7;

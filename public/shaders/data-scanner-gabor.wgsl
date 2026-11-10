@@ -6,7 +6,7 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Upgraded: 2026-11-10
 //  Ideas: Gabor energy from the quadrature pair, DC-free, one shared tap loop (phase-invariant, no confetti); orientation needles from the four energies (dominant orientation + coherence)
-//  A packing: ACES display RGBA (C read as colour at in_scan·0.1) — unchanged
+//  A packing: ACES display RGBA (C read as colour at in_scan·0.1) — unchanged. As in HEAD, prev.rgb*0.88 is post-ACES display colour fed back BEFORE the next ACES (ACES → C → ACES); kept per the card.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -36,6 +36,9 @@ const TAU: f32 = 6.28318530718;
 // the amplitude estimate into 0..1; NEEDLE_GAIN is the needle brightness.
 const ENERGY_GAIN: f32 = 6.0;
 const NEEDLE_GAIN: f32 = 1.0;
+const ENERGY_KNEE: f32 = 0.1;   // energy sum at which the hue is at half of HEAD's strength
+const SCAN_WASH: vec3<f32> = vec3<f32>(0.07, 0.15, 0.20); // faint cyan base where there is no stripe energy
+const PHOTO_FLOOR: f32 = 0.6;   // photo share kept inside the bar (HEAD: none, the hue filled everything)
 const LUMA: vec3<f32> = vec3<f32>(0.299, 0.587, 0.114);
 
 // ── Idea 1: Gabor energy from the quadrature pair ──────────────────────
@@ -138,7 +141,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ── Idea 1: Gabor energy (quadrature) ─────────────────────────────
     // amplitude of the local stripe in luma units, soft-saturated; Gabor Response
     // keeps its role as the gain. Hue = orientation (the four HEAD palettes), a small
-    // phase wobble keeps the stripes readable; brightness = energy.
+    // phase wobble keeps the stripes readable; the energy weights the orientations against each
+    // other and sets how strongly the hue shows (HEAD's normalisation, see below).
     let energy = sqrt(bank.even * bank.even + bank.odd * bank.odd);
     let amp = 2.0 * energy / max(bank.wsum, 1e-3);
     let E = vec4<f32>(1.0) - exp(-amp * responseScale * ENERGY_GAIN);
@@ -152,7 +156,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     analyzed += palette(0.5 + tOff.z + 0.10 * wob.z, pal, pal, vec3<f32>(1.0), vec3<f32>(0.67, 0.0, 0.33)) * E.z;
     analyzed += palette(0.5 + tOff.w + 0.10 * wob.w, pal, pal, vec3<f32>(1.0), vec3<f32>(0.0, 0.67, 0.33)) * E.w;
     let sumE = E.x + E.y + E.z + E.w;
-    analyzed = analyzed * 1.3 / (1.0 + 0.6 * sumE) + color * 0.18;
+    // HEAD's normalisation restored: the energy-weighted palette average, divided by the
+    // energy sum and scaled by 1.3. The divisor's +ENERGY_KNEE lets the hue fade out
+    // where there is no stripe energy (HEAD's even-only response leaked flat areas into
+    // a full-strength random hue); the photo floor keeps the bar no darker than the
+    // dimmed surround on smooth content.
+    analyzed = analyzed * 1.3 / (sumE + ENERGY_KNEE) + color * PHOTO_FLOOR + SCAN_WASH * (ENERGY_KNEE / (sumE + ENERGY_KNEE));
 
     let grid = step(0.95, fract(uv * 40.0).x) + step(0.95, fract(uv * 40.0).y);
     analyzed = max(analyzed, vec3<f32>(0.0, 0.5, 0.0) * grid);
@@ -163,7 +172,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // gets a short tick along the stripe tangent, drawn by the pixels whose offset from
     // the cell centre is parallel to their own orientation. Length scales with coherence.
     let V = vec2<f32>(dot(E, cos(2.0 * angles)), dot(E, sin(2.0 * angles)));
-    let thetaStar = 0.5 * atan2(V.y, V.x);                       // wave-vector direction (dx, dy)
+    let thetaStar = 0.5 * atan2(V.y, V.x + 1e-6);                    // wave-vector direction (dx, dy)
     let coh = length(V) / max(sumE, 1e-3);
     let tang = vec2<f32>(-sin(thetaStar), cos(thetaStar));       // along the stripe
     let norm = vec2<f32>(cos(thetaStar), sin(thetaStar));
@@ -172,10 +181,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let along = dot(offPx, tang);
     let across = dot(offPx, norm);
     let cellMin = min(cellPx.x, cellPx.y);
-    let halfLen = 0.46 * cellMin * mix(0.45, 1.0, coh);
-    let halfW = max(0.8, 0.09 * cellMin);
+    let halfLen = 0.48 * cellMin * mix(0.5, 1.0, coh);
+    let halfW = max(1.0, 0.11 * cellMin);
     let tick = (1.0 - smoothstep(halfW - 0.5, halfW + 0.5, abs(across))) * (1.0 - smoothstep(halfLen * 0.75, halfLen, abs(along)));
-    let needle = tick * smoothstep(0.18, 0.45, coh) * smoothstep(0.08, 0.30, sumE) * NEEDLE_GAIN;
+    let needle = tick * smoothstep(0.08, 0.25, coh) * smoothstep(0.02, 0.10, sumE) * NEEDLE_GAIN;
     let needleCol = (vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (vec3<f32>(thetaStar / 3.14159265) + vec3<f32>(0.0, 0.33, 0.67)))) * 1.4 + vec3<f32>(0.25);
     analyzed = analyzed + needleCol * needle;
 

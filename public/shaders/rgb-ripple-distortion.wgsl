@@ -7,6 +7,11 @@
 //  Upgraded: 2026-05-23, 2026-11-10
 //  Ideas: Cauchy dispersion on the R/G/B taps (§12.2F); two-wave deep-water ripple dispersion, long wave leads and a slower short train trails (§12.2D)
 //  A packing: raw displacement field (rg), fringe/10, stressMag — read back as C as a FIELD (no tone-map); B = stress/angle/isoclinic (HEAD-owned). Output is LDR (no ACES): rest is an exact pass-through
+//  Declared deviations from HEAD (no behaviour change in this edit):
+//   - Color Separation now drives the R/B split: sepGain = 0.5 + 5·w, so the default (w = 0.5) split is 3× HEAD's, whose R/B offset was under 1 px.
+//     A deliberate rescue: at HEAD's size the Cauchy dispersion idea could not be seen.
+//   - At rest the output is an exact pass-through of the source (restGate), so idle mean luma is ≈ +29% vs HEAD (0.316 → 0.409 on the test image).
+//   - A click's ripple train can raise stress into saturated green/magenta blobs around ~0.4 s after the click, before it decays.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"

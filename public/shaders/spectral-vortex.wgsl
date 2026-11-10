@@ -7,6 +7,10 @@
 //  Ideas: 1) isophote advection of the phase/curl/energy state 2) signed spectral arms (counter-spinning hue by curl × radial) 3) depth-shelved curl gain 4) Lamb–Oseen pointer vortex (calm eye, 1/r arms) 5) luma-preserving hue spin (YIQ chroma rotation)
 //  A packing: raw sim state (phase, curl.xy, energy) — Batch 58D state ownership; ACES only on writeTexture; B unwritten
 //  The pointer is the raw cursor: the old extraBuffer spring never persisted (the buffer is re-zeroed every frame) and was removed.
+//  Lamb–Oseen footprint (declared): core rc = 0.12 (card said 0.06–0.08; wider so it reads at default sliders), peak 0.74× HEAD's exp(−6d) peak,
+//  far field 1.8× HEAD's at d = 0.2–0.3, 2.2× at 0.5, 6× at 1.0 (absolute 0.40 vs 0.22 at d = 0.25, 0.11 vs 0.05 at 0.5, 0.015 vs 0.0025 at 1.0).
+//  A steeper envelope (exp(−3.5d), far field ≈1.3× HEAD) was tried and dropped: held visibility fell 10.9% → 3.5%.
+//  Hue spin: same direction and turn count as HEAD's HSV H += turns (angle negated in spinChroma), but chroma-only, so mean Y stays put.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -14,12 +18,14 @@
 const TAU: f32 = 6.28318530718;
 
 // Rotate the chroma plane (I,Q) of YIQ about the luma axis by `turns` full turns:
-// a hue spin that keeps Y, unlike HSV hue rotation at constant V.
+// a hue spin that keeps Y, unlike HSV hue rotation at constant V. In the I/Q plane the hues
+// sit R(~20°) → B(~136°) → G(~242°), i.e. increasing angle runs R→B→G, the opposite sense to
+// HSV's R→G→B, so the angle is negated below to spin the same direction HEAD's H += turns did.
 fn spinChroma(c: vec3<f32>, turns: f32) -> vec3<f32> {
   let y = dot(c, vec3<f32>(0.299, 0.587, 0.114));
   let i = dot(c, vec3<f32>(0.596, -0.274, -0.322));
   let q = dot(c, vec3<f32>(0.211, -0.523, 0.312));
-  let ang = turns * TAU;
+  let ang = -turns * TAU;
   let ca = cos(ang); let sa = sin(ang);
   let i2 = i * ca - q * sa;
   let q2 = i * sa + q * ca;
@@ -87,8 +93,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // HEAD's swirl was a unit tangent × exp(−6d):
   // full strength with an undefined direction at d→0 (a point sink of curl).
   // A real vortex has a calm eye: v ∝ (1 − exp(−d²/rc²))/d, zero on the axis, peak
-  // at ≈1.12·rc, 1/d beyond. Normalised to peak 1; the exp(−2.5d) envelope keeps
-  // the far field local.
+  // at ≈1.12·rc, 1/d beyond. Normalised to peak 1 before the exp(−2.5d) envelope (peak 0.74).
+  // Far field is deliberately wider than HEAD's (see header footprint): the visible gain lives there.
   let rc = 0.12;
   let lamb = (1.0 - exp(-pointerDist * pointerDist / (rc * rc))) * (1.567 * rc / max(pointerDist, 1e-4)) * exp(-pointerDist * 2.5);
   curl += vec2<f32>(-pointerDelta.y, pointerDelta.x) / max(pointerDist, 0.001) * lamb * held * (0.4 + mids);
@@ -136,9 +142,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let armSign = select(-1.0, 1.0, armCross >= 0.0);
   let spin = mix(armSign, armDir, 0.35);
   // ── Idea 5: luma-preserving hue spin (native) ──
-  // HEAD rotated H in HSV at constant V, which swings
-  // luminance between yellow and blue; the same turn count now rotates the chroma plane
-  // of YIQ about the luma axis, so the spectral cycle keeps its brightness.
+  // HEAD rotated H in HSV at constant V, which swings luminance between yellow and blue.
+  // The same turn count, in the same direction as HEAD's H += turns (hence the negated angle in
+  // spinChroma), now rotates the chroma plane of YIQ about the luma axis, so the cycle keeps Y.
   let turns = phase * colorShift * spin + time * colorShift * 0.03 + treble * 0.05;
   var hdr = spinChroma(max(source.rgb, vec3<f32>(0.0)), turns) * (1.0 + energy * 1.2);
   hdr = max(hdr, vec3<f32>(0.0));
