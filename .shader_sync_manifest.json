@@ -92,20 +92,20 @@
     "synced_at": 1794214027.659138
   },
   "pp-sharpen": {
-    "hash": "abace5956c0214e60b2529c1ce3f16c5",
-    "synced_at": 1793263769.226876
+    "hash": "c539dd649aaa9f429f45bc36900192f0",
+    "synced_at": 1794342026.2841725
   },
   "long-exposure": {
     "hash": "88b9036624868395817ad17b69614ff6",
     "synced_at": 1793610122.3933809
   },
   "spatio-temporal-3d-conv": {
-    "hash": "b2e202fd510c516863f1d9199cf4c055",
-    "synced_at": 1793263797.02581
+    "hash": "5b1a2c6f7d151a1c1db7af18884317a3",
+    "synced_at": 1794342026.3023207
   },
   "pp-vignette": {
-    "hash": "52d5835fa37b076a4f729d3033e8b47b",
-    "synced_at": 1793263770.130191
+    "hash": "af7ac08d71f990b0ec3ee133b26b1862",
+    "synced_at": 1794342026.3937318
   },
   "gen-stellar-plasma-ouroboros": {
     "hash": "b65723aff34f29f6afdaaa252b585fdf",
@@ -192,8 +192,8 @@
     "synced_at": 1793263781.769079
   },
   "gen-cosmic-velvet-hypnosis": {
-    "hash": "8a12c4018cc77b936362c98105b9c54d",
-    "synced_at": 1793263782.1485088
+    "hash": "e6ee114b0ecf9fa82a2ceb5b9d8b59a5",
+    "synced_at": 1794342026.4413388
   },
   "gen-neon-tropical-paradise": {
     "hash": "957751dd791c1ef92fde4af188d1321f",
@@ -724,8 +724,8 @@
     "synced_at": 1793263806.9942148
   },
   "gen-belousov-zhabotinsky": {
-    "hash": "6361b1466f94036c9a42cbbd513e0eb0",
-    "synced_at": 1793263806.9158275
+    "hash": "4e973b2c725e42320ac3c280a7ddcf1d",
+    "synced_at": 1794342026.8106272
   },
   "gen-ethereal-aurora-ghost-orchid": {
     "hash": "009f309ad6a189be1188fec96fb3a580",
@@ -744,8 +744,8 @@
     "synced_at": 1793263807.4671028
   },
   "gen-apollonian-gasket": {
-    "hash": "cba41695669a88c91345e9506b0b346e",
-    "synced_at": 1793263807.4393704
+    "hash": "9871525c0bd385fabc5f0d7e9db7f93e",
+    "synced_at": 1794342026.8720558
   },
   "gen-silica-tsunami": {
     "hash": "83008c5de316eb3260d4bf49abc0d880",
@@ -796,8 +796,8 @@
     "synced_at": 1793263809.0079837
   },
   "gen-mushroom-mandala-garden": {
-    "hash": "6ffc16146ec4b21cd85f5b3f21fb99ac",
-    "synced_at": 1793263808.9919844
+    "hash": "cd7e2fbaab4077d732524507487a3b5f",
+    "synced_at": 1794342027.1597972
   },
   "gen-quantum-pollen": {
     "hash": "defd295328f237a55dd56c458325c244",
@@ -856,8 +856,8 @@
     "synced_at": 1793263810.676704
   },
   "gen-erosion-strata": {
-    "hash": "827ba278c253f387dfe41f60575746a0",
-    "synced_at": 1793263810.5577857
+    "hash": "fc891e7617ac5c765c710801cfc85e2c",
+    "synced_at": 1794342027.1603773
   },
   "gen-psychedelic-time-warp-kaleidoscope": {
     "hash": "715ba9057e121573568e17188d1ee0bf",
@@ -1296,8 +1296,8 @@
     "synced_at": 1793263823.3215158
   },
   "gen-prismatic-ion-cascade": {
-    "hash": "626ec2eb62fa6076275dd23541e9d9dd",
-    "synced_at": 1793263823.6496706
+    "hash": "f4daf2dc836fd487175dc03b69dc1a8c",
+    "synced_at": 1794342027.2701256
   },
   "molten-gold": {
     "hash": "f9184c8ef9f25a60a6f76d1e4ab3f99a",
@@ -1328,8 +1328,8 @@
     "synced_at": 1793782096.8578594
   },
   "hyperbolic-crystal-symbiosis": {
-    "hash": "457f86715f0299b2ab48c7cb8621da77",
-    "synced_at": 1793263821.0999188
+    "hash": "e1f46e2a41f62ae777233f7da63c18ac",
+    "synced_at": 1794342027.1743422
   },
   "gen-phyllotaxis-galaxy-spiral": {
     "hash": "13ab460388aec9e630d62ac785462be0",
@@ -1972,8 +1972,8 @@
     "synced_at": 1793782150.4086695
   },
   "neural-resonance": {
-    "hash": "a03f2c3a9a639afe3bf0b8a6687e2c0d",
-    "synced_at": 1793263841.9718847
+    "hash": "e13c289bbd2e85861806025584d9c737",
+    "synced_at": 1794342027.617161
   },
   "spectral-bleed-confinement": {
     "hash": "97cf14b3e134ff7d667bd09b6b7871a9",
@@ -2040,8 +2040,8 @@
     "synced_at": 1793263839.4420552
   },
   "chromatic-folds-gemini": {
-    "hash": "96ab43b8cbb2af5bce484d8981fbb7aa",
-    "synced_at": 1793263843.5243247
+    "hash": "51820b1267a61cf5fba278f173629f10",
+    "synced_at": 1794342027.6136396
   },
   "physarum-grokcf1": {
     "hash": "4529eccea6e62d16bfe64117f69bdbdf",
@@ -2056,8 +2056,8 @@
     "synced_at": 1793263843.9083197
   },
   "spirograph-reveal": {
-    "hash": "9d56d9e6b5b808ee07418c4c2744287e",
-    "synced_at": 1793263843.9663973
+    "hash": "413cb6e0e10e6672b9aa67235d79b422",
+    "synced_at": 1794342027.6206613
   },
   "polka-dot-reveal": {
     "hash": "d95279ea90852a01e7053859544badf3",
@@ -2188,8 +2188,8 @@
     "synced_at": 1793263847.1115787
   },
   "lidar": {
-    "hash": "52cd46fca005ec7dbb5ae9aa0241bcd0",
-    "synced_at": 1793263847.1599584
+    "hash": "72140183b5cf2712ede20ebfe95e1176",
+    "synced_at": 1794342027.6776197
   },
   "cosmic-flow": {
     "hash": "3097b43ec39e3c58614785392fb66b63",
@@ -2264,8 +2264,8 @@
     "synced_at": 1793263848.857779
   },
   "static-reveal": {
-    "hash": "831f9f66240fae491bbb3b746a00db05",
-    "synced_at": 1793263848.8494923
+    "hash": "1a6a3e76b3cc33c19e4749e4d4a51513",
+    "synced_at": 1794342027.7028878
   },
   "temporal-slit-paint": {
     "hash": "b2af4bccbc62c50e5586a5679f83ae7b",
@@ -2292,12 +2292,12 @@
     "synced_at": 1794214131.4511635
   },
   "spectral-distortion": {
-    "hash": "bcab0625a118791da80110a1cde543a7",
-    "synced_at": 1793263849.7197332
+    "hash": "bb245a079f0f5495d5b4f4e85aeda692",
+    "synced_at": 1794342028.0839748
   },
   "refraction-shards": {
-    "hash": "da64013a909295fba0ff62fd6fc5ee5a",
-    "synced_at": 1793263849.5800033
+    "hash": "78cbab6c141991b52ce0312654821a37",
+    "synced_at": 1794342028.2316098
   },
   "cyber-slit-scan": {
     "hash": "e3af04a6ded7c6b8502ddae1da14f7b5",
@@ -2324,8 +2324,8 @@
     "synced_at": 1793263850.2708085
   },
   "infinite-fractal-feedback": {
-    "hash": "36e0ac62547a9236b6beca8c1ae8b937",
-    "synced_at": 1793263850.2619936
+    "hash": "728dd0e81812e97556f268a5875a96a5",
+    "synced_at": 1794342028.1039634
   },
   "thermal-touch": {
     "hash": "046e98a1d40a782ac6ba2fccde9d1bde",
@@ -2340,8 +2340,8 @@
     "synced_at": 1793263850.6707652
   },
   "neural-nexus": {
-    "hash": "5f5023bfeae7ed96b670792512d8f9f4",
-    "synced_at": 1793263850.7247922
+    "hash": "4a3e4f475d3452f7783ba0bed9f7eceb",
+    "synced_at": 1794342028.25881
   },
   "chroma-lens": {
     "hash": "5df13c6ccbc2451d059a23b22d7f32f2",
@@ -2352,8 +2352,8 @@
     "synced_at": 1793263850.8731494
   },
   "scan-slice": {
-    "hash": "fc33753471a9150b4f743592f61ae2f4",
-    "synced_at": 1793263850.7600648
+    "hash": "7fc737ebfc6540669e4f9a3a6465991e",
+    "synced_at": 1794342028.194578
   },
   "digital-mold": {
     "hash": "795a505b9b4e20be13500bfc61134d3e",
@@ -2396,8 +2396,8 @@
     "synced_at": 1793610186.9321609
   },
   "selective-color": {
-    "hash": "16fca049ff8a9dc85a6d529b9d6ffeaa",
-    "synced_at": 1793263852.3143294
+    "hash": "57a118b2cc5c24247954b3740833d214",
+    "synced_at": 1794342028.4996362
   },
   "sonic-distortion": {
     "hash": "ee4ae8d5f64ef692614b319b0cc23c8c",
@@ -2408,8 +2408,8 @@
     "synced_at": 1793610187.0995085
   },
   "fiber-optic-weave": {
-    "hash": "df65627a6c5d09d70892c7ebd922e0d3",
-    "synced_at": 1793263852.615077
+    "hash": "5ab0dd9f00b67f1b7864dab0cd0f20f6",
+    "synced_at": 1794342028.5276635
   },
   "quantum-flux": {
     "hash": "259cea5f3204b6923098b8a96858da73",
@@ -2504,36 +2504,36 @@
     "synced_at": 1793263854.596409
   },
   "interactive-kuwahara": {
-    "hash": "e8d0bc1a7ad2b60ebdec44ad553cd6a0",
-    "synced_at": 1793263854.7232385
+    "hash": "e19b1d5f7438dc99eb9ffc4ac88e1bd5",
+    "synced_at": 1794342028.696896
   },
   "edge-glow-mouse": {
     "hash": "6ae37c2ce388562dffde183e1d0a9a52",
     "synced_at": 1793782209.425715
   },
   "flux-core": {
-    "hash": "9ae5aba0e41d7f3a590d6f4f56966f3e",
-    "synced_at": 1793263854.8293962
+    "hash": "d217aa3f8846aead42ddbf017d593237",
+    "synced_at": 1794342028.6335754
   },
   "kinetic-dispersion": {
     "hash": "07887d4f2f01150b71ca739cfb1424a8",
     "synced_at": 1793263855.0582983
   },
   "mouse-wormhole-lens": {
-    "hash": "d49e9063bb6253516f55f4957d9b97b3",
-    "synced_at": 1793263855.0502286
+    "hash": "3a2603896395a931451c56f92513fb88",
+    "synced_at": 1794342028.665324
   },
   "optical-feedback": {
     "hash": "74b3eab840f3b9084e2e6c33d5b59cb9",
     "synced_at": 1793263855.2364042
   },
   "phosphor-magnifier": {
-    "hash": "1b7b751e69d5e443bd5be2d93b5db3bc",
-    "synced_at": 1793263855.196002
+    "hash": "049005d8c3d6de8aa38677d95abed6f5",
+    "synced_at": 1794342028.9051154
   },
   "vaporwave-horizon": {
-    "hash": "a32e8b20c6fb0b37cb3c4ef4f54edf9d",
-    "synced_at": 1793263855.2396088
+    "hash": "da2561096959265e89721056514a8471",
+    "synced_at": 1794342028.931415
   },
   "prismatic-feedback-loop": {
     "hash": "09b90609949cecdfa91beedd7bedf476",
@@ -2636,12 +2636,12 @@
     "synced_at": 1793263857.721502
   },
   "voronoi-glass": {
-    "hash": "c967edac1ad7c0da354fe9f0a350511a",
-    "synced_at": 1793263857.748482
+    "hash": "b5c37539b6fa4cf31a6fd61b0fd33d22",
+    "synced_at": 1794342081.6082864
   },
   "motion-heatmap": {
-    "hash": "0fb9af5b4ae81d0a7477c817b5d14425",
-    "synced_at": 1793263857.8600357
+    "hash": "f1a119dbb47dda9e7c75710d2c7d8841",
+    "synced_at": 1794342081.6080134
   },
   "particle-disperse": {
     "hash": "8309d006632cee90e29870667ae3e561",
@@ -2652,8 +2652,8 @@
     "synced_at": 1793263858.080052
   },
   "neon-warp": {
-    "hash": "afcbef3612ebc0957618aa8ba022f3de",
-    "synced_at": 1793263858.1505942
+    "hash": "a0b1d96c23fd20ecf273ccb008edda32",
+    "synced_at": 1794342106.5691566
   },
   "neon-ripple-split": {
     "hash": "6a28afde9eab50d8bcdc81842f04d3cf",
@@ -2668,8 +2668,8 @@
     "synced_at": 1793610206.931526
   },
   "quantum-superposition": {
-    "hash": "1c33a5246f593686dc67a300f24919c5",
-    "synced_at": 1793263858.5121045
+    "hash": "55405fc48131f82914727c6329c4f1e9",
+    "synced_at": 1794342081.5817327
   },
   "glass-bead-curtain": {
     "hash": "009926c6e2d17f29454acea5aabb21fc",
@@ -2680,8 +2680,8 @@
     "synced_at": 1793263858.6504517
   },
   "luma-slice-interactive": {
-    "hash": "de7ec23c9d8c330f40efb0fab61c240a",
-    "synced_at": 1793263858.7498782
+    "hash": "2d024a4a2c194829ebaf1c949a7d36f4",
+    "synced_at": 1794342081.607305
   },
   "liquid-warp": {
     "hash": "addf3cb30dc670f1c81bf8cf46500e31",
@@ -2716,8 +2716,8 @@
     "synced_at": 1793610181.7531404
   },
   "block-distort-interactive": {
-    "hash": "7bde22c05eef43cddc6681b69e7dfde9",
-    "synced_at": 1793263859.4668787
+    "hash": "f3de069ceb5e722ed8c7a913f7005be5",
+    "synced_at": 1794342082.084586
   },
   "sequin-flip": {
     "hash": "805a798657a05c4924ac6345ed410de0",
@@ -2784,12 +2784,12 @@
     "synced_at": 1793782210.3905525
   },
   "mouse-neural-dreamscape": {
-    "hash": "9c6a87c942540e079264653cd9167cea",
-    "synced_at": 1793263860.8438764
+    "hash": "308c45ccaa4557ca88b473aea2c764fa",
+    "synced_at": 1794342089.2332416
   },
   "rgb-shift-brush": {
-    "hash": "db4031651f07edcea421bd0bdc81f6cf",
-    "synced_at": 1793263860.935891
+    "hash": "6d1f0e0b9a48136e61d0f360cd2ccffb",
+    "synced_at": 1794342082.1234665
   },
   "velvet-vortex": {
     "hash": "956929fc840aec8cee4af3d3dbea012a",
@@ -2920,8 +2920,8 @@
     "synced_at": 1793263888.7556236
   },
   "crystal-refraction": {
-    "hash": "ef39c1e39e910b3b0b8696b63c1df5eb",
-    "synced_at": 1793263889.5366976
+    "hash": "3518d7ef211a6ecb8f07f26a1d3cb58e",
+    "synced_at": 1794342091.3529215
   },
   "pixel-drag-smear": {
     "hash": "9c7d977445d5c4a1e8039a1a7061306a",
@@ -2932,8 +2932,8 @@
     "synced_at": 1793263889.923369
   },
   "glass-shatter": {
-    "hash": "181530e78b2898874e8d1b62c59f07a8",
-    "synced_at": 1793263890.3212597
+    "hash": "53c3ae68a7a0962595a97f46722df65e",
+    "synced_at": 1794342088.8547428
   },
   "cyber-magnifier": {
     "hash": "2526db1710ad48dd48c017245fe07e11",
@@ -2988,8 +2988,8 @@
     "synced_at": 1793782214.2685533
   },
   "nano-repair": {
-    "hash": "937415b7659cb8115ec1e25b838fa85e",
-    "synced_at": 1793263896.592895
+    "hash": "930fd85cfe3bbbdf72734968957b667a",
+    "synced_at": 1794342082.5382993
   },
   "liquid-lens": {
     "hash": "7e9715ea0235667b68c1d7ab30fd17ff",
@@ -3044,8 +3044,8 @@
     "synced_at": 1793263898.8132145
   },
   "biomimetic-scales": {
-    "hash": "622eb27f78ffe5f3570ba21340e08c3f",
-    "synced_at": 1793263899.0046825
+    "hash": "b07a7462084ae2f6f472ec23cf119416",
+    "synced_at": 1794342082.9493916
   },
   "energy-shield": {
     "hash": "b16fb54939bda2ab49b5c406a29ea422",
@@ -3088,8 +3088,8 @@
     "synced_at": 1793782215.0601282
   },
   "synthwave-grid-warp": {
-    "hash": "f903d07662bfaac0de9f7d4bfc98f167",
-    "synced_at": 1793263900.2945676
+    "hash": "edc46f3abf41534614073b885c4ce4b1",
+    "synced_at": 1794342083.456932
   },
   "interactive-magnetic-ripple": {
     "hash": "4fad1b7ff22f4b0a6bb19372a8e21310",
@@ -3196,8 +3196,8 @@
     "synced_at": 1793782216.2587266
   },
   "interactive-voronoi-lens": {
-    "hash": "c33b8a314e97450f0e657154713789fc",
-    "synced_at": 1793263903.3049493
+    "hash": "a222d0c0cc60bad2ff23582c2a35d8c5",
+    "synced_at": 1794342103.6952662
   },
   "pixel-stretch-cross": {
     "hash": "bc9f6ea1b7ff8e527e7a322559971236",
@@ -3228,8 +3228,8 @@
     "synced_at": 1793263903.8028994
   },
   "cyber-lattice-bilateral": {
-    "hash": "cab728b2662e7bd222c8e07381cb569d",
-    "synced_at": 1793263903.8411987
+    "hash": "63d6a395fa315bfe5f530f08cca94236",
+    "synced_at": 1794342089.3180656
   },
   "thermal-touch-blackbody": {
     "hash": "7485be6dd8e60e076c3f9a4bc026a1f0",
@@ -3284,12 +3284,12 @@
     "synced_at": 1793263905.661346
   },
   "steamy-glass-volumetric": {
-    "hash": "9f70d675197b51f9b27c256a53968831",
-    "synced_at": 1793263905.969319
+    "hash": "c117e47966f3a105fddec25038c8d4ae",
+    "synced_at": 1794342089.640799
   },
   "vhs-tracking-bilateral": {
-    "hash": "4780338e30087e465dceba9c5a88fd8d",
-    "synced_at": 1793263906.0009692
+    "hash": "e32206942b43545bd407b88e09ec461f",
+    "synced_at": 1794342089.7208157
   },
   "dynamic-lens-flares-prismatic": {
     "hash": "cdd13600043b503c7995f2d3d0bad4c0",
@@ -3308,8 +3308,8 @@
     "synced_at": 1793263906.580214
   },
   "bubble-lens-coupled": {
-    "hash": "07f07b99cec2c0930a10b6b06f159cd3",
-    "synced_at": 1793263906.7759416
+    "hash": "e398381d9456fb28ed91572649e5ed29",
+    "synced_at": 1794342090.1698673
   },
   "cyber-organic-ecosystem": {
     "hash": "2e504cf3d843cb66d8a36ba5d2766df5",
@@ -3368,8 +3368,8 @@
     "synced_at": 1793782219.524039
   },
   "deep-workgroup-multi-effect-blend": {
-    "hash": "6f79cc841a639cbd44456780bc09a36f",
-    "synced_at": 1793263908.2678409
+    "hash": "03fe98e1d34c5c9692985a416e0d45df",
+    "synced_at": 1794342090.2610955
   },
   "circuit-breaker-explosion": {
     "hash": "2402c93866230708943a9a5eeefa2649",
@@ -3396,8 +3396,8 @@
     "synced_at": 1793784588.204292
   },
   "block-distort-em": {
-    "hash": "5da9832cfce4aeaa66d665111ee2483c",
-    "synced_at": 1793263909.0055406
+    "hash": "2e00f6d99810dca0ba295d43e3351a4e",
+    "synced_at": 1794342090.682741
   },
   "gamma-ray-burst-blackbody": {
     "hash": "a66d0368fb94c3d090f2d552b8c5c417",
@@ -3420,8 +3420,8 @@
     "synced_at": 1793263909.4949365
   },
   "fluid-grid-rgba-fluid": {
-    "hash": "5840112c3b78ac7e188681b7eee0d851",
-    "synced_at": 1793263909.538121
+    "hash": "6734bd7a9ab12995e318ee4a8cc25a65",
+    "synced_at": 1794342090.7540119
   },
   "gen-singularity-forge-blackbody": {
     "hash": "63a70dba6212514a1ae9c751a19c9824",
@@ -3444,8 +3444,8 @@
     "synced_at": 1793263909.9929507
   },
   "digital-reveal-guided": {
-    "hash": "f458136d568d48ffc57decb3f2302adc",
-    "synced_at": 1793263910.279839
+    "hash": "a5e6f84dcc3bbb923f2e426018f36362",
+    "synced_at": 1794342110.7452297
   },
   "multi-fractal-compositor": {
     "hash": "145e0948d9020b500e1b68cbdad4ebb3",
@@ -3460,8 +3460,8 @@
     "synced_at": 1793782221.1035686
   },
   "digital-lens-prismatic": {
-    "hash": "5856fa6a7eea5eafa26131892a3343d9",
-    "synced_at": 1793263910.6857018
+    "hash": "df7c4eb271ca9e1eaee26a4b0829502c",
+    "synced_at": 1794342102.5567076
   },
   "gen-astro-orrery-blackbody": {
     "hash": "9d301e7f0653a3b0e075e8c591e3fcde",
@@ -3492,8 +3492,8 @@
     "synced_at": 1793263911.294653
   },
   "vortex-warp-coupled": {
-    "hash": "1a711c59682820b332c547ea52ea497f",
-    "synced_at": 1793263911.460203
+    "hash": "fd2dc9ba5fadfaddb3a1b5658db64e94",
+    "synced_at": 1794342091.8794854
   },
   "spec-spherical-harmonics-light": {
     "hash": "2fc195b6b3baff1b212498634fdf5c50",
@@ -3504,8 +3504,8 @@
     "synced_at": 1793263911.7049923
   },
   "spectral-flow-structure": {
-    "hash": "5844be0cb12f2c13ce0d8925a79c624a",
-    "synced_at": 1793263911.704884
+    "hash": "ab78a2ee487b22bbb8baa00b5cc41ee6",
+    "synced_at": 1794342092.274163
   },
   "anamorphic-flare-iridescence": {
     "hash": "2c0c372e618f468a7277209321773069",
@@ -3516,16 +3516,16 @@
     "synced_at": 1793263911.970729
   },
   "data-scanner-gabor": {
-    "hash": "8d9d9f3b3bf528e1b751feda2a68762b",
-    "synced_at": 1793263912.1191726
+    "hash": "9fc36395f51dac5e64fadf39e2fc5cb3",
+    "synced_at": 1794342128.4087362
   },
   "interactive-magnetic-ripple-em": {
     "hash": "4a119e618eb9621f08b38f3bbbf0956a",
     "synced_at": 1793263912.1096807
   },
   "fractal-glass-distort-bilateral": {
-    "hash": "243a9c9a3937381fe4c8f0462c988f23",
-    "synced_at": 1793263912.3424802
+    "hash": "86861fc9e88faba15551df58e9156d09",
+    "synced_at": 1794342131.0371132
   },
   "cyber-ripples-coupled": {
     "hash": "9d5042c205bcb2b7f225918e6cdba34d",
@@ -3576,8 +3576,8 @@
     "synced_at": 1793782222.612417
   },
   "breathing-kaleidoscope-morph": {
-    "hash": "e25a127fc9c59f8c7cf877c7b4a957e1",
-    "synced_at": 1793263913.5329926
+    "hash": "cc6851d7fc8559ac929d4d544b9191cf",
+    "synced_at": 1794342156.0067399
   },
   "ethereal-swirl-coupled": {
     "hash": "c7bfb1e96d72effb276b42a74c12b936",
@@ -3588,8 +3588,8 @@
     "synced_at": 1794214158.921833
   },
   "datamosh-brush-diffusion": {
-    "hash": "1622fe1da6a9a2fbab401227daee9f67",
-    "synced_at": 1793263913.7457097
+    "hash": "802edbba98ae5e283b700c651b91045a",
+    "synced_at": 1794342135.1522017
   },
   "neural-raymarcher-gabor": {
     "hash": "5981e0bff9e2bbe0df01dce2af8b9b34",
@@ -3628,8 +3628,8 @@
     "synced_at": 1793263914.563103
   },
   "chroma-depth-tunnel-prismatic": {
-    "hash": "d48c4115c98ad05aa5d777e0506a8e79",
-    "synced_at": 1793263914.5550554
+    "hash": "60e541a42b857c75782acfdaddd5f283",
+    "synced_at": 1794342163.174558
   },
   "bioluminescent-blackbody": {
     "hash": "6b2ebb3c79ee6eb57668180a1b8496c3",
@@ -3684,8 +3684,8 @@
     "synced_at": 1793782223.1893592
   },
   "interactive-pixel-wind-structure": {
-    "hash": "1d0ef2bf5ce1ac12e2b65c951303dc2e",
-    "synced_at": 1793263915.9317217
+    "hash": "6d88618f6ef91c82092fa6b7a74c11d5",
+    "synced_at": 1794342148.2792659
   },
   "chromatic-focus-coupled": {
     "hash": "b81e692eca4102e0f45a9f8e40f59913",
@@ -3716,12 +3716,12 @@
     "synced_at": 1793782223.6932273
   },
   "blueprint-reveal-guided": {
-    "hash": "912eb10aa904b262f1f21f7f7a6ad519",
-    "synced_at": 1793263916.7796648
+    "hash": "cffc6f894b2497a871c9194c8f488804",
+    "synced_at": 1794342131.5354404
   },
   "alucinate-hdr": {
-    "hash": "933456ca03c465b62fecf41f74e6492b",
-    "synced_at": 1793263916.8103633
+    "hash": "874247aeff02e87e0074b2841b958bdd",
+    "synced_at": 1794342167.8521028
   },
   "interactive-origami-coupled": {
     "hash": "711d20140dc4ef7060e312a84cb3937e",
@@ -3748,20 +3748,20 @@
     "synced_at": 1793263917.2760286
   },
   "retro-phosphor-stipple": {
-    "hash": "c2b1106d9a9b2eb7b5f7560c2074737b",
-    "synced_at": 1793263917.301891
+    "hash": "2ac2f9d5815c29b9a18346d372f4ce26",
+    "synced_at": 1794342138.7497518
   },
   "retro-phosphor-hdr": {
-    "hash": "0d30cbc11261ed3ceb0e925b1284058d",
-    "synced_at": 1793263917.2982419
+    "hash": "844891822a2e72b64afd7656c53c191d",
+    "synced_at": 1794342143.4689293
   },
   "hyperbolic-dreamweaver-julia": {
     "hash": "c33ce85c8b2a7c32101acc83e38f7e76",
     "synced_at": 1793782224.0562067
   },
   "divine-light-iridescence": {
-    "hash": "c780d8a8006da56bbaaf18e0a3151832",
-    "synced_at": 1793263917.5923731
+    "hash": "345d68d286febf1c80b01472c44f0273",
+    "synced_at": 1794342143.9919143
   },
   "liquid-smear-structure": {
     "hash": "4f91a555e9399c5efc76dc08b4ba055b",
@@ -3872,16 +3872,16 @@
     "synced_at": 1793782225.7406762
   },
   "cyber-scan-gabor": {
-    "hash": "11137a00277b8c8ac45ea5e1b3fa8de6",
-    "synced_at": 1793263919.7969172
+    "hash": "0b4f407aef26c5e3127f832de77d9f64",
+    "synced_at": 1794342155.6990502
   },
   "crumpled-paper": {
     "hash": "1ee92f9da6269f8c27eea9d99e7ac016",
     "synced_at": 1793782225.9690945
   },
   "conv-reaction-convolution": {
-    "hash": "935073a945b6b6a7edd4824e36d5101e",
-    "synced_at": 1793263920.1773396
+    "hash": "02a0cd7cbaf1b0256f84fd13eb08ab5b",
+    "synced_at": 1794342148.6818414
   },
   "oil-slick-iridescence": {
     "hash": "603d610f78c374d104d714ead08b0200",
@@ -3916,16 +3916,16 @@
     "synced_at": 1793263921.2776668
   },
   "optical-illusion-spin": {
-    "hash": "3cd6d07b15e9de68075336776d0c47f0",
-    "synced_at": 1793263921.3712976
+    "hash": "963b7fc668c457b67b7d1601ccba1788",
+    "synced_at": 1794342149.1406057
   },
   "steampunk-gear-lens": {
-    "hash": "401b2995beb1e24164ff7447c7afadc8",
-    "synced_at": 1793263921.5081396
+    "hash": "21fee1e49d38840774dc5849bb6d04ce",
+    "synced_at": 1794342149.6231956
   },
   "circular-pixelate": {
-    "hash": "71a966435ae6fc370eba3e3122337b4a",
-    "synced_at": 1793263921.6817482
+    "hash": "95599a87368b088ff5804f9c40e08dcf",
+    "synced_at": 1794342150.053482
   },
   "pixel-stretch-interactive": {
     "hash": "f65f5e76f8bce486123d84796d6820b8",
@@ -4016,8 +4016,8 @@
     "synced_at": 1793782247.7242715
   },
   "contour-flow": {
-    "hash": "e15037dac5da1933bd60f71b003a1e76",
-    "synced_at": 1793263925.1786332
+    "hash": "9982f16eb4c2e2f23735a5094b897cfd",
+    "synced_at": 1794342150.4929469
   },
   "tesseract-fold": {
     "hash": "d2a0f0a6a13cb6e6fb41178c44f5e20c",
@@ -4040,8 +4040,8 @@
     "synced_at": 1793263925.8574233
   },
   "color-channel-weave": {
-    "hash": "88fc230ee620d8c39531ee13bad3689d",
-    "synced_at": 1793263925.8866208
+    "hash": "78feeecc52c5b36f029d89ac08ee48dc",
+    "synced_at": 1794342150.908671
   },
   "slime-drip": {
     "hash": "06c8325615e8ebc80cfeaf7036528279",
@@ -4052,8 +4052,8 @@
     "synced_at": 1793782257.425373
   },
   "watercolor-bloom": {
-    "hash": "2fd299dda6011cb320a5735dd8845cb0",
-    "synced_at": 1793263926.276535
+    "hash": "118ff1283e115a486d5b6be064678a5a",
+    "synced_at": 1794342151.3305702
   },
   "conv-guided-filter-depth": {
     "hash": "e36ecc2413a5e9c6f71499d0dc7a7168",
@@ -4104,8 +4104,8 @@
     "synced_at": 1793610221.7592635
   },
   "rgb-ripple-distortion": {
-    "hash": "9da9afd9da53333f7de3b29ca16df096",
-    "synced_at": 1793263928.3164785
+    "hash": "81aa2061455b33ac4f0deb597e98ad4e",
+    "synced_at": 1794342151.7491586
   },
   "spectral-mesh": {
     "hash": "6a47d8864784f75fd24cc96c5213d9c6",
@@ -4140,8 +4140,8 @@
     "synced_at": 1793263929.1458585
   },
   "spec-histogram-equalize": {
-    "hash": "a0e96de3577bb47de03493bb7d3ace56",
-    "synced_at": 1793263929.1830063
+    "hash": "25ad573b57fce40a3291afa9947872ef",
+    "synced_at": 1794342152.1408908
   },
   "texture": {
     "hash": "9e0f8a7bbdff2929e7f4038df6a9633d",
@@ -4152,8 +4152,8 @@
     "synced_at": 1793263929.5654817
   },
   "pixel-scattering": {
-    "hash": "1de4fd6c449c24f784c3eb0d5d435c03",
-    "synced_at": 1793263929.5908573
+    "hash": "8c08580c13b72a0fd9358c350e1cc447",
+    "synced_at": 1794342152.5970395
   },
   "ember-drift-dissolve": {
     "hash": "9060933406d5920f6f15f8c2a07bd2c0",
@@ -4168,8 +4168,8 @@
     "synced_at": 1793610247.3990283
   },
   "lenticular-holographic-shift": {
-    "hash": "9e34113de1b41d9fef8c7414ceec47c2",
-    "synced_at": 1793263930.4474435
+    "hash": "d06afc207b1a677b0034202623f2be59",
+    "synced_at": 1794342152.9845157
   },
   "conv-frequency-domain-notch": {
     "hash": "ebb5a4d02f71e3b8644f406878c61587",
@@ -4216,8 +4216,8 @@
     "synced_at": 1793263931.864444
   },
   "glitch-reveal": {
-    "hash": "7dc32bc92bcf8f80861688f92a52cbd1",
-    "synced_at": 1793263932.0587907
+    "hash": "621057c9e7e67a2d0fbd8367ddfb3e63",
+    "synced_at": 1794342153.3771367
   },
   "frost-reveal": {
     "hash": "cc453552ee6560c0646e252e4ffd79b8",
@@ -4232,8 +4232,8 @@
     "synced_at": 1794214162.8722308
   },
   "directional-blur-wipe": {
-    "hash": "54c7e47ebd4cccdd5600f403c0cd4779",
-    "synced_at": 1793263932.6509042
+    "hash": "717841349603d2fe1e6ca706a05746d6",
+    "synced_at": 1794342153.7697673
   },
   "crt-clear-zone": {
     "hash": "3693cc0b338fb87b86e01ede3c14a7e2",
@@ -4248,8 +4248,8 @@
     "synced_at": 1793782284.7996938
   },
   "chroma-vortex": {
-    "hash": "68b4aae5dc9ca07d2908f454af4e04be",
-    "synced_at": 1793263933.0649168
+    "hash": "b1a9ec3dc5f13a5be100c3af260395ec",
+    "synced_at": 1794342154.1635463
   },
   "holographic-flicker": {
     "hash": "bce9bec5a8bdb8057f0b5e2056c091e0",
@@ -4308,8 +4308,8 @@
     "synced_at": 1793782286.8697264
   },
   "rgb-distance-split": {
-    "hash": "a3477f76160880500fe82ed8c86d6790",
-    "synced_at": 1793263935.1654792
+    "hash": "fc2374413a8ec70e39b88a92d8ad78ca",
+    "synced_at": 1794342154.6740153
   },
   "alpha-spectral-decompose": {
     "hash": "e19347509a16af419ecee4596c7c6d59",
@@ -4368,16 +4368,16 @@
     "synced_at": 1793610222.1554394
   },
   "data-scanner": {
-    "hash": "c61bcff400b17923a6fad08cd075b38d",
-    "synced_at": 1793263937.207281
+    "hash": "91b5d0da637cd05be632c7f158bf5e43",
+    "synced_at": 1794342155.1048944
   },
   "chromatic-focus-interactive": {
     "hash": "acaef643a4b3f0b6a0e1c4a2db631d27",
     "synced_at": 1793263937.6103647
   },
   "cyber-grid-pulse": {
-    "hash": "a11b8b07610e2a5390eaf674c08196c8",
-    "synced_at": 1793263937.3659918
+    "hash": "698bfce31879fd8c672d22570ca17b84",
+    "synced_at": 1794342155.5029123
   },
   "rgb-topology": {
     "hash": "6a124551b27f5de66c4314828c09e442",
@@ -4412,8 +4412,8 @@
     "synced_at": 1793782288.0266857
   },
   "alpha-multi-layer-glass": {
-    "hash": "a6badfeebd22ba9afc49ed4675300831",
-    "synced_at": 1793263938.832251
+    "hash": "d217ce07cbff902f01537f57677e24be",
+    "synced_at": 1794342156.0173244
   },
   "liquid-pass2": {
     "hash": "d04f0040b05a6d3ec7c0794846f1a677",
@@ -4528,8 +4528,8 @@
     "synced_at": 1793263941.9814546
   },
   "glass-wipes": {
-    "hash": "bfa94ac2b6bb3710aad330f4a0500dc4",
-    "synced_at": 1793263942.0589826
+    "hash": "d9ecdb8413107c046715a1190c3e0577",
+    "synced_at": 1794342156.2085462
   },
   "liquid-viscous-simple": {
     "hash": "821711120c6d53252cb04883ce2d66d8",
@@ -4664,8 +4664,8 @@
     "synced_at": 1793263945.5735714
   },
   "aero-chromatics": {
-    "hash": "b29e414aea36e08134f9b762eb9b6764",
-    "synced_at": 1793263945.5779152
+    "hash": "a4fd21852f4ee05974d576b06a3ec159",
+    "synced_at": 1794342156.4084787
   },
   "sim-heat-haze-field": {
     "hash": "e44185e4fb39e9c34c7608ad56b82e81",
@@ -4796,8 +4796,8 @@
     "synced_at": 1793263948.7598677
   },
   "hyperbolic-dreamweaver": {
-    "hash": "390c44af278cd74a92a90f98e51c7f4c",
-    "synced_at": 1793263948.9120383
+    "hash": "007c66e752be1de360030dbe37d3c5f8",
+    "synced_at": 1794342156.4378273
   },
   "kaleido-scope": {
     "hash": "29cbfae22d4e977d93d768bcfc3611f4",
@@ -4824,8 +4824,8 @@
     "synced_at": 1793782290.5968165
   },
   "spec-hypercube-projection": {
-    "hash": "f57a746155fbbbc73b93e4bde3114c0c",
-    "synced_at": 1793263949.4317687
+    "hash": "afdcdfca225d641b262755e69fbf1069",
+    "synced_at": 1794342156.6063466
   },
   "digital-crease": {
     "hash": "ddd4a7a1155eadb58d418896e4f2b510",
@@ -4888,12 +4888,12 @@
     "synced_at": 1793263950.7798743
   },
   "hyb-neural-voronoi-feedback": {
-    "hash": "631aef73930e5cc199a7566efff04c1d",
-    "synced_at": 1793263950.678824
+    "hash": "6e14d799c8c66f7daac312524bbbf05e",
+    "synced_at": 1794342156.7948291
   },
   "hybrid-fractal-feedback": {
-    "hash": "89fdc9fc959ebe12d6e3a5ccf6d7a7ee",
-    "synced_at": 1793263950.9334006
+    "hash": "a0ea44b714f14a9a43c9a7fb09221b2e",
+    "synced_at": 1794342156.9425528
   },
   "hyb-temporal-fbm-ghost": {
     "hash": "643b9e1090eed6511a1816d4225a59c5",
@@ -4912,8 +4912,8 @@
     "synced_at": 1793263951.4104989
   },
   "spectral-vortex": {
-    "hash": "385197852938698573d0aaffc8c1f8aa",
-    "synced_at": 1793263951.5039632
+    "hash": "561c49535570426affcd800e17c16f0d",
+    "synced_at": 1794342157.1160483
   },
   "magnetic-field": {
     "hash": "20ed958d919aabfea6bfce527966c435",
@@ -4972,16 +4972,16 @@
     "synced_at": 1793263952.6838348
   },
   "gen-chromatic-vortex": {
-    "hash": "e2ff9bd9479ecb60b19d3f5a3501e17d",
-    "synced_at": 1793263952.7775135
+    "hash": "fce1c2e9d2596671f15296e4813b6eaf",
+    "synced_at": 1794342157.1937876
   },
   "hybrid-chromatic-liquid": {
     "hash": "5f16850312844779fcf38dbe0aa6f4a5",
     "synced_at": 1793263951.0061378
   },
   "glitch-slice-mirror": {
-    "hash": "ac644794eec0bea8fe94c07c3da7047f",
-    "synced_at": 1793263953.0411036
+    "hash": "719a1df3438500356181cfbcf6c348e0",
+    "synced_at": 1794342157.3565063
   },
   "predator-camouflage": {
     "hash": "f95de727d6d2116611804a6d1e3d2082",
@@ -5008,8 +5008,8 @@
     "synced_at": 1793782292.269865
   },
   "crystal-facets": {
-    "hash": "5c3914d8bf91a549418170fb0acbcc27",
-    "synced_at": 1793263953.6015239
+    "hash": "a7449189bfa86292c04fc4a1af3905f1",
+    "synced_at": 1794342157.6277301
   },
   "prismatic-mosaic": {
     "hash": "59aa28c08c71fcad34ef48ade915e556",
@@ -5032,8 +5032,8 @@
     "synced_at": 1793263954.0619433
   },
   "glass-brick-wall": {
-    "hash": "229c7a2685ad8729625ac1065098e15b",
-    "synced_at": 1793263954.3109071
+    "hash": "d7c68e8f95a1748d227757ad89c1b5ee",
+    "synced_at": 1794342157.7082078
   },
   "tensor-flow-sculpt": {
     "hash": "e87e2e982eba18c135f1e533ce036088",
@@ -5044,16 +5044,16 @@
     "synced_at": 1793263951.082269
   },
   "spec-bicubic-crystal": {
-    "hash": "e4c6e6bd5c878358c2235f52cd52e36c",
-    "synced_at": 1793263954.3544297
+    "hash": "63d2daee1ff3aee1858f2ff7d26120af",
+    "synced_at": 1794342157.737863
   },
   "zoom-burst": {
     "hash": "841e3939fb9cc2f63fae88f8f92cb2e1",
     "synced_at": 1793782292.7214777
   },
   "luminescent-glass-tiles": {
-    "hash": "ace59caf21f666436478595bdf997179",
-    "synced_at": 1793263954.4918463
+    "hash": "e4bfbb49ad4a12ab91161f110d70f13f",
+    "synced_at": 1794342158.5089548
   },
   "black-hole": {
     "hash": "35cca1e82c1bb1543ccab14994f673e4",
@@ -5116,8 +5116,8 @@
     "synced_at": 1793263955.7873306
   },
   "radial-rgb": {
-    "hash": "6f147e2f869385183caf261c7cb6370d",
-    "synced_at": 1793263956.0490372
+    "hash": "08a924995ab6e044e0a6425c67b47e29",
+    "synced_at": 1794342158.1212664
   },
   "fractal-image-surf": {
     "hash": "9524f2d10a3bdb99419b5e029e37f78a",
@@ -5136,8 +5136,8 @@
     "synced_at": 1793263956.25799
   },
   "fractal-kaleidoscope": {
-    "hash": "3ad613cbaeacf53c24b623336724d592",
-    "synced_at": 1793263956.458707
+    "hash": "d34a5ecba69cce12f2470a0b739a3147",
+    "synced_at": 1794342158.2511659
   },
   "liquid-prism": {
     "hash": "a99b507aeacfadad40519102481fd88e",
@@ -5472,12 +5472,12 @@
     "synced_at": 1794042724.7390501
   },
   "gen-ethereal-neon-bismuth-origami": {
-    "hash": "688a7b01b41e31eb4cfa6cf0b1124587",
-    "synced_at": 1794042724.8051507
+    "hash": "82a881cb607be3a29a9c0841d1245528",
+    "synced_at": 1794342026.6818109
   },
   "gen-magnetic-liquid-glyphs": {
-    "hash": "c1027623b931a18092d7027e923f67ae",
-    "synced_at": 1794128765.2796922
+    "hash": "02465a7772d008d4e76441ae90d6d9c9",
+    "synced_at": 1794342026.445593
   },
   "gen-audio-reactive-quantum-pollen": {
     "hash": "d682ce0e2a643cf094336ee832fee951",
@@ -5512,7 +5512,11 @@
     "synced_at": 1794214084.092053
   },
   "gen-cymatic-void-glass-geode": {
-    "hash": "a3b8aeaca2e76531fe5317b7f4a924ae",
-    "synced_at": 1794214489.8055942
+    "hash": "243527c6c833bd234a933f6c35be7dc2",
+    "synced_at": 1794342026.7308817
+  },
+  "gen-ethereal-cyber-aurora-mantis-shrine": {
+    "hash": "13169b5ab1577c1174911a9fa03e3f5f",
+    "synced_at": 1794342027.2826517
   }
 }
