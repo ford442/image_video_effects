@@ -19,6 +19,7 @@
  *   node scripts/verify-naga-wasm.mjs --files a.wgsl b.wgsl
  *   node scripts/verify-naga-wasm.mjs --base-ref origin/develop
  *   node scripts/verify-naga-wasm.mjs --all --report     # also write reports/naga_wasm_validation.json
+ *   node scripts/verify-naga-wasm.mjs --all --fix        # drop knownFailures ids that now pass
  */
 
 import fs from 'node:fs';
@@ -37,11 +38,12 @@ const fail = (msg) => {
 };
 
 function parseArgs(argv) {
-  const args = { all: false, report: false, baseRef: 'origin/main', files: null, contract: DEFAULT_CONTRACT };
+  const args = { all: false, report: false, fix: false, baseRef: 'origin/main', files: null, contract: DEFAULT_CONTRACT };
   for (let i = 0; i < argv.length; i += 1) {
     const a = argv[i];
     if (a === '--all') args.all = true;
     else if (a === '--report') args.report = true;
+    else if (a === '--fix') args.fix = true;
     else if (a === '--base-ref') args.baseRef = argv[++i];
     else if (a.startsWith('--base-ref=')) args.baseRef = a.slice('--base-ref='.length);
     else if (a === '--contract') args.contract = path.resolve(argv[++i]);
@@ -124,7 +126,7 @@ const shaderId = (file) => path.basename(file, '.wgsl');
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) {
-    console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(2, 22).join('\n'));
+    console.log(fs.readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n').slice(2, 23).join('\n'));
     return;
   }
 
@@ -145,13 +147,6 @@ async function main() {
   const bindGroup0 = loadBindGroup0Contract();
 
   const knownFailures = new Set(contract.knownFailures.ids);
-  if (contract.knownFailures.ratchet !== contract.knownFailures.ids.length) {
-    fail(
-      `❌ wgsl_validation.json knownFailures.ratchet is ${contract.knownFailures.ratchet} ` +
-        `but ids lists ${contract.knownFailures.ids.length} entries — they must match.`,
-    );
-  }
-
   let files;
   if (args.files) files = args.files.map((f) => path.resolve(ROOT, f));
   else if (args.all) files = allShaderFiles();
@@ -227,15 +222,25 @@ async function main() {
     );
   }
 
-  if (nowPassing.length > 0) {
+  if (nowPassing.length > 0 && args.fix) {
+    // The list only shrinks: --fix drops ids this scan proved fixed, never adds one.
+    const fixed = new Set(nowPassing);
+    contract.knownFailures.ids = contract.knownFailures.ids.filter((id) => !fixed.has(id));
+    fs.writeFileSync(args.contract, `${JSON.stringify(contract, null, 2)}\n`);
+    console.log(
+      `\n🔧 --fix: removed ${nowPassing.length} now-passing id(s) from ` +
+        `${path.relative(ROOT, args.contract)} knownFailures.ids ` +
+        `(${contract.knownFailures.ids.length} left):\n  ${nowPassing.join('\n  ')}`,
+    );
+  } else if (nowPassing.length > 0) {
     fail(
       `\n❌ ${nowPassing.length} shader(s) now pass naga but are still listed in ` +
-        `src/contracts/wgsl_validation.json knownFailures.ids. Remove them and lower ` +
-        `ratchet to ${knownFailures.size - nowPassing.length}:\n  ${nowPassing.join('\n  ')}`,
+        `src/contracts/wgsl_validation.json knownFailures.ids. Remove them ` +
+        `(node scripts/verify-naga-wasm.mjs --all --fix does it):\n  ${nowPassing.join('\n  ')}`,
     );
   }
 
-  if (expectedFailures.length > 0 && newFailures.length === 0 && nowPassing.length === 0) {
+  if (expectedFailures.length > 0 && newFailures.length === 0 && (nowPassing.length === 0 || args.fix)) {
     console.log(
       `\n⚠️  ${expectedFailures.length} known-bad shader(s) still failing (ratcheted, not blocking):`,
     );

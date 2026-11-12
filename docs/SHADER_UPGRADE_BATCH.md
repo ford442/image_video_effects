@@ -309,6 +309,24 @@ its thumbnail stale. Use `--event=hygiene` for plumbing-only passes so they are
 not counted as upgrades. Thumbnails are refreshed afterwards on a GPU machine
 (Shader Scanner → *Changed since last thumbnail*), not by the agent.
 
+## 8c. Run the shader gates (required, before push)
+
+```bash
+npm run verify:shaders:fix   # lets the ledgers shrink, then runs every blocking shader gate CI runs
+```
+
+The gates regenerate audit reports under `reports/` (timestamps, counts). Those
+are not part of the batch: discard them file by file, and do not discard
+`reports/shader-upgrade-ledger.json` from 8b.
+
+A batch that migrates a shader to `_prelude.wgsl` or fixes a naga known-failure
+must also remove its id from `src/contracts/prelude_migration.json` `pending` /
+`src/contracts/wgsl_validation.json` `knownFailures.ids`; `--fix` does exactly
+that and nothing else (it never adds an exemption). A shader above 256
+invocations per workgroup needs a `deepWorkgroupExceptions` size **and**
+`"requiresDeepWorkgroup": true` in its definition. Skipping this step is what
+turned `main` red three times (#1674).
+
 ## 9. Notes, MEMORY.md, and coordinator review
 
 ### Where to write the batch

@@ -46,7 +46,7 @@ function withTempDir(fn) {
 
 /** A copy of the real contract with knownFailures swapped out. */
 function contractWith(dir, ids) {
-  const clone = { ...CONTRACT, knownFailures: { ...CONTRACT.knownFailures, ids, ratchet: ids.length } };
+  const clone = { ...CONTRACT, knownFailures: { ...CONTRACT.knownFailures, ids } };
   const file = path.join(dir, 'contract.json');
   fs.writeFileSync(file, JSON.stringify(clone, null, 2));
   return file;
@@ -65,8 +65,8 @@ test('Cargo.toml naga pin matches the contract', () => {
   assert.equal(pinned[1], CONTRACT.nagaCratePin);
 });
 
-test('knownFailures.ratchet equals the number of listed ids', () => {
-  assert.equal(CONTRACT.knownFailures.ratchet, CONTRACT.knownFailures.ids.length);
+test('knownFailures has no hand-maintained count (the ratchet is ids.length)', () => {
+  assert.equal('ratchet' in CONTRACT.knownFailures, false);
 });
 
 test('knownFailures ids are sorted and unique', () => {
@@ -197,25 +197,27 @@ test('gate fails when a listed shader starts passing (ratchet must tighten)', ()
     const { status, stdout } = runGate(['--contract', contractWith(dir, ['zz-good']), '--files', file]);
     assert.equal(status, 1, stdout);
     assert.match(stdout, /now pass naga but are still listed/);
-    assert.match(stdout, /lower ratchet to 0/);
+    assert.match(stdout, /--all --fix/);
   });
 });
 
-test('gate fails when ratchet disagrees with the id list', () => {
+test('--fix removes a now-passing id from the contract and exits 0', () => {
   withTempDir((dir) => {
-    const contract = JSON.parse(fs.readFileSync(contractWith(dir, []), 'utf8'));
-    contract.knownFailures.ratchet = 7;
-    const file = path.join(dir, 'mismatch.json');
-    fs.writeFileSync(file, JSON.stringify(contract));
     const good = path.join(dir, 'zz-good.wgsl');
     fs.writeFileSync(good, VALID_WGSL);
-    const { status, stdout } = runGate(['--contract', file, '--files', good]);
-    assert.equal(status, 1, stdout);
-    assert.match(stdout, /ratchet is 7 but ids lists 0/);
+    const bad = path.join(dir, 'zz-bad.wgsl');
+    fs.writeFileSync(bad, '@compute @workgroup_size(1,1,1) fn main() { let x: i32 = 1.5; }');
+    const contractFile = contractWith(dir, ['zz-bad', 'zz-good']);
+    const { status, stdout } = runGate(['--contract', contractFile, '--files', good, bad, '--fix']);
+    assert.equal(status, 0, stdout);
+    assert.match(stdout, /removed 1 now-passing id/);
+    assert.deepEqual(JSON.parse(fs.readFileSync(contractFile, 'utf8')).knownFailures.ids, ['zz-bad']);
+    // A second run is a no-op and stays green.
+    assert.equal(runGate(['--contract', contractFile, '--files', good, bad]).status, 0);
   });
 });
 
-test('the whole catalog matches the recorded ratchet exactly', () => {
+test('the whole catalog matches the recorded known-failure list exactly', () => {
   const { status, stdout } = runGate(['--all']);
   assert.equal(status, 0, stdout);
   const m = stdout.match(/(\d+) valid, (\d+) invalid \((\d+) known, (\d+) new\)/);
@@ -223,8 +225,8 @@ test('the whole catalog matches the recorded ratchet exactly', () => {
   assert.equal(Number(m[4]), 0, 'new naga failures in the catalog');
   assert.equal(
     Number(m[3]),
-    CONTRACT.knownFailures.ratchet,
-    'known-failure count drifted from the contract ratchet',
+    CONTRACT.knownFailures.ids.length,
+    'known-failure count drifted from the contract id list',
   );
 });
 

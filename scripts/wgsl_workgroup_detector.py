@@ -136,11 +136,39 @@ def parse_workgroup_size_dispatch_xy(content: str, entry_point: str = "main") ->
     return None
 
 
-def check_dispatch_limits(x: int, y: int, z: int) -> list[str]:
+WORKGROUP_CONTRACT = PROJECT_ROOT / "src" / "contracts" / "workgroup_dispatch.json"
+SHADER_DEFINITIONS_DIR = PROJECT_ROOT / "shader_definitions"
+# The deep-workgroup device tier (webgpu_limits.json deepWorkgroupLimits).
+MAX_INVOCATIONS_DEEP = 1024
+
+
+def deep_workgroup_exceptions(contract_path: Path = WORKGROUP_CONTRACT) -> set[tuple[int, int, int]]:
+    """Sizes workgroup_dispatch.json allows above 256 invocations (deepWorkgroupExceptions)."""
+    try:
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {(e["x"], e["y"], e["z"]) for e in contract.get("deepWorkgroupExceptions", [])}
+
+
+def declares_deep_workgroup(shader_id: str, definitions_dir: Path = SHADER_DEFINITIONS_DIR) -> bool:
+    """True when the shader's definition sets requiresDeepWorkgroup (the renderer gates it on the device tier)."""
+    for path in definitions_dir.glob(f"*/{shader_id}.json"):
+        try:
+            if json.loads(path.read_text(encoding="utf-8")).get("requiresDeepWorkgroup") is True:
+                return True
+        except (OSError, ValueError):
+            continue
+    return False
+
+
+def check_dispatch_limits(x: int, y: int, z: int, *, deep: bool = False) -> list[str]:
+    """`deep`: a contracted deep-workgroup size on a shader that declares requiresDeepWorkgroup."""
     issues: list[str] = []
     product = x * y * z
-    if product > MAX_INVOCATIONS:
-        issues.append(f"invocation product {product} > {MAX_INVOCATIONS}")
+    max_invocations = MAX_INVOCATIONS_DEEP if deep else MAX_INVOCATIONS
+    if product > max_invocations:
+        issues.append(f"invocation product {product} > {max_invocations}")
     if x > MAX_WG_X:
         issues.append(f"workgroup x {x} > {MAX_WG_X}")
     if y > MAX_WG_Y:
@@ -219,7 +247,16 @@ def audit_file(path: Path) -> dict[str, Any]:
     dims, dim_source = resolve_workgroup_dims(content, "main")
     limit_errors: list[dict[str, Any]] = []
     if dims:
-        for msg in check_dispatch_limits(*dims):
+        # 16x16x4-style sizes are legal only as a contracted exception on a shader the
+        # catalog marks requiresDeepWorkgroup; anything else over 256 stays an error.
+        in_contract = tuple(dims) in deep_workgroup_exceptions()
+        deep = in_contract and declares_deep_workgroup(path.stem)
+        for msg in check_dispatch_limits(*dims, deep=deep):
+            if in_contract and not deep and msg.startswith("invocation product"):
+                msg += (
+                    f" — {dims[0]}x{dims[1]}x{dims[2]} is a deepWorkgroupExceptions size, but "
+                    f"shader_definitions/*/{path.stem}.json does not set \"requiresDeepWorkgroup\": true"
+                )
             limit_errors.append({
                 "line": line_number_for_match(content, "@workgroup_size"),
                 "message": msg,

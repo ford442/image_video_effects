@@ -102,7 +102,7 @@ a `npm run verify:naga-wasm:all` run and any resulting change to
 `verify:naga-wasm` fails in both directions:
 
 - a shader that fails naga and is **not** in `knownFailures.ids` — a new break;
-- a shader that **is** in `knownFailures.ids` but now passes — remove it and lower
-  `ratchet`, so the count can only go down.
+- a shader that **is** in `knownFailures.ids` but now passes — remove it, so the
+  list can only shrink. `node scripts/verify-naga-wasm.mjs --all --fix` does it.
 
-`ratchet` must always equal `ids.length`.
+The ratchet is `ids.length`; there is no separate count to keep in step.

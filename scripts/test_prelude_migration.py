@@ -259,6 +259,14 @@ def test_gate_r2_r3_stale_entries(tmp_path):
     assert _rules(root)[0] == ["R2", "R3"]
 
 
+def test_gate_fix_drops_stale_entries_and_only_those(tmp_path):
+    root = _gate_tree(tmp_path, {"a": "eligible", "ghost": "eligible", "b": "eligible"}, {"a": MIGRATED, "b": PASTED})
+    assert gate.main(["--root", str(root), "--fix"]) == 0
+    tracker = json.loads((root / gate.TRACKER_REL).read_text(encoding="utf-8"))
+    assert tracker["pending"] == {"b": "eligible"}
+    assert _rules(root)[0] == []
+
+
 def test_gate_r4_mixed(tmp_path):
     root = _gate_tree(tmp_path, {}, {"m": MIXED})
     rules, _, errors = _rules(root)
