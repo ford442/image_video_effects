@@ -134,25 +134,24 @@ export function useRoulette({
         setTimeout(() => setIsRouletteActive(false), 500);
     }, [getRandomShader, randomizeSlotParams, setMode, updateSlotParam, modes.length, setStatus]);
 
-    useEffect(() => {
-        if (chaosModeEnabled) {
-            triggerRoulette();
-            chaosIntervalRef.current = setInterval(() => {
-                triggerRoulette();
-            }, 6000 + Math.random() * 4000);
-        } else {
-            if (chaosIntervalRef.current) {
-                clearInterval(chaosIntervalRef.current);
-                chaosIntervalRef.current = null;
-            }
-        }
+    // Chaos mode reads triggerRoulette through a ref: its identity changes when
+    // rouletteFirstUse / activeSlot change, and depending on it directly made the
+    // first roll re-run this effect (an immediate second roll and a reset timer).
+    const triggerRouletteRef = useRef(triggerRoulette);
+    triggerRouletteRef.current = triggerRoulette;
 
+    useEffect(() => {
+        if (!chaosModeEnabled) return undefined;
+        triggerRouletteRef.current();
+        const id = setInterval(() => {
+            triggerRouletteRef.current();
+        }, 6000 + Math.random() * 4000);
+        chaosIntervalRef.current = id;
         return () => {
-            if (chaosIntervalRef.current) {
-                clearInterval(chaosIntervalRef.current);
-            }
+            clearInterval(id);
+            if (chaosIntervalRef.current === id) chaosIntervalRef.current = null;
         };
-    }, [chaosModeEnabled, triggerRoulette]);
+    }, [chaosModeEnabled]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
