@@ -20,6 +20,7 @@ keeps that list honest in both directions and lets it only shrink:
 Usage:
   python3 scripts/check_prelude_migration.py                    # whole tree
   python3 scripts/check_prelude_migration.py --base origin/main # + R5 / R7 against a base
+  python3 scripts/check_prelude_migration.py --fix              # drop R2 / R3 ids from pending
 
 Stdlib only (the wgsl-precommit-gate CI job has no `npm ci`).
 """
@@ -155,11 +156,11 @@ def check(root: Path = PROJECT_ROOT, base: str | None = None) -> tuple[list[dict
 
     for sid, reason in pending.items():
         if sid not in files:
-            add({"rule": "R3", "severity": "error", "message": f"pending id `{sid}` has no public/shaders/{sid}.wgsl — remove it from {TRACKER_REL}", "fix": None})
+            add({"rule": "R3", "severity": "error", "stale": sid, "message": f"pending id `{sid}` has no public/shaders/{sid}.wgsl — remove it from {TRACKER_REL}", "fix": None})
             continue
         cls = classes[sid]
         if cls.status not in ("migratable", "refused", "mixed"):
-            add({"rule": "R2", "severity": "error", "message": f"`{sid}` no longer pastes the header — remove it from {TRACKER_REL} pending", "fix": None})
+            add({"rule": "R2", "severity": "error", "stale": sid, "message": f"`{sid}` no longer pastes the header — remove it from {TRACKER_REL} pending", "fix": "python3 scripts/check_prelude_migration.py --fix"})
             continue
         if reason not in reasons:
             add({"rule": "R6", "severity": "error", "message": f"`{sid}` has unknown reason `{reason}` (known: {', '.join(sorted(reasons))})", "fix": None})
@@ -201,10 +202,22 @@ def check(root: Path = PROJECT_ROOT, base: str | None = None) -> tuple[list[dict
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--base", help="git ref to diff against (enables R5 and R7)")
+    parser.add_argument("--fix", action="store_true", help="remove pending ids that no longer paste the header (R2) or have no file (R3)")
     parser.add_argument("--root", type=Path, default=PROJECT_ROOT, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
-    errors, warnings, summary = check(args.root.resolve(), args.base)
+    root = args.root.resolve()
+    errors, warnings, summary = check(root, args.base)
+    if args.fix:
+        # The list only shrinks: --fix drops ids that are provably done, never adds one.
+        stale = sorted({v["stale"] for v in errors if v.get("stale")})
+        if stale:
+            tracker = load_tracker(root)
+            for sid in stale:
+                tracker["pending"].pop(sid, None)
+            (root / TRACKER_REL).write_text(json.dumps(tracker, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+            print(f"🔧 --fix: removed {len(stale)} id(s) from {TRACKER_REL} pending: {', '.join(stale)}")
+            errors, warnings, summary = check(root, args.base)
     for v in warnings:
         print(f"⚠️  {v['rule']} {v['message']}")
     for v in errors:

@@ -159,7 +159,7 @@ Main went red on three different ratchet gates in six days because shader-batch 
 **Ratchet gates.** A ratchet lists known-bad ids so legacy debt does not block unrelated work, but the list may only shrink:
 
 - *Prelude migration* (`scripts/check_prelude_migration.py`, `src/contracts/prelude_migration.json` `pending`): when a pending shader no longer pastes the header (or a changed shader is still pending as `eligible`) the gate fails until you delete the id from `pending` (or run `python3 scripts/migrate_to_prelude.py --files public/shaders/<id>.wgsl`); adding an id to `pending` is rejected.
-- *naga knownFailures* (`scripts/verify-naga-wasm.mjs`, `src/contracts/wgsl_validation.json`): when a listed shader starts validating the gate fails with "lower ratchet to N" — remove its id from `knownFailures.ids` and set `knownFailures.ratchet` to the new length (a two-line contract edit; the two must match).
+- *naga knownFailures* (`scripts/verify-naga-wasm.mjs`, `src/contracts/wgsl_validation.json`): when a listed shader starts validating the gate fails — run `node scripts/verify-naga-wasm.mjs --all --fix` (or `npm run verify:shaders:fix`) to drop its id from `knownFailures.ids`. The ratchet is the list length; there is no separate count.
 - *Dead sliders* (`scripts/audit_dead_sliders.py`, `reports/dead_sliders_audit_baseline.json`) and *extraBuffer reserved zone* (`scripts/audit_extrabuffer.py`, `reports/extrabuffer_write_audit_baseline.json`): only a violation **not** in the baseline fails the job; fixing a baselined shader leaves a stale entry that is harmless, and `--write-baseline` re-triages (review the diff — it must only remove entries).
 
 ---

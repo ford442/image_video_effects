@@ -167,7 +167,7 @@ jobs:
       run: node scripts/verify-naga-wasm.mjs --all --report
 
     - name: naga-wasm gate unit tests
-      run: node --test scripts/verify-naga-wasm.test.mjs
+      run: node --test scripts/verify-naga-wasm.test.mjs scripts/verify-shaders.test.mjs
 
     - name: Full-tree workgroup convention scan
       run: python3 scripts/wgsl_precommit_gate.py --full-tree

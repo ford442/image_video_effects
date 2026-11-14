@@ -124,7 +124,9 @@ fn map(p: vec3<f32>) -> vec2<f32> {
         lp.z = sin(a) * r;
 
         let rot_mat = rot(0.5 + sin(time * 0.5 + f32(i)) * 0.2);
-        lp.xy = rot_mat * lp.xy;
+        let lp_xy_1 = rot_mat * lp.xy;
+        lp.x = lp_xy_1.x;
+        lp.y = lp_xy_1.y;
         lp.y -= 0.5 * pow(0.7, f32(i));
 
         let petal = sdCapsule(lp, vec3<f32>(0.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), 0.05 + 0.1 * (1.0 - lp.x));
@@ -139,8 +141,12 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     var hp = mp;
     hp.y -= 0.2;
     let rot_h = rot(time);
-    hp.xz = rot_h * hp.xz;
-    hp.xy = rot_h * hp.xy;
+    let hp_xz_2 = rot_h * hp.xz;
+    hp.x = hp_xz_2.x;
+    hp.z = hp_xz_2.y;
+    let hp_xy_3 = rot_h * hp.xy;
+    hp.x = hp_xy_3.x;
+    hp.y = hp_xy_3.y;
     let heart = (length(hp) - 0.15) * m_scale;
 
     // Filaments (Connecting arms to lotus)
@@ -215,8 +221,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let cam_rot_x = rot(-mouse_uv.y * 1.5);
     let cam_rot_y = rot(mouse_uv.x * 3.14 + time * 0.1);
 
-    ro.yz = cam_rot_x * ro.yz;
-    ro.xz = cam_rot_y * ro.xz;
+    let ro_yz_4 = cam_rot_x * ro.yz;
+    ro.y = ro_yz_4.x;
+    ro.z = ro_yz_4.y;
+    let ro_xz_5 = cam_rot_y * ro.xz;
+    ro.x = ro_xz_5.x;
+    ro.z = ro_xz_5.y;
 
     let lookat = vec3<f32>(0.0, 0.0, 0.0);
     let zoom = 1.0;
