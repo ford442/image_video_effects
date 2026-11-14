@@ -113,6 +113,61 @@ describe.each<Shape>(['asyncify', 'jspi'])('bridge over the %s build', (shape) =
     delete (window as unknown as { PixelocityWASM?: unknown }).PixelocityWASM;
   });
 
+  it('a COPY_SRC WebCodecs take starts and stops mid-suspend without waiting on the async export', async () => {
+    const g = globalThis as Record<string, unknown>;
+    g.VideoEncoder = class {};
+    g.VideoFrame = class {};
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const copySrcCalls: number[] = [];
+    Object.assign(mock.module, {
+      _getCanvasCopySrcSupported: () => 1,
+      _setCanvasCopySrc: (enabled: number) => {
+        copySrcCalls.push(enabled);
+        mock.log.push(`direct:setCanvasCopySrc:${enabled}`);
+        return 1;
+      },
+    });
+    const baseImpl = mock.ccall.getMockImplementation()!;
+    mock.ccall.mockImplementation((ident: string, ...rest: unknown[]) =>
+      ident === 'isRendererInitialized' ? 1 : (baseImpl as (...a: unknown[]) => unknown)(ident, ...rest),
+    );
+    try {
+      await initBridge();
+      expect(bridge.supportsCanvasCopySrc()).toBe(true);
+
+      // Shader compile / resize suspended in WaitAny while the user hits record.
+      mock.hold();
+      void bridge.loadShader('b', 'code');
+      await flush();
+
+      const blob = new Blob(['take'], { type: 'video/webm' });
+      const stop = vi.fn().mockResolvedValue(blob);
+      const take = bridge.startRecording(document.createElement('canvas'), {
+        gpuEncode: vi.fn(async () => {
+          // Same shape as startGpuEncodeSession's canvas source.
+          expect(bridge.setCanvasCopySrc(true)).toBe(true);
+          return { kind: 'canvas' as const, stop: () => stop().finally(() => bridge.setCanvasCopySrc(false)) };
+        }),
+      });
+      await flush();
+      // 'call' policy: ran now, not queued behind the suspended loadShader.
+      expect(copySrcCalls).toEqual([1]);
+      expect(mock.log).toContain('call:setRecording');
+      expect(mock.log).not.toContain('done:loadShader');
+
+      bridge.stopRecording();
+      await expect(take).resolves.toBe(blob);
+      expect(copySrcCalls).toEqual([1, 0]);
+      expect(mock.log).not.toContain('done:loadShader');
+      mock.release();
+      await flush();
+    } finally {
+      delete g.VideoEncoder;
+      delete g.VideoFrame;
+    }
+  });
+
   it('shutdown finalizes an active WebCodecs take, even mid-suspend, and setRecording stays sync', async () => {
     const g = globalThis as Record<string, unknown>;
     g.VideoEncoder = class {};
