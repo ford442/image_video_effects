@@ -14,14 +14,30 @@ export const useAudioAnalyzer = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   // Reusable Float32Array for bin data to avoid per-frame allocations
   const binsRef = useRef<Float32Array>(new Float32Array(AUDIO_FFT_BINS));
   const [isActive, setIsActive] = useState(false);
 
+  /** Disconnect the graph, close the context and stop the mic tracks (turns the indicator off). */
+  const release = useCallback(() => {
+    sourceRef.current?.disconnect();
+    sourceRef.current = null;
+    audioContextRef.current?.close().catch(() => { /* already closed */ });
+    audioContextRef.current = null;
+    analyserRef.current = null;
+    dataArrayRef.current = null;
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  }, []);
+
   const startAudio = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // A second start must not orphan the first context / stream.
+      release();
+      streamRef.current = stream;
 
       audioContextRef.current = new AudioContext();
       analyserRef.current = audioContextRef.current.createAnalyser();
@@ -39,13 +55,12 @@ export const useAudioAnalyzer = () => {
     } catch (err) {
       console.error('❌ Audio access denied:', err);
     }
-  }, []);
+  }, [release]);
 
   const stopAudio = useCallback(() => {
-    sourceRef.current?.disconnect();
-    audioContextRef.current?.close().catch(() => { /* already closed */ });
+    release();
     setIsActive(false);
-  }, []);
+  }, [release]);
 
   const getAudioData = useCallback((): AudioData => {
     const analyser = analyserRef.current;
