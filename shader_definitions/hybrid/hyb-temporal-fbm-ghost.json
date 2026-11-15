@@ -4,7 +4,7 @@
   "category": "hybrid",
   "type": "compute",
   "url": "shaders/hyb-temporal-fbm-ghost.wgsl",
-  "description": "Temporal RGB channel offsets, FBM domain-warp displacement, and a ghosting glow are blended over the input image while preserving alpha.",
+  "description": "Temporal RGB channel offsets, FBM domain-warp displacement, and a ghosting glow are blended over the input image while preserving alpha. The ghost is sampled upstream along the warp, and the halo brightens on the steep crests.",
   "features": [
     "hybrid",
     "temporal-offset",

@@ -2,7 +2,7 @@
   "id": "tilt-shift",
   "name": "Tilt Shift Miniature",
   "url": "shaders/tilt-shift.wgsl",
-  "description": "Scheimpflug principle tilt-shift with angular blur kernel and depth-aware circle-of-confusion. Bass drives tilt angle oscillation, mouse positions the focal plane, depth controls local blur radius. Features boosted saturation, vignette on blurred regions, ACES tone mapping, and chromatic aberration in out-of-focus areas.",
+  "description": "Scheimpflug principle tilt-shift with a hexagonal circle of confusion, cat's-eye clipping off axis, and an Airy ring on defocused highlights. Bass drives tilt angle oscillation, mouse positions the focal plane, depth controls local blur radius. Features boosted saturation, vignette on blurred regions, ACES tone mapping, and chromatic aberration in out-of-focus areas.",
   "params": [
     {
       "id": "strength",

@@ -9,7 +9,7 @@
     "depth-aware",
     "upgraded-rgba"
   ],
-  "description": "Woven fabric simulation with anisotropic noise, silk/sheen BRDF, subsurface scattering, and chromatic aberration on thread edges.",
+  "description": "Woven fabric simulation with anisotropic noise, silk/sheen BRDF, subsurface scattering, and chromatic aberration on thread edges. A weft ducks alternate crossings, and the decay slider rings the pluck from the previous offset.",
   "params": [
     {
       "id": "thread_density",
@@ -61,5 +61,43 @@
     "brdf",
     "audio-reactive",
     "depth-aware"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Thread Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Vibration Amp",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "RGB Split",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Decay",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

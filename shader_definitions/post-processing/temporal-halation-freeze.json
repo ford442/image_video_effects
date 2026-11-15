@@ -2,7 +2,7 @@
   "id": "temporal-halation-freeze",
   "name": "Temporal Halation Freeze",
   "url": "shaders/temporal-halation-freeze.wgsl",
-  "description": "Long-exposure halation and ghost echoes using a 7-tap hex-bokeh bloom, audio envelope, ACES tone mapping, depth-aware fog, and semantic alpha for dreamy time-blurred composites.",
+  "description": "Long-exposure halation and ghost echoes using a 7-tap hex-bokeh bloom. Outer taps run red, the highlight core bleaches toward luma, and a held pointer freeze-holds the plate. Audio envelope, ACES on display, depth-aware fog, and semantic alpha.",
   "tags": [
     "halation",
     "bloom",

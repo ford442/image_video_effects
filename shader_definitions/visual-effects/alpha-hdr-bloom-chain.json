@@ -2,7 +2,7 @@
   "id": "alpha-hdr-bloom-chain",
   "name": "Alpha HDR Bloom Chain",
   "url": "shaders/alpha-hdr-bloom-chain.wgsl",
-  "description": "Temporal spectral HDR bloom with multi-ring dispersion, exposure-preserving feedback, audio-shaped radiance, held-pointer halos, and expanding click flashes.",
+  "description": "Temporal spectral HDR bloom with multi-ring dispersion, a Cauchy red/blue ratio, energy taken from the highlight before it is spread, exposure-preserving feedback, audio-shaped radiance, held-pointer halos, and expanding click flashes.",
   "tags": [
     "hdr",
     "bloom",
@@ -21,7 +21,8 @@
     "three-band-audio",
     "held-pointer",
     "click-reactive",
-    "temporal-spectral-bloom"
+    "temporal-spectral-bloom",
+    "upgraded-rgba"
   ],
   "params": [
     {
