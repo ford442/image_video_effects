@@ -4575,7 +4575,12 @@
         "step": 0.05
       }
     ],
-    "description": "A hyper-organic, pulsing network of luminous fungal threads that weave and branch through a dense, volumetric void, reacting dynamically to bass and treble frequencies."
+    "description": "A hyper-organic, pulsing network of luminous fungal threads that weave and branch through a dense, volumetric void, reacting dynamically to bass and treble frequencies.",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-bioluminescent-neural-coral-matrix",
@@ -14006,7 +14011,8 @@
       "depth-aware",
       "lichtenberg-branches",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
     "params": [
       {

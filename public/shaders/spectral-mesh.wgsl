@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-16
-//  Ideas: junction beads at wire crossings; grating fringe along the wire normal
+//  Upgraded: 2026-10-16, 2026-11-15
+//  Ideas: junction beads at wire crossings; grating fringe along the wire normal; edge-weighted wire gauge; recessed cell faces
 //  A packing: A stores (line, triLine, pull, alpha); C is not read as color
 // ═══════════════════════════════════════════════════════════════════
 
@@ -83,7 +83,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let foreshorten = 1.0 - depth * 0.35;
   let gridUV = sampleUV * adaptiveDensity * foreshorten;
   let grid = abs(fract(gridUV) - 0.5);
-  let lineWidth = 0.03 + audio.z * 0.015;
+  // ── Idea 1: edge-weighted wire gauge ───────────────────────────
+  // gradMag already drives density. The wire thickens on the same edges.
+  let lineWidth = (0.03 + audio.z * 0.015) * (1.0 + clamp(gradMag * 0.65, 0.0, 1.2));
   let line = 1.0 - smoothstep(0.0, lineWidth, min(grid.x, grid.y));
   let diagonal = 1.0 - smoothstep(lineWidth, lineWidth * 2.75, abs(grid.x - grid.y));
 
@@ -114,6 +116,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let fringeR = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV + wireNormal * fringePx, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let fringeB = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - wireNormal * fringePx, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   finalColor = mix(finalColor, vec3<f32>(fringeR, baseColor.g, fringeB), line * 0.45);
+
+  // ── Idea 2: recessed cell faces ────────────────────────────────
+  // The interior of the cell sits below the wire. Wires and triangle
+  // edges stay at full brightness.
+  let face = smoothstep(lineWidth, max(lineWidth + 0.04, 0.28), min(grid.x, grid.y));
+  finalColor = finalColor * mix(1.0, 0.78, face * (1.0 - max(line, triLine)));
 
   finalColor = acesFilm(finalColor * 1.08);
 
