@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: depth-aware, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: solvent-front Rf; capillary tailing
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: solvent-front Rf; capillary tailing; longitudinal diffusion; solvent meniscus
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -117,13 +98,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let gTail = textureSampleLevel(readTexture, u_sampler, clamp(uv + gOff * (1.0 + tail), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
     let b = textureSampleLevel(readTexture, u_sampler, clamp(uv + bOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     let bTail = textureSampleLevel(readTexture, u_sampler, clamp(uv + bOff * (1.0 + tail), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
-    let finalColor = vec3<f32>(mix(r, rTail, 0.35), mix(g, gTail, 0.35), mix(b, bTail, 0.35));
+    // ── Idea 3: longitudinal diffusion — the tail mix widens with distance traveled, above the front
+    let traveled = clamp(uv.y, 0.0, 1.0);
+    let diffuse = 0.35 + traveled * rf * 0.4;
+    let separated = vec3<f32>(mix(r, rTail, diffuse), mix(g, gTail, diffuse), mix(b, bTail, diffuse));
+    // ── Idea 4: solvent meniscus — a wet line on the traveling front
+    let frontLine = smoothstep(0.018, 0.0, abs(uv.y - solvent));
+    let wet = clamp(frontLine * (0.55 + bass * 0.25), 0.0, 1.0);
+    let sepLuma = dot(separated, vec3<f32>(0.299, 0.587, 0.114));
+    let finalColor = mix(separated, vec3<f32>(sepLuma * 0.42, sepLuma * 0.52, sepLuma * 0.64), wet);
 
     let displacedUV = uv + (rOff + gOff + bOff) / 3.0;
     let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let alpha = calculateAdvancedAlpha(finalColor, uv, displacedUV, baseSample.a, u.zoom_params);
     let display = aces(max(finalColor, vec3<f32>(0.0)));
-    let outColor = vec4<f32>(display, clamp(alpha + rf * 0.08, 0.0, 1.0));
+    let outColor = vec4<f32>(display, clamp(alpha + rf * 0.08 + frontLine * 0.1, 0.0, 1.0));
 
     textureStore(writeTexture, coord, outColor);
     textureStore(dataTextureA, coord, outColor);

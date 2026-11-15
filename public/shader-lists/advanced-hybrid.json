@@ -1910,7 +1910,8 @@
     "features": [
       "chroma-threads",
       "gabor-texture-analysis",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {

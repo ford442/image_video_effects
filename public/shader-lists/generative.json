@@ -28533,7 +28533,8 @@
       "ray-marching",
       "audio-reactive",
       "mouse-control",
-      "pbr-shading"
+      "pbr-shading",
+      "upgraded-rgba"
     ],
     "params": [
       {
