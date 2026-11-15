@@ -1,4 +1,13 @@
-// Hybrid Voronoi Glass — stable cellular optics with Cauchy dispersion and TIR.
+// ═══════════════════════════════════════════════════════════════════
+//  Hybrid Voronoi Glass
+//  Category: hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: interior-flat facet bevel; wall caustic from the F2-F1 ridge
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+// Stable cellular optics: Cauchy, Snell, Fresnel, TIR, click fracture.
 // A/C stores ACES display RGBA. B is unused.
 
 #include "_prelude.wgsl"
@@ -86,7 +95,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let boundary = 1.0 - smoothstep(0.015, 0.075, stableBoundaryDistance);
   let cellRandom = hash22(nearestCell);
   let cellNormal2 = normalize(nearestVector + vec2<f32>(0.0001));
-  let facetTilt = 0.3 + cellRandom.x * 0.48;
+  // ── Idea 1: interior-flat facet bevel ────────────────────────────
+  // The cell is a pane. Tilt stays quiet in the interior and comes up
+  // only where F2−F1 says the wall is, which is the cut bevel.
+  let facetTilt = (0.3 + cellRandom.x * 0.48) * mix(0.22, 1.0, boundary);
   var normal = normalize(vec3<f32>(cellNormal2 * facetTilt, 1.0));
 
   let pointerDelta = (uv - mouse) * aspectVec;
@@ -133,7 +145,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   hdr += reflectedColor * (0.35 + boundary * 0.65 + audio.z * 0.2);
   hdr += vec3<f32>(1.15, 0.62, 0.28) * fracture * (0.25 + audio.z * 0.35);
   hdr += history.rgb * clamp(0.018 + fracture * 0.028 + boundary * 0.012, 0.0, 0.07);
-  let alpha = clamp(0.18 + opticalThickness * 0.52 + fresnel * 0.45 + boundary * 0.28 + fracture * 0.2, 0.0, 1.0);
+  // ── Idea 2: wall caustic from the F2-F1 ridge ────────────────────
+  // The bevel focuses transmission on the cell wall. The facet body
+  // gives a little of that light up so the ridge is not free energy.
+  let caustic = exp(-stableBoundaryDistance * stableBoundaryDistance * 220.0);
+  let causticAmt = caustic * (0.25 + dispersion * 0.55);
+  hdr = hdr * mix(0.82, 1.0, caustic) + vec3<f32>(red, green, blue) * causticAmt * (1.0 - fresnel);
+  let alpha = clamp(0.18 + opticalThickness * 0.52 + fresnel * 0.45 + boundary * 0.28 + fracture * 0.2 + caustic * 0.12, 0.0, 1.0);
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
   textureStore(writeTexture, coord, result);
   textureStore(dataTextureA, coord, result);

@@ -1,8 +1,26 @@
-// ----------------------------------------------------------------
-// Liquid-Metal Chrono-Flora
-// Category: generative
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid-Metal Chrono-Flora
+//  Category: generative
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: Fresnel-Schlick chrome; petal veins along the six-fold
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+
 #include "_prelude.wgsl"
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn floraPull(p: vec3<f32>) -> vec3<f32> {
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.0);
+    let m = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z) * 2.0 - 1.0;
+    let dist = length(p.xy - m);
+    let pull = exp(-dist * 2.0) * 0.5 * held;
+    return p - vec3<f32>(m * pull, 0.0);
+}
 
 // Utility Functions
 fn smin(a: f32, b: f32, k: f32) -> f32 {
@@ -23,16 +41,7 @@ fn sdTorus(p: vec3<f32>, t: vec2<f32>) -> f32 {
 
 // Map function
 fn map(p: vec3<f32>) -> f32 {
-    var pos = p;
-
-    // Mouse distortion
-    if (u.zoom_config.w > 0.0) {
-        // Implement mouse gravity well
-        let m = vec2<f32>(u.zoom_config.y, 1.0 - u.zoom_config.z) * 2.0 - 1.0;
-        let dist = length(pos.xy - m);
-        let pull = exp(-dist * 2.0) * 0.5;
-        pos -= vec3<f32>(m * pull, 0.0);
-    }
+    var pos = floraPull(p);
 
     // Audio reactivity
     let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
@@ -106,6 +115,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     var col = vec3<f32>(0.0);
     var out_depth = 1.0;
+    var alpha = 0.04;
 
     let metallicShine = u.zoom_params.x;
     let chronoIntensity = u.zoom_params.w;
@@ -114,27 +124,39 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let p = ro + rd * t;
         let n = get_normal(p);
 
-        // Liquid metal shading
         let viewDir = normalize(ro - p);
         let refl = reflect(-viewDir, n);
 
-        // Base chrome reflection
-        let envCol = vec3<f32>(0.8, 0.9, 1.0) * max(0.0, refl.y * 0.5 + 0.5) * metallicShine;
+        // ── Idea 1: Fresnel-Schlick chrome (§12.2F) ─────────────────
+        // Facing metal stays dark. The grazing rim carries the mirror.
+        let ndv = clamp(dot(n, viewDir), 0.0, 1.0);
+        let f0 = mix(0.55, 0.92, metallicShine);
+        let fres = f0 + (1.0 - f0) * pow(1.0 - ndv, 5.0);
+        let envCol = vec3<f32>(0.8, 0.9, 1.0) * max(0.0, refl.y * 0.5 + 0.5) * metallicShine * fres;
 
-        // Chrono energy in crevices
         let ao = clamp(map(p + n * 0.1) * 10.0, 0.0, 1.0);
         let energyCol = vec3<f32>(0.8, 0.1, 0.9) * (1.0 - ao) * chronoIntensity;
 
         col = envCol + energyCol;
 
-        // Specular
         let spec = pow(max(dot(refl, normalize(vec3<f32>(1.0, 1.0, -1.0))), 0.0), 32.0);
         col += vec3<f32>(1.0) * spec * metallicShine;
 
+        // ── Idea 2: petal veins along the existing six-fold ─────────
+        let fp = floraPull(p);
+        let petalR = length(fp.xz);
+        let petalA = atan2(fp.x, fp.z);
+        let vein = pow(1.0 - abs(sin(petalA * 6.0)), 10.0) * smoothstep(1.7, 0.2, petalR);
+        col += vec3<f32>(0.78, 0.86, 0.95) * vein * fres * metallicShine * 0.4;
+
         out_depth = t / 20.0;
+        alpha = clamp(0.2 + fres * 0.5 + (1.0 - ao) * chronoIntensity * 0.25 + vein * 0.15, 0.0, 1.0);
     }
 
-    textureStore(writeTexture, id.xy, vec4<f32>(col, 1.0));
-    textureStore(writeDepthTexture, id.xy, vec4<f32>(out_depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, id.xy, vec4<f32>(0.0));
+    let coord = vec2<i32>(id.xy);
+    let mapped = aces(max(col, vec3<f32>(0.0)));
+    let outCol = vec4<f32>(mapped, alpha);
+    textureStore(writeTexture, coord, outCol);
+    textureStore(writeDepthTexture, coord, vec4<f32>(out_depth, 0.0, 0.0, 0.0));
+    textureStore(dataTextureA, coord, outCol);
 }

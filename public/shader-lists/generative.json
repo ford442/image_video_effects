@@ -2378,6 +2378,11 @@
         "mapping": "zoom_params.w",
         "id": "glow-intensity"
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -3352,7 +3357,8 @@
       "bass-env",
       "aces-tone-map",
       "ign-dither",
-      "premultiplied-alpha"
+      "premultiplied-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -15271,6 +15277,11 @@
     "type": "generative",
     "category": "generative",
     "url": "shaders/gen-harmonic-ferrofluid-kinetics.wgsl",
+    "description": "Raymarched ferrofluid spikes from an inverted Voronoi field, pinched at the crest, with a held magnetic mound, tip glints, and crevice occlusion.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -18253,7 +18264,8 @@
       "audio-reactive",
       "mouse-driven",
       "sdf",
-      "temporal-glow"
+      "temporal-glow",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",
