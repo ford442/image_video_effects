@@ -3,12 +3,17 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: over/under weave occlusion at stroke crossings; dry-brush ink starvation into bristle streaks; ink pooling at lane turns; over-strand cast shadow
+//  Upgraded: 2026-10-10, 2026-11-15
+//  Ideas: over/under weave occlusion at stroke crossings; dry-brush ink starvation into bristle streaks; ink pooling at lane turns; over-strand cast shadow; wet-edge pigment ring (§12.2C wet-edge accumulation); paper-fibre wicking + pigment granulation (§12.2C paper granulation)
+//  Rescue: weave over/under handoff and the dry-brush re-dip are continuous (HEAD cut strokes with hard vertical seams)
 //  A packing: raw HDR display RGBA history (C read back as the same)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=Stroke Density, y=Flow Speed, z=Ink Width, w=Chromatic Bloom
+
+// Tuning gains for the 2026-11-15 ideas (1.0 = shipped look).
+const WET_GAIN: f32 = 1.0;     // Idea 5: wet-edge pigment ring
+const FIBRE_GAIN: f32 = 1.0;   // Idea 6: paper-fibre wicking + granulation
 
 fn hash21(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -20,6 +25,15 @@ fn noise2(p: vec2<f32>) -> f32 {
     let s = f * f * (3.0 - 2.0 * f);
     return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), s.x),
                mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x), s.y);
+}
+
+// Paper fibres: two octaves of value noise stretched ~13:1 along a fixed oblique direction (20 degrees), so the
+// fibre streaks run independently of the stroke direction. 0..1, mean ~0.5.
+fn paperFibre(p: vec2<f32>) -> f32 {
+    let q = vec2<f32>(p.x * 0.9397 + p.y * 0.3420, -p.x * 0.3420 + p.y * 0.9397);
+    let a = noise2(vec2<f32>(q.x * 3.4, q.y * 44.0));
+    let b = noise2(vec2<f32>(q.x * 5.0 + 7.0, q.y * 56.0 + 3.0));   // 56 not 87: at 576 px the old octave was ~3 px/cell, near Nyquist
+    return smoothstep(0.30, 0.70, 0.66 * a + 0.34 * b);
 }
 
 fn palette(t: f32) -> vec3<f32> {
@@ -52,6 +66,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let held = clamp(u.zoom_config.w, 0.0, 1.0);
     p += normalize(toMouse + vec2<f32>(0.0001)) * sin(length(toMouse) * 16.0 - time * 4.0) * held * 0.07;
 
+    let fibre = paperFibre(p);
     var ink = 0.0;
     var fineInk = 0.0;
     var hueMoment = 0.0;
@@ -74,7 +89,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Idea 2 — dry-brush starvation: ink load runs out along the stroke and is re-dipped;
         // a starved nib breaks into bristle streaks parallel to the stroke.
         let load = 1.0 - fract(p.x * 0.32 + fi * 0.618 - phase * 0.04);
-        let starve = smoothstep(0.45, 0.0, load);
+        // ── Rescue 2: re-dip refills over the last 7% of the cycle instead of snapping 1 -> 0 in a pixel ──
+        let starve = smoothstep(0.45, 0.0, load) * smoothstep(0.0, 0.07, load);
         let bristle = noise2(vec2<f32>(p.x * 5.0 + fi * 11.0, (p.y - curve) / max(nib, 0.0005) * 1.6));
         let dryBrush = smoothstep(starve * 0.75 - 0.08, starve * 0.75 + 0.08, bristle);
         // Idea 3 — ink pooling: where the lane turns (slope ≈ 0) the nib slows and ink pools into a
@@ -82,8 +98,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let turn = 1.0 - smoothstep(0.0, 0.3, abs(derivative));
         let poolW = nib * 1.5;
         poolVal[i] = turn * exp(-d * d / max(poolW * poolW, 0.000001)) * (1.0 - starve * 0.4);
-        strokeVal[i] = max(exp(-d * d / max(nib * nib, 0.000001)) * dryBrush, poolVal[i]);
-        hairVal[i] = exp(-abs(d - nib * 1.8) * 180.0) * 0.25;
+        // ── Idea 5: wet-edge pigment ring (§12.2C wet-edge accumulation) ──
+        // A wet stroke gathers pigment at its boundary and thins in the middle (coffee-ring; 60 % centre hollow so the rim reads). Only ink that is not
+        // starved is wet; the ring sits at 0.92 nib, inside the outer hairline (1.8 nib) and apart from the lane-turn pool.
+        let wet = 1.0 - starve;
+        let ringD = d - nib * 0.92;
+        let wetEdge = exp(-ringD * ringD / max(nib * nib * 0.09, 0.000001)) * wet * WET_GAIN;
+        let hollow = 1.0 - 0.60 * wet * WET_GAIN * (1.0 - smoothstep(0.0, nib * 0.75, d));
+        // ── Idea 6: paper-fibre granulation + wicking (§12.2C paper granulation) ──
+        // Pigment settles into the paper's fibre grain inside the stroke, and ink wicks outward along the fibres just
+        // beyond it. Granulation is mean-neutral (fibre - 0.5); wicking rides the existing hairline channel.
+        let grain = 1.0 + 0.42 * FIBRE_GAIN * (fibre - 0.5);
+        let core = exp(-d * d / max(nib * nib, 0.000001)) * dryBrush;
+        strokeVal[i] = max((core * hollow + 0.62 * wetEdge) * grain, poolVal[i]);
+        let wick = exp(-d * d / max(nib * nib * 7.0, 0.000001)) * smoothstep(nib * 0.9, nib * 1.7, d)
+            * smoothstep(0.55, 0.9, fibre) * wet * 0.30 * FIBRE_GAIN;
+        hairVal[i] = exp(-abs(d - nib * 1.8) * 180.0) * 0.25 + wick;
         // Idea 4 — over-strand cast shadow: the same stroke profile shifted down-screen, cast on lower strands
         let ds = abs(p.y - (curve - inkWidth * 1.4 - 0.012));
         shadowVal[i] = exp(-ds * ds / max(nib * nib * 2.2, 0.000001));
@@ -97,10 +127,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         var shade = 0.0;
         for (var j = 0; j < 10; j++) {
             if (j >= strokeCount) { break; }
-            if (weaveZ[j] > weaveZ[i]) {
-                occluder = max(occluder, strokeVal[j]);
-                shade = max(shade, shadowVal[j]);
-            }
+            // ── Rescue 1: HEAD flipped over/under with a hard `weaveZ[j] > weaveZ[i]`, cutting a seam through every
+            // crossing. The handoff now takes ~0.5 of height difference; a strand never occludes itself (j != i). ──
+            let over = select(0.0, smoothstep(-0.25, 0.25, weaveZ[j] - weaveZ[i]), j != i);
+            occluder = max(occluder, strokeVal[j] * over);
+            shade = max(shade, shadowVal[j] * over);
         }
         let cover = 1.0 - 0.85 * clamp(occluder * 1.3, 0.0, 1.0);
         let shadowed = 1.0 - 0.6 * shade;

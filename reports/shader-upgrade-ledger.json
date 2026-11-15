@@ -3091,8 +3091,17 @@
       "history": []
     },
     "rainbow-cloud": {
-      "hash": "981c35d6b082d66f",
-      "history": []
+      "hash": "0cd350bbe10abc35",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "0cd350bbe10abc35",
+          "prev_hash": "981c35d6b082d66f",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
+        }
+      ]
     },
     "reaction-diffusion": {
       "hash": "59aba9932ea70f30",
@@ -5502,7 +5511,7 @@
       ]
     },
     "gen-chromatic-oracle-jelly": {
-      "hash": "26b84e6c8fb64a09",
+      "hash": "1297427f7b76b82e",
       "history": [
         {
           "event": "upgraded",
@@ -5511,6 +5520,14 @@
           "prev_hash": "8f34f41ef2e92b88",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "1297427f7b76b82e",
+          "prev_hash": "26b84e6c8fb64a09",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -6395,7 +6412,7 @@
       ]
     },
     "gen-emergent-calligraphic-weave": {
-      "hash": "2330b73a4489e4e3",
+      "hash": "cd65e2d05727bb3a",
       "history": [
         {
           "event": "upgraded",
@@ -6404,6 +6421,14 @@
           "prev_hash": "a77c52152b23780b",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "cd65e2d05727bb3a",
+          "prev_hash": "2330b73a4489e4e3",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -8138,7 +8163,7 @@
       ]
     },
     "gen-liquid-cathedral-dream": {
-      "hash": "92b3e3c8bda2b521",
+      "hash": "98ef0b8028dbb889",
       "history": [
         {
           "event": "upgraded",
@@ -8147,6 +8172,14 @@
           "prev_hash": "37f9a7f340a1ffa4",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "98ef0b8028dbb889",
+          "prev_hash": "92b3e3c8bda2b521",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -10228,8 +10261,17 @@
       ]
     },
     "gen-solar-wind-ribbons": {
-      "hash": "ed997ebf089a2023",
-      "history": []
+      "hash": "3a9ea5a9f89eae5b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "3a9ea5a9f89eae5b",
+          "prev_hash": "ed997ebf089a2023",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
+        }
+      ]
     },
     "gen-sonic-lava-flow": {
       "hash": "e5f41e626d7ed46f",
@@ -11871,7 +11913,7 @@
       ]
     },
     "kaleido-scope-grokcf1": {
-      "hash": "630f157415daf793",
+      "hash": "6aa825cae5f69931",
       "history": [
         {
           "event": "upgraded",
@@ -11880,6 +11922,14 @@
           "prev_hash": "f6b9ce6e65cf5855",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "6aa825cae5f69931",
+          "prev_hash": "630f157415daf793",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -12143,7 +12193,7 @@
       ]
     },
     "hybrid-cyber-organic": {
-      "hash": "19ebd376212d3eec",
+      "hash": "521819b43cb6fc08",
       "history": [
         {
           "event": "upgraded",
@@ -12152,6 +12202,14 @@
           "prev_hash": "59128823fb35fd38",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "521819b43cb6fc08",
+          "prev_hash": "19ebd376212d3eec",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -13261,7 +13319,7 @@
       ]
     },
     "liquid-chrome-ripple": {
-      "hash": "b40f179898d383fe",
+      "hash": "3c3d36713e6ba214",
       "history": [
         {
           "event": "upgraded",
@@ -13270,6 +13328,14 @@
           "prev_hash": "493660c96ba20e53",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "3c3d36713e6ba214",
+          "prev_hash": "b40f179898d383fe",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -15659,7 +15725,7 @@
       ]
     },
     "molten-glass": {
-      "hash": "65a9817901024a1f",
+      "hash": "733c8549a304abd0",
       "history": [
         {
           "event": "upgraded",
@@ -15668,6 +15734,14 @@
           "prev_hash": "91d25fe096eafcf1",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "733c8549a304abd0",
+          "prev_hash": "65a9817901024a1f",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -20924,7 +20998,19 @@
         }
       ]
     },
-    "gen-harmonic-ferrofluid-kinetics": {
+    "gen-ethereal-cyber-aurora-mantis-shrine": {
+      "hash": "f7d1ecdb0e458f7e",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "f7d1ecdb0e458f7e",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
+        }
+      ]
+    },
+"gen-harmonic-ferrofluid-kinetics": {
       "hash": "3a292a10790685cb",
       "history": [
         {
