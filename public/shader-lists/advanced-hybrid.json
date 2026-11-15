@@ -4693,7 +4693,7 @@
     "id": "fire-smoke-volumetric-fog",
     "name": "Fire Smoke Volumetric Fog",
     "url": "shaders/fire-smoke-volumetric-fog.wgsl",
-    "description": "Coupled flame heat, smoke density, soot, and buoyant momentum feed a layered blackbody fire-and-fog volume.",
+    "description": "Coupled Boussinesq flame heat, baroclinic smoke plumes, soot, and persistent hearth embers feed a depth-occluded 7-slice volume with Henyey-Greenstein internal flame scattering and Planckian Color Temperature blackbody emission.",
     "tags": [
       "fire",
       "smoke",
@@ -4708,7 +4708,10 @@
       "volumetric-fog",
       "blackbody",
       "depth-aware",
-      "atmospheric"
+      "atmospheric",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

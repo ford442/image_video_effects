@@ -2,7 +2,7 @@
   "id": "poincare-tiling",
   "name": "Poincaré Tiling",
   "url": "shaders/poincare-tiling-map.wgsl",
-  "description": "Physics Lab — hyperbolic disk tiling with Möbius layer composite. graph · 2 passes.",
+  "description": "Physics Lab — aspect-true hyperbolic {p, q} geodesic circle-inversion disk tiling with SU(1,1) pointer/orbit automorphisms, conformal gilded polygon arcs, hyperbolic-metric click waves, and dual-layer Möbius composite. graph · 2 passes.",
   "multipass": {
     "graph": {
       "maxPassesPerFrame": 8,
@@ -58,6 +58,8 @@
       "description": "Secondary layer scale and blend"
     }
   ],
+  "updated": true,
+  "feedbackPacking": "Pass 1 A = linear tiled RGB + packed geodesic edge/parity; Pass 2 A = linear composite RGBA (ACES on writeTexture)",
   "features": [
     "simulation",
     "multi-pass",
@@ -65,7 +67,9 @@
     "physics",
     "mouse-driven",
     "audio-reactive",
-    "interactive"
+    "depth-aware",
+    "interactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "poincare",
@@ -73,5 +77,43 @@
     "simulation",
     "physics",
     "showcase"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Curvature",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Symmetry",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Animation Speed",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Tile Scale",
+          "default": 0.55,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

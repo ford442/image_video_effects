@@ -2,7 +2,7 @@
   "id": "ripple-tank",
   "name": "Ripple Tank",
   "url": "shaders/ripple-tank-step.wgsl",
-  "description": "Physics Lab flagship — click for rings, hold for a driven oscillator, audio rains droplets across the tank. 7 graph passes · target 60 fps at balanced.",
+  "description": "Physics Lab flagship — bathymetric depth-refracting wave tank with Rayleigh sponge shores, twin-pin harmonic dipper, audio droplet rain, ray-sheet Jacobian floor caustics, and Beer-Lambert / Fresnel water optics. 7 graph passes · target 60 fps at balanced.",
   "requiresRgba32Float": true,
   "multipass": {
     "graph": {
@@ -104,7 +104,8 @@
     "audio-reactive",
     "depth-aware",
     "temporal-persistence",
-    "interactive"
+    "interactive",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = height, velocity, foam energy, oscillator phase; graph uses A-only writeback",
   "updated": true,

@@ -1,7 +1,7 @@
 {
   "id": "cymatic-sand",
   "name": "Cymatic Sand",
-  "description": "Damped Chladni plate simulation with exact-load sand transport, persistent resonance and strike memory, three-band harmonic forcing, held mode displacement, bounded click strikes, ACES grain color, semantic alpha, and raw A-only state.",
+  "description": "Damped Chladni soundboard simulation with acoustic radiation-gradient grain flux, 3D heaped nodal-ridge shading over a brushed-brass plate, antinode saltation glints, three-band harmonic forcing, held mode displacement, click strikes, ACES grain color, semantic alpha, and raw A-only state.",
   "url": "shaders/cymatic-sand.wgsl",
   "features": [
     "mouse-driven",
@@ -10,6 +10,7 @@
     "upgraded-rgba",
     "depth-aware"
   ],
+  "feedbackPacking": "A/C = raw (density, radial velocity, resonant energy, strike memory)",
   "updated": true,
   "params": [
     {

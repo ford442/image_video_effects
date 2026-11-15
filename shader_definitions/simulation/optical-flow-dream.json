@@ -2,7 +2,7 @@
   "id": "optical-flow-dream",
   "name": "Optical Flow Dream",
   "url": "shaders/optical-flow-estimate.wgsl",
-  "description": "Canonical single-pass optical-flow dream field using exact dataTextureC history, temporal luma gradients, chromatic advection, held pointer vortices, bounded click tears, three-band color, ACES display, semantic alpha, and A-only feedback.",
+  "description": "Canonical single-pass optical-flow dream field using a 3x3 regularized Lucas-Kanade structure tensor over exact dataTextureC history, sub-pixel clamped MacCormack dream advection, contour-guided chromatic dispersion, held pointer vortices, click tears, ACES display, semantic alpha, and A-only feedback.",
   "params": [
     {
       "id": "flowScale",
@@ -45,13 +45,16 @@
       "description": "Blend between live input and advected dream"
     }
   ],
+  "feedbackPacking": "A/C = linear HDR dream RGB + semantic trail coverage (ACES on writeTexture)",
   "updated": true,
   "features": [
     "simulation",
     "physics",
     "mouse-driven",
     "audio-reactive",
-    "interactive"
+    "depth-aware",
+    "interactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "optical-flow",
