@@ -3,31 +3,13 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: anisotropic Laplacian along flowDir; mitosis pinch on −∇²V
+//  Upgraded: 2026-09-12, 2026-11-15
+//  Ideas: anisotropic Laplacian along flowDir; mitosis pinch on −∇²V; autocatalytic front glow (native); photo-driven kill map (native)
+//  Rescue: U re-supply floor removed (HEAD flooded to a frozen V=1 field after ~15 s); kill range shifted +0.005 (default sat in the flat active-state regime)
 //  A packing: raw (U, V, packet, accumulation)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) /
@@ -51,7 +33,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
     let diffusionRate = 0.025 + u.zoom_params.x * 0.075;
     let feedRate = 0.018 + u.zoom_params.y * 0.052;
-    let killRate = 0.035 + u.zoom_params.z * 0.045;
+    // ── Rescue 2: kill range ──────────────────────────────────────────
+    // HEAD's 0.035 + z*0.045 put the saved default (feed 0.044, kill 0.0575) on the flat side of the
+    // Gray-Scott saddle-node line f = 4(f+k)^2: with the substrate floor gone it relaxes to a uniform
+    // V ~ 0.3 field (numpy port: std 0.03 after 15 s). +0.005 puts the default in the excitable band
+    // and keeps the slider's full 0.045 span and its role.
+    let killRate = 0.040 + u.zoom_params.z * 0.045;
     let accumulationRate = u.zoom_params.w;
 
     // Rotate a one-pixel state conveyor to move the chemistry coherently.
@@ -74,7 +61,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let input = textureLoad(readTexture, coord, 0);
     let seed = dot(input.rgb, vec3<f32>(0.299, 0.587, 0.114));
-    var a = clamp(max(prev.r, 0.75 + seed * 0.25), 0.0, 1.0);
+    // ── Rescue 1: substrate floor ─────────────────────────────────────
+    // HEAD: a = max(prev.r, 0.75 + seed*0.25) re-supplied U to >= 0.75 on EVERY frame. The reaction could
+    // never exhaust it, so V = 1 was an absorbing state: the field flooded to a frozen black frame after
+    // ~15 s (SwiftShader 192 px: uniform grey at 300 frames, black at 900; numpy port agrees). U now keeps
+    // what the chemistry left (the f*(1-a) feed term is the only supply) and is seeded from the photo only
+    // on a cold start, when C is still empty.
+    let fresh = (prev.r + prev.g) < 0.0001;
+    var a = clamp(select(prev.r, 0.75 + seed * 0.25, fresh), 0.0, 1.0);
     var b = clamp(prev.g + seed * 0.002, 0.0, 1.0);
 
     // Narrow analytic packets alternately feed and inhibit the reaction.
@@ -100,13 +94,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let reaction = a * b * b;
     let newA = clamp(a + diffusionRate * laplacian.r - reaction + feedRate * (1.0 - a), 0.0, 1.0);
-    let newB = clamp(b + diffusionRate * 0.5 * laplacian.g + reaction - (killRate + feedRate) * b, 0.0, 1.0);
+    // ── Idea 4 (batch-38 card idea 2): photo-driven kill map (native) ──
+    // One global kill rate gives one pattern type. Gray-Scott's morphology (spots / worms / sheets) is set
+    // by (f, k), so let k follow the photo's luma (already computed as `seed`): +-0.005 around the Scale
+    // slider's value, which stays the global kill. Bright regions extinguish sooner, dark regions keep
+    // their fronts alive, so the pattern's character follows the picture's tonal regions.
+    let killLocal = killRate + (clamp(seed, 0.0, 1.0) - 0.5) * 0.010;
+    let newB = clamp(b + diffusionRate * 0.5 * laplacian.g + reaction - (killLocal + feedRate) * b, 0.0, 1.0);
     let pattern = clamp(newA - newB, -1.0, 1.0);
+    // ── Idea 3 (batch-38 card idea 1, replaces the 9-point stencil): autocatalytic front glow (native) ──
+    // `reaction` = U*V^2 is the autocatalytic rate. It was computed and used only for the update, yet it
+    // peaks exactly on the moving fronts, where the chemistry is actually happening. Show it as emission
+    // (reaction-rate map, hot orange -> white-ish core) so every front reads as a burning edge instead of
+    // a flat band boundary. A is untouched; this only reaches the display.
+    let rate = 1.0 - exp(-reaction * 14.0);
+    let frontGlow = mix(vec3<f32>(1.0, 0.42, 0.10), vec3<f32>(1.0, 0.85, 0.55), rate * rate) * rate;
     let color = vec3<f32>(
         smoothstep(-0.15, 0.55, pattern),
         smoothstep(0.05, 0.68, pattern + packet * 0.2),
         smoothstep(0.22, 0.82, pattern + front * 0.25 + mitosis * 2.0)
-    );
+    ) + frontGlow * 0.55;
     let newAlpha = 1.0 - exp(-abs(pattern) * 2.0);
     let totalAlpha = clamp(prev.a * (0.90 + accumulationRate * 0.08) + newAlpha * accumulationRate * 0.2, 0.0, 1.0);
 

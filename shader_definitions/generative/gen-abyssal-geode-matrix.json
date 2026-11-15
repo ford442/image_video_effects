@@ -4,14 +4,17 @@
   "url": "shaders/gen-abyssal-geode-matrix.wgsl",
   "type": "generative",
   "category": "generative",
-  "description": "A cavernous, dark-matter crystalline structure pulsing with deep sea bioluminescence and reactive geometric fracturing.",
+  "description": "A cavernous, dark-matter crystalline structure pulsing with deep sea bioluminescence and reactive geometric fracturing. Amber veins, deep-water absorption.",
   "features": [
     "audio-reactive",
     "raymarching",
     "crystal",
     "fractal",
     "mouse-driven",
-    "abyss"
+    "abyss",
+    "aces-tone-mapping",
+    "semantic-alpha",
+    "upgraded-rgba"
   ],
   "tags": [
     "crystal",
@@ -62,5 +65,15 @@
       "mapping": "zoom_params.w",
       "description": "Fractal Detail"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        { "index": 0, "name": "Gravity Pull", "default": 0.5, "min": 0.0, "max": 1.0, "step": 0.01 },
+        { "index": 1, "name": "Fractal Speed", "default": 1.0, "min": 0.0, "max": 5.0, "step": 0.1 },
+        { "index": 2, "name": "Glow Intensity", "default": 0.8, "min": 0.0, "max": 2.0, "step": 0.1 },
+        { "index": 3, "name": "Fractal Detail", "default": 1.0, "min": 0.0, "max": 1.0, "step": 0.1 }
+      ]
+    }
+  }
 }

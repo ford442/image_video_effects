@@ -6,6 +6,10 @@
 //  Chunks From: domainWarp, ribbonSDF, hue_preserve_clamp, bass_env, ign
 //  Created: 2026-07-17
 //  By: weekly swarm Batch 14
+//  Upgraded: 2026-11-15
+//  Ideas: asymmetric curtain profile — razor lower border, long upward fade (native); altitude emission colour — N2+ violet fringe / O 557.7 nm green / O 630 nm red (native); fold limb-brightening along the curtain slope (native)
+//  Rescue: trail history read through an exact texel load (HEAD: filtering sampler on rgba32float, pixel/res off the texel centre)
+//  A packing: raw HDR trail colour (RGB) + bassEnv (A) — what C is read as; ACES only on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -48,13 +52,27 @@ fn auroraPalette(t: f32) -> vec3<f32> {
         step(0.5, hue)
     );
 }
-fn ribbonField(uv: vec2<f32>, t: f32, amp: f32, freq: f32, phase: f32) -> f32 {
+// Returns (curtain energy = coverage, signed altitude dy, limb brightening factor — colour only, not coverage).  uv.y is DOWN on screen: dy > 0 is BELOW the curve.
+fn ribbonField(uv: vec2<f32>, t: f32, amp: f32, freq: f32, phase: f32) -> vec3<f32> {
     let warp = fbm(uv * 1.5 + vec2<f32>(t * 0.05, 0.0), 3) * 0.35;
     let x = uv.x + warp;
-    let wave = sin(x * freq + t * 0.8 + phase) * amp;
-    let curtain = exp(-abs(uv.y - wave) * (8.0 + amp * 6.0));
+    let arg = x * freq + t * 0.8 + phase;
+    let wave = sin(arg) * amp;
+    let dy = uv.y - wave;
+    let k = 8.0 + amp * 6.0;
+    // ── Idea 1: asymmetric curtain profile (native) ───────────────────
+    // An auroral curtain is a sheet seen edge-on: its lower border is razor sharp (the
+    // precipitating electrons stop abruptly) and it fades slowly upward along the field
+    // line. Peak is still 1 at dy = 0, as HEAD; HEAD's exp(-|dy|k) was symmetric.
+    let curtain = exp(-max(dy, 0.0) * k * 2.6 - max(-dy, 0.0) * k * 0.55);
+    // ── Idea 3: fold limb-brightening (native) ────────────────────────
+    // Where the sheet folds toward edge-on the line of sight crosses more emitting depth, so
+    // steep stretches of the curve burn brighter than flat ones. Slope = analytic d(wave)/dx
+    // of the sinusoid (the fbm warp derivative is ignored).
+    let slope = amp * freq * cos(arg);
+    let limb = min(1.0 + 7.0 * slope * slope, 2.0) / 1.3;
     let shimmer = pow(valueNoise(uv * vec2<f32>(24.0, 6.0) + vec2<f32>(t * 0.4, phase)), 2.0);
-    return curtain * (0.55 + shimmer * 0.45);
+    return vec3<f32>(curtain * (0.55 + shimmer * 0.45), dy, limb);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -62,7 +80,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.zw);
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
-    let uv01 = vec2<f32>(pixel) / res;
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
@@ -92,17 +109,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let phase = fi * 1.7 + time * 0.15;
         let offset = (fi - f32(ribbonCount) * 0.5) * 0.22 + mouse.y * 0.15;
         let ruv = uv + vec2<f32>(mouse.x * 0.12, offset);
-        let field = ribbonField(ruv, time + fi * 0.3, baseAmp, baseFreq + fi * 0.4, phase);
+        let rf = ribbonField(ruv, time + fi * 0.3, baseAmp, baseFreq + fi * 0.4, phase);
+        let field = rf.x;
         let hue = fi * 0.11 + mids * 0.35 + time * 0.04 + p1 * 0.2;
-        let ribbonCol = auroraPalette(hue) * (0.7 + treble * 0.5);
-        col += ribbonCol * field * (0.85 + bassEnv * 0.35);
+        // ── Idea 2: altitude emission colour (native, spectral) ───────
+        // Emission follows altitude: N2+ violet-blue in a thin fringe under the border, atomic
+        // oxygen 557.7 nm green through the body (the hue clock keeps acting there), and
+        // oxygen 630.0 nm red high above the border.
+        let hiAlt = smoothstep(0.0, 0.25, -rf.y);
+        let loFringe = smoothstep(0.0, 0.03, rf.y) * (1.0 - smoothstep(0.03, 0.10, rf.y));
+        var ribbonCol = auroraPalette(hue) * (0.7 + treble * 0.5);
+        ribbonCol = mix(ribbonCol, vec3<f32>(1.0, 0.22, 0.12) * (0.7 + treble * 0.5), hiAlt * 0.7);
+        ribbonCol = mix(ribbonCol, vec3<f32>(0.35, 0.35, 1.0) * (0.7 + treble * 0.5), loFringe * 0.6);
+        col += ribbonCol * field * rf.z * (0.85 + bassEnv * 0.35);
         density += field;
     }
 
     let spark = hash21(vec2<f32>(pixel) + fract(time * 30.0)) * treble * density * 0.8;
     col += vec3<f32>(0.9, 0.98, 1.0) * spark;
 
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0).rgb;
+    let prev = textureLoad(dataTextureC, pixel, 0).rgb;   // exact texel load (HEAD: filtering sampler, pixel/res off-centre)
     col = mix(prev * (0.9 - p4 * 0.08), col, 0.28 + p4 * 0.18);
     textureStore(dataTextureA, pixel, vec4<f32>(col, bassEnv));
 

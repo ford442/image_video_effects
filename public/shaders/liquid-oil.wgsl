@@ -1,14 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid Oil — high-viscosity film with persistent thickness and specular flow.
 //  Category: liquid-effects
-//  Upgraded: 2026-09-21
-//  Ideas: displacement wake that refills slowly; shear-aligned film streaks
+//  Upgraded: 2026-09-21, 2026-11-15
+//  Ideas: displacement wake that refills slowly; shear-aligned film streaks; angle-dependent thin-film phase (§12.2F); gravity drainage with h^3 flux (§12.2D)
 //  A packing: raw — R=film height, G=vertical response, B=shear, A=coverage.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
+const FILM_N: f32 = 1.47;     // refractive index of the oil film (Snell inside the film, Idea 1)
+const DRAIN_K: f32 = 0.15;    // gravity-drainage strength (Idea 4); upwind CFL: 3*h^2*k <= 1 for h <= 0.75 -> k <= 0.59
 
 fn clampPixel(p: vec2<i32>, dims: vec2<i32>) -> vec2<i32> { return clamp(p, vec2<i32>(0), dims - vec2<i32>(1)); }
 fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123); }
@@ -71,12 +73,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
     if (age >= 0.0 && age < 3.6) {
       let d = length((uv - ripple.xy) * aspectVec);
-      let ring = exp(-pow((d - age * 0.085) * 34.0, 2.0)) * exp(-age * (0.75 + viscosity));
+      // ── Rescue 1: was pow(negative, 2.0) inside the ring (undefined / NaN on some GPUs) ──
+      let ringArg = (d - age * 0.085) * 34.0;
+      let ring = exp(-ringArg * ringArg) * exp(-age * (0.75 + viscosity));
       acceleration += ring * sin(age * 5.0) * (0.012 + rippleStrength * 0.055); clickEnergy += ring;
     }
   }
   velocity = clamp(velocity * damping + acceleration, -0.42, 0.42);
-  height = clamp(height + velocity * mix(0.07, 0.022, viscosity), 0.025, 0.75);
+  // ── Idea 4: gravity drainage — h^3 flux (§12.2D shallow-water continuity) ──
+  // Lubrication theory: a film on a non-horizontal surface drains with flux F = h^3 (thick oil flows much
+  // faster than thin). The solver has no gravity, so nothing ever sagged. Upwind continuity along screen-down:
+  // dh = -k (F(h) - F(h above)). `hD` is the row ABOVE (pixel y-1) — upwind for downward flow. Thick wake rims
+  // slump into slow teardrops, thin film stays put. Mass is conserved up to the existing height clamp.
+  let drainK = DRAIN_K * (1.0 - viscosity * 0.7);
+  let h0 = height;
+  height = clamp(height + velocity * mix(0.07, 0.022, viscosity) - drainK * (h0 * h0 * h0 - hD * hD * hD), 0.025, 0.75);
   shear = clamp(shear * mix(0.94, 0.985, viscosity) + (hR - hL - hU + hD) * 0.05, -1.0, 1.0);
   let coverage = clamp(max(center.a * 0.997, smoothstep(0.025, 0.17, height) + stir * 0.08), 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(height, velocity, shear, coverage));
@@ -86,7 +97,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let sourceUV = clamp(uv + normal.xy * (0.012 + height * 0.055) / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999));
   let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
   let viewDir = normalize(vec3<f32>((uv - 0.5) * aspectVec * 0.3, 1.0));
-  let fresnel = schlick(max(dot(normal, viewDir), 0.0), vec3<f32>(0.045));
+  let cosView = clamp(dot(normal, viewDir), 0.0, 1.0);
+  let fresnel = schlick(cosView, vec3<f32>(0.045));
   let halfDir = normalize(viewDir + normalize(vec3<f32>(-0.45, 0.55, 0.8)));
   let specular = pow(max(dot(normal, halfDir), 0.0), mix(26.0, 130.0, viscosity));
   // ── Idea 2: shear-aligned film streaks ────────────────────────────
@@ -105,8 +117,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let streakH = (height * 2.0 + hA1 + hB1 + hA2 + hB2) / 6.0;
   let streakAmt = select(0.0, clamp(abs(shear) * 3.0 + 0.2, 0.0, 0.85), initialized);
   let filmHeight = mix(height, streakH, streakAmt);
-  let filmPhase = filmHeight * (46.0 + colorShift * 92.0) + shear * 1.8 + time * 0.018;
-  let interference = 0.5 + 0.5 * cos(TAU * (vec3<f32>(1.0, 1.17, 1.36) * filmPhase + vec3<f32>(0.0, 0.2, 0.43)));
+  // ── Idea 3: angle-dependent thin-film phase (§12.2F thin-film) ────
+  // A slick is thin-film interference: delta = 4*pi*n*d*cos(theta_t)/lambda, R = cos^2(delta/2) = 0.5+0.5cos(TAU*m)
+  // with m = 2*n*d*cos(theta_t)/lambda cycles. HEAD's phase ignored the viewing angle, so hue could not drift
+  // across a curved film. cos(theta_t) comes from Snell inside the film using the incidence angle the fresnel
+  // term already computes; flat film at normal incidence (cosT = 1) keeps HEAD's thickness phase exactly.
+  // Channel cycle ratios are now the true 650/550/450 nm ones; the (0, 0.2, 0.43) offsets stay as HEAD's stand-in
+  // for the eye's spectral response.
+  let cosT = sqrt(max(1.0 - (1.0 - cosView * cosView) / (FILM_N * FILM_N), 0.0));
+  let filmPhase = filmHeight * (46.0 + colorShift * 92.0) * cosT + shear * 1.8 + time * 0.018;
+  let interference = 0.5 + 0.5 * cos(TAU * (vec3<f32>(1.0, 1.1818, 1.4444) * filmPhase + vec3<f32>(0.0, 0.2, 0.43)));
   let absorption = exp(-height * vec3<f32>(0.65, 1.05, 1.8));
   let color = source.rgb * absorption + interference * fresnel * (0.24 + colorShift * 0.5 + mids * 0.14)
     + vec3<f32>(1.0, 0.78, 0.38) * specular * (0.65 + bass * 0.35)
