@@ -128,6 +128,8 @@ export interface WebGPUFrameState {
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Stage outputs (webgpu/outputs.ts): one present pass per attached output, after the main present. */
+  encodeOutputs?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
   /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
   afterFrameSubmit?: () => void;
@@ -215,6 +217,8 @@ export interface WebGPUFrameHost {
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Stage outputs (webgpu/outputs.ts): one present pass per attached output, after the main present. */
+  encodeOutputs?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
   /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
   afterFrameSubmit?: () => void;
@@ -278,6 +282,8 @@ export interface FrameContext {
   encodePreFxChores?: (encoder: GPUCommandEncoder) => void;
   /** Encode chore readback copies into the frame encoder (before finish). */
   encodePostFxChores?: (encoder: GPUCommandEncoder) => void;
+  /** Stage outputs (webgpu/outputs.ts): one present pass per attached output, after the main present. */
+  encodeOutputs?: (encoder: GPUCommandEncoder) => void;
   afterFrameSubmitChores?: () => void;
   /** After every frame submit (both paths): release per-frame inputs such as VideoFrames. */
   afterFrameSubmit?: () => void;
@@ -408,6 +414,7 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     get timestampRuntime() { return d.timestampRuntime; },
     encodePreFxChores: (encoder) => d.encodePreFxChores?.(encoder),
     encodePostFxChores: (encoder) => d.encodePostFxChores?.(encoder),
+    encodeOutputs: (encoder) => d.encodeOutputs?.(encoder),
     afterFrameSubmitChores: () => d.afterFrameSubmitChores?.(),
     afterFrameSubmit: () => d.afterFrameSubmit?.(),
     beforeFrame: () => d.beforeFrame?.(),
@@ -506,6 +513,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get timestampRuntime() { return h.timestampRuntime; },
     encodePreFxChores: (encoder) => h.encodePreFxChores?.(encoder),
     encodePostFxChores: (encoder) => h.encodePostFxChores?.(encoder),
+    encodeOutputs: (encoder) => h.encodeOutputs?.(encoder),
     afterFrameSubmitChores: () => h.afterFrameSubmitChores?.(),
     afterFrameSubmit: () => h.afterFrameSubmit?.(),
     beforeFrame: () => h.beforeFrame?.(),

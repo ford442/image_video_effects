@@ -106,6 +106,11 @@ export type HostedRenderer = Pick<
   | 'getInputEcho'
   | 'setFatalErrorHandler'
   | 'simulateDeviceLoss'
+  | 'attachOutput'
+  | 'detachOutput'
+  | 'setOutputConfig'
+  | 'setOutputSize'
+  | 'getOutputStatus'
 >;
 
 export interface RenderWorkerHostDeps {
@@ -206,6 +211,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     workingSizeCap: r.getWorkingSizeCap(),
     resolution: r.getResolutionScale(),
     canvasColor: r.getCanvasColorState(),
+    outputs: r.getOutputStatus(),
     gpuErrors: [...gpuErrors],
     liveGpuDevices: deps.liveDeviceCount?.() ?? 0,
     inputChannel: inputRing ? 'sab' : 'postMessage',
@@ -298,6 +304,9 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       bus.setBpm(bpm);
     },
     setModulationExternal: ({ values }) => getModulationRuntime().setExternal(values),
+    detachOutput: ({ id }) => withRenderer((r) => r.detachOutput(id)),
+    setOutputConfig: ({ id, config }) => withRenderer((r) => r.setOutputConfig(id, config)),
+    setOutputSize: ({ id, width, height }) => withRenderer((r) => r.setOutputSize(id, width, height)),
   };
 
   const rpcs: RpcHandlers = {
@@ -376,6 +385,10 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       return renderer.compileCheck(id, code);
     },
     benchmarkUncapped: async ({ frames }) => (renderer ? renderer.benchmarkUncapped(frames) : null),
+    attachOutput: async ({ id, canvas, width, height, config }) => {
+      if (!renderer) return { ok: false, error: lostRenderer ? 'render device lost' : 'render worker has no renderer' };
+      return renderer.attachOutput(id, canvas, width, height, config);
+    },
     dispose: async () => {
       stopSnapshots();
       const r = renderer ?? lostRenderer;

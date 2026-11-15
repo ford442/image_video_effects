@@ -334,6 +334,33 @@ describe('RendererManager shader forwarding', () => {
     expect(webgpu.addRipple).toHaveBeenCalledWith(0.5, 0.25);
   });
 
+  it('notifies backend-ready listeners after a switch and exposes the output backend only on WebGPU', async () => {
+    const base: Record<string | symbol, unknown> = {
+      ...makeMockWebGPU(), backendKind: 'webgpu', attachOutput: vi.fn(), getOutputStatus: vi.fn(() => []),
+    };
+    // A WebGPU backend gets the whole performance policy applied: stub whatever it asks for.
+    const webgpu = new Proxy(base, {
+      get: (t, k) => (k in t || k === 'then' || typeof k === 'symbol' ? t[k] : (t[k] = vi.fn())),
+    });
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(canvas);
+    const ready = vi.fn();
+    const off = manager.onBackendReady(ready);
+    await manager.switchRenderer('wasm');
+    expect(ready).toHaveBeenCalledTimes(1);
+    expect(manager.getOutputBackend()).toBeNull();
+    await manager.switchRenderer('webgpu');
+    expect(ready).toHaveBeenCalledTimes(2);
+    expect(manager.getOutputBackend()).toBe(webgpu);
+    off();
+    await manager.switchRenderer('wasm');
+    expect(ready).toHaveBeenCalledTimes(2);
+  });
+
   it('forwards updateAudioFrequencyBins to WASMRenderer', async () => {
     const wasm = makeMockWASM();
     (WASMRenderer as Mock).mockImplementation(() => wasm);

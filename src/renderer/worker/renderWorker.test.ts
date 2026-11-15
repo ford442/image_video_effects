@@ -48,6 +48,7 @@ function fakeRenderer() {
     return undefined;
   };
   let fatal: ((message: string, info?: DeviceLossInfo) => void) | null = null;
+  const outputs = new Map<string, { width: number; height: number }>();
   const r = {
     initialized: false,
     init: vi.fn(async () => {
@@ -142,6 +143,18 @@ function fakeRenderer() {
       lose('simulated');
       return true;
     }),
+    attachOutput: vi.fn(async (id: string, _canvas: unknown, width: number, height: number) => {
+      outputs.set(id, { width, height });
+      return { ok: true, format: 'bgra8unorm' as GPUTextureFormat };
+    }),
+    detachOutput: vi.fn((id: string) => {
+      outputs.delete(id);
+    }),
+    setOutputConfig: record('setOutputConfig'),
+    setOutputSize: record('setOutputSize'),
+    getOutputStatus: () => [...outputs].map(([id, o]) => ({
+      id, width: o.width, height: o.height, format: 'bgra8unorm' as GPUTextureFormat, framesPresented: 3, singular: false,
+    })),
   };
   /** What WebGPURenderer does when its device.lost resolves while rendering. */
   const lose = (reason = 'unknown') => {
@@ -315,6 +328,25 @@ describe('render worker host ↔ client', () => {
     expect(deps.runProbe).toHaveBeenCalledTimes(1);
     expect(deps.createRenderer).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ colorSpace: 'display-p3', toneMapping: 'standard' });
+  });
+
+  it('attaches stage outputs over the attachOutput RPC and reports them in the snapshot', async () => {
+    const { mainPort, fake } = setup();
+    const client = await connectRenderWorker(mainPort);
+    await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: 'http://app/' });
+    const stageCanvas = {} as OffscreenCanvas;
+    expect(transferablesOf({ type: 'attachOutput', requestId: 1, id: 'stage-1', canvas: stageCanvas, width: 1, height: 1, config: {} }))
+      .toEqual([stageCanvas]);
+    const result = await client.rpc({ type: 'attachOutput', id: 'stage-1', canvas: stageCanvas, width: 1920, height: 1080, config: { testPattern: 'grid' } });
+    expect(result).toEqual({ ok: true, format: 'bgra8unorm' });
+    expect(fake.raw.attachOutput).toHaveBeenCalledWith('stage-1', stageCanvas, 1920, 1080, { testPattern: 'grid' });
+    client.send({ type: 'setOutputConfig', id: 'stage-1', config: { outline: true } });
+    client.send({ type: 'setOutputSize', id: 'stage-1', width: 1280, height: 720 });
+    client.send({ type: 'detachOutput', id: 'stage-1' });
+    await flushPorts();
+    expect(fake.calls).toContainEqual(['setOutputConfig', ['stage-1', { outline: true }]]);
+    expect(fake.calls).toContainEqual(['setOutputSize', ['stage-1', 1280, 720]]);
+    expect(fake.raw.detachOutput).toHaveBeenCalledWith('stage-1');
   });
 
   it('reports a failed probe without creating a renderer', async () => {

@@ -433,6 +433,13 @@ Cloud VM has no GPU — structural gates only; do not claim visual QA.
 > (§3), **(6)** gate. A formula that fails the admission test is not "a bit of extra polish" —
 > it is the generic overlay of §4 with a new name. This toolkit is a *menu per family*; it is
 > never a checklist, and nothing here is required on any file.
+>
+> **Plumbing comes from the standard library, not from scratch.** Hashes, noise / fbm,
+> colour spaces, tonemaps, SDF primitives, safe math, `textureLoad` filters and audio
+> accessors live in [`SHADER_STDLIB.md`](SHADER_STDLIB.md) (`public/shaders/_std/`). Until the
+> `#import` linker lands, copy the `_std` function verbatim (same name, same body) rather
+> than re-deriving one — body-identical copies are what the dedupe codemod turns into imports
+> with zero pixel diff. Re-deriving a hash is not an idea and spends the batch's budget.
 
 ### 12.1 Tactics for inventing *native* ideas
 

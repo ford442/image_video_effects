@@ -1,6 +1,7 @@
 import * as WasmBridge from '../wasm/wasm_bridge';
 import { WASMRenderer } from '../renderer/WASMRenderer';
 import { DEFAULT_CONFIG } from '../renderer/Renderer';
+import { startGpuEncodeSession } from '../recording/gpuEncodeSupport';
 
 vi.mock('../wasm/wasm_bridge', () => ({
   initWasmRenderer: vi.fn().mockResolvedValue(true),
@@ -19,6 +20,13 @@ vi.mock('../wasm/wasm_bridge', () => ({
   stopRecording: vi.fn(),
   updateUniforms: vi.fn(),
   getFPS: () => 60,
+  getPresentCanvas: vi.fn().mockReturnValue(null),
+  supportsCanvasCopySrc: vi.fn().mockReturnValue(true),
+  setCanvasCopySrc: vi.fn().mockReturnValue(true),
+}));
+
+vi.mock('../recording/gpuEncodeSupport', () => ({
+  startGpuEncodeSession: vi.fn().mockResolvedValue(null),
 }));
 
 describe('WASMRenderer Phase 3 parity methods', () => {
@@ -96,5 +104,44 @@ describe('WASMRenderer Phase 3 parity methods', () => {
 
     renderer.stopRecording();
     expect(WasmBridge.stopRecording).toHaveBeenCalled();
+  });
+
+  it('records through the bridge with a WebCodecs starter wired to the C++ swapchain', async () => {
+    const canvas = document.createElement('canvas');
+    const present = document.createElement('canvas');
+    vi.mocked(WasmBridge.getPresentCanvas).mockReturnValue(present);
+    vi.mocked(WasmBridge.supportsCanvasCopySrc).mockReturnValue(true);
+    vi.mocked(WasmBridge.setCanvasCopySrc).mockReturnValue(true);
+    await renderer.startRecording(canvas, { durationMs: 1000 });
+
+    const [passedCanvas, opts] = vi.mocked(WasmBridge.startRecording).mock.calls[0]!;
+    expect(passedCanvas).toBe(canvas);
+    expect(opts).toMatchObject({ durationMs: 1000 });
+    const starter = (opts as { gpuEncode?: (c: () => Promise<ImageData>, o: unknown) => Promise<unknown> }).gpuEncode;
+    expect(typeof starter).toBe('function');
+
+    const capture = vi.fn();
+    const encodeOpts = { width: 640, height: 360, fps: 60, bitrate: 1 };
+    await starter!(capture, encodeOpts);
+    const [frames, passedOpts] = vi.mocked(startGpuEncodeSession).mock.calls[0]!;
+    expect(passedOpts).toBe(encodeOpts);
+    // Same frame-source contract as the TS path: present canvas + COPY_SRC
+    // toggle first, the RGBA readback as fallback.
+    expect(frames.canvas).toBe(present);
+    expect(frames.readback).toBe(capture);
+    expect(frames.supportsCanvasCopySrc()).toBe(true);
+    expect(frames.setCanvasCopySrc(true)).toBe(true);
+    expect(WasmBridge.setCanvasCopySrc).toHaveBeenCalledWith(true);
+  });
+
+  it('falls back to the caller canvas when there is no present canvas', async () => {
+    vi.mocked(WasmBridge.getPresentCanvas).mockReturnValue(null);
+    const canvas = document.createElement('canvas');
+    await renderer.startRecording(canvas);
+    const opts = vi.mocked(WasmBridge.startRecording).mock.calls[0]![1] as {
+      gpuEncode: (c: () => Promise<ImageData>, o: unknown) => Promise<unknown>;
+    };
+    await opts.gpuEncode(vi.fn(), {});
+    expect(vi.mocked(startGpuEncodeSession).mock.calls[0]![0].canvas).toBe(canvas);
   });
 });

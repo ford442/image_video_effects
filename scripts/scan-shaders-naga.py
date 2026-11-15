@@ -211,7 +211,8 @@ or more dynamic animation consistent with the shader theme.
 def main():
     print("\n🔷 Naga WGSL Scanner\n")
 
-    wgsl_files = sorted(SHADERS_DIR.rglob("*.wgsl"))
+    # _std/ modules are libraries composed with their @requires; src/shaderlib/stdlib.test.ts validates them.
+    wgsl_files = sorted(p for p in SHADERS_DIR.rglob("*.wgsl") if "_std" not in p.relative_to(SHADERS_DIR).parts)
     print(f"Found {len(wgsl_files)} WGSL files in {SHADERS_DIR}\n")
 
     results = []

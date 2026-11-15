@@ -343,6 +343,7 @@ export class RendererManager {
         }
         this.replaySessionExtras();
       }
+      this.notifyBackendReady();
       return true;
     }
 
@@ -389,6 +390,36 @@ export class RendererManager {
     });
     if (this.sourceAutoExposure !== null) r.setSourceAutoExposure?.(this.sourceAutoExposure);
     if (this.hdrToneMap) r.setHdrToneMap?.(this.hdrToneMap);
+  }
+
+  private readonly backendReadyListeners = new Set<() => void>();
+
+  /**
+   * Called after every successful backend switch (device-loss recovery included), once the
+   * session has been replayed. Stage outputs use it to hand the new backend fresh canvases.
+   */
+  onBackendReady(listener: () => void): () => void {
+    this.backendReadyListeners.add(listener);
+    return () => this.backendReadyListeners.delete(listener);
+  }
+
+  private notifyBackendReady(): void {
+    for (const listener of this.backendReadyListeners) {
+      try {
+        listener();
+      } catch (e) {
+        console.warn('[RendererManager] backend-ready listener failed', e);
+      }
+    }
+  }
+
+  /** The TS WebGPU backend (page or worker) for stage outputs; null on WASM / Canvas2D. */
+  getOutputBackend(): Pick<
+    WebGPUBackendApi,
+    'attachOutput' | 'detachOutput' | 'setOutputConfig' | 'setOutputSize' | 'getOutputStatus'
+  > | null {
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) && typeof r.attachOutput === 'function' ? r : null;
   }
 
   private reseedRuntimeGraphs(): void {
