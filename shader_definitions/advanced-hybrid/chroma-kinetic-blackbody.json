@@ -2,7 +2,7 @@
   "id": "chroma-kinetic-blackbody",
   "name": "Chroma Kinetic Blackbody",
   "url": "shaders/chroma-kinetic-blackbody.wgsl",
-  "description": "Chroma Kinetic Blackbody",
+  "description": "Mouse-centered kinetic RGB split whose size follows luma, mixed with a blackbody colour of that same luma. Hotter pixels stretch the blue fringe and bleach the core.",
   "tags": [
     "chroma-kinetic",
     "blackbody-thermal",

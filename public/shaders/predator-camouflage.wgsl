@@ -1,33 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Predator Camouflage
 //  Category: distortion
-//  Features: mouse-driven, audio-reactive, depth-aware, chromatophore-simulation, thermal-vision, chromatic-separation, semantic-alpha
+//  Features: mouse-driven, audio-reactive, depth-aware, chromatophore-simulation, thermal-vision, chromatic-separation, semantic-alpha, upgraded-rgba
 //  Complexity: Very High
-//  Created: 2026-05-30
-//  Updated: 2026-06-01
-//  By: Kimi Agent (4-Agent Swarm Upgrade)
+//  Upgraded: 2026-11-15
+//  Ideas: pigment memory from C.z; luma-matched cloak interior
+//  A packing: raw cloak fields (mask, rim, pigment, alpha); ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
+//  Created: 2026-05-30. Updated: 2026-06-01. By: Kimi Agent (4-Agent Swarm Upgrade).
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -45,9 +27,7 @@ fn noise(p: vec2<f32>) -> f32 {
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
-  let a = x * (x * 0.15 + 0.05) + 0.004;
-  let b = x * (x * 0.15 + 0.50) + 0.06;
-  return clamp(a / b - 0.0033, vec3<f32>(0.0), vec3<f32>(1.0));
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn thermalMap(t: f32) -> vec3<f32> {
@@ -95,7 +75,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let chr1 = noise(uv * noiseScale + vec2<f32>(time * chromatophoreSpeed, -time * 0.6) + audio.x * 2.0);
   let chr2 = noise(uv * (noiseScale * 1.6) - vec2<f32>(time * 0.9, time * chromatophoreSpeed));
-  let pigment = (chr1 + chr2 - 1.0) * (0.5 + audio.x);
+  let pigmentRaw = (chr1 + chr2 - 1.0) * (0.5 + audio.x);
+  // ── Idea 1: pigment memory ─────────────────────────────────────
+  // A.z is pigment. Chromatophore Speed is how fast it chases C.z.
+  let histDim = textureDimensions(dataTextureC);
+  let histCoord = clamp(vec2<i32>(gid.xy), vec2<i32>(0), vec2<i32>(histDim) - vec2<i32>(1));
+  let prevPigment = textureLoad(dataTextureC, histCoord, 0).z;
+  let chase = clamp(0.12 + u.zoom_params.z * 0.4, 0.12, 0.72);
+  let pigment = mix(prevPigment, pigmentRaw, chase);
   let sacScale = smoothstep(0.35, 0.65, chr1) * cloakMask;
   let cloakAngle = atan2(centered.y, centered.x);
   let sacRunner = pow(max(0.0, sin(cloakAngle * 18.0 + dist * noiseScale * 3.0 - time * (13.0 + chromatophoreSpeed))), 14.0) * cloakMask;
@@ -123,13 +110,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let chromaTint = mix(vec3<f32>(0.08, 0.75, 0.95), vec3<f32>(0.6, 0.9, 0.25), chr1);
   sampleColor = mix(sampleColor, sampleColor * 0.5 + thermal * 0.55 + chromaTint * 0.25, cloakMask * 0.6);
+  // ── Idea 2: luma-matched interior ──────────────────────────────
+  // Interior brightness tracks the unrefracted photo. Rim additions
+  // below stay unmatched, so the silhouette is where the cloak fails.
+  let bareL = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let cloakedL = max(dot(sampleColor, vec3<f32>(0.299, 0.587, 0.114)), 0.04);
+  let interior = cloakMask * (1.0 - rim);
+  sampleColor *= mix(1.0, bareL / cloakedL, interior * 0.85);
   sampleColor += chromaTint * rim * (0.12 + audio.y * 0.2) + thermal * sacScale * 0.15;
   sampleColor += chromaTint * sacRunner * (0.12 + audio.z * 0.15) + thermal * (huntSweep * 0.12 + clickFront * 0.3);
 
   let bloom = thermal * rim * sacScale * (0.3 + audio.x * 0.3);
   sampleColor += bloom;
 
-  sampleColor = acesToneMap(sampleColor * (1.0 + cloakMask * 0.25));
+  sampleColor = acesToneMap(max(sampleColor * (1.0 + cloakMask * 0.25), vec3<f32>(0.0)));
 
   let baseDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, refractedUV, 0.0).r;
   let depthOut = clamp(mix(baseDepth, 0.15 + cloakMask * 0.75, 0.35) - clickFront * 0.08, 0.0, 1.0);

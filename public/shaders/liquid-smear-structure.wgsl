@@ -1,27 +1,15 @@
-// Liquid Smear Structure — Codex (e) structure-tensor paint transport.
-// A/C packing: display RGBA history. B and extraBuffer are intentionally unused.
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Smear Structure
+//  Category: advanced-hybrid
+//  Features: liquid-smear, structure-tensor, LIC, temporal, mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: coherence-gated LIC length; wet-edge darkening (§12.2C)
+//  A packing: linear display RGBA; ACES on writeTexture
+// ═══════════════════════════════════════════════════════════════════
 // History is read only through bounded, exact textureLoad operations.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -113,12 +101,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let advectedUV = clamp(uv - flow, vec2<f32>(0.0), vec2<f32>(1.0));
   let history = historyAt(advectedUV, dims);
 
+  // ── Idea 1: coherence-gated LIC length ────────────────────────
+  // Same ±3 taps. The step shrinks where the tensor is uncommitted.
+  let cohLen = streamline * mix(0.18, 1.0, coherence);
   var lic = vec3<f32>(0.0);
   var weight = 0.0;
   for (var j = -3; j <= 3; j = j + 1) {
     let fj = f32(j);
     let w = 1.0 - abs(fj) * 0.18;
-    lic += sourceAt(uv + tangent * texel * fj * streamline).rgb * w;
+    lic += sourceAt(uv + tangent * texel * fj * cohLen).rgb * w;
     weight += w;
   }
   lic /= max(weight, 0.001);
@@ -128,6 +119,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var fresh = mix(lic, spectral * (0.35 + lumaAt(uv)),
     clamp(coherence * 0.62 + audio.x * 0.12, 0.0, 0.82));
   fresh += spectral * (clickLight * 0.12 + brush * 0.18 + audio.z * 0.05);
+  // ── Idea 2: wet-edge darkening (§12.2C) ────────────────────────
+  // Pigment piles up where coherence is already high.
+  let wetEdge = smoothstep(0.32, 0.88, coherence);
+  fresh = mix(fresh, fresh * vec3<f32>(0.58, 0.44, 0.34), wetEdge * 0.42);
   let historyMix = memory * (1.0 - clickLight * 0.12);
   let rgbLinear = mix(fresh, clamp(history.rgb, vec3<f32>(0.0), vec3<f32>(3.0)), historyMix);
   let sourceAlpha = sourceAt(advectedUV).a;

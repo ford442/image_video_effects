@@ -30,7 +30,8 @@
     "bass-env",
     "aces-tone-map",
     "ign-dither",
-    "premultiplied-alpha"
+    "premultiplied-alpha",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -69,5 +70,43 @@
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Grain Density",
+          "default": 0.7,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Glow Size",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Orbit Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Hue Base",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }
