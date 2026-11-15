@@ -33,6 +33,7 @@ import { resolveCanvasColorOptIns } from '../webgpu/device';
 import { snapNodeScale } from '../webgpu/nodeScale';
 import type { SlotMode } from '../webgpu/webgpuConstants';
 import type { WebGPUBackendApi } from '../webgpuBackendApi';
+import type { AttachOutputResult, OutputCanvas, OutputStatus } from '../webgpu/outputs';
 import type { WebGpuProbeHandoff } from '../webgpuBootProbe';
 import {
   publishWebGpuProbeBreadcrumb,
@@ -739,6 +740,40 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
 
   getCanvasColorState(): CanvasColorState | null {
     return this.snap?.canvasColor ?? null;
+  }
+
+  /**
+   * Stage outputs: hand a stage window's OffscreenCanvas to the worker, which configures it
+   * on its own device and presents the program to it every frame. The canvas is transferred.
+   */
+  async attachOutput(
+    id: string,
+    canvas: OutputCanvas,
+    width: number,
+    height: number,
+    config: unknown,
+  ): Promise<AttachOutputResult> {
+    if (!this.client || this.lost) return { ok: false, error: 'render worker is not running' };
+    if (typeof OffscreenCanvas === 'undefined' || !(canvas instanceof OffscreenCanvas)) {
+      return { ok: false, error: 'the render worker needs a transferable OffscreenCanvas' };
+    }
+    return this.client.rpc({ type: 'attachOutput', id, canvas, width, height, config });
+  }
+
+  detachOutput(id: string): void {
+    this.client?.send({ type: 'detachOutput', id });
+  }
+
+  setOutputConfig(id: string, config: unknown): void {
+    this.client?.send({ type: 'setOutputConfig', id, config });
+  }
+
+  setOutputSize(id: string, width: number, height: number): void {
+    this.client?.send({ type: 'setOutputSize', id, width, height });
+  }
+
+  getOutputStatus(): OutputStatus[] {
+    return this.snap?.outputs?.map((o) => ({ ...o })) ?? [];
   }
 
   /** VideoFrame of the next presented frame, transferred from the worker (recording). */

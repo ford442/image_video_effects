@@ -17,6 +17,7 @@ import {
   type CanvasConfigureOptIns,
 } from './webgpu/device';
 import { WebGPUResourcePool } from './webgpu/resources';
+import { OutputPresenter, type AttachOutputResult, type OutputCanvas, type OutputStatus } from './webgpu/outputs';
 import { WebGPUPipelineModule, createComputeBindGroup, type ShaderPrecision } from './webgpu/pipeline';
 
 /** shader-f16 support, whether the half path is on, and what each opted-in shader compiled at. */
@@ -171,6 +172,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   readonly resources = new WebGPUResourcePool();
   readonly pipeline = new WebGPUPipelineModule();
   private readonly frameRenderer = new WebGPUFrameRenderer();
+  /** Stage outputs (webgpu/outputs.ts): extra canvases presented from the same device. */
+  private readonly outputs = new OutputPresenter();
   private readonly audioDepth = createAudioDepthState();
   private readonly mediaState = createMediaInputState();
 
@@ -661,6 +664,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       canvasH: this.canvasH,
       inputSource: this.inputSource,
       captureHold: hold,
+      outputsAttached: this.outputs.count > 0,
     });
     const only = plan.chained[0];
     const shaderId = only?.program.kind === 'chain' ? only.program.shaderIds[0] : undefined;
@@ -811,6 +815,44 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   encodePostFxChores(encoder: GPUCommandEncoder): void {
     this.gpuChores.encodeReadback(encoder);
+  }
+
+  encodeOutputs(encoder: GPUCommandEncoder): void {
+    if (this.outputs.count === 0 || !this.blitReadTex) return;
+    this.outputs.encode(encoder, this.blitReadTex, this.inputSource === 'generative');
+  }
+
+  /**
+   * Present the program to another canvas too (a stage window's, transferred here).
+   * Same device, one extra render pass per frame; replaces an output with the same id.
+   */
+  async attachOutput(
+    id: string,
+    canvas: OutputCanvas,
+    width: number,
+    height: number,
+    config: unknown,
+  ): Promise<AttachOutputResult> {
+    if (!this.device || !this.initialized) return { ok: false, error: 'renderer is not initialized' };
+    const gpu = typeof navigator !== 'undefined' ? navigator.gpu : undefined;
+    const format = gpu?.getPreferredCanvasFormat?.() ?? 'bgra8unorm';
+    return this.outputs.attach(this.device, id, canvas, { width, height }, config, format);
+  }
+
+  detachOutput(id: string): void {
+    this.outputs.detach(id);
+  }
+
+  setOutputConfig(id: string, config: unknown): void {
+    this.outputs.setConfig(id, config);
+  }
+
+  setOutputSize(id: string, width: number, height: number): void {
+    this.outputs.setSize(id, width, height);
+  }
+
+  getOutputStatus(): OutputStatus[] {
+    return this.outputs.status();
   }
 
   afterFrameSubmitChores(): void {
@@ -1302,6 +1344,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       prepareDirectPresent: r.prepareDirectPresent.bind(r),
       encodePreFxChores: r.encodePreFxChores.bind(r),
       encodePostFxChores: r.encodePostFxChores.bind(r),
+      encodeOutputs: r.encodeOutputs.bind(r),
       afterFrameSubmitChores: r.afterFrameSubmitChores.bind(r),
       afterFrameSubmit: r.afterFrameSubmit.bind(r),
       beforeFrame: r.beforeFrame.bind(r),
@@ -1601,6 +1644,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.islands.destroy();
     this.compositor.destroy();
     this.frameRenderer.releasePresentHold();
+    this.outputs.releaseAll();
     this.nodeScales.clear();
     this.videoIngest.detach();
     this.resolveFrameGrabs(null);

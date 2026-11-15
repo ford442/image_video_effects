@@ -15,6 +15,7 @@ import { isPublicPixelocityHost } from '../../utils/publicHost';
 import type { UseSlotCompositingReturn } from '../../hooks/useSlotCompositing';
 import type { UseHdrToneMapReturn } from '../../hooks/useHdrToneMap';
 import type { UseCanvasColorReturn } from '../../hooks/useCanvasColor';
+import { stagePanelStore } from '../../output/stagePanelStore';
 
 const LiveStudioTab = lazy(() => import(/* webpackChunkName: "live-studio" */ '../LiveStudioTab'));
 
@@ -339,6 +340,13 @@ export function AppShell(props: AppShellProps) {
                         style={{ background: activeTab === 'live-studio' ? 'linear-gradient(135deg, #00d4ff, #7b2cbf)' : undefined }}
                     >
                         🎥 Live Studio
+                    </button>
+                    <button
+                        className="toggle-sidebar-btn"
+                        onClick={() => stagePanelStore.toggle()}
+                        title="Stage outputs: open a projector / LED window and corner-pin it"
+                    >
+                        📽 Stage
                     </button>
                     {showRemoteButton && (
                         <>

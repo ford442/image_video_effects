@@ -32,6 +32,7 @@ import type { HdrToneMapSettings } from '../../services/hdrOutput';
 import type { DirectPresentStatus, ShaderPrecisionInfo } from '../WebGPURenderer';
 import type { CanvasColorState, DisplayP3Result, WebGpuProbeSerializable } from '../webgpuBootProbe';
 import type { ResolvedRoute } from '../../modulation/types';
+import type { AttachOutputResult, OutputStatus } from '../webgpu/outputs';
 
 /** What the worker scope supports (sent once, before init). */
 export interface RenderWorkerCaps {
@@ -117,7 +118,13 @@ export type RenderCommand =
   /** Modulation bus (#1513): every route (ranges resolved) and the tempo; replaces the previous set. */
   | { type: 'setModulation'; routes: ResolvedRoute[]; bpm: number }
   /** Modulation bus: latest external controller values (0..1) by `${source}:${id}`. */
-  | { type: 'setModulationExternal'; values: Record<string, number> };
+  | { type: 'setModulationExternal'; values: Record<string, number> }
+  /** Stage outputs (webgpu/outputs.ts): stop presenting to an output and unconfigure its canvas. */
+  | { type: 'detachOutput'; id: string }
+  /** Stage outputs: corner pin, test pattern, colour (an OutputConfig; sanitized in the worker). */
+  | { type: 'setOutputConfig'; id: string; config: unknown }
+  /** Stage outputs: the stage window resized (device pixels). */
+  | { type: 'setOutputSize'; id: string; width: number; height: number };
 
 export interface RenderInitInfo {
   ok: boolean;
@@ -161,6 +168,16 @@ export type RenderRpc =
   | { type: 'compileCheck'; requestId: number; id: string; code: string }
   /** Bench only (#1080): N frames without rAF, timed in the worker to GPU idle. */
   | { type: 'benchmarkUncapped'; requestId: number; frames: number }
+  /** Stage outputs: present the program to a stage window's canvas too (same device). */
+  | {
+      type: 'attachOutput';
+      requestId: number;
+      id: string;
+      canvas: OffscreenCanvas;
+      width: number;
+      height: number;
+      config: unknown;
+    }
   | { type: 'dispose'; requestId: number };
 
 export interface CompileMessage {
@@ -181,6 +198,7 @@ export interface RenderRpcResults {
   setDisplayP3: DisplayP3Result;
   compileCheck: CompileMessage[];
   benchmarkUncapped: UncappedBenchResult | null;
+  attachOutput: AttachOutputResult;
   dispose: true;
 }
 
@@ -215,6 +233,8 @@ export interface RenderSnapshot {
   liveGpuDevices: number;
   /** Applied canvas color state (Display P3 toggle / diagnostics). */
   canvasColor?: CanvasColorState;
+  /** Attached stage outputs (webgpu/outputs.ts). */
+  outputs?: OutputStatus[];
   /** How page input reaches the worker. */
   inputChannel: 'sab' | 'postMessage';
   /** The input the worker's renderer currently holds (proves the channel works). */
@@ -267,6 +287,9 @@ export const RENDER_COMMAND_TYPES = [
   'setRuntimeGraph',
   'setModulation',
   'setModulationExternal',
+  'detachOutput',
+  'setOutputConfig',
+  'setOutputSize',
 ] as const;
 
 export const RENDER_RPC_TYPES = [
@@ -279,6 +302,7 @@ export const RENDER_RPC_TYPES = [
   'setDisplayP3',
   'compileCheck',
   'benchmarkUncapped',
+  'attachOutput',
   'dispose',
 ] as const;
 
@@ -297,6 +321,7 @@ export const PROTOCOL_LISTS_ARE_EXHAUSTIVE: [
 export function transferablesOf(message: RenderToWorker | RenderEvent): Transferable[] {
   switch (message.type) {
     case 'init':
+    case 'attachOutput':
       return [message.canvas];
     case 'videoFrame':
       return [message.frame as unknown as Transferable];

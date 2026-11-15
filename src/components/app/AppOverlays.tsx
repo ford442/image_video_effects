@@ -6,6 +6,7 @@ import type { ThumbnailHost } from '../../services/thumbnailBatch';
 import { readGraphLabEnabled } from '../../graphLab/graphLabFlags';
 import { GraphLabLauncher } from '../graphLab/GraphLabLauncher';
 import { ModMatrixHost } from '../modulation/ModMatrixHost';
+import { StageOutputHost } from '../output/StageOutputHost';
 
 // Debug tool: kept out of the main bundle until it is first opened.
 const ShaderScanner = lazy(() => import(/* webpackChunkName: "shader-scanner" */ '../ShaderScanner'));
@@ -124,6 +125,8 @@ export function AppOverlays({
         <>
             {/* Modulation bus (#1513): the mod-matrix panel is a lazy chunk opened from "Modulate…". */}
             <ModMatrixHost modes={modes} availableModes={availableModes} />
+            {/* Stage outputs: projector windows + corner pin (lazy panel, docs/STAGE_OUTPUTS.md). */}
+            <StageOutputHost rendererRef={rendererRef} />
             <div
                 ref={rouletteFlashRef}
                 className="roulette-flash"

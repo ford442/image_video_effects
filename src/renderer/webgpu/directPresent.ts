@@ -18,6 +18,7 @@
  *   - not generative input (the generative blit flips Y)
  *   - no history ring (it copies the frame's output from the working texture)
  *   - no thumbnail capture in flight (it reads the working texture)
+ *   - no stage output attached (outputs.ts reads the working texture too)
  *
  * Anything else, or a variant that fails to compile, uses the normal path.
  * Kill switch: `?no_direct_present` (setDirectPresentEnabled(false)).
@@ -108,6 +109,8 @@ export interface DirectPresentInputs {
   inputSource: string;
   /** A capture needs the working texture written this frame. */
   captureHold: boolean;
+  /** Stage outputs read the working texture after the present (webgpu/outputs.ts). */
+  outputsAttached?: boolean;
 }
 
 export type DirectPresentIneligible =
@@ -118,7 +121,8 @@ export type DirectPresentIneligible =
   | 'resampled'
   | 'generative-flip'
   | 'history-ring'
-  | 'capture';
+  | 'capture'
+  | 'outputs';
 
 /** Why this frame cannot present directly, or null when it can. */
 export function directPresentBlocker(input: DirectPresentInputs): DirectPresentIneligible | null {
@@ -133,6 +137,7 @@ export function directPresentBlocker(input: DirectPresentInputs): DirectPresentI
   if (input.inputSource === 'generative') return 'generative-flip';
   if (plan.anyUsesHistory) return 'history-ring';
   if (input.captureHold) return 'capture';
+  if (input.outputsAttached) return 'outputs';
   return null;
 }
 
