@@ -2,7 +2,7 @@
   "id": "reaction-diffusion",
   "name": "Reaction-Diffusion",
   "url": "shaders/reaction-diffusion.wgsl",
-  "description": "Gray-Scott two-channel field with a rotating conveyor, traveling feed packets, anisotropic Laplacian along the flow, and mitosis pinch where \u2212\u2207\u00b2V is large. Legacy control labels are retained for saved presets.",
+  "description": "Gray-Scott two-channel field with a rotating conveyor, traveling feed packets, anisotropic Laplacian along the flow, and mitosis pinch where \u2212\u2207\u00b2V is large. Legacy control labels are retained for saved presets. Fronts glow by reaction rate; kill follows photo luma.",
   "features": [
     "mouse-driven",
     "audio-reactive",

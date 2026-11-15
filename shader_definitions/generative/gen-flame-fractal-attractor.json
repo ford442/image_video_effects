@@ -10,7 +10,7 @@
     "orbit-density",
     "audio-reactive"
   ],
-  "description": "A curling orbit-density attractor folds luminous ember filaments through a bass-driven flame field with interactive vortex wakes.",
+  "description": "A curling orbit-density attractor folds luminous ember filaments through a bass-driven flame field with interactive vortex wakes. Log-density display; embers cool as they rise.",
   "workgroup_size": [
     16,
     16,
@@ -69,7 +69,7 @@
     "depth-aware",
     "upgraded-rgba"
   ],
-  "feedbackPacking": "A/C = raw HDR display RGBA history",
+  "feedbackPacking": "A/C = log-density display-linear HDR RGBA history (<= 8)",
   "x-meta": {
     "upgrade": {
       "params": [

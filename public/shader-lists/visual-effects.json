@@ -1684,7 +1684,7 @@
     "name": "Neon Edge Glow",
     "url": "shaders/neon-edge-glow.wgsl",
     "category": "visual-effects",
-    "description": "Gas discharge tube simulation with accurate neon emission spectrum, AC rectification flicker, mercury vapor secondary lines, electrode sputtering, and atmospheric haze. Bass drives flicker frequency, mouse bends the tube, depth controls atmospheric scatter.",
+    "description": "Gas discharge tube simulation with accurate neon emission spectrum, AC rectification flicker, mercury vapor secondary lines, electrode sputtering, and atmospheric haze. Bass drives flicker frequency, mouse bends the tube, depth controls atmospheric scatter. Light spills onto the wall; bands travel along the tube.",
     "tags": [
       "neon",
       "edge",

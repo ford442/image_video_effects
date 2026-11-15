@@ -3,12 +3,15 @@
 //  Category: generative
 //  Features: fractal, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: orbit-capture contour filaments (smooth iteration count at which the orbit falls inside a trap radius, drawn as thin contour lines); rising-ember advection (history read from the pixel below with a curl wobble so filaments leave upward ember trails); kept: abs-fold crease specular; even/odd iteration ember bands
-//  A packing: raw HDR display RGBA (ACES on writeTexture)
+//  Upgraded: 2026-10-10, 2026-11-15
+//  Ideas: orbit-capture contour filaments (smooth iteration count at which the orbit falls inside a trap radius, drawn as thin contour lines); rising-ember advection (history read from the pixel below with a curl wobble so filaments leave upward ember trails); kept: abs-fold crease specular; even/odd iteration ember bands; log-density flame display with vibrancy (Draves, native); blackbody cooling of rising embers + ember persistence (§12.2F)
+//  A packing: log-density display-linear HDR RGBA, <= 8 (fed back through C as colour; ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: x=Attractor Strength, y=Orbit Speed, z=Curl, w=Ember Bloom
+
+const COOL_GAIN: f32 = 2.5;   // Idea 4: cooling ramp strength (per frame)
+const EMBER_KEEP: f32 = 0.92; // Idea 4: fraction of the cooled ember history that survives a frame
 
 fn rot(a: f32) -> mat2x2<f32> {
     let c = cos(a); let s = sin(a);
@@ -104,11 +107,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Idea 1 - contour filaments at integer-ish capture counts
     let contour = select(0.0, smoothstep(0.1, 0.0, abs(fract(capture * 0.5) - 0.5)), captured);
     hdrColor += vec3<f32>(1.5, 0.55, 0.12) * contour * emberBloom * 0.16 * (1.0 + audio.z * 0.4);
+    // ── Idea 3: log-density flame display with vibrancy (native — Draves flame, 2026-11-15) ──
+    // The orbit map is contractive, so after ~15 iterations every pixel sits on the same attractor and the
+    // late iterations add a pixel-independent plateau: HEAD summed to ≈(12,4,1.5) everywhere and ACES made
+    // the frame white. A flame fractal is shown as a LOG of the density with a vibrancy mix between
+    // per-channel log (cores whiten) and a luminance-preserving log (cores keep their hue).
+    let flameK = 4.0;
+    let flameNorm = 1.0 / log(1.0 + flameK * 30.0);
+    let dens = clamp(hdrColor, vec3<f32>(0.0), vec3<f32>(24.0));
+    let densLum = dot(dens, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let logLum = log(1.0 + flameK * densLum) * flameNorm;
+    let logChan = log(vec3<f32>(1.0) + flameK * dens) * flameNorm;
+    hdrColor = mix(logChan, dens * (logLum / max(densLum, 1.0e-4)), 0.75);
     // Idea 2 - rising embers: read C from the pixel below with a curl wobble (exact load, clamped)
-    let wobble = i32(round(sin(f32(coord.y) * 0.045 + time * 1.3) * 1.5));
-    let riseCoord = clamp(coord + vec2<i32>(wobble, 2), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
+    // Rise distance is resolution-relative: 2 px/frame at 192 px (HEAD's value, unchanged there), 6 at 576, 11 at 1080 —
+    // HEAD's fixed 2 px was ~0.2 % of the frame height per frame at 1080p, i.e. no visible rise.
+    let riseK = max(res.y / 96.0, 2.0);
+    let wobble = i32(round(sin(f32(coord.y) * 0.045 + time * 1.3) * 0.75 * riseK));
+    let riseCoord = clamp(coord + vec2<i32>(wobble, i32(round(riseK))), vec2<i32>(0), vec2<i32>(dims) - vec2<i32>(1));
     let history = textureLoad(dataTextureC, riseCoord, 0);
-    hdrColor = clamp(mix(hdrColor, history.rgb, (0.055 + audio.x * 0.07) * (0.8 + 0.25 * emberBloom)), vec3<f32>(0.0), vec3<f32>(8.0));
+    // ── Idea 4: blackbody cooling of rising embers (§12.2F blackbody) ──
+    // An ember loses blue first, then green, as it cools: the history is redshifted a little every frame.
+    let emberCool = exp(-vec3<f32>(0.004, 0.022, 0.07) * COOL_GAIN);
+    let cooledHist = history.rgb * emberCool;
+    hdrColor = mix(hdrColor, cooledHist, (0.055 + audio.x * 0.07) * (0.8 + 0.25 * emberBloom));
+    // A hot ember outlives the frame it was born in. The 5–12 % mix above leaves a trail only 2–3 px long, so the
+    // cooling would be invisible; this lets a bright filament keep rising, reddening and dimming for ~10 frames.
+    hdrColor = clamp(max(hdrColor, cooledHist * EMBER_KEEP), vec3<f32>(0.0), vec3<f32>(8.0));
     let mapped = acesToneMap(hdrColor);
     let alpha = clamp(density * 0.42 + lineTrap * 0.25 + creaseAcc * 0.12 + contour * 0.06 + clickEmber * 0.1, 0.02, 0.98);
     let depth = clamp(density * 0.22 + orbitDensity * 0.035 + creaseAcc * 0.08, 0.0, 1.0);

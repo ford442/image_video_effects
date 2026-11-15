@@ -541,7 +541,7 @@
     "name": "Kaleido-Scope",
     "category": "geometric",
     "url": "shaders/kaleido-scope.wgsl",
-    "description": "Hyperbolic Poincaré-disk tessellation kaleidoscope with animated morphing between symmetry types, iridescent metallic boundaries, HDR specular vertices, and depth-driven stereoscopic chromatic aberration.",
+    "description": "Hyperbolic Poincaré-disk tessellation kaleidoscope with animated morphing between symmetry types, iridescent metallic boundaries, HDR specular vertices, and depth-driven stereoscopic chromatic aberration. Mirrors lose light per bounce; the object cell tumbles.",
     "features": [
       "mouse-driven",
       "audio-reactive",

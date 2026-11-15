@@ -129,7 +129,8 @@
       "exact-load-feedback",
       "aces-tone-map",
       "semantic-alpha",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "chromatic-dispersion"
     ],
     "tags": [
       "fluid",
@@ -631,7 +632,8 @@
       "exact-load-feedback",
       "aces-tone-map",
       "semantic-alpha",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "gravity-drainage"
     ]
   },
   {
