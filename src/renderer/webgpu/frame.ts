@@ -185,6 +185,7 @@ export class WebGPUFrameRenderer {
       state.blitReadTex = state.readTex;
       this.presenter.updateBlitBindGroup(state);
       this.presenter.encodePresent(state, encoder);
+      state.encodeOutputs?.(encoder);
       this.presenter.submitFrame(state, encoder);
       state.afterFrameSubmit?.();
       this.updateFPS(state);
@@ -219,6 +220,8 @@ export class WebGPUFrameRenderer {
       this.presenter.updateBlitBindGroup(state);
       this.presenter.encodePresent(state, encoder);
     }
+    // Stage outputs read the frame's final picture (direct present is off while any is attached).
+    state.encodeOutputs?.(encoder);
     state.encodePostFxChores?.(encoder);
     this.presenter.submitFrame(state, encoder);
     state.afterFrameSubmit?.();
