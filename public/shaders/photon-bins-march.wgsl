@@ -1,11 +1,19 @@
-// ═══ PHOTON BINS — MARCH (sim ring, simState dispatch) ════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Photon Bins — march
+//  Category: simulation
+//  Features: audio-reactive, mouse-driven, multi-pass, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: Beer absorption in dark ground (§12.2F); grazing Schlick wall (§12.2F)
+//  A packing: simState xy position, z heading, w bin+energy. Not display
+// ═══════════════════════════════════════════════════════════════════
 //  One invocation per photon. Photons live in the @group(1) sim ring.
 //  simState[i]: .xy position (px), .z heading (rad),
 //               .w = wavelength bin (integer part, 0..63) + energy (fraction)
 //  The source image is the height field. Light bends toward bright (high
 //  index) ground, bends more at short wavelengths (dispersion), and bounces
 //  off any wall steep enough to climb (a luma jump over one step).
-//  zoom_params: .x index contrast (bass kicks it), .y dispersion,
+//  zoom_params: .x index contrast (bass kicks it), .y dispersion (mids),
 //               .z light size, .w persistence (read by the splat pass)
 //  Lights: the pointer when it is on the canvas, plus a slow orbiting one.
 //  The planner builds the spatial hash from these positions afterwards.
@@ -79,6 +87,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let s = res.y / 1080.0;
   let time = u.config.x;
   let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
 
   var seed = pcg(i ^ pcg(simParams.frame + 0x9e3779b9u));
   let st = simState[i];
@@ -96,12 +105,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Index of refraction grows with brightness; blue (wl → 1) bends harder than red.
   let contrast = mix(0.6, 5.0, u.zoom_params.x) * (1.0 + bass * 1.2);
-  let dispersion = u.zoom_params.y;
+  let dispersion = u.zoom_params.y * (1.0 + mids * 0.55);
   let bend = contrast * (1.0 + dispersion * (wl * 2.0 - 1.0) * 0.8);
   let wallStep = mix(0.30, 0.10, u.zoom_params.x);
   let ds = 2.2 * s;
 
   for (var n = 0u; n < SUBSTEPS; n = n + 1u) {
+    // ── Idea 1: Beer absorption in dark ground (§12.2F) ────────────
+    // The image is the medium. Dark ground is optically thick; bright
+    // ground leaves the existing clear-air decay (below) to do the work.
+    let hHere = height(pos, hi);
+    energy = min(energy * exp(-0.012 * max(1.0 - hHere, 0.0) * ds), 0.999);
+
     let dir = vec2<f32>(cos(heading), sin(heading));
     let g = vec2<f32>(
       height(pos + vec2<f32>(3.0, 0.0), hi) - height(pos - vec2<f32>(3.0, 0.0), hi),
@@ -117,9 +132,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let next = pos + nd * ds;
     let climb = height(next, hi) - height(pos, hi);
     if (climb > wallStep && length(g) > 1e-5) {
-      // Wall: reflect about the local surface normal and lose some energy; stay put this step.
-      nd = reflect(nd, normalize(g));
-      energy = energy * 0.8;
+      // Wall: reflect about the local surface normal and stay put this step.
+      // ── Idea 2: grazing Schlick wall (§12.2F) ─────────────────────
+      // Head-on hits dump energy. A glancing ray keeps it.
+      let nrm = g / max(length(g), 1e-5);
+      let incidence = clamp(abs(dot(nd, nrm)), 0.0, 1.0);
+      let fres = 0.08 + 0.92 * pow(1.0 - incidence, 5.0);
+      energy = energy * mix(0.55, 0.96, fres);
+      nd = reflect(nd, nrm);
       heading = atan2(nd.y, nd.x);
     } else {
       pos = next;

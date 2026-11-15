@@ -1,6 +1,14 @@
-// Alpha Depth Fog Volumetric — layered turbulent extinction with spectral in-scattering.
-// A/C packing remains [tone-mapped fogged display rgb, transmittance]. B and extraBuffer are unused.
-// Premium mixed-eight upgrade: 2026-08-27.
+// ═══════════════════════════════════════════════════════════════════
+//  Alpha Depth Fog Volumetric
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-08-27, 2026-11-15
+//  Ideas: source-tinted in-scatter; mid-slab multiple scatter; aerial cooling
+//  A packing: ACES display RGB, transmittance in alpha
+// ═══════════════════════════════════════════════════════════════════
+// Layered turbulent extinction. A/C packing remains
+// [tone-mapped fogged display rgb, transmittance]. B and extraBuffer are unused.
 
 #include "_prelude.wgsl"
 
@@ -109,9 +117,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                      mix(neutral, cool, smoothstep(0.5, 1.0, colorTemperature)),
                      smoothstep(0.38, 0.62, colorTemperature));
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  // ── Idea 3: aerial cooling ─────────────────────────────────────
+  // Far pixels drift toward the cool stop. A warm temperature slider
+  // keeps the near fog warm and weakens the drift.
+  let aerial = distanceThroughFog * (1.0 - colorTemperature) * 0.55;
+  let body = mix(fogColor, cool, clamp(aerial, 0.0, 0.7));
+  // ── Idea 1: source-tinted in-scatter ───────────────────────────
+  // Bright cloth behind the fog lends its colour to the veil.
+  let srcLuma = clamp(dot(source.rgb, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+  let scatterTint = mix(body, source.rgb, srcLuma * 0.4);
   let silverLining = lightEnergy * (0.35 + treble * 0.72) + clickDisturbance * treble * 0.18;
-  var hdr = source.rgb * transmittance + fogColor * (1.0 - transmittance) * (0.78 + mids * 0.15);
-  hdr += fogColor * silverLining;
+  var hdr = source.rgb * transmittance + scatterTint * (1.0 - transmittance) * (0.78 + mids * 0.15);
+  // ── Idea 2: mid-slab multiple scatter ──────────────────────────
+  // The lining peaks where the slab is half transmitting. A floor
+  // keeps the existing glow at the thin and opaque extremes.
+  let midSlab = 4.0 * transmittance * (1.0 - transmittance);
+  hdr += scatterTint * silverLining * (0.45 + 0.55 * midSlab);
   let history = historyAt(uv - vec2<f32>(time * 0.00015, 0.0) - clickSwirl * 0.002, resolution);
   hdr = mix(hdr, history.rgb, clamp(0.02 + turbulence * 0.045, 0.0, 0.07));
   let display = aces(max(hdr, vec3<f32>(0.0)));
