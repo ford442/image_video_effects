@@ -3,8 +3,8 @@
 //  Category: advanced-hybrid
 //  Features: chroma-kinetic, blackbody-thermal, physical-color, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15
-//  Ideas: λ-scaled RGB split; C luma-delta kinetic boost
+//  Upgraded: 2026-09-15, 2026-11-15
+//  Ideas: λ-scaled RGB split; C luma-delta kinetic boost; Wien split; white-hot core
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse-driven kinetic RGB split combined with physically-correct
@@ -13,26 +13,7 @@
 //  radiance and chromatic aberration.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
@@ -50,8 +31,8 @@ fn blackbodyColor(temperatureK: f32) -> vec3<f32> {
     var b: f32;
     if (t <= 6.5) {
         r = 1.0;
-        g = clamp(0.39 * log(t) - 0.63, 0.0, 1.0);
-        b = clamp(0.54 * log(t - 1.0) - 1.0, 0.0, 1.0);
+        g = clamp(0.39 * log(max(t, 0.05)) - 0.63, 0.0, 1.0);
+        b = clamp(0.54 * log(max(t - 1.0, 0.05)) - 1.0, 0.0, 1.0);
     } else {
         r = clamp(1.29 * pow(t - 0.6, -0.133), 0.0, 1.0);
         g = clamp(1.29 * pow(t - 0.6, -0.076), 0.0, 1.0);
@@ -109,16 +90,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let mag = strength * falloff * modFactor * kineticBoost * (1.0 + bass * 0.15);
 
-    // Idea 1 — λ-scaled R/G/B offsets on the existing split axis
-    let uvR = uv - uvOffsetDir * mag * 1.00;
-    let uvG = uv - uvOffsetDir * mag * 0.18;
-    let uvB = uv + uvOffsetDir * mag * 0.68;
-
-    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
-    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
-    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
-    var color = vec3<f32>(r, g, b);
-
     var temperature = mix(1200.0, 9000.0, luma);
     let mouseDown = u.zoom_config.w > 0.5;
     if (mouseDown) {
@@ -128,16 +99,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     temperature = clamp(temperature, 800.0, 15000.0);
 
+    // ── Idea 1: Wien split ─────────────────────────────────────────
+    // The 1.00 / 0.18 / 0.68 offsets stay the baseline. Hotter temperature
+    // stretches the blue fringe and shortens the red one.
+    let tempNorm = clamp((temperature - 1200.0) / 7800.0, 0.0, 1.0);
+    let uvR = clamp(uv - uvOffsetDir * mag * mix(1.22, 0.78, tempNorm), vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvG = clamp(uv - uvOffsetDir * mag * 0.18, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(uv + uvOffsetDir * mag * 0.68 * mix(0.72, 1.38, tempNorm), vec2<f32>(0.0), vec2<f32>(1.0));
+
+    let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+    var color = vec3<f32>(r, g, b);
+
     let thermalIntensity = 0.8 + luma * 1.4 + mids * 0.25;
     let thermalColor = blackbodyColor(temperature) * thermalIntensity;
-    let displayColor = toneMapACES(thermalColor);
+    var blend = mix(color, thermalColor, 0.6);
 
-    let blend = mix(color, displayColor, 0.6);
+    // ── Idea 2: white-hot core ─────────────────────────────────────
+    // Core chroma collapses toward its own luma. Warmth stays in the
+    // shoulder of the same falloff, not in a second light.
+    let hot = clamp((temperature - 4200.0) / 5500.0, 0.0, 1.0);
+    let core = hot * hot * falloff;
+    let blendL = dot(max(blend, vec3<f32>(0.0)), vec3<f32>(0.299, 0.587, 0.114));
+    blend = mix(blend, vec3<f32>(blendL), core * 0.72);
+    blend += vec3<f32>(1.0, 0.42, 0.12) * hot * (1.0 - hot) * falloff * 0.35;
+
+    let display = toneMapACES(max(blend, vec3<f32>(0.0)));
     let splitAmt = clamp(length(uvOffsetDir * mag) * 14.0, 0.0, 1.0);
     let alpha = clamp(0.48 + splitAmt * 0.35 + luma * 0.2 + select(0.0, 0.08, mouseDown), 0.0, 1.0);
 
-    textureStore(writeTexture, gid.xy, vec4<f32>(blend, alpha));
-    textureStore(dataTextureA, gid.xy, vec4<f32>(blend, alpha));
+    textureStore(writeTexture, gid.xy, vec4<f32>(display, alpha));
+    textureStore(dataTextureA, gid.xy, vec4<f32>(display, alpha));
 
     let depth = textureLoad(readDepthTexture, coord, 0).r;
     textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

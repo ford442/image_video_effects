@@ -2,8 +2,8 @@
 //  Hybrid Magnetic Field + Audio Reactive
 //  Category: generative
 //  Features: hybrid, vector-field, particle-trails, magnetic-distortion, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-10
-//  Ideas: opposite-polarity second pole; exact-C LIC along fieldDir
+//  Upgraded: 2026-09-10, 2026-11-15
+//  Ideas: opposite-polarity second pole; exact-C LIC along fieldDir; iron filings; null marker
 //  A packing: display RGB in A; ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
@@ -103,6 +103,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let fieldAngle = atan2(fieldDir.y, fieldDir.x);
     let linePattern = sin(fieldAngle * lineDensity + fieldMag * 10.0);
     let isFieldLine = smoothstep(0.8, 1.0, linePattern);
+    // ── Idea 1: iron filings ───────────────────────────────────────
+    // The sine stays. Hash along the streamline opens gaps so the line
+    // reads as filings instead of a continuous stroke.
+    let along = dot(p, fieldDir) * lineDensity * 0.17;
+    let filing = smoothstep(0.18, 0.48, hash12(vec2<f32>(floor(along), floor(fieldAngle * 3.0))));
+    let lineDraw = isFieldLine * mix(0.22, 1.0, filing);
 
     let flowUV = clamp(uv + fieldDir * 0.01, vec2<f32>(0.0), vec2<f32>(1.0));
     let lic1UV = clamp(uv + fieldDir * 0.02, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -122,7 +128,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioTint = vec3<f32>(audioBass * 0.3, audioMids * 0.15, audioTreble * 0.1);
 
     var color = prevFrame * trailPersistence;
-    color += (fieldColor + audioTint) * isFieldLine * (0.5 + fieldMag * 0.3);
+    color += (fieldColor + audioTint) * lineDraw * (0.5 + fieldMag * 0.3);
 
     let dist1 = length(p - source1);
     let dist2 = length(p - source2);
@@ -136,7 +142,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isBeat = step(0.7, audioBass);
     color += vec3<f32>(0.1, 0.08, 0.05) * isBeat * glowAmt;
 
-    let alpha = mix(0.4, 1.0, isFieldLine + glowAmt * 0.5);
+    // ── Idea 2: null marker ────────────────────────────────────────
+    // Opposite poles, |B| ~ 1/r². The stagnation sits closer to the
+    // weaker pole and is drawn from that geometry, not from fieldDir.
+    let poleSep = source2 - source1;
+    let poleLen = max(length(poleSep), 0.001);
+    let poleAxis = poleSep / poleLen;
+    let saddle = source1 + poleAxis * (poleLen / (1.0 + sqrt(0.5)));
+    let saddleDelta = p - saddle;
+    let saddlePerp = vec2<f32>(-poleAxis.y, poleAxis.x);
+    let arm = min(abs(dot(saddleDelta, poleAxis)), abs(dot(saddleDelta, saddlePerp)));
+    let nullMask = smoothstep(0.5, 0.08, fieldMag) * smoothstep(0.04, 0.16, dist1) * smoothstep(0.04, 0.16, dist2);
+    color += vec3<f32>(0.72, 0.86, 1.0) * exp(-arm * 48.0) * nullMask * 0.7;
+
+    let alpha = mix(0.4, 1.0, lineDraw + glowAmt * 0.5);
 
     textureStore(dataTextureA, global_id.xy, vec4<f32>(color, alpha));
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(color), alpha));
