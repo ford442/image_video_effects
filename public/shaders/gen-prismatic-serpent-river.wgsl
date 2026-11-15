@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
-//  Ideas: finite serpents with head and tapering tail; per-channel prismatic body dispersion
+//  Upgraded: 2026-09-21, 2026-11-15
+//  Ideas: finite serpents; per-channel body dispersion; over/under braided strand crossings; cylindrical chevron scales & Fresnel flank sheen (§12.2F)
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -73,7 +54,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lane = floor(laneCoord);
     let laneY = fract(laneCoord) - 0.5;
     let slither = sin(p.x * (8.0 + bodyScale * 14.0) - time * speed + lane * 1.83) * (0.10 + bodyScale * 0.17);
-    let bodyDistance = abs(laneY - slither);
+    let signedCross = laneY - slither;
+    let bodyDistance = abs(signedCross);
 
     // Idea 1 — finite serpents: each lane carries separate bodies travelling +x with the slither wave;
     // bodyU runs tail (0) -> head (serpentLen); the girth tapers to the tail and rounds off at the head.
@@ -93,10 +75,38 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         exp(-bodyDistance * bodyK),
         exp(-abs(laneY - slither * (1.0 - dispersion)) * bodyK)) * presence;
     let body = bodyRGB.g;
+
+    // ── Idea 3: over/under braided companion strand with contact shadow ───
+    let braidPhase = p.x * (4.2 + bodyScale * 7.0) - time * speed * 0.52 + lane * 2.41;
+    let braidSlither = -slither * 0.88 + cos(braidPhase) * (0.11 + bodyScale * 0.14);
+    let braidCross = laneY - braidSlither;
+    let braidDist = abs(braidCross);
+    let braidU = fract(p.x * serpentFreq - time * speed * 0.061 + fract(sin((lane + 17.3) * 73.1) * 43758.5453));
+    let braidS = braidU / serpentLen;
+    let braidGirth = select(0.0, sqrt(smoothstep(0.0, 0.6, braidS)) * sqrt(1.0 - smoothstep(0.9, 1.0, braidS)), braidS < 1.0);
+    let braidPresence = smoothstep(0.0, 0.08, braidGirth) * (0.45 + 0.55 * serpentCount);
+    let braidK = (24.0 + bodyScale * 42.0) / max(braidGirth, 0.08);
+    let braidRGB = vec3<f32>(
+        exp(-abs(braidCross - braidSlither * dispersion) * braidK),
+        exp(-braidDist * braidK),
+        exp(-abs(braidCross + braidSlither * dispersion) * braidK)) * braidPresence;
+    let braidBody = braidRGB.g;
+    let primaryOver = smoothstep(-0.22, 0.22, sin(braidPhase));
+    let primaryOcc = 1.0 - clamp(braidBody * (1.0 - primaryOver) * 0.78, 0.0, 0.78);
+    let braidOcc = (1.0 - clamp(body * primaryOver * 0.82, 0.0, 0.82)) * (1.0 - body * primaryOver * 0.55);
+
+    // ── Idea 4: cylindrical spine normal, chevron scales & Fresnel sheen (§12.2F) ──
+    let vNorm = clamp(signedCross * bodyK * 0.42, -1.0, 1.0);
+    let cylNz = sqrt(max(1.0 - vNorm * vNorm, 0.0));
+    let spineRidge = pow(cylNz, 6.0) * body;
+    let fresnelFlank = (0.04 + 0.96 * pow(1.0 - cylNz, 4.0)) * body;
+
     let headDx = (serpentLen * 0.95 - bodyU) / serpentFreq;
     let headEye = exp(-pow(headDx / 0.014, 2.0)) * exp(-bodyDistance * 70.0) * step(bodyU, serpentLen);
     let scalePhase = fract(p.x * (7.0 + bodyScale * 15.0) - time * speed * 0.42 + lane * 0.271);
-    let scales = pow(0.5 + 0.5 * cos(scalePhase * TAU + laneY * 18.0), 10.0) * body;
+    let chevronBend = abs(vNorm) * 0.42;
+    let scales = pow(0.5 + 0.5 * cos((scalePhase + chevronBend) * TAU + signedCross * 18.0), 10.0) * body * (0.55 + 0.65 * cylNz);
+    let braidScales = pow(0.5 + 0.5 * cos((scalePhase + abs(clamp(braidCross * braidK * 0.42, -1.0, 1.0)) * 0.42 + 0.35) * TAU), 10.0) * braidBody;
     let eyePhase = fract(p.x * (2.0 + serpentCount * 4.0) - time * speed * 0.20 + lane * 0.131);
     let eyes = exp(-pow((eyePhase - 0.5) / 0.045, 2.0)) * exp(-bodyDistance * 85.0) * presence * 0.4 + headEye;
     let wake = exp(-abs(laneY - slither * 1.35) * 10.0) * (0.5 + 0.5 * sin(p.x * 30.0 - time * speed * 2.0));
@@ -110,24 +120,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let ripple = u.ripples[i];
         let age = time - ripple.z;
         if (age >= 0.0 && age < 3.0) {
-            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 1.0);
+            let delta = (uv - ripple.xy) * vec2<f32>(aspect, 0.0 + 1.0);
             let ring = abs(length(delta) - age * (0.18 + flowSpeed * 0.15));
             clickShed += (1.0 - smoothstep(0.0, 0.027, ring)) * (0.5 + 0.5 * cos(atan2(delta.y, delta.x) * 11.0 - age * 7.0)) * (1.0 - age / 3.0);
         }
     }
 
     let hue = lane / max(lanes, 1.0) + scalePhase * iridescence + time * (0.04 + iridescence * 0.18);
-    var hdr = palette(hue) * bodyRGB * (0.8 + iridescence * 2.0 + audio.y);
-    hdr += palette(hue + 0.32) * scales * (1.3 + audio.z);
-    hdr += vec3<f32>(1.0, 0.85, 0.35) * eyes * (1.4 + audio.x);
+    var hdr = palette(hue) * bodyRGB * primaryOcc * (0.75 + 0.45 * cylNz) * (0.8 + iridescence * 2.0 + audio.y);
+    hdr += palette(hue + 0.19) * braidRGB * braidOcc * (0.75 + iridescence * 1.7 + audio.y * 0.8);
+    hdr += palette(hue + 0.32) * (scales * primaryOcc + braidScales * braidOcc * 0.8) * (1.3 + audio.z);
+    hdr += palette(hue + 0.55) * (fresnelFlank * (0.65 + iridescence * 1.35) + spineRidge * 0.35) * primaryOcc;
+    hdr += vec3<f32>(1.0, 0.85, 0.35) * eyes * primaryOcc * (1.4 + audio.x);
     hdr += palette(hue + 0.65) * (wake * 0.35 + clickShed * 1.8 + dragMask * 0.8);
     hdr += palette(hue + 0.48) * (prismFins * 1.25 + riverCurrent * 0.18) * (0.5 + audio.z);
     let historyUV = clamp(uv - vec2<f32>((0.004 + flowSpeed * 0.010) / max(aspect, 0.001), sin(time + uv.x * 7.0) * 0.002), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + iridescence * 0.16 + dragMask * 0.14, 0.0, 0.42));
-    let structure = clamp(body + scales * 0.5 + prismFins * 0.4 + eyes + clickShed * 0.5, 0.0, 1.0);
-    let output = vec4<f32>(acesToneMap(hdr), clamp(0.10 + structure * 0.88, 0.0, 1.0));
+    let structure = clamp(body + braidBody * 0.85 + scales * 0.5 + prismFins * 0.4 + eyes + clickShed * 0.5, 0.0, 1.0);
+    let output = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), clamp(0.10 + structure * 0.88, 0.0, 1.0));
+    let braidZ = max(body * (0.45 + 0.35 * primaryOver + 0.15 * cylNz), braidBody * (0.45 + 0.35 * (1.0 - primaryOver)));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);
-    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(0.12 + body * 0.58 + scales * 0.18 + eyes * 0.12, 0.0, 0.95), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(0.12 + braidZ * 0.68 + scales * 0.12 + eyes * 0.10, 0.0, 0.95), 0.0, 0.0, 0.0));
 }

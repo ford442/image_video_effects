@@ -3,8 +3,8 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: macroblock quantization tear at I-frame boundary; chroma ghost trail from C motion
+//  Upgraded: 2026-09-11, 2026-11-15
+//  Ideas: macroblock quantization tear at I-frame boundary; chroma ghost trail from C motion; block-carried P-frame motion (§12.2B); DCT step on the predicted block (§12.2B)
 //  A packing: motion state in A (documented); display on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
@@ -65,6 +65,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Exact C is the packed state written by A, sampled at this pixel only.
   let previous = textureLoad(dataTextureC, pixel, 0);
+  // ── Idea 1: block-carried P-frame motion (§12.2B) ────────────────
+  // A macroblock shares one vector. The centre pixel's previous motion
+  // is that vector. The chroma ghost below still reads previous.xy.
+  let blockCenterPx = clamp(vec2<i32>(block * blockSize + vec2<f32>(3.0)), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
+  let blockPrev = textureLoad(dataTextureC, blockCenterPx, 0);
   var motion = previous.xy;
   var age = clamp(previous.z, 0.0, 1.0);
   var strength = clamp(previous.w, 0.0, 1.0);
@@ -74,7 +79,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (isIFrame) {
     motion = observedMotion; age = 0.0; strength = u.zoom_params.x;
   } else {
-    motion = mix(motion * (0.985 - feedbackDecay * 0.08), observedMotion, 0.08 + mids * 0.04);
+    motion = mix(blockPrev.xy * (0.985 - feedbackDecay * 0.08), observedMotion, 0.08 + mids * 0.04);
     age = min(age + dt / iframeInterval, 1.0);
     strength = mix(strength, u.zoom_params.x, 0.05);
   }
@@ -103,7 +108,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let predicted = textureSampleLevel(readTexture, u_sampler, predictedUv, 0.0);
   let blockDecision = step(0.3, hash12(block + floor(time / 0.12)));
   let predictionMix = select(blendAmount * 0.35, blendAmount, blockDecision > 0.5) * select(1.0, 0.0, isIFrame);
-  var hdr = mix(source.rgb, predicted.rgb, predictionMix);
+  // ── Idea 2: DCT step on the predicted block (§12.2B) ─────────────
+  // P-frames quantize. Motion Strength is the step. I-frames stay clean.
+  let qStep = mix(0.012, 0.11, u.zoom_params.x);
+  let qPred = round(predicted.rgb / qStep) * qStep;
+  let predRgb = select(qPred, predicted.rgb, isIFrame);
+  var hdr = mix(source.rgb, predRgb, predictionMix);
 
   // Chroma ghost trail along stored motion vector from exact C.
   let ghostUv = clamp(uv - previous.xy * (0.55 + strength * 1.1), vec2<f32>(0.0), vec2<f32>(1.0));

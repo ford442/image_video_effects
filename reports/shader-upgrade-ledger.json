@@ -351,8 +351,17 @@
       ]
     },
     "chroma-kinetic-blackbody": {
-      "hash": "32e3af819eb0f144",
-      "history": []
+      "hash": "8d8288c5e197c94c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "8d8288c5e197c94c",
+          "prev_hash": "32e3af819eb0f144",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
+        }
+      ]
     },
     "chroma-lens-iridescence": {
       "hash": "d60cf0e3f919a7e4",
@@ -368,8 +377,17 @@
       ]
     },
     "chroma-threads-gabor": {
-      "hash": "0dc639abbd5e11e0",
-      "history": []
+      "hash": "77e77f4616df27c5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "77e77f4616df27c5",
+          "prev_hash": "0dc639abbd5e11e0",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
+        }
+      ]
     },
     "chroma-vortex-coupled": {
       "hash": "3d00cb1dc12df55f",
@@ -817,8 +835,17 @@
       ]
     },
     "double-exposure-hdr": {
-      "hash": "c8494e7fffe4dea4",
-      "history": []
+      "hash": "08274f2071b7a114",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "08274f2071b7a114",
+          "prev_hash": "c8494e7fffe4dea4",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
+        }
+      ]
     },
     "dynamic-lens-flares-prismatic": {
       "hash": "4ea937b6414e4a3d",
@@ -1546,8 +1573,17 @@
       "history": []
     },
     "liquid-smear-structure": {
-      "hash": "1d45f4a262fb7353",
-      "history": []
+      "hash": "3ced722148fd513c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "3ced722148fd513c",
+          "prev_hash": "1d45f4a262fb7353",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
+        }
+      ]
     },
     "melting-oil-blackbody": {
       "hash": "c35c9830b69b15ce",
@@ -2143,8 +2179,17 @@
       ]
     },
     "aurora-rift-2": {
-      "hash": "17d6bb2c15478862",
-      "history": []
+      "hash": "44e0de6486d85a3c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "44e0de6486d85a3c",
+          "prev_hash": "17d6bb2c15478862",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
+        }
+      ]
     },
     "aurora-rift-gemini": {
       "hash": "0ee3a5b57d264c70",
@@ -2412,8 +2457,17 @@
       ]
     },
     "chromatographic-separation": {
-      "hash": "7098c1b7c25d73a7",
-      "history": []
+      "hash": "b18a6be0eb856ede",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "b18a6be0eb856ede",
+          "prev_hash": "7098c1b7c25d73a7",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
+        }
+      ]
     },
     "cosmic-flow": {
       "hash": "56a75e34a2873fb3",
@@ -2428,8 +2482,17 @@
       "history": []
     },
     "double-exposure-zoom": {
-      "hash": "34de1b127df786c6",
-      "history": []
+      "hash": "e18b517d21d8f033",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "e18b517d21d8f033",
+          "prev_hash": "34de1b127df786c6",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
+        }
+      ]
     },
     "echo-trace": {
       "hash": "271c4787ee570b90",
@@ -3043,8 +3106,17 @@
       "history": []
     },
     "radiating-displacement": {
-      "hash": "7f71ab8fd0f2a631",
-      "history": []
+      "hash": "3968857746fda3ea",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "3968857746fda3ea",
+          "prev_hash": "7f71ab8fd0f2a631",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
+        }
+      ]
     },
     "radiating-haze": {
       "hash": "3fed266c4ed68c09",
@@ -3055,8 +3127,17 @@
       "history": []
     },
     "rainbow-cloud": {
-      "hash": "981c35d6b082d66f",
-      "history": []
+      "hash": "0cd350bbe10abc35",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "0cd350bbe10abc35",
+          "prev_hash": "981c35d6b082d66f",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
+        }
+      ]
     },
     "reaction-diffusion": {
       "hash": "59aba9932ea70f30",
@@ -3135,8 +3216,17 @@
       ]
     },
     "spectral-bleed-confinement": {
-      "hash": "090f455cf8939fd3",
-      "history": []
+      "hash": "a8e44a072173b56b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "a8e44a072173b56b",
+          "prev_hash": "090f455cf8939fd3",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
+        }
+      ]
     },
     "spectral-slit-scan": {
       "hash": "89580f09dc670a33",
@@ -3932,7 +4022,7 @@
       ]
     },
     "predator-camouflage": {
-      "hash": "82ed483775b33dfe",
+      "hash": "7f2cb00331f5fa4a",
       "history": [
         {
           "event": "upgraded",
@@ -3941,6 +4031,14 @@
           "prev_hash": "01305e4831bc18e1",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "7f2cb00331f5fa4a",
+          "prev_hash": "82ed483775b33dfe",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
         }
       ]
     },
@@ -5449,7 +5547,7 @@
       ]
     },
     "gen-chromatic-oracle-jelly": {
-      "hash": "26b84e6c8fb64a09",
+      "hash": "1297427f7b76b82e",
       "history": [
         {
           "event": "upgraded",
@@ -5458,6 +5556,14 @@
           "prev_hash": "8f34f41ef2e92b88",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "1297427f7b76b82e",
+          "prev_hash": "26b84e6c8fb64a09",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -6342,7 +6448,7 @@
       ]
     },
     "gen-emergent-calligraphic-weave": {
-      "hash": "2330b73a4489e4e3",
+      "hash": "cd65e2d05727bb3a",
       "history": [
         {
           "event": "upgraded",
@@ -6351,6 +6457,14 @@
           "prev_hash": "a77c52152b23780b",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "cd65e2d05727bb3a",
+          "prev_hash": "2330b73a4489e4e3",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -7973,7 +8087,7 @@
       ]
     },
     "gen-kaleidoscopic-synapse-bloom": {
-      "hash": "f8c246c570feb170",
+      "hash": "0ddd122ac31ad07d",
       "history": [
         {
           "event": "upgraded",
@@ -7982,6 +8096,14 @@
           "prev_hash": "d7bde138ef61172f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "0ddd122ac31ad07d",
+          "prev_hash": "f8c246c570feb170",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -8093,7 +8215,7 @@
       ]
     },
     "gen-liquid-cathedral-dream": {
-      "hash": "92b3e3c8bda2b521",
+      "hash": "98ef0b8028dbb889",
       "history": [
         {
           "event": "upgraded",
@@ -8102,6 +8224,14 @@
           "prev_hash": "37f9a7f340a1ffa4",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "98ef0b8028dbb889",
+          "prev_hash": "92b3e3c8bda2b521",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -9518,8 +9648,17 @@
       ]
     },
     "gen-prismatic-serpent-river": {
-      "hash": "317f029830bf11d5",
-      "history": []
+      "hash": "29512f9fb934fef1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "29512f9fb934fef1",
+          "prev_hash": "317f029830bf11d5",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-prismatic-void-weaver-ouroboros": {
       "hash": "6b55bb2d5f85df72",
@@ -9565,8 +9704,17 @@
       ]
     },
     "gen-psychedelic-time-warp-kaleidoscope": {
-      "hash": "394ce4d18b2a806c",
-      "history": []
+      "hash": "fe84372e1683e456",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "fe84372e1683e456",
+          "prev_hash": "394ce4d18b2a806c",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-quantum-acoustic-bioluminescent-void-urchin": {
       "hash": "079e2949909104d2",
@@ -10165,8 +10313,17 @@
       ]
     },
     "gen-solar-wind-ribbons": {
-      "hash": "ed997ebf089a2023",
-      "history": []
+      "hash": "3a9ea5a9f89eae5b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "3a9ea5a9f89eae5b",
+          "prev_hash": "ed997ebf089a2023",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
+        }
+      ]
     },
     "gen-sonic-lava-flow": {
       "hash": "e5f41e626d7ed46f",
@@ -11632,7 +11789,7 @@
       ]
     },
     "adaptive-mosaic": {
-      "hash": "3076cb5e3cb7a58d",
+      "hash": "8a3f7a3ecf2016a2",
       "history": [
         {
           "event": "upgraded",
@@ -11641,6 +11798,14 @@
           "prev_hash": "48b7c2459161c925",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "8a3f7a3ecf2016a2",
+          "prev_hash": "3076cb5e3cb7a58d",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
         }
       ]
     },
@@ -11695,7 +11860,7 @@
       ]
     },
     "datamosh": {
-      "hash": "21ae1c8f281519f4",
+      "hash": "0c5d6368c5cdd90b",
       "history": [
         {
           "event": "upgraded",
@@ -11704,6 +11869,14 @@
           "prev_hash": "30bf921cb942e92f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "0c5d6368c5cdd90b",
+          "prev_hash": "21ae1c8f281519f4",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
         }
       ]
     },
@@ -11800,7 +11973,7 @@
       ]
     },
     "kaleido-scope-grokcf1": {
-      "hash": "630f157415daf793",
+      "hash": "6aa825cae5f69931",
       "history": [
         {
           "event": "upgraded",
@@ -11809,6 +11982,14 @@
           "prev_hash": "f6b9ce6e65cf5855",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "6aa825cae5f69931",
+          "prev_hash": "630f157415daf793",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -11981,7 +12162,7 @@
       ]
     },
     "hyb-hex-voronoi-distort": {
-      "hash": "e0fbd1a2e287c389",
+      "hash": "eea6618ab13bd89b",
       "history": [
         {
           "event": "upgraded",
@@ -11990,11 +12171,19 @@
           "prev_hash": "6d6b6f40f2ee5e47",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "eea6618ab13bd89b",
+          "prev_hash": "e0fbd1a2e287c389",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
     "hyb-iridescent-fbm-glow": {
-      "hash": "846a45760f79589b",
+      "hash": "fa1bda6776a2f6e4",
       "history": [
         {
           "event": "upgraded",
@@ -12003,6 +12192,14 @@
           "prev_hash": "09b9f60882589bed",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "fa1bda6776a2f6e4",
+          "prev_hash": "846a45760f79589b",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -12033,7 +12230,7 @@
       ]
     },
     "hyb-spectral-fbm-displace": {
-      "hash": "a117b8d6c4e2de92",
+      "hash": "b59dcc8c5825897d",
       "history": [
         {
           "event": "upgraded",
@@ -12042,6 +12239,14 @@
           "prev_hash": "c050c60b540d6a10",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "b59dcc8c5825897d",
+          "prev_hash": "a117b8d6c4e2de92",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
         }
       ]
     },
@@ -12072,7 +12277,7 @@
       ]
     },
     "hybrid-cyber-organic": {
-      "hash": "19ebd376212d3eec",
+      "hash": "521819b43cb6fc08",
       "history": [
         {
           "event": "upgraded",
@@ -12081,6 +12286,14 @@
           "prev_hash": "59128823fb35fd38",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "521819b43cb6fc08",
+          "prev_hash": "19ebd376212d3eec",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -12106,7 +12319,7 @@
       ]
     },
     "hybrid-magnetic-field": {
-      "hash": "65876857dfe1e7a5",
+      "hash": "706243b67e27067f",
       "history": [
         {
           "event": "upgraded",
@@ -12115,11 +12328,19 @@
           "prev_hash": "1ed294ce82e8faf8",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "706243b67e27067f",
+          "prev_hash": "65876857dfe1e7a5",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
         }
       ]
     },
     "hybrid-noise-kaleidoscope": {
-      "hash": "2b16fde17f4bfc9b",
+      "hash": "fab29f2c22690f9e",
       "history": [
         {
           "event": "upgraded",
@@ -12128,6 +12349,14 @@
           "prev_hash": "d0d7d8cc42943f5e",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "fab29f2c22690f9e",
+          "prev_hash": "2b16fde17f4bfc9b",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -12200,7 +12429,7 @@
       ]
     },
     "hybrid-voronoi-glass": {
-      "hash": "50a30b246f33de34",
+      "hash": "185ca517656c49ad",
       "history": [
         {
           "event": "upgraded",
@@ -12209,6 +12438,14 @@
           "prev_hash": "31fc9afbf31866a4",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "185ca517656c49ad",
+          "prev_hash": "50a30b246f33de34",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
         }
       ]
     },
@@ -12226,7 +12463,7 @@
       ]
     },
     "aerogel-smoke": {
-      "hash": "c6d749c335eb914e",
+      "hash": "8f9850f5b29d8fd6",
       "history": [
         {
           "event": "upgraded",
@@ -12235,6 +12472,14 @@
           "prev_hash": "b051f6894bd07c0f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "8f9850f5b29d8fd6",
+          "prev_hash": "c6d749c335eb914e",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
         }
       ]
     },
@@ -12492,7 +12737,7 @@
       ]
     },
     "conv-guided-filter-depth": {
-      "hash": "867ae29196823eb1",
+      "hash": "ac1e607f0d744496",
       "history": [
         {
           "event": "upgraded",
@@ -12501,6 +12746,14 @@
           "prev_hash": "e376d8db12cced1b",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "ac1e607f0d744496",
+          "prev_hash": "867ae29196823eb1",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
         }
       ]
     },
@@ -12617,7 +12870,7 @@
       ]
     },
     "cross-conv-mouse-bilateral": {
-      "hash": "cd457f4bea1c5933",
+      "hash": "504529164aaa349c",
       "history": [
         {
           "event": "upgraded",
@@ -12626,6 +12879,14 @@
           "prev_hash": "aed0c68fa7905005",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "504529164aaa349c",
+          "prev_hash": "cd457f4bea1c5933",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
         }
       ]
     },
@@ -13158,7 +13419,7 @@
       ]
     },
     "liquid-chrome-ripple": {
-      "hash": "b40f179898d383fe",
+      "hash": "3c3d36713e6ba214",
       "history": [
         {
           "event": "upgraded",
@@ -13167,6 +13428,14 @@
           "prev_hash": "493660c96ba20e53",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "3c3d36713e6ba214",
+          "prev_hash": "b40f179898d383fe",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -13575,7 +13844,7 @@
       ]
     },
     "ring-slicer": {
-      "hash": "39127d07abb43f17",
+      "hash": "b1d4a1f40e58ed62",
       "history": [
         {
           "event": "upgraded",
@@ -13584,6 +13853,14 @@
           "prev_hash": "d69813a4bab5fb54",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "b1d4a1f40e58ed62",
+          "prev_hash": "39127d07abb43f17",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
         }
       ]
     },
@@ -13682,7 +13959,7 @@
       ]
     },
     "spectral-mesh": {
-      "hash": "f09f9e84faf414ca",
+      "hash": "9f1ff52ce93d6346",
       "history": [
         {
           "event": "upgraded",
@@ -13691,6 +13968,14 @@
           "prev_hash": "6abc35cd74a32eae",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "9f1ff52ce93d6346",
+          "prev_hash": "f09f9e84faf414ca",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
         }
       ]
     },
@@ -13852,7 +14137,7 @@
       ]
     },
     "voxel-depth-sort": {
-      "hash": "87d2a76094bcfbc9",
+      "hash": "8f2bfcc2983604c6",
       "history": [
         {
           "event": "upgraded",
@@ -13861,6 +14146,14 @@
           "prev_hash": "ac55f493f0fd384b",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "8f2bfcc2983604c6",
+          "prev_hash": "87d2a76094bcfbc9",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
         }
       ]
     },
@@ -13928,8 +14221,17 @@
       "history": []
     },
     "bio-touch": {
-      "hash": "0a07c0acc73f45de",
-      "history": []
+      "hash": "53c7a3fbd48cbcbe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "53c7a3fbd48cbcbe",
+          "prev_hash": "0a07c0acc73f45de",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "biomimetic-scales": {
       "hash": "57652fd24d55d379",
@@ -14141,8 +14443,17 @@
       ]
     },
     "circuit-breaker": {
-      "hash": "2626a054c46e61a0",
-      "history": []
+      "hash": "918715098a1bd269",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "918715098a1bd269",
+          "prev_hash": "2626a054c46e61a0",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
+        }
+      ]
     },
     "cmyk-halftone-interactive": {
       "hash": "c55509f436f23a61",
@@ -15378,8 +15689,17 @@
       "history": []
     },
     "magma-fissure": {
-      "hash": "4e04d582c8bc5871",
-      "history": []
+      "hash": "bf25873a03bd1481",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "bf25873a03bd1481",
+          "prev_hash": "4e04d582c8bc5871",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
+        }
+      ]
     },
     "magnetic-edge": {
       "hash": "b72bc0fd980ab63d",
@@ -15522,7 +15842,7 @@
       ]
     },
     "molten-glass": {
-      "hash": "65a9817901024a1f",
+      "hash": "733c8549a304abd0",
       "history": [
         {
           "event": "upgraded",
@@ -15531,6 +15851,14 @@
           "prev_hash": "91d25fe096eafcf1",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "733c8549a304abd0",
+          "prev_hash": "65a9817901024a1f",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
         }
       ]
     },
@@ -15659,8 +15987,17 @@
       ]
     },
     "mouse-kaleidoscope-tunnel": {
-      "hash": "3f2c5938894bd04e",
-      "history": []
+      "hash": "cc24624551dce436",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "cc24624551dce436",
+          "prev_hash": "3f2c5938894bd04e",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "mouse-magnetic-pixel-sand": {
       "hash": "942c3e8546f8b388",
@@ -16364,8 +16701,17 @@
       "history": []
     },
     "quantum-prism": {
-      "hash": "88aac87d7b93d1ac",
-      "history": []
+      "hash": "710d2a13621eeb77",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "710d2a13621eeb77",
+          "prev_hash": "88aac87d7b93d1ac",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "quantum-ripples": {
       "hash": "8f30f667bcc3a057",
@@ -16414,12 +16760,30 @@
       ]
     },
     "rain-lens-wipe": {
-      "hash": "429ec596e800e8d3",
-      "history": []
+      "hash": "58688046ef2959fd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "58688046ef2959fd",
+          "prev_hash": "429ec596e800e8d3",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "rainbow-vector-field": {
-      "hash": "f2ba1b3fcf0dfb8e",
-      "history": []
+      "hash": "f2bf6a8e4dff4da6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "f2bf6a8e4dff4da6",
+          "prev_hash": "f2ba1b3fcf0dfb8e",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
+        }
+      ]
     },
     "raindrop-ripples": {
       "hash": "f876503472c04fc0",
@@ -18036,8 +18400,17 @@
       ]
     },
     "pp-ssao": {
-      "hash": "4b5537999105d021",
-      "history": []
+      "hash": "0f26e0ac0ffd8e19",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "0f26e0ac0ffd8e19",
+          "prev_hash": "4b5537999105d021",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
+        }
+      ]
     },
     "pp-tone-map": {
       "hash": "9a7ff631d6495aaa",
@@ -19512,7 +19885,7 @@
       "history": []
     },
     "alpha-depth-fog-volumetric": {
-      "hash": "052cd91ae1f1fff6",
+      "hash": "7a4c44e35b913d34",
       "history": [
         {
           "event": "upgraded",
@@ -19521,6 +19894,14 @@
           "prev_hash": "9fca1db9981f6051",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "7a4c44e35b913d34",
+          "prev_hash": "052cd91ae1f1fff6",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
         }
       ]
     },
@@ -19580,7 +19961,7 @@
       ]
     },
     "alpha-spectral-decompose": {
-      "hash": "24c34c21176d2db4",
+      "hash": "7072ee72f52dbbc3",
       "history": [
         {
           "event": "upgraded",
@@ -19589,6 +19970,14 @@
           "prev_hash": "bb35925ab1a0c455",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T03:18:33.939Z",
+          "hash": "7072ee72f52dbbc3",
+          "prev_hash": "24c34c21176d2db4",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 small-ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-small-ten/BRIEFS.md"
         }
       ]
     },
@@ -19648,7 +20037,7 @@
       ]
     },
     "breathing-kaleidoscope": {
-      "hash": "35a2abf85cda1c15",
+      "hash": "206263805d765c18",
       "history": [
         {
           "event": "upgraded",
@@ -19657,6 +20046,14 @@
           "prev_hash": "a8b6a234ab014088",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "206263805d765c18",
+          "prev_hash": "35a2abf85cda1c15",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -19682,7 +20079,7 @@
       ]
     },
     "chromatic-focus-interactive": {
-      "hash": "5c9b42282444777d",
+      "hash": "9774af020a0ce0fb",
       "history": [
         {
           "event": "upgraded",
@@ -19691,11 +20088,19 @@
           "prev_hash": "b001749680d019ff",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "9774af020a0ce0fb",
+          "prev_hash": "5c9b42282444777d",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
     "cross-spec-alpha-spectral-bloom": {
-      "hash": "a77760aa72a3f8ac",
+      "hash": "6db27c05bfd6b9f3",
       "history": [
         {
           "event": "upgraded",
@@ -19704,6 +20109,14 @@
           "prev_hash": "896f46c11efa1a98",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "6db27c05bfd6b9f3",
+          "prev_hash": "a77760aa72a3f8ac",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
         }
       ]
     },
@@ -20010,7 +20423,7 @@
       ]
     },
     "interactive-fresnel": {
-      "hash": "9dc7b1fa0112ee06",
+      "hash": "1df918b5e2cde009",
       "history": [
         {
           "event": "upgraded",
@@ -20019,6 +20432,14 @@
           "prev_hash": "be306ee5ac426081",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "1df918b5e2cde009",
+          "prev_hash": "9dc7b1fa0112ee06",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -20558,7 +20979,7 @@
       ]
     },
     "gen-aetherial-chromatic-tesseract": {
-      "hash": "1e73ad609d58eef5",
+      "hash": "75664a1a2f907452",
       "history": [
         {
           "event": "added",
@@ -20566,6 +20987,14 @@
           "hash": "1e73ad609d58eef5",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "75664a1a2f907452",
+          "prev_hash": "1e73ad609d58eef5",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
         }
       ]
     },
@@ -20638,7 +21067,7 @@
       ]
     },
     "gen-liquid-metal-chrono-flora": {
-      "hash": "11403c3e55322c58",
+      "hash": "2585130e9042f127",
       "history": [
         {
           "event": "added",
@@ -20646,6 +21075,14 @@
           "hash": "11403c3e55322c58",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "2585130e9042f127",
+          "prev_hash": "11403c3e55322c58",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
         }
       ]
     },
@@ -20686,7 +21123,7 @@
       ]
     },
     "gen-symbiotic-neuro-lattice": {
-      "hash": "fc91ad3149ad1890",
+      "hash": "0b46a161fb71506f",
       "history": [
         {
           "event": "added",
@@ -20694,11 +21131,19 @@
           "hash": "fc91ad3149ad1890",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "0b46a161fb71506f",
+          "prev_hash": "fc91ad3149ad1890",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
     "gen-synaptic-void-weaver": {
-      "hash": "6007fd0af7bd310f",
+      "hash": "308f924a9d551332",
       "history": [
         {
           "event": "added",
@@ -20706,6 +21151,14 @@
           "hash": "6007fd0af7bd310f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T04:47:05.776Z",
+          "hash": "308f924a9d551332",
+          "prev_hash": "6007fd0af7bd310f",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 circuit-void-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-circuit-void-ten/BRIEFS.md"
         }
       ]
     },
@@ -20766,6 +21219,80 @@
           "hash": "e2b60f49f0ec83dc",
           "commit": "798d840",
           "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        }
+      ]
+    },
+    "photon-bins": {
+      "hash": "d845dee530659c17",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "d845dee530659c17",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-fractal-lightning-canvas": {
+      "hash": "1f777384093ae068",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "1f777384093ae068",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-bioluminescent-mycelial-nexus": {
+      "hash": "54959f9cb5191ed8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T07:35:36.167Z",
+          "hash": "54959f9cb5191ed8",
+          "commit": "41bf0f4f",
+          "note": "2026-11-15 spectral-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-spectral-field-ten/NOTES.md"
+        }
+      ]
+    },
+"gen-ethereal-cyber-aurora-mantis-shrine": {
+      "hash": "f7d1ecdb0e458f7e",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-15T05:58:18.089Z",
+          "hash": "f7d1ecdb0e458f7e",
+          "commit": "753dc86c",
+          "note": "2026-11-15 sonnet/batch-37 cloud/glass/ribbon/jelly/kaleido ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-37"
+        }
+      ]
+    },
+"gen-harmonic-ferrofluid-kinetics": {
+      "hash": "3a292a10790685cb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "3a292a10790685cb",
+          "prev_hash": "863838fe99a77a70",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
+    },
+    "gen-audio-reactive-quantum-pollen": {
+      "hash": "97a43bc66c264ce9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "97a43bc66c264ce9",
+          "prev_hash": "ec52573861d1a7c1",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
         }
       ]
     }

@@ -18,6 +18,7 @@
     "audio-reactive",
     "upgraded-rgba",
     "click-reactive",
+    "temporal-feedback",
     "fast-motion"
   ],
   "params": [

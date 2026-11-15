@@ -5,30 +5,17 @@
 //  Complexity: Medium
 //  Chunks From: original bio-touch
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-23
-//  By: Phase A Upgrade Swarm
+//  Upgraded: 2026-05-23, 2026-11-15
+//  Ideas: nucleus and cell wall; afterglow held in C.a
+//  A packing: ACES display RGB; raw glow in A.a
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=GlowRadius, y=CellDensity, z=ColorShift, w=PulseSpeed
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=GlowRadius, y=CellDensity, z=ColorShift, w=PulseSpeed
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // ═══ CHUNK: hash22 (from _hash_library.wgsl) ═══
 fn hash22(p: vec2<f32>) -> vec2<f32> {
@@ -103,8 +90,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let offset = vec2<f32>(sin(time * 0.5), cos(time * 0.4)) * 0.1 + heldCurl * 0.08;
     let v = voronoi((uv + offset) * max(cellDensity, 0.001));
 
-    // Invert voronoi for cell walls/nuclei
-    let glow = 1.0 - smoothstep(0.0, 0.5, v);
+    // ── Idea 1: nucleus and cell wall from the same Voronoi distance
+    let body = 1.0 - smoothstep(0.0, 0.5, v);
+    let nucleus = exp(-v * v * 60.0);
+    let cellWall = exp(-abs(v - 0.22) * 16.0);
+    let glow = body * 0.7 + nucleus * 0.85 + cellWall * 0.5;
 
     // Pulse
     let pulse = 0.5 + 0.5 * sin(time * pulseSpeed - dist * 10.0);
@@ -113,8 +103,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let membrane = sin(v * cellDensity * 0.8 - time * (2.0 + mids * 5.0));
     let finalGlow = glow * influence * pulse * (1.0 + mouseDown * 2.0) + clickFront * 0.5;
 
-    // Sample Image
-    let color = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    // ── Idea 2: afterglow. C.a is the previous glow, not a photo smear.
+    let prevGlow = textureLoad(dataTextureC, coord, 0).a;
+    let decay = mix(0.90, 0.78, clamp(u.zoom_params.w, 0.0, 1.0));
+    let after = max(finalGlow, prevGlow * decay);
+
+    let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let color = src.rgb;
 
     // Color Tinting (branchless)
     var tint = vec3<f32>(0.2, 0.8, 0.6); // Default teal
@@ -124,17 +119,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Composite
     // Add glow to original color
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + membrane * 2.0 + colorShift * 6.283 + treble * 2.0);
-    let outColor = color + mix(tint, spectral, 0.35 + treble * 0.35) * finalGlow + spectral * abs(membrane) * influence * 0.08;
+    let outColor = color + mix(tint, spectral, 0.35 + treble * 0.35) * after + spectral * abs(membrane) * influence * 0.08;
 
-    // Alpha: bioluminescent glow intensity as compositing weight
-    let alpha = clamp(finalGlow * 0.7 + influence * 0.2 + 0.1, 0.0, 1.0);
+    let storedGlow = clamp(after, 0.0, 1.0);
+    let alpha = clamp(storedGlow * 0.75 + influence * 0.15 + src.a * 0.1, 0.0, 1.0);
+    let mapped = aces(max(outColor, vec3<f32>(0.0)));
+    let display = vec4<f32>(mapped, alpha);
 
-    let outRGBA = vec4<f32>(outColor, alpha);
+    textureStore(writeTexture, coord, display);
 
-    textureStore(writeTexture, coord, outRGBA);
-
-    // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, outRGBA);
+    textureStore(dataTextureA, coord, vec4<f32>(mapped, storedGlow));
 }

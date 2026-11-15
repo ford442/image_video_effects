@@ -3,8 +3,8 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-16
-//  Ideas: cooling crust where heat falls; drip thread on the convection packet
+//  Upgraded: 2026-10-16, 2026-11-15
+//  Ideas: cooling crust where heat falls; drip thread on the convection packet; blackbody incandescence from the heat field (§12.2F) [Idea 3]; cooling craquelure in the cooling skirt [Idea 4]
 //  A packing: raw heat in A.r (C.r is heat). ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -14,6 +14,17 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 // zoom_params: x=HeatRadius, y=Viscosity, z=Refraction, w=CoolingRate
+
+// Idea 3 tuning: HDR gain of the blackbody emission before ACES. Kept low so the refracted photo stays
+// readable inside the saturated hot core (2.2 flattened it to a cream disc).
+const INCAND_GAIN: f32 = 0.5;
+// Idea 4 tuning: crack cells across the frame height.
+const CRACK_SCALE: f32 = 13.0;
+
+fn hash22(p: vec2<f32>) -> vec2<f32> {
+    let q = vec2<f32>(dot(p, vec2<f32>(127.1, 311.7)), dot(p, vec2<f32>(269.5, 183.3)));
+    return fract(sin(q) * 43758.5453);
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -132,8 +143,45 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1 — cooling crust. Idea 2 — the convection packet drawn as a drip.
     let crust = smoothstep(0.0, 0.12, prevColor.r - heat) * (1.0 - heat);
     let drip = convectionPacket * heat;
-    let body = color.rgb * mix(vec3<f32>(1.0), vec3<f32>(0.55, 0.62, 0.70), crust)
+    var body = color.rgb * mix(vec3<f32>(1.0), vec3<f32>(0.55, 0.62, 0.70), crust)
         + vec3<f32>(1.0, 0.78, 0.42) * drip * (0.55 + bass * 0.2);
+
+    // ── Idea 3: incandescence (blackbody row, §12.2F) ──
+    // Hot glass EMITS: dull red -> orange -> yellow-white, super-linear in the heat so it only
+    // switches on in the hottest part of the field. Over a dark photo a hot blob now glows.
+    let incand = smoothstep(0.3, 1.0, heat);
+    let blackbodyLow = mix(vec3<f32>(0.45, 0.04, 0.0), vec3<f32>(1.0, 0.36, 0.05), smoothstep(0.0, 0.55, incand));
+    let blackbody = mix(blackbodyLow, vec3<f32>(1.0, 0.88, 0.55), smoothstep(0.55, 1.0, incand));
+    body += blackbody * incand * sqrt(incand) * (0.55 + bass * 0.2) * INCAND_GAIN;
+
+    // ── Idea 4: cooling craquelure (native) ──
+    // Thermal-stress cracks open where the glass has cooled below the soft range: the cooling
+    // front (`crust`) plus the cooled skirt around a heat source. Healed (no cracks) where heat is
+    // high again. Voronoi cell edges, static in screen space so nothing strobes.
+    let skirt = smoothstep(0.03, 0.10, heat) * (1.0 - smoothstep(0.25, 0.6, heat));
+    // No cracks on bare photo: `crust` is non-zero on just-cooled pixels at heat == 0, so gate by heat.
+    let crackZone = clamp(max(crust * 3.0, skirt), 0.0, 1.0) * smoothstep(0.0, 0.05, heat);
+    if (crackZone > 0.02) {
+        let vp = uv * vec2<f32>(aspect, 1.0) * CRACK_SCALE;
+        let vi = floor(vp);
+        let vf = fract(vp);
+        var f1 = 8.0;
+        var f2 = 8.0;
+        for (var j = -1; j <= 1; j = j + 1) {
+            for (var i = -1; i <= 1; i = i + 1) {
+                let g = vec2<f32>(f32(i), f32(j));
+                let d = length(g + hash22(vi + g) - vf);
+                let nf1 = min(f1, d);
+                f2 = min(f2, max(f1, d));
+                f1 = nf1;
+            }
+        }
+        let edge = f2 - f1;
+        let crackCore = 1.0 - smoothstep(0.0, 0.10, edge);
+        let crackRim = smoothstep(0.0, 0.10, edge) * (1.0 - smoothstep(0.10, 0.26, edge));
+        body = body * (1.0 - 0.75 * crackCore * crackZone)
+            + vec3<f32>(1.0, 0.5, 0.12) * crackRim * crackZone * smoothstep(0.03, 0.4, heat) * 0.6;
+    }
     let display = aces(max(body, vec3<f32>(0.0)));
     textureStore(writeTexture, coord, vec4<f32>(display, color.a));
 
