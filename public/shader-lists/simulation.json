@@ -3174,6 +3174,7 @@
     "features": [
       "upgraded-rgba",
       "mouse-driven",
+      "audio-reactive",
       "temporal",
       "rgba-state-machine"
     ],

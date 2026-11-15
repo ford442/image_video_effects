@@ -1561,8 +1561,17 @@
       "history": []
     },
     "liquid-magnetic-ferro-em": {
-      "hash": "1166bbacb2a31243",
-      "history": []
+      "hash": "3b64800d626389ab",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "3b64800d626389ab",
+          "prev_hash": "1166bbacb2a31243",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
+        }
+      ]
     },
     "liquid-metal-prismatic": {
       "hash": "0ae6169cc6007ab7",
@@ -6846,7 +6855,7 @@
       ]
     },
     "gen-fibonacci-spiral-garden": {
-      "hash": "e5813ac0237f4b84",
+      "hash": "ade469affc02ddd8",
       "history": [
         {
           "event": "upgraded",
@@ -6855,6 +6864,14 @@
           "prev_hash": "08419fc65127db98",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "ade469affc02ddd8",
+          "prev_hash": "e5813ac0237f4b84",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
         }
       ]
     },
@@ -7208,7 +7225,7 @@
       ]
     },
     "gen-flowing-silk-ribbons": {
-      "hash": "54c8ee2190fa8133",
+      "hash": "357dde4a70976efb",
       "history": [
         {
           "event": "upgraded",
@@ -7217,6 +7234,14 @@
           "prev_hash": "c056ddd0c5909704",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "357dde4a70976efb",
+          "prev_hash": "54c8ee2190fa8133",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
         }
       ]
     },
@@ -19403,7 +19428,7 @@
       ]
     },
     "alpha-reaction-diffusion-rgba": {
-      "hash": "d2750c66315f53c2",
+      "hash": "9e26da7daa1923f0",
       "history": [
         {
           "event": "upgraded",
@@ -19412,6 +19437,14 @@
           "prev_hash": "7d61d75fb3bb4769",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "9e26da7daa1923f0",
+          "prev_hash": "d2750c66315f53c2",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
         }
       ]
     },
@@ -19796,7 +19829,7 @@
       ]
     },
     "sim-ink-diffusion-rgba": {
-      "hash": "84c8d84c8be572de",
+      "hash": "d9f455bb6261cc01",
       "history": [
         {
           "event": "upgraded",
@@ -19805,6 +19838,14 @@
           "prev_hash": "997c98e2cf708742",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "d9f455bb6261cc01",
+          "prev_hash": "84c8d84c8be572de",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
         }
       ]
     },
@@ -21101,7 +21142,7 @@
       ]
     },
     "gen-bioluminescent-neural-coral-matrix": {
-      "hash": "d672411a67563ebd",
+      "hash": "e833e12e6aa7c4fa",
       "history": [
         {
           "event": "added",
@@ -21109,6 +21150,14 @@
           "hash": "d672411a67563ebd",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "e833e12e6aa7c4fa",
+          "prev_hash": "d672411a67563ebd",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
         }
       ]
     },
@@ -21169,7 +21218,7 @@
       ]
     },
     "gen-neon-geode-crystallization": {
-      "hash": "3af9a4ddc48b190f",
+      "hash": "d40fcbd481a4da4f",
       "history": [
         {
           "event": "added",
@@ -21177,6 +21226,14 @@
           "hash": "3af9a4ddc48b190f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "d40fcbd481a4da4f",
+          "prev_hash": "3af9a4ddc48b190f",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
         }
       ]
     },
@@ -21304,7 +21361,43 @@
         }
       ]
     },
-    "photon-bins": {
+    "gen-cymatic-bloom-fronds": {
+      "hash": "ebd3268811c79148",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "ebd3268811c79148",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-audio-reactive-mycelium-pulse": {
+      "hash": "87df1e43f750d980",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "87df1e43f750d980",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
+        }
+      ]
+    },
+    "gen-stellar-cyber-lotus-forge": {
+      "hash": "921e838700209934",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-15T09:08:06.460Z",
+          "hash": "921e838700209934",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flora-ferro-ten (gemini) — docs/agents/swarm-outputs/gemini-2026-11-15-flora-ferro-ten/NOTES.md"
+        }
+      ]
+    },
+"photon-bins": {
       "hash": "d845dee530659c17",
       "history": [
         {
