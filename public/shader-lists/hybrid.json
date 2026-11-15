@@ -175,7 +175,8 @@
       "ign-dither",
       "chromatic-aberration",
       "fresnel-rim",
-      "oklab-mix"
+      "oklab-mix",
+      "audio-reactive"
     ],
     "tags": [
       "hybrid",

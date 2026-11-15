@@ -368,8 +368,17 @@
       ]
     },
     "chroma-threads-gabor": {
-      "hash": "0dc639abbd5e11e0",
-      "history": []
+      "hash": "77e77f4616df27c5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "77e77f4616df27c5",
+          "prev_hash": "0dc639abbd5e11e0",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
+        }
+      ]
     },
     "chroma-vortex-coupled": {
       "hash": "3d00cb1dc12df55f",
@@ -2439,8 +2448,17 @@
       ]
     },
     "chromatographic-separation": {
-      "hash": "7098c1b7c25d73a7",
-      "history": []
+      "hash": "b18a6be0eb856ede",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "b18a6be0eb856ede",
+          "prev_hash": "7098c1b7c25d73a7",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
+        }
+      ]
     },
     "cosmic-flow": {
       "hash": "56a75e34a2873fb3",
@@ -8043,7 +8061,7 @@
       ]
     },
     "gen-kaleidoscopic-synapse-bloom": {
-      "hash": "f8c246c570feb170",
+      "hash": "0ddd122ac31ad07d",
       "history": [
         {
           "event": "upgraded",
@@ -8052,6 +8070,14 @@
           "prev_hash": "d7bde138ef61172f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "0ddd122ac31ad07d",
+          "prev_hash": "f8c246c570feb170",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -12102,7 +12128,7 @@
       ]
     },
     "hyb-hex-voronoi-distort": {
-      "hash": "e0fbd1a2e287c389",
+      "hash": "eea6618ab13bd89b",
       "history": [
         {
           "event": "upgraded",
@@ -12111,11 +12137,19 @@
           "prev_hash": "6d6b6f40f2ee5e47",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "eea6618ab13bd89b",
+          "prev_hash": "e0fbd1a2e287c389",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
     "hyb-iridescent-fbm-glow": {
-      "hash": "846a45760f79589b",
+      "hash": "fa1bda6776a2f6e4",
       "history": [
         {
           "event": "upgraded",
@@ -12124,6 +12158,14 @@
           "prev_hash": "09b9f60882589bed",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "fa1bda6776a2f6e4",
+          "prev_hash": "846a45760f79589b",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -12256,7 +12298,7 @@
       ]
     },
     "hybrid-noise-kaleidoscope": {
-      "hash": "2b16fde17f4bfc9b",
+      "hash": "fab29f2c22690f9e",
       "history": [
         {
           "event": "upgraded",
@@ -12265,6 +12307,14 @@
           "prev_hash": "d0d7d8cc42943f5e",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "fab29f2c22690f9e",
+          "prev_hash": "2b16fde17f4bfc9b",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -19877,7 +19927,7 @@
       ]
     },
     "breathing-kaleidoscope": {
-      "hash": "35a2abf85cda1c15",
+      "hash": "206263805d765c18",
       "history": [
         {
           "event": "upgraded",
@@ -19886,6 +19936,14 @@
           "prev_hash": "a8b6a234ab014088",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "206263805d765c18",
+          "prev_hash": "35a2abf85cda1c15",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -19911,7 +19969,7 @@
       ]
     },
     "chromatic-focus-interactive": {
-      "hash": "5c9b42282444777d",
+      "hash": "9774af020a0ce0fb",
       "history": [
         {
           "event": "upgraded",
@@ -19920,6 +19978,14 @@
           "prev_hash": "b001749680d019ff",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "9774af020a0ce0fb",
+          "prev_hash": "5c9b42282444777d",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -20239,7 +20305,7 @@
       ]
     },
     "interactive-fresnel": {
-      "hash": "9dc7b1fa0112ee06",
+      "hash": "1df918b5e2cde009",
       "history": [
         {
           "event": "upgraded",
@@ -20248,6 +20314,14 @@
           "prev_hash": "be306ee5ac426081",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "1df918b5e2cde009",
+          "prev_hash": "9dc7b1fa0112ee06",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
@@ -20907,7 +20981,7 @@
       ]
     },
     "gen-symbiotic-neuro-lattice": {
-      "hash": "fc91ad3149ad1890",
+      "hash": "0b46a161fb71506f",
       "history": [
         {
           "event": "added",
@@ -20915,6 +20989,14 @@
           "hash": "fc91ad3149ad1890",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T05:15:06.598Z",
+          "hash": "0b46a161fb71506f",
+          "prev_hash": "fc91ad3149ad1890",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 kaleido-chroma ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-kaleido-chroma-ten/NOTES.md"
         }
       ]
     },
