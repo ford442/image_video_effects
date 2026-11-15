@@ -3,8 +3,8 @@
 //  Category: geometric
 //  Features: mouse-driven, depth-aware, audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: local-variance subdivision; mortar mix from neighbor tesserae
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: local-variance subdivision; mortar mix from neighbor tesserae; directional grout lip; per-tessera glaze
 //  A packing: display RGBA (C is color history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -103,12 +103,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sampleUV     = clamp(centerScaled / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
     var color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
 
+    // ── Idea 2: per-tessera glaze ──────────────────────────────────
+    // Same centre sample. The firing varies from tile to tile.
+    let glaze = hash2f(tileId);
+    let glazeG = hash2f(tileId + vec2<f32>(19.0, 3.0));
+    let glazeB = hash2f(tileId + vec2<f32>(4.0, 11.0));
+    color *= vec3<f32>(0.90 + glaze * 0.18, 0.93 + glazeG * 0.12, 0.88 + glazeB * 0.16);
+
     let dX       = min(inCell.x, 1.0 - inCell.x);
     let dY       = min(inCell.y, 1.0 - inCell.y);
     let edgeSDF  = min(dX, dY);
     let bevelPx  = bevelW / fs;
     let bevel    = smoothstep(0.0, bevelPx, edgeSDF);
-    let lipLight = smoothstep(bevelPx, bevelPx * 2.5, edgeSDF) * 0.15;
+    // ── Idea 1: directional grout lip ──────────────────────────────
+    // Upper-left light on the face the existing bevel SDF already names.
+    let nearestIsX = f32(dX <= dY);
+    let face = vec2<f32>(
+        select(0.0, sign(inCell.x - 0.5), nearestIsX > 0.5),
+        select(sign(inCell.y - 0.5), 0.0, nearestIsX > 0.5)
+    );
+    let lit = clamp(dot(face, vec2<f32>(-0.65, -0.85)) * 0.5 + 0.5, 0.0, 1.0);
+    let lipLight = smoothstep(bevelPx, bevelPx * 2.5, edgeSDF) * mix(0.02, 0.22, lit);
+    let groutDark = (1.0 - bevel) * mix(0.22, 0.0, lit);
 
     let groutRunner = pow(max(0.0, sin(edgeSDF * fs * 80.0 - time * (12.0 + bass * 6.0))), 12.0);
     let groutConveyor = pow(max(0.0, sin(dot(tileCoord, vec2<f32>(1.0, 0.7)) * 6.0 - time * 10.0)), 14.0);
@@ -119,7 +135,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let nU = textureSampleLevel(readTexture, u_sampler, clamp(((tileId + vec2<f32>(0.5, -0.5)) * fs) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let nD = textureSampleLevel(readTexture, u_sampler, clamp(((tileId + vec2<f32>(0.5, 1.5)) * fs) / vec2<f32>(aspect, 1.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
     let mortar = (nL + nR + nU + nD) * 0.25 * (0.55 + mids * 0.15);
-    color = mix(mortar, color, bevel) + lipLight + vec3<f32>(0.04) * groutRunner * groutConveyor;
+    color = mix(mortar, color, bevel) * (1.0 - groutDark) + lipLight + vec3<f32>(0.04) * groutRunner * groutConveyor;
 
     let voroFlicker = pow(max(0.0, sin(time * (8.0 + treble * 5.0))), 10.0);
     let voro     = voronoi(tileCoord * 0.5);
