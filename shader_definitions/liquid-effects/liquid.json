@@ -2,7 +2,7 @@
   "id": "liquid",
   "name": "Liquid (Interactive)",
   "url": "shaders/liquid.wgsl",
-  "description": "The canonical persistent capillary liquid with viscosity-controlled recovery, bounded pointer inertia, held surface push, click packets, curvature foam, exact C state, three-band optics, ACES, and semantic alpha.",
+  "description": "The canonical persistent capillary liquid with viscosity-controlled recovery, held surface push, click packets with dispersive wake trains, curvature foam, Snell refraction, sun glint, exact C state, three-band optics, ACES, and semantic alpha.",
   "tags": [
     "filter",
     "image-processing"
@@ -57,9 +57,46 @@
     "click-reactive",
     "stateful-simulation",
     "raw-height-velocity-state",
-    "spring-interaction",
     "exact-load-feedback",
     "aces-tone-map",
     "semantic-alpha"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Viscosity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Turbulence",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Ripple Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Color Shift",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }
