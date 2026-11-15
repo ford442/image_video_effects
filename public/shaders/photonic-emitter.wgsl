@@ -68,4 +68,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let normal = getSurfaceNormal(uv, texelSize, time, noiseAmp);
   textureStore(dataTextureA, vec2<i32>(coord), vec4<f32>(normal, lightHeight));
+
+  // Trace repeats share this counter so the second photon batch is a new stratum.
+  if (gid.x == 0u && gid.y == 0u) {
+    extraBuffer[133] = 0.0;
+  }
 }

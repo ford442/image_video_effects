@@ -1,27 +1,16 @@
-// ═══ PREDATOR-PREY ECOLOGY — STEP (Lotka–Volterra CA) ═════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Predator-Prey Ecology — step
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: Holling type II intake; nutrient grazing scar; age-raised death
+//  A packing: raw sim (prey, predator, nutrient, age)
+// ═══════════════════════════════════════════════════════════════════
 //  A/C packing: .r prey, .g predator, .b nutrient, .a age
 //  zoom_params: .x eat rate, .y death, .z mutation, .w breed
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn load(p: vec2<i32>, resI: vec2<i32>) -> vec4<f32> {
   return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), resI - vec2<i32>(1)), 0);
@@ -63,37 +52,47 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var nutrient = st.b;
   var age = st.a;
 
-  if (time < 0.08) {
-    prey = 0.15 + nutrient * 0.1;
-    pred = 0.05;
-  }
+  let cold = time < 0.08;
+  prey = select(prey, 0.15 + nutrient * 0.1, cold);
+  pred = select(pred, 0.05, cold);
 
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  nutrient = mix(nutrient, dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114)), 0.04);
+  let photoLuma = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
   let lapP = laplaceAt(pixel, resI, 0);
   let lapPred = laplaceAt(pixel, resI, 1);
 
-  // Lotka–Volterra style local update
-  let growth = prey * (nutrient * 0.8 + 0.1 - pred * eat);
-  let predGrowth = pred * (prey * eat * 1.2 - death);
+  // ── Idea 1: Holling type II intake ────────────────────────────────
+  // Mass-action prey×predator saturates. response == prey at prey ≈ 0.3,
+  // so a moderate field still matches the old Lotka–Volterra step.
+  let halfSat = 0.7;
+  let response = prey * (halfSat + 0.3) / max(halfSat + prey, 0.001);
+  // ── Idea 3: age raises death; Death Rate still owns the base ──────
+  let deathAged = death * (1.0 + 0.28 * clamp(age, 0.0, 1.0));
+  let growth = prey * (nutrient * 0.8 + 0.1) - response * pred * eat;
+  let predGrowth = pred * (response * eat * 1.2 - deathAged);
   prey = clamp(prey + growth * 0.35 + lapP * 0.12 + mutate * nutrient, 0.0, 1.5);
   pred = clamp(pred + predGrowth * 0.3 + lapPred * 0.08, 0.0, 1.2);
 
-  if (held && length(uv - mouse) < 0.08) {
-    prey += breed * 0.25;
-    pred += breed * 0.08;
-  }
+  // ── Idea 2: nutrient grazing scar, then the photo refills at 0.04 ─
+  let grazed = nutrient - prey * (0.012 + eat * 0.02);
+  nutrient = clamp(mix(grazed, photoLuma, 0.04), 0.0, 1.2);
+
+  let inBrush = length(uv - mouse) < 0.08;
+  let seed = select(0.0, 1.0, held && inBrush);
+  prey = prey + breed * 0.25 * seed;
+  pred = pred + breed * 0.08 * seed;
 
   let nRipple = min(u32(u.config.y), 50u);
   for (var i = 0u; i < nRipple; i = i + 1u) {
     let rp = u.ripples[i];
     let ageR = time - rp.z;
-    if (ageR > 0.0 && ageR < 0.35 && length(uv - rp.xy) < 0.04) {
-      prey += (1.0 - ageR / 0.35) * breed * 0.4;
-    }
+    let bloom = select(0.0, (1.0 - ageR / 0.35) * breed * 0.4, ageR > 0.0 && ageR < 0.35 && length(uv - rp.xy) < 0.04);
+    prey = prey + bloom;
   }
 
   age = fract(age + 0.002 + pred * 0.001);
   textureStore(dataTextureA, pixel, vec4<f32>(prey, pred, nutrient, age));
+  let cover = clamp(prey * 0.45 + pred * 0.4, 0.0, 1.0);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(1.0 - cover, 0.0, 0.0, 0.0));
 }

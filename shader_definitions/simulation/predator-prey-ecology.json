@@ -66,7 +66,8 @@
     "physics",
     "mouse-driven",
     "audio-reactive",
-    "interactive"
+    "interactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "predator-prey",
@@ -74,5 +75,15 @@
     "simulation",
     "physics",
     "showcase"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        { "index": 0, "name": "Eat Rate", "default": 0.45, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 1, "name": "Death Rate", "default": 0.35, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 2, "name": "Mutation", "default": 0.25, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 3, "name": "Breed Threshold", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
+      ]
+    }
+  }
 }
