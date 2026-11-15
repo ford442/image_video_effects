@@ -154,7 +154,7 @@
     "id": "bio-touch",
     "name": "Bio-Luminescent Touch",
     "url": "shaders/bio-touch.wgsl",
-    "description": "Bioluminescent cellular membranes with traveling nuclei, held curl vortices, click growth fronts, three-band audio, and spectral organism color.",
+    "description": "Bioluminescent cellular membranes with a nucleus and a wall, held curl vortices, click growth fronts, three-band audio, and spectral organism color. The flash afterglows in the alpha field.",
     "params": [
       {
         "id": "radius",

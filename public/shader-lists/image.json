@@ -4131,7 +4131,8 @@
       "audio-reactive",
       "fbm-wobble",
       "palette-seam-glow",
-      "mouse-grab-twist"
+      "mouse-grab-twist",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

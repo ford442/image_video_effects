@@ -50,7 +50,8 @@
     "chromatic-aberration",
     "thermal-vision",
     "click-reactive",
-    "fast-motion"
+    "fast-motion",
+    "upgraded-rgba"
   ],
   "tags": [
     "cloak",
