@@ -4,8 +4,8 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-09-06
-//  Ideas: hexagonal CoC aperture; specular bloom only in defocus
+//  Upgraded: 2026-09-06, 2026-11-15
+//  Ideas: hexagonal CoC aperture; specular bloom only in defocus; cat's-eye optical vignetting; Airy ring on defocus specular (§12.2F)
 //  A packing: ACES display RGBA
 //  Chunks From: scheimpflug-coc, aces-tonemap, chromatic-aberration
 // ═══════════════════════════════════════════════════════════════════
@@ -20,6 +20,14 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let d = vec3<f32>(0.59);
   let e = vec3<f32>(0.14);
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Idea 4 — Airy-shaped weight. The first ring is lifted so it reads on a photo.
+fn airyDisc(x: f32) -> f32 {
+  let z = max(abs(x), 1e-4);
+  let lobe = sin(z) / z;
+  let ring = exp(-abs(z - 5.136) * 2.2) * 0.22;
+  return max(lobe * lobe, ring);
 }
 
 fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
@@ -77,10 +85,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let q = abs(dir * (r / max(radius, 0.5)));
     let hex = max(q.x * 0.866025 + q.y * 0.5, q.y);
     let hexW = 1.0 - smoothstep(0.92, 1.08, hex);
+    // ── Idea 3: cat's-eye optical vignetting ─────────────────────
+    // Off axis, the barrel clips the outward side of the hex. The sharp band stays round.
+    let aspect = resolution.x / max(resolution.y, 1.0);
+    let fromAxis = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+    let catGate = smoothstep(0.18, 0.62, length(fromAxis)) * smoothstep(1.2, 7.0, coc);
+    let catW = mix(1.0, 1.0 - smoothstep(-0.15, 0.55, dot(dir, fromAxis)), catGate);
     let offset = dir * r / resolution;
     let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
-    colorSum += textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb * hexW;
-    totalWeight += hexW;
+    let tap = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+    // ── Idea 4: Airy ring on defocus specular taps (§12.2F) ──────
+    let tapHi = max(dot(tap, vec3<f32>(0.2126, 0.7152, 0.0722)) - 0.72, 0.0);
+    let specGate = smoothstep(0.02, 0.2, tapHi) * smoothstep(1.0, 6.0, coc);
+    let w = hexW * catW * mix(1.0, airyDisc(7.0156 * r / max(radius, 0.5)), specGate);
+    colorSum += tap * w;
+    totalWeight += w;
   }
 
   var finalColor = colorSum / totalWeight;

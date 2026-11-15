@@ -66,7 +66,7 @@
     "id": "alpha-hdr-bloom-chain",
     "name": "Alpha HDR Bloom Chain",
     "url": "shaders/alpha-hdr-bloom-chain.wgsl",
-    "description": "Temporal spectral HDR bloom with multi-ring dispersion, exposure-preserving feedback, audio-shaped radiance, held-pointer halos, and expanding click flashes.",
+    "description": "Temporal spectral HDR bloom with multi-ring dispersion, a Cauchy red/blue ratio, energy taken from the highlight before it is spread, exposure-preserving feedback, audio-shaped radiance, held-pointer halos, and expanding click flashes.",
     "tags": [
       "hdr",
       "bloom",
@@ -85,7 +85,8 @@
       "three-band-audio",
       "held-pointer",
       "click-reactive",
-      "temporal-spectral-bloom"
+      "temporal-spectral-bloom",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -127,7 +128,7 @@
     "id": "alpha-luminance-history",
     "name": "Alpha Luminance History",
     "url": "shaders/alpha-luminance-history.wgsl",
-    "description": "Temporal luminance history with RGB plus rolling luminance in alpha. Slider-controlled diffusion, directional history advection, traveling click rings, and mouse painting create bounded light trails and warm afterimages.",
+    "description": "Temporal luminance history with RGB plus rolling luminance in alpha. Brightening is fast and release is slow, the afterglow takes its hue from the stored color, and diffusion, click rings, and mouse painting keep the light trails bounded.",
     "tags": [
       "temporal",
       "history",
@@ -144,7 +145,8 @@
       "audio-reactive",
       "click-reactive",
       "fast-motion",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "upgraded-rgba"
     ],
     "params": [
       {

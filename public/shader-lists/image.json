@@ -237,7 +237,7 @@
       "depth-aware",
       "upgraded-rgba"
     ],
-    "description": "Woven fabric simulation with anisotropic noise, silk/sheen BRDF, subsurface scattering, and chromatic aberration on thread edges.",
+    "description": "Woven fabric simulation with anisotropic noise, silk/sheen BRDF, subsurface scattering, and chromatic aberration on thread edges. A weft ducks alternate crossings, and the decay slider rings the pluck from the previous offset.",
     "params": [
       {
         "id": "thread_density",
@@ -522,7 +522,7 @@
       "audio-driven",
       "upgraded-rgba"
     ],
-    "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
+    "description": "Concentric rings that rotate in alternating directions. Outer grooves open wider, a glint sits on the shoulder facing the spin, and the mouse controls the center. Audio-reactive rotation with ring gap opacity.",
     "params": [
       {
         "id": "density",
@@ -4764,7 +4764,7 @@
     "id": "tilt-shift",
     "name": "Tilt Shift Miniature",
     "url": "shaders/tilt-shift.wgsl",
-    "description": "Scheimpflug principle tilt-shift with angular blur kernel and depth-aware circle-of-confusion. Bass drives tilt angle oscillation, mouse positions the focal plane, depth controls local blur radius. Features boosted saturation, vignette on blurred regions, ACES tone mapping, and chromatic aberration in out-of-focus areas.",
+    "description": "Scheimpflug principle tilt-shift with a hexagonal circle of confusion, cat's-eye clipping off axis, and an Airy ring on defocused highlights. Bass drives tilt angle oscillation, mouse positions the focal plane, depth controls local blur radius. Features boosted saturation, vignette on blurred regions, ACES tone mapping, and chromatic aberration in out-of-focus areas.",
     "params": [
       {
         "id": "strength",
@@ -4997,7 +4997,7 @@
     "id": "video-echo-chamber",
     "name": "Video Echo Chamber",
     "url": "shaders/video-echo-chamber.wgsl",
-    "description": "Orbiting history conveyors and horizontal chromatic streaks form bounded video echoes around the mouse, while clicks launch expanding echo rings. Echoes are motion-keyed: moving content leaves trails that linger for a few frames while still areas stay clean (the tunnel stays visible under the pointer), and near objects in the depth map hold their echoes longer than the background. Rotation is aspect-correct, alpha is semantic, display is ACES tone-mapped. Depth is passed through unchanged.",
+    "description": "Orbiting history conveyors and horizontal chromatic streaks form bounded video echoes around the mouse, while clicks launch expanding echo rings. Echoes are motion-keyed: moving content leaves trails that lose chroma over a few frames while still areas stay clean (the tunnel stays visible under the pointer), a bright rim marks the moving contour on the display only, and near objects in the depth map hold their echoes longer than the background. Rotation is aspect-correct, alpha is semantic, display is ACES tone-mapped. Depth is passed through unchanged.",
     "params": [
       {
         "id": "decay",
