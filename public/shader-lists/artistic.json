@@ -4212,7 +4212,7 @@
     "id": "radiating-haze",
     "name": "Radiating Haze",
     "url": "shaders/radiating-haze.wgsl",
-    "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch.",
+    "description": "Animated aura around strong colours; browns, greys & blacks are ignored. Now with colour-mode switch. Aura spills into neutral surrounds.",
     "params": [
       {
         "id": "speed",
@@ -4372,7 +4372,7 @@
     "id": "reaction-diffusion",
     "name": "Reaction-Diffusion",
     "url": "shaders/reaction-diffusion.wgsl",
-    "description": "Gray-Scott two-channel field with a rotating conveyor, traveling feed packets, anisotropic Laplacian along the flow, and mitosis pinch where −∇²V is large. Legacy control labels are retained for saved presets.",
+    "description": "Gray-Scott two-channel field with a rotating conveyor, traveling feed packets, anisotropic Laplacian along the flow, and mitosis pinch where −∇²V is large. Legacy control labels are retained for saved presets. Fronts glow by reaction rate; kill follows photo luma.",
     "features": [
       "mouse-driven",
       "audio-reactive",

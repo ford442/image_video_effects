@@ -3029,8 +3029,17 @@
       "history": []
     },
     "radiating-haze": {
-      "hash": "3fed266c4ed68c09",
-      "history": []
+      "hash": "69a39094e36330cb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "69a39094e36330cb",
+          "prev_hash": "3fed266c4ed68c09",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
+        }
+      ]
     },
     "rain": {
       "hash": "6a932029e0fec501",
@@ -3041,8 +3050,17 @@
       "history": []
     },
     "reaction-diffusion": {
-      "hash": "59aba9932ea70f30",
-      "history": []
+      "hash": "1da069dd0082ded2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "1da069dd0082ded2",
+          "prev_hash": "59aba9932ea70f30",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
+        }
+      ]
     },
     "recursion-mirror-vortex": {
       "hash": "4e465527c1eb34b4",
@@ -7063,7 +7081,7 @@
       ]
     },
     "gen-flame-fractal-attractor": {
-      "hash": "ce9d0c111ea94ecb",
+      "hash": "fcd110d4f2db3193",
       "history": [
         {
           "event": "upgraded",
@@ -7072,6 +7090,14 @@
           "prev_hash": "25fec48bbf9d9451",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "fcd110d4f2db3193",
+          "prev_hash": "ce9d0c111ea94ecb",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
         }
       ]
     },
@@ -11787,7 +11813,7 @@
       ]
     },
     "kaleido-scope": {
-      "hash": "d025a191ffe8968e",
+      "hash": "d64de78596ffd607",
       "history": [
         {
           "event": "upgraded",
@@ -11796,6 +11822,14 @@
           "prev_hash": "6830d45078502a7f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "d64de78596ffd607",
+          "prev_hash": "d025a191ffe8968e",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
         }
       ]
     },
@@ -17425,7 +17459,7 @@
       ]
     },
     "kimi-liquid-glass": {
-      "hash": "23d4a77811bfa9b9",
+      "hash": "36180a353a064646",
       "history": [
         {
           "event": "upgraded",
@@ -17434,6 +17468,14 @@
           "prev_hash": "eaf7d99871930b86",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "36180a353a064646",
+          "prev_hash": "23d4a77811bfa9b9",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
         }
       ]
     },
@@ -17516,7 +17558,7 @@
       ]
     },
     "liquid-oil": {
-      "hash": "8fcf5595393efc52",
+      "hash": "53e3e5db035b3481",
       "history": [
         {
           "event": "upgraded",
@@ -17525,6 +17567,14 @@
           "prev_hash": "94282d257aefff75",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "53e3e5db035b3481",
+          "prev_hash": "8fcf5595393efc52",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
         }
       ]
     },
@@ -20004,7 +20054,7 @@
       ]
     },
     "neon-edge-glow": {
-      "hash": "9cb1f92238345c5b",
+      "hash": "0cd5e8e33f4da523",
       "history": [
         {
           "event": "upgraded",
@@ -20013,6 +20063,14 @@
           "prev_hash": "1ffd8584fde4b71c",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "0cd5e8e33f4da523",
+          "prev_hash": "9cb1f92238345c5b",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
         }
       ]
     },
@@ -20625,7 +20683,7 @@
       ]
     },
     "gen-abyssal-geode-matrix": {
-      "hash": "ac887b9f3aed3791",
+      "hash": "4efe5f25064dcd7c",
       "history": [
         {
           "event": "added",
@@ -20633,6 +20691,14 @@
           "hash": "ac887b9f3aed3791",
           "commit": "00db5f72",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "4efe5f25064dcd7c",
+          "prev_hash": "ac887b9f3aed3791",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
         }
       ]
     },
@@ -20681,6 +20747,30 @@
           "hash": "e2b60f49f0ec83dc",
           "commit": "798d840",
           "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        }
+      ]
+    },
+    "gen-audio-reactive-spiral-galaxy": {
+      "hash": "10a58d0f74ccd218",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "10a58d0f74ccd218",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
+        }
+      ]
+    },
+    "gen-audio-reactive-aurora-ribbons": {
+      "hash": "679b7b4541069afd",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-15T10:08:09.499Z",
+          "hash": "679b7b4541069afd",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
         }
       ]
     }

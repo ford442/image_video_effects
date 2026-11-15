@@ -1722,14 +1722,17 @@
     "url": "shaders/gen-abyssal-geode-matrix.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "A cavernous, dark-matter crystalline structure pulsing with deep sea bioluminescence and reactive geometric fracturing.",
+    "description": "A cavernous, dark-matter crystalline structure pulsing with deep sea bioluminescence and reactive geometric fracturing. Amber veins, deep-water absorption.",
     "features": [
       "audio-reactive",
       "raymarching",
       "crystal",
       "fractal",
       "mouse-driven",
-      "abyss"
+      "abyss",
+      "aces-tone-mapping",
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "tags": [
       "crystal",
@@ -3193,7 +3196,7 @@
       "depth-aware",
       "atmospheric"
     ],
-    "description": "Flowing aurora curtains ripple across a polar sky. Bass swells ribbon amplitude, mids shift spectral hue, and treble adds ionospheric sparkle. Mouse bends the curtain field; depth fades distant glow.",
+    "description": "Flowing aurora curtains ripple across a polar sky. Bass swells ribbon amplitude, mids shift spectral hue, and treble adds ionospheric sparkle. Mouse bends the curtain field; depth fades distant glow. Curtains have razor lower borders, fold highlights and altitude colour.",
     "workgroup_size": [
       16,
       16,
@@ -3208,7 +3211,8 @@
       "depth-aware",
       "aurora-curtains",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -3408,7 +3412,7 @@
       "depth-aware",
       "cosmic"
     ],
-    "description": "A luminous spiral galaxy with a hot core and arm stars that tighten on bass, rotate with mids, and spark supernova bursts on treble. Mouse shifts the viewing center; depth fades distant dust into haze.",
+    "description": "A luminous spiral galaxy with a hot core and arm stars that tighten on bass, rotate with mids, and spark supernova bursts on treble. Mouse shifts the viewing center; depth fades distant dust into haze. Stars orbit differentially through the arm density wave.",
     "workgroup_size": [
       16,
       16,
@@ -3423,7 +3427,8 @@
       "depth-aware",
       "log-spiral",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -13326,7 +13331,7 @@
       "orbit-density",
       "audio-reactive"
     ],
-    "description": "A curling orbit-density attractor folds luminous ember filaments through a bass-driven flame field with interactive vortex wakes.",
+    "description": "A curling orbit-density attractor folds luminous ember filaments through a bass-driven flame field with interactive vortex wakes. Log-density display; embers cool as they rise.",
     "workgroup_size": [
       16,
       16,
@@ -13385,7 +13390,7 @@
       "depth-aware",
       "upgraded-rgba"
     ],
-    "feedbackPacking": "A/C = raw HDR display RGBA history"
+    "feedbackPacking": "A/C = log-density display-linear HDR RGBA history (<= 8)"
   },
   {
     "id": "gen-flowing-silk-ribbons",
