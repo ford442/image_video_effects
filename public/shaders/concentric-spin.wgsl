@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: exact-C lag; ring-gap tangent conveyor
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: exact-C lag; ring-gap tangent conveyor; groove pitch opens with radius; groove-shoulder glint
 //  A packing: lag.xy telemetry
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -74,7 +74,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rot = t * speed * dir;
   let rp = fract(rv);
   let edge = min(rp, 1.0 - rp);
-  let gapMask = smoothstep(0.0, smoothW + 0.001, edge);
+  // ── Idea 3: groove pitch opens with radius ─────────────────────
+  // Smooth W stays the gap slider. Outer rings cut a wider groove; zero still closes every gap.
+  let pitch = smoothW * (0.35 + 1.8 * clamp(r, 0.0, 1.0));
+  let gapMask = smoothstep(0.0, pitch + 0.001, edge);
 
   // Idea 2 — gap conveyor: slide the photo along the ring tangent in the gap
   let tangent = vec2<f32>(-p.y, p.x) / max(r, 0.001);
@@ -111,6 +114,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = aces(col * (1.0 + bass * 0.15));
   let sheen = pow(abs(cos(a * 3.0 + rot)), 4.0) * bass * 0.2 * gapMask;
   col = col + vec3<f32>(sheen);
+  // ── Idea 4: groove-shoulder glint ───────────────────────────────
+  // A thin band just inside the groove catches light on the side facing the spin.
+  let shoulder = smoothstep(0.0, 0.08, edge) * (1.0 - smoothstep(0.08, 0.22, edge));
+  let facing = clamp(0.5 + 0.5 * cos(a - rot), 0.0, 1.0);
+  col = col + vec3<f32>(0.85, 0.92, 1.0) * shoulder * facing * gapMask * 0.28;
   let alpha = clamp(gapMask * (1.0 - gapFade * 0.5) + bloom * 0.3 + pulse * 0.5 + srcA * 0.15, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(col, alpha));
   textureStore(dataTextureA, coord, vec4<f32>(lag, 0.0, alpha));

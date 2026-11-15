@@ -3,31 +3,12 @@
 //  Category: post-processing
 //  Features: audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: continuous algorithm mix; hue-preserving contrast
+//  Upgraded: 2026-09-06, 2026-11-15
+//  Ideas: continuous algorithm mix; hue-preserving contrast; underexposure toe (§12.2A); hue-stable highlight shoulder
 //  A packing: display RGBA (tone-mapped; no second ACES)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -53,7 +34,14 @@ fn agxToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn applyExposure(color: vec3<f32>, exposure: f32) -> vec3<f32> {
-  return color * pow(2.0, exposure);
+  let scaled = color * pow(2.0, exposure);
+  // ── Idea 3: underexposure toe (§12.2A) ─────────────────────────
+  // Below middle exposure, shadows roll off. At exposure ≥ 0 the four curves see `scaled` unchanged.
+  let under = max(-exposure, 0.0);
+  let k = under * 0.22;
+  let safe = max(scaled, vec3<f32>(0.0));
+  let toe = safe * (1.0 + k) / (safe + vec3<f32>(k + 1e-4));
+  return mix(scaled, toe, step(0.001, under));
 }
 
 fn applyContrastHue(color: vec3<f32>, contrast: f32) -> vec3<f32> {
@@ -95,6 +83,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   ldr = applyContrastHue(ldr, contrast);
   ldr = applySaturation(ldr, saturation);
+  // ── Idea 4: hue-stable highlight shoulder ──────────────────────
+  // The hottest channel used to hit 1 first and shift the hue. Mid-grey contrast is unchanged.
+  let peak = max(ldr.r, max(ldr.g, ldr.b));
+  let shoulder = smoothstep(0.78, 1.05, peak);
+  let lSh = dot(max(ldr, vec3<f32>(0.0)), vec3<f32>(0.2126, 0.7152, 0.0722));
+  ldr = mix(ldr, vec3<f32>(lSh), shoulder * 0.4);
   ldr = clamp(ldr, vec3<f32>(0.0), vec3<f32>(1.0));
 
   let rolloff = smoothstep(0.55, 1.0, dot(ldr, vec3<f32>(0.2126, 0.7152, 0.0722)));

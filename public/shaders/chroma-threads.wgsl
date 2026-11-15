@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Chunks From: chroma-threads
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-05-30, 2026-11-15
+//  Ideas: weft crossing; pluck ring-down through C.r
+//  A packing: telemetry (offset, influence, sheen, alpha); ACES display on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -79,10 +81,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pluck = exp(-abs(distX) * (3.0 + decay * 5.0));
   let vibration = weave * pluck * (1.0 + aniso * 0.5);
   let activeAmp = amp * (1.0 + mouseDown * 2.5 + bass * 0.7);
-  let offset = vibration * influence * activeAmp;
+
+  // ── Idea 1: weft crossing ──────────────────────────────────────
+  // A perpendicular thread ducks the warp on alternate crossings. Density sets both pitches.
+  let weftId = floor(uv.x * density * 0.5);
+  let under = step(0.25, fract((threadID + weftId) * 0.5));
+  let weftPattern = abs(fract(uv.x * density * 0.5) - 0.5) * 2.0;
+  let duck = under * (1.0 - smoothstep(0.28, 0.72, weftPattern));
+
+  // ── Idea 2: pluck ring-down through C.r ────────────────────────
+  // Decay still shortens the trail: higher decay damps last frame's offset harder.
+  let prevOff = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0).r;
+  let ring = clamp(prevOff, -0.2, 0.2) * (1.0 - clamp(decay, 0.0, 1.0)) * 0.55;
+  let offset = vibration * influence * activeAmp * (1.0 - duck * 0.85) + ring;
 
   let threadPattern = abs(fract(uv.y * density) - 0.5) * 2.0;
-  let mask = smoothstep(0.95, 0.5, threadPattern);
+  let mask = smoothstep(0.95, 0.5, threadPattern) * (1.0 - duck * 0.62);
   let sheen = smoothstep(0.6, 1.0, sin((uv.y * density + time * (1.0 + mids * 5.0)) * 6.28318) * 0.5 + 0.5);
 
   let offsetR = offset * (1.0 + split * 12.0);

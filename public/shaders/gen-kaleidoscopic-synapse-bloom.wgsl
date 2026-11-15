@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: axon runner fronts; counter-rotating dendrite web; myelin sheath insulation; astrocyte glia network
+//  Upgraded: 2026-10-10, 2026-11-15
+//  Ideas: axon runner fronts; counter-rotating dendrite web; myelin sheath insulation; astrocyte glia network; nodes of Ranvier; tightening front
 //  A packing: ACES display RGBA (C read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -61,7 +61,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let branch = pow(1.0 - abs(2.0 * fract(foldedAngle * (2.0 + neuralWarp * 4.0) + log(radius + 0.03) * 1.7 - time * 0.18) - 1.0), 8.0);
     // Idea 1 (existing): radial axon runner fronts.
     let runnerPhase = fract(radius * (5.0 + bloomDensity * 8.0) - time * (0.8 + pulseSpeed * 2.8));
-    let runner = exp(-pow((runnerPhase - 0.5) / 0.075, 2.0));
+    // ── Idea: the spike stays narrow as it runs — sigma shrinks with radius
+    let sigma = 0.075 / (1.0 + radius * (0.85 + pulseSpeed));
+    let front = (runnerPhase - 0.5) / max(sigma, 0.012);
+    let runner = exp(-front * front);
     // Idea 3: refractory wake — just behind the outward runner front (phase < 0.5)
     // the axon is hyperpolarised and dim, recovering with distance; bass shortens recovery.
     let behindFront = select(0.0, runnerPhase / 0.5, runnerPhase < 0.5);
@@ -71,6 +74,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 1: myelin sheath insulation (beaded structures on axon)
     let myelinPhase = fract(radius * 12.0 - time * pulseSpeed * 0.5);
     let myelin = smoothstep(0.4, 0.6, abs(myelinPhase - 0.5) * 2.0) * branch * exp(-radius * 3.0);
+    // ── Idea: nodes of Ranvier — the gap in the myelin phase flares; the bead stays the sheath
+    let ranvier = (1.0 - smoothstep(0.18, 0.55, abs(myelinPhase - 0.5) * 2.0)) * branch;
     // Idea 2 (existing): a counter-rotating dendrite web keeps the second pass visually independent
     // from the radial axon runner instead of merely brightening it.
     let counterPhase = angle * (sectors + 3.0) - log(radius + 0.025) * (7.0 + neuralWarp * 7.0) + pulse * 0.72;
@@ -112,14 +117,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr += palette(hue + 0.18) * vesicles * (1.6 + colorFlux);
     hdr += palette(hue + 0.6) * dragMask * (0.5 + neuralWarp * 1.5);
     hdr += vec3<f32>(0.2, 0.8, 0.4) * myelin * 1.5;
+    hdr += palette(hue + 0.08) * ranvier * (0.35 + runner * 1.35) * (0.8 + audio.x);
     hdr += vec3<f32>(0.1, 0.1, 0.3) * astrocyte * (0.5 + audio.y);
     let historyUV = clamp(uv - normalize(p + vec2<f32>(0.0001)) * (0.003 + pulseSpeed * 0.008), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.12 + neuralWarp * 0.16 + dragMask * 0.16, 0.0, 0.42));
-    let alpha = clamp(0.12 + nodes * 0.75 + dendrites * 0.28 + vesicles * 0.4 + clickBloom * 0.45 + dragMask * 0.35, 0.0, 1.0);
+    let alpha = clamp(0.12 + nodes * 0.75 + dendrites * 0.28 + vesicles * 0.4 + ranvier * 0.22 + clickBloom * 0.45 + dragMask * 0.35, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(hdr), alpha);
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);
-    let depth = clamp(0.16 + branch * 0.34 + runner * 0.25 + dendrites * 0.18 + vesicles * 0.12 + clickBloom * 0.18, 0.0, 0.95);
+    let depth = clamp(0.16 + branch * 0.34 + runner * 0.25 + dendrites * 0.18 + vesicles * 0.12 + ranvier * 0.08 + clickBloom * 0.18, 0.0, 0.95);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: log-z rings; wavelength split along the spiral
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: log-z rings; wavelength split along the spiral; bore cos4 falloff; inward flight streak
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rot2(a: f32) -> mat2x2<f32> {
   let s = sin(a);
@@ -125,13 +106,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let fog = 1.0 - smoothstep(0.0, 0.8, depthLayer);
   color = color * (0.5 + 0.5 * fog);
 
+  // ── Idea: bore falloff. Tunnel Depth is the adjacent side of the bore angle.
+  let axisCos = zoomDepth / sqrt(polar.x * polar.x + zoomDepth * zoomDepth);
+  let bore = axisCos * axisCos;
+  color = color * mix(0.42, 1.0, bore * bore);
+
   let ringGlow = smoothstep(0.02, 0.0, abs(depthLayer - 0.5)) * 0.3;
   color = color + vec3<f32>(0.6, 0.8, 1.0) * ringGlow * (1.0 + bass * 0.4);
 
   let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
   let alpha = clamp(depthLayer * 0.55 + ringGlow * 0.35 + srcA * 0.25 + bass * 0.08, 0.08, 1.0);
-  let mapped = acesToneMap(color);
-  let outCol = vec4<f32>(mapped, alpha);
+  let mapped = acesToneMap(max(color, vec3<f32>(0.0)));
+  // ── Idea: inward flight streak. Exact C, a few pixels toward the pointer.
+  let toward = select(vec2<f32>(0.0), -centered / max(polar.x, 0.001), polar.x > 0.001);
+  let streakAt = clamp(coord + vec2<i32>(toward * 3.0), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1));
+  let flight = 0.04 + 0.10 * clamp(u.zoom_params.x, 0.0, 1.0);
+  let flown = mix(mapped, textureLoad(dataTextureC, streakAt, 0).rgb, flight);
+  let outCol = vec4<f32>(flown, alpha);
 
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, coord, outCol);

@@ -1,6 +1,13 @@
-// Alpha HDR Bloom Chain — temporal spectral bloom with exposure-preserving feedback.
-// A/C packing remains [raw HDR rgb, overexposure]. B and extraBuffer are unused.
-// Premium mixed-eight upgrade: 2026-08-27.
+// ═══════════════════════════════════════════════════════════════════
+//  Alpha HDR Bloom Chain
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: Cauchy ratio on spectral taps (§12.2F); energy-conserving bloom (§12.2F)
+//  A packing: raw HDR RGB + overexposure in A (ACES on writeTexture only)
+// ═══════════════════════════════════════════════════════════════════
+// Floor landed 2026-08-27. A/C packing remains [raw HDR rgb, overexposure]. B and extraBuffer are unused.
 
 #include "_prelude.wgsl"
 
@@ -26,9 +33,17 @@ fn historyAt(uv: vec2<f32>, resolution: vec2<f32>) -> vec4<f32> {
 }
 
 fn spectralSample(uv: vec2<f32>, direction: vec2<f32>, shift: f32) -> vec3<f32> {
-  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + direction * shift * 1.13, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  // ── Idea 1: Cauchy ratio (§12.2F) ──────────────────────────────
+  // n(λ) = 1 + B/λ². Green keeps the small offset. Blue outruns red; directions stay opposite.
+  let lam = vec3<f32>(0.650, 0.550, 0.450);
+  let nRel = (1.0 + 0.0045 / (lam * lam));
+  let nN = nRel / nRel.y;
+  let span = max(nN.z - nN.x, 1e-4);
+  let devR = (nN.y - nN.x) / span;
+  let devB = (nN.z - nN.y) / span;
+  let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + direction * shift * (0.7 + devR), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + direction * shift * 0.19, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
-  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - direction * shift * 0.91, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let b = textureSampleLevel(readTexture, u_sampler, clamp(uv - direction * shift * (0.7 + devB), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   return vec3<f32>(r, g, b);
 }
 
@@ -91,8 +106,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let historyUV = uv - swirl * hoverHalo * heldGain * (0.002 + mids * 0.003) - mouseDir / aspectVec * clickFront * 0.003;
   let history = historyAt(historyUV, resolution);
   let spectralTint = 0.55 + 0.45 * cos(TAU * (vec3<f32>(0.02, 0.36, 0.70) + time * 0.035 + mouseDist * 0.28));
-  var hdr = source.rgb * exposureScale;
-  hdr += bloom * intensity * (0.65 + hoverHalo * heldGain * 0.85);
+  // ── Idea 2: energy-conserving bloom (§12.2F) ───────────────────
+  // Part of the spread is taken from the exposed source, then the spread is added back.
+  let sourceHdr = max(source.rgb * exposureScale, vec3<f32>(0.0));
+  let spread = bloom * intensity * (0.65 + hoverHalo * heldGain * 0.85);
+  let taken = min(max(spread, vec3<f32>(0.0)) * 0.35, sourceHdr);
+  var hdr = sourceHdr - taken + spread;
   hdr += spectralTint * (hoverHalo * heldGain + clickFront) * intensity * (0.18 + treble * 0.22);
   hdr = mix(hdr, history.rgb, clamp(0.035 + mids * 0.025 + clickFront * 0.035, 0.0, 0.14));
 

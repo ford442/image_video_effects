@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: overlap-only bloom knee; pivot-locked second plate
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: overlap-only bloom knee; pivot-locked second plate; latent shadow-silhouette emulsion keying; halation & core bleach (§12.2A)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rotate2d(uv: vec2<f32>, angle: f32) -> vec2<f32> {
     let c = cos(angle);
@@ -77,7 +58,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv2 = clamp(p + mouse, vec2<f32>(0.0), vec2<f32>(1.0));
     let c2 = textureSampleLevel(readTexture, u_sampler, uv2, 0.0);
 
-    var blended = 1.0 - (1.0 - c1.rgb) * (1.0 - c2.rgb * opacity);
+    // ── Idea 3: latent shadow-silhouette emulsion keying ─────────────────
+    // Unexposed silver halide in Plate 1's shadows develops Plate 2 richly,
+    // while Plate 1 highlights near D-max yield smoothly instead of washing out.
+    let luma1 = dot(c1.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let shadowReserve = 1.0 - smoothstep(0.16, 0.82, luma1);
+    let plate2Gain = opacity * mix(0.62, 1.28, shadowReserve);
+    let c2Keyed = clamp(c2.rgb * plate2Gain, vec3<f32>(0.0), vec3<f32>(1.0));
+
+    var blended = 1.0 - (1.0 - c1.rgb) * (1.0 - c2Keyed);
     let gray = dot(blended, vec3<f32>(0.299, 0.587, 0.114));
     blended = mix(vec3<f32>(gray), blended, 0.5 + saturation * 0.5);
 
@@ -90,23 +79,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bloomSamples = 12;
     var bloom = vec3<f32>(0.0);
     var totalWeight = 0.0;
+    var halationAccum = 0.0;
+    var outerWeight = 0.0;
     for (var i = 0; i < bloomSamples; i = i + 1) {
         let a = f32(i) * 6.283185307 / f32(bloomSamples);
-        let radius = bloomRadius * (1.0 + f32(i % 4) * 0.5);
+        let ringIdx = i % 4;
+        let radius = bloomRadius * (1.0 + f32(ringIdx) * 0.5);
         let offset = vec2<f32>(cos(a), sin(a)) * radius;
         let sampleUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
         let neighbor = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
         let n2 = textureSampleLevel(readTexture, u_sampler, clamp(uv2 + offset * 0.35, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
         let pair = min(max(neighbor.r, max(neighbor.g, neighbor.b)), max(n2.r, max(n2.g, n2.b)));
         let neighborExposure = max(0.0, pair - 0.65);
-        let weight = exp(-f32(i % 4) * 0.5);
+        let weight = exp(-f32(ringIdx) * 0.5);
         bloom += (neighbor + n2) * 0.5 * neighborExposure * weight;
         totalWeight += neighborExposure * weight;
+        let isOuter = f32(ringIdx >= 2);
+        halationAccum += max(pair - 0.72, 0.0) * isOuter * weight;
+        outerWeight += isOuter * weight;
     }
     bloom /= max(totalWeight, 0.001);
     bloom *= 1.5 * overlapKnee * (1.0 + mids * 0.25);
 
-    var hdrColor = blended + bloom;
+    // ── Idea 4: emulsion base halation & shoulder core bleach (§12.2A) ───
+    let halation = (halationAccum / max(outerWeight, 0.001)) * (0.45 + opacity * 0.65) * (1.0 + bass * 0.2);
+    var hdrColor = blended + bloom + halation * vec3<f32>(1.0, 0.36, 0.12);
+    let hdrLuma = dot(hdrColor, vec3<f32>(0.299, 0.587, 0.114));
+    let coreBleach = smoothstep(0.85, 1.85, hdrLuma) * clamp(overlapKnee + halation * 0.5, 0.0, 1.0);
+    hdrColor = mix(hdrColor, vec3<f32>(hdrLuma) * vec3<f32>(1.03, 0.99, 0.94), coreBleach * 0.42);
 
     let mouseDown = u.zoom_config.w;
     let mouseDist = length(uv - mouse);
@@ -123,8 +123,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         hdrColor += vec3<f32>(flash * 2.0, flash * 1.5, flash);
     }
 
-    let ldrColor = toneMapACES(hdrColor * 1.25);
-    let energy = clamp(overlapKnee + treble * 0.08, 0.0, 1.0);
+    let ldrColor = toneMapACES(max(hdrColor, vec3<f32>(0.0)) * 1.25);
+    let energy = clamp(overlapKnee + halation * 0.3 + treble * 0.08, 0.0, 1.0);
     let alpha = clamp(c1.a * 0.3 + energy * 0.55 + opacity * 0.2, 0.0, 1.0);
     let outColor = vec4<f32>(ldrColor, alpha);
 

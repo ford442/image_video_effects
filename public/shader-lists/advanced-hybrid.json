@@ -1607,7 +1607,8 @@
       "spring-interaction",
       "click-reactive",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1776,7 +1777,7 @@
     "id": "chroma-kinetic-blackbody",
     "name": "Chroma Kinetic Blackbody",
     "url": "shaders/chroma-kinetic-blackbody.wgsl",
-    "description": "Chroma Kinetic Blackbody",
+    "description": "Mouse-centered kinetic RGB split whose size follows luma, mixed with a blackbody colour of that same luma. Hotter pixels stretch the blue fringe and bleach the core.",
     "tags": [
       "chroma-kinetic",
       "blackbody-thermal",
@@ -1910,7 +1911,8 @@
     "features": [
       "chroma-threads",
       "gabor-texture-analysis",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7897,7 +7899,9 @@
       "structure-tensor",
       "LIC",
       "temporal",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

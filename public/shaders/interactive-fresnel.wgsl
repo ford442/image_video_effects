@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Interactive Fresnel — Batch 58E
-//  Keeps 2.5D annular curvature, Cauchy dispersion, exact C history.
-//  Adds held ring squeeze, oil-slick grout, radial packets, bounded
-//  click shells. Display RGBA in A.
+//  Interactive Fresnel
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: Cauchy scales (§12.2F); draft-face groove
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -21,7 +24,10 @@ fn fresnel_height(p: vec2<f32>, center: vec2<f32>, ring_spacing: f32, depth_val:
   let d = length(p - center);
   let phase = d / max(ring_spacing, 0.005) - t * 1.5;
   let ring_local = fract(phase);
-  let saw = ring_local * (1.0 - ring_local) * 4.0;
+  let bump = ring_local * (1.0 - ring_local) * 4.0;
+  // ── Idea 2: draft face — the inner half of the groove is the steep riser
+  let riser = smoothstep(0.55, 0.12, ring_local);
+  let saw = bump * mix(0.72, 1.55, riser);
   let envelope = exp(-d * mix(1.8, 3.5, 1.0 - depth_val));
   let dynamic_ripple = sin(d * 42.0 - t * 4.0) * 0.15 * (1.0 + bass);
   return (saw + dynamic_ripple) * envelope;
@@ -91,9 +97,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   let base_disp = normal.xy * (0.05 * lensing_power * depth_factor) + click_disp;
-  let uv_r = clamp(uv + base_disp * (1.0 + dispersion * 2.5), vec2<f32>(0.001), vec2<f32>(0.999));
+  // ── Idea 1: Cauchy (§12.2F) — Dispersion is B. Same direction; blue compresses more than red stretches.
+  let lam2 = vec3<f32>(0.4225, 0.3025, 0.2025);
+  let nLam = 1.0 + max(dispersion, 0.0) / lam2;
+  let rel = nLam / max(nLam.y, 0.001);
+  let uv_r = clamp(uv + base_disp * (1.0 + (rel.y - rel.x) * 4.0), vec2<f32>(0.001), vec2<f32>(0.999));
   let uv_g = clamp(uv + base_disp, vec2<f32>(0.001), vec2<f32>(0.999));
-  let uv_b = clamp(uv + base_disp * (1.0 - dispersion * 2.5), vec2<f32>(0.001), vec2<f32>(0.999));
+  let blueScale = max(1.0 - (rel.z - rel.y) * 4.0, 0.2);
+  let uv_b = clamp(uv + base_disp * blueScale, vec2<f32>(0.001), vec2<f32>(0.999));
 
   let col_r = textureSampleLevel(readTexture, u_sampler, uv_r, 0.0).r;
   let col_g = textureSampleLevel(readTexture, u_sampler, uv_g, 0.0).g;
@@ -116,9 +127,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   final_color = mix(final_color, final_color * slick * 1.22, 0.14 + grout * 0.22 + held * 0.08);
   final_color += slick * (packets * 0.2 + click * 0.4 + grout * 0.12);
   final_color = mix(final_color, prev_state.rgb, 0.12);
-  final_color = aces_film(final_color);
+  final_color = aces_film(max(final_color, vec3<f32>(0.0)));
 
-  let out_rgba = vec4<f32>(final_color, src_alpha);
+  let out_a = clamp(src_alpha * (0.72 + fresnel_term * 0.28) + click * 0.08 + grout * 0.05, 0.0, 1.0);
+  let out_rgba = vec4<f32>(final_color, out_a);
   textureStore(writeTexture, coord, out_rgba);
   textureStore(dataTextureA, coord, out_rgba);
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth_tex + h_c * 0.25 * lensing_power, 0.0, 1.0), 0.0, 0.0, 0.0));
