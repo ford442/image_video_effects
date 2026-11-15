@@ -2,7 +2,7 @@
   "id": "chromatic-reaction-diffusion-rgba",
   "name": "Chromatic Reaction Diffusion RGBA",
   "url": "shaders/chromatic-reaction-diffusion-rgba.wgsl",
-  "description": "Two cross-coupled warm/cool Gray-Scott systems with competitive overlap quench, photo chroma seeding, pointer spiral inoculation, bounded click fronts, and ACES display. Raw chemistry persists in dataTextureA.",
+  "description": "Two cross-coupled warm/cool Gray-Scott systems with competitive overlap quench, photo chroma seeding, isotropic 9-point diffusion, photo-luma-scaled Turing wavelength, pointer spiral inoculation, bounded click fronts, and ACES display. Raw chemistry persists in dataTextureA.",
   "tags": [
     "reaction-diffusion",
     "simulation",
