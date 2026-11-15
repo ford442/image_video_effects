@@ -1,0 +1,1037 @@
+{
+  "version": 1,
+  "description": "Golden values for the shader standard library (public/shaders/_std). Run on SwiftShader by scripts/shaderlib-golden.ts (npm run shaderlib:golden). `analytic` cases are hand-derived and never rewritten; the rest pin the implementation and are captured with --update. src/shaderlib/stdlib.test.ts cross-checks every pcg case against an exact TypeScript reference, so the GPU capture cannot silently bless a wrong hash.",
+  "cases": [
+    {
+      "id": "math.safePow.negative",
+      "modules": [
+        "math"
+      ],
+      "expr": "safePow(-8.0, 1.0 / 3.0)",
+      "type": "f32",
+      "expected": [
+        -2
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "math.cbrt.negative",
+      "modules": [
+        "math"
+      ],
+      "expr": "cbrt(-27.0)",
+      "type": "f32",
+      "expected": [
+        -3
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "math.remap.mid",
+      "modules": [
+        "math"
+      ],
+      "expr": "remap(5.0, 0.0, 10.0, 0.0, 1.0)",
+      "type": "f32",
+      "expected": [
+        0.5
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "math.remap.degenerate",
+      "modules": [
+        "math"
+      ],
+      "expr": "remap(1.0, 2.0, 2.0, 3.0, 4.0)",
+      "type": "f32",
+      "expected": [
+        3
+      ],
+      "tol": 0,
+      "analytic": true
+    },
+    {
+      "id": "math.remapClamped",
+      "modules": [
+        "math"
+      ],
+      "expr": "remapClamped(20.0, 0.0, 10.0, 0.0, 1.0)",
+      "type": "f32",
+      "expected": [
+        1
+      ],
+      "tol": 0,
+      "analytic": true
+    },
+    {
+      "id": "math.cmul",
+      "modules": [
+        "math"
+      ],
+      "expr": "cmul(vec2<f32>(1.0, 2.0), vec2<f32>(3.0, 4.0))",
+      "type": "vec2",
+      "expected": [
+        -5,
+        10
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "math.cdiv",
+      "modules": [
+        "math"
+      ],
+      "expr": "cdiv(vec2<f32>(-5.0, 10.0), vec2<f32>(3.0, 4.0))",
+      "type": "vec2",
+      "expected": [
+        1,
+        2
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "math.cdiv.zero",
+      "modules": [
+        "math"
+      ],
+      "expr": "cdiv(vec2<f32>(1.0, 1.0), vec2<f32>(0.0, 0.0))",
+      "type": "vec2",
+      "expected": [
+        0,
+        0
+      ],
+      "tol": 0,
+      "analytic": true
+    },
+    {
+      "id": "math.polar.roundtrip",
+      "modules": [
+        "math"
+      ],
+      "expr": "fromPolar(toPolar(vec2<f32>(3.0, -4.0)))",
+      "type": "vec2",
+      "expected": [
+        3,
+        -4
+      ],
+      "tol": 0.0001,
+      "analytic": true
+    },
+    {
+      "id": "hash.pcg.0",
+      "modules": [
+        "hash"
+      ],
+      "expr": "pcg(0u)",
+      "type": "u32",
+      "expected": [
+        129708002
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.pcg.1",
+      "modules": [
+        "hash"
+      ],
+      "expr": "pcg(1u)",
+      "type": "u32",
+      "expected": [
+        2831084092
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.pcg.max",
+      "modules": [
+        "hash"
+      ],
+      "expr": "pcg(4294967295u)",
+      "type": "u32",
+      "expected": [
+        3861530882
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.pcg2d.x",
+      "modules": [
+        "hash"
+      ],
+      "expr": "pcg2d(vec2<u32>(1u, 2u)).x",
+      "type": "u32",
+      "expected": [
+        45825804
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.pcg2d.y",
+      "modules": [
+        "hash"
+      ],
+      "expr": "pcg2d(vec2<u32>(1u, 2u)).y",
+      "type": "u32",
+      "expected": [
+        214070181
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.pcg3d.x",
+      "modules": [
+        "hash"
+      ],
+      "expr": "pcg3d(vec3<u32>(1u, 2u, 3u)).x",
+      "type": "u32",
+      "expected": [
+        4204755366
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.pcg3d.z",
+      "modules": [
+        "hash"
+      ],
+      "expr": "pcg3d(vec3<u32>(1u, 2u, 3u)).z",
+      "type": "u32",
+      "expected": [
+        1500469937
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.pcg4d.w",
+      "modules": [
+        "hash"
+      ],
+      "expr": "pcg4d(vec4<u32>(1u, 2u, 3u, 4u)).w",
+      "type": "u32",
+      "expected": [
+        45698095
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash11",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash11(0.5)",
+      "type": "f32",
+      "expected": [
+        0.240955412
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash12",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash12(0.5)",
+      "type": "vec2",
+      "expected": [
+        0.802630544,
+        0.858080685
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash13",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash13(0.5)",
+      "type": "vec3",
+      "expected": [
+        0.702807844,
+        0.201441169,
+        0.193995416
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash21",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash21(vec2<f32>(0.5, 1.25))",
+      "type": "f32",
+      "expected": [
+        0.516192138
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash22",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash22(vec2<f32>(0.5, 1.25))",
+      "type": "vec2",
+      "expected": [
+        0.516192138,
+        0.525424123
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash23",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash23(vec2<f32>(0.5, 1.25))",
+      "type": "vec3",
+      "expected": [
+        0.403701544,
+        0.824727416,
+        0.199335754
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash31",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash31(vec3<f32>(1.0, 2.0, 3.0))",
+      "type": "f32",
+      "expected": [
+        0.614231646
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash32",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash32(vec3<f32>(1.0, 2.0, 3.0))",
+      "type": "vec2",
+      "expected": [
+        0.614231646,
+        0.568742692
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash33",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash33(vec3<f32>(1.0, 2.0, 3.0))",
+      "type": "vec3",
+      "expected": [
+        0.614231646,
+        0.568742692,
+        0.181363046
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hash41",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hash41(vec4<f32>(1.0, 2.0, 3.0, 4.0))",
+      "type": "f32",
+      "expected": [
+        0.987914741
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hashCell21.negative",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hashCell21(vec2<i32>(-3, 7))",
+      "type": "f32",
+      "expected": [
+        0.966399193
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "hash.hashCell33",
+      "modules": [
+        "hash"
+      ],
+      "expr": "hashCell33(vec3<i32>(-1, 0, 5))",
+      "type": "vec3",
+      "expected": [
+        0.454233944,
+        0.184836566,
+        0.154886007
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "noise.valueNoise.lattice",
+      "modules": [
+        "noise"
+      ],
+      "expr": "valueNoise(vec2<f32>(-3.0, 7.0))",
+      "type": "f32",
+      "expected": [
+        0.966399193
+      ],
+      "tol": 0,
+      "analytic": false
+    },
+    {
+      "id": "noise.gradientNoise.lattice",
+      "modules": [
+        "noise"
+      ],
+      "expr": "gradientNoise(vec2<f32>(2.0, 5.0))",
+      "type": "f32",
+      "expected": [
+        0
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "noise.gradientNoise3.lattice",
+      "modules": [
+        "noise"
+      ],
+      "expr": "gradientNoise3(vec3<f32>(2.0, -5.0, 1.0))",
+      "type": "f32",
+      "expected": [
+        0
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "noise.valueNoise",
+      "modules": [
+        "noise"
+      ],
+      "expr": "valueNoise(vec2<f32>(1.37, 2.71))",
+      "type": "f32",
+      "expected": [
+        0.691891193
+      ],
+      "tol": 0.00001,
+      "analytic": false
+    },
+    {
+      "id": "noise.valueNoise3",
+      "modules": [
+        "noise"
+      ],
+      "expr": "valueNoise3(vec3<f32>(1.37, 2.71, -0.5))",
+      "type": "f32",
+      "expected": [
+        0.415601254
+      ],
+      "tol": 0.00001,
+      "analytic": false
+    },
+    {
+      "id": "noise.gradientNoise",
+      "modules": [
+        "noise"
+      ],
+      "expr": "gradientNoise(vec2<f32>(1.37, 2.71))",
+      "type": "f32",
+      "expected": [
+        0.53073585
+      ],
+      "tol": 0.00001,
+      "analytic": false
+    },
+    {
+      "id": "noise.simplex2",
+      "modules": [
+        "noise"
+      ],
+      "expr": "simplex2(vec2<f32>(1.37, 2.71))",
+      "type": "f32",
+      "expected": [
+        -0.591651857
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "noise.worley",
+      "modules": [
+        "noise"
+      ],
+      "expr": "worley(vec2<f32>(0.3, 0.6))",
+      "type": "vec2",
+      "expected": [
+        0.321433514,
+        0.613511741
+      ],
+      "tol": 0.00001,
+      "analytic": false
+    },
+    {
+      "id": "noise.fbm",
+      "modules": [
+        "noise"
+      ],
+      "expr": "fbm(vec2<f32>(1.37, 2.71), 5, 2.0, 0.5)",
+      "type": "f32",
+      "expected": [
+        0.665255427
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "noise.fbm3",
+      "modules": [
+        "noise"
+      ],
+      "expr": "fbm3(vec3<f32>(1.37, 2.71, -0.5), 4, 2.0, 0.5)",
+      "type": "f32",
+      "expected": [
+        0.516364753
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "noise.ridged",
+      "modules": [
+        "noise"
+      ],
+      "expr": "ridged(vec2<f32>(1.37, 2.71), 4, 2.0, 0.5)",
+      "type": "f32",
+      "expected": [
+        0.437642097
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "noise.turbulence",
+      "modules": [
+        "noise"
+      ],
+      "expr": "turbulence(vec2<f32>(1.37, 2.71), 4, 2.0, 0.5)",
+      "type": "f32",
+      "expected": [
+        0.373286158
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "noise.domainWarp",
+      "modules": [
+        "noise"
+      ],
+      "expr": "domainWarp(vec2<f32>(1.37, 2.71), 0.5, 3)",
+      "type": "vec2",
+      "expected": [
+        1.57264471,
+        2.42705083
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "color.luminance.white",
+      "modules": [
+        "color"
+      ],
+      "expr": "luminance(vec3<f32>(1.0))",
+      "type": "f32",
+      "expected": [
+        1
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "color.srgbToLinear.half",
+      "modules": [
+        "color"
+      ],
+      "expr": "srgbToLinear(vec3<f32>(0.5)).x",
+      "type": "f32",
+      "expected": [
+        0.21404114
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "color.srgbToLinear.negative",
+      "modules": [
+        "color"
+      ],
+      "expr": "srgbToLinear(vec3<f32>(-0.5)).x",
+      "type": "f32",
+      "expected": [
+        0
+      ],
+      "tol": 0,
+      "analytic": true
+    },
+    {
+      "id": "color.srgb.roundtrip",
+      "modules": [
+        "color"
+      ],
+      "expr": "linearToSrgb(srgbToLinear(vec3<f32>(0.2, 0.5, 0.8)))",
+      "type": "vec3",
+      "expected": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "tol": 0.0001,
+      "analytic": true
+    },
+    {
+      "id": "color.hsv.roundtrip",
+      "modules": [
+        "color"
+      ],
+      "expr": "hsv2rgb(rgb2hsv(vec3<f32>(0.2, 0.5, 0.8)))",
+      "type": "vec3",
+      "expected": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "tol": 0.0001,
+      "analytic": true
+    },
+    {
+      "id": "color.hsv.red",
+      "modules": [
+        "color"
+      ],
+      "expr": "rgb2hsv(vec3<f32>(1.0, 0.0, 0.0))",
+      "type": "vec3",
+      "expected": [
+        0,
+        1,
+        1
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "color.hsl.roundtrip",
+      "modules": [
+        "color"
+      ],
+      "expr": "hsl2rgb(rgb2hsl(vec3<f32>(0.2, 0.5, 0.8)))",
+      "type": "vec3",
+      "expected": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "tol": 0.0001,
+      "analytic": true
+    },
+    {
+      "id": "color.oklab.white",
+      "modules": [
+        "color"
+      ],
+      "expr": "linearToOklab(vec3<f32>(1.0))",
+      "type": "vec3",
+      "expected": [
+        1,
+        0,
+        0
+      ],
+      "tol": 0.0002,
+      "analytic": true
+    },
+    {
+      "id": "color.oklab.roundtrip",
+      "modules": [
+        "color"
+      ],
+      "expr": "oklabToLinear(linearToOklab(vec3<f32>(0.2, 0.5, 0.8)))",
+      "type": "vec3",
+      "expected": [
+        0.2,
+        0.5,
+        0.8
+      ],
+      "tol": 0.0001,
+      "analytic": true
+    },
+    {
+      "id": "color.oklch.roundtrip",
+      "modules": [
+        "color"
+      ],
+      "expr": "oklchToOklab(oklabToOklch(vec3<f32>(0.6, 0.1, -0.05)))",
+      "type": "vec3",
+      "expected": [
+        0.6,
+        0.1,
+        -0.05
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "color.blackbody.6500",
+      "modules": [
+        "color"
+      ],
+      "expr": "blackbody(6500.0)",
+      "type": "vec3",
+      "expected": [
+        1,
+        0.992079616,
+        0.956338167
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "color.blackbody.max1",
+      "modules": [
+        "color"
+      ],
+      "expr": "max(blackbody(3000.0).r, max(blackbody(3000.0).g, blackbody(3000.0).b))",
+      "type": "f32",
+      "expected": [
+        1
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "color.cosinePalette.t0",
+      "modules": [
+        "color"
+      ],
+      "expr": "cosinePalette(0.0, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0))",
+      "type": "vec3",
+      "expected": [
+        1,
+        1,
+        1
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "tonemap.aces.negative",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "aces(vec3<f32>(-0.18))",
+      "type": "vec3",
+      "expected": [
+        0,
+        0,
+        0
+      ],
+      "tol": 0,
+      "analytic": true
+    },
+    {
+      "id": "tonemap.aces.zero",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "aces(vec3<f32>(0.0))",
+      "type": "vec3",
+      "expected": [
+        0,
+        0,
+        0
+      ],
+      "tol": 0,
+      "analytic": true
+    },
+    {
+      "id": "tonemap.aces.mid",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "aces(vec3<f32>(0.18)).x",
+      "type": "f32",
+      "expected": [
+        0.2668989203894968
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "tonemap.aces.huge",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "aces(vec3<f32>(1e6)).x",
+      "type": "f32",
+      "expected": [
+        1
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "tonemap.reinhard.one",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "reinhard(vec3<f32>(1.0, -1.0, 3.0))",
+      "type": "vec3",
+      "expected": [
+        0.5,
+        0,
+        0.75
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "tonemap.reinhardExtended.white",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "reinhardExtended(vec3<f32>(4.0), 4.0)",
+      "type": "vec3",
+      "expected": [
+        1,
+        1,
+        1
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "tonemap.agx.mid",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "agx(vec3<f32>(0.18))",
+      "type": "vec3",
+      "expected": [
+        0.214467406,
+        0.21453248,
+        0.214536548
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "tonemap.agx.negative",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "agx(vec3<f32>(-1.0))",
+      "type": "vec3",
+      "expected": [
+        0,
+        0,
+        0
+      ],
+      "tol": 0.0001,
+      "analytic": false
+    },
+    {
+      "id": "tonemap.hdrPassthrough",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "hdrPassthrough(vec3<f32>(-1.0, 2.0, 0.0))",
+      "type": "vec3",
+      "expected": [
+        0,
+        2,
+        0
+      ],
+      "tol": 0,
+      "analytic": true
+    },
+    {
+      "id": "tonemap.exposure",
+      "modules": [
+        "tonemap"
+      ],
+      "expr": "exposure(vec3<f32>(1.0), 2.0)",
+      "type": "vec3",
+      "expected": [
+        4,
+        4,
+        4
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.rot2.quarter",
+      "modules": [
+        "sdf",
+        "math"
+      ],
+      "expr": "rot2(HALF_PI) * vec2<f32>(1.0, 0.0)",
+      "type": "vec2",
+      "expected": [
+        0,
+        1
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.sdCircle",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "sdCircle(vec2<f32>(3.0, 4.0), 1.0)",
+      "type": "f32",
+      "expected": [
+        4
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.sdBox2.outside",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "sdBox2(vec2<f32>(2.0, 0.0), vec2<f32>(1.0))",
+      "type": "f32",
+      "expected": [
+        1
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.sdBox.inside",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "sdBox(vec3<f32>(0.0), vec3<f32>(1.0))",
+      "type": "f32",
+      "expected": [
+        -1
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.sdTorus",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "sdTorus(vec3<f32>(2.0, 0.0, 0.0), vec2<f32>(1.0, 0.25))",
+      "type": "f32",
+      "expected": [
+        0.75
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.sdCapsule",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "sdCapsule(vec3<f32>(0.0, 2.0, 0.0), vec3<f32>(-1.0, 0.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), 0.5)",
+      "type": "f32",
+      "expected": [
+        1.5
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.smin.equal",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "smin(1.0, 1.0, 0.5)",
+      "type": "f32",
+      "expected": [
+        0.875
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.smax.far",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "smax(1.0, 3.0, 0.5)",
+      "type": "f32",
+      "expected": [
+        3
+      ],
+      "tol": 0.000001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.opRep2",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "opRep2(vec2<f32>(2.6, -0.4), vec2<f32>(1.0))",
+      "type": "vec2",
+      "expected": [
+        -0.4,
+        -0.4
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    },
+    {
+      "id": "sdf.normalTetra.plane",
+      "modules": [
+        "sdf"
+      ],
+      "expr": "sdfNormalTetra(sdfTetraOffset(0, 0.01).y, sdfTetraOffset(1, 0.01).y, sdfTetraOffset(2, 0.01).y, sdfTetraOffset(3, 0.01).y)",
+      "type": "vec3",
+      "expected": [
+        0,
+        1,
+        0
+      ],
+      "tol": 0.00001,
+      "analytic": true
+    }
+  ]
+}
