@@ -10,7 +10,8 @@
     "rayleigh-henyey-greenstein",
     "beer-lambert",
     "temporal-feedback",
-    "click-reactive"
+    "click-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

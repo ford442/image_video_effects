@@ -1,26 +1,15 @@
-// Spectral Bleed & Confinement — Batch 58D canonical feedback upgrade
-// A owns exact display RGBA afterglow; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Spectral Bleed & Confinement
+//  Category: artistic
+//  Features: mouse-driven, advanced-alpha, audio-reactive, click-reactive, temporal, aces-tone-map, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: normal-biased 120° fan; confinement residual returned as luma
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+// B is intentionally unwritten. The spring in extraBuffer[133..138] is the existing focus.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -41,12 +30,13 @@ fn curlNoise(p: vec2<f32>) -> vec2<f32> {
 
 fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.299, 0.587, 0.114)); }
 
-fn edgeMagnitude(uv: vec2<f32>, texel: vec2<f32>) -> f32 {
+fn edgeGradient(uv: vec2<f32>, texel: vec2<f32>) -> vec3<f32> {
   let x = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb) -
           luma(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
   let y = luma(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb) -
           luma(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
-  return length(vec2<f32>(x, y));
+  let g = vec2<f32>(x, y);
+  return vec3<f32>(g, length(g));
 }
 
 fn channelTap(uv: vec2<f32>, dir: vec2<f32>, radius: f32, channel: u32) -> f32 {
@@ -107,24 +97,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
     if (age < 0.0 || age > 2.4) { continue; }
     let deltaR = (uv - ripple.xy) * aspectVec; let dist = length(deltaR);
-    let front = exp(-pow((dist - age * 0.18) * 22.0, 2.0)) * (1.0 - age / 2.4);
+    let frontDelta = (dist - age * 0.18) * 22.0;
+    let front = exp(-(frontDelta * frontDelta)) * (1.0 - age / 2.4);
     frontEnergy += front;
     frontWarp += deltaR / max(dist, 0.001) * front * 0.012;
   }
 
   let curl = curlNoise(uv * 3.0 + vec2<f32>(time * curlSpeed, -time * curlSpeed * 0.7));
-  let angle = atan2(curl.y, curl.x) + focus * 0.8 + frontEnergy * 0.25;
-  let dirR = vec2<f32>(cos(angle), sin(angle));
-  let dirG = vec2<f32>(cos(angle + TAU / 3.0), sin(angle + TAU / 3.0));
-  let dirB = vec2<f32>(cos(angle + 2.0 * TAU / 3.0), sin(angle + 2.0 * TAU / 3.0));
+  let grad = edgeGradient(uv, texel);
+  let edge = smoothstep(edgeThreshold * 0.5, edgeThreshold, grad.z);
+  // ── Idea 1: normal-biased fan ──────────────────────────────────
+  // The 120° split stays. Its axis leans from the curl toward the
+  // edge normal as the edge gets confident.
+  let curlAngle = atan2(curl.y, curl.x) + focus * 0.8 + frontEnergy * 0.25;
+  let curlAligned = vec2<f32>(cos(curlAngle), sin(curlAngle));
+  let nrm = grad.xy / max(grad.z, 0.0001);
+  let mixed = mix(curlAligned, nrm, edge * 0.7);
+  let axisAngle = atan2(mixed.y, mixed.x);
+  let dirR = vec2<f32>(cos(axisAngle), sin(axisAngle));
+  let dirG = vec2<f32>(cos(axisAngle + TAU / 3.0), sin(axisAngle + TAU / 3.0));
+  let dirB = vec2<f32>(cos(axisAngle + 2.0 * TAU / 3.0), sin(axisAngle + 2.0 * TAU / 3.0));
   let warpedUv = clamp(uv + frontWarp, vec2<f32>(0.0), vec2<f32>(1.0));
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let edge = smoothstep(edgeThreshold * 0.5, edgeThreshold, edgeMagnitude(uv, texel));
   let bleed = vec3<f32>(channelTap(warpedUv, dirR, bleedRadius * (1.0 + focus), 0u),
                         channelTap(warpedUv, dirG, bleedRadius * (1.0 + focus), 1u),
                         channelTap(warpedUv, dirB, bleedRadius * (1.0 + focus), 2u)) * edge;
   let confine = exp(-vec3<f32>(bleed.g * bleed.b, bleed.b * bleed.r, bleed.r * bleed.g) * confinement);
-  var hdr = source.rgb + bleed * confine * (0.65 + vec3<f32>(bass, mids, treble) * 0.45);
+  // ── Idea 2: confinement residual ───────────────────────────────
+  // What the cross-channel product rejects stays on the edge as luma.
+  let admitted = bleed * confine;
+  let rejectedL = dot(bleed * (1.0 - confine), vec3<f32>(0.299, 0.587, 0.114));
+  var hdr = source.rgb + admitted * (0.65 + vec3<f32>(bass, mids, treble) * 0.45) + vec3<f32>(rejectedL);
   hdr += vec3<f32>(1.0, 0.35, 0.12) * frontEnergy * edge * 0.35;
 
   let historyUv = clamp(uv - curl * bleedRadius * 0.6 - frontWarp * 0.5, vec2<f32>(0.0), vec2<f32>(1.0));

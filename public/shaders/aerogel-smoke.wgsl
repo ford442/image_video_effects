@@ -1,5 +1,12 @@
-// Aerogel Smoke — advected silica density with dual scattering transport.
-// A/C owns raw [density, scattering energy, velocity.xy]. B is unused.
+// ═══════════════════════════════════════════════════════════════════
+//  Aerogel Smoke
+//  Category: image
+//  Features: mouse-driven, audio-reactive, volumetric-transport, temporal-feedback, click-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: sub-pixel exact-load advection & vorticity confinement (§12.2D); dichroic Rayleigh Beer-Lambert extinction (§12.2F)
+//  A packing: raw [density, scattering energy, velocity.x, velocity.y]
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -33,6 +40,14 @@ fn stateAt(pixel: vec2<i32>, size: vec2<i32>) -> vec4<f32> {
   return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
 }
 
+fn curlAt(pixel: vec2<i32>, size: vec2<i32>) -> f32 {
+  let r = stateAt(pixel + vec2<i32>(1, 0), size).w;
+  let l = stateAt(pixel + vec2<i32>(-1, 0), size).w;
+  let b = stateAt(pixel + vec2<i32>(0, 1), size).z;
+  let t = stateAt(pixel + vec2<i32>(0, -1), size).z;
+  return 0.5 * ((r - l) - (b - t));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let resolution = u.config.zw;
@@ -53,8 +68,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let centerState = stateAt(coord, size);
   let velocityPixels = centerState.zw * resolution * (1.0 / 60.0);
-  let advectedCoord = coord - vec2<i32>(round(velocityPixels));
-  let advected = stateAt(advectedCoord, size);
+  // ── Idea 1: sub-pixel exact-load advection & vorticity confinement (§12.2D) ──
+  let backPos = vec2<f32>(coord) - velocityPixels;
+  let baseCoord = vec2<i32>(floor(backPos));
+  let fracPos = fract(backPos);
+  let s00 = stateAt(baseCoord, size);
+  let s10 = stateAt(baseCoord + vec2<i32>(1, 0), size);
+  let s01 = stateAt(baseCoord + vec2<i32>(0, 1), size);
+  let s11 = stateAt(baseCoord + vec2<i32>(1, 1), size);
+  let advected = mix(mix(s00, s10, fracPos.x), mix(s01, s11, fracPos.x), fracPos.y);
+
   let north = stateAt(coord + vec2<i32>(0, -1), size);
   let south = stateAt(coord + vec2<i32>(0, 1), size);
   let east = stateAt(coord + vec2<i32>(1, 0), size);
@@ -67,6 +90,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var energy = mix(advected.y, neighborAverage.y, 0.07);
   var velocity = mix(advected.zw, neighborAverage.zw, 0.035);
 
+  let omega = 0.5 * ((east.w - west.w) - (south.z - north.z));
+  let vortGrad = 0.5 * vec2<f32>(
+    abs(curlAt(coord + vec2<i32>(1, 0), size)) - abs(curlAt(coord + vec2<i32>(-1, 0), size)),
+    abs(curlAt(coord + vec2<i32>(0, 1), size)) - abs(curlAt(coord + vec2<i32>(0, -1), size))
+  );
+  let vortDir = vortGrad / max(length(vortGrad), 1e-5);
+  let confinement = vec2<f32>(vortDir.y, -vortDir.x) * omega * (0.045 + audio.y * 0.025);
+
   let densityGradient = vec2<f32>(east.x - west.x, south.x - north.x);
   let curlDriver = vec2<f32>(densityGradient.y, -densityGradient.x);
   let diagonalShear = vec2<f32>(northeast.x - southwest.x, northeast.y - southwest.y);
@@ -75,7 +106,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let seed = smoothstep(0.48, 0.82, ambient * 0.72 + micro * 0.28);
   density += seed * (0.0028 + audio.x * 0.0035) * densityGain;
   energy += seed * (0.0018 + audio.z * 0.0045) * lightPower;
-  velocity += curlDriver * (0.11 + audio.y * 0.04) + diagonalShear * 0.012;
+  velocity += curlDriver * (0.11 + audio.y * 0.04) + diagonalShear * 0.012 + confinement;
   velocity += vec2<f32>(0.006 * sin(time * 0.37 + uv.y * 19.0), -0.008 - audio.x * 0.004);
 
   let mouseDelta = (uv - mouse) * aspectVec;
@@ -112,6 +143,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
   let opticalDepth = density * (0.65 + densityGain * 0.85);
   let transmittance = exp(-opticalDepth);
+  // ── Idea 2: dichroic Rayleigh Beer-Lambert extinction (§12.2F) ────────────
+  // Silica aerogel scatters short blue wavelengths out of the beam, leaving
+  // transmitted background silhouettes warm amber-orange.
+  let dichroicMix = clamp(blueScatter / 2.5, 0.0, 1.0);
+  let spectralSigma = mix(vec3<f32>(1.0), vec3<f32>(0.36, 0.88, 1.92), dichroicMix);
+  let spectralTrans = exp(-opticalDepth * spectralSigma);
   let normal = normalize(vec3<f32>(-densityGradient * 4.0, 1.0));
   let lightVector = normalize(vec3<f32>((mouse - uv) * aspectVec, 0.22 + hoverLight * 0.35));
   let cosTheta = clamp(dot(vec3<f32>(0.0, 0.0, 1.0), lightVector), -1.0, 1.0);
@@ -123,9 +160,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cursorLight = (0.18 + hoverLight * 1.8 + heldPlume * 2.4) * lightPower;
   let inScatter = (rayleigh + mie) * density * (0.08 + surfaceScatter * 0.65) * cursorLight;
   let multipleScatter = vec3<f32>(0.16, 0.48, 1.1) * energy * (0.35 + audio.y * 0.4);
-  var hdr = source.rgb * mix(1.0, transmittance, 0.45 + 0.55 * backgroundVisibility);
+  var hdr = source.rgb * mix(vec3<f32>(1.0), spectralTrans, 0.45 + 0.55 * backgroundVisibility);
   hdr += inScatter + multipleScatter + density * audio * vec3<f32>(0.05, 0.08, 0.12);
-  let alpha = clamp((1.0 - transmittance) * (0.78 + blueScatter * 0.08) + energy * 0.045, 0.0, 1.0);
+  let alpha = clamp(source.a * 0.15 + (1.0 - transmittance) * (0.78 + blueScatter * 0.08) + energy * 0.045, 0.0, 1.0);
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
   textureStore(writeTexture, coord, result);
 

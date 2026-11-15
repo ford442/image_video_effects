@@ -1,17 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Spectral Decompose
 //  Category: visual-effects
-//  Features: spectral-visualization, audio-bands, mouse-scanner, depth-layers
+//  Features: spectral-visualization, audio-bands, mouse-scanner, depth-layers, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Updated: 2026-05-31 — Grok (full seasonal band reactivity + mouse scanner)
-//  RGBA Channels:
-//    R = Low frequency band (large-scale structure)
-//    G = Mid-low frequency band
-//    B = Mid-high frequency band
-//    A = High frequency band (fine detail, edges)
-//  Why f32: Filtered band values can be negative (Gabor kernels have
-//  negative lobes) and need sub-percent precision for recomposition.
+//  Upgraded: 2026-11-15
+//  Ideas: oriented Gabor on the high residual; low-band inertia from C; band-matched audio
+//  A packing: raw band luma (R low, G mid-low, B mid-high, A high); ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
+//  RGBA channels stay the four bands. Bands can be negative (Gabor lobes).
+//  Updated: 2026-05-31 — Grok (band reactivity + mouse scanner).
 
 #include "_prelude.wgsl"
 
@@ -26,6 +23,10 @@ fn gaborFilter(uv: vec2<f32>, angle: f32, frequency: f32, sigma: f32) -> f32 {
     return gauss * wave;
 }
 
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let res = u.config.zw;
@@ -37,10 +38,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // === DECOMPOSE INTO 4 FREQUENCY BANDS ===
     // Sample neighborhood for multi-scale analysis
+    let centerSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let centerLuma = dot(centerSample.rgb, vec3<f32>(0.299, 0.587, 0.114));
     var bandLow = vec3<f32>(0.0);
     var bandMidLow = vec3<f32>(0.0);
     var bandMidHigh = vec3<f32>(0.0);
     var bandHigh = vec3<f32>(0.0);
+    var gaborAcc = 0.0;
+    var gaborW = 0.0;
 
     let sampleCount = 8;
     for (var i = 0; i < sampleCount; i = i + 1) {
@@ -63,6 +68,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             bandMidLow += sampleColor * wMidLow;
             bandMidHigh += sampleColor * wMidHigh;
             bandHigh += sampleColor * wHigh;
+
+            // ── Idea 1: oriented Gabor on the high residual ────────
+            let gSigned = gaborFilter(offset, angle, 0.55 / max(ps.x, 0.0001), 2.4 * max(ps.x, 0.0001));
+            gaborAcc += (luma - centerLuma) * gSigned;
+            gaborW += abs(gSigned);
         }
     }
 
@@ -73,25 +83,38 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     bandHigh /= f32(sampleCount * 3);
 
     // Difference-of-Gaussians style: extract bands
-    let sourceLuma = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
     let lowLuma = dot(bandLow, vec3<f32>(0.299, 0.587, 0.114));
     let midLowLuma = dot(bandMidLow, vec3<f32>(0.299, 0.587, 0.114));
     let midHighLuma = dot(bandMidHigh, vec3<f32>(0.299, 0.587, 0.114));
     let highLuma = dot(bandHigh, vec3<f32>(0.299, 0.587, 0.114));
 
-    let bandR = lowLuma;
+    let gaborHigh = gaborAcc / max(gaborW, 0.001);
     let bandG = midLowLuma - lowLuma * 0.5;
     let bandB = midHighLuma - midLowLuma * 0.5;
-    let bandA = highLuma - midHighLuma * 0.5;
+    let bandA = mix(highLuma - midHighLuma * 0.5, gaborHigh, 0.7);
 
-    // Store decomposition
+    // ── Idea 2: low-band inertia ───────────────────────────────────
+    // Lows chase the previous band. The other three stay instant.
+    let cDims = vec2<i32>(textureDimensions(dataTextureC));
+    let cCoord = clamp(coord, vec2<i32>(0), cDims - vec2<i32>(1));
+    let prevBands = textureLoad(dataTextureC, cCoord, 0);
+    let prevEnergy = abs(prevBands.r) + abs(prevBands.g) + abs(prevBands.b) + abs(prevBands.a);
+    let lag = 0.42 * smoothstep(0.0, 0.02, prevEnergy);
+    let bandR = mix(lowLuma, prevBands.r, lag);
+
+    // Store decomposition. Raw bands — not display, not tone-mapped.
     textureStore(dataTextureA, coord, vec4<f32>(bandR, bandG, bandB, bandA));
 
     // === RECOMPOSITION WITH PARAM GAINS ===
-    let gainLow = u.zoom_params.x * 3.0;
-    let gainMidLow = u.zoom_params.y * 3.0;
-    let gainMidHigh = u.zoom_params.z * 3.0;
-    let gainHigh = u.zoom_params.w * 3.0;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    // ── Idea 3: band-matched audio ─────────────────────────────────
+    // Each slider stays that band's gain. The matching audio band scales it.
+    let gainLow = u.zoom_params.x * 3.0 * (1.0 + bass * 0.35);
+    let gainMidLow = u.zoom_params.y * 3.0 * (1.0 + mids * 0.28);
+    let gainMidHigh = u.zoom_params.z * 3.0 * (1.0 + mids * 0.28);
+    let gainHigh = u.zoom_params.w * 3.0 * (1.0 + treble * 0.35);
 
     var recomposed = vec3<f32>(0.0);
     // Each band contributes a tinted version
@@ -101,17 +124,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     recomposed += vec3<f32>(1.0, 1.0, 1.0) * bandA * gainHigh;
 
     // Add back some original color to preserve recognizability
-    let originalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    recomposed = mix(recomposed, originalColor, 0.2);
-    recomposed = clamp(recomposed, vec3<f32>(0.0), vec3<f32>(1.0));
+    recomposed = mix(recomposed, centerSample.rgb, 0.2);
+    recomposed = max(recomposed, vec3<f32>(0.0));
 
     // === MOUSE INTERACTION ===
     // Mouse radial frequency boost
     let mousePos = u.zoom_config.yz;
     let mouseDist = length(uv - mousePos);
     let mouseInfluence = smoothstep(0.3, 0.0, mouseDist) * u.zoom_config.w;
-    recomposed += vec3<f32>(bandA * mouseInfluence * 2.0);
-    recomposed = clamp(recomposed, vec3<f32>(0.0), vec3<f32>(1.0));
+    recomposed += vec3<f32>(max(bandA, 0.0) * mouseInfluence * 2.0);
 
     // === RIPPLE PULSE ===
     let time = u.config.x;
@@ -122,15 +143,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let age = time - ripple.z;
         if (age < 0.8 && rDist < 0.15) {
             let pulse = smoothstep(0.15, 0.0, rDist) * max(0.0, 1.0 - age);
-            recomposed += vec3<f32>(bandHigh * pulse * 3.0);
+            recomposed += max(bandHigh, vec3<f32>(0.0)) * pulse * 0.85;
         }
     }
-    recomposed = clamp(recomposed, vec3<f32>(0.0), vec3<f32>(1.0));
 
     // Total spectral energy for alpha
     let spectralEnergy = abs(bandR) + abs(bandG) + abs(bandB) + abs(bandA);
-
-    textureStore(writeTexture, coord, vec4<f32>(recomposed, spectralEnergy * 0.5));
+    let alpha = clamp(spectralEnergy * 0.45 + centerSample.a * 0.2, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(aces(max(recomposed, vec3<f32>(0.0))), alpha));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

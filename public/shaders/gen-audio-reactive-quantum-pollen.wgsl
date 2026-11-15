@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  gen-audio-reactive-quantum-pollen
+//  Audio-Reactive Quantum Pollen
 //  Category: generative
-//  Features: audio-reactive, mouse-driven, depth-aware, particle-field,
-//            aces-tone-map, ign-dither, premultiplied-alpha
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Chunks From: warpedFBM, hue_preserve_clamp, bass_env, ign
-//  Created: 2026-07-17
-//  By: Kimi swarm (manual completion after kimi-cli timeout)
+//  Upgraded: 2026-11-15
+//  Ideas: golden-angle grain placement; exine lobes
+//  A packing: raw (bassEnv, trebEnv, density, alpha). ACES on writeTexture only.
 // ═══════════════════════════════════════════════════════════════════
 //  Hundreds of luminous pollen grains in a dark field. Bass envelope
 //  pulls grains into log-spiral galaxy clusters, mids drive harmonic
@@ -87,7 +86,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         for (var i = -1; i <= 1; i = i + 1) {
             let cid = id + vec2<f32>(f32(i), f32(j));
             let rnd = hash22(cid);
-            var gp = (cid + 0.5 + (rnd - 0.5) * 0.8) / cells;
+            // ── Idea 1: golden-angle rest inside the cell (§12.2E)
+            let theta = (cid.x + cid.y * 14.0) * 2.39996323;
+            let restDir = vec2<f32>(cos(theta), sin(theta));
+            var gp = (cid + 0.5) / cells + restDir * ((0.12 + 0.28 * rnd.x) / cells);
             // mids harmonic orbit
             let orbA = time * (0.3 + mids * 0.9) * orbitSpeed * (rnd.x + 0.5) + rnd.y * TAU;
             gp += vec2<f32>(cos(orbA), sin(orbA)) * (0.35 / cells) * (0.4 + rnd.y);
@@ -107,7 +109,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 gp = mix(gp, mouseC + (gp - mouseC) / md * 0.03, pull);
             }
             let d = length(uv - gp);
-            let r = (0.004 + rnd.x * 0.004) * glowSize;
+            // ── Idea 2: exine lobes. The gaussian radius grows spines.
+            let ang = atan2(uv.y - gp.y, uv.x - gp.x);
+            let lobes = 0.70 + 0.30 * sin(ang * (5.0 + floor(rnd.y * 3.0)) + rnd.x * TAU);
+            let r = (0.004 + rnd.x * 0.004) * glowSize * lobes;
             let w = exp(-d * d / (r * r));
             let hue = fract(rnd.y + hueBase + mids * 0.25 + haze * 0.15);
             let c = clamp(vec3<f32>(abs(hue * 6.0 - 3.0) - 1.0, abs(hue * 6.0 - 2.0) - 1.0, abs(hue * 6.0 - 4.0) - 1.0),
