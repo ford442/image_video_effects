@@ -1,4 +1,13 @@
-// Interactive PCB Traces — Manhattan routing, vias, and propagating signal packets.
+// ═══════════════════════════════════════════════════════════════════
+//  Interactive PCB Traces
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: pad teardrop; elbow chamfer
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+// Manhattan routing, vias, and propagating signal packets.
 // A/C stores ACES display RGBA for persistent phosphor-like trace glow. B is unused.
 
 #include "_prelude.wgsl"
@@ -56,12 +65,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let horizontalFirst = random.x > 0.5;
   let edgeTarget = select(vec2<f32>(select(0.0, 1.0, random.y > 0.5), padCenter.y), vec2<f32>(padCenter.x, select(0.0, 1.0, random.y > 0.5)), horizontalFirst);
   let elbow = select(vec2<f32>(edgeTarget.x, padCenter.y), vec2<f32>(padCenter.x, edgeTarget.y), horizontalFirst);
-  let primaryDistance = min(segmentDistance(local, padCenter, elbow), segmentDistance(local, elbow, edgeTarget));
+  // ── Idea 2: elbow chamfer ─────────────────────────────────────────
+  // A short 45° miter replaces the sharp corner. The net is still pad → edge.
+  let padToElbow = elbow - padCenter;
+  let elbowToEdge = edgeTarget - elbow;
+  let n1 = elbow - padToElbow / max(length(padToElbow), 0.0001) * min(0.09, length(padToElbow) * 0.42);
+  let n2 = elbow + elbowToEdge / max(length(elbowToEdge), 0.0001) * min(0.09, length(elbowToEdge) * 0.42);
+  let primaryDistance = min(segmentDistance(local, padCenter, n1), min(segmentDistance(local, n1, n2), segmentDistance(local, n2, edgeTarget)));
 
   let branchDirection = select(vec2<f32>(0.0, select(-1.0, 1.0, random.x > 0.5)), vec2<f32>(select(-1.0, 1.0, random.x > 0.5), 0.0), horizontalFirst);
-  let branchEnd = clamp(elbow + branchDirection * (0.18 + random.y * 0.2), vec2<f32>(0.05), vec2<f32>(0.95));
-  let branchDistance = segmentDistance(local, elbow, branchEnd);
-  let traceWidth = 0.022 + 0.007 * audio.z;
+  let chamferMid = (n1 + n2) * 0.5;
+  let branchEnd = clamp(chamferMid + branchDirection * (0.18 + random.y * 0.2), vec2<f32>(0.05), vec2<f32>(0.95));
+  let branchDistance = segmentDistance(local, chamferMid, branchEnd);
+  // ── Idea 1: pad teardrop ───────────────────────────────────────────
+  // Copper flares along the pad leg so the trace fillets into the via.
+  let baseWidth = 0.022 + 0.007 * audio.z;
+  let fromPad = distance(local, padCenter);
+  let onPadLeg = 1.0 - smoothstep(baseWidth * 2.2, baseWidth * 5.5, segmentDistance(local, padCenter, n1));
+  let fillet = smoothstep(0.24, 0.10, fromPad) * onPadLeg;
+  let traceWidth = baseWidth * (1.0 + fillet * 2.1);
   let trace = 1.0 - smoothstep(traceWidth, traceWidth * 2.6, min(primaryDistance, branchDistance));
   let traceHalo = exp(-min(primaryDistance, branchDistance) * (18.0 + 8.0 / glowAmount));
 
@@ -69,7 +91,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let pad = 1.0 - smoothstep(0.105, 0.135, padDistance);
   let drill = 1.0 - smoothstep(0.03, 0.048, padDistance);
   let viaRing = clamp(pad - drill, 0.0, 1.0);
-  let routeLength = distance(padCenter, elbow) + distance(elbow, edgeTarget);
+  let routeLength = distance(padCenter, n1) + distance(n1, n2) + distance(n2, edgeTarget);
   let routeCoordinate = (distance(local, padCenter) + dot(local - padCenter, normalize(edgeTarget - padCenter + vec2<f32>(0.0001)))) / max(routeLength, 0.1);
   let packetPhase = fract(routeCoordinate * 0.34 - time * pulseSpeed * 0.12 - random.x + audio.x * 0.08);
   let packet = exp(-pow((packetPhase - 0.5) * (18.0 + audio.y * 4.0), 2.0)) * (trace + viaRing);
