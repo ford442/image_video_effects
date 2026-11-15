@@ -11,7 +11,8 @@
       "rayleigh-henyey-greenstein",
       "beer-lambert",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1597,6 +1598,7 @@
       "audio-reactive",
       "upgraded-rgba",
       "click-reactive",
+      "temporal-feedback",
       "fast-motion"
     ],
     "params": [
@@ -5085,6 +5087,7 @@
       "3d-effect",
       "audio-reactive",
       "depth-aware",
+      "temporal-feedback",
       "upgraded-rgba"
     ],
     "tags": [

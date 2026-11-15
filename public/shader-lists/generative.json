@@ -28640,7 +28640,11 @@
     "features": [
       "audio-reactive",
       "mouse-control",
-      "raymarching"
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,
