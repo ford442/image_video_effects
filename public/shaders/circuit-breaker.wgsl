@@ -1,35 +1,27 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Circuit Breaker
-//  Category: effects
+//  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
+//  Upgraded: 2026-05-17, 2026-11-15
+//  Ideas: annular via pads & 45-degree routed edge traces; Schmitt-trigger breaker latch (§12.2B)
+//  A packing: ACES display RGB + Schmitt-trigger trip bit in A.a
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
     return fract(sin(h) * 43758.5453123);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -103,35 +95,66 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let isEdge = step(edgeThreshold, edge);
 
-    // Circuit glow colors — bass tints toward overload
+    // ── Idea 1: annular solder-via pads & 45-degree routed PCB edge traces ──
+    let cellLocal = fract(gridUV) - 0.5;
+    let padDist = length(cellLocal);
+    let viaRing = smoothstep(0.35, 0.26, padDist) * smoothstep(0.08, 0.15, padDist) * node;
+    let drillHole = smoothstep(0.12, 0.06, padDist) * node;
+
+    let octAngle = round(atan2(edgeX, -edgeY) / 0.78539816) * 0.78539816;
+    let traceDir = vec2<f32>(cos(octAngle), sin(octAngle));
+    let traceCross = abs(dot(cellLocal, vec2<f32>(-traceDir.y, traceDir.x)));
+    let routedTrace = isEdge * mix(0.45, 1.0, smoothstep(0.24, 0.08, traceCross));
+    let busPacket = (0.5 + 0.5 * sin(dot(gridUV, traceDir) * 3.4 - time * (6.5 + mids * 5.0) + hash21(gridID) * 6.28318)) * routedTrace;
+
+    // ── Idea 2: Schmitt-trigger breaker latch per PCB cell (§12.2B) ─────────
+    let resI = vec2<i32>(resolution);
+    let cellCenterUV = clamp((gridID + 0.5) / gridScale, vec2<f32>(0.0), vec2<f32>(0.9999));
+    let cellCoord = clamp(vec2<i32>(cellCenterUV * resolution), vec2<i32>(0), resI - vec2<i32>(1));
+    let prevCell = textureLoad(dataTextureC, cellCoord, 0);
+    let prevPixel = textureLoad(dataTextureC, coord, 0);
+    let lockPrev = step(0.5, prevCell.a);
+    let cellRating = 0.72 + 0.28 * hash21(gridID + vec2<f32>(3.7, 9.1));
+    let overloadDrive = influence / cellRating;
+    let tripHi = 0.88 - intensity * 0.34;
+    let tripLo = max(tripHi - 0.30, 0.08);
+    var tripped = lockPrev;
+    tripped = select(tripped, 1.0, overloadDrive > tripHi);
+    tripped = select(tripped, 0.0, overloadDrive < tripLo);
+    let tripOnset = max(tripped - lockPrev, 0.0);
+
+    // Circuit glow colors — bass tints toward overload; tripped cells open-circuit to charred copper
     let circuitColor = vec3<f32>(0.0, 0.8, 0.2);
     let overloadColor = vec3<f32>(0.5, 0.8, 1.0);
-    let glow = mix(circuitColor, overloadColor, influence + bass * 0.3);
+    let charredCopper = vec3<f32>(0.22, 0.09, 0.04);
+    let liveGlow = mix(circuitColor, overloadColor, clamp(influence + bass * 0.3 + busPacket * 0.35, 0.0, 1.0));
+    let glow = mix(liveGlow, charredCopper, tripped * 0.82) * (1.0 + busPacket * 0.45 * (1.0 - tripped));
 
-    // Branchless edge/grid blend: apply glow when isEdge or isGrid > 0.5
-    let applyGlow = clamp(isEdge + isGrid, 0.0, 1.0);
+    // Branchless edge/grid/via blend
+    let applyGlow = clamp(routedTrace + isGrid + viaRing, 0.0, 1.0);
     let glowBlend = 0.5 + influence * 0.5;
-    let colorAfterGlow = mix(color.rgb, mix(color.rgb, glow, glowBlend), applyGlow);
+    var colorAfterGlow = mix(color.rgb, mix(color.rgb, glow, glowBlend), applyGlow);
+    colorAfterGlow *= 1.0 - drillHole * 0.85;
 
-    // Branchless node flash: active when influence > 0.5 AND node > 0.5
-    // Treble adds sparkle to flash frequency
-    let flashActive = step(0.5, influence) * node;
+    // Branchless node flash on copper via ring + arc burst when breaker trips
+    let flashActive = step(0.5, influence) * viaRing;
     let flash = sin(time * (20.0 + treble * 10.0) + hash21(gridID) * 6.28318) * 0.5 + 0.5;
-    let colorAfterFlash = mix(colorAfterGlow, vec3<f32>(1.0), flash * influence * flashActive);
+    let tripArc = (viaRing + isGrid * 0.35) * (tripOnset * 2.4 + tripped * flash * 0.55);
+    var hdrRGB = mix(colorAfterGlow, vec3<f32>(1.0, 0.98, 0.92), clamp(flash * influence * flashActive, 0.0, 1.0));
+    hdrRGB += vec3<f32>(0.55, 0.88, 1.35) * tripArc;
+    hdrRGB = mix(hdrRGB, max(hdrRGB, prevPixel.rgb * 0.84), tripped * 0.28);
 
-    // Scanline
-    let scanline = sin(uv.y * resolution.y * 0.5) * 0.1;
-    let finalRGB = colorAfterFlash - scanline;
+    // Scanline + ACES display mapping
+    let scanline = sin(uv.y * resolution.y * 0.5) * 0.08;
+    let finalRGB = aces(max(hdrRGB - scanline, vec3<f32>(0.0)));
 
-    // Meaningful alpha: edge strength + grid presence + influence + bass
-    let alpha = clamp(edge * 2.0 + isGrid * 0.3 + influence * 0.4 + bass * 0.2, 0.0, 1.0);
+    // Meaningful alpha: edge strength + grid/via presence + influence + breaker state
+    let alpha = clamp(color.a * 0.2 + edge * 2.0 + (isGrid + viaRing) * 0.3 + influence * 0.35 + tripped * 0.2 + bass * 0.15, 0.0, 1.0);
 
-    let finalColor = vec4<f32>(finalRGB, alpha);
+    textureStore(writeTexture, coord, vec4<f32>(finalRGB, alpha));
 
-    textureStore(writeTexture, coord, finalColor);
-
-    // Depth pass-through
+    // Depth pass-through & Schmitt latch stored in A.a
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, finalColor);
+    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, tripped));
 }

@@ -1,6 +1,11 @@
 // ----------------------------------------------------------------
 // Ethereal Cyber-Aurora Mantis-Shrine
 // Category: generative
+// Features: mouse-driven, audio-reactive, upgraded-rgba
+// Upgraded: 2026-11-15
+// Ideas: aurora curtain sky fused to the lotus palette hue clock; chrome mantis mirrors the curtains (environment reflection); heartbeat ring travelling out of the heart along the filaments and washing the body
+// A packing: ACES display RGBA (HEAD stored nothing in A; C is never read)
+// Rescues: audio from plasmaBuffer[0].x (HEAD read dataTextureC(0,0), never written); upright camera (HEAD screen-y was world-down: mantis head-down, mist a ceiling); camera pitch clamped above the ground mist (HEAD white-out at the bottom edge); semantic alpha; m_scale / normalize guards
 // ----------------------------------------------------------------
 #include "_prelude.wgsl"
 
@@ -63,6 +68,58 @@ fn noise3(x: vec3<f32>) -> f32 {
                        dot(hash3(p + vec3<f32>(1.0, 1.0, 1.0)), f - vec3<f32>(1.0, 1.0, 1.0)), u.x), u.y), u.z);
 }
 
+// ── Idea 1: aurora curtain sky (native: the shrine is named for it) ──
+// Hanging curtains folded around the azimuth, sharp lower hem + long soft fade upward,
+// vertical ray striations, coloured with the lotus' own palette() hue clock.
+fn auroraSky(rd: vec3<f32>, time: f32, bass: f32) -> vec3<f32> {
+    // Below the horizon every layer's hem term is exactly 0, so skip the noise work.
+    if (rd.y <= 0.0) { return vec3<f32>(0.0); }
+    let alt = rd.y;
+    let az = atan2(rd.x, rd.z);
+    var acc = vec3<f32>(0.0);
+    for (var k = 0; k < 3; k++) {
+        let fk = f32(k);
+        let wob = noise3(vec3<f32>(az * 1.6 + fk * 3.1, alt * 1.5, time * 0.06 + fk * 1.7)) * 2.4;
+        let band = 0.5 + 0.5 * sin(az * (3.0 + fk * 1.5) + wob + time * 0.05 * (1.0 + fk));
+        let sheet = band * band * band;
+        let hem = smoothstep(fk * 0.03, 0.10 + fk * 0.04, alt);
+        let fade = exp(-max(alt - 0.10, 0.0) * (2.4 + fk * 0.9));
+        let rays = 0.6 + 0.4 * noise3(vec3<f32>(az * 16.0 + fk * 9.0, alt * 0.8, time * 0.35));
+        let tint = palette(alt * 0.7 + fk * 0.21 - time * 0.2,
+                           vec3<f32>(0.5), vec3<f32>(0.5),
+                           vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.3, 0.1, 0.6));
+        acc += tint * sheet * hem * fade * rays;
+    }
+    return acc * (0.8 + bass * 0.8);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Chrome environment: aurora above the horizon, ground-mist tint below.
+// Below refl.y = -0.18 the mix weight is exactly 0, so the sky work is skipped with an identical result.
+fn chromeEnv(refl: vec3<f32>, time: f32, bass: f32) -> vec3<f32> {
+    let groundRefl = vec3<f32>(0.03, 0.10, 0.17);
+    if (refl.y < -0.18) { return groundRefl; }
+    let skyRefl = auroraSky(refl, time, bass) + vec3<f32>(0.02, 0.05, 0.1) * noise3(refl * 3.0);
+    return mix(groundRefl, skyRefl, smoothstep(-0.18, 0.06, refl.y));
+}
+
+// Heartbeat ring + heart flash at a surface point (only mats 2, 3, 4 read it).
+fn beatRing(p: vec3<f32>, heartP: vec3<f32>, ringR: f32, beatPhase: f32, m_scale: f32) -> vec2<f32> {
+    let dh = length(p - heartP);
+    let rr = (dh - ringR) / (0.42 * m_scale);
+    let ring = exp(-rr * rr) * (1.0 - 0.7 * beatPhase);
+    let heartFlash = exp(-beatPhase * 5.0) * exp(-dh * 1.4 / m_scale);
+    return vec2<f32>(ring, heartFlash);
+}
+
+// Heart centre in world space (mirrors the mp/hp offsets used in map()).
+fn heartPos(time: f32, m_scale: f32) -> vec3<f32> {
+    return vec3<f32>(0.0, m_scale * (1.2 + sin(time) * 0.2), 0.0);
+}
+
 // Map function returning (distance, material_id)
 // material_id: 1.0 for mist, 2.0 for mantis, 3.0 for lotus, 4.0 for heart/filaments
 fn map(p: vec3<f32>) -> vec2<f32> {
@@ -79,16 +136,18 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     if (u.zoom_config.w > 0.5) { // Click triggered burst
         let dist = length(q - mouse_pos);
         let ripple = sin(dist * 10.0 - time * 5.0) * exp(-dist * 0.5) * 0.2;
-        q += normalize(q - mouse_pos) * ripple;
+        q += (q - mouse_pos) / max(dist, 0.001) * ripple;
     }
 
     // --- 1. Mist (FBM) ---
     let mist_fbm = noise3(q * 0.5 + vec3<f32>(time * 0.1)) * 0.5 + noise3(q * 1.0 - vec3<f32>(time * 0.2)) * 0.25;
-    let mist_d = -p.y + 2.0 - mist_fbm * u.zoom_params.z * 5.0; // Ground mist
+    // Rescue 3 (cont.): with the upright camera the mist must be the GROUND (HEAD's -p.y+2 was a ceiling that only
+    // looked like a floor because the whole picture was upside-down).
+    let mist_d = p.y + 2.0 - mist_fbm * u.zoom_params.z * 5.0; // Ground mist
 
     // --- 2. Mantis ---
     var mantis_d = MAX_DIST;
-    let m_scale = u.zoom_params.x;
+    let m_scale = max(u.zoom_params.x, 0.1);
     var mp = q / m_scale;
     mp.y -= 1.0 + sin(time) * 0.2; // Hovering
 
@@ -134,8 +193,9 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     }
 
     // --- 4. Heart Pulse & Filaments ---
-    let audio_sample = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).x;
-    let pulse = u.zoom_params.w * (1.0 + audio_sample * 5.0);
+    // Rescue 1: HEAD read dataTextureC(0,0).x as "audio" - nothing ever writes A, so it was a dead 0.
+    let bassMap = plasmaBuffer[0].x;
+    let pulse = u.zoom_params.w * (1.0 + bassMap * 5.0);
 
     // Heart
     var hp = mp;
@@ -171,21 +231,39 @@ fn map(p: vec3<f32>) -> vec2<f32> {
 }
 
 // Raymarching
+// Perf (fog crawl): inside the mist HEAD's step is clamped to 0.01 and the ray burns the whole 100-step
+// budget there (74-86 % of all steps in a frame that is half ground fog). The crawl now moves CRAWL_N x as far
+// per step, charges the loop CRAWL_N budget units, and adds CRAWL_N x the per-step mist term, with the term
+// extrapolated to the centroid of the interval it stands for (first-order, from the previous crawl sample).
+// Same depth range, same budget, same integral; only the quadrature is coarser. Approach steps are untouched.
+const CRAWL_N = 4;
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>) -> vec3<f32> {
     var dO = 0.0;
     var mat = 0.0;
     var mist_dens = 0.0;
+    var gPrev = 0.0;
+    var prevCrawl = false;
 
     for (var i = 0; i < MAX_STEPS; i++) {
         let p = ro + rd * dO;
         let res = map(p);
         let dS = res.x;
+        let inMist = res.y == 1.0;
+        let crawl = inMist && dS < 0.01;
+        // Units of HEAD's 0.01-steps this iteration stands for; the last group is clipped to the budget left.
+        let nUnits = select(1, min(CRAWL_N, MAX_STEPS - i), crawl);
+        let fN = f32(nUnits);
 
-        if(res.y == 1.0 && dS < 0.1) {
-            mist_dens += 0.05 * (0.1 - dS); // Accumulate mist
+        if (inMist && dS < 0.1) {
+            let g = 0.05 * (0.1 - dS); // Accumulate mist (HEAD's per-step term)
+            let gHat = g + select(0.0, 0.375 * (g - gPrev), prevCrawl);
+            mist_dens += select(g, fN * gHat, crawl);
+            gPrev = g;
         }
 
-        dO += max(dS, 0.01); // Prevent getting stuck
+        dO += select(max(dS, 0.01), 0.01 * fN, crawl); // Prevent getting stuck
+        i += nUnits - 1;
+        prevCrawl = crawl;
         mat = res.y;
 
         if (dO > MAX_DIST || (dS < SURF_DIST && res.y != 1.0)) { break; }
@@ -210,7 +288,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (fragCoord.x >= res.x || fragCoord.y >= res.y) { return; }
 
     var uv = (fragCoord - 0.5 * res) / res.y;
+    // Rescue 3: pixel rows grow DOWN the screen but u_cam is world-up, so HEAD rendered the shrine upside-down
+    // (mantis head-down, lotus above it). Flip so +y on screen is +y in the world.
+    uv.y = -uv.y;
     let time = u.config.x;
+    let bass = plasmaBuffer[0].x;
+    let m_scale = max(u.zoom_params.x, 0.1); // Rescue 5: guard the mp = q / m_scale divide (saved min is 0.5)
 
     // Mouse orbit
     let mouse_uv = u.zoom_config.yz * 2.0 - 1.0;
@@ -218,7 +301,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Camera setup
     var ro = vec3<f32>(0.0, 0.0, -5.0);
 
-    let cam_rot_x = rot(-mouse_uv.y * 1.5);
+    // Rescue 4: HEAD let the orbit drop/lift the camera into the mist SDF (flat white frame). Keep the idle
+    // framing, let the cursor lift the camera freely, but only dip it a hair below the horizon (ground mist at y=-2).
+    let pitchIn = clamp(select(mouse_uv.y * 0.12, mouse_uv.y, mouse_uv.y > 0.0), -0.12, 0.9);
+    let cam_rot_x = rot(-pitchIn * 1.5);
     let cam_rot_y = rot(mouse_uv.x * 3.14 + time * 0.1);
 
     let ro_yz_4 = cam_rot_x * ro.yz;
@@ -243,8 +329,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let mist = rm.z;
 
     var col = vec3<f32>(0.0);
+    let hit = d < MAX_DIST && mat != 1.0;
 
-    if (d < MAX_DIST && mat != 1.0) {
+    // ── Idea 3: heartbeat ring. A pulse leaves the heart at the beat rate and travels out through the
+    // filaments, then washes over the body it passes (native: the heart is the shrine's light source).
+    let beatRate = 0.55 + bass * 0.6;
+    let beatPhase = fract(time * beatRate);
+    let heartP = heartPos(time, m_scale);
+    let ringR = beatPhase * 2.4 * m_scale;
+    let beatAmp = clamp(u.zoom_params.w, 0.0, 3.0) * 0.6 * (1.0 + bass);
+
+    if (hit) {
         let p = ro + rd * d;
         let n = calcNormal(p);
         let viewDir = normalize(ro - p);
@@ -258,30 +353,51 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         if (mat == 2.0) { // Mantis (Liquid Chrome)
             let base = vec3<f32>(0.1, 0.15, 0.2);
             col = base * diff + vec3<f32>(1.0) * spec + vec3<f32>(0.4, 0.8, 1.0) * fresnel;
+            // ── Idea 2: chrome environment reflection. The mirror body carries the same curtains as the sky
+            // (horizon split: ground mist below, aurora above) instead of a constant grey-blue rim.
+            let env = chromeEnv(reflect(rd, n), time, bass);
+            col += env * (0.55 + 0.9 * fresnel);
+            col += vec3<f32>(0.1, 0.9, 1.0) * beatRing(p, heartP, ringR, beatPhase, m_scale).x * beatAmp * 1.5;
         } else if (mat == 3.0) { // Lotus (Auroral Plasma)
             let base = palette(length(p) * 0.5 - time,
                                vec3<f32>(0.5), vec3<f32>(0.5),
                                vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.3, 0.1, 0.6));
             col = base * (diff * 0.5 + 0.5) + base * fresnel * 2.0;
+            // The reflection weight is fresnel*0.6; below 0.004 it moves the pixel by < 0.003 pre-ACES, skip it.
+            if (fresnel > 0.004) {
+                col += chromeEnv(reflect(rd, n), time, bass) * fresnel * 0.6;
+            }
+            col += vec3<f32>(0.1, 0.9, 1.0) * beatRing(p, heartP, ringR, beatPhase, m_scale).x * beatAmp * 1.1;
         } else if (mat == 4.0) { // Heart/Filaments (Emissive)
-            let audio_sample = textureLoad(dataTextureC, vec2<i32>(0, 0), 0).x;
-            let intensity = u.zoom_params.w * (1.0 + audio_sample * 2.0);
-            col = vec3<f32>(0.1, 0.9, 1.0) * intensity * 2.0;
+            // Rescue 1: bass (plasmaBuffer[0].x), not the never-written C(0,0) texel.
+            let intensity = u.zoom_params.w * (1.0 + bass * 2.0);
+            let br = beatRing(p, heartP, ringR, beatPhase, m_scale);
+            col = vec3<f32>(0.1, 0.9, 1.0) * intensity * 2.0 * (1.0 + 2.2 * br.x * (0.4 + beatAmp) + 1.4 * br.y);
         }
     }
 
     // Add Mist Volumetrics
     col += vec3<f32>(0.1, 0.3, 0.5) * mist;
 
-    // Background (Nebula)
+    // Background: faint nebula + the aurora curtains (rays that left the scene)
     if (d >= MAX_DIST) {
         let bg_noise = noise3(rd * 3.0);
         col += vec3<f32>(0.02, 0.05, 0.1) * bg_noise;
+        col += auroraSky(rd, time, bass);
     }
 
-    // Gamma correction
-    col = pow(max(col, vec3<f32>(0.0)), vec3<f32>(0.4545));
+    // Rescue 2: ACES on the display colour (HEAD: gamma pow only). Clamp first: the catalog fit maps negatives bright.
+    let hdr = max(col, vec3<f32>(0.0));
+    let mapped = aces(hdr * 1.25);
 
-    textureStore(writeTexture, vec2<i32>(id.xy), vec4<f32>(col, 1.0));
+    // Rescue 2 (cont.): semantic alpha (HEAD: bare 1.0) and A = display RGBA (HEAD: no A store). Surfaces are
+    // opaque, aurora/mist cover in proportion to their light.
+    let glowLum = dot(hdr, vec3<f32>(0.299, 0.587, 0.114));
+    let cover = select(clamp(glowLum * 1.6 + mist * 2.5, 0.0, 1.0), 1.0, hit);
+    let alpha = clamp(0.18 + 0.82 * cover, 0.0, 1.0);
+
+    let outColor = vec4<f32>(mapped, alpha);
+    textureStore(writeTexture, vec2<i32>(id.xy), outColor);
+    textureStore(dataTextureA, vec2<i32>(id.xy), outColor);
     textureStore(writeDepthTexture, vec2<i32>(id.xy), vec4<f32>(select(0.0, 1.0 - clamp(d / MAX_DIST, 0.0, 1.0), d < MAX_DIST), 0.0, 0.0, 0.0));
 }

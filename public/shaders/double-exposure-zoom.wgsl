@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: plate registration drift; highlight-keyed second plate
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: plate registration drift; highlight-keyed second plate; Cauchy radial zoom-shutter streak (§12.2F); sprocket-frame edgeMask & film-rebate border
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = vec3<f32>(2.51);
@@ -39,9 +20,16 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 }
 
 fn filmResponse(c: vec3<f32>) -> vec3<f32> {
-  let lifted = pow(c, vec3<f32>(1.15, 1.05, 0.95));
+  let safeC = max(c, vec3<f32>(0.0));
+  let lifted = pow(safeC, vec3<f32>(1.15, 1.05, 0.95));
   let compressed = lifted / (lifted + vec3<f32>(0.25));
-  return pow(compressed, vec3<f32>(0.85));
+  return pow(max(compressed, vec3<f32>(0.0)), vec3<f32>(0.85));
+}
+
+fn cauchyScale(B: f32) -> vec3<f32> {
+  let lam2 = vec3<f32>(0.650, 0.550, 0.450) * vec3<f32>(0.650, 0.550, 0.450);
+  let n = 1.0 + B / lam2;
+  return n / n.y;
 }
 
 fn luminance(c: vec3<f32>) -> f32 {
@@ -89,14 +77,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let edgeDist = min(min(uv2.x, 1.0 - uv2.x), min(uv2.y, 1.0 - uv2.y));
   let edgeMask = smoothstep(0.0, 0.05 + edgeFade * 0.45, edgeDist);
-  let caStrength = (1.0 - edgeMask) * 0.008;
-  let rUV = clamp(uv2 + vec2<f32>(caStrength, -caStrength * 0.5), vec2<f32>(0.0), vec2<f32>(1.0));
-  let bUV = clamp(uv2 - vec2<f32>(caStrength * 0.5, caStrength), vec2<f32>(0.0), vec2<f32>(1.0));
-  let gUV = clamp(uv2, vec2<f32>(0.0), vec2<f32>(1.0));
+
+  // ── Idea 3: radial zoom-rack streak & Cauchy focal dispersion (§12.2F) ─
+  // Racking a zoom barrel during exposure pulls radial streaks from the pivot
+  // with non-linear R/G/B focal magnification rather than a flat diagonal shift.
+  let radialFromPivot = uv2 - mouse;
+  let zoomExcursion = abs(zoomMod - 0.5) * 1.6 + bass * audioReact * 0.35;
+  let dispersionB = (0.0022 + (1.0 - edgeMask) * 0.0055) * (0.35 + zoomExcursion);
+  let cScale = cauchyScale(dispersionB);
+  var accumPlate2 = vec3<f32>(0.0);
+  for (var tap = -1; tap <= 1; tap = tap + 1) {
+    let shutterScale = 1.0 + f32(tap) * 0.014 * zoomExcursion;
+    let rTap = clamp(mouse + radialFromPivot * cScale.x * shutterScale, vec2<f32>(0.0), vec2<f32>(1.0));
+    let gTap = clamp(mouse + radialFromPivot * cScale.y * shutterScale, vec2<f32>(0.0), vec2<f32>(1.0));
+    let bTap = clamp(mouse + radialFromPivot * cScale.z * shutterScale, vec2<f32>(0.0), vec2<f32>(1.0));
+    let wTap = select(0.25, 0.50, tap == 0);
+    accumPlate2 += vec3<f32>(
+      textureSampleLevel(readTexture, u_sampler, rTap, 0.0).r,
+      textureSampleLevel(readTexture, u_sampler, gTap, 0.0).g,
+      textureSampleLevel(readTexture, u_sampler, bTap, 0.0).b
+    ) * wTap;
+  }
   var col2 = vec4<f32>(
-    textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
-    textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g,
-    textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b,
+    accumPlate2,
     textureSampleLevel(readTexture, u_sampler, clamp(uv2, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).a
   );
 
@@ -109,21 +112,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let screen = 1.0 - (1.0 - col1.rgb) * (1.0 - col2.rgb);
   let soft = 2.0 * col1.rgb * col2.rgb + col1.rgb * col1.rgb * (1.0 - 2.0 * col2.rgb);
   let blendedRGB = mix(screen, soft, matte * 0.5);
-  let keyed = mix(col1.rgb, blendedRGB, 0.55 + highlightKey * 0.35);
+
+  // ── Idea 4: sprocket-frame edgeMask gate & warm film-rebate border ─────
+  // Clamped out-of-frame pixels fade cleanly via edgeMask instead of smearing,
+  // with a subtle amber rebate line right at Plate 2's negative frame edge.
+  let plateExposure = (0.55 + highlightKey * 0.35) * edgeMask;
+  let rebateBorder = exp(-pow((edgeDist - 0.008) / 0.012, 2.0)) * step(0.0, edgeDist) * (1.0 - edgeFade * 0.65);
+  let keyed = mix(col1.rgb, blendedRGB, plateExposure) + vec3<f32>(0.18, 0.08, 0.02) * rebateBorder;
 
   var film = filmResponse(keyed);
-  film = acesToneMap(film * (1.0 + mids * 0.3));
-
-  let lightLeak = smoothstep(0.4, 0.0, edgeDist) * (0.1 + bass * 0.15);
-  film += vec3<f32>(lightLeak * 1.2, lightLeak * 0.6, lightLeak * 0.2);
-  let vignette = 1.0 - smoothstep(0.3, 0.8, edgeDist) * 0.5;
-  film *= vignette;
+  let inFrameLeak = smoothstep(0.4, 0.0, max(edgeDist, 0.0)) * step(-0.02, edgeDist) * (0.1 + bass * 0.15);
+  film += vec3<f32>(inFrameLeak * 1.2, inFrameLeak * 0.6, inFrameLeak * 0.2);
+  let vignette = 1.0 - smoothstep(0.3, 0.8, clamp(edgeDist, 0.0, 1.0)) * 0.5 * edgeMask;
+  film = acesToneMap(max(film * vignette, vec3<f32>(0.0)) * (1.0 + mids * 0.3));
 
   let prevFrame = textureLoad(dataTextureC, coord, 0);
   let trailAmt = 0.12 + bass * audioReact * 0.2;
   let finalRGB = mix(film, prevFrame.rgb, trailAmt);
 
-  let blendRatio = matte * 0.5 + 0.3;
+  let blendRatio = (matte * 0.5 + 0.3) * mix(0.35, 1.0, edgeMask);
   let lumConfidence = smoothstep(0.05, 0.5, max(lum1, lum2));
   let alpha = clamp(col1.a * 0.25 + blendRatio * lumConfidence * (0.4 + depth * 0.6), 0.0, 1.0);
   let finalColor = vec4<f32>(finalRGB, alpha);

@@ -4,31 +4,18 @@
 //  Features: mouse-driven, 3d, audio-reactive, upgraded-rgba,
 //            meridians, held-drag, bounded-click-ripples
 //  Complexity: High
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-11-15
+//  Ideas: limb Fresnel (§12.2F); directional glint
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -99,9 +86,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = mix(color, color * slick * 1.2, hit * (0.22 + treble * 0.2));
     color += slick * hit * (meridians * 0.28 + parallels * 0.22 + click * 0.5);
 
+    // ── Idea 1: limb Fresnel (§12.2F) ────────────────────────────────
+    // Grazing the sphere picks up a cool rim. Lambert from Lighting is unchanged.
+    let ndv = clamp(dot(n, -rd), 0.0, 1.0);
+    let fres = pow(1.0 - ndv, 5.0) * hit;
+    color += vec3<f32>(0.45, 0.68, 1.0) * fres * 0.7;
+
+    // ── Idea 2: directional glint ────────────────────────────────────
+    // Tight Blinn highlight from the existing key light, scaled by Lighting.
+    let halfH = lightDir - rd;
+    let halfV = halfH / max(length(halfH), 0.001);
+    let spec = pow(max(dot(n, halfV), 0.0), 40.0) * light_param * hit;
+    color += vec3<f32>(1.0, 0.97, 0.92) * spec;
+
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(mix(bg.a, 0.35 + luma * 0.65, hit), 0.0, 1.0);
-    let outCol = vec4<f32>(mix(color, prev.rgb * 0.88, 0.2 * hit), mix(alpha, prev.a * 0.88, 0.2 * hit));
+    let preRgb = mix(color, prev.rgb * 0.88, 0.2 * hit);
+    let outCol = vec4<f32>(aces(max(preRgb, vec3<f32>(0.0))), mix(alpha, prev.a * 0.88, 0.2 * hit));
     let depthSrc = textureLoad(readDepthTexture, pixel, 0).r;
     let depthOut = mix(depthSrc, clamp(t / 10.0 + meridians * 0.05, 0.0, 1.0), hit);
     textureStore(writeTexture, pixel, outCol);

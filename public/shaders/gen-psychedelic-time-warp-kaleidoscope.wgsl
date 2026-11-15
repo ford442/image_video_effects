@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: kaleidoscope, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: exact-C smear along the fold; honest three-band audio
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: exact-C smear along the fold; honest three-band audio; counter-rotating time warp; mirror-joint hairline
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
@@ -101,10 +82,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var angle = atan2(foldUV.y, foldUV.x);
 
     angle += wobble * sin(dist * 0.02 - time * 2.0);
+    // ── Idea: counter-rotating time warp, same wobble amplitude, opposite way
+    angle += wobble * 0.42 * sin(dist * 0.051 + time * 1.2);
 
     angle = ((angle - angle_step * floor(angle / angle_step)) + angle_step);
     angle = angle - angle_step * floor(angle / angle_step);
-    angle = abs(angle - angle_step / 2.0) * mix(1.0, 2.0, u.zoom_params.x);
+    let fromMirror = abs(angle - angle_step / 2.0);
+    // ── Idea: mirror-joint hairline. fromMirror peaks on the glass joint.
+    let seam = smoothstep(angle_step * 0.46, angle_step * 0.5, fromMirror);
+    angle = fromMirror * mix(1.0, 2.0, u.zoom_params.x);
 
     foldUV = vec2<f32>(cos(angle), sin(angle)) * dist;
 
@@ -122,6 +108,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let smearPix = clamp(coords + vec2<i32>(foldDir * 3.0), vec2<i32>(0), maxCoord);
     let prevSmear = textureLoad(dataTextureC, smearPix, 0);
     color = mix(color, prevSmear.rgb * 0.92, 0.08 + bass * 0.04);
+    color = color * (1.0 - seam * 0.62);
 
     color.r += glow * bass * 0.35;
     color.g += glow * mids * 0.25;
@@ -129,7 +116,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luma * 0.55 + glow * 0.25 + srcA * 0.2, 0.0, 1.0);
-    var outCol = applyGenerativePrimaryControls(vec4<f32>(acesToneMap(color), alpha));
+    var outCol = applyGenerativePrimaryControls(vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(norm_coords, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     textureStore(writeTexture, coords, outCol);

@@ -1,7 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Chromatic Focus Interactive — Batch 56 cursor+main merge
-//  Six-blade iris geometry, multi-tap blur, zone-plate caustics, oil-slick
-//  runners/packets, held squeeze/pinch, click iris shells, display history in A
+//  Chromatic Focus Interactive
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: Cauchy-weighted offsets (§12.2F); blade-gated circle of confusion
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -15,6 +19,10 @@ fn calculateChannelAlpha(thickness: f32, wavelength: f32) -> f32 {
   let lambda_norm = (800.0 - wavelength) / 400.0;
   let absorption = mix(0.3, 1.0, lambda_norm);
   return exp(-thickness * absorption);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
@@ -68,9 +76,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let slick = hsv2rgb(vec3<f32>(fract(ang / TAU + time * 0.1 + audio.z * 0.2), 0.7, 1.0));
   let caustic = sin(dist * (35.0 + focusRad * 90.0) - time * (1.0 + audio.y * 4.0)) * amount;
 
-  let rOffset = dir * (amount * strength + squeeze + irisShell * 0.008);
-  let bOffset = -dir * (amount * strength + squeeze + irisShell * 0.008);
-  let blurRadius = blurAmt * amount * (0.002 + audio.x * 0.006);
+  let mag = amount * strength + squeeze + irisShell * 0.008;
+  // ── Idea 1: Cauchy (§12.2F) — wavelengths already declared. Blue's split is larger.
+  let lamUm = vec3<f32>(WAVELENGTH_RED, WAVELENGTH_GREEN, WAVELENGTH_BLUE) / 1000.0;
+  let lam2 = lamUm * lamUm;
+  let nLam = 1.0 + max(u.zoom_params.x, 0.0) * 0.045 / lam2;
+  let rel = nLam / max(nLam.y, 0.001);
+  let rOffset = dir * mag * (1.0 + (rel.y - rel.x) * 8.0);
+  let bOffset = -dir * mag * (1.0 + (rel.z - rel.y) * 8.0);
+  // ── Idea 2: the existing six-blade signal gates the circle of confusion
+  let aperture = mix(0.62, 1.0, blades);
+  let blurRadius = blurAmt * amount * (0.002 + audio.x * 0.006) * aperture;
   let tangent = vec2<f32>(-dir.y, dir.x);
 
   let r = (
@@ -97,12 +113,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color += (0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + caustic * 4.0 + time))
     * (abs(caustic) * 0.08 + irisShell * 0.16);
 
-  if (mouseDown > 0.5) {
-    let ring = abs(dist - focusRad);
-    if (ring < 0.005) {
-      color += vec3<f32>(0.5, 0.5, 0.5);
-    }
-  }
+  let focusRing = held * (1.0 - smoothstep(0.003, 0.007, abs(dist - focusRad)));
+  color += vec3<f32>(0.5, 0.5, 0.5) * focusRing;
 
   color = mix(color, prev.rgb * 0.90, 0.14 * amount + 0.06);
 
@@ -118,7 +130,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let finalColor = vec3<f32>(color.r * alphaR, color.g * alphaG, color.b * alphaB);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthOut = clamp(depth + irisBlade * 0.06 + irisShell * 0.04, 0.0, 1.0);
-  let finalPixel = vec4<f32>(finalColor, finalAlpha);
+  let display = aces(max(finalColor, vec3<f32>(0.0)));
+  let finalPixel = vec4<f32>(display, finalAlpha);
 
   textureStore(writeTexture, pixel, finalPixel);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));

@@ -2378,6 +2378,11 @@
         "mapping": "zoom_params.w",
         "id": "glow-intensity"
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -2454,7 +2459,9 @@
       "tachyon",
       "energy",
       "folded-space",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "lattice",
@@ -3352,7 +3359,8 @@
       "bass-env",
       "aces-tone-map",
       "ign-dither",
-      "premultiplied-alpha"
+      "premultiplied-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4569,7 +4577,12 @@
         "step": 0.05
       }
     ],
-    "description": "A hyper-organic, pulsing network of luminous fungal threads that weave and branch through a dense, volumetric void, reacting dynamically to bass and treble frequencies."
+    "description": "A hyper-organic, pulsing network of luminous fungal threads that weave and branch through a dense, volumetric void, reacting dynamically to bass and treble frequencies.",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-bioluminescent-neural-coral-matrix",
@@ -11034,6 +11047,11 @@
       "mechanical",
       "audio-reactive"
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -13995,7 +14013,8 @@
       "depth-aware",
       "lichtenberg-branches",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -15271,6 +15290,11 @@
     "type": "generative",
     "category": "generative",
     "url": "shaders/gen-harmonic-ferrofluid-kinetics.wgsl",
+    "description": "Raymarched ferrofluid spikes from an inverted Voronoi field, pinched at the crest, with a held magnetic mound, tip glints, and crevice occlusion.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -18253,7 +18277,8 @@
       "audio-reactive",
       "mouse-driven",
       "sdf",
-      "temporal-glow"
+      "temporal-glow",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",
@@ -28533,7 +28558,8 @@
       "ray-marching",
       "audio-reactive",
       "mouse-control",
-      "pbr-shading"
+      "pbr-shading",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -28628,7 +28654,11 @@
     "features": [
       "audio-reactive",
       "mouse-control",
-      "raymarching"
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,

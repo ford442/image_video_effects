@@ -15,7 +15,9 @@
     "structure-tensor",
     "LIC",
     "temporal",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

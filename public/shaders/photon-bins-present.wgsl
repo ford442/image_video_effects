@@ -1,10 +1,19 @@
-// ═══ PHOTON BINS — PRESENT ════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Photon Bins — present
+//  Category: simulation
+//  Features: audio-reactive, multi-pass, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: surface-tinted caustic on the source albedo
+//  A packing: does not write A. A/C stays the splat accumulator
+// ═══════════════════════════════════════════════════════════════════
 //  Reads the caustic accumulator (dataA → dataC barrier after the splat pass)
 //  and composites it over a night-dimmed copy of the source image:
 //    · spectral dispersion — wavelength bins arrive as separate rainbow ribbons
 //    · thin-film fringes   — local photon count modulates hue in iridescent bands
 //    · ridge glints        — the height field's steep edges catch the light (treble)
 //  A/C packing: .rgb spectral energy, .a photon count
+//  This pass must not write dataA: that texture is the accumulator.
 
 #include "_prelude.wgsl"
 
@@ -40,6 +49,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let caustic = acc.rgb * (vec3<f32>(0.8) + 0.7 * fringe);
   let glint = vec3<f32>(1.0, 0.95, 0.9) * edge * luma(acc.rgb) * (1.5 + treble * 3.0);
 
+  // ── Idea: surface-tinted caustic ─────────────────────────────────
+  // The rainbow sits on the photo. Bright cloth stays bright; a dark
+  // region keeps a dimmer ribbon of the same hue.
+  let lit = caustic * (0.35 + 0.65 * src);
   let bg = src * 0.16 + vec3<f32>(0.012, 0.016, 0.035);
-  textureStore(writeTexture, p, vec4<f32>(aces(bg + caustic + glint), 1.0));
+  let cover = clamp(luma(acc.rgb) * 0.45 + acc.a * 0.2, 0.0, 1.0);
+  let alpha = clamp(cover * 0.75 + edge * 0.25, 0.0, 1.0);
+  textureStore(writeTexture, p, vec4<f32>(aces(max(bg + lit + glint, vec3<f32>(0.0))), alpha));
+  let sceneDepth = textureLoad(readDepthTexture, p, 0).r;
+  textureStore(writeDepthTexture, p, vec4<f32>(clamp(sceneDepth * 0.8 + cover * 0.2, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

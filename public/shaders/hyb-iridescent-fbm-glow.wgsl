@@ -5,7 +5,9 @@
 //            domain-warp, audio-reactive, aces-tone-map, ign-dither,
 //            depth-aware, chromatic-aberration, fresnel-rim, oklab-mix
 //  Complexity: Medium
-//  Upgraded: 2026-07-12 (retry)
+//  Upgraded: 2026-07-12, 2026-11-15
+//  Ideas: thin-film thickness; energy-conserving glow
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -22,7 +24,13 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 { var s = 0.0; var a = 0.5; var f = 1.0; f
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0)); }
 fn ign(p: vec2<f32>) -> f32 { return fract(52.9829181 * fract(dot(p, vec2<f32>(0.06711056, 0.00583715)))); }
 fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
-fn iridescence(theta: f32, shift: f32) -> vec3<f32> { let t = theta * 4.0 + shift; return 0.5 + 0.5 * cos(vec3<f32>(t, t + 2.094, t + 4.189)); }
+// ── Idea 1: thin-film (§12.2F) — thickness and angle set the interference colour
+fn thinFilm(thicknessNm: f32, cosT: f32) -> vec3<f32> {
+    let lam = vec3<f32>(650.0, 550.0, 450.0);
+    let delta = (12.566370614 * 1.38 * max(thicknessNm, 0.0) * max(cosT, 0.08)) / lam;
+    let c = cos(delta * 0.5);
+    return c * c;
+}
 
 // Approximate sRGB -> OkLab conversion for perceptually even colour mixing.
 fn srgbToOkLab(c: vec3<f32>) -> vec3<f32> {
@@ -105,7 +113,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     );
     let warped = uv * fbmScale + 4.0 * q + vec2<f32>(time * 0.05);
     let noise = fbm(warped, octaves);
-    let ird = iridescence(noise, time * shiftSpeed);
+    let thicknessNm = 160.0 + noise * 640.0 + time * shiftSpeed * 48.0;
+    let cosT = clamp(0.25 + noise * 0.75, 0.08, 1.0);
+    let ird = thinFilm(thicknessNm, cosT);
     let glowLayer = ird * noise * noise;
 
     // Layer the new upgrades over the original FBM glow.
@@ -115,8 +125,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let depthFog = exp(-depth * 2.0);
     let glow = glowLayer * glowMix * (1.0 + bass * 0.5) * depthFog;
-    var outRGB = oklabMix(ca, ca + glow + rim, glowMix);
-    outRGB = acesToneMap(outRGB);
+    // ── Idea 2: energy-conserving glow (§12.2F) — the film borrows light from the photo
+    let spent = clamp(luma(glow) * 0.55, 0.0, 0.7);
+    let paid = ca * (1.0 - spent);
+    var outRGB = oklabMix(paid, paid + glow + rim, glowMix);
+    outRGB = acesToneMap(max(outRGB, vec3<f32>(0.0)));
     outRGB += (ign(vec2<f32>(global_id.xy)) - 0.5) / 255.0;
 
     let energy = length(glow) * 0.5;

@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, depth-aware, mouse-driven
 //  Convolution Type: guided-filter
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: joint luma range on the depth guide; photo-edge hold when depth misses
+//  Upgraded: 2026-09-08, 2026-11-15
+//  Ideas: joint luma range on the depth guide; photo-edge hold when depth misses; spatial Gaussian window; variance-scaled epsilon; anti-halo clamp (§12.2A)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -83,6 +83,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var sumGuideInput = vec3<f32>(0.0);
     var sumGuide2 = 0.0;
     var count = 0.0;
+    var loCol = original.rgb;
+    var hiCol = original.rgb;
+    let sigma = max(f32(maxRadius), 1.0);
     
     for (var dy = -maxRadius; dy <= maxRadius; dy++) {
         for (var dx = -maxRadius; dx <= maxRadius; dx++) {
@@ -91,12 +94,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let guideVal = textureSampleLevel(readDepthTexture, non_filtering_sampler, p, 0.0).r + rippleDepth * 0.1;
             let inputVal = textureSampleLevel(readTexture, u_sampler, p, 0.0).rgb;
             let sampleLuma = dot(inputVal, vec3<f32>(0.299, 0.587, 0.114));
-            let lumaW = exp(-pow(sampleLuma - centerLuma, 2.0) / 0.025);
-            sumGuide += guideVal * lumaW;
-            sumInput += inputVal * lumaW;
-            sumGuideInput += inputVal * guideVal * lumaW;
-            sumGuide2 += guideVal * guideVal * lumaW;
-            count += lumaW;
+            let lumaDelta = sampleLuma - centerLuma;
+            let lumaW = exp(-(lumaDelta * lumaDelta) / 0.025);
+            // ── Idea 1: spatial Gaussian on the same window ──────────
+            let spatialW = exp(-f32(dx * dx + dy * dy) / (sigma * sigma * 0.5));
+            let w = lumaW * spatialW;
+            sumGuide += guideVal * w;
+            sumInput += inputVal * w;
+            sumGuideInput += inputVal * guideVal * w;
+            sumGuide2 += guideVal * guideVal * w;
+            count += w;
+            loCol = min(loCol, inputVal);
+            hiCol = max(hiCol, inputVal);
         }
     }
     
@@ -104,14 +113,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let meanInput = sumInput / max(count, 1.0);
     let meanGI = sumGuideInput / max(count, 1.0);
     let meanGuide2 = sumGuide2 / max(count, 1.0);
-    let varGuide = meanGuide2 - meanGuide * meanGuide;
+    let varGuide = max(meanGuide2 - meanGuide * meanGuide, 0.0);
     
+    // ── Idea 2: variance-scaled epsilon ─────────────────────────────
+    // Flat depth keeps the slider's epsilon. Noisy depth regularizes harder.
+    let epsLocal = epsilon * (0.4 + varGuide * 6.0);
     // Linear model coefficients: output = a * guide + b
-    let a = (meanGI - meanGuide * meanInput) / (varGuide + epsilon);
+    let a = (meanGI - meanGuide * meanInput) / (varGuide + epsLocal);
     let b = meanInput - a * meanGuide;
     
     let guide = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + rippleDepth * 0.1;
-    let result = a * guide + b;
+    // ── Idea 3: anti-halo clamp (§12.2A) ────────────────────────────
+    let result = clamp(a * guide + b, loCol - vec3<f32>(0.015), hiCol + vec3<f32>(0.015));
     
     // Confidence = how much the guide influences the result
     let confidence = length(a) * depthInfluence;

@@ -1,21 +1,16 @@
-// Cellular Automata 3D — Batch 68 stateful projected-volume upgrade.
-// A owns the projected volume display history; B is intentionally unwritten.
+// ═══════════════════════════════════════════════════════════════════
+//  Cellular Automata 3D
+//  Category: advanced-hybrid
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: shell glow; birth flash; voxel edge
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
+// Batch 68 stateful projected volume. A owns the display history; B is unwritten.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
 const TAU: f32 = 6.28318530718;
 
 fn hash31(p: vec3<f32>) -> f32 {
@@ -30,7 +25,7 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> {
   return clamp(vec2<i32>(uv * vec2<f32>(dims)), vec2<i32>(0), dims - vec2<i32>(1));
 }
-fn cellDensity(p: vec3<f32>, epoch: f32, density: f32, shock: f32) -> f32 {
+fn cellDensity(p: vec3<f32>, epoch: f32, density: f32, shock: f32) -> vec3<f32> {
   let cell = floor((p + vec3<f32>(1.0)) * 14.0);
   let current = step(1.0 - density, hash31(cell + vec3<f32>(floor(epoch))));
   var neighbors = 0.0;
@@ -40,7 +35,12 @@ fn cellDensity(p: vec3<f32>, epoch: f32, density: f32, shock: f32) -> f32 {
   } } }
   let born = step(4.0 - shock * 2.0, neighbors) * step(neighbors, 6.0 + shock * 3.0);
   let survives = step(5.0, neighbors) * step(neighbors, 7.0);
-  return mix(born, survives, current);
+  let alive = mix(born, survives, current);
+  // Idea 1 — shell: fewer live neighbors means the surface of a cluster.
+  let shell = 1.0 - clamp(neighbors / 16.0, 0.0, 1.0);
+  // Idea 2 — newborn: born this epoch, not a cell that merely survived.
+  let newborn = born * (1.0 - current);
+  return vec3<f32>(alive, shell, newborn);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -71,7 +71,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
     if (age < 0.0 || age > 2.0) { continue; }
     let dist = length((uv - ripple.xy) * aspectVec);
-    shock += exp(-pow((dist - age * 0.28) * 28.0, 2.0)) * (1.0 - age / 2.0);
+    let shockQ = (dist - age * 0.28) * 28.0;
+    shock += exp(-shockQ * shockQ) * (1.0 - age / 2.0);
   }
 
   let pointer = (springPos * 2.0 - 1.0) * aspectVec;
@@ -87,10 +88,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (all(abs(pos) < vec3<f32>(1.05))) {
       let projectedDist = length((pos.xy * 0.5 + vec2<f32>(0.5) - springPos) * aspectVec);
       let attraction = exp(-projectedDist * projectedDist * 18.0) * (0.15 + 0.65 * u.zoom_config.w);
-      let cell = cellDensity(pos, time * evolutionSpeed * (1.0 + mids * 0.5), initialDensity, clamp(shock + attraction, 0.0, 1.0));
-      if (cell > 0.5) {
+      let state = cellDensity(pos, time * evolutionSpeed * (1.0 + mids * 0.5), initialDensity, clamp(shock + attraction, 0.0, 1.0));
+      if (state.x > 0.5) {
         let age = hash31(floor((pos + vec3<f32>(1.0)) * 14.0)); let hue = fract(age + time * colorCycling * 0.08 + treble * 0.2);
-        let emission = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (vec3<f32>(hue) + vec3<f32>(0.0, 0.33, 0.67)));
+        var emission = vec3<f32>(0.5) + vec3<f32>(0.5) * cos(TAU * (vec3<f32>(hue) + vec3<f32>(0.0, 0.33, 0.67)));
+        // ── Idea 1: shell glow ── surface cells (state.y) outshine the packed core.
+        emission *= 0.42 + 0.95 * state.y;
+        // ── Idea 2: birth flash ── a cell that just flipped on spikes white.
+        emission += vec3<f32>(1.0, 0.94, 0.82) * state.z * 0.7;
+        // ── Idea 3: voxel edge ── the same 14³ lattice darkens on the cube face.
+        let fr = fract((pos + vec3<f32>(1.0)) * 14.0);
+        let edge = min(min(fr.x, 1.0 - fr.x), min(min(fr.y, 1.0 - fr.y), min(fr.z, 1.0 - fr.z)));
+        emission *= 1.0 - smoothstep(0.16, 0.0, edge) * 0.62;
         let density = 0.12 + 0.08 * bass + shock * 0.05;
         volumeColor += transmittance * emission * density; transmittance *= 1.0 - density; volumeAlpha = 1.0 - transmittance;
         if (transmittance < 0.03) { break; }

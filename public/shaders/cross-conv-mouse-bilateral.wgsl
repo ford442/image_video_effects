@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Bilateral Paint
 //  Category: image
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: crossover, mouse-driven, advanced-convolution, audio-reactive, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-16
-//  Ideas: range coring so noise smooths and edges stay; wet edge on the brush
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-16, 2026-11-15
+//  Ideas: range coring; wet edge on the brush; persistent drying paint canvas in C (§12.2C); joint chroma & depth range weight
+//  A packing: linear painted RGB + brush coverage alpha (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 //
 //  The mouse acts as a brush that paints bilateral-filter smoothness.
@@ -47,6 +47,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
+    let coord = vec2<i32>(global_id.xy);
 
     // Parameters — bass swells the brush, mids sharpen edge preservation
     let brushSize = mix(0.05, 0.25, u.zoom_params.x) * (1.0 + bass * 0.4);
@@ -71,39 +73,53 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
     let localStrength = strength * clamp(brushFalloff * clickBoost + brushRunner * 0.45 + clickFront, 0.0, 1.5);
-    
+
+    // ── Idea 3: persistent drying paint canvas in C (§12.2C) ─────────────
+    let prevCanvas = textureLoad(dataTextureC, coord, 0);
+    let drying = mix(0.955, 0.992, u.zoom_params.z);
+    let driedCoverage = select(0.0, prevCanvas.a * drying, prevCanvas.a * drying >= 0.005);
+
+    let centerSample = textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    let centerCol = centerSample.rgb;
+    let centerDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+
     if (localStrength < 0.01) {
-        // Untouched region: alpha marks zero filter coverage
-        let col = sampleColor(uv);
-        let passthrough = vec4<f32>(aces(max(col, vec3<f32>(0.0))), 0.0);
-        textureStore(writeTexture, global_id.xy, passthrough);
-        textureStore(dataTextureA, vec2<i32>(global_id.xy), passthrough);
-        let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+        // Outside live brush: either completely dry passthrough or drying stroke from C
+        let dryBlend = mix(centerCol, prevCanvas.rgb, clamp(driedCoverage, 0.0, 1.0));
+        let storedLinear = select(max(centerCol, vec3<f32>(0.0)), prevCanvas.rgb, driedCoverage > 0.0);
+        textureStore(dataTextureA, coord, vec4<f32>(storedLinear, driedCoverage));
+        textureStore(writeTexture, global_id.xy, vec4<f32>(aces(max(dryBlend, vec3<f32>(0.0))), driedCoverage));
+        textureStore(writeDepthTexture, global_id.xy, vec4<f32>(centerDepth, 0.0, 0.0, 0.0));
         return;
     }
     
-    let centerCol = sampleColor(uv);
     let centerLuma = dot(centerCol, vec3<f32>(0.299, 0.587, 0.114));
+    let centerChroma = centerCol - vec3<f32>(centerLuma);
     
     var sumColor = vec3<f32>(0.0);
     var sumWeight = 0.0;
     
-    let sigmaS = mix(1.5, 4.0, localStrength) * pixel.x;
+    let sigmaS = mix(1.5, 4.0, clamp(localStrength, 0.0, 1.0)) * pixel.x;
     let sigmaR = edgePreserve;
     
     for (var y: i32 = -3; y <= 3; y = y + 1) {
         for (var x: i32 = -3; x <= 3; x = x + 1) {
             let offset = vec2<f32>(f32(x), f32(y)) * pixel;
-            let sUV = uv + offset;
+            let sUV = clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0));
             let sCol = sampleColor(sUV);
             let sLuma = dot(sCol, vec3<f32>(0.299, 0.587, 0.114));
+            let sDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sUV, 0.0).r;
             
             let spatialDist2 = dot(offset, offset);
-            let rangeDiff = sLuma - centerLuma;
+            let rangeDiff = abs(sLuma - centerLuma);
+            // ── Idea 4: joint chroma-opponent & depth-silhouette range weight ──
+            let chromaDiff = length((sCol - vec3<f32>(sLuma)) - centerChroma) * 0.85;
+            let depthDiff = abs(sDepth - centerDepth) * 2.1;
+            let jointDiff = sqrt(rangeDiff * rangeDiff + chromaDiff * chromaDiff + depthDiff * depthDiff);
+
             // Idea 1 — range coring: gaps smaller than the core are sensor noise.
             let core = 0.012 + edgePreserve * 0.04;
-            let cored = sign(rangeDiff) * max(abs(rangeDiff) - core, 0.0);
+            let cored = max(jointDiff - core, 0.0);
             
             let w = gaussSpatial(spatialDist2, sigmaS) * gaussRange(cored, sigmaR);
             sumColor = sumColor + sCol * w;
@@ -112,22 +128,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     
     let filtered = sumColor / max(sumWeight, 0.0001);
-    var finalColor = mix(centerCol, filtered, localStrength);
+    let freshCoverage = clamp(localStrength, 0.0, 1.0);
+    var strokeLinear = mix(centerCol, filtered, freshCoverage);
 
-    // Bass lifts the smoothed region so the brush reads as a glowing sheen
-    let sheen = clamp(localStrength, 0.0, 1.0) * bass;
-    finalColor = clamp(finalColor + vec3<f32>(0.4, 0.55, 0.8) * (sheen + clickFront * 0.4) * 0.25, vec3<f32>(0.0), vec3<f32>(4.0));
+    // Bass + subtle treble lift the smoothed region so the brush reads as a wet sheen
+    let sheen = freshCoverage * (bass + treble * 0.25);
+    strokeLinear = clamp(strokeLinear + vec3<f32>(0.4, 0.55, 0.8) * (sheen + clickFront * 0.4) * 0.25, vec3<f32>(0.0), vec3<f32>(4.0));
 
     // Idea 2 — wet edge where brush coverage falls off.
     let wet = smoothstep(0.12, 0.32, brushFalloff) * (1.0 - smoothstep(0.48, 0.78, brushFalloff));
-    finalColor = finalColor * (1.0 - wet * 0.22);
+    strokeLinear = strokeLinear * (1.0 - wet * 0.22);
 
-    // Alpha carries filter coverage — how much this pixel was actually smoothed
-    let alpha = clamp(localStrength, 0.0, 1.0);
-    let outColor = vec4<f32>(aces(max(finalColor, vec3<f32>(0.0))), alpha);
+    // Merge fresh stroke into drying paint canvas in linear space
+    let canvasCoverage = max(driedCoverage, freshCoverage);
+    let strokeMix = clamp(freshCoverage / max(canvasCoverage, 0.001), 0.0, 1.0);
+    let storedRGB = mix(prevCanvas.rgb, strokeLinear, strokeMix);
+    let displayLinear = mix(centerCol, storedRGB, canvasCoverage);
 
-    textureStore(writeTexture, global_id.xy, outColor);
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
-    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+    // Alpha carries active + drying paint coverage
+    let alpha = clamp(canvasCoverage * (0.85 + centerSample.a * 0.15), 0.0, 1.0);
+    textureStore(dataTextureA, coord, vec4<f32>(storedRGB, canvasCoverage));
+    textureStore(writeTexture, global_id.xy, vec4<f32>(aces(max(displayLinear, vec3<f32>(0.0))), alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(centerDepth, 0.0, 0.0, 0.0));
 }

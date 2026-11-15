@@ -1895,7 +1895,8 @@
       "sim-ring",
       "spatial-hash",
       "simulation",
-      "temporal-persistence"
+      "temporal-persistence",
+      "upgraded-rgba"
     ],
     "tags": [
       "audio",

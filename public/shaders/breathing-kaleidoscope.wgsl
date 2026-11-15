@@ -3,8 +3,8 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: inhale vs exhale petal scale; held-breath freeze
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: inhale vs exhale petal scale; held-breath freeze; slow exhale; petal midrib
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -72,7 +72,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — held-breath freeze: mouseDown holds phase at rest (no extraBuffer)
     let liveTime = select(time, 0.0, mouseDown > 0.5);
     let phase = liveTime * cycleSpeed * 6.28318 + bass * 3.0 * (1.0 - step(0.5, mouseDown));
-    let breathWave = sin(phase);
+    // ── Idea 3: slow exhale — the rising half is ~35% of the cycle, the falling half the rest
+    let cycle = fract(phase / 6.28318530718);
+    let rising = cycle < 0.35;
+    let halfT = select((cycle - 0.35) / 0.65, cycle / 0.35, rising);
+    let breathWave = select(-sin(halfT * 3.14159265), sin(halfT * 3.14159265), rising);
     let breathAmp = (breathWave * 0.5 + 0.5) * (1.0 + bass * 0.5);
     let breathe = 0.65 + breathAmp * 0.35;
 
@@ -114,12 +118,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let sparkle = smoothstep(0.06, 0.0, edgeDist) * treble * 0.35;
     let sparkColor = vec3<f32>(1.0, 0.92, 0.7) * sparkle;
+    // ── Idea 4: petal midrib — sector is 0 on the wedge centerline, brighter on the inhale
+    let midrib = smoothstep(0.16, 0.0, sector);
+    let ribColor = vec3<f32>(0.95, 0.78, 0.42) * midrib * (0.12 + breathAmp * 0.55);
 
-    var finalColor = acesToneMap(baseColor * (0.65 + breathAmp * 0.25) * depthFade + jewel + glowColor + sparkColor);
+    var finalColor = acesToneMap(max(baseColor * (0.65 + breathAmp * 0.25) * depthFade + jewel + glowColor + sparkColor + ribColor, vec3<f32>(0.0)));
     finalColor = finalColor + filmGrain(uv, time) * (1.0 - depth * 0.5);
 
     let lum = dot(finalColor, vec3<f32>(0.299, 0.587, 0.114));
-    let alpha = clamp(lum * 0.35 + breathAmp * 0.22 + depth * 0.18 + sparkle * 0.15 + src.a * 0.2, 0.1, 0.95);
+    let alpha = clamp(lum * 0.35 + breathAmp * 0.22 + depth * 0.18 + sparkle * 0.15 + midrib * 0.12 + src.a * 0.2, 0.1, 0.95);
     let outDepth = clamp(depth + axisGlow * 0.05 + sparkle * 0.03, 0.0, 1.0);
     let outCol = vec4<f32>(finalColor, alpha);
 

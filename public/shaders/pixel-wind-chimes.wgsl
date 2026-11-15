@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: hinge specular; closest-Z strip sort
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: hinge specular; closest-Z strip sort; suspension cord; free-end swing smear
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rotate(p: vec2<f32>, angle: f32) -> vec2<f32> {
     let s = sin(angle);
@@ -66,6 +47,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var best_z = -1000.0;
     var hinge_amt = 0.0;
     var shade_keep = 0.2;
+    var win_y = 0.0;
+    var win_ang_vel = 0.0;
 
     for (var i = -2; i <= 2; i = i + 1) {
         let idx = base_idx + f32(i);
@@ -73,7 +56,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         let center_x = (idx + 0.5) * strip_width;
         let dist_x = center_x - mouse.x;
-        let push = exp(-pow(dist_x * 5.0, 2.0));
+        let push = exp(-pow(abs(dist_x) * 5.0, 2.0));
         let dir = sign(dist_x + 0.001);
         let mouse_angle = dir * push * sway_amp;
         let ambient_angle = sin(time * wind_speed + idx * 0.5) * 0.1 * sway_amp;
@@ -97,6 +80,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 found_hit = true;
                 // Idea 1 — hinge specular at the top pivot
                 hinge_amt = exp(-local_pos.y * 28.0) * (0.45 + treble * 0.4);
+                win_y = local_pos.y;
+                win_ang_vel = cos(time * wind_speed + idx * 0.5) * wind_speed * 0.1 * sway_amp;
             }
         }
     }
@@ -104,10 +89,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var hdr = final_color;
     if (found_hit) {
         hdr = hdr + vec3<f32>(0.95, 0.92, 0.82) * hinge_amt * shade_keep;
+        // ── Idea 2: free-end swing smear ────────────────────────────
+        // Angular velocity times distance from the hinge. The pivot stays
+        // sharp; the open end streaks. Wind Speed already sets that rate.
+        let smearPx = win_y * win_ang_vel * 48.0;
+        let smearUv = clamp(uv - vec2<f32>(smearPx / resolution.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+        let smearDims = vec2<i32>(textureDimensions(dataTextureC));
+        let smearPxCoord = clamp(vec2<i32>(smearUv * vec2<f32>(smearDims)), vec2<i32>(0), smearDims - vec2<i32>(1));
+        let prev = textureLoad(dataTextureC, smearPxCoord, 0);
+        let smearAmt = clamp(abs(win_y * win_ang_vel) * 3.5, 0.0, 0.45);
+        hdr = mix(hdr, prev.rgb, smearAmt);
     }
-    let mapped = aces(hdr);
+    // ── Idea 1: suspension cord ──────────────────────────────────────
+    // Hanger and a short string in the gap. The tube covers them where it hits.
+    let nearest = clamp(base_idx, 0.0, strip_count - 1.0);
+    let cordX = (nearest + 0.5) * strip_width;
+    let hanger = exp(-abs(uv.y - 0.012) * resolution.y * 0.42);
+    let cord = exp(-abs(uv.x - cordX) * resolution.x * 0.55) * smoothstep(0.10, 0.0, uv.y);
+    let hardware = max(hanger, cord) * (1.0 - f32(found_hit));
+    hdr += vec3<f32>(0.78, 0.76, 0.70) * hardware * 0.9;
+    let mapped = aces(max(hdr, vec3<f32>(0.0)));
     let gapDark = select(0.0, 1.0, found_hit);
-    let alpha = clamp(srcA * 0.35 + gapDark * 0.45 + hinge_amt * 0.4, 0.0, 1.0);
+    let alpha = clamp(srcA * 0.35 + gapDark * 0.45 + hinge_amt * 0.4 + hardware * 0.55, 0.0, 1.0);
     let outCol = vec4<f32>(mapped, alpha);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

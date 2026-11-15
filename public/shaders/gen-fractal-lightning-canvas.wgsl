@@ -1,11 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  gen-fractal-lightning-canvas
 //  Category: generative
-//  Features: audio-reactive, mouse-driven, depth-aware, fractal-lightning
+//  Features: audio-reactive, mouse-driven, depth-aware, fractal-lightning, upgraded-rgba
 //  Complexity: Medium
 //  Chunks From: lichtenbergBranch, domainWarp, blackbodyGlow, ign
 //  Created: 2026-07-17
 //  By: weekly swarm Batch 14
+//  Upgraded: 2026-11-15
+//  Ideas: return-stroke core; tip taper; scorch corona from C
+//  A packing: A.r raw energy (not ACES). Display is ACES
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -48,8 +51,15 @@ fn branchBolt(uv: vec2<f32>, seed: vec2<f32>, branches: f32, jitter: f32, t: f32
     let w = fbm(d * 4.0 + t * 0.2) * jitter * 2.5;
     let dend = fbm(vec2<f32>(a * branches + w, r * 7.0 + t * 0.1));
     let core = smoothstep(0.14, 0.0, r);
-    let fil = smoothstep(0.52, 0.42, dend) * smoothstep(0.65, 0.0, r);
-    return max(core, fil);
+    let sheath = smoothstep(0.52, 0.42, dend) * smoothstep(0.65, 0.0, r);
+    // ── Idea 1: return-stroke core ─────────────────────────────────
+    // A tighter band of the same dendrite. The hot colour already
+    // keys off energy, so the channel lights without a new palette.
+    let stroke = smoothstep(0.36, 0.28, dend) * smoothstep(0.5, 0.0, r);
+    // ── Idea 2: tip taper ──────────────────────────────────────────
+    // The sheath thins as the branch runs out. The seed core stays.
+    let tip = clamp(1.0 - r / 0.65, 0.0, 1.0);
+    return max(core, sheath * mix(0.55, 1.0, tip) + stroke * 0.85);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -57,7 +67,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = vec2<i32>(global_id.xy);
     let res = vec2<f32>(u.config.zw);
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
-    let uv01 = vec2<f32>(pixel) / res;
     let uv = (vec2<f32>(pixel) - res * 0.5) / min(res.x, res.y);
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
@@ -77,7 +86,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warp = fbm(uv * 2.0 + time * 0.08) * (0.04 + treble * 0.08);
     let wuv = uv + vec2<f32>(warp, warp * 0.6) + mouse * 0.08;
 
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv01, 0.0).r;
+    let prev = textureLoad(dataTextureC, pixel, 0).r;
     var energy = 0.0;
     let branches = mix(10.0, 22.0, p1);
     let jitter = 0.25 + p2 * 0.55 + treble * 0.35;
@@ -101,7 +110,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     energy = smoothstep(0.0, 1.0 / mix(0.6, 1.8, mids), energy);
-    energy = max(energy, prev * mix(0.65, 0.94, p4));
+    let glowKeep = mix(0.65, 0.94, p4);
+    energy = max(energy, prev * glowKeep);
+    // ── Idea 3: scorch corona from exact C neighbours ──────────────
+    let hi = vec2<i32>(res) - vec2<i32>(1);
+    let scorch = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(2, 0), vec2<i32>(0), hi), 0).r
+               + textureLoad(dataTextureC, clamp(pixel + vec2<i32>(-2, 0), vec2<i32>(0), hi), 0).r
+               + textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, 2), vec2<i32>(0), hi), 0).r
+               + textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, -2), vec2<i32>(0), hi), 0).r;
+    energy = max(energy, scorch * 0.22 * glowKeep);
 
     var col = vec3<f32>(0.01, 0.015, 0.03);
     let cool = vec3<f32>(0.35, 0.55, 1.0);
