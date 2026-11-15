@@ -5,15 +5,19 @@
 //            depth-aware, stained-glass-facets, oil-slick-prism
 //  Complexity: High
 //  Created: 2026-05-10
-//  Upgraded: 2026-09-11
-//  Ideas: segment seam glow on mirror beat; counter-rotating inner ring wedge
-//  A packing: display RGBA + bass env/spring state at (0,0)
+//  Upgraded: 2026-09-11, 2026-11-15
+//  Ideas: segment seam glow on mirror beat; counter-rotating inner ring wedge; mirror-bounce attenuation + cool cast (energy accounting); eyepiece barrel + field stop (Brown-Conrady, §12.2B)
+//  A packing: display RGBA + bass env/spring state at (0,0); ACES only on the added emissive terms (photo base keeps its levels)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 // zoom_params: x=segments, y=rotation, z=zoom, w=ring offset
 
 const TAU: f32 = 6.28318530718;
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
@@ -72,6 +76,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spin = time * (rot_speed - 0.5) * 2.0;
     angle = angle + spin + held * (mouse.y - 0.5) * 0.9 * exp(-dist * 3.0);
 
+    // ── Idea 3: mirror-bounce attenuation + cool cast (energy accounting) ──
+    // Mirrors sit every half-wedge; the half-wedge index around the circle is the number of
+    // reflections that image has taken (0 for the object wedge, up to n on the far side). Each
+    // bounce loses light and a little red (silvered glass), so far images are dimmer and cooler.
+    let halfSeg = segment_angle * 0.5;
+    let ringHalf = 2.0 * max(num_segments, 1.0);
+    let halfIdx = floor(angle / halfSeg);
+    let halfWrapped = halfIdx - ringHalf * floor(halfIdx / ringHalf);
+    let bounces = min(halfWrapped, ringHalf - halfWrapped);
+    // Capped at 4 reflections: the loss reads as a modest far-side dimming at any segment count
+    // (uncapped, a 15-wedge chamber lost ~21 % of its mean luma).
+    let bounceAtt = exp(log(vec3<f32>(0.92, 0.945, 0.96)) * min(bounces, 4.0));
+
     let folded = angle - segment_angle * floor(angle / segment_angle);
     angle = select(folded, segment_angle - folded, folded > segment_angle * 0.5);
 
@@ -84,8 +101,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let scale = (2.0 - zoom * 1.8) * (1.0 - held * 0.12);
     let radius = dist * scale + offset_param * 0.5;
-    let new_vec = vec2<f32>(cos(angle), sin(angle)) * radius;
-    let inner_vec = vec2<f32>(cos(innerAngle), sin(innerAngle)) * radius * 0.62;
+    // ── Idea 4: eyepiece barrel (Brown-Conrady r' = r(1 + k1 r^2), §12.2B) ──
+    // The object field is magnified through an eyepiece lens: it samples outward faster toward the
+    // rim, bulging the picture. Overlays (grout/packets/hue) stay on the undistorted radius.
+    let radiusObj = radius * (1.0 + 0.14 * radius * radius);
+    let new_vec = vec2<f32>(cos(angle), sin(angle)) * radiusObj;
+    let inner_vec = vec2<f32>(cos(innerAngle), sin(innerAngle)) * radiusObj * 0.62;
     let sample_uv = clamp(vec2<f32>(0.5, 0.5) + vec2<f32>(new_vec.x / aspect, new_vec.y), vec2<f32>(0.0), vec2<f32>(1.0));
     let inner_sample_uv = clamp(vec2<f32>(0.5, 0.5) + vec2<f32>(inner_vec.x / aspect, inner_vec.y), vec2<f32>(0.0), vec2<f32>(1.0));
 
@@ -101,6 +122,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let reflect_uv = clamp(vec2<f32>(0.5, 0.5) - vec2<f32>(new_vec.x / aspect, new_vec.y), vec2<f32>(0.0), vec2<f32>(1.0));
     color += textureSampleLevel(readTexture, u_sampler, reflect_uv, 0.0).rgb * (0.3 + env * 0.4);
 
+    // Idea 3 + 4 act on the PHOTO base only (mirror loss, lens field stop); the emissive overlays
+    // below are lights on the glass, not images in the mirrors.
+    let framePos = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+    let frameR = length(framePos) / max(length(vec2<f32>(aspect, 1.0) * 0.5), 0.0001);
+    let fieldStop = 1.0 - 0.45 * smoothstep(0.75, 1.0, frameR);
+    color = color * bounceAtt * fieldStop;
+
     let seam = smoothstep(0.035, 0.0, min(angle, segment_angle - angle));
     // Idea 1 — segment seam glow pulsing on kaleido beat (bass-driven mirror boundary)
     let seamBeat = seam * (0.55 + bass * 0.85 + 0.35 * sin(time * (4.0 + bass * 6.0)));
@@ -114,14 +142,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let rp = u.ripples[i];
         let age = time - rp.z;
         if (rp.z > 0.0 && age >= 0.0 && age < 1.5) {
-            iris = max(iris, exp(-abs(distance(uv, rp.xy) - age * 0.48) * 64.0) * (1.0 - age / 1.5));
+            // ── Rescue 1: aspect-correct ring (HEAD measured uv distance → elliptical on wide frames) ──
+            let ringD = length((uv - rp.xy) * vec2<f32>(aspect, 1.0));
+            iris = max(iris, exp(-abs(ringD - age * 0.48) * 64.0) * (1.0 - age / 1.5));
         }
     }
 
     let hue = fract(angle / segment_angle + time * 0.12 + mids * 0.25 + radius * 0.35);
     let slick = hsv2rgb(vec3<f32>(hue, 0.72 + treble * 0.2, 0.92));
     color = mix(color, color * slick * 1.35, 0.32 + treble * 0.22);
-    color += slick * (seamBeat * 0.55 + grout * 0.22 + conveyor * 0.28 + packets * 0.24 + iris * 0.55);
+    // ── Rescue 2: HEAD tagged upgraded-rgba with no ACES. Tone-map only the emissive overlay terms
+    // (clamped >= 0) so the photo base keeps its levels. ──
+    let emissive = slick * (seamBeat * 0.55 + grout * 0.22 + conveyor * 0.28 + packets * 0.24 + iris * 0.55);
+    color += acesToneMap(max(emissive, vec3<f32>(0.0)));
     color *= (1.0 + bass * 0.1 + mids * 0.05 + treble * 0.05) * (1.0 + held * 0.12 + iris * 0.35);
 
     let luminance = dot(color, vec3<f32>(0.299, 0.587, 0.114));

@@ -1,26 +1,14 @@
-// Aurora Rift 2 — magnetically folded oxygen/nitrogen emission curtains.
-// A/C stores ACES display RGBA. B is unused. Source depth passes through.
+// ═══════════════════════════════════════════════════════════════════
+//  Aurora Rift V2
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, magnetic-curtains, volumetric-transmittance, temporal-feedback, click-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: asymmetric electron stopping-edge & vertical N2+/O ray spectrum; tangential fold pleat brightening & foreground depth occlusion
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -98,17 +86,34 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fieldUV = vec2<f32>(uv.x * (2.1 + lf * 0.45), uv.y * 1.35) * parallax;
     let lowField = fbm3(fieldUV + flow + vec2<f32>(lf * 9.7));
     let highField = fbm3(fieldUV * (1.8 + turbulence * 0.15) - flow * 0.7 - vec2<f32>(lf * 4.1));
-    let magneticFold = sin(uv.x * (10.0 + turbulence * 4.0) + lowField * 5.0 + time * speed + lf * 1.7);
+    let foldPhase = uv.x * (10.0 + turbulence * 4.0) + lowField * 5.0 + time * speed + lf * 1.7;
+    let magneticFold = sin(foldPhase);
     let bend = pointerBend * (mouse.x - uv.x) * (0.75 + lf * 0.12);
-    let centerY = 0.18 + lf * 0.135 + lowField * 0.32 + magneticFold * (0.035 + turbulence * 0.012) + bend;
+    let centerY = 0.24 + lf * 0.135 + lowField * 0.28 + magneticFold * (0.035 + turbulence * 0.012) + bend;
     let width = 0.035 + highField * 0.055 + audio.y * 0.012;
-    let ribbon = exp(-pow((uv.y - centerY) / max(width, 0.01), 2.0));
+
+    // ── Idea 1: asymmetric electron stopping-edge & vertical N2+/O ray spectrum ──
+    // Precipitating electrons stop abruptly at the lower border (uv.y > centerY) with a
+    // fast N2+ violet-pink fringe, glow 557.7 nm green in the belly, and taper upward
+    // (uv.y < centerY) into tall diffuse 630.0 nm high-altitude crimson rays.
+    let relY = uv.y - centerY;
+    let lowerScale = max(width * 0.44, 0.008);
+    let upperScale = max(width * (2.35 + highField * 1.15), 0.02);
+    let vertSigma = select(upperScale, lowerScale, relY > 0.0);
+    let ribbon = exp(-pow(relY / vertSigma, 2.0));
+    let rayHeight = clamp(-relY / max(upperScale * 1.75, 0.02), -0.35, 1.0);
+    let stoppingFringe = exp(-pow((rayHeight + 0.03) / 0.16, 2.0));
+
+    // ── Idea 2 (part a): tangential sightline fold-pleat brightening ───────
+    let foldCos = cos(foldPhase);
+    let foldPleat = 0.72 + 0.34 / sqrt(foldCos * foldCos + 0.14);
+
     let striation = 0.35 + 0.65 * pow(0.5 + 0.5 * sin((uv.x + highField * 0.12) * (82.0 + audio.z * 16.0)), 4.0);
-    let density = ribbon * striation * (0.18 + lowField * 0.32) * (1.0 + ionization * 0.65);
-    let altitude = clamp(1.0 - centerY, 0.0, 1.0);
-    let oxygen = mix(oxygenRed, oxygenGreen, smoothstep(0.2, 0.75, altitude + audio.y * 0.12));
+    let density = ribbon * striation * foldPleat * (0.18 + lowField * 0.32) * (1.0 + ionization * 0.65);
+    let oxygen = mix(oxygenGreen, oxygenRed, smoothstep(0.28, 0.88, rayHeight + (1.0 - centerY) * 0.18 - audio.y * 0.10));
     let nitrogen = mix(nitrogenViolet, nitrogenBlue, smoothstep(0.0, 1.0, highField + audio.z * 0.25));
-    let emission = mix(oxygen, nitrogen, clamp(0.18 + lf * 0.13 + audio.z * 0.14, 0.0, 0.72));
+    var emission = mix(oxygen, nitrogen, clamp(0.16 + lf * 0.12 + audio.z * 0.14, 0.0, 0.68));
+    emission = mix(emission, nitrogenViolet * vec3<f32>(1.35, 0.82, 1.15), stoppingFringe * (0.55 + ionization * 0.25));
     let transmittance = exp(-opticalDepth * (1.35 + depthWeight * 0.7));
     accumulatedLight += emission * density * transmittance * intensity * (0.55 + audio.x * 0.3);
     opticalDepth += density * (0.55 + depthWeight * 0.45);
@@ -116,15 +121,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
 
   let source = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let absorption = vec3<f32>(0.55, 0.28, 0.72) * opticalDepth;
+  // ── Idea 2 (part b): foreground silhouette sky-mask & horizon bounce ─────
+  let skyMask = mix(1.0, smoothstep(0.14, 0.68, sourceDepth), depthWeight);
+  let meanCurtainY = select(0.45, curtainCoordinate / max(opticalDepth, 0.001), opticalDepth > 0.001);
+  let horizonBounce = (1.0 - skyMask) * exp(-abs(uv.y - meanCurtainY) * 2.4) * 0.18;
+
+  let absorption = vec3<f32>(0.55, 0.28, 0.72) * opticalDepth * skyMask;
   let transmitted = source.rgb * exp(-absorption);
   let historyUV = uv - vec2<f32>(speed * 0.0009, 0.0) + pointerDelta * pointerBend * 0.002;
   let history = historyAt(historyUV, resolution);
-  var hdr = transmitted + accumulatedLight;
-  hdr += history.rgb * clamp(0.025 + opticalDepth * 0.035, 0.0, 0.09);
-  hdr += vec3<f32>(0.22, 0.5, 1.15) * ionization * (0.2 + audio.z * 0.35);
+  var hdr = transmitted + accumulatedLight * (skyMask + horizonBounce);
+  hdr += history.rgb * clamp(0.025 + opticalDepth * 0.035, 0.0, 0.09) * skyMask;
+  hdr += vec3<f32>(0.22, 0.5, 1.15) * ionization * (0.2 + audio.z * 0.35) * mix(0.35, 1.0, skyMask);
   let depthLayer = mix(1.0, mix(0.3, 1.0, sourceDepth), depthWeight);
-  let alpha = clamp((1.0 - exp(-opticalDepth * 1.8)) * depthLayer + ionization * 0.12, 0.0, 1.0);
+  let alpha = clamp(source.a * 0.15 + (1.0 - exp(-opticalDepth * 1.8)) * depthLayer + ionization * 0.12, 0.0, 1.0);
   let result = vec4<f32>(aces(max(hdr, vec3<f32>(0.0))), alpha);
   textureStore(writeTexture, coord, result);
   textureStore(dataTextureA, coord, result);

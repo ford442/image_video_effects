@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: log-depth seam walls; even/odd contra-rotate; event horizon shear; accretion disk glow
+//  Upgraded: 2026-10-10, 2026-11-15
+//  Ideas: log-depth seam walls; even/odd contra-rotate; event horizon shear; accretion disk glow; hoop gap; inward flight streak
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -26,7 +26,10 @@ fn tunnelLayer(
 
   let ringMask = sin(r * 30.0 - t * (2.0 + bass * 1.5)) * 0.5 + 0.5;
   let spokeMask = sin(spin * 8.0 + z * 0.5) * 0.5 + 0.5;
-  let combined = ringMask * spokeMask;
+  // ── Idea: hoop gap ─────────────────────────────────────────────────
+  // The sine is a soft smear. A steeper body leaves a dark gap between hoops.
+  let hoop = mix(ringMask, smoothstep(0.58, 0.9, ringMask), 0.7);
+  let combined = hoop * spokeMask;
 
   // Idea 1 — log-depth seam walls
   let zFrac = fract(z);
@@ -95,7 +98,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   col *= 1.0 - smoothstep(0.8 * zoom, 1.4 * zoom, r);
 
-  col = aces(col * 1.2);
+  col = aces(max(col * 1.2, vec3<f32>(0.0)));
+
+  // ── Idea: inward flight streak ─────────────────────────────────────
+  // Exact C, a short step toward the bore. The amount is the z speed
+  // already used in zBase: 0.5·(1+bass). Held off inside the iris.
+  let flight = 0.5 * (1.0 + bass * 0.2);
+  let dirN = pv / max(r, 0.001);
+  let streakUv = clamp(uv - vec2<f32>(dirN.x / aspect, dirN.y) * flight * 0.014, vec2<f32>(0.0), vec2<f32>(1.0));
+  let streakDims = vec2<i32>(textureDimensions(dataTextureC));
+  let streakPx = clamp(vec2<i32>(streakUv * vec2<f32>(streakDims)), vec2<i32>(0), streakDims - vec2<i32>(1));
+  let prev = textureLoad(dataTextureC, streakPx, 0);
+  let streakAmt = (0.12 + 0.18 * flight) * smoothstep(0.03, 0.18, r) * (1.0 - iris);
+  col = mix(col, prev.rgb, clamp(streakAmt, 0.0, 0.4));
 
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
   let srcA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;

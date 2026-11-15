@@ -3,8 +3,8 @@
 //  Category: hybrid
 //  Features: audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: per-channel lag from exact C; source-tied ghost
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: per-channel lag from exact C; source-tied ghost; flow-advected ghost; warp-crest glow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -106,9 +106,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     ghostRGB.g = mix(ghostRGB.g, prev.g, 0.14 + zp.x * 0.18);
     ghostRGB.b = mix(ghostRGB.b, prev.b, 0.08 + zp.x * 0.12);
 
+    // ── Idea 3: flow-advected ghost ──────────────────────────────
+    // The warp already computed disp. Yesterday's plate one step upstream rides that flow.
+    let flowPx = vec2<i32>(round(disp * vec2<f32>(dims)));
+    let flowCoord = clamp(coord - flowPx, vec2<i32>(0), dimsI - vec2<i32>(1));
+    let upstream = textureLoad(dataTextureC, flowCoord, 0).rgb;
+    let flowMix = clamp(length(disp) / max(warpAmt, 0.02), 0.0, 1.0) * zp.x;
+    ghostRGB = mix(ghostRGB, upstream, flowMix * 0.45);
+
     let luma = dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
     // Idea 2 — source-tied ghost (halo follows plate luma, not a new palette).
-    let halo = glow(1.0 - luma, 0.45, 0.4) * src.rgb * (1.0 + mids * 0.25);
+    // ── Idea 4: warp-crest glow — steep warps lengthen the smear, so the halo brightens there.
+    let crest = smoothstep(0.15, 1.0, length(disp) / max(warpAmt, 0.02));
+    let halo = glow(1.0 - luma, 0.45, 0.4) * src.rgb * (1.0 + mids * 0.25) * (0.65 + 0.9 * crest);
     let layerRGB = clamp(ghostRGB + halo * 0.25, vec3<f32>(0.0), vec3<f32>(1.0));
     let outRGB = aces(mix(src.rgb, layerRGB, effectMix));
     let alpha = clamp(src.a * 0.4 + luma * 0.35 + effectMix * 0.2 + treble * 0.05, 0.0, 1.0);

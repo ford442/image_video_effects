@@ -195,7 +195,7 @@
     "name": "Ambient Liquid Coupled",
     "url": "shaders/ambient-liquid-coupled.wgsl",
     "category": "advanced-hybrid",
-    "description": "Two persistent viscous height fields coupled through a living membrane, with bounded pointer velocity, held press and twist, click counter-waves, three-band tension, layer-separation optics, exact C state, ACES, and semantic alpha.",
+    "description": "Two persistent viscous height fields coupled through a living membrane, with bounded pointer velocity, held press and twist, click counter-waves, three-band tension, double-refraction Beer optics, torn-film rim, exact C state, ACES, and semantic alpha.",
     "features": [
       "mouse-pressure",
       "liquid-membrane",
@@ -207,7 +207,6 @@
       "click-reactive",
       "stateful-simulation",
       "raw-coupled-height-state",
-      "spring-interaction",
       "exact-load-feedback",
       "aces-tone-map",
       "semantic-alpha"
@@ -1607,7 +1606,8 @@
       "spring-interaction",
       "click-reactive",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -1776,7 +1776,7 @@
     "id": "chroma-kinetic-blackbody",
     "name": "Chroma Kinetic Blackbody",
     "url": "shaders/chroma-kinetic-blackbody.wgsl",
-    "description": "Chroma Kinetic Blackbody",
+    "description": "Mouse-centered kinetic RGB split whose size follows luma, mixed with a blackbody colour of that same luma. Hotter pixels stretch the blue fringe and bleach the core.",
     "tags": [
       "chroma-kinetic",
       "blackbody-thermal",
@@ -1910,7 +1910,8 @@
     "features": [
       "chroma-threads",
       "gabor-texture-analysis",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4692,7 +4693,7 @@
     "id": "fire-smoke-volumetric-fog",
     "name": "Fire Smoke Volumetric Fog",
     "url": "shaders/fire-smoke-volumetric-fog.wgsl",
-    "description": "Coupled flame heat, smoke density, soot, and buoyant momentum feed a layered blackbody fire-and-fog volume.",
+    "description": "Coupled Boussinesq flame heat, baroclinic smoke plumes, soot, and persistent hearth embers feed a depth-occluded 7-slice volume with Henyey-Greenstein internal flame scattering and Planckian Color Temperature blackbody emission.",
     "tags": [
       "fire",
       "smoke",
@@ -4707,7 +4708,10 @@
       "volumetric-fog",
       "blackbody",
       "depth-aware",
-      "atmospheric"
+      "atmospheric",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5443,9 +5447,51 @@
       "audio-reactive",
       "mouse-driven",
       "raymarched",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
-    "params": []
+    "params": [
+      {
+        "id": "ringSpread",
+        "name": "Ring Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "How far the inner and outer annuli open around the original ring"
+      },
+      {
+        "id": "temperature",
+        "name": "Temperature",
+        "default": 0.08,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Blackbody temperature of the main ring. The default is the original orange"
+      },
+      {
+        "id": "trail",
+        "name": "Orbital Trail",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How much of the previous frame is kept, sampled against the spiral's rotation"
+      },
+      {
+        "id": "starDensity",
+        "name": "Star Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "How many parallax stars pass the brightness threshold"
+      }
+    ]
   },
   {
     "id": "gen-audio-spirograph-julia",
@@ -5858,9 +5904,52 @@
       "generative",
       "wave-equation",
       "structure-tensor",
-      "LIC"
+      "LIC",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
-    "params": []
+    "params": [
+      {
+        "id": "foldGap",
+        "name": "Fold Gap",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Gap subtracted after each absolute fold. The default is the original 0.5"
+      },
+      {
+        "id": "stringRate",
+        "name": "String Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Vibration frequency of the strings. The default is the original 20"
+      },
+      {
+        "id": "trail",
+        "name": "Trail",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How much of the unwound previous frame is kept"
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Amplitude of the string core and sheath"
+      }
+    ]
   },
   {
     "id": "gen-xeno-botanical-ecosystem",
@@ -7697,8 +7786,10 @@
       "spring-interaction",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
+    "feedbackPacking": "A/C = raw MHD state (R=height, G=velocity, B=EM potential, A=surface charge); writeTexture = ACES",
     "params": [
       {
         "id": "field_strength",
@@ -7895,7 +7986,9 @@
       "structure-tensor",
       "LIC",
       "temporal",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8911,7 +9004,9 @@
       "volumetric-smoke",
       "vorticity",
       "mouse-driven",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8947,7 +9042,7 @@
         "step": 0.01
       }
     ],
-    "feedbackPacking": "A/C = smoke density, temperature, horizontal and vertical velocity",
+    "feedbackPacking": "A/C = smoke density, temperature, horizontal and vertical velocity. MacCormack corrects density and temperature only. Blackbody chromaticity is display-only; A is not tone-mapped.",
     "updated": true
   },
   {

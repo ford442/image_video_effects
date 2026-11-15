@@ -5,7 +5,15 @@
   "url": "shaders/gen-synaptic-void-weaver.wgsl",
   "description": "A biomechanical abyss where luminescent neural tendrils pulse with electric thoughts, weaving through an endless, shifting dark matter fractal.",
   "tags": ["organic", "neural", "dark-matter", "bioluminescent", "fractal", "interactive"],
-  "features": ["audio-reactive", "mouse-control", "raymarching"],
+  "features": [
+    "audio-reactive",
+    "mouse-control",
+    "mouse-driven",
+    "click-reactive",
+    "temporal-feedback",
+    "raymarching",
+    "upgraded-rgba"
+  ],
   "workgroup_size": [16, 16, 1],
   "params": [
     {
@@ -45,5 +53,43 @@
       "step": 0.01,
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Glow Intensity",
+          "default": 1.5,
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Fractal Iterations",
+          "default": 4.0,
+          "min": 1.0,
+          "max": 8.0,
+          "step": 1.0
+        },
+        {
+          "index": 2,
+          "name": "Tendril Thickness",
+          "default": 0.1,
+          "min": 0.01,
+          "max": 0.5,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Rotation Speed",
+          "default": 0.1,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrono Luma Slit Scan
 //  Category: post-processing
-//  Upgraded: 2026-10-04
-//  Ideas: isochrone contour lines at integer-age seams; scan-runner windows onto the oldest frame
+//  Upgraded: 2026-10-04, 2026-11-15
+//  Ideas: isochrone contour lines at integer-age seams; scan-runner windows onto the oldest frame; slit-travel smear; raised-cosine shutter
 //  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
@@ -96,8 +96,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let frameA = frameAt(sampleUV, historyHead, histDepth, age, current);
   let frameB = frameAt(sampleUV, historyHead, histDepth, age + 1u, current);
 
-  let slitColor = mix(frameA, frameB, ageFrac);
-  var output   = mix(slitColor, current, origBlend);
+  // ── Idea 4: raised-cosine shutter ──────────────────────────────
+  // The two frames overlap like a slit exposure. Isochrones below still key off raw ageFrac.
+  let shutter = 0.5 - 0.5 * cos(clamp(ageFrac, 0.0, 1.0) * 3.14159265);
+  let slitColor = mix(frameA, frameB, shutter);
+
+  // ── Idea 3: slit-travel smear ──────────────────────────────────
+  // A horizontal band travels in y, a vertical band in x. Two taps along that travel, same age.
+  let travel = vec2<f32>(slitBandV, slitBandH);
+  let travelLen = max(length(travel), 1e-4);
+  let stepUv = travel / travelLen * (0.006 * spread);
+  let smearA = frameAt(clamp(sampleUV - stepUv, vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, age, current);
+  let smearB = frameAt(clamp(sampleUV + stepUv, vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, age, current);
+  let smeared = mix(slitColor, (smearA + smearB) * 0.5, clamp(travelLen * 1.6, 0.0, 0.65) * spread);
+  var output   = mix(smeared, current, origBlend);
 
   // Idea 1 — isochrones: thin contours where the luma-chosen age crosses a whole frame,
   // drawing the luma→time map as a topographic chart (absent on a 1–2 layer ring).

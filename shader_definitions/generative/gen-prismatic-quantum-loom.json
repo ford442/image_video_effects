@@ -1,6 +1,6 @@
 {
   "name": "Prismatic Quantum Loom",
-  "description": "A hyper-dimensional weaving of chromatic threads that respond to cosmic gravity, creating an ethereal, glowing lattice of pure light and quantum entanglement.",
+  "description": "A hyper-dimensional weaving of chromatic threads that respond to cosmic gravity, creating an ethereal, glowing lattice of pure light and quantum entanglement. Over/under weave, dispersed halos.",
   "type": "generative",
   "category": "generative",
   "tags": [
@@ -11,6 +11,12 @@
     "lattice"
   ],
   "url": "shaders/gen-prismatic-quantum-loom.wgsl",
+  "features": [
+    "raymarched",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
   "workgroup_size": [
     16,
     16,
@@ -54,5 +60,15 @@
       "mapping": "zoom_params.w"
     }
   ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        { "index": 0, "name": "Thread Density", "default": 1.0, "min": 0.5, "max": 3.0, "step": 0.1 },
+        { "index": 1, "name": "Chromatic Shift", "default": 0.0, "min": 0.0, "max": 6.28, "step": 0.1 },
+        { "index": 2, "name": "Gravity Well Strength", "default": 0.5, "min": 0.0, "max": 2.0, "step": 0.05 },
+        { "index": 3, "name": "Quantum Fluctuation Speed", "default": 1.0, "min": 0.1, "max": 5.0, "step": 0.1 }
+      ]
+    }
+  },
   "id": "gen-prismatic-quantum-loom"
 }

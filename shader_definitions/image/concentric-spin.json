@@ -8,7 +8,7 @@
     "audio-driven",
     "upgraded-rgba"
   ],
-  "description": "Concentric rings that rotate in alternating directions. Mouse controls the center. Audio-reactive rotation with ring gap opacity.",
+  "description": "Concentric rings that rotate in alternating directions. Outer grooves open wider, a glint sits on the shoulder facing the spin, and the mouse controls the center. Audio-reactive rotation with ring gap opacity.",
   "params": [
     {
       "id": "density",

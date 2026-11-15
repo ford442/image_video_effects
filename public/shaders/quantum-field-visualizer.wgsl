@@ -5,8 +5,8 @@
 //  Complexity: High
 //  Chunks From: quantum-field-visualizer
 //  Created: 2026-05-10
-//  Upgraded: 2026-09-11
-//  Ideas: literal two-slit barrier; held-only measurement collapse
+//  Upgraded: 2026-09-11, 2026-11-15
+//  Ideas: literal two-slit barrier; held-only measurement collapse; finite-slit diffraction envelope; upstream probability wake
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -81,6 +81,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let probDensity = realPsi * realPsi + imagPsi * imagPsi;
   let phase = atan2(imagPsi, realPsi) / 6.28318;
 
+  // ── Idea 1: finite-slit diffraction envelope ──────────────────────
+  // The barrier gaps are finite. A single-slit sinc² in y, scaled by the
+  // existing wave number k0, puts the interference inside a lobe.
+  // Energy already sets k0, so a higher energy tightens the lobe.
+  let beta = k0 * p.y * 0.52;
+  let sinc = sin(beta) / max(abs(beta), 0.085);
+  let slitEnvelope = clamp(sinc * sinc, 0.0, 1.0);
+  let enveloped = probDensity * mix(0.18, 1.0, slitEnvelope);
+
   // Mouse measurement collapse
   let mouseVec = (uv - mouse) * vec2<f32>(aspect, 1.0);
   let mouseDist = length(mouseVec);
@@ -90,7 +99,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Collapse localizes probability
   let collapseBoost = exp(-mouseDist * mouseDist / (measureRadius * measureRadius * 0.5));
-  let collapsedProb = mix(probDensity, collapseBoost * 2.0, measureCertainty);
+  let collapsedProb = mix(enveloped, collapseBoost * 2.0, measureCertainty);
 
   // Hue from phase, saturation from contrast, brightness from probability
   let hue = fract(phase + 0.5);
@@ -101,6 +110,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // HDR bloom on high-probability regions
   let bloom = max(bri - 1.0, 0.0) * 0.6;
   quantumColor += vec3<f32>(0.4, 0.7, 1.0) * bloom;
+
+  // ── Idea 2: upstream probability wake ─────────────────────────────
+  // Crests travel +x (phase = kx − ωt). Exact C from upstream leaves a
+  // short trail behind the moving fringes.
+  let wakeUv = clamp(uv - vec2<f32>(0.012, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let wakeDims = vec2<i32>(textureDimensions(dataTextureC));
+  let wakePx = clamp(vec2<i32>(wakeUv * vec2<f32>(wakeDims)), vec2<i32>(0), wakeDims - vec2<i32>(1));
+  let wake = textureLoad(dataTextureC, wakePx, 0);
+  quantumColor += wake.rgb * smoothstep(0.015, 0.22, enveloped) * 0.34;
 
   // Sample base image
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgba;

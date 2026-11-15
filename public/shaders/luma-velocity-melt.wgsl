@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Luma Velocity Melt — exact-load HDR display-history advection.
 //  Category: liquid-effects
-//  Upgraded: 2026-09-21
-//  Ideas: drip pinch-off into beaded columns; depth-ledge pooling
+//  Upgraded: 2026-09-21, 2026-11-15
+//  Ideas: drip pinch-off into beaded columns; depth-ledge pooling; Marangoni thermocapillary spread (native); rivulet meander (native)
 //  A packing: untonemapped HDR RGB + semantic alpha; B intentionally unwritten.
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -16,6 +16,17 @@ fn historyCoord(uv: vec2<f32>, dims: vec2<i32>) -> vec2<i32> { return clamp(vec2
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Tuning for the 2026-11-15 ideas. Zero a gain to get the 2026-09 look back exactly.
+const MARANGONI_GAIN: f32 = 0.9;   // lateral spread speed per unit of temperature step, in melt-speed units
+const MARANGONI_UV: f32 = 0.02;    // half-width (uv of image height) of the temperature stencil — resolution independent
+const MEANDER_AMP: f32 = 0.016;    // rivulet sway amplitude (uv), scaled by melt speed
+const MEANDER_FOLLOW: f32 = 1.0;   // how much the stream follows the wandering centre line
+
+fn hotRamp(uv: vec2<f32>, threshold: f32) -> f32 {
+  let c = textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+  return smoothstep(threshold - 0.12, threshold + 0.12, dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -43,9 +54,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // them) and speeds through the necks, while a lateral pull toward the
   // column centre narrows the stream. Only where the source is hot.
   let dripW = 7.0 / res.x;
-  let dripCol = floor(uv.x / dripW);
+
+  // ── Idea 4: rivulet meander (native) ──────────────────────────────
+  // A real rivulet wanders; it does not run down a ruler-straight line. HEAD measured
+  // colLocal from a fixed vertical grid. The centre line of each group of columns now
+  // sways with y (two slow sines whose phase is a smooth function of x, so neighbouring
+  // columns wander together and no seam appears), and the stream follows its own centre
+  // line (see the lateral-flow block below). Amplitude grows with melt speed.
+  let meanderGroup = uv.x / (dripW * 5.0);
+  let meanderPh1 = 6.2831853 * noise2(vec2<f32>(meanderGroup, 0.37));
+  let meanderPh2 = 6.2831853 * noise2(vec2<f32>(meanderGroup + 17.3, 5.11));
+  let meanderA = MEANDER_AMP * min(0.6 + meltSpeed * 60.0, 1.5);
+  let meanderArg1 = uv.y * 50.0 + meanderPh1 + time * 0.35;
+  let meanderArg2 = uv.y * 118.0 + meanderPh2 - time * 0.5;
+  let meanderOffset = meanderA * (0.65 * sin(meanderArg1) + 0.35 * sin(meanderArg2));
+  let meanderSlope = meanderA * (0.65 * 50.0 * cos(meanderArg1) + 0.35 * 118.0 * cos(meanderArg2));
+  let columnX = uv.x - meanderOffset;
+  let dripCol = floor(columnX / dripW);
   let colSeed = hash21(vec2<f32>(dripCol, 3.17));
-  let colLocal = fract(uv.x / dripW) - 0.5;
+  let colLocal = fract(columnX / dripW) - 0.5;
+  // Idea 1 (cont.): beads and pinch, now measured against the wandering column.
   let beadPhase = uv.y * (7.0 + colSeed * 5.0) - time * (0.25 + meltSpeed * 30.0) - colSeed;
   let bead = 0.5 + 0.5 * cos(beadPhase * 6.2831853);
   let pinch = clamp(hot, 0.0, 1.0);
@@ -62,6 +90,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   flow.y *= 1.0 - ledge * 0.85;
   flow.x += (nY - 0.5) * ledge * meltSpeed * 3.0;
 
+  // ── Idea 3: Marangoni thermocapillary spread (native) ─────────────
+  // Surface tension falls as temperature rises, so a hot film pulls material from hot
+  // (low sigma) toward cold (high sigma): a hot region does not only fall, it SPREADS
+  // sideways at its rim. `hot` is already a temperature field but HEAD only used its
+  // value at the pixel; four taps of the same luma ramp give its gradient. The flow is
+  // down-gradient, strongest at the boundary of the bright region, mostly sideways
+  // (the y part is damped so the melt does not climb against gravity), and scales with
+  // the saved melt speed so Melt Speed = 0 still means no motion.
+  let marDy = MARANGONI_UV;                    // the same pixel distance on both axes
+  let marDx = MARANGONI_UV * res.y / res.x;
+  let marGrad = vec2<f32>(
+    hotRamp(uv + vec2<f32>(marDx, 0.0), threshold) - hotRamp(uv - vec2<f32>(marDx, 0.0), threshold),
+    hotRamp(uv + vec2<f32>(0.0, marDy), threshold) - hotRamp(uv - vec2<f32>(0.0, marDy), threshold));
+  flow -= marGrad * vec2<f32>(1.0, 0.4) * meltSpeed * MARANGONI_GAIN * (1.0 + heat * 0.1);
+
+  // Idea 4 (cont.): the stream follows its wandering centre line — lateral velocity is the
+  // centre line's slope times the (bead/ledge-modulated) fall speed.
+  flow.x += meanderSlope * flow.y * pinch * MEANDER_FOLLOW;
+
   let mouseDelta = (uv - u.zoom_config.yz) * aspectVec; let mouseDist = length(mouseDelta);
   let mouseMask = exp(-mouseDist * mouseDist * 75.0); let held = select(0.16, 1.0, u.zoom_config.w > 0.5);
   let tangent = select(vec2<f32>(0.0), vec2<f32>(-mouseDelta.y, mouseDelta.x) / mouseDist, mouseDist > 0.001);
@@ -71,7 +118,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
     if (age >= 0.0 && age < 2.4) {
       let delta = (uv - ripple.xy) * aspectVec; let dist = length(delta);
-      let ring = exp(-pow((dist - age * 0.2) * 42.0, 2.0)) * exp(-age * 1.2);
+      let ringArg = (dist - age * 0.2) * 42.0;   // squared, not pow(x, 2.0): the base is negative inside the front
+      let ring = exp(-ringArg * ringArg) * exp(-age * 1.2);
       let dir = select(vec2<f32>(0.0), delta / dist, dist > 0.001);
       flow += dir / aspectVec * ring * (0.008 + meltSpeed * 2.2); clickEnergy += ring;
     }

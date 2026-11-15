@@ -3,10 +3,11 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-11-15
 //  Ideas: pulse-swim contraction with thrust/coast surge; pupils track the pointer and
 //         blink on seeded schedules; tentacle-anchored luminous wake from a second
-//         history sample; click-triggered startle contraction spike; audio-linked pupil dilation; oracle synapse sparks; bioluminescent bell-edge frills
+//         history sample; click-triggered startle contraction spike; audio-linked pupil dilation; oracle synapse sparks; bioluminescent bell-edge frills;
+//         radial canals with rim-ward excitation wave (medusa anatomy); frilled oral arms (medusa anatomy)
 //  A packing: ACES display RGBA (read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -119,12 +120,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         exp(-abs(eyeDistance - 0.15) * (45.0 + oracleChroma * 25.0));
     let deepBell = exp(-abs(bellDistance - 0.48) * 28.0) * (0.5 + 0.5 * sin(drift + seed * TAU));
 
+    // ── Idea 6 (card idea 1): radial canals with rim-ward excitation wave (native: medusa anatomy) ──
+    // Eight canals run from the manubrium (the eye) to the bell margin. Each swim stroke fires a
+    // pulse down them (nerve-net conduction): it leaves the eye margin at the contraction peak
+    // (phase ≈ 0.15), reaches the rim just after the stroke ends (phase ≈ 0.54) and only then fades;
+    // it starts behind the canal root, so there is no pop at the swimPhase wrap. The canals sit
+    // dim through the coast. Constant-width
+    // lines (perpendicular distance, not angle) so they do not fatten toward the margin.
+    let canalR = length(eyeLocal);
+    let canalPerp = abs(fract(oracleAngle * (8.0 / TAU) + 0.5) - 0.5) * canalR * (TAU / 8.0);
+    let canalReach = smoothstep(0.06, 0.10, canalR) * (1.0 - smoothstep(0.22, 0.31, canalR)) * (1.0 - smoothstep(0.29, 0.34, bellDistance));
+    let canalTerm = (1.0 - smoothstep(0.005, 0.016, canalPerp)) * canalReach * bell;
+    let canalFrontD = canalR / 0.30 - (swimPhase * 2.6 - 0.4);
+    let canalPulse = exp(-canalFrontD * canalFrontD * 10.0) * (1.0 - smoothstep(0.55, 0.72, swimPhase));
+
+    // ── Idea 7 (card idea 2): frilled oral arms (native: medusa anatomy) ──
+    // Four thick ribbons hang from the manubrium below the thin tentacles' curtain, swaying in
+    // antiphase with them, frilled along both margins, shortening as the bell contracts.
+    var armAcc = 0.0;
+    if (abs(local.x) < 0.26 && local.y > -0.03 && local.y < 0.33) {   // arms live in this cell-local box only
+    for (var ai = 0; ai < 4; ai = ai + 1) {
+        let fa = f32(ai);
+        let armLen = 0.30 * (1.0 - contraction * 0.28);
+        let ay = (local.y + 0.02) / armLen;                                  // 0 at the eye, 1 at the tip
+        let sway = sin(local.y * 9.0 + drift * 2.2 + fa * 1.9 + seed * TAU + 3.14159) * (0.030 + tentacleCurl * 0.035) * clamp(ay, 0.0, 1.0);
+        let ax = local.x - ((fa - 1.5) * 0.085 + sway);
+        let armW = mix(0.034, 0.010, clamp(ay, 0.0, 1.0)) * (1.0 + 0.35 * sin(local.y * 64.0 - drift * 4.0 + fa * 2.3));
+        let armBody = 1.0 - smoothstep(armW * 0.5, armW, abs(ax));
+        armAcc = max(armAcc, armBody * smoothstep(0.0, 0.16, ay) * (1.0 - smoothstep(0.80, 1.0, ay)));
+    }
+    }
+    let armTerm = armAcc;
+
     let hue = seed + oracleChroma * 0.55 + local.y * 0.35 + time * (0.04 + driftSpeed * 0.10);
-    var hdr = palette(hue) * bell * (0.6 + oracleChroma * 2.1 + audio.y);
+    var hdr = palette(hue) * bell * (0.6 + oracleChroma * 2.1 + audio.y) * (1.0 - 0.5 * canalTerm);
     hdr += palette(hue + 0.34) * (rim * 1.7 + tentacles * (0.7 + audio.z)) + vec3<f32>(1.0, 0.9, 0.5) * synapseSparks * 3.0;
     hdr += vec3<f32>(1.0, 0.85, 0.40) * eye * (0.6 + audio.x) - vec3<f32>(0.3, 0.05, 0.45) * pupil;
     hdr += palette(hue + 0.48) * (oracleSigil * 1.2 + deepBell * 0.42) * (0.5 + audio.z);
     hdr += palette(hue + 0.68) * (clickOracle * 1.8 + dragMask * 0.9);
+    hdr += palette(hue + 0.52) * canalTerm * (0.30 + 1.7 * canalPulse + min(startleKick, 1.5) * 0.4) * (0.8 + audio.y * 0.4);
+    hdr += palette(hue + 0.82) * armTerm * (0.6 + audio.y * 0.6 + canalPulse * 0.5);
     let historyUV = clamp(uv + vec2<f32>(sin(drift + uv.y * 9.0) * 0.002, 0.003 + driftSpeed * 0.008), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + oracleChroma * 0.16 + dragMask * 0.14, 0.0, 0.42));
@@ -135,9 +170,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tentacleWakeUV = clamp(uv + vec2<f32>(sin(tentaclePhase * 0.05) * 0.008, 0.014 + driftSpeed * 0.012), vec2<f32>(0.0), vec2<f32>(1.0));
     let tentacleWake = historyLoadUV(tentacleWakeUV).rgb;
     hdr += tentacleWake * tentacles * 0.55;
-    let structure = clamp(bell * 0.65 + rim * 0.5 + tentacles * 0.45 + oracleSigil * 0.35 + eye + clickOracle * 0.45, 0.0, 1.0);
+    let structure = clamp(bell * 0.65 + rim * 0.5 + tentacles * 0.45 + oracleSigil * 0.35 + eye + clickOracle * 0.45 + armTerm * 0.35 + canalTerm * 0.15, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(max(hdr, vec3<f32>(0.0))), clamp(0.10 + structure * 0.88, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);
-    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(0.10 + bell * 0.48 + rim * 0.20 + eye * 0.18, 0.0, 0.95), 0.0, 0.0, 0.0));
+    textureStore(writeDepthTexture, coord, vec4<f32>(clamp(0.10 + bell * 0.48 + rim * 0.20 + eye * 0.18 + armTerm * 0.10, 0.0, 0.95), 0.0, 0.0, 0.0));
 }

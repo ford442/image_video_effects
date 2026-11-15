@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: leaded came panes in each window; molten glass drips below arches; pane-coloured god-ray shafts down the nave; dichroic hue shift across the pointer
+//  Upgraded: 2026-10-10, 2026-11-15
+//  Ideas: leaded came panes in each window; molten glass drips below arches; pane-coloured god-ray shafts down the nave; dichroic hue shift across the pointer; seeded antique glass (trapped bubbles + reamy cord streaks); Tyndall dust motes drifting up inside the shafts
 //  A packing: ACES display RGBA (C read back as melt-offset colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -28,6 +28,44 @@ fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
     let size = vec2<i32>(textureDimensions(dataTextureC));
     let pixel = vec2<i32>(floor(clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0)) * vec2<f32>(size)));
     return textureLoad(dataTextureC, clamp(pixel, vec2<i32>(0), size - vec2<i32>(1)), 0);
+}
+
+fn vnoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let s = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), s.x),
+               mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), s.x), s.y);
+}
+
+// One lattice layer of trapped glass bubbles ("seeds"): at most one bubble per lattice cell.
+// Centre in [0.35, 0.65] and radius in [0.14, 0.27], so centre ± 1.3·radius stays inside the cell
+// (the profile is < 0.3 % at the lattice line) — no bubble is ever sliced into a D-shape.
+fn glassSeeds(gp: vec2<f32>, salt: vec2<f32>, density: f32) -> f32 {
+    let gi = floor(gp);
+    let gf = fract(gp);
+    let h = hash21(gi + salt);
+    let present = step(1.0 - density, h);
+    let cen = vec2<f32>(0.35 + 0.3 * hash21(gi + salt + vec2<f32>(5.3, 1.1)), 0.35 + 0.3 * hash21(gi + salt + vec2<f32>(2.7, 8.9)));
+    let r = 0.14 + 0.13 * hash21(gi + salt + vec2<f32>(9.1, 4.3));
+    let d = length(gf - cen) / r;
+    return present * (exp(-d * d * 4.0) + 0.6 * exp(-(d - 0.92) * (d - 0.92) * 36.0));
+}
+
+// One layer of floating dust motes: soft Gaussians that rise (screen +y is down, so the lattice
+// scrolls with +t) and wobble continuously — no per-frame hashing, so no strobing. Centre + wobble
+// stays in [0.27, 0.73] so the Gaussian is < 1.3 % at the lattice line; the cell index is wrapped
+// at 64 so hash arguments stay small however long the piece runs.
+fn dustMotes(wp: vec2<f32>, t: f32, scale: f32, speed: f32, salt: f32) -> f32 {
+    let gp = vec2<f32>(wp.x * scale, wp.y * scale + t * speed);
+    let gif = floor(gp);
+    let gf = fract(gp);
+    let gi = gif - 64.0 * floor(gif / 64.0);
+    let h = hash21(gi + vec2<f32>(salt, salt * 1.7));
+    let cen = vec2<f32>(0.35 + 0.3 * hash21(gi + vec2<f32>(7.1 + salt, 3.3)), 0.35 + 0.3 * hash21(gi + vec2<f32>(1.9, 9.2 + salt)))
+            + vec2<f32>(sin(t * 0.6 + h * 40.0), cos(t * 0.5 + h * 31.0)) * 0.08;
+    let d = length(gf - cen);
+    return step(0.62, h) * exp(-d * d * 60.0) * (0.55 + 0.45 * sin(t * 1.7 + h * 50.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -109,6 +147,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // as the pointer crosses the window (zero shift when the pointer sits at centre).
     let dichroic = clamp((q.x - mouseP.x) * 0.5, -0.35, 0.35) * (0.5 + refraction);
 
+    // ── Idea 5 (card idea 1): seeded antique glass (native: pot-metal glass) ──
+    // Old cathedral glass carries trapped bubbles ("seeds") that flash as pinpoints when a shaft of
+    // light crosses them, and long reamy cord streaks that run along the melt direction (x keeps only 30 %
+    // of the melt shear, so they stay straight streaks instead of sheared mottling) and
+    // modulate how much light each part of the pane passes. Bubbles live in cell-local glass
+    // coordinates (world scale, so they stay round) and ride the melt because q is melt-warped.
+    let glassW = vec2<f32>(cellX * (2.0 / columns), tierY / (3.0 + spireDensity * 3.0));
+    // tierId grows ~0.45/s at the saved defaults; unwrapped, tierId·31·311.7 reaches f32-ulp 0.5 inside the
+    // sin() after ~17 min. Wrap it (identity for tierId in [-8, 56), i.e. the first ~2 min).
+    let tierW = tierId - 64.0 * floor((tierId + 8.0) / 64.0);
+    let glassSalt = vec2<f32>(columnId * 17.0, tierW * 31.0);
+    var seedGlint = 0.0;
+    var reamMod = 0.0;
+    if (window > 0.003) {   // glass detail only matters inside a window
+    seedGlint = (glassSeeds(glassW * 34.0, glassSalt, 0.30) + 1.2 * glassSeeds(glassW * 15.0 + vec2<f32>(3.7, 1.3), glassSalt + vec2<f32>(11.0, 5.0), 0.12)) * window;
+    reamMod = (smoothstep(0.22, 0.78, vnoise(vec2<f32>((p.x + melt.x * 0.3) * 52.0 + columnId * 3.7 + sin(q.y * 5.0 + flowTime * 0.3) * 0.3, q.y * 2.8 + flowTime * 0.10))) - 0.5) * 1.3 * window;
+    }
+
+    // ── Idea 6 (card idea 2): Tyndall dust motes in the shafts (native: lit nave air) ──
+    // Dust hanging in the nave scatters the god-rays: sparse soft motes drift upward and are only
+    // visible while they sit inside a shaft band (two parallax layers, continuous drift).
+    let moteFade = smoothstep(0.04, 0.45, shaftBand) * smoothstep(-0.55, 0.05, tierY) * smoothstep(0.5, 0.0, tierY);
+    var moteAmt = 0.0;
+    if (moteFade > 0.002) {   // motes only show inside a shaft band
+    moteAmt = (dustMotes(p, time, 22.0, 0.35, 0.0) + 1.5 * dustMotes(p + vec2<f32>(0.37, 0.11), time, 11.0, 0.18, 4.0)) * moteFade;
+    }
+
     var clickRose = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -123,10 +188,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     let hue = stainedHue + cellX * 0.7 + tierY * 0.35 + flowTime * 0.06;
-    var hdr = palette(hue + paneHue + dichroic) * window * (1.0 - came * 0.88) * (0.5 + glassPulse * 1.4 + audio.z);
+    var hdr = palette(hue + paneHue + dichroic + reamMod * 0.25) * window * (1.0 + reamMod) * (1.0 - came * 0.88) * (0.5 + glassPulse * 1.4 + audio.z);
     hdr += vec3<f32>(0.32, 0.28, 0.24) * came * glassPulse * 0.35;
     hdr += palette(hue + paneHue) * (drip * 0.9 + bead * 2.4) * (0.7 + audio.x);
     hdr += palette(hue + shaftHue + dichroic) * shaft * 1.1;
+    hdr += mix(palette(hue + paneHue + dichroic), vec3<f32>(1.0), 0.6) * seedGlint * (0.9 + 1.8 * shaftBand) * 1.5;
+    hdr += mix(vec3<f32>(1.0, 0.92, 0.75), palette(hue + shaftHue + dichroic), 0.4) * moteAmt * (3.0 + audio.y * 1.5);
     hdr += palette(hue + 0.57) * floorCaustic * (drip + bead) * 0.8;
     hdr += palette(hue + 0.32) * (arch * 1.8 + spire * 0.8) * (0.8 + audio.x);
     hdr += palette(hue + 0.57) * (roseTracery * 1.35 + floorCaustic * 0.45) * (0.6 + audio.y);
@@ -135,7 +202,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyUV = clamp(uv + vec2<f32>(melt.x / max(aspect, 0.001), 0.004 + meltSpeed * 0.007), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.10 + refraction * 0.20 + dragMask * 0.12, 0.0, 0.42));
-    let structure = clamp(max(arch, spire) + window * 0.45 + roseTracery * 0.35 + clickRose * 0.5 + came * 0.3 + drip * 0.5 + bead * 0.6 + shaft * 0.25, 0.0, 1.0);
+    let structure = clamp(max(arch, spire) + window * 0.45 + roseTracery * 0.35 + clickRose * 0.5 + came * 0.3 + drip * 0.5 + bead * 0.6 + shaft * 0.25 + seedGlint * 0.15 + moteAmt * 0.25, 0.0, 1.0);
     let output = vec4<f32>(acesToneMap(hdr), clamp(0.16 + structure * 0.82, 0.0, 1.0));
     textureStore(writeTexture, coord, output);
     textureStore(dataTextureA, coord, output);

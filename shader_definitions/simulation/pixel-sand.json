@@ -2,7 +2,7 @@
   "id": "pixel-sand",
   "name": "Pixel Sand",
   "url": "shaders/pixel-sand.wgsl",
-  "description": "Granular density and velocity automaton with avalanche sheets, rising jet lanes, held-pointer gravity, bounded click shelves, three-band spectral heat, depth shading, ACES display, semantic alpha, and raw A-only state feedback.",
+  "description": "Granular density and velocity automaton with scene-depth 3D collision ledges, divergence-free streamfunction curl eddies, live top-hopper sand streams, frictional shear blackbody glow, held-pointer vortices, click shelves, ACES display, semantic alpha, and raw A-only state feedback.",
   "features": [
     "upgraded-rgba",
     "mouse-driven",
@@ -19,6 +19,7 @@
     "continuous-motion",
     "bounded-click-ripples"
   ],
+  "feedbackPacking": "A/C = raw (density, vx, vy, kinetic energy)",
   "tags": [
     "sand",
     "granular",

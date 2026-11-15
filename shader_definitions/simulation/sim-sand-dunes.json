@@ -2,14 +2,19 @@
   "id": "sim-sand-dunes",
   "name": "Sand Dunes",
   "url": "shaders/sim-sand-dunes.wgsl",
-  "description": "Persistent dune height field with saltation, angle-of-repose avalanches, wind erosion, moisture cohesion, three-band gusts, held sand deposition, bounded click shelves, ACES shading, semantic alpha, and raw A-only state.",
+  "description": "Persistent dune height field with upwind saltation fetch, brink wind-shadow deposition, angle-of-repose avalanches, heavy-mineral trough lag, dry-quartz micro-facet glints, moisture cohesion, held sand deposition, click craters, ACES shading, semantic alpha, and raw A-only state.",
   "features": [
     "simulation",
     "cellular-automata",
     "falling-sand",
     "wind-erosion",
-    "randomization-safe"
+    "mouse-driven",
+    "audio-reactive",
+    "depth-aware",
+    "randomization-safe",
+    "upgraded-rgba"
   ],
+  "feedbackPacking": "A/C = raw (height, loose grains, downslope velocity, moisture)",
   "updated": true,
   "params": [
     {
