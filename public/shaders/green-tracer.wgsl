@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: phosphor persist from exact C; edge-only trail
-//  A packing: trail RGB (C is previous trail)
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: phosphor persist from exact C; edge-only trail; phosphor strike color; phosphor bloom
+//  A packing: trail RGB in A.rgb (not tonemapped). A.a is coverage. ACES on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash(p: vec2<f32>) -> f32 {
     var h = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -74,24 +55,45 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let motion = length(src.rgb - prev.rgb);
     let edge = edgeDetect(uv, texel);
-    // Idea 2 — edge-only trail (persist more on edges).
+    // Edge-only trail (persist more on edges).
     let edgeGate = smoothstep(0.02, 0.18, edge);
     let isMoving = f32(motion > motionThresh);
 
-    // Idea 1 — phosphor persist from exact C, fade from trailLen.
+    // Phosphor persist from exact C, fade from trailLen.
     var trail = prev.rgb * mix(trailFade, mix(trailFade, 0.999, edgeGate), 0.55);
     trail = mix(trail, mix(trail, src.rgb, 0.1 + trailLen * 0.15), isMoving);
-    textureStore(dataTextureA, coord, vec4<f32>(trail, 1.0));
 
     let greenWorld = mix(src.rgb, vec3<f32>(0.1, 1.0, 0.2), greenTint);
     let glow = glowInt * smoothstep(0.0, 0.1, motion) * edge * (1.0 + bass * 0.25);
     let glowCol = vec3<f32>(0.0, 1.0, 0.3) * glow;
     let grain = (hash(uv * 1000.0 + time) - 0.5) * noiseAmt * (1.0 + treble * 0.3);
 
-    var outCol = mix(greenWorld, trail, 0.35 + trailLen * 0.25) + glowCol + grain;
-    outCol = aces(max(outCol, vec3<f32>(0.0)));
-    let alpha = clamp(src.a * 0.3 + edgeGate * 0.4 + motion * 0.25 + mids * 0.05, 0.0, 1.0);
+    // ── Idea 1: phosphor strike color ───────────────────────────────
+    // P43 strikes yellow-green on a fresh edge and rests as deep green.
+    // The stored trail stays the image persist; only the display is tinted.
+    let freshness = smoothstep(motionThresh, motionThresh + 0.12, motion) * edgeGate;
+    let trailGain = mix(vec3<f32>(0.42, 0.92, 0.58), vec3<f32>(1.2, 1.05, 0.38), freshness);
 
+    // ── Idea 2: phosphor bloom ──────────────────────────────────────
+    // Four loads of the previous trail. Bright neighbors halo in green.
+    // Amount is Glow Intensity. This is not film halation.
+    let dimsI = vec2<i32>(i32(resolution.x), i32(resolution.y));
+    let lim = dimsI - vec2<i32>(1);
+    let lumaW = vec3<f32>(0.15, 0.75, 0.10);
+    let n0 = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-2, 0), vec2<i32>(0), lim), 0).rgb;
+    let n1 = textureLoad(dataTextureC, clamp(coord + vec2<i32>( 2, 0), vec2<i32>(0), lim), 0).rgb;
+    let n2 = textureLoad(dataTextureC, clamp(coord + vec2<i32>( 0,-2), vec2<i32>(0), lim), 0).rgb;
+    let n3 = textureLoad(dataTextureC, clamp(coord + vec2<i32>( 0, 2), vec2<i32>(0), lim), 0).rgb;
+    let halo = max(dot(n0, lumaW) - 0.55, 0.0) + max(dot(n1, lumaW) - 0.55, 0.0)
+             + max(dot(n2, lumaW) - 0.55, 0.0) + max(dot(n3, lumaW) - 0.55, 0.0);
+    let bloom = halo * 0.25 * glowInt;
+
+    var outCol = mix(greenWorld, trail * trailGain, 0.35 + trailLen * 0.25) + glowCol + vec3<f32>(grain);
+    outCol += vec3<f32>(0.22, 1.0, 0.32) * bloom;
+    outCol = aces(max(outCol, vec3<f32>(0.0)));
+    let alpha = clamp(src.a * 0.3 + edgeGate * 0.4 + motion * 0.25 + mids * 0.05 + bloom * 0.2, 0.0, 1.0);
+
+    textureStore(dataTextureA, coord, vec4<f32>(trail, alpha));
     textureStore(writeTexture, coord, vec4<f32>(outCol, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

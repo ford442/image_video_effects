@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-09
-//  Ideas: path-length chroma along tunnel v; throat ring on the center-fade radius
+//  Upgraded: 2026-10-09, 2026-11-15
+//  Ideas: path-length chroma along tunnel v; throat ring on the center-fade radius; Cauchy path split (§12.2F); wall Fresnel (§12.2F)
 //  A packing: ACES display RGBA (C is color history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -17,6 +17,13 @@ fn palette(t: f32) -> vec3<f32> {
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// n(λ) = 1 + B/λ² relative to green. λ in µm.
+fn cauchyScale(bDisp: f32) -> vec3<f32> {
+    let lam = vec3<f32>(0.650, 0.550, 0.450);
+    let n = 1.0 + bDisp / (lam * lam);
+    return n / max(n.y, 1e-4);
 }
 
 fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
@@ -50,11 +57,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let flight = time * speed;
     let helix = sin(angle * (5.0 + density) + inverseRadius * 0.12 - time * (3.0 + audio.y * 2.0));
     let tunnelBase = vec2<f32>(angle / 6.28318 + 0.5 + helix * 0.018, inverseRadius * 0.08 * density + flight * 0.07);
-    // Path length along v: violet leads, red trails. Angular chroma stays.
+    // Path length along v. Angular chroma stays.
+    // ── Idea 1: Cauchy path split (§12.2F) ──────────────────────────
+    // Same offsets as before, skewed so blue runs farther than red.
+    // At chroma 0 both leads are zero and the split collapses.
     let path = chroma * (0.65 + inverseRadius * 0.015);
-    let rUV = fract(tunnelBase + vec2<f32>(chroma, path * 0.7));
+    let nRel = cauchyScale(chroma * 0.12);
+    let redLead = max(nRel.y - nRel.x, 0.0);
+    let blueLead = max(nRel.z - nRel.y, 0.0);
+    let leadSum = max(redLead + blueLead, 1e-4);
+    let rUV = fract(tunnelBase + vec2<f32>(chroma, path * 0.7) * (redLead / (0.5 * leadSum)));
     let gUV = fract(tunnelBase);
-    let bUV = fract(tunnelBase - vec2<f32>(chroma, path));
+    let bUV = fract(tunnelBase - vec2<f32>(chroma, path) * (blueLead / (0.5 * leadSum)));
     var color = vec3<f32>(
         textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
         textureSampleLevel(readTexture, u_sampler, gUV, 0.0).g,
@@ -63,11 +77,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let fog = mix(1.0, smoothstep(0.0, max(centerFade, 0.001), radius), step(0.001, centerFade));
     let throatRadius = max(centerFade, 0.02) * 0.85;
-    let throat = exp(-pow((radius - throatRadius) / max(throatRadius * 0.18, 0.012), 2.0));
+    let throatArg = (radius - throatRadius) / max(throatRadius * 0.18, 0.012);
+    let throat = exp(-throatArg * throatArg);
     let ringPhase = inverseRadius * density * 0.45 - flight * 4.0;
     let ribs = pow(0.5 + 0.5 * sin(ringPhase), 10.0);
     let runnerPhase = fract(angle / 6.28318 * (6.0 + density) + inverseRadius * 0.04 - time * (1.8 + abs(speed)));
-    let runner = exp(-pow((runnerPhase - 0.5) / 0.065, 2.0));
+    let runnerArg = (runnerPhase - 0.5) / 0.065;
+    let runner = exp(-runnerArg * runnerArg);
 
     var shock = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -86,6 +102,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     hdr += palette(time * 0.1 + runnerPhase) * runner * (1.0 + audio.z + mouseDown * 0.65);
     hdr += vec3<f32>(0.72, 0.88, 1.0) * throat * fog * (0.55 + chroma * 6.0);
     hdr += vec3<f32>(0.25, 0.65, 1.0) * shock * 1.2;
+    // ── Idea 2: wall Fresnel (§12.2F) ───────────────────────────────
+    // Looking down the bore is dark glass. The wall, at grazing, reflects.
+    let cosBore = clamp(1.0 - smoothstep(0.05, 0.92, radius), 0.0, 1.0);
+    let fres = pow(1.0 - cosBore, 5.0);
+    let wall = 0.04 + 0.96 * fres;
+    hdr += vec3<f32>(0.62, 0.78, 0.95) * wall * fog * 0.55;
     let historyUV = clamp(uv - normalize(p + vec2<f32>(0.0001)) * (0.004 + abs(speed) * 0.0015), vec2<f32>(0.0), vec2<f32>(1.0));
     let history = historyLoadUV(historyUV);
     hdr = mix(hdr, history.rgb, clamp(0.12 + runner * 0.24, 0.0, 0.42));

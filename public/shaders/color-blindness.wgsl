@@ -3,9 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Low
-//  Upgraded: 2026-09-06
-//  Ideas: continuous type mix; confusion-axis assist from unused param
-//  A packing: display RGBA
+//  Upgraded: 2026-09-06, 2026-11-15
+//  Ideas: continuous type mix; confusion-axis assist from unused param; luminance restore; type-aligned confusion hatch
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -62,6 +62,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var simulated = mix(color, m * color, severity);
 
+  // ── Idea 1: luminance restore ───────────────────────────────────
+  // The matrix changes confusion, not exposure. Source luma is put back.
+  let srcL = dot(color, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let simL = dot(simulated, vec3<f32>(0.2126, 0.7152, 0.0722));
+  simulated = clamp(simulated * (srcL / max(simL, 1e-3)), vec3<f32>(0.0), vec3<f32>(1.0));
+
   let showOriginal = splitMode && (uv.x < u.zoom_config.y);
   var finalColor = select(simulated, color, showOriginal);
 
@@ -70,7 +76,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = clamp(finalColor + seam, vec3<f32>(0.0), vec3<f32>(1.0));
 
   let shift = length(simulated - color);
-  let hatch = step(0.55, fract((uv.x + uv.y) * 90.0));
+  // ── Idea 2: type-aligned confusion hatch ────────────────────────
+  // Protan is nearly horizontal, deutan diagonal, tritan vertical.
+  // Assist still sets how much of the hatch is drawn.
+  let deutanW = clamp(t, 0.0, 1.0);
+  let tritanW = clamp(t - 1.0, 0.0, 1.0);
+  var axis = mix(vec2<f32>(1.0, 0.08), vec2<f32>(0.82, 0.35), deutanW);
+  axis = mix(axis, vec2<f32>(0.12, 1.0), tritanW);
+  let hatch = step(0.55, fract(dot(uv, axis) * 90.0));
   finalColor = mix(finalColor, mix(finalColor, vec3<f32>(shift), hatch * 0.65), assist * smoothstep(0.04, 0.18, shift));
 
   let display = acesToneMap(finalColor);

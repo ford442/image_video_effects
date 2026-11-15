@@ -1,7 +1,12 @@
-// Glitch Ripple Drag — Batch 68 exact display-history upgrade.
-// A owns semantic display RGBA; B is intentionally unwritten.
-// Ideas: velocity-scaled chroma spread; held-pointer strobe latch
-// A packing: display RGBA (unchanged)
+// ═══════════════════════════════════════════════════════════════════
+//  Glitch Ripple Drag
+//  Category: image
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: velocity-scaled chroma spread; held-pointer strobe latch; scanline tear; dropout tail (§12.2B)
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -47,13 +52,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let waveTime = select(time, floor(time * strobeRate) / strobeRate, isHeld);
   let heldWave = smoothstep(0.62, 0.9, sin(mouseDist * waveFreq - waveTime * (5.0 + mids * 2.0))) * smoothstep(0.9, 0.0, mouseDist) * (0.3 + 0.7 * u.zoom_config.w);
   var displacement = direction / aspectVec * dragStrength * heldWave + velocity * heldWave * 0.16;
+  // ── Idea 3: scanline tear ───────────────────────────────────────
+  // While the ripple is up, the drag collapses to one horizontal shift
+  // shared by the whole row. Glitch Factor widens how hard the row wins.
+  let bands = mix(28.0, 96.0, clamp(glitchAmt, 0.0, 1.0));
+  let bandY = floor(uv.y * bands) / max(bands, 1.0);
+  let bandDist = abs(bandY - origin.y);
+  let bandWave = smoothstep(0.62, 0.9, sin(bandDist * waveFreq - waveTime * (5.0 + mids * 2.0))) * smoothstep(0.9, 0.0, bandDist);
+  let rowSign = select(-1.0, 1.0, fract(bandY * 13.7) > 0.5);
+  let rowOff = rowSign * bandWave * dragStrength * (1.4 + glitchAmt);
+  let tearAmt = clamp(glitchAmt * 0.65 + bandWave * 0.7, 0.0, 1.0);
+  displacement = mix(displacement, vec2<f32>(rowOff, 0.0), tearAmt);
   var clickEnergy = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i++) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
     if (age < 0.0 || age > 2.2) { continue; }
     let deltaClick = (uv - ripple.xy) * aspectVec; let dist = length(deltaClick);
-    let front = exp(-pow((dist - age * 0.34) * 32.0, 2.0)) * (1.0 - age / 2.2);
+    let ringD = (dist - age * 0.34) * 32.0;
+    let front = exp(-ringD * ringD) * (1.0 - age / 2.2);
     let dir = select(vec2<f32>(0.0), deltaClick / dist, dist > 0.001);
     displacement += dir / aspectVec * front * dragStrength * 1.8;
     clickEnergy += front;
@@ -71,7 +88,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prior = select(source, history, history.a > 0.001);
   var trailRgb = mix(source.rgb, prior.rgb, persistence);
   trailRgb = mix(trailRgb, vec3<f32>(redHistory, trailRgb.g, blueHistory), clamp(glitchAmt * (heldWave + clickEnergy), 0.0, 1.0));
-  let trailEnergy = clamp(length(trailRgb - source.rgb) + heldWave + clickEnergy * 0.6, 0.0, 1.0);
+  // ── Idea 4: dropout tail (§12.2B) ───────────────────────────────
+  // An exponential streak just off the ring. It follows the ripple that
+  // is already there; Glitch Factor only lengthens the tail.
+  let phase = mouseDist * waveFreq - waveTime * (5.0 + mids * 2.0);
+  let ring = abs(fract(phase * 0.15915494) - 0.18);
+  let wake = exp(-ring * (9.0 + (1.0 - clamp(glitchAmt, 0.0, 1.0)) * 16.0)) * smoothstep(0.95, 0.08, mouseDist) * (0.28 + glitchAmt * 0.72);
+  trailRgb = mix(trailRgb, trailRgb * vec3<f32>(0.62, 0.88, 1.12), clamp(wake * 0.55, 0.0, 0.7));
+  let trailEnergy = clamp(length(trailRgb - source.rgb) + heldWave + clickEnergy * 0.6 + wake * 0.25, 0.0, 1.0);
   let alpha = clamp(source.a + (1.0 - source.a) * trailEnergy, 0.0, 1.0);
   let display = vec4<f32>(acesToneMap(max(trailRgb, vec3<f32>(0.0))), alpha);
   textureStore(dataTextureA, pixel, display); textureStore(writeTexture, pixel, display);
