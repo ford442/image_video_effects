@@ -25,8 +25,17 @@
       ]
     },
     "ambient-liquid-coupled": {
-      "hash": "c3f3fa66e9dafe9b",
-      "history": []
+      "hash": "2820c77f813d4b5f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "2820c77f813d4b5f",
+          "prev_hash": "c3f3fa66e9dafe9b",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
+        }
+      ]
     },
     "anamorphic-flare-iridescence": {
       "hash": "f25ece8dc3a1fd9a",
@@ -7343,7 +7352,7 @@
       ]
     },
     "gen-fractal-flame-classic": {
-      "hash": "bd92ccc6f61ff483",
+      "hash": "b23343559a5d0ed7",
       "history": [
         {
           "event": "upgraded",
@@ -7352,6 +7361,14 @@
           "prev_hash": "4940f1cd4f1432eb",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "b23343559a5d0ed7",
+          "prev_hash": "bd92ccc6f61ff483",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
@@ -8031,7 +8048,7 @@
       "history": []
     },
     "gen-iris-bloom-fractal": {
-      "hash": "8941e611467c94cc",
+      "hash": "dd12de99cfa52960",
       "history": [
         {
           "event": "upgraded",
@@ -8040,6 +8057,14 @@
           "prev_hash": "14b7d8cbb0e49900",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "dd12de99cfa52960",
+          "prev_hash": "8941e611467c94cc",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
@@ -18227,7 +18252,7 @@
       ]
     },
     "liquid": {
-      "hash": "a3ac9c05d4a1f35f",
+      "hash": "1977370da7e36624",
       "history": [
         {
           "event": "upgraded",
@@ -18236,6 +18261,14 @@
           "prev_hash": "8e66bb9029851538",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "1977370da7e36624",
+          "prev_hash": "a3ac9c05d4a1f35f",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
@@ -18261,7 +18294,7 @@
       ]
     },
     "luma-velocity-melt": {
-      "hash": "0db77fc8c1fce075",
+      "hash": "58a50474429b3622",
       "history": [
         {
           "event": "upgraded",
@@ -18270,6 +18303,14 @@
           "prev_hash": "c7ef16954b98e3ee",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "58a50474429b3622",
+          "prev_hash": "0db77fc8c1fce075",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
@@ -18287,7 +18328,7 @@
       ]
     },
     "viscous-drag": {
-      "hash": "627cbaf68f35564f",
+      "hash": "e61d85a2be5c7144",
       "history": [
         {
           "event": "upgraded",
@@ -18296,6 +18337,14 @@
           "prev_hash": "929a5afff32f7537",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "e61d85a2be5c7144",
+          "prev_hash": "627cbaf68f35564f",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
@@ -19475,7 +19524,7 @@
       ]
     },
     "chromatic-reaction-diffusion-rgba": {
-      "hash": "b7e28206196f59f5",
+      "hash": "5925cce442905352",
       "history": [
         {
           "event": "upgraded",
@@ -19484,6 +19533,14 @@
           "prev_hash": "609e13bd3ce18d2d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "5925cce442905352",
+          "prev_hash": "b7e28206196f59f5",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
@@ -21090,7 +21147,7 @@
       ]
     },
     "gen-acoustic-obsidian-resonator": {
-      "hash": "9d8c7e12f816281c",
+      "hash": "abc10cc5b3cccf7c",
       "history": [
         {
           "event": "added",
@@ -21098,6 +21155,14 @@
           "hash": "9d8c7e12f816281c",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "abc10cc5b3cccf7c",
+          "prev_hash": "9d8c7e12f816281c",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
@@ -21326,7 +21391,7 @@
       ]
     },
     "gen-prismatic-quantum-loom": {
-      "hash": "60ac4136061c7d64",
+      "hash": "1ae10c3db1ee8c5c",
       "history": [
         {
           "event": "added",
@@ -21334,6 +21399,14 @@
           "hash": "60ac4136061c7d64",
           "commit": "33ae9962",
           "note": "2026-11-09 compile fix: swizzle assignment rd.xy += in mouse-gravity branch (main gate verify:naga-wasm:all) — no look change at idle cursor"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "1ae10c3db1ee8c5c",
+          "prev_hash": "60ac4136061c7d64",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
@@ -21397,7 +21470,7 @@
         }
       ]
     },
-"photon-bins": {
+    "photon-bins": {
       "hash": "d845dee530659c17",
       "history": [
         {
@@ -21433,7 +21506,7 @@
         }
       ]
     },
-"gen-ethereal-cyber-aurora-mantis-shrine": {
+    "gen-ethereal-cyber-aurora-mantis-shrine": {
       "hash": "f7d1ecdb0e458f7e",
       "history": [
         {
@@ -21445,7 +21518,7 @@
         }
       ]
     },
-"gen-harmonic-ferrofluid-kinetics": {
+    "gen-harmonic-ferrofluid-kinetics": {
       "hash": "3a292a10790685cb",
       "history": [
         {
@@ -21468,6 +21541,18 @@
           "prev_hash": "ec52573861d1a7c1",
           "commit": "7123b01b",
           "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
+    },
+    "gen-cymatic-hex-mandala": {
+      "hash": "bd7c5ae3919a82b6",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-15T11:58:29.152Z",
+          "hash": "bd7c5ae3919a82b6",
+          "commit": "2add24c3",
+          "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     }

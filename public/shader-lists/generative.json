@@ -2146,7 +2146,7 @@
   {
     "id": "gen-acoustic-obsidian-resonator",
     "name": "Acoustic Obsidian Resonator",
-    "description": "A towering, crystalline obsidian structure that breathes and fractures in perfect synchronization with unseen acoustic frequencies, revealing molten golden cores.",
+    "description": "A towering, crystalline obsidian structure that breathes and fractures in perfect synchronization with unseen acoustic frequencies, revealing molten golden cores. Glossy glass, conchoidal scars, gold sheen.",
     "category": "generative",
     "url": "/shaders/gen-acoustic-obsidian-resonator.wgsl",
     "workgroup_size": [
@@ -2197,7 +2197,8 @@
     "updated": true,
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -9295,9 +9296,10 @@
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "standing-wave"
+      "standing-wave",
+      "chladni"
     ],
-    "description": "A hex-tiled cymatic mandala radiates standing-wave rings from center. Bass drives wave amplitude, mids shift frequency and hue, and treble sparks node intersections. Mouse offsets the mandala center; depth softens outer rings.",
+    "description": "A hex-tiled cymatic mandala radiates standing-wave rings from center. Bass drives wave amplitude, mids shift frequency and hue, and treble sparks node intersections. Mouse offsets the mandala center; depth softens outer rings. Six-fold plate modes scallop the rings; Chladni sand gathers on nodal lines.",
     "workgroup_size": [
       16,
       16,
@@ -9312,7 +9314,8 @@
       "depth-aware",
       "hex-cymatics",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -13940,7 +13943,7 @@
       "horseshoe",
       "audio-reactive"
     ],
-    "description": "A classic fractal flame blends swirl, horseshoe, and polar affine variations into warm spectral density traps with temporal embers.",
+    "description": "A classic fractal flame blends swirl, horseshoe, and polar affine variations into warm spectral density traps with temporal embers. A black point keeps filaments; colour index tints, cores burn white.",
     "workgroup_size": [
       16,
       16,
@@ -17198,7 +17201,7 @@
       "eye",
       "audio-reactive"
     ],
-    "description": "Recursive polar petals articulate a breathing iris aperture, dark pupil, treble-fine veins, pointer gaze, and click-seeded bloom rings.",
+    "description": "Recursive polar petals articulate a breathing iris aperture, dark pupil, treble-fine veins, pointer gaze, and click-seeded bloom rings. Hippus, click light reflex, furrows, catchlight.",
     "workgroup_size": [
       16,
       16,
@@ -24058,7 +24061,7 @@
   },
   {
     "name": "Prismatic Quantum Loom",
-    "description": "A hyper-dimensional weaving of chromatic threads that respond to cosmic gravity, creating an ethereal, glowing lattice of pure light and quantum entanglement.",
+    "description": "A hyper-dimensional weaving of chromatic threads that respond to cosmic gravity, creating an ethereal, glowing lattice of pure light and quantum entanglement. Over/under weave, dispersed halos.",
     "type": "generative",
     "category": "generative",
     "tags": [
@@ -24069,6 +24072,12 @@
       "lattice"
     ],
     "url": "shaders/gen-prismatic-quantum-loom.wgsl",
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
