@@ -1595,7 +1595,8 @@
       "pads-and-vias",
       "signal-packets",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "pcb",

@@ -312,8 +312,17 @@
       ]
     },
     "cellular-automata-3d": {
-      "hash": "6ad554b85d5003c0",
-      "history": []
+      "hash": "a927f0de496244d2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "a927f0de496244d2",
+          "prev_hash": "6ad554b85d5003c0",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
+        }
+      ]
     },
     "charcoal-rub-diffusion": {
       "hash": "f900a12e0dfdd098",
@@ -2583,8 +2592,17 @@
       ]
     },
     "ion-stream": {
-      "hash": "2cb942aba1a077e0",
-      "history": []
+      "hash": "cb6c58491ac88396",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "cb6c58491ac88396",
+          "prev_hash": "2cb942aba1a077e0",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
+        }
+      ]
     },
     "iridescent-oil-slick": {
       "hash": "9a3f2aabed95d066",
@@ -7760,7 +7778,7 @@
       ]
     },
     "gen-hypnotic-vortex-tunnel": {
-      "hash": "63c9d4a4cf876934",
+      "hash": "fd6ddc3cf2532e3a",
       "history": [
         {
           "event": "upgraded",
@@ -7769,6 +7787,14 @@
           "prev_hash": "dabe26da4cc4ea0b",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "fd6ddc3cf2532e3a",
+          "prev_hash": "63c9d4a4cf876934",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
         }
       ]
     },
@@ -14795,8 +14821,17 @@
       ]
     },
     "hypnotic-spiral": {
-      "hash": "618f360df2af5f1f",
-      "history": []
+      "hash": "f28a1e6b28abcc17",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "f28a1e6b28abcc17",
+          "prev_hash": "618f360df2af5f1f",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
+        }
+      ]
     },
     "impasto-swirl": {
       "hash": "a27413c940cffdeb",
@@ -16227,7 +16262,7 @@
       ]
     },
     "pixel-wind-chimes": {
-      "hash": "cb0499bac2023c66",
+      "hash": "1f275634a81ead25",
       "history": [
         {
           "event": "upgraded",
@@ -16236,6 +16271,14 @@
           "prev_hash": "b60301510e7a940d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "1f275634a81ead25",
+          "prev_hash": "cb0499bac2023c66",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
         }
       ]
     },
@@ -16274,8 +16317,17 @@
       "history": []
     },
     "psychedelic-noise-flow": {
-      "hash": "ee9f7309202f5492",
-      "history": []
+      "hash": "ca83896856acb074",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "ca83896856acb074",
+          "prev_hash": "ee9f7309202f5492",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
+        }
+      ]
     },
     "quad-mirror": {
       "hash": "17637d4e2b1ef557",
@@ -16767,8 +16819,17 @@
       ]
     },
     "sphere-projection": {
-      "hash": "d2c65dea369296b3",
-      "history": []
+      "hash": "d3fe98e7fbdca69c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "d3fe98e7fbdca69c",
+          "prev_hash": "d2c65dea369296b3",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
+        }
+      ]
     },
     "split-dimension": {
       "hash": "9f1086c0cfb41acf",
@@ -19962,7 +20023,7 @@
       ]
     },
     "interactive-pcb-traces": {
-      "hash": "82422fbb31fac736",
+      "hash": "99824998c446a94b",
       "history": [
         {
           "event": "upgraded",
@@ -19971,6 +20032,14 @@
           "prev_hash": "1e46ad924b3a90e1",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "99824998c446a94b",
+          "prev_hash": "82422fbb31fac736",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
         }
       ]
     },
@@ -20138,7 +20207,7 @@
       ]
     },
     "quantum-field-visualizer": {
-      "hash": "bf7f8542ac4fba15",
+      "hash": "644e446192a688c9",
       "history": [
         {
           "event": "upgraded",
@@ -20147,6 +20216,14 @@
           "prev_hash": "cdba5dd0283d1366",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "644e446192a688c9",
+          "prev_hash": "bf7f8542ac4fba15",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
         }
       ]
     },
@@ -20493,7 +20570,7 @@
       ]
     },
     "gen-aetheric-tachyon-lattice": {
-      "hash": "ba6022b936c47b00",
+      "hash": "61dc72b12f0bfcfe",
       "history": [
         {
           "event": "added",
@@ -20501,6 +20578,14 @@
           "hash": "ba6022b936c47b00",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T09:07:13.990Z",
+          "hash": "61dc72b12f0bfcfe",
+          "prev_hash": "ba6022b936c47b00",
+          "commit": "7f6ce638",
+          "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
         }
       ]
     },
