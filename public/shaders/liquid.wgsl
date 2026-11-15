@@ -1,12 +1,16 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid — canonical interactive capillary surface.
 //  Category: liquid-effects
-//  Upgraded: 2026-09-21
-//  Ideas: capillary precursor ring (anomalous dispersion); foam drains into troughs
+//  Upgraded: 2026-09-21, 2026-11-15
+//  Ideas: capillary precursor ring (anomalous dispersion); foam drains into troughs; Snell vector refraction (§12.2F); dispersive wake train behind each click front (§12.2D deep-water dispersion); sun glint on lit ripple flanks (native)
 //  A packing: raw — R=height, G=velocity, B=curvature foam, A=coverage.
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 const TAU: f32 = 6.28318530718;
+const SNELL_DEPTH: f32 = 4.0;   // column depth scale: calibrated so mean offset ~ HEAD's thin-lens offset
+const WAKE_K: f32 = 1.2;        // dispersion strength of the wake train
+const WAKE_AMP: f32 = 1.8;      // wake amplitude relative to the main ring (0 = HEAD)
+const GLINT_AMP: f32 = 1.1;     // sun glint strength (0 = HEAD)
 
 fn clampPixel(p: vec2<i32>, dims: vec2<i32>) -> vec2<i32> { return clamp(p, vec2<i32>(0), dims - vec2<i32>(1)); }
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -34,26 +38,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hD = select(0.14, d.r, initialized); let hU = select(0.14, t.r, initialized);
   let laplacian = hL + hR + hD + hU - 4.0 * height;
 
-  let hasSpring = arrayLength(&extraBuffer) >= 139u;
-  var pointer = u.zoom_config.yz; var pointerVelocity = vec2<f32>(0.0);
-  if (hasSpring && extraBuffer[138] > 0.5) { pointer = vec2<f32>(extraBuffer[133], extraBuffer[134]); pointerVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]); }
-  if (hasSpring && gid.x == 0u && gid.y == 0u) {
-    var p = pointer; var v = pointerVelocity; let seeded = extraBuffer[138] > 0.5;
-    if (!seeded) { p = u.zoom_config.yz; v = vec2<f32>(0.0); }
-    let dt = select(0.0, clamp(time - extraBuffer[137], 0.0, 0.05), seeded);
-    v += ((u.zoom_config.yz - p) * 180.0 - v * mix(18.0, 31.0, viscosity)) * dt; p += v * dt;
-    extraBuffer[133] = p.x; extraBuffer[134] = p.y; extraBuffer[135] = v.x; extraBuffer[136] = v.y; extraBuffer[137] = time; extraBuffer[138] = 1.0;
-  }
+  // ── Rescue 1: the spring that lived here never persisted ─────────────
+  // The host re-uploads extraBuffer[133..255] as zero every frame, so the
+  // spring state was always re-seeded to the raw cursor and pointerVelocity
+  // was identically 0 (its `length(pointerVelocity)` impulse term was dead).
+  // The cursor is used directly; nothing about the picture changes.
+  let pointer = u.zoom_config.yz;
   let mouseDelta = (uv - pointer) * aspectVec; let mouseDist = length(mouseDelta);
   let mouseMask = exp(-mouseDist * mouseDist * 72.0);
   let held = select(0.15, 1.0, u.zoom_config.w > 0.5);
-  var impulse = mouseMask * held * (0.01 + rippleStrength * 0.055 + length(pointerVelocity) * 0.008);
+  var impulse = mouseMask * held * (0.01 + rippleStrength * 0.055);
   var clickEnergy = 0.0; let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i += 1u) {
     let ripple = u.ripples[i]; let age = time - ripple.z;
     if (age >= 0.0 && age < 3.2) {
       let dist = length((uv - ripple.xy) * aspectVec);
-      let ring = exp(-pow((dist - age * (0.16 + bass * 0.05)) * 42.0, 2.0)) * exp(-age * mix(0.85, 1.45, viscosity));
+      // Rescue 2: pow(negative, 2.0) is undefined in WGSL (dist < front behind the ring) -> plain squares.
+      let front = age * (0.16 + bass * 0.05);
+      let ringArg = (dist - front) * 42.0;
+      let ring = exp(-ringArg * ringArg) * exp(-age * mix(0.85, 1.45, viscosity));
       impulse += ring * sin(age * (6.0 + mids * 3.0)) * (0.025 + rippleStrength * 0.075); clickEnergy += ring;
       // ── Idea 1: capillary precursor ring ──────────────────────────
       // Capillary waves have anomalous dispersion — short wavelengths
@@ -61,10 +64,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       // fine ripples AHEAD of the main ring. Faster, narrower, higher
       // frequency, and damped harder by viscosity, since viscous damping
       // grows with k^2.
-      let capFront = age * (0.16 + bass * 0.05) * mix(1.9, 1.45, viscosity);
-      let precursor = exp(-pow((dist - capFront) * 95.0, 2.0)) * exp(-age * mix(1.6, 2.8, viscosity));
+      let capFront = front * mix(1.9, 1.45, viscosity);
+      let capArg = (dist - capFront) * 95.0;
+      let precursor = exp(-capArg * capArg) * exp(-age * mix(1.6, 2.8, viscosity));
       impulse += precursor * sin(age * 19.0 + dist * 180.0) * (0.008 + rippleStrength * 0.03);
       clickEnergy += precursor * 0.5;
+      // ── Idea 4: dispersive wake train (§12.2D deep-water dispersion) ──
+      // The other half of the dispersion story. Gravity waves are NORMAL
+      // (phase speed c ~ sqrt(lambda)): the long crest leads and ever
+      // shorter ones trail it, so a pebble drop throws a TRAIN — crests
+      // behind the front that spread apart with age and crowd together
+      // toward the centre. Crest j trails at front / sqrt(1 + K*j) (the
+      // wavelength of crest j is lambda0 / (1 + K*j)), alternating sign,
+      // damped harder than the main ring (shorter waves), and gated in
+      // over the first half second so it separates from the front.
+      let wakeGate = smoothstep(0.08, 0.45, age) * exp(-age * mix(0.6, 1.3, viscosity));
+      var wakeAmp = WAKE_AMP;
+      for (var j = 1; j <= 3; j = j + 1) {
+        let crest = front * inverseSqrt(1.0 + WAKE_K * f32(j));
+        let wArg = (dist - crest) * 34.0;
+        let sgn = 1.0 - 2.0 * f32((j + 1) & 1);   // +, -, + : crest, trough, crest
+        wakeAmp = wakeAmp * 0.72;
+        let w = exp(-wArg * wArg) * wakeGate;
+        impulse += sgn * w * wakeAmp * (0.02 + rippleStrength * 0.05);
+        clickEnergy += w * wakeAmp * 0.2;
+      }
     }
   }
   let p = (uv - 0.5) * aspectVec;
@@ -90,15 +114,32 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let gradient = vec2<f32>(hL - hR, hD - hU) * (5.0 + rippleStrength * 13.0);
   let normal = normalize(vec3<f32>(gradient, 0.24 + viscosity * 0.2));
-  let sourceUV = clamp(uv + normal.xy * (0.012 + height * 0.052) / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999));
+  // ── Idea 3: Snell vector refraction (§12.2F) ─────────────────────────
+  // HEAD displaced the photo by normal.xy * (0.012 + height*0.052): a thin-
+  // lens guess. The camera ray is refracted at the surface (n = 1.33), and
+  // its lateral travel scales with the water column under the pixel, so the
+  // magnification grows with BOTH slope and depth (steep flanks over deep
+  // water bend most). refract() bends toward -N: a mound converges the photo.
+  let refr = refract(vec3<f32>(0.0, 0.0, -1.0), normal, 0.7518797);
+  let lateral = refr.xy / max(-refr.z, 0.2);
+  let column = (0.012 + height * 0.052) * SNELL_DEPTH;
+  let sourceUV = clamp(uv + lateral * column / aspectVec, vec2<f32>(0.001), vec2<f32>(0.999));
   let source = textureSampleLevel(readTexture, u_sampler, sourceUV, 0.0);
+  // ── Idea 5: sun glint (native to a water surface) ───────────────────
+  // A low sun upper-left, seen over the perturbed normal with a Blinn half-
+  // vector: only slopes that face the sun flash, so glints sparkle along the
+  // lit flank of every ripple and vanish on flat water.
+  let sunH = vec3<f32>(-0.213, -0.266, 0.941);
+  let sunCone = smoothstep(0.965, 1.0, dot(normal, sunH));   // 0 on flat water (dot = 0.941), 1 facing the sun
+  let glint = sunCone * sunCone;
   let fresnel = 0.02 + 0.98 * pow(clamp(1.0 - normal.z, 0.0, 1.0), 5.0);
   let caustic = pow(clamp(abs(laplacian) * 21.0 + clickEnergy * 0.3, 0.0, 1.0), 2.2);
   let tint = 0.5 + 0.5 * cos(TAU * (vec3<f32>(0.0, 0.19, 0.41) + colorShift + height * vec3<f32>(0.42, 0.51, 0.63)));
   let color = source.rgb * exp(-height * vec3<f32>(0.3, 0.14, 0.06))
     + tint * fresnel * (0.14 + colorShift * 0.18 + mids * 0.12)
     + vec3<f32>(0.7, 0.94, 1.12) * caustic * (0.16 + treble * 0.22)
-    + vec3<f32>(0.76, 0.88, 1.0) * foam * (0.08 + bass * 0.08);
+    + vec3<f32>(0.76, 0.88, 1.0) * foam * (0.08 + bass * 0.08)
+    + vec3<f32>(1.0, 0.96, 0.88) * glint * GLINT_AMP * (0.6 + treble * 0.9) * coverage;
   let alpha = clamp(source.a + (1.0 - source.a) * coverage * (0.22 + height * 0.58) + fresnel * 0.07 + foam * 0.04, 0.0, 1.0);
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(color), alpha));
   let sourceDepth = textureLoad(readDepthTexture, pixel, 0).r;

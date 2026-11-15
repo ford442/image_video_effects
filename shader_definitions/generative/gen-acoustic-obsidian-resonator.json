@@ -1,7 +1,7 @@
 {
   "id": "gen-acoustic-obsidian-resonator",
   "name": "Acoustic Obsidian Resonator",
-  "description": "A towering, crystalline obsidian structure that breathes and fractures in perfect synchronization with unseen acoustic frequencies, revealing molten golden cores.",
+  "description": "A towering, crystalline obsidian structure that breathes and fractures in perfect synchronization with unseen acoustic frequencies, revealing molten golden cores. Glossy glass, conchoidal scars, gold sheen.",
   "category": "generative",
   "url": "/shaders/gen-acoustic-obsidian-resonator.wgsl",
   "workgroup_size": [16, 16, 1],
@@ -48,7 +48,8 @@
   "updated": true,
   "features": [
     "audio-reactive",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "x-meta": {
     "upgrade": {

@@ -3,26 +3,12 @@
 //  Category: simulation
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: competitive overlap quench; photo chroma seed into warm/cool V
-//  A packing: raw (warm U, warm V, cool U, cool V)
+//  Upgraded: 2026-09-12, 2026-11-15
+//  Ideas: competitive overlap quench; photo chroma seed into warm/cool V; isotropic 9-point Laplacian (§12.2D, also the stability rescue); photo-luma-scaled diffusion length (native)
+//  A packing: raw (warm U, warm V, cool U, cool V) — unchanged, no ACES on A
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+#include "_prelude.wgsl"
 
 fn loadState(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> { return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0); }
 fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
@@ -43,7 +29,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let l = loadState(p + vec2<i32>(-1, 0), hi); let r = loadState(p + vec2<i32>(1, 0), hi);
   let t = loadState(p + vec2<i32>(0, -1), hi); let btm = loadState(p + vec2<i32>(0, 1), hi);
-  let lap = l + r + t + btm - 4.0 * s;
+  // ── Rescue 1 + Idea 3: isotropic 9-point Laplacian (§12.2D) ─────────
+  // HEAD used the UNNORMALISED 5-point Laplacian (eigenvalue -8 on a checkerboard) with Du*dt = 0.82*0.8 = 0.66,
+  // far past the explicit-Euler limit D*dt <= 0.25: the U layers flipped 0/1 per pixel and the clamp turned that into
+  // a pixel-grid staircase (warm V never lived). The isotropic stencil (0.2 edges, 0.05 corners, -1 centre) is
+  // ~0.3 * del^2 (checkerboard eigenvalue -1.6), which lands D*dt at ~0.2 AND removes the axis bias of the 5-point
+  // stencil (worms / stripes no longer line up with the pixel grid). Same D constants as HEAD.
+  let tl = loadState(p + vec2<i32>(-1, -1), hi); let tr = loadState(p + vec2<i32>(1, -1), hi);
+  let bl = loadState(p + vec2<i32>(-1, 1), hi);  let br = loadState(p + vec2<i32>(1, 1), hi);
+  let lap = 0.2 * (l + r + t + btm) + 0.05 * (tl + tr + bl + br) - s;
+  // ── Idea 4: photo-luma-scaled diffusion length (native) ──────────────
+  // A Turing wavelength scales as sqrt(D). Scaling BOTH diffusivities of a species pair by the photo's local luma keeps
+  // the Du:Dv ratio (the pattern regime) but makes bright regions grow bigger spots / worms than dark ones, so the
+  // texture follows the picture like a halftone (numpy, grey luma ramp, no seeds: dark:bright spatial frequency 1.36x
+  // at the shipped 0.4..1.3). The reaction Jacobian adds to the Euler amplification, so the cap is 1.3: the numpy worst case
+  // (feed 1, kill 0, separation 1, white photo) first goes unstable at ~1.6.
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let photoLuma = clamp(dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
+  let dLen = mix(0.4, 1.3, photoLuma);
   let feed = mix(0.020, 0.061, u.zoom_params.x) + audio.y * 0.004;
   let kill = mix(0.043, 0.070, u.zoom_params.y) + audio.x * 0.004;
   let separation = mix(0.02, 0.34, u.zoom_params.z);
@@ -51,10 +54,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let warmReaction = s.r * s.g * s.g; let coolReaction = s.b * s.a * s.a;
   let phase = sin((uv.x - uv.y) * 18.0 + time * (0.35 + audio.y));
   let delta = vec4<f32>(
-    (0.82 + separation * 0.08) * lap.r - warmReaction + feed * (1.0 - s.r) - coupling * s.r * s.a,
-    0.30 * lap.g + warmReaction - (feed + kill + phase * separation * 0.002) * s.g,
-    (0.76 - separation * 0.06) * lap.b - coolReaction + feed * (1.0 - s.b) - coupling * s.b * s.g,
-    0.27 * lap.a + coolReaction - (feed + kill - phase * separation * 0.002) * s.a
+    (0.82 + separation * 0.08) * dLen * lap.r - warmReaction + feed * (1.0 - s.r) - coupling * s.r * s.a,
+    0.30 * dLen * lap.g + warmReaction - (feed + kill + phase * separation * 0.002) * s.g,
+    (0.76 - separation * 0.06) * dLen * lap.b - coolReaction + feed * (1.0 - s.b) - coupling * s.b * s.g,
+    0.27 * dLen * lap.a + coolReaction - (feed + kill - phase * separation * 0.002) * s.a
   );
   s = clamp(s + delta * 0.80, vec4<f32>(0.0), vec4<f32>(1.0));
 
@@ -64,7 +67,6 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   s.a = clamp(s.a - overlap * (0.18 + coupling * 0.5), 0.0, 1.0);
 
   // Idea 2 — photo chroma seed: red luma → warm V, blue luma → cool V
-  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let warmSeed = max(src.r - 0.5 * (src.g + src.b), 0.0);
   let coolSeed = max(src.b - 0.5 * (src.r + src.g), 0.0);
   s.g = clamp(s.g + warmSeed * 0.010, 0.0, 1.0);

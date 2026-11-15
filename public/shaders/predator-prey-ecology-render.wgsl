@@ -1,25 +1,18 @@
-// ═══ PREDATOR-PREY ECOLOGY — RENDER ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Predator-Prey Ecology — render
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: age cohorts on flora and fauna
+//  A packing: raw sim copied back (prey, predator, nutrient, age). ACES on display only
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -35,14 +28,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let prey = clamp(st.r, 0.0, 1.5);
   let pred = clamp(st.g, 0.0, 1.2);
   let treble = plasmaBuffer[0].z;
+  let cohort = clamp(st.a, 0.0, 1.0);
 
-  let flora = vec3<f32>(0.15, 0.85 + prey * 0.1, 0.35) * prey;
-  let fauna = vec3<f32>(0.95, 0.35 + pred * 0.2, 0.12) * pred;
+  // ── Idea 3: age cohorts. Age 0 is the original green / orange ─────
+  let floraYoung = vec3<f32>(0.15, 0.85, 0.35);
+  let floraOld = vec3<f32>(0.72, 0.78, 0.18);
+  let faunaYoung = vec3<f32>(0.95, 0.35 + pred * 0.2, 0.12);
+  let faunaOld = vec3<f32>(0.40, 0.07, 0.06);
+  let flora = mix(floraYoung, floraOld, cohort) * prey;
+  let fauna = mix(faunaYoung, faunaOld, cohort) * pred;
   var col = src.rgb * 0.15 + flora + fauna;
   col += vec3<f32>(st.b * 0.15, st.b * 0.08, st.b * 0.25);
   col = mix(col, col * (1.0 + treble * 0.15), clamp(prey + pred, 0.0, 1.0));
 
-  textureStore(writeTexture, pixel, vec4<f32>(clamp(col, vec3<f32>(0.0), vec3<f32>(1.6)), 1.0));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let alpha = clamp(src.a * 0.2 + prey * 0.4 + pred * 0.35 + st.b * 0.1, 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(aces(max(col, vec3<f32>(0.0))), alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(mix(depth, 1.0 - clamp(prey + pred, 0.0, 1.0), 0.55), 0.0, 1.0), 0.0, 0.0, 0.0));
   textureStore(dataTextureA, pixel, st);
 }
