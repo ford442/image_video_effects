@@ -790,7 +790,7 @@
   {
     "id": "cymatic-sand",
     "name": "Cymatic Sand",
-    "description": "Damped Chladni plate simulation with exact-load sand transport, persistent resonance and strike memory, three-band harmonic forcing, held mode displacement, bounded click strikes, ACES grain color, semantic alpha, and raw A-only state.",
+    "description": "Damped Chladni soundboard simulation with acoustic radiation-gradient grain flux, 3D heaped nodal-ridge shading over a brushed-brass plate, antinode saltation glints, three-band harmonic forcing, held mode displacement, click strikes, ACES grain color, semantic alpha, and raw A-only state.",
     "url": "shaders/cymatic-sand.wgsl",
     "features": [
       "mouse-driven",
@@ -799,6 +799,7 @@
       "upgraded-rgba",
       "depth-aware"
     ],
+    "feedbackPacking": "A/C = raw (density, radial velocity, resonant energy, strike memory)",
     "updated": true,
     "params": [
       {
@@ -1774,7 +1775,7 @@
     "id": "optical-flow-dream",
     "name": "Optical Flow Dream",
     "url": "shaders/optical-flow-estimate.wgsl",
-    "description": "Canonical single-pass optical-flow dream field using exact dataTextureC history, temporal luma gradients, chromatic advection, held pointer vortices, bounded click tears, three-band color, ACES display, semantic alpha, and A-only feedback.",
+    "description": "Canonical single-pass optical-flow dream field using a 3x3 regularized Lucas-Kanade structure tensor over exact dataTextureC history, sub-pixel clamped MacCormack dream advection, contour-guided chromatic dispersion, held pointer vortices, click tears, ACES display, semantic alpha, and A-only feedback.",
     "params": [
       {
         "id": "flowScale",
@@ -1817,13 +1818,16 @@
         "description": "Blend between live input and advected dream"
       }
     ],
+    "feedbackPacking": "A/C = linear HDR dream RGB + semantic trail coverage (ACES on writeTexture)",
     "updated": true,
     "features": [
       "simulation",
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "depth-aware",
+      "interactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "optical-flow",
@@ -2242,7 +2246,7 @@
     "id": "pixel-sand",
     "name": "Pixel Sand",
     "url": "shaders/pixel-sand.wgsl",
-    "description": "Granular density and velocity automaton with avalanche sheets, rising jet lanes, held-pointer gravity, bounded click shelves, three-band spectral heat, depth shading, ACES display, semantic alpha, and raw A-only state feedback.",
+    "description": "Granular density and velocity automaton with scene-depth 3D collision ledges, divergence-free streamfunction curl eddies, live top-hopper sand streams, frictional shear blackbody glow, held-pointer vortices, click shelves, ACES display, semantic alpha, and raw A-only state feedback.",
     "features": [
       "upgraded-rgba",
       "mouse-driven",
@@ -2259,6 +2263,7 @@
       "continuous-motion",
       "bounded-click-ripples"
     ],
+    "feedbackPacking": "A/C = raw (density, vx, vy, kinetic energy)",
     "tags": [
       "sand",
       "granular",
@@ -2317,7 +2322,7 @@
     "id": "poincare-tiling",
     "name": "Poincaré Tiling",
     "url": "shaders/poincare-tiling-map.wgsl",
-    "description": "Physics Lab — hyperbolic disk tiling with Möbius layer composite. graph · 2 passes.",
+    "description": "Physics Lab — aspect-true hyperbolic {p, q} geodesic circle-inversion disk tiling with SU(1,1) pointer/orbit automorphisms, conformal gilded polygon arcs, hyperbolic-metric click waves, and dual-layer Möbius composite. graph · 2 passes.",
     "multipass": {
       "graph": {
         "maxPassesPerFrame": 8,
@@ -2390,6 +2395,8 @@
         "description": "Secondary layer scale and blend"
       }
     ],
+    "updated": true,
+    "feedbackPacking": "Pass 1 A = linear tiled RGB + packed geodesic edge/parity; Pass 2 A = linear composite RGBA (ACES on writeTexture)",
     "features": [
       "simulation",
       "multi-pass",
@@ -2397,7 +2404,9 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "depth-aware",
+      "interactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "poincare",
@@ -2711,7 +2720,7 @@
     "id": "ripple-tank",
     "name": "Ripple Tank",
     "url": "shaders/ripple-tank-step.wgsl",
-    "description": "Physics Lab flagship — click for rings, hold for a driven oscillator, audio rains droplets across the tank. 7 graph passes · target 60 fps at balanced.",
+    "description": "Physics Lab flagship — bathymetric depth-refracting wave tank with Rayleigh sponge shores, twin-pin harmonic dipper, audio droplet rain, ray-sheet Jacobian floor caustics, and Beer-Lambert / Fresnel water optics. 7 graph passes · target 60 fps at balanced.",
     "requiresRgba32Float": true,
     "multipass": {
       "graph": {
@@ -2813,7 +2822,8 @@
       "audio-reactive",
       "depth-aware",
       "temporal-persistence",
-      "interactive"
+      "interactive",
+      "upgraded-rgba"
     ],
     "feedbackPacking": "A/C = height, velocity, foam energy, oscillator phase; graph uses A-only writeback",
     "updated": true,
@@ -3332,14 +3342,19 @@
     "id": "sim-sand-dunes",
     "name": "Sand Dunes",
     "url": "shaders/sim-sand-dunes.wgsl",
-    "description": "Persistent dune height field with saltation, angle-of-repose avalanches, wind erosion, moisture cohesion, three-band gusts, held sand deposition, bounded click shelves, ACES shading, semantic alpha, and raw A-only state.",
+    "description": "Persistent dune height field with upwind saltation fetch, brink wind-shadow deposition, angle-of-repose avalanches, heavy-mineral trough lag, dry-quartz micro-facet glints, moisture cohesion, held sand deposition, click craters, ACES shading, semantic alpha, and raw A-only state.",
     "features": [
       "simulation",
       "cellular-automata",
       "falling-sand",
       "wind-erosion",
-      "randomization-safe"
+      "mouse-driven",
+      "audio-reactive",
+      "depth-aware",
+      "randomization-safe",
+      "upgraded-rgba"
     ],
+    "feedbackPacking": "A/C = raw (height, loose grains, downslope velocity, moisture)",
     "updated": true,
     "params": [
       {

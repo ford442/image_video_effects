@@ -1,65 +1,141 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sand Dunes
 //  Category: simulation
-//  Features: wind-erosion, mouse-driven, audio-reactive, upgraded-rgba
+//  Features: wind-erosion, mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: slipface lee avalanche; windward ripple wavelength from wind
+//  Upgraded: 2026-09-12, 2026-11-15
+//  Ideas: slipface lee avalanche; windward ripple wavelength from wind; upwind saltation fetch & brink wind-shadow deposition; heavy-mineral trough lag & dry-quartz micro-facet glints
 //  A packing: raw (height, loose grains, downslope velocity, moisture)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
-fn sandAt(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> { return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0); }
-fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453); }
-fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
+#include "_prelude.wgsl"
+
+fn sandAt(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0);
+}
+
+fn hash21(p: vec2<f32>) -> f32 {
+  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
-  let size = vec2<u32>(u32(u.config.z), u32(u.config.w)); if (gid.x >= size.x || gid.y >= size.y) { return; }
-  let p = vec2<i32>(gid.xy); let hi = vec2<i32>(size) - vec2<i32>(1); let res = vec2<f32>(size);
-  let uv = (vec2<f32>(p) + 0.5) / res; let aspect = res.x / max(res.y, 1.0); let time = u.config.x;
-  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0)); var s = sandAt(p, hi);
-  if (time < 0.12 || dot(s, s) < 0.000001) { let src0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0); let seed = hash21(floor(uv * 180.0)); s = vec4<f32>(clamp(uv.y * 0.72 + dot(src0.rgb, vec3<f32>(0.18)) * 0.22 + seed * 0.08, 0.0, 1.0), 0.18 + seed * 0.12, 0.0, 0.08); }
-  let l = sandAt(p + vec2<i32>(-1, 0), hi); let r = sandAt(p + vec2<i32>(1, 0), hi); let t = sandAt(p + vec2<i32>(0, -1), hi); let b = sandAt(p + vec2<i32>(0, 1), hi);
-  let lap = l.r + r.r + t.r + b.r - 4.0 * s.r; let slope = vec2<f32>(r.r - l.r, b.r - t.r) * 0.5;
+  let size = vec2<u32>(u32(u.config.z), u32(u.config.w));
+  if (gid.x >= size.x || gid.y >= size.y) { return; }
+
+  let p = vec2<i32>(gid.xy);
+  let hi = vec2<i32>(size) - vec2<i32>(1);
+  let res = vec2<f32>(size);
+  let uv = (vec2<f32>(p) + 0.5) / res;
+  let aspect = res.x / max(res.y, 1.0);
+  let time = u.config.x;
+  let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(2.0));
+
+  var s = sandAt(p, hi);
+  if (time < 0.12 || dot(s, s) < 0.000001) {
+    let src0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let seed = hash21(floor(uv * 180.0));
+    s = vec4<f32>(clamp(uv.y * 0.72 + dot(src0.rgb, vec3<f32>(0.18)) * 0.22 + seed * 0.08, 0.0, 1.0), 0.18 + seed * 0.12, 0.0, 0.08);
+  }
+
+  let l = sandAt(p + vec2<i32>(-1, 0), hi);
+  let r = sandAt(p + vec2<i32>(1, 0), hi);
+  let t = sandAt(p + vec2<i32>(0, -1), hi);
+  let b = sandAt(p + vec2<i32>(0, 1), hi);
+  let lap = l.r + r.r + t.r + b.r - 4.0 * s.r;
+  let slope = vec2<f32>(r.r - l.r, b.r - t.r) * 0.5;
+
   let gravity = mix(0.02, 0.18, u.zoom_params.x) * (1.0 + audio.x * 0.25);
-  let wind = (u.zoom_params.y * 2.0 - 1.0) * (0.02 + audio.y * 0.05); let viscosity = mix(0.96, 0.55, u.zoom_params.z);
-  let erosion = mix(0.002, 0.045, u.zoom_params.w) * (1.0 + audio.z * 0.5); let repose = mix(0.035, 0.16, u.zoom_params.z);
+  let wind = (u.zoom_params.y * 2.0 - 1.0) * (0.02 + audio.y * 0.05);
+  let viscosity = mix(0.96, 0.55, u.zoom_params.z);
+  let erosion = mix(0.002, 0.045, u.zoom_params.w) * (1.0 + audio.z * 0.5);
+  let repose = mix(0.035, 0.16, u.zoom_params.z);
+
   let avalanche = max(length(slope) - repose, 0.0);
-  let windSign = sign(wind + 0.0001);
+  let windSign = select(-1.0, 1.0, wind >= 0.0);
   let lee = max(-slope.x * windSign, 0.0);
   let stoss = max(slope.x * windSign, 0.0);
   let slipface = avalanche * (1.0 + lee * 4.0);
+
+  // ── Idea 3: upwind saltation fetch & brink-separation lee wind-shadow pocket ──
+  let windStep = i32(windSign);
+  let up1 = sandAt(p - vec2<i32>(windStep, 0), hi);
+  let up2 = sandAt(p - vec2<i32>(windStep * 2, 0), hi);
+  let sceneDepth = textureLoad(readDepthTexture, p, 0).r;
+  let upDepth = textureLoad(readDepthTexture, clamp(p - vec2<i32>(windStep * 2, 0), vec2<i32>(0), hi), 0).r;
+  let depthShelter = clamp((upDepth - sceneDepth) * 2.4, 0.0, 0.65);
+  let brinkCrest = max(up1.r - up2.r, 0.0) * step(0.001, lee);
+  let windShadow = clamp(lee * 5.5 + brinkCrest * 9.0 + max(-lap * 6.0, 0.0) * step(0.002, lee) + depthShelter, 0.0, 1.0);
+  let upwindSupply = 0.65 * up1.g + 0.35 * up2.g;
+  let saltationTrap = abs(wind) * (upwindSupply * (0.35 + windShadow * 1.35) - s.g * (0.35 + stoss * 1.65) * (1.0 - windShadow * 0.8));
+
   var velocity = s.b * viscosity + slope.y * gravity + wind * slope.x;
-  var loose = clamp(s.g + erosion * (abs(slope.x) + audio.z * 0.15) - slipface * 0.22, 0.0, 1.0);
-  var height = s.r + lap * (0.018 + slipface * gravity) - velocity * 0.018 + loose * wind * (l.g - r.g);
+  var loose = clamp(s.g + erosion * (abs(slope.x) + stoss * 0.6 + audio.z * 0.15) * (1.0 - windShadow * 0.55) - slipface * 0.22 - windShadow * s.g * 0.04, 0.0, 1.0);
+  var height = s.r + lap * (0.018 + slipface * gravity) - velocity * 0.018 + loose * wind * (l.g - r.g) + saltationTrap * 0.55;
   height += sin(uv.x * (40.0 + abs(wind) * 90.0) + uv.y * 6.0) * stoss * 0.01;
-  let mq = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0); let md = length(mq); let hover = exp(-md * 16.0); let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
-  height += hover * held * (0.035 + audio.x * 0.02); loose += hover * (0.002 + held * 0.08); velocity += hover * held * 0.04;
-  var impacts = 0.0; let count = min(u32(u.config.y), 50u);
-  for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 1.8) { let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0)); impacts += exp(-age * 1.8) * exp(-abs(d - age * 0.26) * 76.0); } }
-  height += impacts * 0.028; loose += impacts * 0.10; velocity -= impacts * 0.06;
+
+  let mq = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0);
+  let md = length(mq);
+  let hover = exp(-md * 16.0);
+  let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+  height += hover * held * (0.035 + audio.x * 0.02);
+  loose += hover * (0.002 + held * 0.08);
+  velocity += hover * held * 0.04;
+
+  var impacts = 0.0;
+  let count = min(u32(max(u.config.y, 0.0)), 50u);
+  for (var i = 0u; i < count; i = i + 1u) {
+    let e = u.ripples[i];
+    let age = time - e.z;
+    let isLive = f32(age >= 0.0 && age < 1.8);
+    let safeAge = clamp(age, 0.0, 1.8);
+    let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0));
+    impacts += isLive * exp(-safeAge * 1.8) * exp(-abs(d - safeAge * 0.26) * 76.0);
+  }
+  height += impacts * 0.028;
+  loose += impacts * 0.10;
+  velocity -= impacts * 0.06;
+
   let moisture = clamp(mix(s.a, 0.05 + audio.x * 0.08 + u.zoom_params.z * 0.28, 0.015) + hover * held * 0.01, 0.0, 1.0);
-  let next = vec4<f32>(clamp(height, 0.0, 1.2), clamp(loose, 0.0, 1.0), clamp(velocity, -1.0, 1.0), moisture); textureStore(dataTextureA, p, next);
-  let normal = normalize(vec3<f32>(-slope.x * 8.0, -slope.y * 8.0, 1.0)); let sun = normalize(vec3<f32>(-0.45 + wind * 2.0, -0.55, 0.75));
-  let light = 0.18 + 0.82 * max(dot(normal, sun), 0.0); let strata = 0.5 + 0.5 * sin((uv.x * 70.0 + next.r * 34.0) + time * wind * 7.0);
+  let next = vec4<f32>(clamp(height, 0.0, 1.2), clamp(loose, 0.0, 1.0), clamp(velocity, -1.0, 1.0), moisture);
+  textureStore(dataTextureA, p, next);
+
+  let normal = normalize(vec3<f32>(-slope.x * 9.0, -slope.y * 9.0, 1.0));
+  let sun = normalize(vec3<f32>(-0.45 + wind * 2.0, -0.55, 0.75));
+  let light = (0.18 + 0.82 * max(dot(normal, sun), 0.0)) * (1.0 - windShadow * 0.22);
+  let strata = 0.5 + 0.5 * sin((uv.x * 70.0 + next.r * 34.0) + time * wind * 7.0);
   let windRipple = 0.5 + 0.5 * sin(uv.x * (48.0 + abs(wind) * 110.0) - uv.y * 3.0);
-  let dry = vec3<f32>(1.35, 0.63, 0.14); let wet = vec3<f32>(0.38, 0.15, 0.05); var hdr = mix(dry, wet, moisture) * (light + strata * loose * 0.18);
-  hdr += dry * windRipple * stoss * loose * 0.22;
-  hdr += vec3<f32>(1.6, 0.9, 0.25) * impacts * (0.4 + audio.z); let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0); hdr = mix(src.rgb, hdr, clamp(next.r * 0.8 + loose * 0.3, 0.0, 0.95));
-  let alpha = clamp(src.a * 0.20 + next.r * 0.68 + loose * 0.25 + impacts * 0.25, 0.0, 1.0); let mapped = aces(max(hdr, vec3<f32>(0.0)));
-  textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha)); textureStore(writeDepthTexture, p, vec4<f32>(clamp(1.0 - next.r * 0.78, 0.0, 1.0), 0.0, 0.0, 0.0));
+
+  // ── Idea 4: heavy-mineral magnetite trough lag & dry-quartz micro-facet glints ──
+  let troughScour = (1.0 - smoothstep(0.16, 0.58, next.r)) * (0.35 + u.zoom_params.w * 0.65);
+  let rippleTrough = (1.0 - windRipple) * stoss * 1.35;
+  let heavyLag = clamp(troughScour * 0.55 + rippleTrough * 0.45, 0.0, 0.85);
+  let facetJitter = vec3<f32>(
+    hash21(floor(uv * res * 0.85)) - 0.5,
+    hash21(floor(uv * res * 0.85 + vec2<f32>(19.3, 41.7))) - 0.5,
+    0.0
+  ) * 0.32;
+  let halfVec = normalize(sun + vec3<f32>(0.0, 0.0, 1.0));
+  let facetSpec = pow(max(dot(normalize(normal + facetJitter), halfVec), 0.0), 28.0);
+  let quartzGlint = facetSpec * (1.0 - moisture) * (0.22 + next.g * 0.85 + stoss * 1.4);
+
+  let dry = vec3<f32>(1.35, 0.63, 0.14);
+  let wet = vec3<f32>(0.38, 0.15, 0.05);
+  let magnetiteLag = vec3<f32>(0.24, 0.13, 0.09);
+  let baseSand = mix(mix(dry, magnetiteLag, heavyLag), wet, moisture);
+  var hdr = baseSand * (light + strata * next.g * 0.18);
+  hdr += dry * windRipple * stoss * next.g * 0.22;
+  hdr += vec3<f32>(1.95, 1.55, 0.95) * quartzGlint * (0.42 + audio.z * 0.35);
+  hdr += vec3<f32>(1.6, 0.9, 0.25) * impacts * (0.4 + audio.z);
+
+  let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  hdr = mix(src.rgb, hdr, clamp(next.r * 0.8 + next.g * 0.3, 0.0, 0.95));
+  let alpha = clamp(src.a * 0.20 + next.r * 0.68 + next.g * 0.25 + impacts * 0.25, 0.0, 1.0);
+  let mapped = aces(max(hdr, vec3<f32>(0.0)));
+  textureStore(writeTexture, p, vec4<f32>(mapped * alpha, alpha));
+  textureStore(writeDepthTexture, p, vec4<f32>(clamp(1.0 - next.r * 0.78, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

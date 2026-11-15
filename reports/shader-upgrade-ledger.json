@@ -988,8 +988,17 @@
       ]
     },
     "fire-smoke-volumetric-fog": {
-      "hash": "a51d3932ce62a899",
-      "history": []
+      "hash": "e1ce7e24acf47ce9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "e1ce7e24acf47ce9",
+          "prev_hash": "a51d3932ce62a899",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
+        }
+      ]
     },
     "fluid-grid-rgba-fluid": {
       "hash": "8a18d3ff1a344a75",
@@ -8014,7 +8023,7 @@
       ]
     },
     "gen-interference-moire-field": {
-      "hash": "6329ce19570c22fd",
+      "hash": "a362603e3f379b2a",
       "history": [
         {
           "event": "upgraded",
@@ -8023,6 +8032,14 @@
           "prev_hash": "91183e21324cfabc",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "a362603e3f379b2a",
+          "prev_hash": "6329ce19570c22fd",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
         }
       ]
     },
@@ -8099,7 +8116,7 @@
       ]
     },
     "gen-julia-set-classic": {
-      "hash": "7fd8ef6a771c856e",
+      "hash": "92b89005ef20115a",
       "history": [
         {
           "event": "upgraded",
@@ -8108,6 +8125,14 @@
           "prev_hash": "465a1af35499ca3d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "92b89005ef20115a",
+          "prev_hash": "7fd8ef6a771c856e",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
         }
       ]
     },
@@ -18162,7 +18187,7 @@
       ]
     },
     "liquid-v1": {
-      "hash": "773b0315ffcbc963",
+      "hash": "2c7294f24ab188f7",
       "history": [
         {
           "event": "upgraded",
@@ -18171,6 +18196,14 @@
           "prev_hash": "a500ade44fabed15",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "2c7294f24ab188f7",
+          "prev_hash": "773b0315ffcbc963",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
         }
       ]
     },
@@ -19501,8 +19534,17 @@
       ]
     },
     "cymatic-sand": {
-      "hash": "cab2cc0b5ac885fd",
-      "history": []
+      "hash": "3a54fafb6c642d93",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "3a54fafb6c642d93",
+          "prev_hash": "cab2cc0b5ac885fd",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
+        }
+      ]
     },
     "digital-moss": {
       "hash": "91f80ad024e60774",
@@ -19621,8 +19663,17 @@
       ]
     },
     "optical-flow-dream": {
-      "hash": "7829e2d34d7c8a96",
-      "history": []
+      "hash": "564bedba8003d6e3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "564bedba8003d6e3",
+          "prev_hash": "7829e2d34d7c8a96",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
+        }
+      ]
     },
     "photonic-caustics-graph": {
       "hash": "721eeba2ed7e780e",
@@ -19633,12 +19684,30 @@
       "history": []
     },
     "pixel-sand": {
-      "hash": "dec81fef83c8f74f",
-      "history": []
+      "hash": "80fac9244f3ce4ce",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "80fac9244f3ce4ce",
+          "prev_hash": "dec81fef83c8f74f",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
+        }
+      ]
     },
     "poincare-tiling": {
-      "hash": "5090895b871900fb",
-      "history": []
+      "hash": "cb624b8f74ac4157",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "cb624b8f74ac4157",
+          "prev_hash": "5090895b871900fb",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
+        }
+      ]
     },
     "predator-prey-ecology": {
       "hash": "362ef22eb213b12f",
@@ -19752,8 +19821,17 @@
       ]
     },
     "ripple-tank": {
-      "hash": "88d9a913e8d5608a",
-      "history": []
+      "hash": "327d7934a7a7b72a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "327d7934a7a7b72a",
+          "prev_hash": "88d9a913e8d5608a",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
+        }
+      ]
     },
     "sim-decay-system-rgba": {
       "hash": "f235af6a67643b25",
@@ -19876,8 +19954,17 @@
       ]
     },
     "sim-sand-dunes": {
-      "hash": "556b48d1676ceaea",
-      "history": []
+      "hash": "446a3a28a9fa3214",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:42:11.455Z",
+          "hash": "446a3a28a9fa3214",
+          "prev_hash": "556b48d1676ceaea",
+          "commit": "c636988f",
+          "note": "2026-11-15 gemini/wave-sand-ten (gemini-4-carbon) — docs/agents/swarm-outputs/gemini-2026-11-15-wave-sand-ten/NOTES.md"
+        }
+      ]
     },
     "sim-slime-mold-growth-em": {
       "hash": "f213670838bb0f1f",
@@ -21397,7 +21484,7 @@
         }
       ]
     },
-"photon-bins": {
+    "photon-bins": {
       "hash": "d845dee530659c17",
       "history": [
         {
@@ -21433,7 +21520,7 @@
         }
       ]
     },
-"gen-ethereal-cyber-aurora-mantis-shrine": {
+    "gen-ethereal-cyber-aurora-mantis-shrine": {
       "hash": "f7d1ecdb0e458f7e",
       "history": [
         {
@@ -21445,7 +21532,7 @@
         }
       ]
     },
-"gen-harmonic-ferrofluid-kinetics": {
+    "gen-harmonic-ferrofluid-kinetics": {
       "hash": "3a292a10790685cb",
       "history": [
         {
