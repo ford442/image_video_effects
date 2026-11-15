@@ -5445,9 +5445,51 @@
       "audio-reactive",
       "mouse-driven",
       "raymarched",
-      "temporal"
+      "temporal",
+      "upgraded-rgba"
     ],
-    "params": []
+    "params": [
+      {
+        "id": "ringSpread",
+        "name": "Ring Spread",
+        "default": 0.55,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "How far the inner and outer annuli open around the original ring"
+      },
+      {
+        "id": "temperature",
+        "name": "Temperature",
+        "default": 0.08,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Blackbody temperature of the main ring. The default is the original orange"
+      },
+      {
+        "id": "trail",
+        "name": "Orbital Trail",
+        "default": 0.8,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How much of the previous frame is kept, sampled against the spiral's rotation"
+      },
+      {
+        "id": "starDensity",
+        "name": "Star Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "How many parallax stars pass the brightness threshold"
+      }
+    ]
   },
   {
     "id": "gen-audio-spirograph-julia",
@@ -5860,9 +5902,52 @@
       "generative",
       "wave-equation",
       "structure-tensor",
-      "LIC"
+      "LIC",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
-    "params": []
+    "params": [
+      {
+        "id": "foldGap",
+        "name": "Fold Gap",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.x",
+        "description": "Gap subtracted after each absolute fold. The default is the original 0.5"
+      },
+      {
+        "id": "stringRate",
+        "name": "String Rate",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.y",
+        "description": "Vibration frequency of the strings. The default is the original 20"
+      },
+      {
+        "id": "trail",
+        "name": "Trail",
+        "default": 0.85,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.z",
+        "description": "How much of the unwound previous frame is kept"
+      },
+      {
+        "id": "glow",
+        "name": "Glow",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01,
+        "mapping": "zoom_params.w",
+        "description": "Amplitude of the string core and sheath"
+      }
+    ]
   },
   {
     "id": "gen-xeno-botanical-ecosystem",
@@ -8917,7 +9002,9 @@
       "volumetric-smoke",
       "vorticity",
       "mouse-driven",
-      "HDR"
+      "HDR",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -8953,7 +9040,7 @@
         "step": 0.01
       }
     ],
-    "feedbackPacking": "A/C = smoke density, temperature, horizontal and vertical velocity",
+    "feedbackPacking": "A/C = smoke density, temperature, horizontal and vertical velocity. MacCormack corrects density and temperature only. Blackbody chromaticity is display-only; A is not tone-mapped.",
     "updated": true
   },
   {

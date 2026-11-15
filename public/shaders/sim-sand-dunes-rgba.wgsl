@@ -3,25 +3,12 @@
 //  Category: simulation
 //  Features: rgba-state-machine, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: size segregation (coarse troughs / fine saltation); dust-devil swirl
+//  Upgraded: 2026-09-12, 2026-11-15
+//  Ideas: size segregation (coarse troughs / fine saltation); dust-devil swirl; angle of repose; lee-side saltation fallout
 //  A packing: raw (fine, coarse, moist clumps, airborne dust)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+#include "_prelude.wgsl"
 fn grainAt(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> { return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0); }
 fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(171.7, 319.3))) * 43758.5453); }
 fn aces(x: vec3<f32>) -> vec3<f32> { return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0)); }
@@ -50,6 +37,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tang = vec2<f32>(-(uv.y - 0.5), uv.x - 0.5);
   let devilAdvect = (l.a - r.a) * tang.x + (t.a - b.a) * tang.y;
   next.a += devilAdvect * devil * 0.12;
+  // ── Idea: angle of repose. Moisture lets the face stand steeper ───
+  // Both sides use the previous bed so the upper pixel's loss is the lower pixel's gain.
+  let repose = 0.055 + moisture * 0.06;
+  let avalancheIn = max((t.r + t.g) - bed - repose, 0.0) * gravity * 3.5;
+  let avalancheOut = max(bed - (b.r + b.g) - repose, 0.0) * gravity * 3.5;
+  let slip = (avalancheIn - avalancheOut) * 0.45;
+  next.r += slip * 0.62;
+  next.g += slip * 0.38;
+  // ── Idea: dust falls out on the lee of an upwind ridge, into fine ─
+  let upwind = select(r, l, wind >= 0.0);
+  let lee = max((upwind.r + upwind.g) - (next.r + next.g), 0.0);
+  let fallout = lee * dustiness * abs(wind) * 0.85;
+  next.a = max(next.a - fallout, 0.0);
+  next.r += fallout * 0.65;
   let q = (uv - u.zoom_config.yz) * vec2<f32>(aspect, 1.0); let md = length(q); let hover = exp(-md * 15.0); let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
   next.r += hover * held * 0.06; next.g += hover * held * 0.035; next.a += hover * (0.004 + held * 0.045);
   var impacts = 0.0; let count = min(u32(u.config.y), 50u);

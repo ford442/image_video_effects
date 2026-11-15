@@ -1,50 +1,38 @@
-// Wave Tank — Pass 3: normals, refraction, phase hue, caustics
+// ═══════════════════════════════════════════════════════════════════
+//  Wave Tank — render
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: rising-crest foam from latched previous height
+//  A packing: raw wave copied back. ACES on display only
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + vec3<f32>(0.03))) / (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
-fn computeNormal(uv: vec2<f32>, texelSize: vec2<f32>) -> vec3<f32> {
-  let left = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(-1.0, 0.0) * texelSize, 0.0).r;
-  let right = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(1.0, 0.0) * texelSize, 0.0).r;
-  let up = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, -1.0) * texelSize, 0.0).r;
-  let down = textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, 1.0) * texelSize, 0.0).r;
-  let dx = (right - left) * 2.0;
-  let dy = (down - up) * 2.0;
-  return normalize(vec3<f32>(-dx, -dy, 0.1));
+fn loadH(p: vec2<i32>, hi: vec2<i32>) -> f32 {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0).r;
 }
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
-  var h = hsv.x * 6.0;
+  let h = fract(hsv.x) * 6.0;
   let s = hsv.y;
   let v = hsv.z;
   let c = v * s;
-  let x = c * (1.0 - abs(h % 2.0 - 1.0));
+  let x = c * (1.0 - abs((h % 2.0) - 1.0));
   let m = v - c;
-  var rgb: vec3<f32>;
-  if (h < 1.0) { rgb = vec3<f32>(c, x, 0.0); }
-  else if (h < 2.0) { rgb = vec3<f32>(x, c, 0.0); }
-  else if (h < 3.0) { rgb = vec3<f32>(0.0, c, x); }
-  else if (h < 4.0) { rgb = vec3<f32>(0.0, x, c); }
-  else if (h < 5.0) { rgb = vec3<f32>(x, 0.0, c); }
-  else { rgb = vec3<f32>(c, 0.0, x); }
+  let sector = floor(h);
+  var rgb = vec3<f32>(0.0);
+  rgb = select(rgb, vec3<f32>(c, x, 0.0), sector < 1.0);
+  rgb = select(rgb, vec3<f32>(x, c, 0.0), sector >= 1.0 && sector < 2.0);
+  rgb = select(rgb, vec3<f32>(0.0, c, x), sector >= 2.0 && sector < 3.0);
+  rgb = select(rgb, vec3<f32>(0.0, x, c), sector >= 3.0 && sector < 4.0);
+  rgb = select(rgb, vec3<f32>(x, 0.0, c), sector >= 4.0 && sector < 5.0);
+  rgb = select(rgb, vec3<f32>(c, 0.0, x), sector >= 5.0);
   return rgb + vec3<f32>(m);
 }
 
@@ -54,16 +42,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let coord = gid.xy;
   if (coord.x >= size.x || coord.y >= size.y) { return; }
 
+  let pixel = vec2<i32>(coord);
+  let hi = vec2<i32>(size) - vec2<i32>(1);
   let uv = vec2<f32>(f32(coord.x), f32(coord.y)) / vec2<f32>(f32(size.x), f32(size.y));
-  let texelSize = 1.0 / vec2<f32>(f32(size.x), f32(size.y));
 
-  let state = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
+  let state = textureLoad(dataTextureC, pixel, 0);
   let height = state.r;
   let velocity = state.g;
+  let prevHeight = state.b;
 
-  let normal = computeNormal(uv, texelSize);
-  let refractOffset = normal.xy * 0.03;
-  let sourceColor = textureSampleLevel(readTexture, u_sampler, uv + refractOffset, 0.0);
+  let dx = (loadH(pixel + vec2<i32>(1, 0), hi) - loadH(pixel + vec2<i32>(-1, 0), hi)) * 2.0;
+  let dy = (loadH(pixel + vec2<i32>(0, 1), hi) - loadH(pixel + vec2<i32>(0, -1), hi)) * 2.0;
+  let normal = normalize(vec3<f32>(-dx, -dy, 0.1));
+  let refractOffset = clamp(normal.xy * 0.03, vec2<f32>(-0.08), vec2<f32>(0.08));
+  let sourceColor = textureSampleLevel(readTexture, u_sampler, clamp(uv + refractOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   let phase = atan2(velocity, height);
@@ -80,15 +72,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   finalColor = finalColor * (0.5 + diffuse * 0.5);
   finalColor = finalColor + vec3<f32>(specular * 0.3);
 
-  let laplacian = (textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).r
-    + textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(texelSize.x, 0.0), 0.0).r
-    + textureSampleLevel(dataTextureC, non_filtering_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).r
-    + textureSampleLevel(dataTextureC, non_filtering_sampler, uv - vec2<f32>(0.0, texelSize.y), 0.0).r
-    - 4.0 * height);
+  let laplacian = loadH(pixel + vec2<i32>(1, 0), hi) + loadH(pixel + vec2<i32>(-1, 0), hi)
+                + loadH(pixel + vec2<i32>(0, 1), hi) + loadH(pixel + vec2<i32>(0, -1), hi)
+                - 4.0 * height;
   let caustic = pow(abs(laplacian) * 5.0, 2.0);
   finalColor = finalColor + vec3<f32>(caustic * 0.2);
 
-  textureStore(writeTexture, vec2<i32>(coord), vec4<f32>(finalColor, 1.0));
-  textureStore(writeDepthTexture, vec2<i32>(coord), vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(coord), state);
+  // ── Idea 2: foam on a crest that is still rising ──────────────────
+  let rising = max(height - prevHeight, 0.0);
+  let crest = smoothstep(0.12, 0.48, height) * smoothstep(0.002, 0.06, rising);
+  finalColor = finalColor + vec3<f32>(0.82, 0.90, 1.0) * crest * (0.4 + amplitude * 0.8);
+
+  let alpha = clamp(sourceColor.a * 0.35 + amplitude * 0.45 + crest * 0.4, 0.0, 1.0);
+  textureStore(writeTexture, pixel, vec4<f32>(aces(max(finalColor, vec3<f32>(0.0))), alpha));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(mix(depth, 0.5 - height * 0.2, 0.65), 0.0, 1.0), 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, pixel, state);
 }

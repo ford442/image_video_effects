@@ -54,7 +54,8 @@
     "audio-reactive",
     "physics",
     "temporal-persistence",
-    "interactive"
+    "interactive",
+    "upgraded-rgba"
   ],
   "tags": [
     "simulation",
@@ -85,6 +86,16 @@
           "reads": ["dataB"],
           "writes": ["color", "dataA"]
         }
+      ]
+    }
+  },
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        { "index": 0, "name": "Wave Speed", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 1, "name": "Damping", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 2, "name": "Source Strength", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 3, "name": "Boundary Reflect", "default": 0.5, "min": 0, "max": 1, "step": 0.01 }
       ]
     }
   }
