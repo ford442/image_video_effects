@@ -7697,8 +7697,10 @@
       "spring-interaction",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
+    "feedbackPacking": "A/C = raw MHD state (R=height, G=velocity, B=EM potential, A=surface charge); writeTexture = ACES",
     "params": [
       {
         "id": "field_strength",

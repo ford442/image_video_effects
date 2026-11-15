@@ -3276,11 +3276,15 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
       "depth-aware",
       "voronoi-network",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
+    "feedbackPacking": "A/C = linear HDR mycelium trail RGB + semantic alpha; writeTexture = ACES",
     "params": [
       {
         "id": "network_scale",
@@ -4627,7 +4631,17 @@
         "id": "bioluminescence",
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for refractory coral afterglow"
   },
   {
     "id": "gen-bioluminescent-neural-lattice-weaver",
@@ -9206,12 +9220,16 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
       "depth-aware",
       "barnsley-ifs",
       "domain-warp",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
+    "feedbackPacking": "A/C = linear HDR frond/cymatic trail RGB + semantic alpha; writeTexture = ACES",
     "params": [
       {
         "id": "growth_rate",
@@ -21032,8 +21050,14 @@
     "features": [
       "audio-reactive",
       "mouse-control",
-      "raymarching"
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
     ],
+    "updated": true,
+    "feedbackPacking": "A/C = ACES display RGBA for geode plasma shimmer",
     "params": [
       {
         "id": "plasma_intensity",
@@ -27876,7 +27900,17 @@
         "step": 0.1,
         "id": "p4"
       }
-    ]
+    ],
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for stellar forge ember trail"
   },
   {
     "name": "Stellar Mycelium Overdrive",
