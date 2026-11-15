@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: log vs Archimedean mix; photo rides the spiral tangent
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: log vs Archimedean mix; photo rides the spiral tangent; leading-edge bevel; spin afterimage
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hsv2rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     let c = fract(h + vec3<f32>(0.0, 0.66666667, 0.33333333)) * 6.0 - 3.0;
@@ -82,7 +63,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         twist += sin(dist * 20.0 - age * 8.0) * exp(-age * 2.0) * 0.5 / (dist + 0.1);
     }
     let twistedAngle = baseAngle + radius * rotSpeed * twist;
-    let spiralPattern = sin(arms * twistedAngle - time * rotSpeed + radius * 10.0);
+    let armPhase = arms * twistedAngle - time * rotSpeed + radius * 10.0;
+    let spiralPattern = sin(armPhase);
     let spiralMask = smoothstep(-0.2, 0.2, spiralPattern);
     let secAngle = baseAngle - radius * rotSpeed * 0.7;
     let secPattern = sin(arms * 0.5 * secAngle + time * rotSpeed * 0.5 + radius * 8.0);
@@ -92,6 +74,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sat = 1.0 - radius * 0.5;
     let val = (spiralMask + secMask + sparkle) * (1.0 - radius * 0.3);
     var rgb = hsv2rgb(fract(hue), sat, val);
+    // ── Idea 1: leading-edge bevel ───────────────────────────────────
+    // Cosine of the existing arm phase: one side of the crest lights, the other falls.
+    let lead = cos(armPhase);
+    rgb *= 1.0 + lead * spiralMask * 0.45;
     let centerDist = length(uv);
     let glow = exp(-centerDist * 3.0) * sin(time * 5.0) * 0.5 + 0.5;
     rgb += vec3<f32>(1.0, 0.8, 0.5) * glow * (1.0 - radius);
@@ -101,7 +87,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ride = spiralMask * 0.07 * (0.35 + u.zoom_params.w * 0.4);
     let texUV = clamp(pixUV + tangent * ride / vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let texColor = textureSampleLevel(readTexture, u_sampler, texUV, 0.0);
-    let mapped = acesToneMap(mix(rgb, texColor.rgb, 0.3));
+    // ── Idea 2: spin afterimage ──────────────────────────────────────
+    // Exact C, a short step against the rotation, amount from Rotation Speed.
+    let spinSign = sign(rotSpeed);
+    let aspectFix = vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
+    let streakUv = clamp(pixUV - tangent * spinSign * (0.02 * clamp(abs(rotSpeed), 0.0, 2.0)) / aspectFix, vec2<f32>(0.0), vec2<f32>(1.0));
+    let streakDims = vec2<i32>(textureDimensions(dataTextureC));
+    let streakPx = clamp(vec2<i32>(streakUv * vec2<f32>(streakDims)), vec2<i32>(0), streakDims - vec2<i32>(1));
+    let prevArm = textureLoad(dataTextureC, streakPx, 0);
+    let streakAmt = clamp(abs(rotSpeed) * 0.28, 0.0, 0.36) * (0.35 + 0.65 * spiralMask);
+    rgb = mix(rgb, prevArm.rgb, streakAmt);
+    let mapped = acesToneMap(max(mix(rgb, texColor.rgb, 0.3), vec3<f32>(0.0)));
     let alpha = clamp((spiralMask + secMask * 0.5) * (1.0 - radius * 0.3) + glow * 0.2 + bass * 0.1 + texColor.a * 0.2, 0.0, 1.0);
     let outCol = vec4<f32>(mapped, alpha);
 

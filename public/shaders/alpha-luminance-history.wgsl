@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Alpha Luminance History
 //  Category: visual-effects
-//  Features: mouse-driven, temporal, rgba-state-machine
+//  Features: mouse-driven, audio-reactive, temporal, rgba-state-machine, upgraded-rgba
 //  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: phosphor attack/release; remembered-color afterglow
+//  A packing: raw state — RGB current source color, A rolling luminance (ACES on writeTexture only)
 //  RGBA Channels:
 //    R = Current frame red
 //    G = Current frame green
@@ -13,6 +16,10 @@
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn historyAt(coord: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
     let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
@@ -48,15 +55,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let glowIntensity = u.zoom_params.y * 3.0 * (1.0 + audio.y * 0.25);
     let colorShift = u.zoom_params.z; // Hue shift based on history
 
-    // === UPDATE ROLLING AVERAGE ===
-    let newAvgLuma = mix(prevAvgLuma, currentLuma, decay);
+    // ── Idea 1: phosphor attack / release ─────────────────────────
+    // Brightening tracks the frame; the afterimage releases on the slow side of the decay slider.
+    let attack = min(decay * 2.4 + 0.08, 0.9);
+    let release = decay * 0.42;
+    let memK = select(release, attack, currentLuma > prevAvgLuma);
+    let newAvgLuma = mix(prevAvgLuma, currentLuma, memK);
 
     // === GLOW COMPUTATION ===
     // Glow where it WAS bright (newAvg > current)
     let glowAmount = max(0.0, newAvgLuma - currentLuma);
 
-    // Warm glow color
-    let glowColor = vec3<f32>(1.0, 0.85, 0.6) * glowAmount * glowIntensity;
+    // ── Idea 2: remembered-color afterglow ────────────────────────
+    // C.rgb is the color stored with the previous luminance. The warm lamp is the fallback.
+    let remembered = max(prevState.rgb, vec3<f32>(0.0));
+    let glowTint = mix(vec3<f32>(1.0, 0.85, 0.6), remembered, clamp(prevAvgLuma * 1.4, 0.0, 0.75));
+    let glowColor = glowTint * glowAmount * glowIntensity;
 
     // === COLOR SHIFT BASED ON HISTORY ===
     var displayColor = currentColor + glowColor;
@@ -103,13 +117,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let diffusedAvg = mix(finalAvgLuma, neighborAvg, mix(0.0, 0.48, diffusion));
 
     // === STORE STATE ===
+    // A.rgb stays this frame's source color so the next glow can remember it. A.a stays the average.
     textureStore(dataTextureA, coord, vec4<f32>(currentColor, diffusedAvg));
 
     // === TONE MAP AND WRITE ===
     displayColor = displayColor / (1.0 + displayColor * 0.3);
-    displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    displayColor = aces(clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0)));
+    let coverage = clamp(diffusedAvg * 0.75 + glowAmount * glowIntensity * 0.25, 0.0, 1.0);
 
-    textureStore(writeTexture, coord, vec4<f32>(displayColor, diffusedAvg));
+    textureStore(writeTexture, coord, vec4<f32>(displayColor, coverage));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -2149,7 +2149,7 @@
   {
     "id": "gen-acoustic-obsidian-resonator",
     "name": "Acoustic Obsidian Resonator",
-    "description": "A towering, crystalline obsidian structure that breathes and fractures in perfect synchronization with unseen acoustic frequencies, revealing molten golden cores.",
+    "description": "A towering, crystalline obsidian structure that breathes and fractures in perfect synchronization with unseen acoustic frequencies, revealing molten golden cores. Glossy glass, conchoidal scars, gold sheen.",
     "category": "generative",
     "url": "/shaders/gen-acoustic-obsidian-resonator.wgsl",
     "workgroup_size": [
@@ -2200,7 +2200,8 @@
     "updated": true,
     "features": [
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -2381,6 +2382,11 @@
         "mapping": "zoom_params.w",
         "id": "glow-intensity"
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -2457,7 +2463,9 @@
       "tachyon",
       "energy",
       "folded-space",
-      "audio-reactive"
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "lattice",
@@ -3280,11 +3288,15 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
       "depth-aware",
       "voronoi-network",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
+    "feedbackPacking": "A/C = linear HDR mycelium trail RGB + semantic alpha; writeTexture = ACES",
     "params": [
       {
         "id": "network_scale",
@@ -3356,7 +3368,8 @@
       "bass-env",
       "aces-tone-map",
       "ign-dither",
-      "premultiplied-alpha"
+      "premultiplied-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4574,7 +4587,12 @@
         "step": 0.05
       }
     ],
-    "description": "A hyper-organic, pulsing network of luminous fungal threads that weave and branch through a dense, volumetric void, reacting dynamically to bass and treble frequencies."
+    "description": "A hyper-organic, pulsing network of luminous fungal threads that weave and branch through a dense, volumetric void, reacting dynamically to bass and treble frequencies.",
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ]
   },
   {
     "id": "gen-bioluminescent-neural-coral-matrix",
@@ -4632,7 +4650,17 @@
         "id": "bioluminescence",
         "mapping": "zoom_params.w"
       }
-    ]
+    ],
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for refractory coral afterglow"
   },
   {
     "id": "gen-bioluminescent-neural-lattice-weaver",
@@ -9211,12 +9239,16 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
       "depth-aware",
       "barnsley-ifs",
       "domain-warp",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
+    "feedbackPacking": "A/C = linear HDR frond/cymatic trail RGB + semantic alpha; writeTexture = ACES",
     "params": [
       {
         "id": "growth_rate",
@@ -9269,9 +9301,10 @@
       "audio-reactive",
       "mouse-driven",
       "depth-aware",
-      "standing-wave"
+      "standing-wave",
+      "chladni"
     ],
-    "description": "A hex-tiled cymatic mandala radiates standing-wave rings from center. Bass drives wave amplitude, mids shift frequency and hue, and treble sparks node intersections. Mouse offsets the mandala center; depth softens outer rings.",
+    "description": "A hex-tiled cymatic mandala radiates standing-wave rings from center. Bass drives wave amplitude, mids shift frequency and hue, and treble sparks node intersections. Mouse offsets the mandala center; depth softens outer rings. Six-fold plate modes scallop the rings; Chladni sand gathers on nodal lines.",
     "workgroup_size": [
       16,
       16,
@@ -9286,7 +9319,8 @@
       "depth-aware",
       "hex-cymatics",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -11038,6 +11072,11 @@
       "organic",
       "mechanical",
       "audio-reactive"
+    ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,
@@ -13909,7 +13948,7 @@
       "horseshoe",
       "audio-reactive"
     ],
-    "description": "A classic fractal flame blends swirl, horseshoe, and polar affine variations into warm spectral density traps with temporal embers.",
+    "description": "A classic fractal flame blends swirl, horseshoe, and polar affine variations into warm spectral density traps with temporal embers. A black point keeps filaments; colour index tints, cores burn white.",
     "workgroup_size": [
       16,
       16,
@@ -14000,7 +14039,8 @@
       "depth-aware",
       "lichtenberg-branches",
       "aces-tone-map",
-      "ign-dither"
+      "ign-dither",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -15276,6 +15316,11 @@
     "type": "generative",
     "category": "generative",
     "url": "shaders/gen-harmonic-ferrofluid-kinetics.wgsl",
+    "description": "Raymarched ferrofluid spikes from an inverted Voronoi field, pinched at the crest, with a held magnetic mound, tip glints, and crevice occlusion.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -17161,7 +17206,7 @@
       "eye",
       "audio-reactive"
     ],
-    "description": "Recursive polar petals articulate a breathing iris aperture, dark pupil, treble-fine veins, pointer gaze, and click-seeded bloom rings.",
+    "description": "Recursive polar petals articulate a breathing iris aperture, dark pupil, treble-fine veins, pointer gaze, and click-seeded bloom rings. Hippus, click light reflex, furrows, catchlight.",
     "workgroup_size": [
       16,
       16,
@@ -18258,7 +18303,8 @@
       "audio-reactive",
       "mouse-driven",
       "sdf",
-      "temporal-glow"
+      "temporal-glow",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",
@@ -21037,8 +21083,14 @@
     "features": [
       "audio-reactive",
       "mouse-control",
-      "raymarching"
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
     ],
+    "updated": true,
+    "feedbackPacking": "A/C = ACES display RGBA for geode plasma shimmer",
     "params": [
       {
         "id": "plasma_intensity",
@@ -24014,7 +24066,7 @@
   },
   {
     "name": "Prismatic Quantum Loom",
-    "description": "A hyper-dimensional weaving of chromatic threads that respond to cosmic gravity, creating an ethereal, glowing lattice of pure light and quantum entanglement.",
+    "description": "A hyper-dimensional weaving of chromatic threads that respond to cosmic gravity, creating an ethereal, glowing lattice of pure light and quantum entanglement. Over/under weave, dispersed halos.",
     "type": "generative",
     "category": "generative",
     "tags": [
@@ -24025,6 +24077,12 @@
       "lattice"
     ],
     "url": "shaders/gen-prismatic-quantum-loom.wgsl",
+    "features": [
+      "raymarched",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -27881,7 +27939,17 @@
         "step": 0.1,
         "id": "p4"
       }
-    ]
+    ],
+    "updated": true,
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
+    ],
+    "feedbackPacking": "A/C = ACES display RGBA for stellar forge ember trail"
   },
   {
     "name": "Stellar Mycelium Overdrive",
@@ -28538,7 +28606,8 @@
       "ray-marching",
       "audio-reactive",
       "mouse-control",
-      "pbr-shading"
+      "pbr-shading",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -28633,7 +28702,11 @@
     "features": [
       "audio-reactive",
       "mouse-control",
-      "raymarching"
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,

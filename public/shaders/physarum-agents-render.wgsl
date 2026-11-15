@@ -5,7 +5,12 @@
 //    · bioluminescent veins — trail density through a teal → cyan → white-hot glow, with a soft halo
 //    · iridescent flow     — vein hue follows the trail gradient's orientation, drifting slowly
 //    · living front        — texels deposited in the last ~0.15 s flare: the network's growing tips
+//    · dried-tube crust    — old dense trail shifts ochre
+//    · peristaltic pulse   — brightness travels along the trail tangent
 //  A/C packing: .r trail, .g time of the last deposit on the texel
+//  Upgraded: 2026-11-15
+//  Ideas: dried-tube crust; peristaltic pulse along the trail tangent
+//  A packing: raw trail (.r amount, .g last deposit time). Render does not write A. ACES on display
 
 #include "_prelude.wgsl"
 
@@ -67,13 +72,24 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col = col + tint * glow * (0.9 + 0.6 * bass) + vec3<f32>(1.0, 0.95, 0.85) * hot * 0.6;
   col = col + tint * (1.0 - exp(-halo * 0.6)) * 0.35;
 
-  // Living front.
-  if (here.g > 0.0) {
-    let fresh = exp(-max(time - here.g, 0.0) * 14.0);
-    col = col + vec3<f32>(1.0, 0.85, 0.55) * fresh * glow * (0.5 + 0.8 * treble);
-  }
+  // ── Idea 1: dried-tube crust. The living front is applied after ───
+  let deposited = here.g > 0.0;
+  let age01 = select(1.0, clamp((time - here.g) * 0.35, 0.0, 1.0), deposited);
+  let crust = smoothstep(0.45, 1.0, age01) * glow;
+  col = mix(col, col * vec3<f32>(0.55, 0.42, 0.28) + vec3<f32>(0.08, 0.05, 0.02) * glow, crust * 0.55);
 
-  textureStore(writeTexture, p, vec4<f32>(aces(col * 1.1), 1.0));
+  // ── Idea 2: peristalsis along the tangent of the trail gradient ───
+  let ang = orient * 3.14159265;
+  let along = dot(uv - vec2<f32>(0.5), vec2<f32>(-sin(ang), cos(ang)));
+  let pulse = 0.5 + 0.5 * sin(along * 46.0 - time * 1.6);
+  col = col + tint * glow * pulse * 0.22;
+
+  // Living front.
+  let fresh = select(0.0, exp(-max(time - here.g, 0.0) * 14.0), deposited);
+  col = col + vec3<f32>(1.0, 0.85, 0.55) * fresh * glow * (0.5 + 0.8 * treble);
+
+  let alpha = clamp(0.28 + glow * 0.5 + hot * 0.25 + fresh * 0.2, 0.0, 1.0);
+  textureStore(writeTexture, p, vec4<f32>(aces(max(col * 1.1, vec3<f32>(0.0))), alpha));
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, p, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

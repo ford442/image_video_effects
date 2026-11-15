@@ -1,6 +1,12 @@
-// Ripple Tank — Codex (e) graph node 1: dispersive wave integration.
-// A/C packing: height, velocity, foam energy, oscillator phase.
-// Writes only A; B and extraBuffer are intentionally unused.
+// ═══════════════════════════════════════════════════════════════════
+//  Ripple Tank — Node 1: Bathymetric Dispersive Wave Integration
+//  Category: simulation
+//  Features: multi-pass, mouse-driven, audio-reactive, depth-aware, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: bathymetric scene-depth wave shoaling (§12.2D) & Rayleigh sponge shore; ray-sheet Jacobian focal caustics & Fresnel-Schlick / Beer-Lambert tank optics (§12.2F)
+//  A packing: raw (height, velocity, foam energy, oscillator phase)
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
@@ -37,20 +43,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let uv = (vec2<f32>(gid.xy) + 0.5) / res;
   let audio = clamp(plasmaBuffer[0].xyz, vec3<f32>(0.0), vec3<f32>(1.0));
   let state = stateAt(pixel, dims);
-  let waveSpeed = mix(0.08, 0.45, u.zoom_params.x) * (1.0 + audio.y * 0.035);
+
+  // ── Idea 1: bathymetric scene-depth wave shoaling (§12.2D Dispersion) ──
+  // Submerged foreground silhouettes reduce local water depth h_b, slowing phase speed c ~ sqrt(h_b)
+  let sceneDepth = textureLoad(readDepthTexture, pixel, 0).r;
+  let shoalFactor = sqrt(clamp(1.06 - sceneDepth * 0.54, 0.38, 1.0));
+  let waveSpeed = mix(0.08, 0.45, u.zoom_params.x) * (1.0 + audio.y * 0.035) * shoalFactor;
   let damping = mix(0.975, 0.9995, u.zoom_params.y) - audio.z * 0.0008;
-  let boundaryReflect = u.zoom_params.w;
+  let boundaryReflect = clamp(u.zoom_params.w, 0.0, 1.0);
 
   let curvature = laplacian(pixel, dims);
   var velocity = (state.g + waveSpeed * waveSpeed * curvature) * damping;
   var height = state.r + velocity;
   var foam = max(state.b * (0.965 + audio.x * 0.012), abs(curvature) * 0.32);
 
+  // ── Idea 1: Rayleigh velocity-sponge beach vs. Neumann reflecting tank wall ──
   let edgeDistance = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-  let wall = mix(smoothstep(0.0, 0.06, edgeDistance), 1.0, boundaryReflect);
-  height *= wall;
-  velocity *= wall;
-  foam *= mix(0.7, 1.0, wall);
+  let shoreBand = 1.0 - smoothstep(0.0, 0.075, edgeDistance);
+  let absorbAmount = shoreBand * (1.0 - boundaryReflect);
+  velocity *= 1.0 - absorbAmount * 0.18;
+  height *= 1.0 - absorbAmount * 0.045;
+  foam *= 1.0 - absorbAmount * 0.08;
 
   textureStore(dataTextureA, pixel, vec4<f32>(
     clamp(height, -1.5, 1.5),

@@ -3,31 +3,12 @@
 //  Category: post-processing
 //  Features: audio-reactive, temporal, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: red dye-layer lag; C freeze-hold
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: red dye-layer lag; C freeze-hold; red fringe on outer hex taps (§12.2A); core bleach (§12.2A)
 //  A packing: accumulated halo RGB + envelope A (raw bloom; C is previous halo)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const HEX_TAPS = array<vec2<f32>, 7>(
     vec2<f32>(0.0, 0.0), vec2<f32>(1.0, 0.0), vec2<f32>(0.5, 0.866),
@@ -55,7 +36,11 @@ fn hexBloom(uv: vec2<f32>, radius: vec2<f32>, lod: f32) -> vec3<f32> {
         let off = HEX_TAPS[i] * radius * 18.0;
         let s = textureSampleLevel(readTexture, u_sampler, clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0)), lod).rgb;
         let w = select(0.75, 1.35, i == 0);
-        acc += s * w;
+        // ── Idea 3: red fringe on the outer taps (§12.2A) ─────────
+        // The center tap stays the source color. Scattered taps re-expose the red layer.
+        let sL = dot(s, vec3<f32>(0.299, 0.587, 0.114));
+        let redCast = mix(s, vec3<f32>(1.0, 0.38, 0.12) * sL, select(0.55, 0.0, i == 0));
+        acc += redCast * w;
         wt += w;
     }
     return acc / max(wt, 1.0e-4);
@@ -102,7 +87,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let fog = exp(-depth * 0.8);
 
-    var col = input.rgb * (1.0 - brightMask * 0.15) + bloomCol * 1.1 + ghost * 0.6;
+    // ── Idea 4: core bleach (§12.2A) ───────────────────────────────
+    // The halo's light left the core, so the core gives up chroma instead of only dimming.
+    let coreL = dot(input.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let bleach = clamp(length(newHalo) * 1.4, 0.0, 0.55);
+    let core = mix(input.rgb, vec3<f32>(coreL), bleach);
+    var col = core * (1.0 - brightMask * 0.15) + bloomCol * 1.1 + ghost * 0.6;
     col = 1.0 - exp(-col * 1.05);
     col = aces(col * fog) * fog;
     col = mix(col, input.rgb, darkPixel);

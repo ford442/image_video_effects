@@ -5,32 +5,19 @@
 //  Complexity: High
 //  Chunks From: mirror-drag, bass_env, temporal-feedback
 //  Created: 2024-01-01
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-05-31, 2026-11-15
+//  Ideas: hinge crease; facet shade
+//  A packing: linear trail RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn bass_env(bass: f32, mids: f32) -> f32 {
   return 1.0 + bass * 0.5 + mids * 0.2;
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -96,10 +83,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let shatterGlow = smoothstep(0.9, 1.0, shardEdge) * (treble + clickFront) * shatterAmount;
 
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + facetRunner * 2.0 + u.config.x);
-    let finalRGB = chromaColor.rgb + spectral * (shatterGlow + abs(facetRunner) * shatterAmount * 0.06 * isMouseDown);
-    let alpha = clamp(chromaColor.a + shatterGlow + bass * 0.05, 0.0, 1.0);
+    var finalRGB = chromaColor.rgb + spectral * (shatterGlow + abs(facetRunner) * shatterAmount * 0.06 * isMouseDown);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
-    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, alpha));
+    // ── Idea 1: hinge crease ────────────────────────────────────────
+    // The fold is where the straight plate and the mirrored plate disagree.
+    // That seam is drawn on the axis, and it fades as Mirror Amount goes to 0.
+    let plainUV = clamp(uv - offset, vec2<f32>(0.0), vec2<f32>(1.0));
+    let plain = textureSampleLevel(readTexture, u_sampler, plainUV, 0.0);
+    let seam = length(plain.rgb - current.rgb);
+    let onAxis = 1.0 - smoothstep(0.0, 0.045 + (1.0 - mirror) * 0.18, abs(uv.x - 0.5));
+    let crease = clamp(seam * mirror * onAxis, 0.0, 1.0);
+    finalRGB = mix(finalRGB, finalRGB * vec3<f32>(0.22, 0.26, 0.32), crease);
+    finalRGB += vec3<f32>(0.75, 0.82, 0.95) * crease * 0.45;
+
+    // ── Idea 2: facet shade ─────────────────────────────────────────
+    // The shard angle already cuts the glass. Shade the face, not only the crack.
+    let facetLit = 0.78 + 0.22 * sin(shardAngle + shardDist * 2.5);
+    finalRGB *= mix(1.0, facetLit, shatterAmount);
+
+    let alpha = clamp(chromaColor.a + shatterGlow + bass * 0.05 + crease * 0.25, 0.0, 1.0);
+    let linearRGB = max(finalRGB, vec3<f32>(0.0));
+    let shown = vec4<f32>(aces(linearRGB), alpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), shown);
+    textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(linearRGB, alpha));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

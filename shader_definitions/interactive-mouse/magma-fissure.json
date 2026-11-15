@@ -42,7 +42,8 @@
     "three-band-audio",
     "held-pointer",
     "click-reactive",
-    "branching-thermal-field"
+    "branching-thermal-field",
+    "upgraded-rgba"
   ],
   "feedbackPacking": "A/C = heat in R with G/B zero and A one via bounded exact neighbor loads; writeTexture is ACES presentation; B is unused",
   "tags": [

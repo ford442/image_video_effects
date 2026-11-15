@@ -2,8 +2,8 @@
 //  Hex Circuit
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-10
-//  Ideas: via pads at hex nuclei; exact-C contour persist
+//  Upgraded: 2026-09-10, 2026-11-15
+//  Ideas: via pads at hex nuclei; exact-C contour persist; edge-aligned trace; joule heating
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -46,13 +46,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let fractA = fract(p / r) * r - h;
     let fractB = (fract((p / r) + 0.5) * r) - h;
-
-    var localUV = vec2<f32>(0.0);
-    if (dot(fractA, fractA) < dot(fractB, fractB)) {
-        localUV = fractA;
-    } else {
-        localUV = fractB;
-    }
+    let localUV = select(fractB, fractA, dot(fractA, fractA) < dot(fractB, fractB));
 
     var q = abs(localUV);
     let distToCenter = max(q.x * 0.5 + q.y * 0.866025, q.x);
@@ -68,7 +62,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let lumaR = dot(cR, vec3<f32>(0.333));
     let lumaU = dot(cU, vec3<f32>(0.333));
 
-    let imgEdge = sqrt(pow(luma - lumaR, 2.0) + pow(luma - lumaU, 2.0));
+    let dRx = luma - lumaR;
+    let dUy = luma - lumaU;
+    let imgEdge = sqrt(dRx * dRx + dUy * dUy);
     let prev = textureLoad(dataTextureC, coord, 0);
     let persist = max(imgEdge, prev.a * 0.82);
 
@@ -84,22 +80,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isHexLine = 1.0 - smoothstep(0.0, lineThickness, distToEdge);
     let via = 1.0 - smoothstep(0.0, lineThickness * 1.8, distToCenter);
 
-    let hexColor = mix(vec3<f32>(0.0, 0.5, 1.0), vec3<f32>(1.0, 0.0, 0.5), pulse + bass * 0.15);
+    // ── Idea 1: edge-aligned trace ──────────────────────────────────
+    // A wall of the hex lights when its normal faces the photo edge.
+    // Walls that only cross the edge stay dim. Flat photo keeps a quiet grid.
+    let gradLen = imgEdge;
+    let edgeDir = vec2<f32>(dRx, dUy) / max(gradLen, 1e-4);
+    let wallN = localUV / max(length(localUV), 1e-4);
+    let align = abs(dot(wallN, edgeDir));
+    let aligned = select(0.55, align, gradLen > 0.02);
+    let trace = isHexLine * mix(0.35, 1.0, aligned);
+
+    // ── Idea 2: joule heating ───────────────────────────────────────
+    // C.a stays high where a trace kept firing. That persist shifts the
+    // pulse color toward hot copper. Idle alpha (about 0.14) stays cold.
+    let pulseColor = mix(vec3<f32>(0.0, 0.5, 1.0), vec3<f32>(1.0, 0.0, 0.5), pulse + bass * 0.15);
+    let heat = clamp((persist - 0.16) * (1.6 + edgeSens), 0.0, 1.0);
+    let hexColor = mix(pulseColor, vec3<f32>(1.0, 0.42, 0.08), heat);
 
     let liveEdge = max(imgEdge, persist * 0.85);
     let activeHex = step(edgeSens * 0.1, liveEdge) * (0.7 + treble * 0.3) + pulse * (0.45 + bass * 0.45);
 
-    color = mix(color, hexColor * glowStrength, isHexLine * clamp(activeHex + 0.2, 0.2, 1.0));
+    color = mix(color, hexColor * glowStrength, trace * clamp(activeHex + 0.2, 0.2, 1.0));
     color += (1.0 - isHexLine) * hexColor * activeHex * 0.2;
     color += hexColor * via * activeHex * 0.45;
 
     let mouseHover = 1.0 - smoothstep(0.0, 0.2, mouseDist);
     color += mouseHover * vec3<f32>(0.1, 0.1, 0.2);
 
-    let finalAlpha = clamp(0.14 + isHexLine * clamp(activeHex + 0.15, 0.0, 1.0) * 0.45 + pulse * 0.18 + bass * 0.08 + via * activeHex * 0.12, 0.08, 0.96);
-    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + isHexLine * 0.05 + pulse * 0.02, 0.0, 1.0);
+    let finalAlpha = clamp(0.14 + trace * clamp(activeHex + 0.15, 0.0, 1.0) * 0.45 + pulse * 0.18 + bass * 0.08 + via * activeHex * 0.12 + heat * 0.1, 0.08, 0.96);
+    let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r + trace * 0.05 + pulse * 0.02, 0.0, 1.0);
 
-    let outColor = vec4<f32>(acesToneMap(color), finalAlpha);
+    let outColor = vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), finalAlpha);
     textureStore(writeTexture, coord, outColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
     textureStore(dataTextureA, coord, outColor);

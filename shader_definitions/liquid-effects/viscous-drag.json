@@ -2,7 +2,7 @@
   "id": "viscous-drag",
   "name": "Viscous Drag",
   "url": "shaders/viscous-drag.wgsl",
-  "description": "Diffused drag state drives traveling jets, pressure and thickness buildup, elastic recovery, held-pointer smears, click fronts, and illuminated viscous ridges.",
+  "description": "Diffused drag state drives traveling jets, pressure and thickness buildup, elastic recovery, held-pointer smears, click fronts, and illuminated viscous ridges. Ridges lit by thickness gradient; strain smears the photo along flow.",
   "features": [
     "mouse-driven",
     "audio-reactive",

@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Voxel Depth Sort v2
 //  Category: image
-//  Features: audio-reactive, depth-aware, isometric-voxel, ao-shadows,
-//            chromatic-subsurface, aces-tone-map
+//  Features: mouse-driven, click-reactive, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-02 (Batch 30)
+//  Upgraded: 2026-08-02, 2026-11-15
+//  Ideas: extruded isometric X/Y voxel side walls; upslope neighbour depth-sort shadow & C.x column settle
+//  A packing: raw voxel fields (settledColumn, topMask, depthConf, finalAlpha)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -82,14 +83,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
   let cellHash = hash11(cell.x * 17.0 + cell.y * 113.0);
-  let fftBin = (u32(cellHash * 8.0) % 8u) + 1u;
+  let maxBins = max(arrayLength(&plasmaBuffer), 1u);
+  let fftBin = min((u32(cellHash * 8.0) % 8u) + 1u, maxBins - 1u);
   let fftVoice = clamp(plasmaBuffer[fftBin].x, 0.0, 1.0);
 
+  let coord = vec2<i32>(global_id.xy);
   let sourceDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, blockUV, 0.0).r;
   let shiftedUV = clamp(blockUV + vec2<f32>(0.0, -(sourceDepth + bass * 0.15 + clickLift * 0.35) * extrusion * 0.14), vec2<f32>(0.0), vec2<f32>(1.0));
-  let blockColor = textureSampleLevel(readTexture, u_sampler, shiftedUV, 0.0).rgb;
+  let sampledTex = textureSampleLevel(readTexture, u_sampler, shiftedUV, 0.0);
+  let blockColor = sampledTex.rgb;
   let luma = luminance(blockColor);
-  let column = clamp(max(luma, sourceDepth) + clickLift * extrusion * 0.45, 0.0, 1.0);
+  let targetColumn = clamp(max(luma, sourceDepth) + clickLift * extrusion * 0.45, 0.0, 1.0);
+
+  // ── Idea 2 (part a): physical pinscreen column settle from exact C.x ───
+  let prevField = textureLoad(dataTextureC, coord, 0);
+  let settleRate = select(0.18, 0.58, targetColumn > prevField.x);
+  let column = select(targetColumn, mix(prevField.x, targetColumn, settleRate), prevField.w > 0.01);
 
   let rotLocal = vec2<f32>(
     local.x * cos(isoRot) - local.y * sin(isoRot),
@@ -98,14 +107,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let perspective = 1.0 - isoTilt * 0.3;
   let projLocal = vec2<f32>(rotLocal.x * aspect * perspective, rotLocal.y * perspective);
 
-  let inset = max(abs(projLocal.x), abs(projLocal.y));
-  let topMask = 1.0 - smoothstep(0.5 - blockGap * 0.45, 0.5, inset);
-  let shadowMask = (1.0 - topMask) * (0.35 + bgDarken * 0.45);
+  // ── Idea 1: extruded isometric X/Y voxel side walls ────────────────────
+  let halfFace = 0.5 - blockGap * 0.45;
+  let extVec = vec2<f32>(sin(isoRot) * 0.34, -0.32 - isoTilt * 0.26) * column * extrusion;
+  let capLocal = projLocal - extVec * 0.55;
+  let inset = max(abs(capLocal.x), abs(capLocal.y));
+  let topMask = 1.0 - smoothstep(halfFace - 0.025, halfFace, inset);
 
-  let ao = 1.0 - smoothstep(0.2, 0.5, inset) * 0.35 * topMask;
-  let softShadow = smoothstep(0.0, 0.5, sourceDepth) * 0.25 * topMask;
+  let extLen2 = max(dot(extVec, extVec), 1e-5);
+  let sweepT = clamp(dot(projLocal + extVec * 0.45, extVec) / extLen2, 0.0, 1.0);
+  let shaftLocal = (projLocal + extVec * 0.45) - extVec * sweepT;
+  let shaftInset = max(abs(shaftLocal.x), abs(shaftLocal.y));
+  let wallMask = (1.0 - smoothstep(halfFace - 0.02, halfFace + 0.015, shaftInset)) * (1.0 - topMask) * step(0.008, length(extVec));
+  let isXWall = step(abs(shaftLocal.y), abs(shaftLocal.x));
+  let wallShade = mix(0.36, 0.58, isXWall) * (0.68 + 0.32 * sweepT);
 
-  let rim = smoothstep(0.30, 0.48, inset) * topMask;
+  // ── Idea 2 (part b): upslope neighbour height step-shadow ──────────────
+  let stepSignX = select(-1.0, 1.0, sin(isoRot) < 0.15);
+  let neighUV = clamp(((cell + vec2<f32>(stepSignX, -1.0) + 0.5) * blockPixels) / resolution, vec2<f32>(0.0), vec2<f32>(1.0));
+  let neighDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, neighUV, 0.0).r;
+  let neighColor = textureSampleLevel(readTexture, u_sampler, neighUV, 0.0).rgb;
+  let neighColumn = clamp(max(luminance(neighColor), neighDepth), 0.0, 1.0);
+  let heightDiff = max(neighColumn - column, 0.0) * extrusion;
+  let shadowAxis = -capLocal.y * 0.72 + capLocal.x * stepSignX * 0.38;
+  let stepShadow = smoothstep(halfFace - heightDiff * 0.95, halfFace, shadowAxis) * clamp(heightDiff * 2.1, 0.0, 0.68);
+
+  let shadowMask = (1.0 - clamp(topMask + wallMask, 0.0, 1.0)) * (0.35 + bgDarken * 0.45);
+
+  let ao = 1.0 - smoothstep(0.2, halfFace, inset) * 0.35 * topMask;
+  let softShadow = (smoothstep(0.0, 0.5, sourceDepth) * 0.25 + stepShadow * 0.75) * topMask;
+
+  let rim = smoothstep(halfFace - 0.16, halfFace - 0.01, inset) * topMask;
   let spectral = mix(
     vec3<f32>(0.16, 0.60, 1.0),
     vec3<f32>(1.0, 0.45, 0.20),
@@ -117,19 +149,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var backgroundColor = mix(blockColor * (1.0 - bgDarken * 0.80), vec3<f32>(0.02, 0.03, 0.05), bgDarken * 0.70);
   backgroundColor = backgroundColor * (1.0 - shadowMask);
 
+  let wallColor = (blockColor * wallShade + spectral * 0.08 * (1.0 - sweepT)) * (1.0 - stepShadow * 0.55);
+
   var topColor = blockColor * (0.65 + 0.60 * column) * ao;
   topColor = topColor + spectral * rim * (0.14 + audio.y * 0.24 + bass * 0.18 + fftVoice * 0.18);
   topColor = topColor + vec3<f32>(0.08, 0.10, 0.14) * extrusion * (1.0 + bass * 0.2);
-  topColor = (topColor + sss) * (1.0 - softShadow);
-  topColor = aces_tonemap(topColor);
+  topColor = (topColor + sss) * (1.0 - clamp(softShadow, 0.0, 0.82));
 
-  let finalColor = mix(backgroundColor, topColor, topMask);
+  let pillarColor = mix(backgroundColor, wallColor, wallMask);
+  let hdrOut = mix(pillarColor, topColor, topMask);
+  let finalColor = aces_tonemap(max(hdrOut, vec3<f32>(0.0)));
+  let voxelCover = clamp(topMask + wallMask * 0.85, 0.0, 1.0);
   let depthConf = clamp(sourceDepth + column * 0.3, 0.0, 1.0);
-  let occlusion = shadowMask * 0.5 + (1.0 - ao) * 0.3;
-  let finalAlpha = clamp(depthConf * (1.0 - occlusion) * (0.5 + topMask * 0.45), 0.25, 0.98);
-  let depthOut = clamp(mix(sourceDepth * (1.0 - bgDarken * 0.50), min(1.0, column + extrusion * 0.60 + bass * 0.12 + clickLift * 0.18), topMask), 0.0, 1.0);
+  let occlusion = shadowMask * 0.5 + (1.0 - ao) * 0.3 + stepShadow * 0.2;
+  let finalAlpha = clamp((sampledTex.a * 0.15 + depthConf * 0.85) * (1.0 - occlusion * 0.6) * (0.45 + voxelCover * 0.53), 0.25, 0.98);
+  let pillarDepth = mix(column * sweepT, min(1.0, column + extrusion * 0.60 + bass * 0.12 + clickLift * 0.18), topMask);
+  let depthOut = clamp(mix(sourceDepth * (1.0 - bgDarken * 0.50), pillarDepth, voxelCover), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(luma, topMask, depthConf, finalAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(column, topMask, depthConf, finalAlpha));
 }

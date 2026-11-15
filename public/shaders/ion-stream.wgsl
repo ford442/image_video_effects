@@ -1,29 +1,14 @@
-// Ion stream with helical packet conveyors, magnetic wakes, and click fronts.
-// Upgraded: 2026-09-21
-// Ideas: charge split (alternate lanes bend opposite ways around the magnet); cyclotron
-//        tightening (helix winds faster and tighter inside the field)
-// A packing: display RGBA
+// ═══════════════════════════════════════════════════════════════════
+//  Ion Stream
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21, 2026-11-15
+//  Ideas: charge split; cyclotron tightening; sausage pinch; magnet pile-up
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -34,6 +19,10 @@ fn valueNoise(p: vec2<f32>) -> f32 {
   let f = fract(p);
   let q = f * f * (3.0 - 2.0 * f);
   return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), q.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0, 1.0)), q.x), q.y);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn historyLoadUV(uv: vec2<f32>) -> vec4<f32> {
@@ -75,16 +64,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Idea 2 — cyclotron tightening. Gyration frequency grows with B and the Larmor radius
     // shrinks as 1/B, so near the magnet the helix coils into a tight, fast spring.
     let cyclo = 1.0 + fieldB * 4.0;
+    // ── Idea 3: sausage pinch ────────────────────────────────────────
+    // A beam's radius breathes along its length. Stream Speed sets the rate,
+    // Stream Density sets how deep the waist goes.
+    let sausage = sin(uv.y * (9.0 + streamDensity * 14.0) - time * speed * 0.65);
+    let pinch = 1.0 + sausage * 0.42 * clamp(streamDensity, 0.0, 1.0);
     let helix = sin(lane * 2.17 + uv.y * 18.0 * cyclo - time * speed * (1.0 + fieldB * 2.0))
-        * (0.018 + curlStrength * 0.05) / (1.0 + fieldB * 3.0);
+        * (0.018 + curlStrength * 0.05) / (1.0 + fieldB * 3.0) * pinch;
     // Idea 1 — charge split. Alternate lanes carry opposite charge, so the magnet pushes them
     // opposite ways and the stream parts around the cursor like a mass spectrometer.
     let charge = select(-1.0, 1.0, (i32(lane) & 1) == 0);
     let deflect = charge * fieldB * (0.45 / lanes) * (0.5 + curlStrength);
     let coreDist = abs(uv.x - laneCenter - helix - deflect);
-    let core = exp(-coreDist * (90.0 + streamDensity * 140.0));
+    let core = exp(-coreDist * (90.0 + streamDensity * 140.0) / max(pinch, 0.35));
     let packetPhase = fract(uv.y * (3.0 + streamDensity * 9.0) - time * speed * 0.42 + lane * 0.173);
-    let packet = exp(-pow((packetPhase - 0.5) / 0.10, 2.0));
+    // ── Idea 4: magnet pile-up ────────────────────────────────────────
+    // Packets tighten where fieldB is strong, so the beam stalls at the cursor.
+    let packetWidth = 0.10 / (1.0 + fieldB * 2.0);
+    let packetDelta = (packetPhase - 0.5) / max(packetWidth, 0.02);
+    let packet = exp(-packetDelta * packetDelta);
     var clickFront = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
@@ -98,9 +96,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let wakeUV = clamp(uv - vec2<f32>(flow.x * 0.010, 0.006 + speed * 0.0015), vec2<f32>(0.0), vec2<f32>(1.0));
     let wake = historyLoadUV(wakeUV);
-    let ionGlow = (core * (0.25 + packet * 1.6) + clickFront * 0.9) * colorIntensity * (1.0 + audio.y);
+    let ionGlow = (core * (0.25 + packet * 1.6) + clickFront * 0.9) * colorIntensity * (1.0 + audio.y) * (1.0 + fieldB * 1.35);
     let ionColor = mix(vec3<f32>(0.12, 0.45, 1.0), vec3<f32>(0.75, 0.2, 1.0), clamp(packet + audio.z * 0.4 + select(-0.1, 0.35, charge < 0.0), 0.0, 1.0)) * ionGlow;
-    let finalRGB = clamp(mix(source.rgb, wake.rgb, 0.18 + curlStrength * 0.24) + ionColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    let finalRGB = aces(max(mix(source.rgb, wake.rgb, 0.18 + curlStrength * 0.24) + ionColor, vec3<f32>(0.0)));
     let alpha = clamp(max(source.a, wake.a * 0.88) + ionGlow * 0.45, 0.0, 1.0);
     let output = vec4<f32>(finalRGB, alpha);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

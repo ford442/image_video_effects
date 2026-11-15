@@ -1,10 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Ring Slicer
 //  Category: distortion
-//  Features: polar-warp, mouse-driven, ring-rotation, fbm-wobble,
-//            palette-seams, audio-reactive, mouse-grab-twist
-//  Upgraded by: kimi-swarm 2026-07-19
+//  Features: polar-warp, mouse-driven, ring-rotation, fbm-wobble, palette-seams, audio-reactive, mouse-grab-twist, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: intra-ring shear; kerf at the seam
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
+//  Prior pass: kimi-swarm 2026-07-19 (wobble, seam palette, grab-twist).
 
 #include "_prelude.wgsl"
 
@@ -44,10 +47,6 @@ fn fbm(p: vec2<f32>, octaves: i32) -> f32 {
 // ── Color helpers ────────────────────────────────────────────────
 fn cosPalette(t: f32) -> vec3<f32> {
     return vec3<f32>(0.5) + vec3<f32>(0.5) * cos(6.2831853 * (t + vec3<f32>(0.0, 0.33, 0.67)));
-}
-
-fn luma(rgb: vec3<f32>) -> f32 {
-    return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -108,9 +107,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let chaosSpeed = mix(1.0, 0.5 + randFactor * 2.0, chaos);
 
   // ── Rotation: base spin + bass pulse + mouse-down grab-twist ───
+  let ringPos = fract(rSliced * density);
+  // ── Idea 1: intra-ring shear ───────────────────────────────────
+  // Chaos still scales the wobble. Across one ring, the inner lip leads.
+  let shear = (ringPos - 0.5) * chaos * 0.7;
   let angleOffset = time * speed * direction * chaosSpeed * (1.0 + bass * 0.5) * (1.0 + mouseDown * 1.5);
   let grabTwist = mouseDown * 1.2 / (r * 6.0 + 1.0);
-  let newAngle = a + angleOffset + grabTwist;
+  let newAngle = a + angleOffset + grabTwist + shear;
 
   let newX = r * cos(newAngle);
   let newY = r * sin(newAngle);
@@ -122,19 +125,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var color = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
 
   // ── Seam glow: smooth bands tinted by a drifting cosine palette ─
-  let ringPos = fract(rSliced * density);
   let seamDist = min(ringPos, 1.0 - ringPos);
   let edgeWidth = 0.03 + 0.09 * chaos;
   let seam = 1.0 - smoothstep(0.0, edgeWidth, seamDist);
+  // ── Idea 2: kerf ───────────────────────────────────────────────
+  // The cut itself goes dark. The palette glow still sits on it.
+  let kerf = smoothstep(edgeWidth * 0.55, 0.0, seamDist);
+  color = vec4<f32>(color.rgb * (1.0 - kerf * (0.42 + chaos * 0.35)), color.a);
   let seamStrength = (0.15 + 0.85 * chaos) * (1.0 + mids * 0.8);
   let seamColor = cosPalette(ringIndex * 0.13 + time * 0.05 + mids * 0.15);
   color = vec4<f32>(color.rgb + seamColor * seam * seamStrength * 0.35, color.a);
 
-  // ── Soft-knee highlight compression (image ≤ 1.0 stays untouched)
-  let l = luma(color.rgb);
-  color = vec4<f32>(mix(color.rgb, acesToneMap(color.rgb), smoothstep(1.0, 1.6, l)), clamp(color.a, 0.0, 1.0));
+  let mapped = acesToneMap(max(color.rgb, vec3<f32>(0.0)));
+  let alpha = clamp(color.a * 0.45 + seam * 0.4 + kerf * 0.2, 0.0, 1.0);
+  color = vec4<f32>(mapped, alpha);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), color);
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), color);
 
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(d, 0.0, 0.0, 0.0));

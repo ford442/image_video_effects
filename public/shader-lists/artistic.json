@@ -557,7 +557,9 @@
       "oxygen-nitrogen-emission",
       "volumetric-transmittance",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "tags": [
       "aurora",
@@ -4730,7 +4732,8 @@
       "audio-reactive",
       "click-reactive",
       "temporal",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "params": [
       {

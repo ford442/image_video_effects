@@ -2,7 +2,7 @@
   "id": "rgb-iso-lines",
   "name": "RGB Iso Lines",
   "url": "shaders/rgb-iso-lines.wgsl",
-  "description": "RGB contour maps with iso-runners, ridge ticks, held parallax, bounded click fronts, and rainbow hypsometry. A packs [lineR, lineG, lineB, alpha].",
+  "description": "RGB contour maps with index lines, downslope ticks, iso-runners, ridge ticks, held parallax, bounded click fronts, and rainbow hypsometry. A is the linear contour composite; ACES is on the display write.",
   "params": [
     {
       "id": "thickness",

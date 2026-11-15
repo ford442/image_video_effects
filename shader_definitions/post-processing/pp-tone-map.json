@@ -2,7 +2,7 @@
   "id": "pp-tone-map",
   "name": "PP Tone Map",
   "url": "shaders/pp-tone-map.wgsl",
-  "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
+  "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Exposure below the middle grows a soft toe, highlights roll toward luma before the clip, and contrast stays hue-preserving.",
   "tags": [
     "post-process",
     "tone-map",

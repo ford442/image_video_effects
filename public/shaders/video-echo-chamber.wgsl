@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, click-reactive, audio-reactive, temporal-persistence, bounded-history, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: motion-keyed echo (|current − history| drives the echo weight, static content stays clean); depth-weighted persistence (near echoes last longer)
+//  Upgraded: 2026-09-28, 2026-11-15
+//  Ideas: motion-keyed echo (|current − history| drives the echo weight, static content stays clean); depth-weighted persistence (near echoes last longer); chroma collapse of the persisted echo; motion contour rim on display only
 //  A packing: rgb = pre-ACES echo composite clamped 0..1 (C.rgb read back as colour history, nearest textureLoad); a = motion-echo memory 0..1 (C.a read back and decayed). Display alpha = source coverage + echo coverage, on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 // Video echo chamber with orbiting history conveyors and click-launched echoes.
@@ -96,6 +96,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let staticFloor = mix(0.15, 0.85, mouseMask);
     let motionKey = staticFloor + (1.0 - staticFloor) * motionMemory;
 
+    // ── Idea 3: chroma collapse of the persisted echo ─────────────
+    // Older feedback (motionMemory) loses chroma. A still frame stays saturated.
+    let echoLuma = dot(echoColor, lumaW);
+    echoColor = mix(echoColor, vec3<f32>(echoLuma), motionMemory * 0.42);
+
     let historyWeight = echoStrength * depthDecay * (0.45 + runner * 0.25) * motionKey;
     let echoWeight = clamp(historyWeight + clickEcho * 0.18, 0.0, 0.92);
     let blended = clamp(mix(current.rgb, echoColor, echoWeight), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -106,6 +111,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // A stays pre-ACES 0..1 so the loop is never tone-mapped twice; ACES on display only.
     textureStore(dataTextureA, coord, vec4<f32>(blended, motionMemory));
-    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(blended), alpha));
+    // ── Idea 4: motion contour rim, display only ───────────────────
+    // A spatial edge of the source, gated by this frame's motion. Kept out of A so it cannot feed back.
+    let lumaL = dot(textureLoad(readTexture, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).rgb, lumaW);
+    let lumaR = dot(textureLoad(readTexture, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).rgb, lumaW);
+    let lumaU = dot(textureLoad(readTexture, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).rgb, lumaW);
+    let lumaD = dot(textureLoad(readTexture, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), vec2<i32>(resolution) - vec2<i32>(1)), 0).rgb, lumaW);
+    let srcLuma = dot(current.rgb, lumaW);
+    let edge = max(max(abs(srcLuma - lumaL), abs(srcLuma - lumaR)), max(abs(srcLuma - lumaU), abs(srcLuma - lumaD)));
+    let shown = clamp(blended + vec3<f32>(edge * motionNow * 1.6), vec3<f32>(0.0), vec3<f32>(1.0));
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(shown), alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

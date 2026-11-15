@@ -1211,18 +1211,22 @@
     "id": "liquid-v1",
     "name": "Liquid (Ambient)",
     "url": "shaders/liquid-v1.wgsl",
-    "description": "A clean baseline persistent liquid height field with ambient capillary modes, held pointer push, click waves, exact C state, three-band caustics, ACES output, and semantic alpha.",
+    "description": "A clean baseline persistent liquid height field with isotropic 9-point capillary waves, bathymetric depth shoaling, chromatic Snell refraction, raking sun glints, held pointer push, click waves, exact C state, ACES output, and semantic alpha.",
     "features": [
       "mouse-driven",
       "held-interaction",
       "click-reactive",
       "audio-reactive",
+      "depth-aware",
       "stateful-simulation",
       "raw-height-velocity-state",
       "exact-load-feedback",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
+    "updated": true,
+    "feedbackPacking": "A/C = raw (height, velocity, foam, coverage)",
     "tags": [
       "filter",
       "image-processing"
@@ -1537,7 +1541,7 @@
     "id": "liquid",
     "name": "Liquid (Interactive)",
     "url": "shaders/liquid.wgsl",
-    "description": "The canonical persistent capillary liquid with viscosity-controlled recovery, bounded pointer inertia, held surface push, click packets, curvature foam, exact C state, three-band optics, ACES, and semantic alpha.",
+    "description": "The canonical persistent capillary liquid with viscosity-controlled recovery, held surface push, click packets with dispersive wake trains, curvature foam, Snell refraction, sun glint, exact C state, three-band optics, ACES, and semantic alpha.",
     "tags": [
       "filter",
       "image-processing"
@@ -1592,7 +1596,6 @@
       "click-reactive",
       "stateful-simulation",
       "raw-height-velocity-state",
-      "spring-interaction",
       "exact-load-feedback",
       "aces-tone-map",
       "semantic-alpha"
@@ -1667,7 +1670,7 @@
       "aces-tone-map",
       "semantic-alpha"
     ],
-    "description": "Exact-load HDR history melts downward under luma-derived velocity, curl turbulence, depth viscosity, held pointer stirring, click fronts, three-band heat and chromatic flow, ACES, and semantic alpha.",
+    "description": "Exact-load HDR history melts downward under luma-derived velocity, curl turbulence, depth viscosity, held pointer stirring, click fronts, three-band heat and chromatic flow, ACES, and semantic alpha. Hot regions spread by Marangoni flow; rivulets meander.",
     "params": [
       {
         "name": "Melt Speed",
@@ -1793,7 +1796,7 @@
     "id": "viscous-drag",
     "name": "Viscous Drag",
     "url": "shaders/viscous-drag.wgsl",
-    "description": "Diffused drag state drives traveling jets, pressure and thickness buildup, elastic recovery, held-pointer smears, click fronts, and illuminated viscous ridges.",
+    "description": "Diffused drag state drives traveling jets, pressure and thickness buildup, elastic recovery, held-pointer smears, click fronts, and illuminated viscous ridges. Ridges lit by thickness gradient; strain smears the photo along flow.",
     "features": [
       "mouse-driven",
       "audio-reactive",

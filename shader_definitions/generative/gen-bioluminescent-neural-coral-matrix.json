@@ -54,5 +54,53 @@
       "id": "bioluminescence",
       "mapping": "zoom_params.w"
     }
-  ]
+  ],
+  "updated": true,
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "click-reactive",
+    "temporal-feedback",
+    "raymarching",
+    "upgraded-rgba"
+  ],
+  "feedbackPacking": "A/C = ACES display RGBA for refractory coral afterglow",
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Structure Scale",
+          "default": 2.5,
+          "min": 1.0,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 1,
+          "name": "Distortion Intensity",
+          "default": 1.5,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        },
+        {
+          "index": 2,
+          "name": "Travel Speed",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 5.0,
+          "step": 0.1
+        },
+        {
+          "index": 3,
+          "name": "Bioluminescence",
+          "default": 1.0,
+          "min": 0.0,
+          "max": 3.0,
+          "step": 0.1
+        }
+      ]
+    }
+  }
 }

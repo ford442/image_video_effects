@@ -1,4 +1,12 @@
-// ═══ PHOTON BINS — SPLAT (spatial hash gather, pixels) ════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Photon Bins — splat
+//  Category: simulation
+//  Features: multi-pass, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-15
+//  Ideas: travel-axis splat along the photon heading
+//  A packing: rgb spectral energy, a photon count (raw accumulator, not ACES)
+// ═══════════════════════════════════════════════════════════════════
 //  Each pixel gathers the photons binned around it: its own cell plus the
 //  three neighbours on the near side, at most MAX_VISITS photons per cell,
 //  within a splat radius of half a cell. Colour comes from the wavelength bin,
@@ -65,9 +73,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         if (d2 < r2) {
           let bin = floor(q.w);
           let energy = q.w - bin;
-          let kern = (1.0 - d2 / r2) * (1.0 - d2 / r2);
-          acc = acc + spectrum(bin / 64.0) * (energy * kern);
-          cnt = cnt + energy * kern;
+          // ── Idea: travel-axis splat ────────────────────────────────
+          // q.z is the heading the march stored. Weight stretches along
+          // the ray and tightens across it, so a caustic filaments
+          // instead of a round blob. The gather radius is unchanged.
+          let dir = vec2<f32>(cos(q.z), sin(q.z));
+          let across = vec2<f32>(-dir.y, dir.x);
+          let ell = dot(d, dir) * dot(d, dir) * 0.35 + dot(d, across) * dot(d, across) * 1.7;
+          let kern = max(1.0 - ell / r2, 0.0);
+          let k2 = kern * kern;
+          acc = acc + spectrum(bin / 64.0) * (energy * k2);
+          cnt = cnt + energy * k2;
         }
         j = atomicLoad(&simHash[HASH_NEXT + j]);
       }

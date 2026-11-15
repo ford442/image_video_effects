@@ -2,8 +2,22 @@
   "id": "liquid-v1",
   "name": "Liquid (Ambient)",
   "url": "shaders/liquid-v1.wgsl",
-  "description": "A clean baseline persistent liquid height field with ambient capillary modes, held pointer push, click waves, exact C state, three-band caustics, ACES output, and semantic alpha.",
-  "features": ["mouse-driven", "held-interaction", "click-reactive", "audio-reactive", "stateful-simulation", "raw-height-velocity-state", "exact-load-feedback", "aces-tone-map", "semantic-alpha"],
+  "description": "A clean baseline persistent liquid height field with isotropic 9-point capillary waves, bathymetric depth shoaling, chromatic Snell refraction, raking sun glints, held pointer push, click waves, exact C state, ACES output, and semantic alpha.",
+  "features": [
+    "mouse-driven",
+    "held-interaction",
+    "click-reactive",
+    "audio-reactive",
+    "depth-aware",
+    "stateful-simulation",
+    "raw-height-velocity-state",
+    "exact-load-feedback",
+    "aces-tone-map",
+    "semantic-alpha",
+    "upgraded-rgba"
+  ],
+  "updated": true,
+  "feedbackPacking": "A/C = raw (height, velocity, foam, coverage)",
   "tags": [
     "filter",
     "image-processing"
@@ -41,5 +55,43 @@
       "max": 1,
       "step": 0.01
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Ambient Parallax",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Foreground Motion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Depth Waver",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Contrast",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }

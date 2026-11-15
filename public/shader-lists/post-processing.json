@@ -177,7 +177,7 @@
     "name": "Chrono Luma Slit Scan",
     "url": "shaders/chrono-luma-slit-scan.wgsl",
     "category": "post-processing",
-    "description": "Luminance slit-scan with horizontal/vertical scan runners, held temporal halo, treble warp detail, and capped ripple fronts. Thin isochrone contours mark where the chosen age crosses a whole frame, and the sweeping scan bands open windows onto the oldest stored frame.",
+    "description": "Luminance slit-scan with horizontal/vertical scan runners, a raised-cosine shutter between frames, and a short smear along the slit's travel. Thin isochrone contours mark where the chosen age crosses a whole frame, and the sweeping scan bands open windows onto the oldest stored frame.",
     "tags": [
       "temporal",
       "slit-scan",
@@ -690,7 +690,7 @@
     "id": "pp-tone-map",
     "name": "PP Tone Map",
     "url": "shaders/pp-tone-map.wgsl",
-    "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Includes exposure, contrast, and saturation controls.",
+    "description": "HDR to LDR tone mapping with ACES, Uncharted 2, Reinhard, and AgX algorithms. Exposure below the middle grows a soft toe, highlights roll toward luma before the clip, and contrast stays hue-preserving.",
     "tags": [
       "post-process",
       "tone-map",
@@ -1171,7 +1171,7 @@
     "id": "temporal-halation-freeze",
     "name": "Temporal Halation Freeze",
     "url": "shaders/temporal-halation-freeze.wgsl",
-    "description": "Long-exposure halation and ghost echoes using a 7-tap hex-bokeh bloom, audio envelope, ACES tone mapping, depth-aware fog, and semantic alpha for dreamy time-blurred composites.",
+    "description": "Long-exposure halation and ghost echoes using a 7-tap hex-bokeh bloom. Outer taps run red, the highlight core bleaches toward luma, and a held pointer freeze-holds the plate. Audio envelope, ACES on display, depth-aware fog, and semantic alpha.",
     "tags": [
       "halation",
       "bloom",

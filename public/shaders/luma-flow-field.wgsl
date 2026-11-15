@@ -3,25 +3,12 @@
 //  Category: simulation
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-12
-//  Ideas: LIC sample along isoFlow; stagnation hold in luma flats
+//  Upgraded: 2026-09-12, 2026-11-15
+//  Ideas: LIC sample along isoFlow; stagnation hold in luma flats; bidirectional LIC; pooling in luma hollows
 //  A packing: HDR display-history RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-struct Uniforms { config: vec4<f32>, zoom_config: vec4<f32>, zoom_params: vec4<f32>, ripples: array<vec4<f32>, 50>, };
+#include "_prelude.wgsl"
 fn luma(c: vec3<f32>) -> f32 { return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722)); }
 fn hash21(p: vec2<f32>) -> f32 { return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453); }
 fn noise(p: vec2<f32>) -> f32 { let i = floor(p); let f = fract(p); let q = f * f * (3.0 - 2.0 * f); return mix(mix(hash21(i), hash21(i + vec2<f32>(1.0, 0.0)), q.x), mix(hash21(i + vec2<f32>(0.0, 1.0)), hash21(i + vec2<f32>(1.0)), q.x), q.y); }
@@ -50,18 +37,25 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   for (var i = 0u; i < count; i = i + 1u) { let e = u.ripples[i]; let age = time - e.z; if (age >= 0.0 && age < 1.5) { let d = length((uv - e.xy) * vec2<f32>(aspect, 1.0)); let ring = exp(-age * 2.1) * exp(-abs(d - age * 0.34) * 70.0); flow += normalize(uv - e.xy + vec2<f32>(0.0001)) * ring * 1.6; fronts += ring; } }
   let velocity = flow * px * (1.5 + 6.0 * u.zoom_params.x + audio.x * audioSensitivity * 4.0);
   let histPx = clamp(vec2<i32>((uv - velocity) * res), vec2<i32>(0), hi); let history = textureLoad(dataTextureC, histPx, 0);
-  // Idea 1 — LIC sample along isoFlow
+  // Idea 1 — LIC sample along isoFlow, both directions
   let licPx = clamp(vec2<i32>((uv - isoFlow * px * 5.0) * res), vec2<i32>(0), hi);
+  let licUpPx = clamp(vec2<i32>((uv + isoFlow * px * 5.0) * res), vec2<i32>(0), hi);
   let licHist = textureLoad(dataTextureC, licPx, 0);
+  let licUp = textureLoad(dataTextureC, licUpPx, 0);
   let src = textureSampleLevel(readTexture, u_sampler, clamp(uv + velocity * 0.4, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
   let phase = atan2(flow.y, flow.x) + time * (0.7 + audio.z);
   let ribbon = 0.5 + 0.5 * cos(vec3<f32>(phase, phase - 2.094, phase + 2.094));
   let edge = clamp(length(grad) * 4.0, 0.0, 1.0); let fresh = src.rgb * (0.7 + ribbon * (0.35 + audio * audioSensitivity * 0.25));
   var hdr = mix(fresh, history.rgb * decay, 0.52 + u.zoom_params.y * 0.30) + ribbon * (edge * 0.25 + fronts * 0.4);
-  hdr = mix(hdr, licHist.rgb, 0.16 + u.zoom_params.y * 0.12);
+  hdr = mix(hdr, (licHist.rgb + licUp.rgb) * 0.5, 0.16 + u.zoom_params.y * 0.12);
   // Idea 2 — stagnation hold where |∇luma| is tiny
   let stagnate = 1.0 - smoothstep(0.0, 0.035, length(grad));
   hdr = mix(hdr, history.rgb, stagnate * 0.48);
+  // ── Idea 3: trail pools where the luma Laplacian is a hollow ──────
+  let centerL = luma(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb);
+  let lapL = luma(left.rgb) + luma(right.rgb) + luma(top.rgb) + luma(bottom.rgb) - 4.0 * centerL;
+  let pool = smoothstep(0.0, 0.08, -lapL);
+  hdr = mix(hdr, history.rgb, pool * 0.22);
   let alpha = clamp(src.a * 0.35 + edge * 0.5 + history.a * decay * 0.45 + fronts * 0.35 + stagnate * 0.12, 0.0, 1.0);
   let state = vec4<f32>(clamp(hdr, vec3<f32>(0.0), vec3<f32>(8.0)), alpha); textureStore(dataTextureA, p, state);
   let mapped = aces(state.rgb); let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

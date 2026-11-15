@@ -3,7 +3,7 @@
   "name": "Ambient Liquid Coupled",
   "url": "shaders/ambient-liquid-coupled.wgsl",
   "category": "advanced-hybrid",
-  "description": "Two persistent viscous height fields coupled through a living membrane, with bounded pointer velocity, held press and twist, click counter-waves, three-band tension, layer-separation optics, exact C state, ACES, and semantic alpha.",
+  "description": "Two persistent viscous height fields coupled through a living membrane, with bounded pointer velocity, held press and twist, click counter-waves, three-band tension, double-refraction Beer optics, torn-film rim, exact C state, ACES, and semantic alpha.",
   "features": [
     "mouse-pressure",
     "liquid-membrane",
@@ -15,7 +15,6 @@
     "click-reactive",
     "stateful-simulation",
     "raw-coupled-height-state",
-    "spring-interaction",
     "exact-load-feedback",
     "aces-tone-map",
     "semantic-alpha"
@@ -69,5 +68,43 @@
       "mapping": "zoom_params.w",
       "description": "How much the subsurface layer shows through when the membrane is torn"
     }
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Wave Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Viscosity",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Vortex Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Layer Separation",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
+  }
 }
