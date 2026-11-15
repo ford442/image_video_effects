@@ -1416,7 +1416,8 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "jfa",
@@ -2044,7 +2045,7 @@
         "description": "Caustic brightness and accumulator display gain"
       }
     ],
-    "feedbackPacking": "Graph pipeline: emit writes normal to dataA; trace reads via dataC and accumulates into dataA (2 passes); accumulate presents ACES color with persistent caustic field.",
+    "feedbackPacking": "Graph pipeline: emit writes the pool normal to dataA; trace reads it (and, on the repeat, the caustic) via dataC and writes caustic rgb; accumulate presents ACES color. Cauchy splits the IOR; Beer-Lambert eats red along the photon path. Display is ACES; the stored field is the caustic.",
     "features": [
       "simulation",
       "multi-pass",
@@ -2053,7 +2054,8 @@
       "audio-reactive",
       "physics",
       "temporal-feedback",
-      "click-reactive"
+      "click-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "caustics",
@@ -2176,7 +2178,8 @@
       "physics",
       "sim-ring",
       "simulation",
-      "temporal-persistence"
+      "temporal-persistence",
+      "upgraded-rgba"
     ],
     "tags": [
       "agents",
@@ -2494,7 +2497,8 @@
       "physics",
       "mouse-driven",
       "audio-reactive",
-      "interactive"
+      "interactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "predator-prey",
@@ -4131,7 +4135,8 @@
       "audio-reactive",
       "physics",
       "temporal-persistence",
-      "interactive"
+      "interactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "simulation",

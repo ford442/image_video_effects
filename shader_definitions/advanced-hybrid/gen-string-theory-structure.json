@@ -13,10 +13,89 @@
     "generative",
     "wave-equation",
     "structure-tensor",
-    "LIC"
+    "LIC",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
-  "params": [],
+  "params": [
+    {
+      "id": "foldGap",
+      "name": "Fold Gap",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x",
+      "description": "Gap subtracted after each absolute fold. The default is the original 0.5"
+    },
+    {
+      "id": "stringRate",
+      "name": "String Rate",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y",
+      "description": "Vibration frequency of the strings. The default is the original 20"
+    },
+    {
+      "id": "trail",
+      "name": "Trail",
+      "default": 0.85,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z",
+      "description": "How much of the unwound previous frame is kept"
+    },
+    {
+      "id": "glow",
+      "name": "Glow",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w",
+      "description": "Amplitude of the string core and sheath"
+    }
+  ],
   "x-meta": {
-    "seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Fold Gap",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "String Rate",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Trail",
+          "default": 0.85,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Glow",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }
