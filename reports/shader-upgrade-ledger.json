@@ -2637,8 +2637,17 @@
       ]
     },
     "green-tracer": {
-      "hash": "f0f713d68a4d2d7f",
-      "history": []
+      "hash": "e8749d8df751dfb1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "e8749d8df751dfb1",
+          "prev_hash": "f0f713d68a4d2d7f",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
+        }
+      ]
     },
     "halftone-reveal": {
       "hash": "3eecbd96aa6b4b40",
@@ -8113,7 +8122,7 @@
       ]
     },
     "gen-islamic-geometric-tiling": {
-      "hash": "a39ba619e72640bb",
+      "hash": "2e2505e4195ea15b",
       "history": [
         {
           "event": "upgraded",
@@ -8122,6 +8131,14 @@
           "prev_hash": "f19a8b19c6b2120e",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "2e2505e4195ea15b",
+          "prev_hash": "a39ba619e72640bb",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
         }
       ]
     },
@@ -12607,7 +12624,7 @@
       ]
     },
     "analog-film-degrade": {
-      "hash": "5fb9ed844c5f2ee8",
+      "hash": "35f443410d5053da",
       "history": [
         {
           "event": "upgraded",
@@ -12616,6 +12633,14 @@
           "prev_hash": "f0b06eab1aea3a1b",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "35f443410d5053da",
+          "prev_hash": "5fb9ed844c5f2ee8",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
         }
       ]
     },
@@ -12696,7 +12721,7 @@
       ]
     },
     "color-blindness": {
-      "hash": "0e3cf79d0f2bf67f",
+      "hash": "0e3d6b6a045ae1cc",
       "history": [
         {
           "event": "upgraded",
@@ -12705,6 +12730,14 @@
           "prev_hash": "bfcfdaddeb738ab0",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "0e3d6b6a045ae1cc",
+          "prev_hash": "0e3cf79d0f2bf67f",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
         }
       ]
     },
@@ -13385,7 +13418,7 @@
       ]
     },
     "glitch-ripple-drag": {
-      "hash": "095e3f8c275e68e8",
+      "hash": "067a2f09ac2b9c1f",
       "history": [
         {
           "event": "upgraded",
@@ -13394,6 +13427,14 @@
           "prev_hash": "d31d74b53017bd5f",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "067a2f09ac2b9c1f",
+          "prev_hash": "095e3f8c275e68e8",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
         }
       ]
     },
@@ -14478,7 +14519,7 @@
       ]
     },
     "chroma-depth-tunnel": {
-      "hash": "ca085c4c059a4e06",
+      "hash": "a6fe5aff11d3828a",
       "history": [
         {
           "event": "upgraded",
@@ -14487,6 +14528,14 @@
           "prev_hash": "2a19385a44c40c38",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "a6fe5aff11d3828a",
+          "prev_hash": "ca085c4c059a4e06",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
         }
       ]
     },
@@ -15959,8 +16008,17 @@
       ]
     },
     "mirror-drag": {
-      "hash": "3e5d7759875bfc01",
-      "history": []
+      "hash": "1130ef298d95b918",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "1130ef298d95b918",
+          "prev_hash": "3e5d7759875bfc01",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
+        }
+      ]
     },
     "moire-interference": {
       "hash": "c227bf9d711e2660",
@@ -17001,8 +17059,17 @@
       ]
     },
     "rgb-iso-lines": {
-      "hash": "0ca5edbf912a98e2",
-      "history": []
+      "hash": "534a5aca9d56513b",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "534a5aca9d56513b",
+          "prev_hash": "0ca5edbf912a98e2",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
+        }
+      ]
     },
     "rgb-ripple-waves": {
       "hash": "06f22d9e7b57bfe0",
@@ -20371,7 +20438,7 @@
       ]
     },
     "ascii-shockwave": {
-      "hash": "eee8055f1999a214",
+      "hash": "3b8e88ab1273b3f1",
       "history": [
         {
           "event": "upgraded",
@@ -20380,6 +20447,14 @@
           "prev_hash": "957ee42374db6ccd",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "3b8e88ab1273b3f1",
+          "prev_hash": "eee8055f1999a214",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
         }
       ]
     },
@@ -20636,7 +20711,7 @@
       ]
     },
     "hex-circuit": {
-      "hash": "19fddf1d6e33d404",
+      "hash": "64057736062c193f",
       "history": [
         {
           "event": "upgraded",
@@ -20645,6 +20720,14 @@
           "prev_hash": "3ee6044e327d2a31",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T11:15:59.060Z",
+          "hash": "64057736062c193f",
+          "prev_hash": "19fddf1d6e33d404",
+          "commit": "c8e664c4",
+          "note": "2026-11-15 trace-grade ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-trace-grade-ten/BRIEFS.md"
         }
       ]
     },

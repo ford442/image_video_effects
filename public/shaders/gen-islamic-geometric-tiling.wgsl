@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: star-polygons, rosette, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: over-under strap shadow at crossings; half-angle girih dart; gold leaf specular glints; ceramic tile glaze imperfections
+//  Upgraded: 2026-10-10, 2026-11-15
+//  Ideas: over-under strap shadow at crossings; half-angle girih dart; gold leaf specular glints; ceramic tile glaze imperfections; grout joint; strap bevel
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -37,6 +37,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let row = floor(grid.y);
   let offset = select(0.0, 0.5, fract(row * 0.5) > 0.25);
   var cell = fract(grid + vec2<f32>(offset, 0.0)) - vec2<f32>(0.5);
+  // ── Idea 3: grout joint ─────────────────────────────────────────
+  // The tile edge, before the ornament rotates, becomes a mortar line.
+  // Width follows Line Width.
+  let groutDist = 0.5 - max(abs(cell.x), abs(cell.y));
+  let grout = 1.0 - smoothstep(0.0, max(lineWidth * 2.2, 0.008), groutDist);
   cell = rotate2(cell, time * 0.025 + pointerTwist * 0.28 + mids * 0.025);
   let radius = length(cell);
   let angle = atan2(cell.y, cell.x);
@@ -88,9 +93,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   raw += palette(hue + 0.42) * interlace * treble * 0.48;
   raw += vec3<f32>(1.55, 1.05, 0.32) * dart * 0.38;
   raw *= 1.0 - underShadow * 0.42;
+  // ── Idea 4: strap bevel ─────────────────────────────────────────
+  // Outside the star stroke catches gold. The inner lip falls into shade.
+  let bevelSide = clamp((radius - starRadius) / max(lineWidth, 0.002), -1.0, 1.0);
+  raw += vec3<f32>(1.15, 0.92, 0.48) * max(bevelSide, 0.0) * starLine * 0.4;
+  raw *= 1.0 - max(-bevelSide, 0.0) * starLine * 0.28;
+  raw = mix(raw, vec3<f32>(0.11, 0.09, 0.07), grout * 0.85);
   let prev = textureLoad(dataTextureC, pixel, 0);
   raw = clamp(mix(prev.rgb * 0.94, raw, 0.28 + u.zoom_params.w * 0.06), vec3<f32>(0.0), vec3<f32>(7.0));
-  let alpha = clamp(0.035 + geometry * 0.5 + dart * 0.12 + gildedWave * 0.2 + glint * 0.2 + glaze, 0.035, 0.98);
+  let alpha = clamp(0.035 + geometry * 0.5 + dart * 0.12 + gildedWave * 0.2 + glint * 0.2 + glaze + grout * 0.12, 0.035, 0.98);
   let depth = clamp(geometry * 0.34 + depthMoment * 0.34 + dart * 0.12 + gildedWave * 0.18, 0.0, 1.0);
   textureStore(dataTextureA, pixel, vec4<f32>(raw, alpha));
   textureStore(writeTexture, pixel, vec4<f32>(acesToneMap(raw * 1.08), alpha));

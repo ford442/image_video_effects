@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-06
-//  Ideas: per-channel grain; continuous gate-weave hairlines; C print-through
+//  Upgraded: 2026-09-06, 2026-11-15
+//  Ideas: per-channel grain; continuous gate-weave hairlines; C print-through; density-weighted grain (§12.2A); halation (§12.2A)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -46,7 +46,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gR = (hash21(grainSeed) - 0.5);
   let gG = (hash21(grainSeed * vec2<f32>(1.17, 0.91) + vec2<f32>(17.1, 9.3)) - 0.5);
   let gB = (hash21(grainSeed * vec2<f32>(0.83, 1.29) + vec2<f32>(3.7, 28.4)) - 0.5);
-  rgb += vec3<f32>(gR, gG, gB) * grainIntensity;
+  // ── Idea 1: density-weighted grain (§12.2A) ─────────────────────
+  // The flat hash stays. Midtones take the full grain; clear base and
+  // dense black take a quarter. Grain Intensity is still the amplitude.
+  let srcLuma = clamp(dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+  let density = sqrt(max(srcLuma * (1.0 - srcLuma), 0.0)) * 2.0;
+  rgb += vec3<f32>(gR, gG, gB) * grainIntensity * mix(0.25, 1.0, density);
 
   let weave = sin(uv.y * (res.y * 0.55) + time * 2.4) * 0.0018 * scratchFreq;
   let weaveUV = clamp(uv + vec2<f32>(weave, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
@@ -60,6 +65,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let dust = hash21(uv * 280.0 + vec2<f32>(time * 0.05, 2.2));
   rgb += vec3<f32>(select(0.0, dust * 0.25, dust < scratchFreq * 0.006));
+
+  // ── Idea 2: halation (§12.2A) ───────────────────────────────────
+  // Light that clears the emulsion bounces off the base into the red
+  // layer. The core is bleached toward luma. Amount rides Fade.
+  let hr = 3.0 / max(res, vec2<f32>(1.0));
+  var hal = 0.0;
+  for (var k = 0; k < 4; k = k + 1) {
+    let o = vec2<f32>(f32(k & 1) * 2.0 - 1.0, f32(k >> 1) * 2.0 - 1.0) * hr;
+    let tuv = clamp(uv + o, vec2<f32>(0.0), vec2<f32>(1.0));
+    let tap = textureSampleLevel(readTexture, u_sampler, tuv, 0.0).rgb;
+    hal += max(dot(tap, vec3<f32>(0.299, 0.587, 0.114)) - 0.85, 0.0);
+  }
+  hal *= 0.25 * (0.4 + 0.6 * fadeAmount);
+  rgb += hal * vec3<f32>(1.0, 0.35, 0.10);
+  rgb = mix(rgb, vec3<f32>(srcLuma), clamp(hal * 0.5, 0.0, 0.5));
 
   let luma = dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
   let sepia = vec3<f32>(luma * 1.2, luma * 0.9, luma * 0.6);
@@ -75,7 +95,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   rgb *= vignette;
 
   let display = acesToneMap(clamp(rgb, vec3<f32>(0.0), vec3<f32>(1.4)));
-  let damage = clamp(abs(gR) + (1.0 - vignette) + hair, 0.0, 1.0);
+  let damage = clamp(abs(gR) * density + (1.0 - vignette) + hair + hal * 0.3, 0.0, 1.0);
   let alpha = clamp(src.a * (1.0 - damage * 0.45) + treble * 0.08, 0.0, 1.0);
   let outCol = vec4<f32>(display, alpha);
 

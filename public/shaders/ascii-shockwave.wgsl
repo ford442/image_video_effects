@@ -4,7 +4,9 @@
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, depth-aware,
 //            glyph-cells, held-drag, bounded-click-ripples
 //  Complexity: High
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-11-15
+//  Ideas: mid-ramp bar; cell-average luma
+//  A packing: linear display RGBA (ACES on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -13,6 +15,10 @@ fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
     let k = vec4<f32>(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     let p = abs(fract(hsv.xxx + k.xyz) * 6.0 - k.www);
     return hsv.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -46,14 +52,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cells = mix(36.0, 110.0, scale) * (1.0 + treble * 0.15);
     let local = fract(uv * cells);
     let grid = floor(uv * cells) / cells;
-    let src = textureSampleLevel(readTexture, u_sampler, clamp(grid + 0.5 / cells, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let lum = dot(src.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let centerUV = clamp(grid + 0.5 / cells, vec2<f32>(0.0), vec2<f32>(1.0));
+    let src = textureSampleLevel(readTexture, u_sampler, centerUV, 0.0);
+
+    // ── Idea 2: cell-average luma ───────────────────────────────────
+    // The glyph follows the cell, not a single center pixel.
+    // Color still comes from the center sample.
+    let half = 0.22 / max(cells, 1.0);
+    let l0 = textureSampleLevel(readTexture, u_sampler, clamp(centerUV + vec2<f32>( half,  half), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let l1 = textureSampleLevel(readTexture, u_sampler, clamp(centerUV + vec2<f32>(-half,  half), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let l2 = textureSampleLevel(readTexture, u_sampler, clamp(centerUV + vec2<f32>(-half, -half), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let l3 = textureSampleLevel(readTexture, u_sampler, clamp(centerUV + vec2<f32>( half, -half), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let lum = dot((src.rgb + l0 + l1 + l2 + l3) * 0.2, vec3<f32>(0.299, 0.587, 0.114));
 
     let box = 1.0 - smoothstep(0.08, 0.16, min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y)));
     let cross = 1.0 - smoothstep(0.04, 0.11, min(abs(local.x - local.y), abs(local.x - (1.0 - local.y))));
     let dotm = 1.0 - smoothstep(0.12 + detail * 0.12, 0.28, distance(local, vec2<f32>(0.5)));
     let fill = smoothstep(0.55, 0.92, lum);
-    let glyph = mix(mix(dotm, cross, smoothstep(0.18, 0.55, lum)), mix(box, fill, fill), smoothstep(0.45, 0.82, lum));
+
+    // ── Idea 1: mid-ramp bar ────────────────────────────────────────
+    // A horizontal stroke sits between the cross and the box.
+    let bar = 1.0 - smoothstep(0.07, 0.14, abs(local.y - 0.5));
+    let mid = mix(cross, max(cross, bar), 0.7);
+    let glyph = mix(mix(dotm, mid, smoothstep(0.18, 0.55, lum)), mix(box, fill, fill), smoothstep(0.45, 0.82, lum));
 
     let conveyor = smoothstep(0.1, 0.0, abs(fract(grid.x * cells * 0.08 - time * (1.8 + speed * 2.4)) - 0.5));
     let packets = smoothstep(0.09, 0.0, abs(fract(dist * mix(6.0, 16.0, scale) - time * (2.2 + bass * 2.0)) - 0.5));
@@ -77,11 +98,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(0.28 + luma * 0.62 + asciiAmt * 0.18 + click * 0.2, 0.0, 1.0);
-    let trail = vec4<f32>(mix(color, prev.rgb * 0.86, 0.28), mix(alpha, prev.a * 0.86, 0.28));
+    let linearRgb = max(mix(color, prev.rgb * 0.86, 0.28), vec3<f32>(0.0));
+    let linearA = clamp(mix(alpha, prev.a * 0.86, 0.28), 0.0, 1.0);
+    let shown = vec4<f32>(aces(linearRgb), linearA);
     let depth = textureLoad(readDepthTexture, pixel, 0).r;
     let outDepth = clamp(depth + glyph * asciiAmt * 0.08 + click * 0.06, 0.0, 1.0);
 
-    textureStore(writeTexture, pixel, trail);
-    textureStore(dataTextureA, pixel, trail);
+    textureStore(writeTexture, pixel, shown);
+    textureStore(dataTextureA, pixel, vec4<f32>(linearRgb, linearA));
     textureStore(writeDepthTexture, pixel, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
 }
