@@ -175,7 +175,8 @@
       "ign-dither",
       "chromatic-aberration",
       "fresnel-rim",
-      "oklab-mix"
+      "oklab-mix",
+      "audio-reactive"
     ],
     "tags": [
       "hybrid",
@@ -1109,7 +1110,7 @@
     "id": "hybrid-voronoi-glass",
     "name": "Hybrid Voronoi Glass",
     "url": "shaders/hybrid-voronoi-glass.wgsl",
-    "description": "Stable Voronoi cell boundaries drive Cauchy dispersion, Fresnel and total internal reflection, thickness absorption, cursor lens pressure, and click fracture fronts.",
+    "description": "Stable Voronoi cell boundaries drive Cauchy dispersion, Fresnel and total internal reflection, thickness absorption, cursor lens pressure, and click fracture fronts. Facet interiors stay flatter than the bevel, and the cell wall focuses a caustic.",
     "features": [
       "mouse-driven",
       "hybrid",
@@ -1119,6 +1120,7 @@
       "fresnel",
       "randomization-safe",
       "audio-reactive",
+      "upgraded-rgba",
       "cauchy-dispersion",
       "total-internal-reflection",
       "thickness-absorption",

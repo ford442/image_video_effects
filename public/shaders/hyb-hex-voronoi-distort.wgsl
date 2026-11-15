@@ -2,8 +2,8 @@
 //  hyb-hex-voronoi-distort
 //  Category: hybrid
 //  Features: hex-grid, voronoi, image-distortion, depth-passthrough, mouse-driven, audio-reactive, upgraded-rgba
-//  Upgraded: 2026-09-10
-//  Ideas: F2−F1 crack ridge; hex mortar (distort only in cell interior)
+//  Upgraded: 2026-09-10, 2026-11-15
+//  Ideas: F2−F1 crack ridge; hex mortar (distort only in cell interior); site pull; crack kick
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -104,7 +104,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let phase = sin(time * 0.8 + voro.dist * 6.28318) * 0.5 + 0.5;
     let crack = 1.0 - smoothstep(0.0, 0.08 + treble * 0.04, voro.dist2 - voro.dist);
 
-    let distortedUV = mix(uv, hexCenter, distortAmount * phase * mortar);
+    // ── Idea 1: the Voronoi site pulls along with the hex centre
+    let site = (voro.cell + voro.point) / max(voronoiDensity, 0.001);
+    let cellTarget = mix(hexCenter, site, 0.42);
+    // ── Idea 2: the F2−F1 crack kicks the sample toward that site
+    let toSite = site - uv;
+    let seamDir = toSite / max(length(toSite), 0.0001);
+    let distortedUV = mix(uv, cellTarget, distortAmount * phase * mortar) + seamDir * crack * distortAmount * 0.28;
     let clampedUV = clamp(distortedUV, vec2<f32>(0.0), vec2<f32>(1.0));
     let distorted = textureSampleLevel(readTexture, u_sampler, clampedUV, 0.0);
 

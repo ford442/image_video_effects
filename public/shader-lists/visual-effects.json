@@ -257,7 +257,9 @@
     ],
     "features": [
       "mouse-driven",
-      "rgba-state-machine"
+      "rgba-state-machine",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

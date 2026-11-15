@@ -2378,6 +2378,11 @@
         "mapping": "zoom_params.w",
         "id": "glow-intensity"
       }
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ]
   },
   {
@@ -3352,7 +3357,8 @@
       "bass-env",
       "aces-tone-map",
       "ign-dither",
-      "premultiplied-alpha"
+      "premultiplied-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -11039,6 +11045,11 @@
       "mechanical",
       "audio-reactive"
     ],
+    "features": [
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -15277,6 +15288,11 @@
     "type": "generative",
     "category": "generative",
     "url": "shaders/gen-harmonic-ferrofluid-kinetics.wgsl",
+    "description": "Raymarched ferrofluid spikes from an inverted Voronoi field, pinched at the crest, with a held magnetic mound, tip glints, and crevice occlusion.",
+    "features": [
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
     "workgroup_size": [
       16,
       16,
@@ -18259,7 +18275,8 @@
       "audio-reactive",
       "mouse-driven",
       "sdf",
-      "temporal-glow"
+      "temporal-glow",
+      "upgraded-rgba"
     ],
     "tags": [
       "organic",
@@ -28539,7 +28556,8 @@
       "ray-marching",
       "audio-reactive",
       "mouse-control",
-      "pbr-shading"
+      "pbr-shading",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -28634,7 +28652,11 @@
     "features": [
       "audio-reactive",
       "mouse-control",
-      "raymarching"
+      "mouse-driven",
+      "click-reactive",
+      "temporal-feedback",
+      "raymarching",
+      "upgraded-rgba"
     ],
     "workgroup_size": [
       16,

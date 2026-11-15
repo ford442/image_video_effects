@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: meniscus ridge at the wipe/wet boundary; bead runoff
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: meniscus ridge at the wipe/wet boundary; bead runoff; drop-core lens; asymmetric streak tail
 //  A packing: wipe mask in A.r (raw). Display ACES RGB.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -68,7 +49,9 @@ fn rainDistortion(uv: vec2<f32>, time: f32, scale: f32) -> vec2<f32> {
         }
     }
     let drop = smoothstep(0.45, 0.30, nearest);
-    return offset * drop;
+    // ── Idea: drop-core lens. The thick middle of the drop pulls harder.
+    let lens = drop * (0.55 + 0.9 * drop);
+    return offset * lens;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -107,7 +90,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let distortion = rainDistortion(uv, time * (1.0 + rainStrength * 1.8), rainScale);
     let streakPhase = fract(uv.y * (5.0 + u.zoom_params.w * 11.0) - time * (1.4 + rainStrength * 3.5) + floor(uv.x * rainScale) * 0.173);
-    let streakPacket = exp(-pow((streakPhase - 0.5) / 0.09, 2.0));
+    // ── Idea: asymmetric streak. Sharp head, long tail. No signed pow.
+    let phaseDelta = streakPhase - 0.38;
+    let streakPacket = exp(-max(phaseDelta, 0.0) * 22.0) * exp(-max(-phaseDelta, 0.0) * 5.5);
     let streakOffset = vec2<f32>(sin(uv.x * rainScale * 2.1 + time) * 0.002, -0.012 * streakPacket) * rainStrength;
     let finalDistortion = (distortion * rainStrength * 0.10 + streakOffset) * (1.0 - newState);
     let sampleUV = clamp(uv + finalDistortion, vec2<f32>(0.0), vec2<f32>(1.0));

@@ -3,31 +3,12 @@
 //  Category: post-processing
 //  Features: depth-aware, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: cosine-weighted hemisphere; bent-normal color bleed
+//  Upgraded: 2026-09-09, 2026-11-15
+//  Ideas: cosine-weighted hemisphere; bent-normal color bleed; depth bias; horizon mix
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn random(uv: vec2<f32>) -> f32 {
     return fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -93,6 +74,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var colorInfluence = vec3<f32>(0.0);
     var bent = vec2<f32>(0.0);
     var weightSum = 0.0;
+    var horizon = 0.0;
+    // ── Idea 1: depth bias ─────────────────────────────────────────
+    // Flat walls stop self-occluding. Radius still sets the scale.
+    let depthBias = 0.0015 + radius * 0.06;
 
     for (var i: i32 = 0; i < sampleCount; i = i + 1) {
         let angle = f32(i) / f32(sampleCount) * 6.28318 + random(uv + f32(i)) * 0.5 + time * (0.75 + treble * 0.35);
@@ -106,16 +91,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let depthDiff = sampleDepth - centerDepth;
         let offsetDir = vec3<f32>(offset.x, offset.y, 0.002);
         let cosine = max(dot(centerNormal, normalize(offsetDir)), 0.0);
-        let occluding = f32(depthDiff < 0.0 && depthDiff > -radius * 2.0) * inBounds;
+        let occluding = f32(depthDiff < -depthBias && depthDiff > -radius * 2.0) * inBounds;
         let falloff = (1.0 - smoothstep(0.0, radius, -depthDiff)) * cosine;
         let occW = falloff * occluding;
         occlusion += occW;
         colorInfluence += sampleColor * occW;
         weightSum += occW;
         bent += offset * (1.0 - occluding) * inBounds * cosine;
+        // ── Idea 2: horizon angle from the same tap ────────────────
+        let rise = max(-depthDiff - depthBias, 0.0);
+        let elev = atan2(rise, max(dist, 0.0005));
+        horizon = max(horizon, elev * inBounds);
     }
 
-    occlusion = clamp(occlusion / max(f32(sampleCount), 1.0), 0.0, 1.0) * intensity;
+    let countAO = clamp(occlusion / max(f32(sampleCount), 1.0), 0.0, 1.0);
+    let horizonAO = clamp(sin(horizon), 0.0, 1.0);
+    occlusion = mix(countAO, max(countAO, horizonAO * 0.85), 0.55) * intensity;
     let ao = 1.0 - occlusion;
     var finalColor = src.rgb * (0.5 + 0.5 * ao);
 
