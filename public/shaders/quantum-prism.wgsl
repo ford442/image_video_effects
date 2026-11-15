@@ -1,29 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Quantum Prism — Batch 56 cursor+main merge
-//  Honeycomb bevels/grout, spectral bands, oil-slick facet runners,
-//  held deformation, click fronts, facet depth, display history in A
+//  Quantum Prism
+//  Category: interactive-mouse
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-15
+//  Ideas: Cauchy-weighted chromatic offsets; facet Fresnel rim
+//  A packing: display RGBA (exact C is the previous display)
 // ═══════════════════════════════════════════════════════════════════
+// Kept: hex bevel and grout, spectral bands, oil-slick runners, click fronts.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -31,6 +17,16 @@ fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
   let s = sin(angle);
   let c = cos(angle);
   return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn cauchyRatio(bend: f32) -> vec3<f32> {
+  let lam2 = vec3<f32>(0.4225, 0.3025, 0.2025);
+  let n = 1.0 + bend / lam2;
+  return n / max(n.y, 0.001);
 }
 
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
@@ -97,9 +93,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let finalUV = clamp(vec2<f32>(finalUV_scaled.x / scale / aspect, finalUV_scaled.y / scale), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let ca = (0.002 + intensity * 0.025) * (influence + audio.z * 0.25);
-  let rOffset = rotate(vec2<f32>(ca, 0.0), rotAngle);
-  let bOffset = rotate(vec2<f32>(ca, 0.0), rotAngle + 2.094);
-  let gOffset = rotate(vec2<f32>(ca, 0.0), rotAngle + 4.188);
+  // ── Idea 1: Cauchy-weighted offsets (§12.2F). Same wheel, n(λ)/n(green).
+  let ratio = cauchyRatio(0.08 + intensity * 0.22);
+  let rOffset = rotate(vec2<f32>(ca, 0.0), rotAngle) * ratio.x;
+  let bOffset = rotate(vec2<f32>(ca, 0.0), rotAngle + 2.094) * ratio.z;
+  let gOffset = rotate(vec2<f32>(ca, 0.0), rotAngle + 4.188) * ratio.y;
 
   let r = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + rOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   let g = textureSampleLevel(readTexture, u_sampler, clamp(finalUV + gOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
@@ -126,12 +124,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color += slick * (runners * 0.20 + packets * 0.16 + clickFront * 0.30 + influence * 0.08);
   color = mix(color, prev.rgb * 0.88, 0.16 * influence + 0.06);
 
+  // ── Idea 2: facet Fresnel rim (§12.2F). Grazing hex edge reflects.
+  let facing = clamp(1.0 - hexDistance * 1.7, 0.0, 1.0);
+  let fres = pow(1.0 - facing, 5.0) * (1.0 - grout);
+  let fresAmt = fres * (0.35 + intensity * 0.65);
+  color = color * (1.0 - fresAmt * 0.3) + vec3<f32>(0.70, 0.84, 1.05) * fresAmt * 0.55;
+
   let centerSample = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
   let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(mix(centerSample.a, 0.3 + luma * 0.7, 0.55) + clickFront * 0.08, 0.0, 1.0);
+  let alpha = clamp(mix(centerSample.a, 0.3 + luma * 0.7, 0.55) + clickFront * 0.08 + fres * 0.1, 0.0, 1.0);
   let depth = textureLoad(readDepthTexture, pixel, 0).r;
   let depthOut = clamp(mix(depth, 0.18 + bevel * 0.72, 0.3 * intensity) + grout * 0.06 + clickFront * 0.04, 0.0, 1.0);
-  let finalPixel = vec4<f32>(color, alpha);
+  let finalPixel = vec4<f32>(aces(max(color, vec3<f32>(0.0))), alpha);
 
   textureStore(writeTexture, pixel, finalPixel);
   textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));

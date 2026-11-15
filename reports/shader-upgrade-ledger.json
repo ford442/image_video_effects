@@ -9583,8 +9583,17 @@
       ]
     },
     "gen-psychedelic-time-warp-kaleidoscope": {
-      "hash": "394ce4d18b2a806c",
-      "history": []
+      "hash": "fe84372e1683e456",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "fe84372e1683e456",
+          "prev_hash": "394ce4d18b2a806c",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-quantum-acoustic-bioluminescent-void-urchin": {
       "hash": "079e2949909104d2",
@@ -12234,7 +12243,7 @@
       ]
     },
     "hybrid-voronoi-glass": {
-      "hash": "50a30b246f33de34",
+      "hash": "185ca517656c49ad",
       "history": [
         {
           "event": "upgraded",
@@ -12243,6 +12252,14 @@
           "prev_hash": "31fc9afbf31866a4",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "185ca517656c49ad",
+          "prev_hash": "50a30b246f33de34",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
         }
       ]
     },
@@ -13970,8 +13987,17 @@
       "history": []
     },
     "bio-touch": {
-      "hash": "0a07c0acc73f45de",
-      "history": []
+      "hash": "53c7a3fbd48cbcbe",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "53c7a3fbd48cbcbe",
+          "prev_hash": "0a07c0acc73f45de",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "biomimetic-scales": {
       "hash": "57652fd24d55d379",
@@ -15692,8 +15718,17 @@
       ]
     },
     "mouse-kaleidoscope-tunnel": {
-      "hash": "3f2c5938894bd04e",
-      "history": []
+      "hash": "cc24624551dce436",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "cc24624551dce436",
+          "prev_hash": "3f2c5938894bd04e",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "mouse-magnetic-pixel-sand": {
       "hash": "942c3e8546f8b388",
@@ -16380,8 +16415,17 @@
       "history": []
     },
     "quantum-prism": {
-      "hash": "88aac87d7b93d1ac",
-      "history": []
+      "hash": "710d2a13621eeb77",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "710d2a13621eeb77",
+          "prev_hash": "88aac87d7b93d1ac",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "quantum-ripples": {
       "hash": "8f30f667bcc3a057",
@@ -16430,8 +16474,17 @@
       ]
     },
     "rain-lens-wipe": {
-      "hash": "429ec596e800e8d3",
-      "history": []
+      "hash": "58688046ef2959fd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "58688046ef2959fd",
+          "prev_hash": "429ec596e800e8d3",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
     },
     "rainbow-vector-field": {
       "hash": "f2ba1b3fcf0dfb8e",
@@ -20566,7 +20619,7 @@
       ]
     },
     "gen-aetherial-chromatic-tesseract": {
-      "hash": "1e73ad609d58eef5",
+      "hash": "75664a1a2f907452",
       "history": [
         {
           "event": "added",
@@ -20574,6 +20627,14 @@
           "hash": "1e73ad609d58eef5",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "75664a1a2f907452",
+          "prev_hash": "1e73ad609d58eef5",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
         }
       ]
     },
@@ -20638,7 +20699,7 @@
       ]
     },
     "gen-liquid-metal-chrono-flora": {
-      "hash": "11403c3e55322c58",
+      "hash": "2585130e9042f127",
       "history": [
         {
           "event": "added",
@@ -20646,6 +20707,14 @@
           "hash": "11403c3e55322c58",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "2585130e9042f127",
+          "prev_hash": "11403c3e55322c58",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
         }
       ]
     },
@@ -20766,6 +20835,32 @@
           "hash": "e2b60f49f0ec83dc",
           "commit": "798d840",
           "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        }
+      ]
+    },
+    "gen-harmonic-ferrofluid-kinetics": {
+      "hash": "3a292a10790685cb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "3a292a10790685cb",
+          "prev_hash": "863838fe99a77a70",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
+        }
+      ]
+    },
+    "gen-audio-reactive-quantum-pollen": {
+      "hash": "97a43bc66c264ce9",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T02:35:15.046Z",
+          "hash": "97a43bc66c264ce9",
+          "prev_hash": "ec52573861d1a7c1",
+          "commit": "7123b01b",
+          "note": "2026-11-15 glass-flora ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-15-glass-flora-ten/BRIEFS.md"
         }
       ]
     }
