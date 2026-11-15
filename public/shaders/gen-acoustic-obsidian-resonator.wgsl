@@ -39,61 +39,84 @@ fn hash33(p3: vec3<f32>) -> vec3<f32> {
     return fract((q.xxy + q.yxx) * q.zyx);
 }
 
-// --- LOCAL FRAME: mouse pull -> domain repetition -> rotation (HEAD's first three map() steps,
-// factored out so the shading pass can recover the object-space point and the cell id) ---
-struct LocalFrame {
-    p: vec3<f32>,
-    cell: vec3<f32>,
+// --- PER-PIXEL CONTEXT -------------------------------------------------------------------
+// Everything below is constant over the 30-100 march steps of one pixel. HEAD re-derived it inside
+// every map() call (two plasmaBuffer loads, a sin/cos pair for the rotation, the spacing maths);
+// hoisting it here is what pays for the post-hit shading (trim round, 2026-11-15).
+struct Ctx {
+    rot: vec2<f32>,       // (cos, sin) of time * rotation_speed
+    spacing: f32,         // domain_spacing * 5
+    invSpacing: f32,
+    octR: f32,            // 1.5 + bass * fracture_scale  (HEAD's cavity swell)
+    mids: f32,
+    scarAmp: f32,         // Idea 1 relief amplitude (fracture_scale scales it)
+    held: f32,            // mouse down
+    mouse10: vec2<f32>,   // mouse_uv * 10 (HEAD's pull centre)
+    shock: f32,           // shockwave_force
 };
 
-fn localFrame(pos: vec3<f32>) -> LocalFrame {
-    var p = pos;
+fn makeCtx() -> Ctx {
+    let a = u.config.x * u.zoom_params.x;
+    let spacing = max(u.zoom_params.w * 5.0, 1e-3);
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+    return Ctx(
+        vec2<f32>(cos(a), sin(a)),
+        spacing,
+        1.0 / spacing,
+        1.5 + bass * u.zoom_params.z,
+        clamp(plasmaBuffer[0].y, 0.0, 1.0),
+        0.022 * clamp(u.zoom_params.z, 0.0, 2.0),
+        select(0.0, 1.0, u.zoom_config.w > 0.5),
+        (u.zoom_config.yz * 2.0 - 1.0) * 10.0,
+        u.zoom_params.y
+    );
+}
 
-    // Mouse distortion (unchanged; Rescue 2: normalize(p) was unguarded at p == 0)
-    if (u.zoom_config.w > 0.5) {
-        let mouse_uv = u.zoom_config.yz * 2.0 - 1.0;
-        let dist = length(p.xy - mouse_uv * 10.0);
-        let pull = exp(-dist * 0.5) * u.zoom_params.y;
+// Mouse distortion (HEAD's, unchanged; Rescue 2: normalize(p) was unguarded at p == 0)
+fn pullP(pos: vec3<f32>, c: Ctx) -> vec3<f32> {
+    var p = pos;
+    if (c.held > 0.5) {
+        let dist = length(p.xy - c.mouse10);
+        let pull = exp(-dist * 0.5) * c.shock;
         p = p + p / max(length(p), 1e-4) * pull;
     }
+    return p;
+}
 
-    // Domain Repetition
-    let spacing = max(u.zoom_params.w * 5.0, 1e-3);
-    let cell = floor(p / spacing + vec3<f32>(0.5));
-    p = fract(p / spacing + vec3<f32>(0.5)) * spacing - vec3<f32>(0.5 * spacing);
-
-    // Rotations
-    let rxy = p.xy * rot2D(u.config.x * u.zoom_params.x);
-    return LocalFrame(vec3<f32>(rxy, p.z), cell);
+// Domain repetition -> rotation (HEAD's steps) from the pre-folded coordinate q = p/spacing + 0.5
+fn localOf(q: vec3<f32>, c: Ctx) -> vec3<f32> {
+    let f = fract(q) * c.spacing - vec3<f32>(0.5 * c.spacing);
+    // == f.xy * rot2D(time * rotation_speed)
+    return vec3<f32>(f.x * c.rot.x - f.y * c.rot.y, f.x * c.rot.y + f.y * c.rot.x, f.z);
 }
 
 // --- SDF MAP ---
-fn map(pos: vec3<f32>) -> f32 {
-    let fr = localFrame(pos);
-    let p = fr.p;
-
-    // Audio Reactivity
-    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
-    let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+fn map(pos: vec3<f32>, c: Ctx) -> f32 {
+    let q = pullP(pos, c) * c.invSpacing + vec3<f32>(0.5);
+    let p = localOf(q, c);
 
     let base_box = sdBox(p, vec3<f32>(1.0, 4.0, 1.0));
-    let oct = sdOctahedron(p, 1.5 + bass * u.zoom_params.z);
+    let oct = sdOctahedron(p, c.octR);
 
-    // Fracture displacement
-    let fracture = sin(p.x * 10.0) * sin(p.y * 10.0) * sin(p.z * 10.0) * mids * 0.2;
+    var d = max(base_box, -oct);
 
-    var d = max(base_box, -oct) + fracture;
+    // Fracture displacement (HEAD's mids crack). Exactly 0 when mids == 0, so the three sines are
+    // skipped at silence (a uniform branch).
+    if (c.mids > 0.0) {
+        d += sin(p.x * 10.0) * sin(p.y * 10.0) * sin(p.z * 10.0) * c.mids * 0.2;
+    }
 
     // ── Idea 1: conchoidal fracture scars (native) ────────────────────
     // Obsidian breaks along curved shells: concentric ripples that radiate from the
     // percussion point of each blow, widening as they go. Each monolith cell gets its own
     // blow origin; the shell relief is a few hundredths of a unit — enough to bend the
     // glossy reflection (below) into arcs, silent or not. `fracture_scale` scales it, so
-    // all four sliders are live at silence. Only evaluated near the surface.
+    // all four sliders are live at silence. Only evaluated near the surface; the cell id is
+    // only needed here, so the floor lives inside the branch.
     if (d < 0.2) {
-        let org = (hash33(fr.cell) * 2.0 - vec3<f32>(1.0)) * vec3<f32>(1.6, 3.0, 1.6);
+        let org = (hash33(floor(q)) * 2.0 - vec3<f32>(1.0)) * vec3<f32>(1.6, 3.0, 1.6);
         let rr = length(p - org);
-        d += sin(rr * 9.0 - 2.2 * sqrt(rr)) * (0.022 / (1.0 + rr * 0.22)) * clamp(u.zoom_params.z, 0.0, 2.0);
+        d += sin(rr * 9.0 - 2.2 * sqrt(rr)) * (c.scarAmp / (1.0 + rr * 0.22));
     }
     return d;
 }
@@ -105,6 +128,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (f32(id.x) >= res.x || f32(id.y) >= res.y) { return; }
 
     let uv = (vec2<f32>(id.xy) * 2.0 - res) / min(res.x, res.y);
+    let cx = makeCtx();
 
     var ro = vec3<f32>(0.0, 0.0, -5.0 + u.config.x);
     var rd = normalize(vec3<f32>(uv, 1.0));
@@ -113,8 +137,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var steps = 0;
     var dEnd = 0.0;   // SDF value at the final march position (≈ the hit residual; used by the curvature tap)
     for (var i = 0; i < 100; i++) {
-        let p = ro + rd * t;
-        let d = map(p);
+        let d = map(ro + rd * t, cx);
         dEnd = d;
         if (d < 0.001 || t > 50.0) { break; }
         t += d;
@@ -130,7 +153,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ao = 1.0 - f32(steps) / 100.0;
 
         let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
-        let mids = clamp(plasmaBuffer[0].y, 0.0, 1.0);
+        let mids = cx.mids;
         let emissive_gold = vec3<f32>(1.0, 0.8, 0.2) * (bass * 2.0);
 
         // HEAD's shading, unchanged: dark glass + gold emissive where the march was cheap.
@@ -143,10 +166,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // 4-tap tetrahedron stencil: gradient (normal) AND Laplacian from the same four map() calls.
         let e = 0.02;
         let h = e * 0.57735027;
-        let t0 = map(p + h * vec3<f32>(1.0, -1.0, -1.0));
-        let t1 = map(p + h * vec3<f32>(-1.0, -1.0, 1.0));
-        let t2 = map(p + h * vec3<f32>(-1.0, 1.0, -1.0));
-        let t3 = map(p + h * vec3<f32>(1.0, 1.0, 1.0));
+        let t0 = map(p + h * vec3<f32>(1.0, -1.0, -1.0), cx);
+        let t1 = map(p + h * vec3<f32>(-1.0, -1.0, 1.0), cx);
+        let t2 = map(p + h * vec3<f32>(-1.0, 1.0, -1.0), cx);
+        let t3 = map(p + h * vec3<f32>(1.0, 1.0, 1.0), cx);
         let g = vec3<f32>(1.0, -1.0, -1.0) * t0 + vec3<f32>(-1.0, -1.0, 1.0) * t1
               + vec3<f32>(-1.0, 1.0, -1.0) * t2 + vec3<f32>(1.0, 1.0, 1.0) * t3;
         let n = g / max(length(g), 1e-5);
@@ -170,8 +193,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // the SDF Laplacian κ = 1.5·(Σ₄ d(p+e·uᵢ) − 4·d(p)) / e², with d(p) = the march's final
         // residual (NOT 0: the march stops at d < 0.001, and 4·0.001/e² would swamp κ); convex
         // edges (κ·e large) are chipped bright — more so where the mids crack the glass.
-        let lf = localFrame(p);
-        let layer = 0.5 + 0.5 * sin(lf.p.y * 6.0 + lf.p.x * 1.3 + 1.7 * sin(lf.p.z * 2.0));
+        let lp = localOf(pullP(p, cx) * cx.invSpacing + vec3<f32>(0.5), cx);
+        let layer = 0.5 + 0.5 * sin(lp.y * 6.0 + lp.x * 1.3 + 1.7 * sin(lp.z * 2.0));
         let graze = (1.0 - ndv) * (1.0 - ndv) * sqrt(1.0 - ndv);
         let schiller = vec3<f32>(1.0, 0.72, 0.26) * graze * (0.20 + 0.80 * layer) * 0.55;
         let kappa = 1.5 * (t0 + t1 + t2 + t3 - 4.0 * dEnd) / (e * e);   // tetrahedron: Σf = 4f₀ + (2/3)e²∇²f

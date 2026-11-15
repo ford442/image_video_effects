@@ -75,11 +75,11 @@ Slider sweep (128 px, free / held cursor): rotation 94.7 % / 93.1 %, shockwave 0
 
 Default-look change (256 px): idle 0.008 / 0.004 → 0.091 / 0.137; audio 0.484 / 0.383 → 0.502 / 0.291 (ACES compresses HEAD's unclamped gold; the yellow areas are less saturated).
 
-Cost (new/HEAD, 256 px, drained-frame min over 6 frames t ≤ 4 s, interleaved, 6 rounds, load 20–50): **first version** (6-tap central stencil, `sin` hash, `exp` falloff) idle median ≈ 1.9× (min-ratio) / 2.1× (median frame). **After the trim** (sine-free hash, `1/(1+k·rr)` falloff, 4-tap tetrahedron stencil giving normal + Laplacian) idle per-round [1.13, 0.80, 1.22, 4.06, 2.44, 1.50] median **1.36** (median-frame 1.47); audio [1.45, 0.95, 1.73, 2.91, 1.04, 1.22] median **1.33** (1.36). Scars-off variant: idle 1.48 / 0.97, audio 1.85 / 1.43 — i.e. NOT separable from noise, so the scar term is not the cost driver; the post-hit stencil (4 extra `map` calls + `localFrame` + environment) is. That is at or just over the 1.3× cap on a loaded SwiftShader (spread per round is 0.8–4×); I did not trim further. **The coordinator should re-time alone.** A cheaper option if needed: drop the stencil to a 3-tap forward difference (normal only) and give up the wear term.
+**[SUPERSEDED by the Trim round below: the coordinator's alone re-time was 1.65–1.68×; after the trim it is 0.98 idle / 1.00 audio.]** Cost (new/HEAD, 256 px, drained-frame min over 6 frames t ≤ 4 s, interleaved, 6 rounds, load 20–50): **first version** (6-tap central stencil, `sin` hash, `exp` falloff) idle median ≈ 1.9× (min-ratio) / 2.1× (median frame). **After the trim** (sine-free hash, `1/(1+k·rr)` falloff, 4-tap tetrahedron stencil giving normal + Laplacian) idle per-round [1.13, 0.80, 1.22, 4.06, 2.44, 1.50] median **1.36** (median-frame 1.47); audio [1.45, 0.95, 1.73, 2.91, 1.04, 1.22] median **1.33** (1.36). Scars-off variant: idle 1.48 / 0.97, audio 1.85 / 1.43 — i.e. NOT separable from noise, so the scar term is not the cost driver; the post-hit stencil (4 extra `map` calls + `localFrame` + environment) is. That is at or just over the 1.3× cap on a loaded SwiftShader (spread per round is 0.8–4×); I did not trim further. **The coordinator should re-time alone.** A cheaper option if needed: drop the stencil to a 3-tap forward difference (normal only) and give up the wear term.
 
 §12.2 row used: SDF curvature (obsidian only). Idea 1 is native. No orbit-trap / Beer–Lambert / Cauchy.
 
-Open items: (a) scars read as soft undulations of the reflected lobes rather than crisp conchoidal arcs (amplitude 0.022; a deeper relief would need the step threshold relaxed); (b) at audio the diagonal black speckle in the alpha panel is step-exhausted rays (HEAD drew them black too; they now carry alpha 0); (c) the wear term is wide with the 4-tap stencil (12 % of the idle frame vs 2.6 % for the earlier 6-tap one) because the tetrahedron footprint is larger — thresholds (`smoothstep(0.12, 0.5, κ·e)`) were not re-tuned after the switch; (d) real-GPU eyeball for the silent frame, which is the biggest default-look change.
+Open items: (a) scars read as soft undulations of the reflected lobes rather than crisp conchoidal arcs (amplitude 0.022; a deeper relief would need the step threshold relaxed); (b) at audio the diagonal black speckle in the alpha panel is step-exhausted rays (HEAD drew them black too; they now carry alpha 0); (c) **[WITHDRAWN — see Trim round: the 12 % figure came from a comparison against stale variant files; the 4-tap wear is 2.8 % of the idle frame]** the wear term is wide with the 4-tap stencil (12 % of the idle frame vs 2.6 % for the earlier 6-tap one) because the tetrahedron footprint is larger — thresholds (`smoothstep(0.12, 0.5, κ·e)`) were not re-tuned after the switch; (d) real-GPU eyeball for the silent frame, which is the biggest default-look change.
 
 ---
 
@@ -92,3 +92,48 @@ Open items: (a) scars read as soft undulations of the reflected lobes rather tha
 | `audit:dead-sliders -- --files` | 0 new | 0 new |
 | `audit:extrabuffer` | no finding for either file | no finding |
 | params byte-exact vs HEAD | yes | yes |
+
+
+---
+
+## Trim round — gen-acoustic-obsidian-resonator, 2026-11-15 (coordinator: 1.62–1.68× HEAD, over the 1.3× cap)
+
+Edited only `public/shaders/gen-acoustic-obsidian-resonator.wgsl` (JSON untouched; params still byte-exact). Method = the coordinator's: `coord/mr_perf.mjs`, 256 px, 24 frames, t ≤ 1 s, saved-default sliders `0.5,2.0,1.0,1.5`, HEAD and variant interleaved, min-of-drained-frames, 6 rounds, median of per-round ratios; idle (0,0,0) and audio (0.8,0.5,0.9). `uptime` before each run: load 0.8–2.3, no other `mr_perf` / `mr_d` process of mine running.
+
+### What was actually costing (answer to the coordinator's reading)
+The coordinator's variants say ≈ 1.2–1.3× is already there with HEAD's shading, scars off and taps off, i.e. "march-side plumbing". Confirmed in a different way: the cost was not any one new term but **HEAD's per-step recomputation that my `localFrame` / struct version kept and added to**. Every `map()` call (30–100 per pixel, +4 for the stencil) re-derived loop invariants: two `plasmaBuffer` storage loads + clamps, a `sin`/`cos` pair for the rotation (`rot2D(time·rotation_speed)`), `spacing`, `1/spacing`, the octahedron radius, the mouse centre; plus my own struct return and an unconditional second `floor` for the cell id.
+
+### The trim (no idea weakened, no term removed)
+1. **Per-pixel context** (`struct Ctx`, built once in `main()` by `makeCtx()`): rotation (cos, sin), spacing, 1/spacing, octahedron radius `1.5 + bass·fracture_scale`, mids, scar amplitude `0.022·clamp(fracture_scale, 0, 2)`, held flag, mouse·10 centre, shockwave. `map(pos, ctx)` and the 4 stencil taps use it; the rotation is applied as `(x·c − y·s, x·s + y·c)` (identical to HEAD's `p.xy * rot2D(a)`).
+2. **No struct return in the hot path**: `pullP()` (mouse pull) and `localOf(q, ctx)` (fold + rotate) return plain `vec3`; the shading pass reuses them instead of the second `localFrame(p)`.
+3. **`floor` for the cell id only inside `if (d < 0.2)`** (the scar branch) — `cell = floor(q)` with `q = pulled/spacing + 0.5`, which the fold already needs.
+4. **Fracture sines skipped when `mids == 0`**: `sin·sin·sin·mids·0.2` is exactly 0 there (uniform branch), so at silence all three sines are skipped in the march and in the taps. Exact-zero skip, not an approximation.
+`dEnd` bookkeeping, the 4-tap tetrahedron stencil, the 3-sine `layer`, the `sqrt` in `graze`, both soft-box smoothsteps and the environment are all **unchanged** — none needed to go.
+
+### Result (alone, load 1.3–2.2)
+| mode | new/HEAD median | per-round |
+|---|---|---|
+| idle | **0.98** | 1.302 1.125 0.990 0.938 0.975 0.971 |
+| audio | **1.005** | 0.978 1.009 1.054 1.005 1.005 0.976 |
+(first round idle 1.30 is a cold-start outlier; the same file read 1.02 / 1.00 in an earlier 6-round run: idle 1.010 1.091 0.979 1.022 1.108 1.006, audio 1.029 0.924 0.920 1.020 0.986 1.417.) Previous version in the same harness: 1.42 / 1.92 (2 rounds), consistent with the coordinator's 1.62–1.68.
+
+### Pixel equivalence with the pre-trim version (so visibility is a property of the same picture)
+192 px, t = 4, held cursor (0.4, 0.6): idle 0.00 % of pixels differ > 0.02 (mean |Δ| 0.0000), audio 0.01 %. Slider extremes at 128 px, held cursor, with audio (rot 0/2, shockwave 0/10, fracture 0/3, spacing 0.5/5, plus two mixed settings): ≤ 0.01 % of pixels, max |Δ| 0.065–0.312 on a handful of pixels (`·invSpacing` vs `/spacing` flips a `fract` cell edge by one ulp). `nan` = 0 everywhere.
+
+### Visibility re-measured on the trimmed file (idea zeroed, % px > 0.02, mean |Δ|; idle = free cursor, audio = held cursor 0.4,0.6 + audio 0.8,0.5,0.9)
+| | 192 idle | 192 audio | 576 idle | 576 audio |
+|---|---|---|---|---|
+| Idea 1 conchoidal scars | **22.5 %** (0.036) | **41.4 %** (0.061) | **22.4 %** (0.036) | **41.2 %** (0.061) |
+| Idea 2 sheen + wear | **14.9 %** (0.032) | **50.2 %** (0.119) | **14.8 %** (0.032) | **50.2 %** (0.119) |
+| — sheen only | 13.9 % (0.022) | 22.7 % (0.022) | — | — |
+| — wear only | 2.8 % (0.009) | 35.1 % (0.091) | — | — |
+| R1 gloss (silent-frame rescue) | 49.3 % (0.077) | 53.0 % (0.064) | — | — |
+Silent frame holds: idle meanL **0.093** / stdL 0.143 at 192 and 576 (HEAD 0.008 / 0.004); audio meanL 0.506 / stdL 0.291.
+
+### Corrections to the sections above
+- The "wear only 12.0 % idle / 55.4 % audio" figure and open item (c) ("wear is wide with the 4-tap stencil") are **withdrawn**: they came from a comparison against variant files that had not been regenerated after the stencil switch. Measured properly (variants built from the same file in the same run) the 4-tap wear is 2.8 % of the idle frame and 35 % with mids, the same as the 6-tap one. The wear thresholds need no re-tune.
+- The earlier cost paragraph (≈ 1.33–1.36×) and the claim "scars are not the driver" were measured at load 20–50; the coordinator's alone numbers (1.62–1.68×) are the valid ones for the pre-trim file, and the table above is the valid one for the trimmed file.
+- Gates re-run on the trimmed file: `wgsl_precommit_gate.py --files` pass (naga OK, bindgroup compatible), `verify-naga-wasm.mjs --files` pass, `audit:dead-sliders` 0 new, `audit:extrabuffer` pass.
+
+### Open
+Cost was measured on SwiftShader only; the idle gain below 1.0 comes partly from skipping HEAD's three always-on fracture sines at silence, so with real audio (mids > 0) the ratio is ≈ 1.0 rather than below it. Real-GPU timing not done.

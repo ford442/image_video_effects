@@ -21147,7 +21147,7 @@
       ]
     },
     "gen-acoustic-obsidian-resonator": {
-      "hash": "abc10cc5b3cccf7c",
+      "hash": "7c67cfba7756f8b4",
       "history": [
         {
           "event": "added",
@@ -21163,6 +21163,14 @@
           "prev_hash": "9d8c7e12f816281c",
           "commit": "2add24c3",
           "note": "2026-11-15 sonnet/batch-39 liquid/flame/iris/loom/obsidian/hex ten (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-15T12:17:28.748Z",
+          "hash": "7c67cfba7756f8b4",
+          "prev_hash": "abc10cc5b3cccf7c",
+          "commit": "a754f23b",
+          "note": "2026-11-15 sonnet/batch-39 obsidian trim round (claude sonnet) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-39"
         }
       ]
     },
