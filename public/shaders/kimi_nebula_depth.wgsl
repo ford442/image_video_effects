@@ -1,13 +1,14 @@
 // ============================================================================
 // Kimi Nebula Depth — halftone dot + Sobel ink-stipple
-// Upgraded: 2026-09-27
-// Ideas: rosette screen angle; wet-ink bleed from C; click screen misregister
+// Upgraded: 2026-09-27, 2026-11-18
+// Ideas: rosette screen angle; wet-ink bleed from C; click screen misregister; dot gain + minimum printable dot (area-coverage tone curve riding Ink Density); off-register colour plate; ink pooling in a static paper tooth
+// Rescues 2026-11-18: Sobel magnitude was |gx+gy| (no outline on one diagonal family); paper grain was one global value (hash of uv*time*0.001), now a static per-pixel tooth; vignette spring could not persist (engine zeroes the scratch) and raced thread (0,0), now stateless; bindings via _prelude
 // A packing: ACES display RGBA. Alpha is ink coverage.
-// Kept: Batch 18 Sobel loop, bass dot pulse, spring vignette. Not a nebula.
+// Kept: Batch 18 Sobel loop (magnitude line fixed), bass dot pulse, pointer vignette. Not a nebula.
 //
 // Despite the legacy name there is no nebula or raymarch here: this is a
 // posterized-luma halftone renderer with Sobel ink outlines, paper grain,
-// a bass-reactive dot pulse, and a spring-damped mouse vignette.
+// a bass-reactive dot pulse, and a pointer-following vignette.
 //
 // Slider wiring (u.zoom_params):
 //   x = Dot Size         — halftone cell pitch in screen pixels
@@ -15,45 +16,11 @@
 //   z = Posterize Levels — luma/color quantization steps
 //   w = Ink Density      — strength of ink outlines and dots
 //
-// Persistent state (extraBuffer safe zone [133..255], single writer):
-//   [133] vignette center.x   [134] vignette center.y
-//   [135] vignette velocity.x [136] vignette velocity.y
-//   [137] last frame time     [138] initialized flag
+// No persistent state: the vignette follows the raw pointer (the engine re-uploads
+// extraBuffer[133..255] as zero every frame, so the old spring never persisted).
 // ============================================================================
 
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
-}
-
-@group(0) @binding(0) 
-var u_sampler: sampler;
-@group(0) @binding(1) 
-var readTexture: texture_2d<f32>;
-@group(0) @binding(2) 
-var writeTexture: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(3) 
-var<uniform> u: Uniforms;
-@group(0) @binding(4) 
-var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) 
-var non_filtering_sampler: sampler;
-@group(0) @binding(6) 
-var writeDepthTexture: texture_storage_2d<r32float,write>;
-@group(0) @binding(7) 
-var dataTextureA: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(8) 
-var dataTextureB: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(9) 
-var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) 
-var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) 
-var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) 
-var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
 fn getLuma(color_1: vec3<f32>) -> f32 {
     return dot(color_1, vec3<f32>(0.299, 0.587, 0.114));
@@ -138,39 +105,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         }
     }
 
-    // ── Spring-damped vignette center (single writer, read by all) ──────
-    let hasState = (arrayLength(&extraBuffer) > 138u);
-    var vigCenter = vec2<f32>(0.5, 0.5);
-    if (hasState) {
-        let stateInit = (extraBuffer[138] > 0.5);
-        if (stateInit) {
-            vigCenter = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        }
-    }
-    let isWriter = ((global_id.x == 0u) && (global_id.y == 0u));
-    if (isWriter && hasState) {
-        let lastTime = extraBuffer[137];
-        let dt = clamp((time - lastTime), 0.0, 0.1);
-        var vPos = vigCenter;
-        var vVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        if (extraBuffer[138] < 0.5) {
-            vVel = vec2<f32>(0.0, 0.0);
-        }
-        // Clamp the spring target so a negative "mouse inactive" sentinel
-        // pulls the vignette to screen center instead of off-canvas.
-        let targetPos = select(mousePos, vec2<f32>(0.5, 0.5), (mousePos.x < 0.0));
-        let stiff = 36.0;
-        let damping = 8.0;
-        let accel = (((targetPos - vPos) * stiff) - (vVel * damping));
-        vVel = (vVel + (accel * dt));
-        vPos = (vPos + (vVel * dt));
-        extraBuffer[133] = vPos.x;
-        extraBuffer[134] = vPos.y;
-        extraBuffer[135] = vVel.x;
-        extraBuffer[136] = vVel.y;
-        extraBuffer[137] = time;
-        extraBuffer[138] = 1.0;
-    }
+    // ── Vignette centre (Rescue 3: stateless; the HEAD spring never persisted and raced) ──
+    // A negative x is the "pointer inactive" sentinel -> screen centre.
+    let vigCenter = select(mousePos, vec2<f32>(0.5, 0.5), mousePos.x < 0.0);
 
     // ── Sobel edge detection (fragile naga-transpiled core: verbatim) ───
     let pixelSize = (vec2(1.0) / resolution);
@@ -244,7 +181,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     let _e139 = gx;
     let _e140 = gy;
-    let edge = length((_e139 + _e140));
+    // ── Rescue 1: HEAD used length(gx + gy) = sqrt(3)*|gx+gy|, which is exactly 0 for the "\" diagonal
+    // family (gx = -gy) and 1.41x too strong for "/". Same value on axis-aligned edges, isotropic now. ──
+    let edge = 1.7320508 * length(vec2<f32>(_e139.x, _e140.x));
     let isEdge = select(0.0, 1.0, (edge > edgeThresh));
     // Soft ink weight for anti-aliased outlines; binary isEdge kept for logic.
     let edgeSoft = smoothstep(edgeThresh, (edgeThresh + 0.08), edge);
@@ -255,21 +194,42 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color = _e151.xyz;
     let _e154 = color;
     let _e155 = getLuma(_e154);
+
+    // ── Rescue 2: static paper tooth (HEAD hashed uv*time*0.001: one global value, not grain) ──
+    let pix = vec2<f32>(global_id.xy);
+    let tooth = 0.5 * hash12_(pix + vec2<f32>(100.0)) + 0.5 * hash12_(floor(pix / 3.0) + vec2<f32>(57.0));
+
+    // ── Idea 2: off-register colour plate (native: print registration) ──
+    // The posterized colour plate is printed a little off the black plate (dots + outlines), along
+    // the rosette axis, scaled by the dot pitch; colour edges fringe against the ink.
+    let rosette = 0.26;
+    let regOff = vec2<f32>(cos(rosette), sin(rosette)) * (dotSize * 0.25) / resolution;
+    let colorPlate = textureSampleLevel(readTexture, u_sampler, uv + regOff, 0.0).xyz;
+
     // Rosette: rotate the existing dot grid so the screen is not axis-aligned.
     let screen = (vec2<f32>(global_id.xy) / vec2(dotSize)) + misreg * 18.0;
-    let rosette = 0.26;
     let gridPos = vec2<f32>(
         screen.x * cos(rosette) - screen.y * sin(rosette),
         screen.x * sin(rosette) + screen.y * cos(rosette)
     );
     let gridCenter = (floor(gridPos) + vec2(0.5));
     let dist = length((gridPos - gridCenter));
-    let _e169 = color;
-    color = (floor((_e169 * levels)) / vec3(levels));
-    let dotRadius = ((1.0 - _e155) * 0.7);
-    let isDot = select(0.0, 1.0, (dist < dotRadius));
-    // Anti-aliased dot mask: soft rim instead of a hard binary edge.
-    let dotMask = smoothstep((dotRadius + 0.06), (dotRadius - 0.06), dist);
+    color = (floor((colorPlate * levels)) / vec3(levels));
+
+    // ── Idea 1: dot gain + minimum printable dot (native: the plate's tone curve) ──
+    // HEAD radius was linear in ink (1 - luma). Printed dots spread: the ink amount gains most in the
+    // midtones, 4t(1-t), by an amount that rides Ink Density (heavier ink spreads more); a plate cannot
+    // hold a dot below ~3 % ink, so the faintest dots drop out of the highlights.
+    let inkAmt = 1.0 - _e155;
+    let inkGained = clamp(inkAmt + inkDensity * 0.2 * 4.0 * inkAmt * (1.0 - inkAmt), 0.0, 1.0);
+    let plateKeep = smoothstep(0.02, 0.06, inkGained);
+    // ── Idea 3: ink pools in the paper tooth (native: ink sits in paper grain) ──
+    // The dot threshold breathes with the tooth, more at low Ink Density, so rims break up.
+    let pool = 1.0 + 0.3 * (tooth - 0.5) * (1.2 - inkDensity);
+    let dotRadius = (inkGained * 0.7) * pool;
+    // Anti-aliased dot mask drawn from the soft rim alone (HEAD's binary gate cut the rim).
+    let dotMask = smoothstep((dotRadius + 0.06), (dotRadius - 0.06), dist) * plateKeep;
+    let isDot = select(0.0, 1.0, dotMask > 0.002);
 
     // ── Ink compositing ─────────────────────────────────────────────────
     let _e182 = color;
@@ -278,11 +238,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let line_density = ((inkDensity * 0.9) + 0.05);
         ink_alpha = line_density;
         let _e192 = finalColor;
-        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (edgeSoft * inkDensity));
+        // Idea 3 (outline): the outline ink also sits in the tooth.
+        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), clamp(edgeSoft * inkDensity * (0.75 + 0.5 * tooth), 0.0, 1.0));
     }
     if (isDot > 0.5) {
-        let dot_coverage = smoothstep(0.0, 0.7, (1.0 - _e155));
-        let dot_alpha = ((dot_coverage * inkDensity) * 0.85);
+        let dot_coverage = smoothstep(0.0, 0.7, inkGained);
+        let dot_alpha = ((dot_coverage * inkDensity) * 0.85) * dotMask;
         let inkColor = vec3<f32>(0.08, 0.07, 0.09);
         let _e213 = finalColor;
         finalColor = mix(_e213, (_e213 * 0.7), (dotMask * 0.8));
@@ -296,13 +257,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         ink_alpha = mix(0.15, 0.45, (_e155 * inkDensity));
     }
 
-    // ── Paper grain ─────────────────────────────────────────────────────
-    let _e229 = uv;
-    let _e236 = hash12_((((_e229 * time) * 0.001) + vec2(100.0)));
-    let paper_tex = (0.95 + (0.05 * _e236));
+    // ── Paper grain (Rescue 2: the static tooth above, not a time-scaled uv hash) ──
+    let paper_tex = (0.95 + (0.05 * tooth));
     let _e241 = ink_alpha;
     ink_alpha = (_e241 * paper_tex);
-    finalColor = (finalColor * (0.97 + (0.03 * _e236)));
+    finalColor = (finalColor * (0.97 + (0.03 * tooth)));
     finalColor = finalColor + vec3<f32>(0.04, 0.02, 0.0) * mids * paper_tex;
     finalColor = finalColor + vec3<f32>(paper_tex - 0.97) * treble * 0.15;
 

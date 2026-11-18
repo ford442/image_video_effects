@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarched, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: braided axonal bundles woven through gyroid links; synaptic vesicle release bursts from active crystal nodes
+//  Upgraded: 2026-10-10, 2026-11-18
+//  Ideas: braided axonal bundles woven through gyroid links; synaptic vesicle release bursts from active crystal nodes; nucleation front (outgoing freezing shells); memory-crystal bit states; light-piped links; action-potential wavefronts with refractory undershoot launched at each vesicle burst (native); SDF curvature edge wear (§12.2E)
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back exactly as HDR history
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -140,6 +140,13 @@ fn cellBit(cell: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(level, glint);
 }
 
+// The crystal nodes' own box SDF in the cell-local frame (same arithmetic as the d_crystal line in mapFull,
+// without the melt / bit offsets): used by Idea 7's curvature taps.
+fn crystalDist(q: vec3<f32>) -> f32 {
+    let c = ifsCrystals(q);
+    return length(max(abs(c) - vec3<f32>(0.1, 0.1, 0.1), vec3<f32>(0.0))) - 0.05;
+}
+
 // Main SDF: x = distance, y = material (0 crystal .. 1 gyroid), z = crystal distance (for the light pipes)
 fn mapFull(p_in: vec3<f32>) -> vec3<f32> {
     let L = latticeSpace(p_in);
@@ -256,7 +263,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let lat = latticeSpace(p);
         let front = nucleationFront(lat.r);
         let bit = cellBit(lat.cell);
-        let d_crystal = mapFull(p).z;
+        let mf = mapFull(p);
+        let d_crystal = mf.z;
 
         // Nodes (Crystal) neon: cyan base, hue rotated
         let neonCol = hueRotate(vec3<f32>(0.0, 1.0, 1.0), hueShift);
@@ -301,9 +309,50 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Idea 4: braided axonal bundles woven through gyroid links.
             let braid = 0.5 + 0.5 * sin(lat.r * 11.0 + p.z * 6.0 - u.config.x * 2.4);
             baseCol += neonCol * braid * 0.32;
+
+            // ── Idea 6: action-potential wavefront with refractory undershoot (native: neuron physiology) ──
+            // Each node already fires a vesicle burst (Idea 5: sin(9t + cell phase) peaks). At that instant a spike is
+            // launched from the node and conducts out over the links at finite speed (distance field = d_crystal, the
+            // coordinate the light pipes use): a sharp depolarising leading edge, then a dim hyperpolarised band
+            // behind it (refractory undershoot), amplitude decrementing with distance. 0-bit nodes stay silent, melted ones fire at 30 %.
+            let fireArg = u.config.x * 9.0 + dot(lat.cell, vec3<f32>(0.37, 0.53, 0.71)) - 0.5 * PI;
+            let tau = fract(fireArg / (2.0 * PI)) * (2.0 * PI / 9.0);       // seconds since this node last fired
+            let cellSize = 8.0 / (u.zoom_params.x * 5.0 + 1.0);              // same cell size latticeSpace uses
+            let reach = cellSize * 0.55;                                     // the front crosses most of the cell in one burst period
+            let df = tau * (9.0 / (2.0 * PI)) * reach;                       // front radius, world units
+            let sf = d_crystal - df;                                         // > 0 ahead of the front, < 0 behind
+            let wS = clamp(cellSize / 2.3, 0.5, 2.0) * 1.3;                  // spike widths follow the cell scale
+            let upW = select(0.10, 0.035, sf > 0.0) * wS;                    // sharp leading edge, softer repolarisation
+            let up = exp(-(sf * sf) / (upW * upW));
+            // refractory undershoot: everything the spike has already crossed is dimmed just behind the front and recovers
+            // toward the node (links recover over the rest of the burst period)
+            let behind = max(-sf, 0.0);
+            let under = smoothstep(0.0, 0.12 * wS, behind) * exp(-behind / (0.5 * reach));
+            // melted nodes (ahead of the freezing front) keep their seed specks, which still fire, at 30 %
+            let fires = (0.3 + 0.7 * front.x) * bit.x * exp(-df / reach);
+            let spikeCol = mix(neonCol, vec3<f32>(1.0), 0.55);
+            baseCol = baseCol * (1.0 - 0.45 * under * fires) + spikeCol * up * fires * (1.6 + audio.y * 0.9);
         }
 
         col = baseCol * (diff1 * 0.6 + diff2 * 0.4) + vec3<f32>(1.0) * spec;
+
+        // ── Idea 7: SDF curvature edge wear (§12.2E SDF curvature) ──
+        // kappa ~ (sum of the six axis taps - 6 d0) / e^2 on the crystal nodes' own box SDF (an exact distance, so
+        // the Laplacian is the true sum of principal curvatures: ~1/0.05 on a rounded arris, ~2/0.05 at a corner,
+        // 0 on a face). The six taps reuse the cell-local frame `lat.q` (no extra latticeSpace). Convex arrises catch
+        // a polished frost glint, treble-lit.
+        let ec = 0.02;
+        let c0 = crystalDist(lat.q);
+        let kap = (crystalDist(lat.q + vec3<f32>(ec, 0.0, 0.0)) + crystalDist(lat.q - vec3<f32>(ec, 0.0, 0.0))
+                 + crystalDist(lat.q + vec3<f32>(0.0, ec, 0.0)) + crystalDist(lat.q - vec3<f32>(0.0, ec, 0.0))
+                 + crystalDist(lat.q + vec3<f32>(0.0, 0.0, ec)) + crystalDist(lat.q - vec3<f32>(0.0, 0.0, ec))
+                 - 6.0 * c0) / (ec * ec);
+        // only on the node's own surface (|d| small) and only for lit 1-bit nodes (a 0-bit node is dull smoky quartz)
+        let onNode = 1.0 - smoothstep(0.012, 0.045, abs(c0));
+        // arris (kappa ~ 20) get a faint polish, corners (kappa ~ 40) a hard vertex glint
+        let convex = (0.3 * smoothstep(8.0, 16.0, kap) + smoothstep(27.0, 36.0, kap)) * onNode * bit.x;
+        let wearCol = hueRotate(vec3<f32>(0.75, 1.0, 1.0), hueShift);
+        col += wearCol * convex * (0.5 + audio.z * 0.6) * (1.0 - mat);
 
         // Idea 1: frost rim where the freezing front is nucleating crystal right now (emissive, both materials).
         let frostCol = hueRotate(vec3<f32>(0.65, 1.0, 1.0), hueShift);

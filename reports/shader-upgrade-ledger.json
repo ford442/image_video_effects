@@ -5311,7 +5311,7 @@
       ]
     },
     "gen-bismuth-singularity-loom-engine": {
-      "hash": "2c2634edc161e578",
+      "hash": "dfe2d57f3dda8eb7",
       "history": [
         {
           "event": "upgraded",
@@ -5320,6 +5320,14 @@
           "prev_hash": "16fef9c9b92eae96",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "dfe2d57f3dda8eb7",
+          "prev_hash": "2c2634edc161e578",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
         }
       ]
     },
@@ -6055,7 +6063,7 @@
       ]
     },
     "gen-crystalline-chrono-dyson": {
-      "hash": "b258ad9e557906b6",
+      "hash": "4867a287c737b2b7",
       "history": [
         {
           "event": "upgraded",
@@ -6064,6 +6072,14 @@
           "prev_hash": "97d5e5eeaf669f22",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "4867a287c737b2b7",
+          "prev_hash": "b258ad9e557906b6",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
         }
       ]
     },
@@ -6102,7 +6118,7 @@
       ]
     },
     "gen-cyber-organic-liquid-neon-pulsar": {
-      "hash": "74e9005ab9afef1b",
+      "hash": "e341c75d27fe082e",
       "history": [
         {
           "event": "upgraded",
@@ -6111,6 +6127,14 @@
           "prev_hash": "34984b936a8c178f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "e341c75d27fe082e",
+          "prev_hash": "74e9005ab9afef1b",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
         }
       ]
     },
@@ -6170,7 +6194,7 @@
       ]
     },
     "gen-cybernetic-crystalline-neuro-lattice": {
-      "hash": "c3cb77d0ebdf6f66",
+      "hash": "b7f4566b731aa15b",
       "history": [
         {
           "event": "upgraded",
@@ -6179,6 +6203,14 @@
           "prev_hash": "3af0419762ed9e94",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "b7f4566b731aa15b",
+          "prev_hash": "c3cb77d0ebdf6f66",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
         }
       ]
     },
@@ -7926,8 +7958,17 @@
       ]
     },
     "gen-hyperbolic-crystal-symbiosis": {
-      "hash": "4ab931adec898655",
-      "history": []
+      "hash": "d11aabbad73e84a2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "d11aabbad73e84a2",
+          "prev_hash": "4ab931adec898655",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
+        }
+      ]
     },
     "gen-hyperbolic-tessellation": {
       "hash": "bd6358ff85be5409",
@@ -8423,7 +8464,7 @@
       ]
     },
     "gen-liquid-neon-cyber-metropolis": {
-      "hash": "cf01be1185f8f4e4",
+      "hash": "314ae6d3cf70f323",
       "history": [
         {
           "event": "upgraded",
@@ -8432,6 +8473,14 @@
           "prev_hash": "84b4e5600bc9697e",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "314ae6d3cf70f323",
+          "prev_hash": "cf01be1185f8f4e4",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
         }
       ]
     },
@@ -9305,7 +9354,7 @@
       ]
     },
     "gen-neuro-kinetic-liquid-gold-lotus": {
-      "hash": "0c213000f73bf69b",
+      "hash": "f6e2339ed07fa8d5",
       "history": [
         {
           "event": "upgraded",
@@ -9314,6 +9363,14 @@
           "prev_hash": "c8867e6a54015281",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "f6e2339ed07fa8d5",
+          "prev_hash": "0c213000f73bf69b",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
         }
       ]
     },
@@ -9339,8 +9396,17 @@
       ]
     },
     "gen-newton-fractal": {
-      "hash": "2ad0c280677f8a84",
-      "history": []
+      "hash": "0f2bd1542c91ac74",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "0f2bd1542c91ac74",
+          "prev_hash": "2ad0c280677f8a84",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
+        }
+      ]
     },
     "gen-obsidian-echo-chamber": {
       "hash": "220330394cf41688",
@@ -10484,7 +10550,7 @@
       ]
     },
     "gen-sonoluminescent-chrono-geode-matrix": {
-      "hash": "ff7be263af71c41e",
+      "hash": "b3ffce0779903947",
       "history": [
         {
           "event": "upgraded",
@@ -10493,6 +10559,14 @@
           "prev_hash": "d3b60ac5cc8b96c5",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "b3ffce0779903947",
+          "prev_hash": "ff7be263af71c41e",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
         }
       ]
     },
@@ -11487,8 +11561,17 @@
       ]
     },
     "kimi-nebula-depth": {
-      "hash": "7a5810cf0d29d588",
-      "history": []
+      "hash": "74ce112965d341df",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-18T02:03:22.642Z",
+          "hash": "74ce112965d341df",
+          "prev_hash": "7a5810cf0d29d588",
+          "commit": "0761b6b9",
+          "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
+        }
+      ]
     },
     "kimi-quantum-field": {
       "hash": "fc197ffc3b95557d",

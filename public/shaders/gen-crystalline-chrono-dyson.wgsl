@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarched, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-10-10
-//  Ideas: chronometer tick-crowns around the shell azimuth; quartz twinning seams crossing the crystalline panel interiors
+//  Upgraded: 2026-10-10, 2026-11-18
+//  Ideas: chronometer tick-crowns around the shell azimuth; quartz twinning seams crossing the crystalline panel interiors; statite swarm (Swarm Count orbiting octahedra); power-grid packets along spokes and conduit; louvred plates tilting open per cell; Cauchy-dispersed plate transmission (§12.2F); lume sweep hand (escapement-stepped, afterglow on ticks and plates)
 //  A packing: clamped HDR linear RGB (pre-ACES) + semantic alpha; C read back exactly as HDR for chromatic feedback
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -61,7 +61,8 @@ fn domainWarp(p: vec3<f32>, t: f32) -> vec3<f32> {
     return p + vec3<f32>(fbm(p + vec3<f32>(0.0, 0.0, t), 3), fbm(p + vec3<f32>(5.2, 1.3, t), 3), fbm(p + vec3<f32>(1.7, 9.2, t), 3)) * 0.4;
 }
 
-fn fresnel(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> { return f0 + (vec3<f32>(1.0) - f0) * pow(1.0 - cosTheta, 5.0); }
+// Hardening: dot(n,v) can overshoot 1 by an ulp face-on; pow(-1e-7, 5.0) is NaN on GPUs that use exp2(y*log2 x).
+fn fresnel(cosTheta: f32, f0: vec3<f32>) -> vec3<f32> { return f0 + (vec3<f32>(1.0) - f0) * pow(max(1.0 - cosTheta, 0.0), 5.0); }
 fn smin(a: f32, b: f32, k: f32) -> f32 { let h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0); return mix(b, a, h) - k * h * (1.0 - h); }
 
 fn sdSphere(p: vec3<f32>, r: f32) -> f32 { return length(p) - r; }
@@ -80,6 +81,13 @@ fn spectralGlow(angle: f32, intensity: f32) -> vec3<f32> {
         0.5 + 0.5 * cos(angle * 6.28 + 2.094),
         0.5 + 0.5 * cos(angle * 6.28 + 4.189)
     ) * intensity;
+}
+
+// Cauchy dispersion n(lambda) = A + B / lambda^2 at 650/550/450 nm (lambda in micrometres). B is exaggerated
+// (flint-like) so the fringe of the quasar's image through a plate is legible at its few-degree angular size.
+fn cauchyIndex() -> vec3<f32> {
+    let lam = vec3<f32>(0.650, 0.550, 0.450);
+    return vec3<f32>(1.45) + vec3<f32>(0.10) / (lam * lam);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -280,11 +288,44 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let louvre = louvreOpen(floor(q * u.zoom_params.x), tD);
         col += vec3<f32>(1.0, 0.8, 0.45) * onShell * louvre * (0.25 + abs(dot(n, coreDir))) * quasar_glow * 0.45;
 
+        // ── Idea 6: Cauchy-dispersed plate transmission (§12.2F Cauchy dispersion + Snell refraction) ──
+        // Each shell plate is a refracting crystal. Refract the view ray per channel (n = A + B/lambda^2, air -> glass,
+        // so no total internal reflection) and test whether it still points into the quasar's angular disc
+        // (radius asin(0.5/dist), plus its glare halo). Louvre tilt bends the ray, so tilted plates throw a colour-fringed image of the
+        // quasar: the R/G/B discs sit at slightly different angles, white where all three overlap.
+        let nPlate = select(n, -n, dot(n, rd) > 0.0);
+        let nIdx = cauchyIndex();
+        let aQ = asin(clamp(0.5 / max(dist_to_center, 0.6), 0.0, 0.99));
+        let angR = acos(clamp(dot(refract(rd, nPlate, 1.0 / nIdx.x), coreDir), -1.0, 1.0));
+        let angG = acos(clamp(dot(refract(rd, nPlate, 1.0 / nIdx.y), coreDir), -1.0, 1.0));
+        let angB = acos(clamp(dot(refract(rd, nPlate, 1.0 / nIdx.z), coreDir), -1.0, 1.0));
+        // The quasar is a glaring source, not a hard disc: Quasar Glow widens the halo the plates catch
+        // (1.6 + glow) x the disc radius, i.e. ~3.1x at the saved default.
+        let aG = (1.6 + quasar_glow) * aQ;
+        let seen = vec3<f32>(1.0 - smoothstep(0.45 * aG, 1.0 * aG, angR),
+                             1.0 - smoothstep(0.45 * aG, 1.0 * aG, angG),
+                             1.0 - smoothstep(0.45 * aG, 1.0 * aG, angB));
+        col += vec3<f32>(1.0, 0.86, 0.62) * seen * onShell * (0.18 + 0.22 * quasar_glow) * audio_pulse;
+
         // Idea 4: chronometer tick-crowns circling the Dyson shell.
         let lon = atan2(q.z, q.x);
         let tickBand = exp(-abs(dist_to_center - 2.0) * 14.0);
         let ticks = pow(max(cos(lon * 48.0 - tD * 0.5), 0.0), 10.0);
         col += vec3<f32>(1.0, 0.88, 0.52) * tickBand * ticks * (0.2 + quasar_glow * 0.16);
+
+        // ── Idea 7: lume sweep hand (native: chronometer dial) ──
+        // Escapement: the seconds hand steps 60 times per revolution (1.5 beats per Flux-clock unit) and each step
+        // settles with a spring overshoot (1 - e^-14f cos 38f, continuous across beats). Lume (luminous dial paint)
+        // is charged where the hand has passed and glows with an exponential afterglow behind it: strong on the tick
+        // marks, faint on the crystal plates. Ahead of the hand the lume is dark.
+        let beat = tD * 1.5;
+        let bf = fract(beat);
+        let handA = (floor(beat) + 1.0 - exp(-bf * 14.0) * cos(bf * 38.0)) * (TAU / 60.0);
+        let behind = fmod(handA - lon, TAU);                      // 0 at the hand, grows behind it, ~TAU just ahead
+        let lume = exp(-behind * 0.6);
+        let handLine = exp(-min(behind, TAU - behind) * 28.0);
+        col += vec3<f32>(0.30, 1.0, 0.62) * lume * (tickBand * ticks * 0.9 + onShell * 0.30);
+        col += vec3<f32>(0.9, 1.0, 0.8) * handLine * tickBand * 0.7;
 
         // Idea 5: quartz twinning seams through panel interiors.
         let twin = exp(-abs(abs(q.x) - abs(q.y)) * 9.0) + exp(-abs(abs(q.y) - abs(q.z)) * 9.0);

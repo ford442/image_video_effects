@@ -6,8 +6,8 @@
 //  Wolfram Data: Crab Pulsar PSR B0531+21 — 33.08 ms period (30.2 Hz)
 //                Neutron star magnetic field: 10^8 Tesla
 //  Created: 2026-06-07
-//  Upgraded: 2026-10-10
-//  Ideas: polar lighthouse beams on a precessing magnetic axis; fibre current packets; polar cap hotspots
+//  Upgraded: 2026-10-10, 2026-11-18
+//  Ideas: polar lighthouse beams on a precessing magnetic axis; fibre current packets; polar cap hotspots; polar-cap spark carousel (subpulse drift around the axis); dipole L-shell rings (field-footprint rings about the same axis); pointer/lighting/beam axis share one frame (cursor dent now follows the cursor)
 //  A packing: HDR display RGB + alpha (C read back as colour history); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -101,17 +101,37 @@ fn rot2d(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(c, -s, s, c);
 }
 
+// ── Rescue 1: one definition of the scene spin, so screen-frame things can be recovered ──
+// The march rotates every sample (object frame). The pointer dent, the lighting and the beam
+// axis are screen-frame concepts; HEAD fed them rotated coordinates, so after a few seconds
+// the dent was mirrored away from the cursor and the beams missed the hotspots.
+fn spinObj(v: vec3<f32>, time: f32) -> vec3<f32> {
+    let a = rot2d(time * 0.1) * v.xz;
+    let q = vec3<f32>(a.x, v.y, a.y);
+    let b = rot2d(time * 0.05) * q.yz;
+    return vec3<f32>(q.x, b.x, b.y);
+}
+
+fn unspinObj(v: vec3<f32>, time: f32) -> vec3<f32> {
+    let b = rot2d(-time * 0.05) * v.yz;
+    let q = vec3<f32>(v.x, b.x, b.y);
+    let a = rot2d(-time * 0.1) * q.xz;
+    return vec3<f32>(a.x, q.y, a.y);
+}
+
 // --- SDF functions ---
 fn map(p_in: vec3<f32>, time: f32, bass: f32) -> f32 {
-    var p = p_in;
-
-    // Mouse Interaction — warps magnetic field topology
+    // Mouse Interaction — warps magnetic field topology.
+    // Rescue 1: the dent is evaluated in the SCREEN frame (un-spin, dent, re-spin) so it stays
+    // under the cursor; at t = 0 the two frames coincide, so the first seconds are unchanged.
+    var ps = unspinObj(p_in, time);
     let mouse_pos = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
     let mouse_p = vec3<f32>(mouse_pos * vec2<f32>(u.config.z / u.config.w, 1.0) * 2.0, 0.0);
-    let mouse_dist = length(p.xy - mouse_p.xy);
-    let mouse_dir = normalize(vec3<f32>(p.xy - mouse_p.xy, p.z) + vec3<f32>(0.0001));
+    let mouse_dist = length(ps.xy - mouse_p.xy);
+    let mouse_dir = normalize(vec3<f32>(ps.xy - mouse_p.xy, ps.z) + vec3<f32>(0.0001));
 
-    p = p - mouse_dir * smoothstep(0.8, 0.0, mouse_dist) * 0.4;
+    ps = ps - mouse_dir * smoothstep(0.8, 0.0, mouse_dist) * 0.4;
+    var p = spinObj(ps, time);
 
     // Magnetic field topology warping (Wolfram: 10^8 Tesla Crab Pulsar)
     let angle = atan2(p.y, p.x);
@@ -201,11 +221,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     for (var i = 0; i < max_steps; i = i + 1) {
         p = ro + rd * t;
 
-        // Rotate the whole scene slowly
-        let r2 = rot2d(time * 0.1);
-        p = vec3<f32>(r2 * p.xz, p.y).xzy;
-        let r2_2 = rot2d(time * 0.05);
-        p = vec3<f32>(p.x, r2_2 * p.yz);
+        // Rotate the whole scene slowly (same rotation as HEAD, factored into spinObj)
+        p = spinObj(p, time);
 
         d = map(p, time, bass);
 
@@ -230,16 +247,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let spinPhase = time * (0.4 + u.zoom_params.z * 2.2);
     let magAxis = normalize(vec3<f32>(sin(0.55) * cos(spinPhase), cos(0.55), sin(0.55) * sin(spinPhase)));
 
+    // Screen-frame magnetic axis (the object-frame axis un-spun): drives the beams so they pass
+    // through the hotspots, which live on the object-frame axis.
+    let magAxisS = unspinObj(magAxis, time);
+    // Core-surface additions are collected here and added AFTER the bg fade (like the beams).
+    var coreExtra = vec3<f32>(0.0);
+
     if (hit) {
         let n = getNormal(p, time, bass);
+        let nS = unspinObj(n, time);
+        let pS = unspinObj(p, time);
 
-        // Lighting
+        // Lighting (screen frame — Rescue 1)
         let light_dir = normalize(vec3<f32>(1.0, 1.0, -1.0));
-        let diff = max(dot(n, light_dir), 0.0);
-        let view_dir = normalize(ro - p);
-        let refl_dir = reflect(-light_dir, n);
+        let diff = max(dot(nS, light_dir), 0.0);
+        let view_dir = normalize(ro - pS);
+        let refl_dir = reflect(-light_dir, nS);
         let spec = pow(max(dot(view_dir, refl_dir), 0.0), 32.0);
-        let rim = 1.0 - max(dot(view_dir, n), 0.0);
+        let rim = 1.0 - max(dot(view_dir, nS), 0.0);
 
         // Core vs Fiber detection using Voronoi again
         let fiber_density = u.zoom_params.y;
@@ -263,6 +288,31 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             // Idea 3 — polar cap hotspots where the magnetic axis exits the core
             let cap = pow(abs(dot(normalize(p), magAxis)), 28.0);
             col = col + mix(base_col, vec3<f32>(1.0, 0.95, 0.9), 0.6) * cap * (1.2 + bass * 1.5) * u.zoom_params.w * 2.0;
+
+            // Local frame about the magnetic axis (object frame, same as the hotspots above).
+            let np = normalize(p);
+            let cMag = dot(np, magAxis);
+            let acMag = abs(cMag);
+            let e1 = normalize(cross(magAxis, vec3<f32>(1.0, 0.0, 0.0)));
+            let e2 = cross(magAxis, e1);
+            let psi = atan2(dot(np, e2) + 1e-5, dot(np, e1)) * select(-1.0, 1.0, cMag > 0.0);
+
+            // ── Idea 4: polar-cap spark carousel (native: drifting subpulses) ──
+            // Six gap sparks circulate on a broad ring (colatitude ~15-45 deg) around each cap, at a rate tied to Pulsation Speed.
+            let carRate = 0.9 + u.zoom_params.z * 1.8;
+            let spark = pow(0.5 + 0.5 * cos(6.0 * (psi - time * carRate)), 8.0);
+            let ringW = (acMag - 0.86) / 0.08;
+            let sparkRing = exp(-ringW * ringW);
+            coreExtra = coreExtra + mix(base_col, vec3<f32>(1.0, 0.95, 0.9), 0.7) * spark * sparkRing * (2.2 + bass * 2.5) * u.zoom_params.w * 2.0;
+
+            // ── Idea 5: dipole L-shell rings (native: field-footprint rings about the axis) ──
+            // Dipole field lines are r = L sin^2(theta); the footprints on the surface are the
+            // rings where L = 1/(1-c^2) hits a geometric ladder. Drift poleward with the spin.
+            let sin2 = max(1.0 - cMag * cMag, 0.03);
+            let shellPhase = log2(1.0 / sin2) * 1.2 - time * (0.15 + 0.35 * u.zoom_params.z);
+            let shellRing = pow(0.5 + 0.5 * cos(6.28318 * shellPhase), 14.0);
+            let shellFade = smoothstep(0.0, 0.2, acMag) * (1.0 - smoothstep(0.86, 0.96, acMag));
+            coreExtra = coreExtra + base_col * shellRing * shellFade * (0.9 + mids * 1.2) * u.zoom_params.w * 2.0;
         }
     }
 
@@ -282,14 +332,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Background fade
     let bg = vec3<f32>(0.02, 0.01, 0.05) * (1.0 - length(uv));
     col = mix(bg, col, clamp(t / 10.0, 0.0, 1.0));
+    col += coreExtra;
 
     // Idea 1 — polar lighthouse beams: twin cones along the projected magnetic axis sweep the frame,
     // flaring when the axis swings toward the viewer
-    let beamDir2 = magAxis.xy / max(length(magAxis.xy), 0.0001);
+    let beamDir2 = magAxisS.xy / max(length(magAxisS.xy), 0.0001);
     let uvLen = max(length(uv), 0.0001);
     let beamAlign = abs(dot(uv / uvLen, beamDir2));
     let beamCone = pow(beamAlign, 60.0) * smoothstep(0.12, 0.35, uvLen) * exp(-uvLen * 1.2);
-    let facing = 0.35 + 2.0 * pow(abs(magAxis.z), 6.0);
+    let facing = 0.35 + 2.0 * pow(abs(magAxisS.z), 6.0);
     let beamGlow = beamCone * facing * (0.5 + bass * 0.8) * u.zoom_params.w;
     col += palette(0.15 + u.zoom_params.x + uvLen * 0.4) * beamGlow * select(1.0, 0.25, hit);
 

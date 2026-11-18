@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: self-assembling sectors (each of the six cubes at its own fractional carve stage); gravitational time dilation (proper-time lag of the twist + assembly clock, dilated fringe frequency); singularity shadow (lensed rays captured inside rs go black); terrace-edge cathodoluminescence; photon-sphere shear arcs
+//  Upgraded: 2026-09-27, 2026-11-18
+//  Ideas: self-assembling sectors (each of the six cubes at its own fractional carve stage); gravitational time dilation (proper-time lag of the twist + assembly clock, dilated fringe frequency); singularity shadow (lensed rays captured inside rs go black); terrace-edge cathodoluminescence; photon-sphere shear arcs; terrace-depth oxide bands (carve level as material, §12.2E); hopper growth lines (concentric rectangles on each terrace tread); frame-dragged lensing (Lense-Thirring swirl)
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR trail memory (ACES only on writeTexture)
 // ═══════════════════════════════════════════════════════════════════
 //  Kept from HEAD: six-fold angular repeat, pointer twist/pitch, boolean
@@ -74,7 +74,10 @@ fn dilation(r: f32, rs: f32) -> f32 {
     return sqrt(max(1.0 - rs / max(r, 1e-3), 0.0));
 }
 
-fn map(p: vec3<f32>, sm: vec2<f32>, bassAmp: f32, midsAmp: f32) -> vec2<f32> {
+// Returns (distance, carve level that defined the surface, growth-line coordinate, 0).
+// The level / growth coordinate are only computed when `wantInfo` (once, at the hit);
+// the march and the normal call it with false and pay nothing for them.
+fn mapInfo(p: vec3<f32>, sm: vec2<f32>, bassAmp: f32, midsAmp: f32, wantInfo: bool) -> vec4<f32> {
     let time = u.config.x;
 
     // Idea 2: local proper time. The lag is bounded (never grows with time),
@@ -90,9 +93,16 @@ fn map(p: vec3<f32>, sm: vec2<f32>, bassAmp: f32, midsAmp: f32) -> vec2<f32> {
     let radius = length(vec2<f32>(pos.x, pos.z));
     let sector = 6.28318 / 6.0;
 
-    let a_mod = mod_f32(angle + sector * 0.5, sector) - sector * 0.5;
+    let a_loc = mod_f32(angle + sector * 0.5, sector) - sector * 0.5;
     // Idea 1: which of the six cubes this point belongs to (0..5, wrapped at ±pi)
     let sectorId = mod_f32(floor((angle + sector * 0.5) / sector), 6.0);
+
+    // Rescue 1: reflect every odd wedge. A pure rotation repeat leaves a position jump at
+    // each wedge boundary (the twist below makes the cube asymmetric in z), i.e. an SDF
+    // tear -- a vertical seam through the screen centre at the default camera. With
+    // alternating mirror images both neighbours see the same point on the shared plane
+    // (6 wedges = even, so the ring closes) and the stage blend below is continuous too.
+    let a_mod = select(a_loc, -a_loc, mod_f32(sectorId, 2.0) > 0.5);
 
     pos = vec3<f32>(radius * cos(a_mod), pos.y, radius * sin(a_mod));
 
@@ -119,9 +129,9 @@ fn map(p: vec3<f32>, sm: vec2<f32>, bassAmp: f32, midsAmp: f32) -> vec2<f32> {
     // Near a sector edge the phase blends toward the neighbour's, reaching the
     // same 50/50 value from both sides, so the per-sector stage is continuous
     // across the boundary and does not tear the SDF.
-    let side = select(-1.0, 1.0, a_mod > 0.0);
+    let side = select(-1.0, 1.0, a_loc > 0.0);
     let nbId = mod_f32(sectorId + side, 6.0);
-    let edgeW = 0.5 * smoothstep(0.35, 1.0, abs(a_mod) / (sector * 0.5));
+    let edgeW = 0.5 * smoothstep(0.35, 1.0, abs(a_loc) / (sector * 0.5));
     let assembly = mix(0.5 - 0.5 * cos(tProper * 0.13 + sectorId * 2.39996),
                        0.5 - 0.5 * cos(tProper * 0.13 + nbId * 2.39996), edgeW);
     let stage = f32(iters) * mix(0.38, 0.76, assembly);
@@ -135,6 +145,11 @@ fn map(p: vec3<f32>, sm: vec2<f32>, bassAmp: f32, midsAmp: f32) -> vec2<f32> {
     let ext = bassAmp * u.zoom_params.w * 0.4
         + min(0.2 + 0.5 * stage, 2.1) * (0.75 + 0.25 * u.zoom_params.w);
 
+    // Ideas 1-2: which carve defined the surface here (0 = base block) and where the
+    // point sits on that carve's wall, in the scale-normalised box frame.
+    var lvl = 0.0;
+    var growthCoord = 0.0;
+
     for (var i: i32 = 0; i < 10; i++) {
         if (i >= iters) { break; }
         // Idea 1: fractional carve of the stage's last iteration
@@ -146,20 +161,33 @@ fn map(p: vec3<f32>, sm: vec2<f32>, bassAmp: f32, midsAmp: f32) -> vec2<f32> {
 
         // carve = 1 is HEAD's cut; carve -> 0 shrinks the cut to a point
         let sub_box = sdBox(q, vec3<f32>(0.6 / scale)) + (1.0 - carve) * 0.6 / scale;
+        let wins = -sub_box > d;
         d = max(d, -sub_box);
+        if (wantInfo) {
+            lvl = select(lvl, f32(i + 1), wins);
+            // median of |q|: on a face of the carve box it is the larger in-plane offset, so
+            // its contours are concentric rectangles on the tread (hopper growth lines)
+            let aq = abs(q);
+            let mdq = aq.x + aq.y + aq.z - max(aq.x, max(aq.y, aq.z)) - min(aq.x, min(aq.y, aq.z));
+            growthCoord = select(growthCoord, mdq * scale, wins);
+        }
 
         scale *= 1.3;
     }
 
-    return vec2<f32>(d, 1.0); // dist, material_id
+    return vec4<f32>(d, lvl, growthCoord, 0.0);
+}
+
+fn map(p: vec3<f32>, sm: vec2<f32>, bassAmp: f32, midsAmp: f32) -> f32 {
+    return mapInfo(p, sm, bassAmp, midsAmp, false).x;
 }
 
 fn getNormal(p: vec3<f32>, sm: vec2<f32>, bassAmp: f32, midsAmp: f32) -> vec3<f32> {
     let e = vec2<f32>(0.001, 0.0);
     return normalize(vec3<f32>(
-        map(p + vec3<f32>(e.x, e.y, e.y), sm, bassAmp, midsAmp).x - map(p - vec3<f32>(e.x, e.y, e.y), sm, bassAmp, midsAmp).x,
-        map(p + vec3<f32>(e.y, e.x, e.y), sm, bassAmp, midsAmp).x - map(p - vec3<f32>(e.y, e.x, e.y), sm, bassAmp, midsAmp).x,
-        map(p + vec3<f32>(e.y, e.y, e.x), sm, bassAmp, midsAmp).x - map(p - vec3<f32>(e.y, e.y, e.x), sm, bassAmp, midsAmp).x
+        map(p + vec3<f32>(e.x, e.y, e.y), sm, bassAmp, midsAmp) - map(p - vec3<f32>(e.x, e.y, e.y), sm, bassAmp, midsAmp),
+        map(p + vec3<f32>(e.y, e.x, e.y), sm, bassAmp, midsAmp) - map(p - vec3<f32>(e.y, e.x, e.y), sm, bassAmp, midsAmp),
+        map(p + vec3<f32>(e.y, e.y, e.x), sm, bassAmp, midsAmp) - map(p - vec3<f32>(e.y, e.y, e.x), sm, bassAmp, midsAmp)
     ));
 }
 
@@ -173,6 +201,8 @@ fn raymarching(ro: vec3<f32>, rd_in: vec3<f32>, sm: vec2<f32>, bassAmp: f32, mid
     var glow = 0.0;
     var iter_count = 0;
 
+    var hitInfo = vec4<f32>(0.0);
+
     // Idea 3: closest approach to the singularity along the bent ray
     let rs = schwarzschildR();
     var minR = 1e9;
@@ -183,10 +213,19 @@ fn raymarching(ro: vec3<f32>, rd_in: vec3<f32>, sm: vec2<f32>, bassAmp: f32, mid
         // Gravitational lensing: pointer y + bass deepen the gravity well
         let dist_to_center = length(p);
         let pull_str = (u.zoom_params.x + sm.y * 0.5 + bassAmp * 0.35) / (dist_to_center * dist_to_center + 0.1);
-        rd = normalize(rd - normalize(p) * pull_str * 0.05); // Bend ray
+        // ── Idea 8: frame-dragged lensing (Lense-Thirring). The hole spins about +y; the
+        // ray also gets a tangential kick ~ rs / r^3 around that axis, windowed to the
+        // near field (1.5..4 rs) so the lattice far from the hole is not perturbed, so
+        // lensed images shear around the spin axis instead of falling straight in.
+        var bend = -normalize(p) * pull_str * 0.05;
+        if (dist_to_center < 4.0 * rs) {
+            let nearField = 1.0 - smoothstep(1.5 * rs, 4.0 * rs, dist_to_center);
+            let dragVec = cross(vec3<f32>(0.0, 1.0, 0.0), p) * (rs * 6.0 * nearField / (dist_to_center * dist_to_center * dist_to_center + 0.15));
+            bend += dragVec * 0.05;
+        }
+        rd = normalize(rd + bend); // Bend ray
 
-        let map_res = map(p, sm, bassAmp, midsAmp);
-        let dS = map_res.x;
+        let dS = map(p, sm, bassAmp, midsAmp);
 
         glow += 0.01 / (0.01 + abs(dS));
 
@@ -215,6 +254,7 @@ fn raymarching(ro: vec3<f32>, rd_in: vec3<f32>, sm: vec2<f32>, bassAmp: f32, mid
     var ao = 0.0;
     // Shade based on hit normal + iridescence
     if (hit) {
+        hitInfo = mapInfo(p, sm, bassAmp, midsAmp, true);
         let normal = getNormal(p, sm, bassAmp, midsAmp);
         let view_dir = -rd;
         let ndotv = max(dot(normal, view_dir), 0.0);
@@ -229,10 +269,18 @@ fn raymarching(ro: vec3<f32>, rd_in: vec3<f32>, sm: vec2<f32>, bassAmp: f32, mid
         let c = vec3<f32>(freq);
         let d = vec3<f32>(0.0, 0.33, 0.67);
 
-        let base_col = palette(ndotv, a, b, c, d);
+        // ── Idea 6: terrace-depth oxide bands (§12.2E fold count as material). Each carve
+        // level is a different oxide thickness, so every stair step gets its own
+        // interference order: the palette phase steps by hitInfo.y per terrace.
+        let base_col = palette(ndotv + hitInfo.y * 0.11, a, b, c, d);
         ao = 1.0 - f32(iter_count) / f32(MAX_STEPS);
 
         col = base_col * ao;
+        // ── Idea 7: hopper growth lines — concentric rectangles on the terrace tread
+        // (contours of the in-plane offset in the winning carve's box frame).
+        let lineFreq = clamp(u.config.w / 72.0, 3.0, 10.0);
+        let ridge = 1.0 - smoothstep(0.0, 0.3, abs(fract(hitInfo.z * lineFreq) - 0.5) * 2.0);
+        col *= 1.0 - 0.38 * ridge * step(0.5, hitInfo.y);
         // Idea 4: terrace-edge cathodoluminescence on sharp crystalline breaks.
         let edge = pow(1.0 - ndotv, 6.0);
         col += vec3<f32>(0.95, 0.85, 0.55) * edge * (0.08 + trebleAmp * 0.12);

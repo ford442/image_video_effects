@@ -3,34 +3,15 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: hyperbolic growth zoning; symbiotic twin lamellae; hyperboloid lift relief
+//  Upgraded: 2026-09-13, 2026-11-18
+//  Ideas: hyperbolic growth zoning; symbiotic twin lamellae; hyperboloid lift relief; hourglass sector zoning (native); cleavage hypercycles (native)
 //  A packing: raw HDR display-history RGBA (pre-ACES rgb, coverage alpha)
 //  Description: Competing crystal growth in hyperbolic geometry.
 //  Local curvature influenced by audio and mouse. Non-Euclidean tiling
 //  with iridescent jewel-like coloring and symmetry breaking.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -123,6 +104,7 @@ struct Facet {
     minId: f32,
     secondId: f32,   // Idea 2: runner-up seed identity
     minK: f32,       // Idea 1: winning seed index (per-seed zoning jitter)
+    minLocal: vec2<f32>, // Ideas 4/5: winning seed's local Poincaré coordinate (was thrown away)
 };
 
 // Crystal facet pattern: Voronoi-like in hyperbolic coordinates
@@ -132,6 +114,7 @@ fn crystalFacet(z: vec2<f32>, t: f32, growthSpeed: f32, mutation: f32) -> Facet 
     var secondD = 100.0;
     var secondId = 0.0;
     var minK = 0.0;
+    var minLocal = vec2<f32>(0.0);
 
     let numSeeds = 7;
     for (var k = 0; k < numSeeds; k++) {
@@ -151,6 +134,7 @@ fn crystalFacet(z: vec2<f32>, t: f32, growthSpeed: f32, mutation: f32) -> Facet 
             minD = d;
             minId = seedId;
             minK = kf;
+            minLocal = localZ;
         } else if (d < secondD) {
             secondD = d;
             secondId = seedId;
@@ -158,7 +142,7 @@ fn crystalFacet(z: vec2<f32>, t: f32, growthSpeed: f32, mutation: f32) -> Facet 
     }
 
     let border = secondD - minD;
-    return Facet(minD, secondD, border, minId, secondId, minK);
+    return Facet(minD, secondD, border, minId, secondId, minK, minLocal);
 }
 
 // Jewel iridescent color
@@ -263,6 +247,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                                    warpT, bass, mids, treble);
         color = mix(color, twinColor, contested * lamella * (0.55 + mids * 0.2));
 
+        // Seed-local crystal frame of the winning facet (shared by Ideas 4 and 5).
+        // axisAng: the crystal's own axis (per seed, drifting slowly with growth).
+        let axisAng = hash12(vec2<f32>(crystalData.minK * 5.3, 2.9)) * TAU + warpT * growthSpeed * 0.02 + bass * 0.15;
+        let lz = crot(crystalData.minLocal + vec2<f32>(1e-6, 0.0), -axisAng);
+        let lzR2 = min(dot(lz, lz), 0.9999);
+        let seedFade = smoothstep(0.03, 0.2, facetDist);
+
+        // ── Idea 4: hourglass sector zoning (native: crystal growth sectors) ──
+        // Growth sectors of a real crystal take up different composition and meet in an hourglass:
+        // cos(2θ) about the seed picks a warm or cool tint family, mutation sets the contrast.
+        let hourglass = smoothstep(-0.18, 0.18, cos(2.0 * atan2(lz.y, lz.x)));
+        let sectorWarm = jewelColor(fract(combinedId + 0.07), facetDist, facetBorder, warpT, bass, mids, treble);
+        let sectorCool = jewelColor(fract(combinedId - 0.07), facetDist, facetBorder, warpT, bass, mids, treble) * 0.82;
+        color = mix(color, mix(sectorCool, sectorWarm * 1.08, hourglass), seedFade * clamp(0.45 + u.zoom_params.w * 0.6, 0.0, 0.9));
+
+        // ── Idea 5: cleavage hypercycles (native: crystal cleavage planes) ──
+        // Lines at equal steps of the hyperbolic distance d⊥ from the diameter geodesic through the seed:
+        // sinh d⊥ = 2·y' / (1 − |z'|²), so they crowd toward the ideal boundary like the zoning bands do.
+        // A dark cleaved plane with a bright shoulder catching light; they fade out at facet borders.
+        let dPerp = asinh(2.0 * lz.y / (1.0 - lzR2));
+        let cleavePhase = dPerp / (0.36 / (0.8 + competition)) + 0.5;
+        let cs = fract(cleavePhase);
+        let cleaveDark = 1.0 - smoothstep(0.0, 0.11, min(cs, 1.0 - cs));
+        let cleaveShoulder = smoothstep(0.11, 0.17, cs) * (1.0 - smoothstep(0.17, 0.32, cs));
+        let cleaveFade = seedFade * smoothstep(0.02, 0.2, facetBorder);
+        color = color * (1.0 - 0.5 * cleaveDark * cleaveFade) + vec3<f32>(1.0, 0.97, 0.9) * cleaveShoulder * cleaveFade * 0.26;
+
         // Racing growth-front runners along hyperbolic tiles.
         let frontWave = sin(facetDist * 12.0 - warpT * (growthSpeed * 4.0 + competition * 2.0));
         let frontGlow = smoothstep(0.7, 1.0, frontWave) * treble * 0.6;
@@ -290,11 +301,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             if (age > 0.0 && age < 3.0) {
                 var center = (ripple.xy - vec2<f32>(0.5)) * 2.2;
                 center.x *= res.x / res.y;
+                // ── Rescue 2: the click centre goes through the same curvature scale + cursor Möbius shift as the pixel (HEAD left it in raw disk space, ring was off the click) ──
+                center = hyperbolicTranslate(center * curv, focus * 0.8);
                 let front = abs(distance(diskUV, center) - age * (0.18 + growthSpeed * 0.045));
-                clickFront += exp(-front * 56.0) * exp(-age * 1.4);
+                // ── Rescue 3: ring was ~0.09 peak after the history blend (invisible); wider and stronger, same age decay ──
+                clickFront += exp(-front * 30.0) * exp(-age * 1.4);
             }
         }
-        color += jewelColor(combinedId + clickFront * 0.2, facetDist, facetBorder, warpT, bass, mids, treble) * clickFront * 0.45;
+        color += jewelColor(combinedId + clickFront * 0.2, facetDist, facetBorder, warpT, bass, mids, treble) * clickFront * 1.1;
 
         // Idea 3: hyperboloid lift relief — the disk point lifts onto the upper
         // hyperboloid sheet (x0 = (1+r^2)/(1-r^2)); a dome height 1/x0 falls to 0

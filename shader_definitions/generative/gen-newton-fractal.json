@@ -15,7 +15,7 @@
     "domain-warp",
     "reaction-diffusion"
   ],
-  "description": "Newton's-method basins for z^n - 1, now with FBM domain-warped coordinates, multi-root color accumulation, smooth iteration counts, multi-shape orbit traps, SDF smooth-union root halos, and reaction-diffusion boundary accents. Audio drives polynomial degree and halo shimmer; ACES tone mapping and chromatic aberration finish the image.",
+  "description": "Newton's-method basins for z^n - 1, now with FBM domain-warped coordinates, multi-root color accumulation, smooth iteration counts, multi-shape orbit traps, SDF smooth-union root halos, and reaction-diffusion boundary accents. Audio drives polynomial degree and halo shimmer; ACES tone mapping and chromatic aberration finish the image. Gold distance-estimate filaments trace the basin boundaries.",
   "workgroup_size": [
     16,
     16,
@@ -74,7 +74,9 @@
     "aces-tone-map",
     "depth",
     "mouse-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "distance-estimate",
+    "riemann-sheet-tint"
   ],
   "x-meta": {
     "upgrade": {
