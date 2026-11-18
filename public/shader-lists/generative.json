@@ -5283,7 +5283,7 @@
       "audio-reactive",
       "bismuth"
     ],
-    "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core. Each of the six cubes runs its own assembly clock, carving from seed block to terraced shards to dust; clocks near the singularity run slow, shearing the weave and broadening its fringes, and rays that fall inside the horizon leave a black shadow at the core.",
+    "description": "A hyper-dimensional, continually self-assembling bismuth crystal matrix orbiting a microscopic gravitational singularity, its iridescent geometric steps carving sharp staircases into the fabric of spacetime. The scene blends hard-edged, prismatic synthetic-architecture with chaotic fluid distortions driven by an intense sub-bass core. Each of the six cubes runs its own assembly clock, carving from seed block to terraced shards to dust; clocks near the singularity run slow, shearing the weave and broadening its fringes, and rays that fall inside the horizon leave a black shadow at the core. Each terrace has its own oxide colour; the spin drags lensed rays.",
     "url": "shaders/gen-bismuth-singularity-loom-engine.wgsl",
     "workgroup_size": [
       16,
@@ -5304,7 +5304,9 @@
       "hit-depth-output",
       "mouse-driven",
       "audio-reactive",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "oxide-terrace-bands",
+      "frame-dragged-lensing"
     ],
     "params": [
       {
@@ -8155,7 +8157,7 @@
       "depth-aware",
       "chromatic"
     ],
-    "description": "A crystalline Dyson sphere with KIFS fractal panel interiors, Worley/Voronoi crystal lattice, Fresnel-Schlick reflections, plasma conduits with Beer-Lambert subsurface scattering, domain-repeated panels, and audio-reactive quasar core. Mouse orbits the structure.",
+    "description": "A crystalline Dyson sphere with KIFS fractal panel interiors, Worley/Voronoi crystal lattice, Fresnel-Schlick reflections, plasma conduits with Beer-Lambert subsurface scattering, domain-repeated panels, and audio-reactive quasar core. Mouse orbits the structure. Dispersive plate glints; lume sweep hand.",
     "workgroup_size": [
       16,
       16,
@@ -8724,7 +8726,7 @@
       "organic",
       "neon"
     ],
-    "description": "A hyper-structured, ever-evolving neural lattice that crystallizes data streams into neon-infused geometries, blending organic synaptic growth with cybernetic precision.",
+    "description": "A hyper-structured, ever-evolving neural lattice that crystallizes data streams into neon-infused geometries, blending organic synaptic growth with cybernetic precision. Action-potential spikes, polished crystal arrises.",
     "workgroup_size": [
       16,
       16,
@@ -16581,7 +16583,7 @@
       "audio-reactive",
       "mathematical"
     ],
-    "description": "Competing crystal growth in hyperbolic (Poincaré disk) geometry. Racing growth-front runners, tile pulse waves, and advected HDR trails. Local curvature influenced by audio and mouse. Iridescent jewel coloring with symmetry-breaking facet borders, hyperbolic growth zoning, symbiotic twin lamellae where rival crystals meet, and hyperboloid-lift relief depth.",
+    "description": "Competing crystal growth in hyperbolic (Poincaré disk) geometry. Racing growth-front runners, tile pulse waves, and advected HDR trails. Local curvature influenced by audio and mouse. Iridescent jewel coloring with symmetry-breaking facet borders, hyperbolic growth zoning, symbiotic twin lamellae where rival crystals meet, and hyperboloid-lift relief depth. Hourglass sector zoning, cleavage hypercycles.",
     "workgroup_size": [
       16,
       16,
@@ -22119,7 +22121,7 @@
       "audio-reactive",
       "geometry"
     ],
-    "description": "A liquid-gold lotus with rapid petal torque waves, audio-driven plasma runners, click-launched blossom shocks, direct saved-control behavior, and bounded rotational trails. Second pass contributes capillary rivulets and Kelvin-Helmholtz shear rolls in the plasma runners.",
+    "description": "A liquid-gold lotus with rapid petal torque waves, audio-driven plasma runners, click-launched blossom shocks, direct saved-control behavior, and bounded rotational trails. Second pass contributes capillary rivulets and Kelvin-Helmholtz shear rolls in the plasma runners. Third pass: mirror-gold petal reflections, anisotropic vein glints.",
     "workgroup_size": [
       16,
       16,
@@ -22179,7 +22181,9 @@
       "semantic-alpha",
       "aces-tonemap",
       "conductor-fresnel-gold",
-      "phyllotaxis-florets"
+      "phyllotaxis-florets",
+      "mirror-gold-reflection",
+      "anisotropic-highlight"
     ],
     "feedbackPacking": "A/C = ACES display RGBA; rgb = max(ACES(frame), exact torque-advected C load * decay), a = semantic coverage"
   },
@@ -22250,7 +22254,7 @@
       "domain-warp",
       "reaction-diffusion"
     ],
-    "description": "Newton's-method basins for z^n - 1, now with FBM domain-warped coordinates, multi-root color accumulation, smooth iteration counts, multi-shape orbit traps, SDF smooth-union root halos, and reaction-diffusion boundary accents. Audio drives polynomial degree and halo shimmer; ACES tone mapping and chromatic aberration finish the image.",
+    "description": "Newton's-method basins for z^n - 1, now with FBM domain-warped coordinates, multi-root color accumulation, smooth iteration counts, multi-shape orbit traps, SDF smooth-union root halos, and reaction-diffusion boundary accents. Audio drives polynomial degree and halo shimmer; ACES tone mapping and chromatic aberration finish the image. Gold distance-estimate filaments trace the basin boundaries.",
     "workgroup_size": [
       16,
       16,
@@ -22309,7 +22313,9 @@
       "aces-tone-map",
       "depth",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "distance-estimate",
+      "riemann-sheet-tint"
     ]
   },
   {
@@ -27677,7 +27683,7 @@
       "temporal",
       "audio-reactive"
     ],
-    "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass kick bursts, and swirl-advected motion-blur trails. 2026-09-27: the shock front ignites and jolts the crystal walls as it passes, each collapse deposits a new agate stratum in the geode, and the core flash bleeds through thin shard walls.",
+    "description": "A colossal, infinitely shattering crystalline geode that fractures to reveal a violently erupting sonoluminescent plasma core. Fast-motion upgrade: closed-form orbital camera with eased time-warp spin, sonoluminescent flash-burst physics (bubble-collapse cycles with ballistic shockwave shells), bass kick bursts, and swirl-advected motion-blur trails. 2026-09-27: the shock front ignites and jolts the crystal walls as it passes, each collapse deposits a new agate stratum in the geode, and the core flash bleeds through thin shard walls. 2026-11-18: afterbounce flashes; shock-heated ember cooling.",
     "workgroup_size": [
       16,
       16,
@@ -30679,12 +30685,12 @@
     "id": "kimi-nebula-depth",
     "name": "Kimi Nebula Depth",
     "url": "shaders/kimi_nebula_depth.wgsl",
-    "description": "Halftone dot and Sobel edge ink-stipple effect: posterized luma rendered as resolution-independent dots with ink outlines, paper grain, and a mouse-driven vignette.",
+    "description": "Halftone dot and Sobel edge ink-stipple effect: posterized luma rendered as resolution-independent dots with ink outlines, paper grain, and a mouse-driven vignette. Dot gain, off-register colour plate, paper-tooth ink pooling.",
     "features": [
       "mouse-driven",
+      "audio-reactive",
       "generative",
-      "volumetric",
-      "3d"
+      "upgraded-rgba"
     ],
     "tags": [
       "procedural",
