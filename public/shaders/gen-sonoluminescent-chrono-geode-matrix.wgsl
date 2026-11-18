@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: shock-front crystal ignition; collapse-deposited agate strata; flash translucency through thin shard walls; cavitation pearl chains; piezoelectric twinning glints
+//  Upgraded: 2026-09-27, 2026-11-18
+//  Ideas: shock-front crystal ignition; collapse-deposited agate strata; flash translucency through thin shard walls; cavitation pearl chains; piezoelectric twinning glints; Rayleigh-Plesset afterbounce (radius ring-down + secondary flashes); shock-heated ember afterglow cooling along a blackbody ramp (§12.2F)
 //  A packing: raw HDR history RGB (pre-ACES, clamped <= 5.0) + semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 // Batch 38 (Algorithmist) FAST MOTION layer, kept:
@@ -48,6 +48,16 @@ fn acesTone(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + vec3<f32>(0.03))) /
                  (x * (2.43 * x + vec3<f32>(0.59)) + vec3<f32>(0.14)),
                  vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// Wien-law blackbody tint (§12.2F): Planck radiance at 650/550/450 nm, max-channel normalised.
+// 1700 K -> deep orange, 4000 K -> warm white, 7000 K -> blue-white. Brightness is the caller's.
+fn wienTint(T: f32) -> vec3<f32> {
+    let lam = vec3<f32>(0.650, 0.550, 0.450);                 // micrometres
+    let l2 = lam * lam;
+    let e = exp(vec3<f32>(-14388.0) / (lam * max(T, 500.0))); // exp(-c2/(lambda T))
+    let i = e / (l2 * l2 * lam);                              // lambda^-5
+    return i / max(max(i.x, i.y), max(i.z, 1e-30));
 }
 
 // 3D Value Noise (kept from original — smooth, temporal-coherent)
@@ -187,17 +197,32 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Sonoluminescent flash-burst physics (closed-form bubble collapse):
     // each acoustic cycle the bubble implodes (exp envelope) then re-grows;
     // brightness spikes at collapse with bounded exponential decay.
-    let flashRate = 0.8 + speedNorm * 1.2 + bass * 0.6;
+    // ── Rescue 1: flash phase must not depend on instantaneous bass ──
+    // HEAD: flashRate had + bass*0.6, so every frame-to-frame change of bass re-phased the
+    // cycle by animTime*0.6*dBass cycles (animTime reaches 10^2..10^3): live audio re-triggered
+    // the flash at random every frame. Bass still drives kick (amplitude) and ringR (reach).
+    let flashRate = 0.8 + speedNorm * 1.2;
     let flashPhase = fract(animTime * flashRate);
     let collapse = exp(-flashPhase * 7.0);
     let regrow = 1.0 - exp(-flashPhase * 4.0);
+    // ── Idea 6: Rayleigh-Plesset afterbounce (native: bubble dynamics) ──
+    // After the main collapse the wall rebounds and re-collapses with decaying amplitude: two
+    // smaller collapses at phase 0.20 and 0.38, each dipping the core radius and firing a weaker
+    // flash (0.22x, 0.09x of the primary, ~35% of its energy). Both are zero at the main collapse, so HEAD's
+    // implosion and its exp(-7*phase) decay are untouched.
+    let b1 = (flashPhase - 0.20) * 11.0;
+    let b2 = (flashPhase - 0.38) * 12.0;
+    let ab1 = exp(-b1 * b1);
+    let ab2 = exp(-b2 * b2);
+    let rebound = 0.22 * ab1 + 0.09 * ab2;
+    let radiusDip = 0.22 * ab1 + 0.10 * ab2;
 
     var ctx: SceneCtx;
     ctx.animTime = animTime;
     ctx.warpTime = warpTime;
     ctx.flashPhase = flashPhase;
-    ctx.flash = collapse * (0.5 + 0.9 * intensity) * (1.0 + kick * 1.5 + fftPulse * 0.5);
-    ctx.coreR = (0.45 + 0.35 * regrow) * (0.9 + 0.2 * bass);
+    ctx.flash = (collapse + rebound) * (0.5 + 0.9 * intensity) * (1.0 + kick * 1.5 + fftPulse * 0.5);
+    ctx.coreR = (0.45 + 0.35 * regrow) * (0.9 + 0.2 * bass) * (1.0 - radiusDip);
     ctx.ringR = flashPhase * (5.0 + kick * 3.0);       // ballistic shock shell
     ctx.geodeScale = geodeScale;
     ctx.fractureAmp = intensity * (0.25 + bass * 0.8 + kick * 0.6);
@@ -235,7 +260,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         plasma_acc = plasma_acc + exp(-shellD * 4.0) * ctx.flash * 0.05;
         // Idea 4: cavitation pearl chains nucleating in the wake of each collapse front.
         let pearlPhase = fract(length(p_march) * 1.6 - ctx.animTime * (1.2 + bass * 0.8));
-        let pearls = exp(-pow((pearlPhase - 0.5) * 7.0, 2.0))
+        // Rescue 2: pow(negative, 2.0) is undefined (NaN on GPUs that lower it to exp2(y*log2 x)); square it.
+        let pearlX = (pearlPhase - 0.5) * 7.0;
+        let pearls = exp(-pearlX * pearlX)
                    * exp(-abs(dot(normalize(p_march + vec3<f32>(0.0001)), normalize(vec3<f32>(0.3, 0.7, 0.6)))) * 1.2);
         plasma_acc = plasma_acc + pearls * ctx.flash * 0.015;
 
@@ -261,7 +288,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         let diff = max(dot(n, l), 0.0);
         let view_dir = normalize(-rd);
-        let fresnel = pow(1.0 - max(dot(n, view_dir), 0.0), 3.0);
+        let fresnel = pow(max(1.0 - max(dot(n, view_dir), 0.0), 0.0), 3.0); // Rescue 2: base can be -1e-7 face-on
 
         // Iridescence: fast hue sweep driven by eased warp time
         let iridescence = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.0, 4.0) + fresnel * 5.0 + warpTime * 1.5);
@@ -286,6 +313,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // crosses the crystal wall it burns a hot incandescent band.
         let shellCross = exp(-abs(length(p_surf) - ctx.ringR) * 9.0) * ctx.flash;
         col = col + shellCross * vec3<f32>(1.0, 0.82, 0.62) * (0.8 + 0.8 * intensity);
+
+        // ── Idea 7: shock-heated ember afterglow (§12.2F blackbody) ──
+        // Wall the front has already crossed keeps incandescing and cools behind it:
+        // age = phase since the front passed this radius (front speed = ringR / phase),
+        // heat = exp(-5*age), T = 1700 + 5200*heat K -> white-hot at the front, orange, then red.
+        // The freshly crossed outer wall is hotter than the inner wall crossed earlier.
+        let frontSpeed = 5.0 + ctx.kick * 3.0;
+        let tPass = length(p_surf) / frontSpeed;                // phase at which the front reaches this radius
+        let heat = step(tPass, ctx.flashPhase) * exp(-max(ctx.flashPhase - tPass, 0.0) * 5.0);
+        // Radiance falls ~T^4, so the cool tail would vanish at equal exposure: sqrt(heat) keeps it legible.
+        let ember = wienTint(1700.0 + 5200.0 * heat) * sqrt(heat);
+        // The hot wall out-glows part of its own cold reflection: blend toward the ember (capped at half).
+        col = mix(col, ember * (0.8 + 0.8 * intensity), clamp(heat * 2.0, 0.0, 0.5));
         col = col + vec3<f32>(0.65, 0.95, 1.0) * (twinA + twinB) * (0.08 + 0.25 * ctx.flash);
 
         // [Idea 3] Flash translucency through thin shard walls: probe the SDF

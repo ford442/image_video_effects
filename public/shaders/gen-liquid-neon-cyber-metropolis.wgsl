@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: liquid neon rivers flowing down tower veins; wet-street neon reflections; gravity-warp horizon ring; neon light-trail traffic in the street canyons; flickering lit-window lattice with bass-flash neon panes
+//  Upgraded: 2026-10-10, 2026-11-18
+//  Ideas: liquid neon rivers flowing down tower veins; wet-street neon reflections; gravity-warp horizon ring; neon light-trail traffic in the street canyons; flickering lit-window lattice with bass-flash neon panes; neon sign columns (scrolling LED glyph strips on tower faces); roof panel seams (tiled neon roofs); roof obstruction beacons (blinking red aircraft-warning lamps); camera altitude clears the skyline (was inside a tower 23% of the orbit)
 //  A packing: ACES display RGBA (C read back via exact textureLoad as neon persistence history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -22,6 +22,10 @@ fn rot2D(a: f32) -> mat2x2<f32> {
     let s = sin(a);
     let c = cos(a);
     return mat2x2<f32>(c, -s, s, c);
+}
+
+fn h21(p: vec2<f32>) -> f32 {
+    return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
 }
 
 fn smin(a: f32, b: f32, k: f32) -> f32 {
@@ -154,9 +158,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Camera
     let time = u.config.x;
     let camTime = time * 0.15;
+    // ── Rescue 1: camera clears the skyline ──
+    // HEAD orbited at y = 14 ± 3, which is INSIDE the tower field (towers span y -h/2..1.5h,
+    // neon shell to 1.65h, crowns to ~25): the camera was inside the SDF for ~23% of the
+    // orbit and the frame went to one flat neon wall. 28 ± 2 keeps d > 3 at idle.
     var ro = vec3<f32>(
         sin(camTime) * 28.0,
-        14.0 + sin(time * 0.3) * 3.0,
+        28.0 + sin(time * 0.3) * 2.0,
         cos(camTime) * 28.0 + 8.0
     );
 
@@ -261,8 +269,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let trailSpeed = 1.2 + bass * 2.2;
             let trailZ = pow(fract(p.z * 0.11 - side.x * time * trailSpeed + laneSeed * 9.0), 14.0);
             let trailX = pow(fract(p.x * 0.11 - side.y * time * trailSpeed + laneSeed * 5.0), 14.0);
-            let laneZ = exp(-pow((cl.x - 0.45) / 0.09, 2.0));
-            let laneX = exp(-pow((cl.y - 0.45) / 0.09, 2.0));
+            // ── Rescue 2: pow(negative, 2.0) is indeterminate in WGSL (NaN on real GPUs); square it ──
+            let laneDz = (cl.x - 0.45) / 0.09;
+            let laneDx = (cl.y - 0.45) / 0.09;
+            let laneZ = exp(-laneDz * laneDz);
+            let laneX = exp(-laneDx * laneDx);
             let trailColZ = select(vec3<f32>(0.1, 0.9, 1.2), vec3<f32>(1.2, 0.15, 0.35), side.x > 0.0);
             let trailColX = select(vec3<f32>(0.1, 0.9, 1.2), vec3<f32>(1.2, 0.15, 0.35), side.y > 0.0);
             col += (trailColZ * trailZ * laneZ + trailColX * trailX * laneX) * groundMask * 2.4 * u.zoom_params.x;
@@ -306,6 +317,54 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let flowPhase = fract(p.y * 0.25 + time * (0.6 + bass * 0.8) + hHash * 7.0);
             let packet = pow(flowPhase, 8.0);
             col += neonCol * packet * 2.5 * u.zoom_params.x;
+
+            let neonGain = mix(0.6, 1.4, clamp(u.zoom_params.x, 0.0, 1.0));
+            // Rib crests tilt wall normals up to n.y = ±0.75, so roofs need n.y > 0.85.
+            let roof = smoothstep(0.85, 0.97, n.y);
+            let wallM = 1.0 - smoothstep(0.7, 0.9, abs(n.y));
+
+            // ── Idea 6: neon sign columns (native) ──
+            // One vertical LED strip per face on about 60% of the faces: four glyph cells wide,
+            // dark mullions, bits scroll DOWN the strip like the liquid packets above, bass flicker.
+            let faceX = abs(n.x) > abs(n.z);
+            let faceSgn = select(select(-1.0, 1.0, n.z > 0.0), select(-1.0, 1.0, n.x > 0.0), faceX);
+            let faceId = select(0.0, 2.0, faceX) + faceSgn * 0.5 + 0.5;
+            let hf = h21(vec2<f32>(hHash * 91.7, faceId * 17.3));
+            let stripOn = step(0.4, hf);
+            let lat = select(qxz.x, qxz.y, faceX);
+            let c0 = (fract(hf * 7.0) - 0.5) * repSize * 0.2;
+            let gx = (lat - c0) / 0.55;
+            let gy = p.y / 0.7 + time * (0.9 + bass * 1.6);
+            let inStrip = step(abs(gx), 2.0) * step(0.8, p.y) * step(p.y, 5.0 + 9.0 * fract(hf * 3.7));
+            let gcell = vec2<f32>(floor(gx), floor(gy));
+            let gbit = step(0.5, h21(gcell + vec2<f32>(hf * 31.0, 3.7)));
+            let gfx = fract(gx);
+            let gfy = fract(gy);
+            let gmask = step(0.12, gfx) * step(gfx, 0.88) * step(0.15, gfy) * step(gfy, 0.85);
+            let signCol = select(vec3<f32>(1.2, 0.1, 0.35), vec3<f32>(0.1, 0.9, 1.2), fract(hf * 13.0) > 0.5);
+            let signAmt = stripOn * inStrip * wallM;
+            col = mix(col, col * 0.25, signAmt);
+            col += signCol * gbit * gmask * signAmt * (1.6 + bass * 1.5 + 0.3 * sin(time * 17.0 + hf * 40.0)) * neonGain;
+
+            // ── Idea 7: roof panel seams (native) ──
+            // Up-facing neon skin is a tiled panel roof: per-panel level from the tower hash,
+            // dark seams. Anchored to the tower cell (qxz) so the panels follow the gravity warp.
+            let panelUV = qxz / 1.1;
+            let panelCell = floor(panelUV);
+            let panelF = abs(fract(panelUV) - 0.5);
+            let seam = smoothstep(0.40, 0.47, max(panelF.x, panelF.y));
+            let panelLevel = (0.55 + 0.45 * h21(panelCell + vec2<f32>(hHash * 91.0, 5.1))) * (1.0 - 0.85 * seam);
+            col = mix(col, col * panelLevel, roof);
+
+            // ── Idea 8: roof obstruction beacons (native) ──
+            // One red aircraft-warning lamp on a roof corner per tower, per-tower blink phase;
+            // the persistence blend below gives the lamp its one-frame afterglow.
+            let bcSign = vec2<f32>(select(-1.0, 1.0, fract(hHash * 7.31) > 0.5), select(-1.0, 1.0, fract(hHash * 13.77) > 0.5));
+            let bcD = qxz - bcSign * repSize * 0.3;
+            let bcR2 = dot(bcD, bcD);
+            let bcPhase = fract(time * 0.7 + hHash * 5.0);
+            let bcOn = smoothstep(0.0, 0.04, bcPhase) * (1.0 - smoothstep(0.34, 0.42, bcPhase));
+            col += vec3<f32>(1.5, 0.06, 0.04) * (exp(-bcR2 * 4.0) * 2.2 + exp(-bcR2 * 0.8) * 0.5) * bcOn * roof * neonGain;
         }
 
         // Fake specular reflection

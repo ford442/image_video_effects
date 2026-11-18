@@ -3,35 +3,18 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-27
-//  Ideas: convergence-order sheen (estimated order q from successive Newton steps: quadratic glints, linear/relaxed zones shade violet with step isochrones); damped-Newton relaxation waves from clicks / held mouse reshaping the basins; Newton-flow striations (atan2 of last step inside basins); wandering-orbit dust (high orbitSecond despite convergence)
+//  Upgraded: 2026-09-27, 2026-11-18
+//  Ideas: convergence-order sheen (estimated order q from successive Newton steps: quadratic glints, linear/relaxed zones shade violet with step isochrones); damped-Newton relaxation waves from clicks / held mouse reshaping the basins; Newton-flow striations (atan2 of last step inside basins); wandering-orbit dust (high orbitSecond despite convergence); basin-boundary distance-estimate filament (Green's-function DE from the accumulated orbit derivative, constant pixel width); Riemann-sheet hop count (orbit crossings of the cpower branch cut, amplitude |sin(pi n)|)
 //  A packing: ACES display RGBA in A; A.a = floor(convergenceAlpha*255)/256 + reactionState*(0.999/256) (reaction-diffusion state rides in the sub-1/256 fraction of alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Zoom, .y = Polynomial Degree, .z = Iteration Precision, .w = Boundary Distortion
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Zoom, .y = Polynomial Degree, .z = Iteration Precision, .w = Boundary Distortion
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const MAX_ROOTS: i32 = 6;
+const TRAP_GATE: f32 = 0.35; // Rescue 1: step length below which an orbit counts as converged
 
 // ── Hash & noise ──────────────────────────────────────────────────
 fn hashf(n: f32) -> f32 {
@@ -81,6 +64,19 @@ fn cpower(z: vec2<f32>, n: f32) -> vec2<f32> {
 fn cdiv(a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
     let d = dot(b, b) + 1e-8;
     return vec2<f32>((a.x * b.x + a.y * b.y) / d, (a.y * b.x - a.x * b.y) / d);
+}
+
+// Rescue 2b: roots of z^n - 1 on the principal branch of cpower sit at angles
+// m * TAU / n for integers |m| <= n / 2. Order of the list: 0, 1, -1, 2, -2, 3
+// (at most 6, same MAX_ROOTS). The -m twin of an exact +-pi pair is dropped.
+fn rootMult(k: i32) -> f32 {
+    return select(-f32(k / 2), f32((k + 1) / 2), (k & 1) == 1);
+}
+
+fn rootAlive(k: i32, n: f32) -> bool {
+    let m = rootMult(k);
+    let lim = abs(m) * 2.0;
+    return select(lim <= n + 1e-4, lim < n - 1e-3, m < 0.0);
 }
 
 fn complexNoise(z: vec2<f32>, time: f32, scale: f32) -> vec2<f32> {
@@ -172,7 +168,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         vec3<f32>(0.25, 0.95, 0.95)
     );
 
-    let nRoots = clamp(i32(floor(degree + 0.5)), 3, MAX_ROOTS);
     let rootStep = TAU / degree;
 
     // Native idea 2: damped-Newton relaxation waves. z -= a * f/f'; a = 1 is
@@ -203,15 +198,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var lastDz = vec2<f32>(0.0);
     var prevStep = 1.0;
     var convOrder = 0.0; // peak observed local convergence order
+    var orbitLogDer = 0.0;              // Idea 5: log |d z_n / d z_0| along the orbit
+    let rhoP = perturbStrength * 0.9;   // linear contraction floor the noise adds (|d noise / dz| / |f'|)
+    var sheetHops = 0.0;                // Idea 6: branch-cut crossings of the orbit
 
     for (var i = 0; i < maxIter; i = i + 1) {
         let zn = cpower(z, degree);
         let znm1 = cpower(z, degree - 1.0);
         let perturb = complexNoise(z, time, perturbStrength);
         let dz = cdiv(zn - vec2<f32>(1.0, 0.0) + perturb, degree * znm1) * relax;
+        let zOld = z;
         z = z - dz;
         lastDz = dz;
         iters = i;
+
+        // ── Idea 5: orbit derivative (basin-boundary distance estimate) ──
+        // Newton map N(z) = z - f/f' has N'(z) = f f'' / f'^2 = (z^n - 1)(n - 1) / (n z^n)
+        // for f = z^n - 1; the damped step (relax) has derivative 1 - a + a N'.
+        // Only |z_n'| is needed, so it is carried as a log-sum; the perturbation's own
+        // derivative (not differentiated here) enters in quadrature as a floor rhoP.
+        let nPrime = cdiv((zn - vec2<f32>(1.0, 0.0)) * (degree - 1.0), zn * degree);
+        let stepDer = vec2<f32>(1.0 - relax, 0.0) + nPrime * relax;
+        orbitLogDer = orbitLogDer + 0.5 * log(max(dot(stepDer, stepDer) + rhoP * rhoP, 1e-30));
+
+        // ── Idea 6: Riemann-sheet hop bookkeeping — the step crossed the cpower branch cut
+        // (negative real axis, where arg jumps from +pi to -pi).
+        let hopped = (z.y * zOld.y < 0.0) && (z.x < 0.0) && (zOld.x < 0.0);
+        sheetHops = sheetHops + select(0.0, 1.0, hopped);
 
         // Native idea 1: local convergence order q = log|dz_k| / log|dz_k-1|.
         let stepLen = length(dz);
@@ -223,41 +236,54 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         prevStep = stepLen;
 
         // Multi-shape orbit trap
-        let r = length(z);
-        let dRing = abs(r - 1.0);
-        let dAxis = min(abs(z.x), abs(z.y));
-        let dDiag = abs(z.x - z.y) * 0.70710678;
-        let ang = atan2(z.y, z.x);
-        let dSpiral = abs(fract(ang / TAU + log(r + 1e-6) * 0.25 + time * 0.03) - 0.5) * 2.0;
-        let dTrap = min(min(min(dRing, dAxis), dDiag), dSpiral);
+        // Rescue 1: only the travelling part of the orbit feeds the traps. The converged
+        // tail sits ON the roots, which lie on |z| = 1 and (root 0) on the real axis, so
+        // HEAD's min over every step was ~0 everywhere. As a bonus the tail skips the
+        // trap's atan2 / log entirely.
+        if (stepLen > TRAP_GATE) {
+            let r = length(z);
+            let dRing = abs(r - 1.0);
+            let dAxis = min(abs(z.x), abs(z.y));
+            let dDiag = abs(z.x - z.y) * 0.70710678;
+            let ang = atan2(z.y, z.x);
+            let dSpiral = abs(fract(ang / TAU + log(r + 1e-6) * 0.25 + time * 0.03) - 0.5) * 2.0;
+            let dTrap = min(min(min(dRing, dAxis), dDiag), dSpiral);
 
-        let isMin = dTrap < orbitMin;
-        orbitSecond = select(min(orbitSecond, dTrap), orbitMin, isMin);
-        orbitMin = select(orbitMin, dTrap, isMin);
+            let isMin = dTrap < orbitMin;
+            orbitSecond = select(min(orbitSecond, dTrap), orbitMin, isMin);
+            orbitMin = select(orbitMin, dTrap, isMin);
+        }
 
         if (length(dz) < tol) { break; }
     }
 
     // Smooth iteration count
-    let smoothIter = f32(iters) - log2(tol / max(length(lastDz), tol));
+    // Rescue 3: superattracting form — the log of the error doubles every step, so the
+    // fractional part is log2(log|dz| / log tol). HEAD's tol/max(|dz|,tol) was exactly 1
+    // (term 0) for every converged pixel, i.e. integer bands.
+    let lastLen = max(length(lastDz), 1e-12);
+    let smoothIter = f32(iters) - log2(max(log(lastLen) / log(tol), 1.0));
     let iterRatio = clamp(smoothIter / f32(maxIter), 0.0, 1.0);
     let convergence = 1.0 - iterRatio;
 
-    // Identify nearest root
-    let theta = atan2(z.y, z.x);
-    let nearestIdx = clamp(i32(fract(theta / rootStep + 0.5) * degree + 0.5), 0, nRoots - 1);
-
-    // Multi-root color accumulation for organic boundaries
+    // Multi-root color accumulation for organic boundaries.
+    // Rescue 2: the nearest root is the argmin over the live root list (HEAD's
+    // fract(theta/rootStep + 0.5) is 0.5 for every converged z -> one colour for all basins).
     var accCol = vec3<f32>(0.0);
     var weightSum = 0.0;
+    var bestD = 1e9;
+    var nearestIdx = 0;
     for (var k = 0; k < MAX_ROOTS; k = k + 1) {
-        let alive = k < nRoots;
-        let ra = rootStep * f32(k);
+        let alive = rootAlive(k, degree);
+        let ra = rootStep * rootMult(k);
         let rk = vec2<f32>(cos(ra), sin(ra));
         let dk = length(z - rk);
         let w = exp(-dk * 7.0) * f32(alive);
         accCol = accCol + rootColors[k] * w;
         weightSum = weightSum + w;
+        let better = alive && dk < bestD;
+        bestD = select(bestD, dk, better);
+        nearestIdx = select(nearestIdx, k, better);
     }
     let blendedRoot = accCol / max(weightSum, 1e-6);
     let baseCol = mix(rootColors[nearestIdx], blendedRoot, 0.35 + p4 * 0.35);
@@ -265,23 +291,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = baseCol * (1.0 - iterRatio * 0.55);
 
     // Orbit-trap glow
-    let trapGlow = exp(-orbitMin * (7.0 + bloom * 10.0 + treble * 4.0));
-    let trapIrid = exp(-orbitSecond * (3.0 + bloom * 6.0));
-    color = color + vec3<f32>(0.5, 0.7, 0.95) * trapGlow * bloom * 2.0;
-    color = color + vec3<f32>(0.95, 0.45, 0.25) * trapIrid * bloom * 0.7;
+    // Rescue 4 (energy budget): the four always-on accents summed to ~+1.2 pre-ACES on a
+    // ~0.4 base, so ACES clipped the frame to white. Sharper trap falloff + lower gains
+    // (trap / iridescent trap / SDF halo / RD accent) make them mark orbits that really
+    // pass a trap instead of washing the frame; the relative roles are unchanged.
+    let trapGlow = exp(-orbitMin * (20.0 + bloom * 25.0 + treble * 8.0));
+    let trapIrid = exp(-orbitSecond * (8.0 + bloom * 14.0));
+    color = color + vec3<f32>(0.5, 0.7, 0.95) * trapGlow * bloom * 1.2;
+    color = color + vec3<f32>(0.95, 0.45, 0.25) * trapIrid * bloom * 0.5;
 
     // SDF smooth-union halo around roots
     var sdf = 1e9;
     let rootRadius = 0.04 + p4 * 0.05;
     for (var k = 0; k < MAX_ROOTS; k = k + 1) {
-        let alive = k < nRoots;
-        let ra = rootStep * f32(k);
+        let alive = rootAlive(k, degree);
+        let ra = rootStep * rootMult(k);
         let rk = vec2<f32>(cos(ra), sin(ra));
-        let dk = length(z - rk) - rootRadius;
+        // Rescue 5: the halo is measured from the START point p. At the converged z every
+        // pixel sits on its root (sdf = -rootRadius), so HEAD's halo was a flat constant.
+        let dk = length(p - rk) - rootRadius;
         sdf = select(sdf, smin(sdf, dk, 0.07), alive);
     }
     let sdfGlow = exp(-abs(sdf) * (5.0 + bloom * 8.0));
-    color = color + vec3<f32>(0.55, 0.9, 1.0) * sdfGlow * bloom * 0.85;
+    color = color + vec3<f32>(0.55, 0.9, 1.0) * sdfGlow * bloom * 0.5;
 
     // Convergence-order sheen: quadratic (q~2) glints, linear (q~1) shades violet,
     // with isochrone contours of the smooth step count.
@@ -303,6 +335,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let wander = smoothstep(0.04, 0.20, orbitSecond) * convergence;
     color = color + vec3<f32>(0.62, 0.32, 1.0) * wander * 0.22 * (0.5 + treble * 0.55);
 
+    // ── Idea 5: basin-boundary distance-estimate filament ──────────────
+    // Green's function of the superattracting basin: G = 2^-n (-log|phi(z_n)|),
+    // |phi| = |c| e_n with Boettcher constant |c| = (n-1)/2 and e_n ~ |c| |dz|^2.
+    // |grad G| = 2^-n |z_n'| / e_n  =>  d = 2 sinh(G) / |grad G|  (Koebe-bounded).
+    // The 2^n cancels against G = 2^-n L, so the estimate is evaluated in logs:
+    // d = 2 L e_n sinhc(G) / |z_n'|. e_n comes from the last step (quadratic part
+    // c|dz|^2 plus the noise's linear part rhoP |dz|, in quadrature).
+    // Pixels that never converged ARE the boundary (d = 0). Width is measured in
+    // pixels of the warped plane, so the line keeps its thickness at any zoom.
+    let nSteps = f32(iters + 1);
+    let cAbs = max(0.5 * (degree - 1.0), 1e-3);
+    let eN = max(lastLen * sqrt(cAbs * cAbs * lastLen * lastLen + rhoP * rhoP), 1e-30);
+    let bigL = max(-log(max(cAbs * eN, 1e-30)), 1e-3);
+    let gPot = exp2(-nSteps) * bigL;
+    let sinhc = select(sinh(min(gPot, 12.0)) / max(gPot, 1e-8), 1.0 + gPot * gPot * 0.16666667, gPot < 0.3);
+    let logDe = log(2.0 * bigL * sinhc) + log(eN) - orbitLogDer;
+    let deRaw = exp(clamp(logDe, -30.0, 2.0));
+    let converged = length(lastDz) < tol;
+    let deDist = select(0.0, deRaw, converged);
+    let pxw = 8.75 / (zoom * res.y);
+    let lineW = pxw * (1.0 + 1.0 * bloom);
+    let filament = 1.0 - smoothstep(0.5 * lineW, 2.0 * lineW, deDist);
+    color = color + vec3<f32>(1.0, 0.70, 0.26) * filament * 1.1 * (0.8 + treble * 0.5);
+
+    // ── Idea 6: Riemann-sheet hop tint ─────────────────────────────────
+    // zⁿ jumps across the cut by 2|sin(pi n)|: nothing at integer degree, maximal at
+    // half-integer. Orbits that hopped sheets get the basin colours hue-rotated.
+    let sheetAmp = abs(sin(PI * degree));
+    let hopW = min(sheetHops, 2.0) * 0.5 * sheetAmp;
+    color = mix(color, color.brg * 1.1 + vec3<f32>(0.04, 0.0, 0.08), hopW * 0.75);
+
     // Reaction-diffusion accent on basin boundaries
     let idims = vec2<i32>(res);
     let prevTex = textureLoad(dataTextureC, pixel, 0);
@@ -315,7 +378,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let feed = trapGlow * (1.0 - trapGlow) * 4.0;
     let rdState = clamp(c0 + 0.25 * (0.22 * lap + feed - 0.16 * c0), 0.0, 1.0);
-    color = color + vec3<f32>(0.95, 0.2, 0.35) * rdState * (0.4 + bloom * 0.6);
+    color = color + vec3<f32>(0.95, 0.2, 0.35) * rdState * (0.4 + bloom * 0.6) * 0.5;
 
     // Subtle temporal color feedback
     let prevColor = prevTex.rgb;

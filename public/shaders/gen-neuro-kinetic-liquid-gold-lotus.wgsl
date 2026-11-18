@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: conductor Fresnel on liquid gold (spectral F0 tint at normal, white at grazing); golden-angle phyllotaxis stamen florets firing in spiral order on the core; capillary rivulets running down petal blades as brighter gold channels; Kelvin-Helmholtz shear rolls modulating plasma runners along torque-driven petal flow
+//  Upgraded: 2026-09-14, 2026-11-18
+//  Ideas: conductor Fresnel on liquid gold (spectral F0 tint at normal, white at grazing); golden-angle phyllotaxis stamen florets firing in spiral order on the core; capillary rivulets running down petal blades as brighter gold channels; Kelvin-Helmholtz shear rolls modulating plasma runners along torque-driven petal flow; mirror-gold reflection with petal inter-reflection (double-bounce F0^2 + studio env through the conductor Fresnel); anisotropic Kajiya-Kay vein highlight along the petal radial tangent
+//  Rescues 2026-11-18: camera aimed at the bloom (was horizontal + upside-down, lotus cropped at the top); petal domain repetition (eight blades, not a blob); plasma overlay no longer extrapolates into negative ACES input
 //  A packing: ACES display RGBA in A (rgb = max(ACES(frame), torque-advected C history * decay), a = semantic coverage)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -79,32 +80,35 @@ fn sdSphere(p: vec3<f32>, s: f32) -> f32 {
 }
 
 fn sdLotusPetals(p: vec3<f32>, time: f32, bloom: f32, torque: f32) -> f32 {
-    var p_w = p;
-
-    // Unfurling animation
+    // ── Rescue 2: petal domain repetition ──
+    // HEAD rotated the UNtwisted p by +a_mod (sector centre landed at 2*a_mod, not 0), used the
+    // twisted point only to pick the sector id and never offset the petal radially, so the eight
+    // petals collapsed into one blob round the axis. Now: rotate the torque-twisted q by -a_mod
+    // (sector centre -> +z), stand each petal off the core as an ellipsoid blade. The HEAD twin
+    // lobe (abs(x) - c), bowl lift (0.5 r^2 - bloom/2) and fbm liquid perturbation are kept.
     let num_petals = 8.0;
-    let r = length(p_w.xz);
+    let r = length(p.xz);
     let torqueWave = sin(r * 7.0 - time * 11.0) * torque * (0.15 + r * 0.08);
-    let twisted = rotY(torqueWave) * p_w;
-    p_w = twisted;
-    let angle = atan2(p_w.x, p_w.z);
+    let q = rotY(torqueWave) * p;
+    let angle = atan2(q.x, q.z);
 
     // Domain repetition
     let a = angle * num_petals / (2.0 * 3.14159265);
     let id = floor(a);
-    let af = fract(a) - 0.5;
-
-    // Reconstruct position based on repetition
     let a_mod = (id + 0.5) * (2.0 * 3.14159265) / num_petals;
     let c = cos(a_mod);
     let s = sin(a_mod);
-    p_w = vec3<f32>(p.x*c + p.z*s, p.y, -p.x*s + p.z*c);
+    var p_w = vec3<f32>(q.x * c - q.z * s, q.y, q.x * s + q.z * c);
 
     // Petal shape
-    p_w.x = abs(p_w.x) - 0.2;
+    p_w.x = abs(p_w.x) - 0.06;
     p_w.y -= 0.5 * r * r - bloom * 0.5;
+    p_w.z -= 0.85;
 
-    let base = sdSphere(p_w, 0.4);
+    let rad = vec3<f32>(0.2, 0.3, 0.55);
+    let k0 = length(p_w / rad);
+    let k1 = length(p_w / (rad * rad));
+    let base = k0 * (k0 - 1.0) / max(k1, 1e-4);
 
     // Add liquid perturbation
     let n = fbm(p * 2.0 + vec3<f32>(0.0, time * 0.5, 0.0)) * 0.1;
@@ -148,6 +152,20 @@ fn phyllotaxisFlorets(p: vec3<f32>) -> vec2<f32> {
     return vec2<f32>(prox, bestK / 60.0);
 }
 
+// Idea 1 helper: a tiny studio for the gold to mirror — dark warm floor, warm horizon glow, a cool
+// dim fill (echoes the scene background) and a key softbox along the existing light direction.
+// `sharp` = gold smoothness: rough gold smears the softbox into a wide sheen.
+fn goldStudioEnv(r: vec3<f32>, sharp: f32) -> vec3<f32> {
+    let key = normalize(vec3<f32>(1.0, 2.0, -1.0));
+    let kd = max(dot(r, key), 0.0);
+    let softbox = smoothstep(mix(0.45, 0.86, sharp), mix(0.92, 0.97, sharp), kd) * 2.4;
+    let upv = clamp(r.y, -1.0, 1.0);
+    let skyCol = mix(vec3<f32>(0.07, 0.06, 0.05), vec3<f32>(0.03, 0.05, 0.11), smoothstep(0.0, 0.8, upv));
+    let floorCol = vec3<f32>(0.05, 0.035, 0.02);
+    let horizon = exp(-abs(upv) * 5.0) * 0.55;
+    return mix(floorCol, skyCol, smoothstep(-0.12, 0.12, upv)) + vec3<f32>(1.0, 0.78, 0.5) * (horizon + softbox);
+}
+
 fn getNormal(p: vec3<f32>, time: f32, audio_val: f32, bloom: f32, torque: f32) -> vec3<f32> {
     let e = vec2<f32>(0.01, 0.0);
     let n = vec3<f32>(
@@ -177,7 +195,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     // Persistent cursor spring: [133..134] position, [135..136] velocity,
     // [137] held-gravity envelope, [138] initialization flag.
-    var springPos = u.zoom_config.yz;
+    // Rescue 4: a negative "pointer inactive" sentinel would rotate the camera by ~3 rad.
+    let pointerRaw = select(u.zoom_config.yz, vec2<f32>(0.5), u.zoom_config.y < 0.0);
+    var springPos = pointerRaw;
     var springVel = vec2<f32>(0.0);
     var heldGravity = select(0.0, 1.0, mouseDown);
     if (arrayLength(&extraBuffer) > 138u) {
@@ -188,7 +208,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         }
     }
     let springOmega = mix(7.0, 15.0, mouseInfluence);
-    let springAccel = springOmega * springOmega * (u.zoom_config.yz - springPos) - 2.0 * springOmega * springVel;
+    let springAccel = springOmega * springOmega * (pointerRaw - springPos) - 2.0 * springOmega * springVel;
     let nextSpringVel = springVel + springAccel * 0.016;
     let nextSpringPos = springPos + nextSpringVel * 0.016;
     let nextHeldGravity = mix(heldGravity, select(0.0, 1.0, mouseDown), 0.14);
@@ -226,8 +246,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         gravityWeight += rippleStrength;
     }
 
+    // ── Rescue 1: camera aimed at the bloom ──
+    // HEAD looked horizontally along +z (the lotus sat 22 deg below the axis) and used uv.y (screen
+    // down) as world-up, so the lotus was upside-down and cropped in the top 30 % of the frame.
     let ro = vec3<f32>(0.0, 2.0, -5.0);
-    var rd = normalize(vec3<f32>(uv, 1.0));
+    let camFwd = normalize(vec3<f32>(0.0, -0.05, 0.0) - ro);
+    let camRight = vec3<f32>(1.0, 0.0, 0.0);
+    let camUp = cross(camFwd, camRight);
+    var rd = normalize(camFwd + camRight * uv.x - camUp * uv.y);
+    // World-up is screen-up now, so the pointer/click wells (screen-down-positive) flip y.
+    let wellWorld = vec2<f32>(gravityAim.x, -gravityAim.y);
 
     // Apply mouse rotation
     rd = rotX(my * 1.5 * mouseInfluence) * rd;
@@ -244,7 +272,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     for(var i=0; i<80; i++) {
         p = ro_rot + rd * t;
         // Gravity well distortion near center
-        let toWell = gravityAim - p.xy;
+        let toWell = wellWorld - p.xy;
         let bend = exp(-dot(toWell, toWell) * 0.55) * (0.08 + min(gravityWeight, 2.5) * 0.11);
         p += vec3<f32>(toWell * bend, 0.0);
 
@@ -284,6 +312,34 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         // Combine lighting and material
         // Metals have no diffuse-white highlight: specular and rim are Fresnel-tinted.
         col = base_gold * (diff * 0.5 + 0.2) + fresnel * spec * (1.0 + audioBands.z * 0.3) + fresnel * rim * 0.5 * (0.6 + gold_smooth * 0.5);
+
+        // ── Idea 1: mirror-gold reflection with petal inter-reflection (native: conductor = what it mirrors) ──
+        // Short reflected march through the same map(): a strike on another petal returns that gold
+        // twice-bounced (F0^2: deeper, more saturated orange); an escape reads the little studio env.
+        // Both ride the existing spectral Fresnel; gold smoothness sharpens the mirror.
+        let rdir = reflect(-v, n);
+        var tr = 0.04;
+        var rhit = false;
+        for (var k = 0; k < 8; k++) {
+            let dr = map(p + rdir * tr, time, audio_val, bloom_radius, torque);
+            if (dr < 0.004) { rhit = true; break; }
+            tr += max(dr, 0.03);
+            if (tr > 3.0) { break; }
+        }
+        let f0g = vec3<f32>(1.0, 0.71, 0.29);
+        let bounceLit = 0.45 + 0.4 * (1.0 - clamp(tr / 1.4, 0.0, 1.0)) + 0.15 * clamp(rdir.y * 0.5 + 0.5, 0.0, 1.0);
+        let mirror = select(goldStudioEnv(rdir, gold_smooth), f0g * f0g * bounceLit, rhit);
+        col += fresnel * mirror * mix(0.25, 0.6, gold_smooth);
+
+        // ── Idea 2: anisotropic Kajiya-Kay vein highlight along the petal radial tangent (tactic 7) ──
+        // The rivulets already run radially; liquid gold drawn down a blade stretches its highlight
+        // across that flow. Tangent = radial direction projected onto the tangent plane.
+        let radialDir = vec3<f32>(p.x, 0.0, p.z) / max(length(p.xz), 1e-3);
+        let tanV = radialDir - n * dot(radialDir, n);
+        let tanN = tanV / max(length(tanV), 1e-3);
+        let th = dot(tanN, h);
+        let aniso = pow(sqrt(max(1.0 - th * th, 0.0)), mix(24.0, 140.0, gold_smooth));
+        col += fresnel * aniso * sqrt(diff) * (0.15 + gold_smooth * 0.2);
         // IDEA 3: capillary rivulets on petal blades.
         let rivulet = pow(0.5 + 0.5 * sin(atan2(p.z, p.x) * 20.0 + p.y * 26.0 + time * (4.0 + audioBands.y * 3.0)), 5.0) * smoothstep(0.35, 1.4, length(p.xz));
         col += vec3<f32>(0.95, 0.68, 0.22) * rivulet * (0.18 + gold_smooth * 0.12);
@@ -296,7 +352,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col += vec3<f32>(1.0, 0.85, 0.45) * anther * 1.4;
 
         // Overlay plasma
-        col = mix(col, mixed_plasma * 2.0, plasma_factor);
+        // ── Rescue 3: HEAD mixed with weight plasma_factor <= 2.5, extrapolating to negative channels
+        // (ACES maps negatives to bright, so cyan plasma flared red). Weight clamped to 1. ──
+        col = mix(col, mixed_plasma * 2.0, clamp(plasma_factor, 0.0, 1.0));
     }
 
     // Atmospheric perspective (fog)
@@ -324,7 +382,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let historyCoord = clamp(vec2<i32>(floor(historyUV * vec2<f32>(historySize))), vec2<i32>(0), historySize - vec2<i32>(1));
     let previous = textureLoad(dataTextureC, historyCoord, 0).rgb;
     // History in C is already ACES display RGB, so trails decay in display space.
-    let temporal = clamp(max(acesToneMap(col), previous * (0.86 + gold_smooth * 0.08)), vec3<f32>(0.0), vec3<f32>(1.0));
+    let temporal = clamp(max(acesToneMap(max(col, vec3<f32>(0.0))), previous * (0.86 + gold_smooth * 0.08)), vec3<f32>(0.0), vec3<f32>(1.0));
     let depth = select(1.0, clamp(t / 20.0, 0.0, 0.995), hit);
     let temporalLuma = dot(temporal, vec3<f32>(0.2126, 0.7152, 0.0722));
     let semanticAlpha = clamp(select(0.08 + smoothstep(0.02, 0.4, temporalLuma) * 0.35, 0.72 + blossomShock * 0.2, hit), 0.0, 1.0);

@@ -2,12 +2,12 @@
   "id": "kimi-nebula-depth",
   "name": "Kimi Nebula Depth",
   "url": "shaders/kimi_nebula_depth.wgsl",
-  "description": "Halftone dot and Sobel edge ink-stipple effect: posterized luma rendered as resolution-independent dots with ink outlines, paper grain, and a mouse-driven vignette.",
+  "description": "Halftone dot and Sobel edge ink-stipple effect: posterized luma rendered as resolution-independent dots with ink outlines, paper grain, and a mouse-driven vignette. Dot gain, off-register colour plate, paper-tooth ink pooling.",
   "features": [
     "mouse-driven",
+    "audio-reactive",
     "generative",
-    "volumetric",
-    "3d"
+    "upgraded-rgba"
   ],
   "tags": [
     "procedural",
