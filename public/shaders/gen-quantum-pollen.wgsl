@@ -3,31 +3,12 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: echinate exine spikes; tetrad dehiscence (4-grain clusters that separate)
+//  Upgraded: 2026-09-27, 2026-11-19
+//  Ideas: echinate exine spikes; tetrad dehiscence (4-grain clusters that separate); curl-noise anther eddies (divergence-free air swirls carry grains and trails); anemophilous gust fronts (travelling wind bands lift a pollen cloud)
 //  A packing: HDR advected feedback RGB, alpha = slow age accumulator
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -118,8 +99,10 @@ fn genChromaticShift(color: vec3<f32>, uv: vec2<f32>, strength: f32, time: f32) 
 }
 
 // ── Particle core ─────────────────────────────────────────────────
-fn particleLayer(uv: vec2<f32>, time: f32, scale: f32, drift: vec2<f32>, phase: f32) -> vec3<f32> {
-  let gridUV = uv * scale + drift * time + phase;
+fn particleLayer(uv: vec2<f32>, time: f32, scale: f32, drift: vec2<f32>, offset: vec2<f32>, phase: f32) -> vec3<f32> {
+  // Rescue 2: only the spatially-uniform drift is integrated over time; the spatial fields
+  // (vortex / gravity / burst / eddies) displace the lookup instead of shearing it by `time`.
+  let gridUV = (uv + offset) * scale + drift * time + phase;
   let cell = floor(gridUV);
   let local = fract(gridUV) - 0.5;
   let rnd = hash22(cell);
@@ -146,6 +129,16 @@ fn particleLayer(uv: vec2<f32>, time: f32, scale: f32, drift: vec2<f32>, phase: 
     core = max(core, exp(-rMod * rMod * 95.0));
   }
   return vec3<f32>(core, halo, rnd.x);
+}
+
+// Idea 3: curl-noise anther eddies (§12.2 curl-noise advection) — curl of a scalar noise
+// potential is divergence-free, so grains swirl in closed eddies instead of bunching up.
+fn curlEddy(p: vec2<f32>, time: f32) -> vec2<f32> {
+  let e = 0.05;
+  let q = p + vec2<f32>(time * 0.11, -time * 0.07);
+  let dx = fbm(q + vec2<f32>(e, 0.0), 2) - fbm(q - vec2<f32>(e, 0.0), 2);
+  let dy = fbm(q + vec2<f32>(0.0, e), 2) - fbm(q - vec2<f32>(0.0, e), 2);
+  return vec2<f32>(dy, -dx) / (2.0 * e);
 }
 
 // ── Main compute pass ─────────────────────────────────────────────
@@ -192,6 +185,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cos(time * 0.28 + bass * 3.0) * 0.05
   );
   let totalDrift = driftBase + vortex + gravity + audioWander + burst;
+  let uniformDrift = driftBase + audioWander;
+  // ── Idea 3: curl-noise anther eddies ──
+  let IDEA_3 = 1.0;
+  let eddy = curlEddy(uv * 2.2, time) * (0.6 + mids * 0.6) * IDEA_3;
+  // ── Idea 4: anemophilous gust fronts — a wind band sweeps diagonally across the frame ──
+  let IDEA_4 = 1.0;
+  let gustCoord = dot(uv, vec2<f32>(0.8, 0.6)) - time * 0.12;
+  let gustPh = gustCoord - floor(gustCoord / 1.6) * 1.6;
+  let gust = smoothstep(0.0, 0.25, gustPh) * (1.0 - smoothstep(0.25, 0.7, gustPh)) * (0.8 + bass * 0.5) * IDEA_4;
+  let spatialOffset = (vortex + gravity + burst) * 0.6 + eddy * 0.05 + vec2<f32>(0.8, 0.6) * gust * 0.04;
 
   // Organic domain warp for emergent flow
   let warpScale = 1.5 + p1 * 3.5 + bass * 0.5;
@@ -205,17 +208,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spawnMask = smoothstep(0.42, 0.82, videoLuma) * (0.25 + treble * 0.45);
 
   // Pollen layers with audio-scaled radii
-  let swarmDensity = mix(8.0, 82.0, p1);
+  // Rescue 1: HEAD mix(8,82) on top of warpScale gave 60-200 grains across the frame (sub-pixel speckle).
+  let swarmDensity = mix(2.0, 9.0, p1);
   let morphSpeed = mix(0.35, 1.7, p2) + mids * 0.35;
   let coreSharp = 34.0 + treble * 10.0;
   let haloSoft = 7.0 + bass * 4.0;
 
-  let l0 = particleLayer(warpUV, time, swarmDensity * 0.42, totalDrift, 0.0);
-  let l1 = particleLayer(warpUV + vec2<f32>(0.31, 0.19), time * 1.13, swarmDensity, totalDrift * 1.25, morphSpeed * 0.7);
-  let l2 = particleLayer(warpUV + vec2<f32>(0.57, 0.43), time * 1.31, swarmDensity * 1.55, totalDrift * 1.7, morphSpeed * 1.4);
+  let off = spatialOffset * warpScale;
+  let l0 = particleLayer(warpUV, time, swarmDensity * 0.42, uniformDrift, off, 0.0);
+  let l1 = particleLayer(warpUV + vec2<f32>(0.31, 0.19), time * 1.13, swarmDensity, uniformDrift * 1.25, off * 1.25, morphSpeed * 0.7);
+  let l2 = particleLayer(warpUV + vec2<f32>(0.57, 0.43), time * 1.31, swarmDensity * 1.55, uniformDrift * 1.7, off * 1.7, morphSpeed * 1.4);
 
   let core = l0.x + l1.x + l2.x;
-  let haze = l0.y * 0.6 + l1.y * 0.85 + l2.y;
+  // Idea 4: the gust lifts a pale pollen cloud (haze thickens inside the band).
+  let haze = (l0.y * 0.6 + l1.y * 0.85 + l2.y) * (1.0 + gust * 2.5);
 
   // Treble sparkle
   let sparklePhase = time * (7.0 + treble * 32.0) + (l0.z + l1.z + l2.z) * 12.0;
@@ -227,6 +233,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += psychedelicPalette(time * 0.063 + l1.z * 0.37 + 0.31) * l1.x * (1.0 + mids * 0.28);
   color += psychedelicPalette(time * 0.079 + l2.z * 0.45 + 0.67) * l2.x * (1.0 + bass * 0.22);
   color += vec3<f32>(0.08, 0.16, 0.12) * haze * 0.35;
+  color += vec3<f32>(0.55, 0.48, 0.22) * gust * haze * 0.12; // Idea 4: golden pollen cloud in the gust
 
   // Bass pulse scales overall brightness; mids tint motion
   let pulse = 1.0 + bass * 0.65 + mids * 0.25;
@@ -236,7 +243,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += videoSample.rgb * spawnMask * 0.45 * (1.0 + bass);
 
   // Motion-vector advection + temporal accumulation feedback
-  let advectUV = clamp(uv01 - totalDrift * 0.008 * (1.0 + p4 * 2.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  // Idea 3: trails ride the same eddies (screen-space, y-down uv01 vs y-down uv: same sign).
+  let advectUV = clamp(uv01 - (totalDrift + eddy * 0.9) * 0.008 * (1.0 + p4 * 2.0), vec2<f32>(0.0), vec2<f32>(1.0));
   let advectCoord = clamp(vec2<i32>(advectUV * res), vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1));
   let advect = textureLoad(dataTextureC, advectCoord, 0);
   let decay = 0.92 - p4 * 0.07;

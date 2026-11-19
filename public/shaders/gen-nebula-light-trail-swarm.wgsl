@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: Strömgren-sphere ionization stratification around the core star ([O III] teal inner zone, H-alpha red shell, [S II] ionization front; radius ∝ cube root of ionizing flux); recombination afterglow along photon trails (head ionized [O III] white-teal cooling to H-alpha red toward the tail, recombination time set by Trail Decay)
+//  Upgraded: 2026-09-14, 2026-11-19
+//  Ideas: Strömgren-sphere ionization stratification around the core star ([O III] teal inner zone, H-alpha red shell, [S II] ionization front; radius ∝ cube root of ionizing flux); recombination afterglow along photon trails (head ionized [O III] white-teal cooling to H-alpha red toward the tail, recombination time set by Trail Decay); Airy diffraction rings around each photon head (ring spacing set by Glow Radius); bow-shock arcs where a photon head plows into dense nebular gas
 //  A packing: ACES display RGBA in A (C read back as trail history)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // .x = Particle Speed, .y = Trail Decay, .z = Curl Strength, .w = Glow Radius
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: .x = Particle Speed, .y = Trail Decay, .z = Curl Strength, .w = Glow Radius
 
 // --- Color Science: OkLab ---
 fn srgb_to_linear(c: vec3<f32>) -> vec3<f32> {
@@ -112,6 +94,9 @@ fn loadC(p: vec2<i32>, maxC: vec2<i32>) -> vec4<f32> {
     return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), maxC), 0);
 }
 
+const IDEA_3: f32 = 1.0;
+const IDEA_4: f32 = 1.0;
+
 fn trailDist(uv: vec2<f32>, p: vec2<f32>, dir: vec2<f32>, len: f32, width: f32) -> f32 {
     let toP = uv - p;
     let proj = dot(toP, dir);
@@ -144,6 +129,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let recombLen = mix(0.35, 0.04, u.zoom_params.y);
     var col = vec3<f32>(0.0);
     var totalGlow = 0.0;
+    // gas density hoisted above the loop: shared by the bow shocks (Idea 4) and the Strömgren zones (Idea 1)
+    let pc = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
+    let rN = length(pc);
+    let gas = valueNoise(pc * 6.0 + vec2<f32>(time * 0.02, -time * 0.015)) * 0.65
+            + valueNoise(pc * 14.0 - vec2<f32>(time * 0.03, 0.0)) * 0.35;
+    let airyScale = 3.8317 * (1.0 + treble * 0.3) / (glowRadius * 2.5 + 0.012);
     let numParticles = 20;
     for (var i: i32 = 0; i < numParticles; i = i + 1) {
         let fi = f32(i);
@@ -183,6 +174,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let audioBoost = 1.0 + bass * 1.5 + treble * 0.5;
         col = col + trailCol * glow * afterglow * audioBoost;
         totalGlow = totalGlow + glow * afterglow;
+        let headPos = startPos + dir * trailLen;
+        let hv = (uv - headPos) * vec2<f32>(aspect, 1.0);
+        let hr2 = dot(hv, hv);
+        if (hr2 < 0.0256) { // both head ideas are gone beyond r = 0.16 — skip the far field
+        let hr = sqrt(hr2);
+        // ── Idea 3: Airy diffraction rings (§12.2 Airy disc) ── each photon head is a point source seen
+        // through the swarm's aperture: central disc + faint rings, I ≈ (2·J1(x)/x)², J1 via its
+        // large-x asymptote sin-envelope; Glow Radius widens the pattern, treble sharpens it.
+        let ax = hr * airyScale;
+        let j1 = select(0.5 * ax, sqrt(0.6366 / max(ax, 1e-3)) * cos(ax - 2.3562), ax > 1.8);
+        let airyR = 2.0 * j1 / max(ax, 1e-3);
+        // displayed as |amplitude| (√ of intensity) so the first rings read, as on a stretched exposure
+        let airy = abs(airyR) * life * smoothstep(0.16, 0.0, hr);
+        col = col + mix(trailCol, vec3<f32>(1.0), 0.4) * airy * IDEA_3 * 0.7 * audioBoost;
+        // ── Idea 4: bow-shock arcs (native) ── a parabolic shock front stands just ahead of each head;
+        // it brightens where the clumpy gas the head plows into is dense ([S II]/H-alpha shocked gas).
+        let ad = dot(hv, normalize(dir * vec2<f32>(aspect, 1.0) + vec2<f32>(1e-5)));
+        let lat = sqrt(max(hr * hr - ad * ad, 0.0));
+        let standoff = 0.018 + glowRadius * 0.3;
+        let shockD = (ad - standoff) + lat * lat / (2.0 * standoff);
+        let shock = exp(-shockD * shockD * 9000.0) * smoothstep(0.09, 0.0, lat) * step(-standoff, ad) * life;
+        col = col + mix(HALPHA, SII, 0.5) * shock * (0.3 + gas * 1.4) * IDEA_4 * (1.0 + bass);
+        totalGlow = totalGlow + (airy * IDEA_3 + shock * IDEA_4) * 0.5;
+        }
     }
     // Central nebula core with Fresnel-like rim
     let coreDist = length(uv - vec2<f32>(0.5));
@@ -201,10 +216,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // teal; H-alpha fills the outer shell; low-ionization [S II] marks the
     // thin ionization front where neutral gas begins. Clumpy gas density
     // wrinkles the front.
-    let pc = (uv - vec2<f32>(0.5)) * vec2<f32>(aspect, 1.0);
-    let rN = length(pc);
-    let gas = valueNoise(pc * 6.0 + vec2<f32>(time * 0.02, -time * 0.015)) * 0.65
-            + valueNoise(pc * 14.0 - vec2<f32>(time * 0.03, 0.0)) * 0.35;
     let Q = 1.0 + bass * 2.5 + held * 1.0;
     let Rs = 0.26 * pow(Q, 1.0 / 3.0) * (0.85 + gas * 0.3);
     let x = rN / Rs;

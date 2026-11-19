@@ -28,7 +28,9 @@
     "optical-flow",
     "curl-noise-advection",
     "diffusion-feedback",
-    "generated-depth"
+    "generated-depth",
+    "doppler-streak-fringe",
+    "cooling-afterglow"
   ],
   "x-meta": {
     "upgrade": {
