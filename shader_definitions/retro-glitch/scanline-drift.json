@@ -2,7 +2,7 @@
   "id": "scanline-drift",
   "name": "Scanline Drift",
   "url": "shaders/scanline-drift.wgsl",
-  "description": "Horizontal strip drift with RGB split: strips shear into each other like stretched tape, displaced lines reveal an h-sync blanking porch at the wrap seam, and fast-drifting strips smear along their velocity. Pointer band jitter, held boost, click tears, treble flicker, ACES output.",
+  "description": "Horizontal strip drift with RGB split: strips shear into each other like stretched tape, displaced lines reveal an h-sync blanking porch at the wrap seam, and fast-drifting strips smear along their velocity. Pointer band jitter, held boost, click tears, treble flicker, ACES output. The bottom lines skew in a VCR head-switching band, and tape dropouts streak short white comets along single scan rows.",
   "workgroup_size": [
     16,
     16,

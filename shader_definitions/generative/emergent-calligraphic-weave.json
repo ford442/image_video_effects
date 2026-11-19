@@ -3,7 +3,7 @@
   "name": "Emergent Calligraphic Weave",
   "url": "shaders/emergent-calligraphic-weave.wgsl",
   "category": "generative",
-  "description": "Sumi-e ink wash simulation with pressure-sensitive Bézier brush strokes, ink viscosity flow, paper absorption capillary action, and dry-brush texture. Audio drives brush speed and splatter; mouse acts as the brush with pressure from click duration. Depth scales paper grain.",
+  "description": "Sumi-e ink wash simulation with pressure-sensitive B\u00e9zier brush strokes, ink viscosity flow, paper absorption capillary action, and dry-brush texture. Audio drives brush speed and splatter; mouse acts as the brush with pressure from click duration. Depth scales paper grain. Ink ribbons are laid along the curl field's own flow lines and lift as the brush runs dry, ink pools in dark beads at stroke tails, and wet ink wicks along the paper fibres.",
   "features": [
     "stroke-based",
     "brush-dynamics",
@@ -16,7 +16,12 @@
     "audio-field",
     "mouse-influence",
     "temporal",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "streamline-strokes",
+    "ink-pooling",
+    "fiber-wicking",
+    "mouse-driven",
+    "audio-reactive"
   ],
   "tags": [
     "calligraphic",

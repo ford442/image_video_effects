@@ -2,7 +2,7 @@
   "id": "cyber-terminal-ascii",
   "name": "Cyber Terminal ASCII",
   "url": "shaders/cyber-terminal-ascii.wgsl",
-  "description": "Scrolling grid of luma-picked SDF glyphs in phosphor green (or colour-blended) with a binary decode lens at the cursor that widens while held, click packet bursts and C phosphor persistence. Ideas: hex-dump decode (lens cells show the two hex nibbles of their luma byte from a 4x6 bitmap font), typewriter row entry (the row entering at the bottom types in left-to-right behind a blinking block cursor at a bass-driven rate), and bit-error flicker (treble flips random glyphs to a neighbour index for one frame, leaving a brief green after-image). ACES display.",
+  "description": "Scrolling grid of luma-picked SDF glyphs in phosphor green (or colour-blended) with a binary decode lens at the cursor that widens while held, click packet bursts and C phosphor persistence. Ideas: hex-dump decode (lens cells show the two hex nibbles of their luma byte from a 4x6 bitmap font), typewriter row entry (the row entering at the bottom types in left-to-right behind a blinking block cursor at a bass-driven rate), and bit-error flicker (treble flips random glyphs to a neighbour index for one frame, leaving a brief green after-image). ACES display. Second pass: line-buffer misalignment (a drifting, mids-widened band of rows reads its picture a whole number of cells sideways, amber-tinted) and a reverse-video selection rim around the lens (wider while held).",
   "workgroup_size": [
     16,
     16,

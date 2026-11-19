@@ -9,7 +9,7 @@
     "raymarching",
     "volumetric"
   ],
-  "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound. Additional structure adds myelin pearling instability and synaptic bouton crowns at branch terminals.",
+  "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound. Additional structure adds myelin pearling instability and synaptic bouton crowns at branch terminals. Boutons flash and shed an expanding vesicle shell when the saltatory spike arrives, and a violet astrocyte haze glows around the tissue.",
   "workgroup_size": [
     16,
     16,
@@ -70,7 +70,9 @@
     "depth-output",
     "dendritic-bifurcation",
     "saltatory-action-potentials",
-    "aces-tonemap"
+    "aces-tonemap",
+    "vesicle-release-burst",
+    "astrocyte-haze"
   ],
   "x-meta": {
     "upgrade": {

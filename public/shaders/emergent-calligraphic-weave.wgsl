@@ -3,33 +3,20 @@
 //  Category: generative
 //  Features: stroke-based, brush-dynamics, ink-viscosity, paper-absorption,
 //            bezier-strokes, sumi-e, dry-brush, dry-brush-sparkle,
-//            curl-field, chromatic-edge, upgraded-rgba, aces-tone-map
+//            curl-field, chromatic-edge, streamline-strokes, ink-pooling,
+//            fiber-wicking, mouse-driven, audio-reactive, upgraded-rgba,
+//            aces-tone-map
 //  Complexity: Very High
 //  Created: 2026-05-31
 //  Upgraded: 2026-07-22 (Visualist: curl-noise stroke field, real brush
-//            constants on all 4 sliders, treble dry-brush edge sparkle)
+//            constants on all 4 sliders, treble dry-brush edge sparkle);
+//            2026-11-19
+//  Ideas: streamline strokes (ink ribbons laid along isolines of the curl potential, brush lifts where its load runs out); tamari ink pooling at stroke tails; nijimi fiber wicking (anisotropic capillary bleed along the paper fibre)
+//  A packing: raw sim state (r=stroke ink, g=angle, b=ink concentration, a=density)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FieldComplexity, y=StrokePersistence, z=Coherence, w=Chaos
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FieldComplexity, y=StrokePersistence, z=Coherence, w=Chaos
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -60,7 +47,8 @@ fn vnoise(p: vec2<f32>) -> f32 {
 
 // Divergence-free curl field: perpendicular gradient of a scalar potential.
 // Strokes advected along this flow read as brushed calligraphy, not static hash.
-fn curlField(p: vec2<f32>, freq: f32, time: f32) -> vec2<f32> {
+// .xy = curl, .z = stream function (mean of the 4 taps) — its isolines are flow lines.
+fn curlField(p: vec2<f32>, freq: f32, time: f32) -> vec3<f32> {
     let e = 0.35 / max(freq, 0.001);
     let sp = p * freq + vec2<f32>(time * 0.13, -time * 0.09);
     let pR = vnoise(sp + vec2<f32>(e, 0.0));
@@ -69,8 +57,9 @@ fn curlField(p: vec2<f32>, freq: f32, time: f32) -> vec2<f32> {
     let pD = vnoise(sp - vec2<f32>(0.0, e));
     let dx = (pR - pL) / (2.0 * e);
     let dy = (pU - pD) / (2.0 * e);
-    return vec2<f32>(dy, -dx);
+    return vec3<f32>(dy, -dx, (pR + pL + pU + pD) * 0.25);
 }
+
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
@@ -125,7 +114,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Curl-noise advection: bend the base stroke direction along the
     // divergence-free flow so strokes sweep like a moving brush.
-    let curl = curlField(uv, fieldFreq, time);
+    let curlP = curlField(uv, fieldFreq, time);
+    let curl = curlP.xy;
     let curlMag = length(curl);
     let curlWeight = clamp(curlMag * mix(0.25, 0.9, pComplexity), 0.0, 0.85);
     let baseDir = vec2<f32>(cos(baseAngle), sin(baseAngle));
@@ -158,8 +148,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Ink viscosity flow and capillary bleed
     let decay = viscosity - bass * 0.02;
     let bleed = (sampled.r - prev.r) * 0.08 * paperAbsorb;
-    var newStroke = sampled.r * decay + 0.035 * inkConcentration + bleed;
-    newStroke = newStroke * (0.7 + dryBrush * 0.6);
+    // IDEA 1: streamline strokes — the curl potential's isolines are exactly the
+    // flow lines, so thin bands of it are brush strokes that follow the field.
+    // A slow load noise per stroke lifts the brush so strokes start and end.
+    let pot = curlP.z * mix(7.0, 16.0, pComplexity);
+    let strokeId = floor(pot);
+    let bandDist = abs(fract(pot) - 0.5);
+    let ribbon = 1.0 - smoothstep(strokeWidth * 6.0, strokeWidth * 12.0, bandDist);
+    let brushLoad = smoothstep(0.3, 0.7, vnoise(uv * 2.5 + vec2<f32>(strokeId * 3.7, time * 0.25)));
+    // dry-brush gates only the fresh deposit (HEAD multiplied the stored field,
+    // which compounded every frame into salt-and-pepper static)
+    let deposit = ribbon * brushLoad * (0.35 + 0.65 * dryBrush) * 0.24 * inkConcentration * (1.0 + bass * 0.4);
+
+    // IDEA 3: nijimi fiber wicking — wet ink creeps along the paper fibre axis.
+    let fiberDir = normalize(vec2<f32>(1.7, -2.3));
+    // one tap, flipping side each frame (time-averaged it wicks both ways)
+    let wickSide = select(-1.0, 1.0, (u32(u.config.x * 60.0) & 1u) == 0u);
+    let wickTap = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + fiberDir * (0.006 * wickSide), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let wick = max(wickTap - prev.r, 0.0) * 0.12 * paperAbsorb * pPersistence * (0.4 + fiber);
+
+    var newStroke = sampled.r * decay + 0.012 * inkConcentration + bleed + deposit + wick;
 
     // Brush temperature from bass (faster = drier / hotter)
     let brushTemp = 0.5 + bass * 0.5;
@@ -180,6 +188,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let coherence = 1.0 - abs(sampled.g - angle) * 0.7;
     newStroke += coherence * coherenceGain * (0.5 + mids * 0.4);
 
+    // IDEA 2: tamari pooling — where the stroke behind is wet but the paper ahead
+    // is dry, the brush has just lifted and ink collects in a dark bead.
+    let tail = smoothstep(0.08, 0.3, sampled.r - neighbor.r) * smoothstep(0.15, 0.4, sampled.r);
+    newStroke += tail * 0.04;
+
+    newStroke = clamp(newStroke, 0.0, 1.5);
     let density = clamp(newStroke, 0.0, 1.2);
     let ink = pow(density, 0.9);
 
@@ -193,6 +207,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let hueShift = sin(angle * 2.0) * 0.06;
     var finalCol = col * (1.0 + hueShift) + yellowing;
+    // pooled ink reads as a deep, slightly blue-black bead at the stroke tail
+    finalCol = mix(finalCol, vec3<f32>(0.02, 0.02, 0.05), tail * 0.7);
 
     // Dry-brush sparkle as warm paper-grain glint on stroke edges
     finalCol = finalCol + vec3<f32>(0.85, 0.8, 0.65) * sparkle * 0.6;
@@ -207,7 +223,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // ACES tone map
     finalCol = acesToneMap(finalCol * 1.1);
 
-    let alpha = clamp(ink * paperAbsorb * depth + splatter * 0.5 + sparkle * 0.3, 0.0, 1.0);
+    let alpha = clamp(ink * paperAbsorb * (0.6 + 0.4 * depth) + tail * 0.3 + splatter * 0.5 + sparkle * 0.3, 0.0, 1.0);
 
     textureStore(writeTexture, gid.xy, vec4<f32>(finalCol, alpha));
     textureStore(dataTextureA, gid.xy, vec4<f32>(newStroke, angle, inkConcentration, density));

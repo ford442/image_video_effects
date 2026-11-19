@@ -2,10 +2,13 @@
   "id": "physarum-gemini",
   "name": "Physarum Gemini",
   "url": "shaders/physarum-gemini.wgsl",
-  "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning.",
+  "description": "An advanced, agent-based slime mold simulation with emergent, time-driven growth patterns, complex nutrient interaction, and mouse-driven agent spawning. Upgraded: agents now live in the feedback texture so the network actually grows; light scatters forward through the veins into a soft halo, and colour castes fuse into bright seams where they meet.",
   "features": [
     "mouse-driven",
-    "time-driven"
+    "time-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "temporal-feedback"
   ],
   "tags": [
     "simulation",

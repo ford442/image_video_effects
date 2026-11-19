@@ -5,7 +5,8 @@
 //  Complexity: Medium
 //  Upgraded: 2026-09-21
 //  Ideas: toner starvation bands; Mach-band edge halo; compounding
-//         generation loss through C
+//         generation loss through C; platen dust specks; generation creep
+//  Upgraded: 2026-11-19
 //  A packing: ACES display RGBA (C is read as the previous generation)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -87,32 +88,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mids = plasmaBuffer[0].y;
   let treble = plasmaBuffer[0].z;
 
-  var smoothMouse = mouse;
-  let hasSpring = arrayLength(&extraBuffer) > 138u;
-  if (hasSpring && extraBuffer[138] > 0.5) {
-    smoothMouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-  }
-  if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-    var springPos = smoothMouse;
-    var springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[138] <= 0.5) {
-      springPos = mouse;
-      springVel = vec2<f32>(0.0);
-    } else {
-      let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-      let omega = 9.0;
-      let accel = (mouse - springPos) * (omega * omega) - springVel * (2.0 * omega);
-      springVel += accel * dt;
-      springPos += springVel * dt;
-    }
-    extraBuffer[133] = springPos.x;
-    extraBuffer[134] = springPos.y;
-    extraBuffer[135] = springVel.x;
-    extraBuffer[136] = springVel.y;
-    extraBuffer[137] = time;
-    extraBuffer[138] = 1.0;
-    smoothMouse = springPos;
-  }
+  // Rescue: HEAD smoothed the pointer with a spring in extraBuffer[133..138],
+  // a range zeroed every frame (never persisted) — removed, pointer is direct.
+  let smoothMouse = mouse;
 
   let contrast = u.zoom_params.x * 8.0 + 2.0 + mids * 2.0;
   let grainAmt = clamp(u.zoom_params.y + bass * 0.15, 0.0, 1.0);
@@ -189,11 +167,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Re-thresholding the previous generation through the same sigmoid before
   // blending is what a copy of a copy of a copy actually does: contrast
   // compounds, midtones fall out, the page drifts toward pure ink and paper.
-  let prev = textureLoad(dataTextureC, coord, 0);
+  // Idea 5 — generation creep: the page never lands square on the platen,
+  // so each copy reads the previous generation a hair rotated and shifted
+  // (pivot drifts slowly; bass nudges it). Over many generations the image
+  // slides and skews off the sheet like a real copy-of-a-copy chain.
+  let creepAng = 0.0025 * sin(time * 0.13) * (1.0 + bass);
+  let pivot = vec2<f32>(0.5 + 0.3 * sin(time * 0.05), 0.5);
+  let rel = (uv - pivot) * vec2<f32>(aspect, 1.0);
+  let cs = vec2<f32>(cos(creepAng), sin(creepAng));
+  let relR = vec2<f32>(rel.x * cs.x - rel.y * cs.y, rel.x * cs.y + rel.y * cs.x) / vec2<f32>(aspect, 1.0);
+  let creepUV = pivot + relR + vec2<f32>(0.0, 0.6) / resolution;
+  let creepCoord = clamp(vec2<i32>(creepUV * resolution), vec2<i32>(0), vec2<i32>(resolution) - 1);
+  let prev = textureLoad(dataTextureC, creepCoord, 0);
   let prevLuma = dot(prev.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let regen = sigmoidContrast(clamp(prevLuma - threshold + 0.5, 0.0, 1.0), contrast);
   let generation = mix(vec3<f32>(0.05, 0.05, 0.12), paper, clamp(regen, 0.0, 1.0));
   color = mix(color, generation, smearAmt * 0.12 + rippleSmear * 0.06);
+
+  // Idea 4 — platen dust specks: grit on the copier glass prints in the
+  // same place on every copy (no time term), small hard ink dots and a few
+  // hair-thin scratches. Density follows Grain; they compound via C.
+  let dustCell = floor(uv * resolution / 6.0);
+  let dh = hash3_packed(dustCell + 17.0);
+  let dustP = (dustCell + 0.2 + dh.xy * 0.6) * 6.0;
+  let dustD = length(vec2<f32>(coord) - dustP);
+  let speck = step(dh.z, 0.012 + grainAmt * 0.03) * (1.0 - smoothstep(0.6, 1.6 + dh.x * 1.2, dustD));
+  let scratchCell = floor(uv.x * 9.0);
+  let sh = hash3_packed(vec2<f32>(scratchCell, 3.0));
+  let scratchX = (scratchCell + sh.x) / 9.0 + (uv.y - 0.5) * (sh.y - 0.5) * 0.08;
+  let scratch = step(sh.z, 0.25 * grainAmt) * (1.0 - smoothstep(0.0, 0.8 / resolution.x, abs(uv.x - scratchX)))
+              * step(abs(uv.y - sh.y), 0.15 + sh.x * 0.3);
+  color = mix(color, vec3<f32>(0.05, 0.05, 0.12), max(speck, scratch) * 0.9);
 
   color = acesToneMap(color * (0.95 + bass * 0.04));
 

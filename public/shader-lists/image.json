@@ -806,7 +806,7 @@
   {
     "id": "conv-difference-of-gaussians-cascade",
     "name": "Difference of Gaussians Cascade",
-    "description": "Multi-scale Difference-of-Gaussians at 4 scales with signed response storage. Creates neural-edge glow where edges at different scales colorize differently. RGBA32FLOAT stores signed bipolar responses in all channels. Mouse controls scale emphasis.",
+    "description": "Multi-scale Difference-of-Gaussians at 4 scales with signed response storage. Creates neural-edge glow where edges at different scales colorize differently. RGBA32FLOAT stores signed bipolar responses in all channels. Mouse controls scale emphasis. The strongest scale picks each blob's size and polarity for warm (light) or cool (dark) halos, and the fine DoG gradient is embossed as relief lit from the pointer.",
     "url": "shaders/conv-difference-of-gaussians-cascade.wgsl",
     "features": [
       "advanced-convolution",
@@ -986,7 +986,7 @@
   {
     "id": "conv-gabor-texture-analyzer",
     "name": "Gabor Texture Analyzer",
-    "description": "Gabor filter bank detecting oriented texture patterns at 0, 45, 90, and 135 degrees. RGBA32FLOAT stores signed bipolar responses in all four channels. Mouse rotates the filter bank for swirling texture segmentation.",
+    "description": "Gabor filter bank detecting oriented texture patterns at 0, 45, 90, and 135 degrees. RGBA32FLOAT stores signed bipolar responses in all four channels. Mouse rotates the filter bank for swirling texture segmentation. Oriented texture keeps full hue while isotropic regions mute to source luma (orientation coherence), and the quadrature phase at the dominant orientation classes each feature as a line (thin light/dark ridge) or a step edge (bipolar relief).",
     "url": "shaders/conv-gabor-texture-analyzer.wgsl",
     "features": [
       "advanced-convolution",

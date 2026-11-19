@@ -129,49 +129,49 @@
     },
     {
       "file": "public/shaders/physarum-gemini.wgsl",
-      "line": 158,
+      "line": 139,
       "expr": "idx * 4u + 0u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     },
     {
       "file": "public/shaders/physarum-gemini.wgsl",
-      "line": 159,
+      "line": 140,
       "expr": "idx * 4u + 1u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     },
     {
       "file": "public/shaders/physarum-gemini.wgsl",
-      "line": 160,
+      "line": 141,
       "expr": "idx * 4u + 2u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     },
     {
       "file": "public/shaders/physarum-gemini.wgsl",
-      "line": 161,
+      "line": 142,
       "expr": "idx * 4u + 3u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     },
     {
       "file": "public/shaders/physarum-grokcf1.wgsl",
-      "line": 158,
+      "line": 139,
       "expr": "idx * 4u + 0u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     },
     {
       "file": "public/shaders/physarum-grokcf1.wgsl",
-      "line": 159,
+      "line": 140,
       "expr": "idx * 4u + 1u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     },
     {
       "file": "public/shaders/physarum-grokcf1.wgsl",
-      "line": 160,
+      "line": 141,
       "expr": "idx * 4u + 2u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     },
     {
       "file": "public/shaders/physarum-grokcf1.wgsl",
-      "line": 161,
+      "line": 142,
       "expr": "idx * 4u + 3u",
       "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
     }

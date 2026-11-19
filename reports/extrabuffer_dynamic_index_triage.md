@@ -60,17 +60,17 @@ Static analysis cannot prove the index stays in the safe zone; human triage acce
 
 | Line | Expression | Triage |
 |-----:|------------|--------|
-| 158 | `idx * 4u + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 159 | `idx * 4u + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 160 | `idx * 4u + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 161 | `idx * 4u + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 139 | `idx * 4u + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 140 | `idx * 4u + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 141 | `idx * 4u + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 142 | `idx * 4u + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
 
 ### `public/shaders/physarum-grokcf1.wgsl`
 
 | Line | Expression | Triage |
 |-----:|------------|--------|
-| 158 | `idx * 4u + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 159 | `idx * 4u + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 160 | `idx * 4u + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 161 | `idx * 4u + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 139 | `idx * 4u + 0u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 140 | `idx * 4u + 1u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 141 | `idx * 4u + 2u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 142 | `idx * 4u + 3u` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
 
