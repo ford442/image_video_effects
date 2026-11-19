@@ -5,7 +5,9 @@
 //            per-band-fft, depth-parallax-layers, volumetric-fog,
 //            chromatic-aberration, temporal-streaks, depth-aware,
 //            upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 58B — Liquid)
+//  Upgraded: 2026-08-23 (Batch 58B — Liquid); 2026-11-19
+//  Ideas: radial zoom smear along the ray; off-axis chromatic growth
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════════════════
 //  An endless zoom-through built from phase-offset copies of the plate, scaled
 //  per pixel by scene depth so near content rushes past and far content drifts.
@@ -92,8 +94,11 @@ fn sampleLayer(
   let repeatingUV = (uv - zoomCenter) / scale + zoomCenter;
   let wrapped = ping_pong_v2(repeatingUV);
 
-  // Radial chromatic split — the tunnel disperses toward its rim.
-  let radial = (wrapped - zoomCenter) * chroma;
+  // ── Idea 2: off-axis chromatic growth ────────────────────────────
+  // The radial split was one scalar. Dispersion strengthens away from
+  // the zoom axis, where the plate is moving fastest.
+  let offAxis = length(wrapped - zoomCenter);
+  let radial = (wrapped - zoomCenter) * chroma * (0.35 + offAxis * 3.5);
   let cR = textureSampleLevel(readTexture, non_filtering_sampler, ping_pong_v2(wrapped + radial), 0.0).r;
   let cG = textureSampleLevel(readTexture, non_filtering_sampler, wrapped, 0.0);
   let cB = textureSampleLevel(readTexture, non_filtering_sampler, ping_pong_v2(wrapped - radial), 0.0).b;
@@ -208,9 +213,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color += vec3<f32>(0.55, 0.85, 1.0) * rimGlow * (0.4 + mids * 0.6);
   color += vec3<f32>(0.30, 0.55, 0.85) * pointerBoost * 0.2;
 
-  // ── Temporal streaks: the tunnel leaves motion trails ────────────────────
+  // ── Idea 1: radial zoom smear ────────────────────────────────────
+  // The in-place max stays. Three earlier taps lie toward the zoom
+  // center, where this pixel's plate was on the previous frame.
   let prev = textureLoad(dataTextureC, coord, 0);
-  color = max(color, prev.rgb * (0.72 + parallaxFactor * 0.16));
+  let toCenter = zoomCenter - uv;
+  let smear = (0.01 + nearSpeed * 0.04) * (0.2 + parallaxFactor) * (1.0 + pulseBoost * 0.6);
+  var trail = prev.rgb;
+  for (var s = 1u; s <= 3u; s = s + 1u) {
+    let sUV = clamp(uv + toCenter * smear * (f32(s) / 3.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let sCoord = clamp(vec2<i32>(sUV * resolution), vec2<i32>(0), dimsI - vec2<i32>(1));
+    trail = max(trail, textureLoad(dataTextureC, sCoord, 0).rgb);
+  }
+  color = max(color, trail * (0.72 + parallaxFactor * 0.16));
 
   color = acesFilm(color);
 

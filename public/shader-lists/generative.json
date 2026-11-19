@@ -6036,7 +6036,7 @@
       "textile",
       "audio-reactive"
     ],
-    "description": "A woven night-sky tapestry of luminous warp and weft threads stitched with star knots.",
+    "description": "A woven night-sky tapestry of luminous warp and weft threads stitched with star knots. The brighter thread sits on top, and the cloth covers the stars behind it.",
     "workgroup_size": [
       16,
       16,
@@ -9152,7 +9152,7 @@
       "abstract",
       "prismatic"
     ],
-    "description": "Five nested hypotrochoid curves form a blooming floral mandala. A coarse-plus-refined curve search keeps the petals efficient, the mouse pulls the bloom without an audio gate, clicks send petal waves, and each layer shimmers from its own FFT voice while color feedback burns bright arcs. Cusp sparks knot the petals, and a rolling circle traces the bloom.",
+    "description": "Five nested hypotrochoid curves form a blooming floral mandala. A coarse-plus-refined curve search keeps the petals efficient, the mouse pulls the bloom without an audio gate, clicks send petal waves, and each layer shimmers from its own FFT voice while color feedback burns bright arcs. Cusp sparks knot the petals, a rolling circle traces the bloom, and that circle's fixed partner and contact bead stay visible.",
     "workgroup_size": [
       16,
       16,
@@ -19223,7 +19223,7 @@
     "url": "shaders/gen-luminescent-singularity-loom.wgsl",
     "category": "generative",
     "type": "generative",
-    "description": "A cosmic-organic loom weaving ethereal, glowing threads around a central gravitational singularity that pulses and distorts spacetime.",
+    "description": "A cosmic-organic loom weaving ethereal, glowing threads around a central gravitational singularity that pulses and distorts spacetime. Alternate threads open a shed, and the fat half of a bass pluck glints.",
     "features": [
       "gravitational-lens",
       "fractal-threads",
@@ -19369,7 +19369,7 @@
       "audio-reactive",
       "bioluminescent"
     ],
-    "description": "A mesmerizing, bioluminescent liquid surface that physically organizes itself into hyper-complex, evolving Chladni resonant figures driven by low-frequency audio interference patterns.",
+    "description": "A mesmerizing, bioluminescent liquid surface that physically organizes itself into hyper-complex, evolving Chladni resonant figures driven by low-frequency audio interference patterns. Sand piles where a nodal line crosses itself and clears along the free edge of the plate.",
     "workgroup_size": [
       16,
       16,
@@ -22534,7 +22534,7 @@
       "audio-reactive",
       "cellular-automaton"
     ],
-    "description": "Site percolation on a 2D square lattice near the critical threshold p_c ≈ 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom.",
+    "description": "Site percolation on a 2D square lattice near the critical threshold p_c ≈ 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom. Occupied neighbors are drawn as bonds, and each cluster's union-find root is marked.",
     "workgroup_size": [
       16,
       16,
@@ -32206,7 +32206,7 @@
     "name": "Sacred Geometry Torus",
     "url": "shaders/sacred-geometry-torus.wgsl",
     "category": "generative",
-    "description": "Golden ratio torus knots and sacred geometry nodes rotate in layered phi-harmonic patterns driven by bass.",
+    "description": "Golden ratio torus knots and sacred geometry nodes rotate in layered phi-harmonic patterns driven by bass. An emerald ring sits on the torus, brighter strands pass over dimmer ones, and the trail stores the color it mixes.",
     "tags": [
       "generative",
       "sacred-geometry",

@@ -2,7 +2,7 @@
   "id": "liquid-jelly",
   "name": "Liquid Jelly",
   "url": "shaders/liquid-jelly.wgsl",
-  "description": "Spring-damped jelly deformation with bounded pointer inertia, exact-load thickness slopes, soft recovery, subsurface scattering, three-band audio, click waves, ACES output, and semantic alpha.",
+  "description": "Spring-damped jelly deformation with bounded pointer inertia, exact-load thickness slopes, soft recovery, subsurface scattering, three-band audio, click waves, ACES output, and semantic alpha. An inward tether thickens the gel and an outward one thins it; the soliton ridge pinches into beads.",
   "features": [
     "audio-reactive",
     "depth-aware",

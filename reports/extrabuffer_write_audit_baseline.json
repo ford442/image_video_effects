@@ -398,13 +398,13 @@
     "entries": [
       {
         "file": "public/shaders/gen-percolation-threshold.wgsl",
-        "line": 83,
+        "line": 65,
         "expr": "gid.y",
         "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
       },
       {
         "file": "public/shaders/gen-percolation-threshold.wgsl",
-        "line": 84,
+        "line": 66,
         "expr": "u32(latticeH) + gid.y",
         "reason": "const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound"
       },

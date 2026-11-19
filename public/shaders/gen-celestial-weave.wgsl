@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: procedural, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: shimmer-driven traveling thread glint; void-depth star parallax; constellation pulse-travel timed to bass; astral dust motes; gravity-lens spacetime warping
-//  A packing: display RGBA
+//  Upgraded: 2026-10-10; 2026-11-19
+//  Ideas: thread glint; star parallax; constellation pulse; dust motes; gravity lens; over-under shed; cloth occultation of stars
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -96,11 +96,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let zp_w = u.zoom_params.w;
   let zp = clamp(vec4<f32>(zp_x, zp_y, zp_z, zp_w), vec4<f32>(0.0), vec4<f32>(1.0));
 
-  // ═══ CHUNK: bass_env smoothing (replaces raw-bass strobing) ═══
-  let prevBass = extraBuffer[0];
+  // Bass envelope. Remapped off engine-reserved extraBuffer[0] onto [133].
+  var prevBass = bass;
+  let hasEnv = arrayLength(&extraBuffer) > 133u;
+  if (hasEnv) {
+    prevBass = extraBuffer[133];
+  }
   let smoothBass = bass_env(prevBass, bass, 0.8, 0.15);
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[0] = smoothBass;
+  if (hasEnv && gid.x == 0u && gid.y == 0u) {
+    extraBuffer[133] = smoothBass;
   }
 
   let weaveScale = mix(3.0, 30.0, u.zoom_params.x);
@@ -138,6 +142,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let warpWave = sin(warpPhase);
   let knot = smoothstep(0.7, 1.0, abs(weft * warpWave));
   let fiber = smoothstep(0.92, 1.0, max(abs(weft), abs(warpWave)));
+
+  // ── Idea 1: over-under shed ──────────────────────────────────────
+  // The larger thread is on top: warm weft, cool warp. The under
+  // thread keeps the dimmer purple so the cloth has a face.
+  let weftOver = step(abs(warpWave), abs(weft));
+  let shedMask = smoothstep(0.08, 0.5, abs(abs(weft) - abs(warpWave))) * fiber;
+  let shedTint = mix(vec3<f32>(0.42, 0.68, 1.0), vec3<f32>(0.98, 0.42, 0.78), weftOver);
 
   // Idea: shimmer-driven traveling thread glint — a bright point riding each
   // thread's own already-moving phase, scaled by the Shimmer-derived glowAmp.
@@ -197,19 +208,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     vec3<f32>(0.0, 0.33, 0.67)
   );
 
+  // ── Idea 2: cloth occultation ───────────────────────────────────
+  // Stars and links sit behind the tapestry. Fiber and knot cover them.
+  let cloth = sat(fiber * 0.85 + knot);
+  let starVis = starGlowVal * (1.0 - cloth);
+  let linkVis = constellation * (1.0 - cloth * 0.8);
+  let pulseVis = constellationPulse * (1.0 - cloth * 0.65);
+
   var color = vec3<f32>(0.01, 0.02, 0.05) * (1.0 - voidDepth * 0.7);
-  color = color + vec3<f32>(0.35, 0.15, 0.75) * fiber * (1.0 + treble * 0.2);
+  color = color + vec3<f32>(0.35, 0.15, 0.75) * fiber * (1.0 + treble * 0.2) * mix(1.0, 0.45, shedMask);
+  color = color + shedTint * shedMask * (0.55 + glowAmp * 0.2);
   color = color + vec3<f32>(0.95, 0.35, 0.75) * knot * glowAmp * (1.0 + smoothBass * 0.15);
-  color = color + starCol * starGlowVal * glowAmp * (0.6 + treble);
+  color = color + starCol * starVis * glowAmp * (0.6 + treble);
   
   // Idea 1: Astral dust motes
   let dustCoord = uv * 50.0 + vec2<f32>(time * 0.5, time * 0.2);
   let dustNoise = hash21(floor(dustCoord));
   let dustMote = step(0.98, dustNoise) * exp(-length(fract(dustCoord) - 0.5) * 10.0);
   color += vec3<f32>(1.0, 0.8, 0.6) * dustMote * (0.2 + bass);
-  color = color + vec3<f32>(0.75, 0.95, 1.0) * constellation * glowAmp * (0.5 + mids * 0.3);
+  color = color + vec3<f32>(0.75, 0.95, 1.0) * linkVis * glowAmp * (0.5 + mids * 0.3);
   color = color + vec3<f32>(1.0, 0.95, 0.8) * threadGlint;
-  color = color + vec3<f32>(0.6, 0.85, 1.0) * constellationPulse * glowAmp;
+  color = color + vec3<f32>(0.6, 0.85, 1.0) * pulseVis * glowAmp;
 
   // Temporal persistence: star trails and weave memory — exact texel read, no filtering.
   let prev = textureLoad(dataTextureC, coord, 0);
@@ -218,7 +237,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   color = acesToneMap(color * 1.1);
 
   // Semantic alpha: coverage of fiber/knot/star/constellation structure over the void.
-  let alpha = sat(fiber * 0.5 + knot * 0.35 + starGlowVal * 0.4 + constellation * 0.3 + threadGlint * 0.3 + 0.08);
+  let alpha = sat(fiber * 0.5 + knot * 0.35 + starVis * 0.4 + linkVis * 0.3 + threadGlint * 0.3 + shedMask * 0.15 + 0.08);
   // Truthful relief: brighter thread/knot structure reads as nearer (lower depth).
   let depthVal = sat(1.0 - (fiber * 0.55 + knot * 0.45) - voidDepth * 0.15);
 

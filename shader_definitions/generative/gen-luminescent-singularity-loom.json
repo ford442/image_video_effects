@@ -4,7 +4,7 @@
   "url": "shaders/gen-luminescent-singularity-loom.wgsl",
   "category": "generative",
   "type": "generative",
-  "description": "A cosmic-organic loom weaving ethereal, glowing threads around a central gravitational singularity that pulses and distorts spacetime.",
+  "description": "A cosmic-organic loom weaving ethereal, glowing threads around a central gravitational singularity that pulses and distorts spacetime. Alternate threads open a shed, and the fat half of a bass pluck glints.",
   "features": [
     "gravitational-lens",
     "fractal-threads",

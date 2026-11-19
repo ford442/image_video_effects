@@ -5,8 +5,8 @@
 //            chromatic-layer-separation, depth-output, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
 //  Created: 2026-05-23
-//  Upgraded: 2026-10-11
-//  Ideas: hypotrochoid parameter vein; origin stamen; epicycloid counter-layer; petal crossings; cusp sparks; rolling circle
+//  Upgraded: 2026-10-11; 2026-11-19
+//  Ideas: hypotrochoid vein; stamen; epicycloid; crossings; cusp sparks; rolling circle; fixed circle; contact bead
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Nested hypotrochoid and epicycloid curves layered to form a
@@ -202,6 +202,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let roll = exp(-abs(distance(p, rollCenter) - rollR) * 42.0);
   colorAcc += vec3<f32>(0.75, 0.84, 1.0) * roll * (0.28 + mids * 0.15);
   glowAcc += roll * 0.2;
+
+  // ── Idea 1: fixed circle ─────────────────────────────────────────
+  // The outer hypotrochoid rolls inside a circle of radius R, drawn
+  // at that layer's scale. One ring, not another petal search.
+  let fixedR = 0.88;
+  let fixedRing = exp(-abs(length(p) - fixedR) * 64.0);
+  colorAcc += vec3<f32>(0.55, 0.64, 0.82) * fixedRing * (0.28 + mids * 0.1);
+  glowAcc += fixedRing * 0.15;
+
+  // ── Idea 2: contact bead ─────────────────────────────────────────
+  // The generator already has a center and a radius. The contact is
+  // the point on that circle nearest the origin.
+  let rollDir = rollCenter / max(length(rollCenter), 1.0e-4);
+  let contactP = rollCenter - rollDir * rollR;
+  let contactG = exp(-distance(p, contactP) * 85.0);
+  colorAcc += vec3<f32>(1.0, 0.94, 0.78) * contactG * (0.7 + treble * 0.2);
+  glowAcc += contactG * 0.4;
 
   // Chromatic layer separation: R from outer layers, B from inner
   let chromaR = colorAcc * vec3<f32>(1.1, 0.95, 0.85);

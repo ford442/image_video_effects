@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, field-simulation, chromatic, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: LIC field lines over a stable hash; aurora curtains hanging from |B|, coloured by sign of B; click counter-charges anchored at the click
+//  Upgraded: 2026-10-05; 2026-11-19
+//  Ideas: LIC field lines; aurora curtains from |B|; anchored counter-charges; E×B shear; Coulomb equipotentials
 //  A packing: ACES display RGBA; texel (0,0) = (prevMouse.xy, prevTime, 1), texel (1,0) = (smoothed velocity.xy, 0, 1) — exact C loads
 // ═══════════════════════════════════════════════════════════════════
 //  The mouse acts as a moving electric charge generating EM fields.
@@ -172,11 +172,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2: aurora curtains — |B| sampled above the pixel so glow hangs down
   // from wherever the moving charge induces a strong B, broken into vertical
   // rays; green where B > 0, violet where B < 0.
+  // ── Idea 1: E×B shear ────────────────────────────────────────────
+  // The same curtain also leans with the drift, perpendicular to E.
+  let drift = vec2<f32>(-fieldDirA.y, fieldDirA.x) * sign(totalB);
   var curtain = 0.0;
   var signAcc = 0.0;
   for (var k: i32 = 0; k < 5; k = k + 1) {
     let fk = f32(k);
-    let probe = uvA - vec2<f32>(0.0, fk * 0.045);
+    let probe = uvA - vec2<f32>(0.0, fk * 0.045) + drift * fk * 0.028;
     let bk = magneticField(probe, mouseA, mouseVelA, chargeStrength);
     let bSoft = abs(bk) / (abs(bk) + 10.0);
     let fall = 1.0 - fk * 0.17;
@@ -193,7 +196,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseDist = length(uvA - mouseA);
   let coreGlow = exp(-mouseDist * mouseDist * 400.0) * chargeStrength;
   let glowColor = vec3<f32>(0.6, 0.9, 1.0);
-  var outColor = finalColor + glowColor * coreGlow * fieldVis;
+  // ── Idea 2: Coulomb equipotentials ───────────────────────────────
+  // Log-spaced rings around the pointer charge. Radius is fixed in
+  // log(r); the phase only crawls, so this is not an expanding front.
+  let logR = log(max(mouseDist, 0.004));
+  let equipWave = 0.5 + 0.5 * sin(logR * 9.0 - time * 0.15);
+  let equip = smoothstep(0.93, 1.0, equipWave) * exp(-mouseDist * 1.7) * fieldVis;
+  var outColor = finalColor + glowColor * coreGlow * fieldVis + vec3<f32>(0.5, 0.78, 1.0) * equip * 0.45;
   // Idea 3: small opposite-polarity glow marks each anchored counter-charge
   for (var i: i32 = 0; i < gChargeN; i = i + 1) {
     let dc = length(uvA - gChargePos[i]);

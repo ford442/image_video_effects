@@ -1775,7 +1775,7 @@
     "id": "signal-noise",
     "name": "Signal Noise",
     "url": "shaders/signal-noise.wgsl",
-    "description": "Multi-octave analog noise with VHS head-switch bands, DCT artifacts, sprung cursor, held burst, capped ripples, exact C temporal smear, ACES output.",
+    "description": "Multi-octave analog noise with VHS head-switch bands, DCT artifacts, sprung cursor, held burst, capped ripples, exact C temporal smear, ACES output. Chroma lags luma by a few pixels, and rare dropout streaks tail across a line.",
     "workgroup_size": [
       16,
       16,

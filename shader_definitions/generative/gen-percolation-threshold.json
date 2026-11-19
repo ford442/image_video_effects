@@ -11,7 +11,7 @@
     "audio-reactive",
     "cellular-automaton"
   ],
-  "description": "Site percolation on a 2D square lattice near the critical threshold p_c \u2248 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom.",
+  "description": "Site percolation on a 2D square lattice near the critical threshold p_c \u2248 0.5927. Iterative connected-component labeling with jewel-tone cluster coloring and HDR spanning-cluster bloom. Occupied neighbors are drawn as bonds, and each cluster's union-find root is marked.",
   "workgroup_size": [
     16,
     16,
