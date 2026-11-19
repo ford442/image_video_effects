@@ -4930,7 +4930,7 @@
       ]
     },
     "gen-astral-plasma-accretion-forge": {
-      "hash": "1743fdb76b90c339",
+      "hash": "14b29b1a8e21615b",
       "history": [
         {
           "event": "upgraded",
@@ -4939,6 +4939,14 @@
           "prev_hash": "974ea92dda137039",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "14b29b1a8e21615b",
+          "prev_hash": "1743fdb76b90c339",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -5097,7 +5105,7 @@
       ]
     },
     "gen-bifurcation-diagram": {
-      "hash": "1b6c07f1d208a04f",
+      "hash": "3ce48d6c54145d3c",
       "history": [
         {
           "event": "upgraded",
@@ -5106,6 +5114,14 @@
           "prev_hash": "8303176769be1564",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "3ce48d6c54145d3c",
+          "prev_hash": "1b6c07f1d208a04f",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -7531,7 +7547,7 @@
       ]
     },
     "gen-galactic-aether-crystal-geode-core": {
-      "hash": "21ea4275811141bc",
+      "hash": "7c9e52ba11d8c1c8",
       "history": [
         {
           "event": "upgraded",
@@ -7540,6 +7556,14 @@
           "prev_hash": "9907e41bb61fae88",
           "commit": "f17da9d0",
           "note": "2026-10-10 fractal/flame/glass ten, second pass (claude) - agents/swarm-outputs/claude-2026-10-10-fractal-flame-glass-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "7c9e52ba11d8c1c8",
+          "prev_hash": "21ea4275811141bc",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -8388,7 +8412,7 @@
       ]
     },
     "gen-lichtenberg-storm": {
-      "hash": "04533de375d0ebc4",
+      "hash": "2991565e3030f407",
       "history": [
         {
           "event": "upgraded",
@@ -8397,6 +8421,14 @@
           "prev_hash": "deada203f38bd4c3",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "2991565e3030f407",
+          "prev_hash": "04533de375d0ebc4",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -8532,8 +8564,17 @@
       ]
     },
     "gen-lorenz-attractor-flow": {
-      "hash": "7220b61fcde36e94",
-      "history": []
+      "hash": "18ab7e068f41027f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "18ab7e068f41027f",
+          "prev_hash": "7220b61fcde36e94",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-lorenz-attractor": {
       "hash": "a73d3efd0ad37ce3",
@@ -8912,7 +8953,7 @@
       ]
     },
     "gen-metaball-soft-body": {
-      "hash": "8948866e16fa5954",
+      "hash": "f42c575ccc000e5a",
       "history": [
         {
           "event": "upgraded",
@@ -8921,6 +8962,14 @@
           "prev_hash": "117cc4a5558da6b4",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "f42c575ccc000e5a",
+          "prev_hash": "8948866e16fa5954",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -9568,7 +9617,7 @@
       ]
     },
     "gen-plasma-psychedelic-wormhole": {
-      "hash": "3fd8867f1f22631d",
+      "hash": "9c94642bd8ee5526",
       "history": [
         {
           "event": "upgraded",
@@ -9577,6 +9626,14 @@
           "prev_hash": "e7ac65f538997293",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "9c94642bd8ee5526",
+          "prev_hash": "3fd8867f1f22631d",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -10409,7 +10466,7 @@
       ]
     },
     "gen-sentient-liquid-neon-fractal-heart": {
-      "hash": "421d7200137b0f28",
+      "hash": "ccd85cd48af75b1b",
       "history": [
         {
           "event": "upgraded",
@@ -10418,6 +10475,14 @@
           "prev_hash": "13f2b4a4ef54eabc",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "ccd85cd48af75b1b",
+          "prev_hash": "421d7200137b0f28",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -10817,7 +10882,7 @@
       "history": []
     },
     "gen-thermal-rainbow-topography": {
-      "hash": "e315d0343dbef74a",
+      "hash": "75227ac01c2a6e76",
       "history": [
         {
           "event": "upgraded",
@@ -10826,6 +10891,14 @@
           "prev_hash": "9ddce466174ac937",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "75227ac01c2a6e76",
+          "prev_hash": "e315d0343dbef74a",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -10847,8 +10920,17 @@
       ]
     },
     "gen-topology-flow": {
-      "hash": "f92e4f887d1ae025",
-      "history": []
+      "hash": "8c2cbd14bcf9241c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T12:03:31.607Z",
+          "hash": "8c2cbd14bcf9241c",
+          "prev_hash": "f92e4f887d1ae025",
+          "commit": "a0755fe9",
+          "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-torus-knot-rainbow": {
       "hash": "e805c4dada07b9fe",
