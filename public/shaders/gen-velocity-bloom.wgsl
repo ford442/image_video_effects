@@ -9,31 +9,16 @@
 //            direction, motion-aligned anamorphic streaks, curl-noise
 //            advected trails, Gray-Scott-hint diffusion feedback, audio
 //            pump + guarded FFT shimmer, click pulse via extraBuffer
-//            spring, generated relief depth, bounds guard)
+//            spring, generated relief depth, bounds guard), 2026-11-19
+//  Ideas: Doppler streak fringe; cooling afterglow
+//  A packing: rgb = accumulated bloom trail, a = previous source luma
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0–1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
+const IDEA_1: f32 = 1.0;
+const IDEA_2: f32 = 1.0;
 
 fn luma(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.299, 0.587, 0.114));
@@ -75,10 +60,10 @@ fn curlNoise(p: vec2<f32>, t: f32) -> vec2<f32> {
 // ambient curl field so streaks are anisotropic even on still frames.
 fn velocityField(uv: vec2<f32>, pixel: vec2<f32>, coord: vec2<i32>, t: f32) -> vec3<f32> {
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let previous = textureLoad(dataTextureC, coord, 0).rgb;
-
-    let diff = current - previous;
-    let lumaDiff = length(diff);
+    // ── Rescue 1: C.rgb is last frame's accumulated BLOOM, not the source, so
+    // HEAD saw "motion" everywhere. Previous source luma now lives in C.a. ──
+    let prevLuma = textureLoad(dataTextureC, coord, 0).a;
+    let lumaDiff = abs(luma(current) - prevLuma) * 1.7;
 
     let right = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixel.x, 0.0), 0.0).rgb;
     let left = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixel.x, 0.0), 0.0).rgb;
@@ -131,11 +116,16 @@ fn anamorphicBloom(uv: vec2<f32>, radius: f32, velocity: f32, flowDir: vec2<f32>
     var bloom = vec3<f32>(0.0);
     let samples = 16;
     let stretch = 1.0 + velocity * 2.0;
+    // ── Idea 1: Doppler streak fringe (native) ── red rides the leading half of
+    // the streak, blue the trailing half; the split widens with velocity.
+    let lead = clamp(velocity * 1.5, 0.0, 0.85) * IDEA_1;
 
     for (var i: i32 = 0; i < samples; i++) {
         let s = (f32(i) / f32(samples - 1) - 0.5) * 2.0;
         let offset = flowDir * s * radius * stretch;
-        bloom += textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
+        let smp = textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
+        let w = vec3<f32>(mix(1.0, 2.0 * step(0.0, s), lead), 1.0, mix(1.0, 2.0 * step(s, 0.0), lead));
+        bloom += smp * w;
     }
 
     return bloom / f32(samples);
@@ -236,7 +226,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Reaction–diffusion-flavoured accumulation: diffuse, decay, then
     // feed from the thresholded bright-pass of the new frame.
     let diffused = prevCenter + laplacian * 0.6;
-    let decayedBloom = diffused * decay;
+    // ── Idea 2: Cooling afterglow (native) ── carried trail energy shifts toward
+    // velocityColor's cold end each frame: fresh bloom white, old trails blue.
+    let cool = mix(vec3<f32>(1.0), vec3<f32>(0.9, 0.96, 1.05), IDEA_2);
+    let decayedBloom = diffused * decay * cool;
     let feed = max(finalBloom * bloomIntensity - vec3<f32>(threshold * 0.5), vec3<f32>(0.0));
     let accumulatedBloom = max(feed, decayedBloom * 0.9);
 
@@ -254,7 +247,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
 
     // ── Outputs ─────────────────────────────────────────────────────
-    textureStore(dataTextureA, coord, vec4<f32>(accumulatedBloom, 1.0));
+    textureStore(dataTextureA, coord, vec4<f32>(accumulatedBloom, baseLuma));
 
     let alpha = clamp(mix(0.8, 1.0, velocityMask) + clickPulse * 0.1, 0.0, 1.0);
     textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));

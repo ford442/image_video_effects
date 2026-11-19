@@ -4534,8 +4534,17 @@
       ]
     },
     "bioluminescent-bloom": {
-      "hash": "36631e62e53a0494",
-      "history": []
+      "hash": "d069788f9bbb187c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "d069788f9bbb187c",
+          "prev_hash": "36631e62e53a0494",
+          "commit": "d0efc8a3",
+          "note": null
+        }
+      ]
     },
     "bubble-chamber": {
       "hash": "131789a40120649d",
@@ -5484,7 +5493,7 @@
       ]
     },
     "gen-celestial-nanite-swarm-nebula": {
-      "hash": "42574b110b365642",
+      "hash": "e14b45b46e86d2a0",
       "history": [
         {
           "event": "upgraded",
@@ -5493,6 +5502,14 @@
           "prev_hash": "d4aa35307ccb1001",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "e14b45b46e86d2a0",
+          "prev_hash": "42574b110b365642",
+          "commit": "d0efc8a3",
+          "note": null
         }
       ]
     },
@@ -6404,7 +6421,7 @@
       ]
     },
     "gen-de-jong-attractor": {
-      "hash": "50facdf77b23800e",
+      "hash": "a3d6ceed7d5839f0",
       "history": [
         {
           "event": "upgraded",
@@ -6413,6 +6430,14 @@
           "prev_hash": "6292238fab199b69",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "a3d6ceed7d5839f0",
+          "prev_hash": "50facdf77b23800e",
+          "commit": "d0efc8a3",
+          "note": null
         }
       ]
     },
@@ -8600,7 +8625,7 @@
       ]
     },
     "gen-liquid-neon-topography": {
-      "hash": "86bc849e812f6c12",
+      "hash": "a57944e3a3ca028b",
       "history": [
         {
           "event": "upgraded",
@@ -8609,6 +8634,14 @@
           "prev_hash": "d7ae2e4fe26e2b0b",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "a57944e3a3ca028b",
+          "prev_hash": "86bc849e812f6c12",
+          "commit": "d0efc8a3",
+          "note": null
         }
       ]
     },
@@ -8799,8 +8832,17 @@
       ]
     },
     "gen-luminescent-quantum-flora-symphony": {
-      "hash": "e35488753fe75a7c",
-      "history": []
+      "hash": "4560b44bd9360462",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "4560b44bd9360462",
+          "prev_hash": "e35488753fe75a7c",
+          "commit": "d0efc8a3",
+          "note": null
+        }
+      ]
     },
     "gen-luminescent-quantum-glass-phoenix-egg": {
       "hash": "d4585bf22b364427",
@@ -9215,8 +9257,17 @@
       ]
     },
     "gen-nebula-light-trail-swarm": {
-      "hash": "ebb0dfcd7a4c1de6",
-      "history": []
+      "hash": "913d0815bae1e25a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "913d0815bae1e25a",
+          "prev_hash": "ebb0dfcd7a4c1de6",
+          "commit": "d0efc8a3",
+          "note": null
+        }
+      ]
     },
     "gen-nebular-chrono-astrolabe": {
       "hash": "31cc7fc10dfd132c",
@@ -10227,8 +10278,17 @@
       "history": []
     },
     "gen-quantum-pollen": {
-      "hash": "d778b4700ac259ca",
-      "history": []
+      "hash": "9069d0bfe4eae929",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "9069d0bfe4eae929",
+          "prev_hash": "d778b4700ac259ca",
+          "commit": "d0efc8a3",
+          "note": null
+        }
+      ]
     },
     "gen-quantum-singularity-forge": {
       "hash": "b330d342b8fabb0a",
@@ -11097,8 +11157,17 @@
       "history": []
     },
     "gen-velocity-bloom": {
-      "hash": "f39bd682649abb84",
-      "history": []
+      "hash": "ee6693cc8f4f7819",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "ee6693cc8f4f7819",
+          "prev_hash": "f39bd682649abb84",
+          "commit": "d0efc8a3",
+          "note": null
+        }
+      ]
     },
     "gen-verlet-cloth-wind": {
       "hash": "08c2bc7b2fe0f48f",
@@ -11906,8 +11975,17 @@
       "history": []
     },
     "nebula-gyroid": {
-      "hash": "997d2f8d8ef59b04",
-      "history": []
+      "hash": "368300a0b3fd1cd2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "368300a0b3fd1cd2",
+          "prev_hash": "997d2f8d8ef59b04",
+          "commit": "d0efc8a3",
+          "note": null
+        }
+      ]
     },
     "neon-fern-garden": {
       "hash": "d8697430b774a8fd",
@@ -21868,7 +21946,7 @@
       ]
     },
     "gen-biomechanical-neural-mycelium": {
-      "hash": "bedb68b0055840aa",
+      "hash": "d5343d1d1c08d357",
       "history": [
         {
           "event": "added",
@@ -21876,6 +21954,14 @@
           "hash": "bedb68b0055840aa",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:09:36.114Z",
+          "hash": "d5343d1d1c08d357",
+          "prev_hash": "bedb68b0055840aa",
+          "commit": "d0efc8a3",
+          "note": null
         }
       ]
     },

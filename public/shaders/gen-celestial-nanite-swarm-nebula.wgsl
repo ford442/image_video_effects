@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: shepherd-ring traffic lanes around the cursor attractor; quorum-front ignition where synchronized nanite cohorts flip into amber pulse bands
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: shepherd-ring traffic lanes around the cursor attractor; quorum-front ignition where synchronized nanite cohorts flip into amber pulse bands; Kuramoto nanite sync flashes; lattice self-assembly docking; Beer-Lambert face dust; Henyey-Greenstein backlit dust silver-lining from a hidden beacon star; flash relay across shared Voronoi faces
 //  A packing: ACES display RGBA + semantic alpha (C not read)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -209,11 +209,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ro = vec3<f32>(0.0, 0.0, -5.0);
     let rd = normalize(vec3<f32>(p, 1.0));
 
+    let IDEA_7 = 1.0;
     var col = vec3<f32>(0.0);
     var t = 0.0;
     var density_sum = 0.0;
     var firstHitT = -1.0;
     var trans = 1.0; // Idea 3: Beer-Lambert transmittance through the face dust
+
+    // ── Idea 6: Henyey-Greenstein backlit dust (§12.2 HG phase) ──
+    // A beacon star hides behind the swarm, up-right of centre; the face dust forward-scatters it,
+    // so dust sheets near its line of sight get a warm silver lining. Phase depends only on the ray.
+    let IDEA_6 = 1.0;
+    let beaconDir = normalize(vec3<f32>(0.45, -0.3, 1.0));
+    let hgG = 0.85;
+    let hgDen = max(1.0 + hgG * hgG - 2.0 * hgG * dot(rd, beaconDir), 1e-4);
+    let hgPhase = (1.0 - hgG * hgG) / (12.566 * hgDen * sqrt(hgDen));
+    let beaconCol = vec3<f32>(1.0, 0.86, 0.62) * hgPhase * (1.0 + bass * 0.5) * IDEA_6;
 
     for (var i = 0; i < 60; i = i + 1) {
         let pos = ro + rd * t;
@@ -240,6 +251,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             firstHitT = select(firstHitT, t, firstHitT < 0.0);
         }
 
+        // Idea 6: in-scatter of the beacon by the dust, itself attenuated by the dust in front.
+        col += beaconCol * s.dust * trans * dt * 0.3 * exp(-t * 0.2);
+        // ── Idea 7: flash relay — a flashing nanite hands its pulse to the face sheets it shares with its
+        // neighbours (the dust lies where nothing else emits), so the faces light magenta in the Kuramoto wave. ──
+        col += vec3<f32>(1.0, 0.15, 0.85) * s.blink * s.dust * trans * dt * (0.6 + u.zoom_params.y) * exp(-t * 0.2) * IDEA_7;
         // Idea 3: dust absorbs light from everything behind it (emission-only HEAD had no extinction).
         trans *= exp(-0.7 * s.dust * dt);
 

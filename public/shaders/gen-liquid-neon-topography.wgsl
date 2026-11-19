@@ -3,13 +3,15 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: neon iso-height contour lines; liquid neon pooling in the valleys; downhill neon rivulets along steepest descent; shoreline foam where ridges meet the pool
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: neon iso-height contour lines; liquid neon pooling in the valleys; downhill neon rivulets along steepest descent; shoreline foam where ridges meet the pool; hypsometric tint bands between the contours; neon oil-slick thin film on the pool
 //  A packing: ACES display RGBA (C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 // zoom_params: .x = Ridge Height, .y = Flow Speed, .z = Emissive Glow, .w = Contour Detail
 
+const IDEA_5: f32 = 1.0;
+const IDEA_6: f32 = 1.0;
 const MAX_STEPS = 100;
 const MAX_DIST = 10.0;
 const SURF_DIST = 0.005;
@@ -133,7 +135,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     if (coord.x >= i32(dims.x) || coord.y >= i32(dims.y)) { return; }
 
     let res = vec2<f32>(f32(dims.x), f32(dims.y));
-    let uv = (vec2<f32>(coord) - 0.5 * res) / res.y;
+    // ── Rescue 1: storage y runs down; flip so the terrain sits below the sky (HEAD drew it upside-down) ──
+    let uv = vec2<f32>(f32(coord.x) - 0.5 * res.x, 0.5 * res.y - f32(coord.y)) / res.y;
 
     // Time and Mouse interaction
     let flowSpeed = u.zoom_params.y;
@@ -201,6 +204,21 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         col = baseColor + emission + sss + ridgeColor * fresnel * glowParam * 0.5;
 
+        // ── Idea 5: hypsometric tint bands (native) ── each contour interval gets its own elevation
+        // tint, like a survey map: low bands deep teal, high bands warm magenta, stepped not smooth.
+        let bandSpacing = ridgeScale * 0.9 / (2.0 + detail * 1.5);
+        let band = floor((p.y - poolLevel) / max(bandSpacing, 0.0005));
+        let bandT = clamp(band / (3.0 + detail * 1.5), 0.0, 1.0);
+        let hypso = mix(vec3<f32>(0.0, 0.35, 0.45), vec3<f32>(0.6, 0.1, 0.45), bandT) * (0.75 + 0.25 * fract(band * 0.5) * 2.0);
+        col += hypso * IDEA_5 * 0.35 * glowParam * (1.0 - fresnel * 0.6) * (0.8 + mids * 0.4);
+
+        // ── Idea 6 (valley floors): the same neon oil-slick film coats the wet low ground ──
+        let vFilmD = 0.35 + 0.5 * (noise(p.xz * 1.7 + vec2<f32>(time * 0.12 * flowSpeed, 0.0)) * 0.5 + 0.5) + treble * 0.1;
+        let vOpd = 2.0 * 1.33 * vFilmD * max(-dot(rd, n), 0.05) * 3.0;
+        let vFilm = 0.5 + 0.5 * cos(6.28318 * vOpd / vec3<f32>(0.65, 0.53, 0.45));
+        let wet = smoothstep(0.85, 0.45, h / max(ridgeScale, 0.001));
+        col += vFilm * wet * IDEA_6 * 0.45 * glowParam * (0.4 + fresnel);
+
         // Idea 1: neon iso-height contour lines on world height; Contour Detail densifies the survey.
         let spacing = ridgeScale * 0.9 / (2.0 + detail * 1.5);
         let lineCoord = p.y / max(spacing, 0.0005);
@@ -248,7 +266,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let shimmer = noise(pp.xz * 6.0 + vec2<f32>(time * 0.3 * flowSpeed, -time * 0.2 * flowSpeed));
         let pn = normalize(vec3<f32>(shimmer * 0.08 * (1.0 + treble), 1.0, noise(pp.zx * 6.0 - time * 0.25) * 0.08));
         let poolFresnel = pow(clamp(1.0 + dot(rd, pn), 0.0, 1.0), 3.0);
-        let reflCol = neonPalette(pp.z * 0.1 + shimmer * 0.3 + time * 0.2) * glowParam * (0.35 + poolFresnel);
+        var reflCol = neonPalette(pp.z * 0.1 + shimmer * 0.3 + time * 0.2) * glowParam * (0.35 + poolFresnel);
+        // ── Idea 6: neon oil-slick thin film (§12.2 thin-film iridescence) ── film thickness drifts with the
+        // current; interference hue = optical path 2·n·d·cosθ against R/G/B wavelengths.
+        let filmD = 0.35 + 0.5 * (noise(pp.xz * 1.7 + vec2<f32>(time * 0.12 * flowSpeed, 0.0)) * 0.5 + 0.5) + treble * 0.1;
+        let opd = 2.0 * 1.33 * filmD * max(-rd.y, 0.05) * 3.0;
+        let film = 0.5 + 0.5 * cos(6.28318 * opd / vec3<f32>(0.65, 0.53, 0.45));
+        reflCol = mix(reflCol, film * glowParam * (0.5 + poolFresnel), IDEA_6 * 0.6);
         let shallow = clamp((min(d, MAX_DIST) - tPool) * 2.5, 0.0, 1.0);
         let seen = mix(col, col * vec3<f32>(0.3, 0.45, 0.6), shallow);
         let poolFog = 1.0 - exp(-0.02 * tPool * tPool);

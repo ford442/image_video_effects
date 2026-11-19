@@ -11,8 +11,8 @@
 //    gallery of intricate lace-work patterns — butterflies, snowflakes,
 //    spirographs — as the attractor topology continuously transforms.
 //    Temporal Monte Carlo builds density per frame; bass warps geometry.
-//  Upgraded: 2026-10-10
-//  Ideas: local stretch tint from |p'−p|; dwell rings from iteration index; critical curves; antipodal ghost; stall glints; Jacobian caustic
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: local stretch tint from |p'−p|; dwell rings from iteration index; critical curves; antipodal ghost; stall glints; Jacobian caustic; log density tone; Lyapunov shadow-orbit tint
 //  A packing: accumulated density, hue phase, tube depth, alpha (raw)
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=speed_a, y=speed_b, z=glow_radius(+tube radius), w=decay
@@ -30,6 +30,8 @@ const MARCH_FAR: f32 = 6.0;      // far plane / ray escape
 const SMOOTH_K: f32 = 0.14;      // smooth-union blend radius
 const CONE_LOD: f32 = 0.12;      // tube radius growth per unit ray distance
 const FOLD_COUNT: f32 = 6.0;     // kaleidoscope wedge count
+const IDEA_7: f32 = 1.0;
+const IDEA_8: f32 = 1.0;
 
 // Per-invocation hero orbit (3D-lifted de Jong ribbon), filled in main.
 var<private> heroOrbit: array<vec3<f32>, 8>;
@@ -147,6 +149,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let seed   = hash22(uv * 131.7 + vec2<f32>(fract(time * 0.031), fract(time * 0.041 + 0.5)));
     var p      = seed * 4.0 - 2.0;
+    // ── Idea 8: Lyapunov shadow-orbit tint (native) ── twin orbit started ε away
+    var ps     = p + vec2<f32>(1e-3, 0.0);
+    var lyapAccum = 0.0;
 
     // Chromatic parameter separation: R uses a+b offset, B uses c+d offset
     var contribR = 0.0;
@@ -179,6 +184,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let jDet = b * sin(b * p0.x) * d * sin(d * p0.y) - a * cos(a * p0.y) * c * cos(c * p0.x);
         stallAccum += g * exp(-stretch * 20.0);
         causticAccum += g * exp(-abs(jDet) * 6.0);
+        // Idea 8: separation growth of the shadow orbit, renormalised each step (FTLE).
+        ps = de_jong(ps, a, b, c, d);
+        let sep = max(length(ps - p), 1e-6);
+        lyapAccum += g * log(sep * 1e3);
+        ps = p + (ps - p) * (1e-3 / sep);
     }
     contribR *= (1.0 / 128.0);
     contribB *= (1.0 / 128.0);
@@ -186,6 +196,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     dwellAccum *= (1.0 / 128.0);
     stallAccum *= (1.0 / 128.0);
     causticAccum *= (1.0 / 128.0);
+    lyapAccum *= (1.0 / 128.0);
 
     let prevDensity = textureLoad(dataTextureC, coord, 0).r;
     let accumulated = mix(contribR + contribB, prevDensity, clamp(decay, 0.0, 0.999));
@@ -242,11 +253,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
 
     let hueOff  = fract(time * 0.045);
-    let density = clamp(accumulated * 10.0, 0.0, 1.0);
+    let densLin = clamp(accumulated * 10.0, 0.0, 1.0);
+    // ── Idea 7: Log density tone (§12.2 density-histogram log tone) ──
+    let densLog = clamp(log(1.0 + max(accumulated, 0.0) * 3000.0) / log(3001.0), 0.0, 1.0);
+    let density = mix(densLin, densLog, IDEA_7);
     let warmCol = palette(density, hueOff);
     let coolCol = palette(density, hueOff + 0.2);
     let chromaMix = smoothstep(0.0, 1.0, contribR - contribB + 0.5);
-    var col     = mix(coolCol, warmCol, chromaMix);
+    // ── Rescue 1: empty plane was painted full palette (flat blue floor); scale by tone ──
+    var col     = mix(coolCol, warmCol, chromaMix) * (0.06 + 0.94 * density);
+    // Idea 8: chaotic filaments (positive FTLE) glow hot, regular arcs cool.
+    let lyap = lyapAccum / max(contribR + contribB, 1e-4) * 2.0;
+    let lyapW = smoothstep(0.03, 0.3, density) * IDEA_8;
+    col = mix(col, col * mix(vec3<f32>(0.35, 0.7, 1.35), vec3<f32>(1.45, 0.8, 0.35), smoothstep(-0.6, 0.9, lyap)), lyapW);
     col += palette(hueOff + 0.12, 0.0) * clamp(stretchAccum * 6.0, 0.0, 0.45);
     col += palette(dwellAccum + hueOff, 0.25) * clamp(dwellAccum * 1.8, 0.0, 0.35) * (0.5 + mids * 0.4);
     // Critical curves of the map: cos(a y) = 0 or cos(c x) = 0. Display only.

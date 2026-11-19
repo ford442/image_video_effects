@@ -2,7 +2,7 @@
   "id": "nebula-gyroid",
   "name": "Nebula Gyroid",
   "url": "shaders/nebula-gyroid.wgsl",
-  "description": "Ethereal, flowing organic form created with raymarched gyroid SDFs. Features iridescent lighting, multiple blended gyroid layers, and mouse-reactive domain warping for a fluid geometry effect.",
+  "description": "Ethereal layered-zoom nebula around the cursor: five depth strata flow along a gyroid field whose thin sheets glow as filaments, tinted hot-core to cold-rim, with bass-driven vortex and chromatic split.",
   "tags": [
     "generative",
     "gyroid",
@@ -19,7 +19,6 @@
     "reactive"
   ],
   "features": [
-    "raymarched",
     "mouse-driven",
     "audio-reactive",
     "audio-driven"

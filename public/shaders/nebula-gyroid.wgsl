@@ -1,8 +1,30 @@
-struct Uniforms {
-    config: vec4<f32>,
-    zoom_config: vec4<f32>,
-    zoom_params: vec4<f32>,
-    ripples: array<vec4<f32>, 50>,
+// ═══════════════════════════════════════════════════════════════════
+//  Nebula Gyroid — layered recursive zoom nebula
+//  Category: generative
+//  Upgraded: 2026-11-19
+//  Ideas: Gyroid veil warp (layer flow follows a gyroid-field gradient, thin |g| sheets glow as filaments, bass thickens them); Depth-strata nebula tint (each zoom layer tinted hot-core→cold-rim by its depth)
+//  A packing: alpha = volumetric fog/fresnel coverage (unchanged)
+// ═══════════════════════════════════════════════════════════════════
+#include "_prelude.wgsl"
+
+const IDEA_1: f32 = 1.0;
+const IDEA_2: f32 = 1.0;
+
+// Gyroid field g = sin x cos y + sin y cos z + sin z cos x (.x) and its
+// analytic xy gradient (.yz), sharing one set of sin/cos.
+fn gyroidField(p: vec3<f32>) -> vec3<f32> {
+    let s = sin(p);
+    let c = cos(p);
+    let g = s.x * c.y + s.y * c.z + s.z * c.x;
+    return vec3<f32>(g, c.x * c.y - s.z * s.x, -s.x * s.y + c.y * c.z);
+}
+
+// Hot core → cold rim nebula ramp over layer depth t in 0..1.
+fn strataTint(t: f32) -> vec3<f32> {
+    let core = vec3<f32>(1.25, 0.85, 0.65);
+    let mid = vec3<f32>(0.95, 0.70, 1.20);
+    let rim = vec3<f32>(0.55, 0.85, 1.35);
+    return select(mix(mid, rim, (t - 0.5) * 2.0), mix(core, mid, t * 2.0), t < 0.5);
 }
 fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   let primaryIntensity = mix(0.55, 1.45, clamp(u.zoom_params.x, 0.0, 1.0));
@@ -14,33 +36,6 @@ fn applyGenerativePrimaryControls(color: vec4<f32>) -> vec4<f32> {
   return vec4<f32>(controlled, color.a);
 }
 
-
-@group(0) @binding(0) 
-var u_sampler: sampler;
-@group(0) @binding(1) 
-var readTexture: texture_2d<f32>;
-@group(0) @binding(2) 
-var writeTexture: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(3) 
-var<uniform> u: Uniforms;
-@group(0) @binding(4) 
-var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) 
-var non_filtering_sampler: sampler;
-@group(0) @binding(6) 
-var writeDepthTexture: texture_storage_2d<r32float,write>;
-@group(0) @binding(7) 
-var dataTextureA: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(8) 
-var dataTextureB: texture_storage_2d<rgba32float,write>;
-@group(0) @binding(9) 
-var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) 
-var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) 
-var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) 
-var<storage, read> plasmaBuffer: array<vec4<f32>>;
 
 fn ping_pong(a: f32) -> f32 {
     return (1.0 - abs(((fract((a * 0.5)) * 2.0) - 1.0)));
@@ -172,12 +167,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e38 = u.zoom_config.z;
     let _e40 = resolution.y;
     mousePos = vec2<f32>((_e31 / _e33), (_e38 / _e40));
-    if (arrayLength((&extraBuffer)) > 10u) {
-        let _e52 = extraBuffer[10];
-        clickIntensity = _e52;
-    } else {
-        clickIntensity = 0.0;
+    // ── Rescue 2: HEAD read extraBuffer[10] (an FFT bin) as "click". Vortex now
+    // spins from bass plus recent clicks (age-windowed ripple scan; ripples[i].w is padding).
+    let bass = plasmaBuffer[0].x;
+    var clickRecent = 0.0;
+    let rc = min(u32(u.config.y), 50u);
+    for (var ri = 0u; ri < rc; ri = ri + 1u) {
+        let age = time - u.ripples[ri].z;
+        clickRecent = max(clickRecent, select(0.0, exp(-age * 1.5), age >= 0.0 && age < 3.0));
     }
+    clickIntensity = bass * 0.6 + clickRecent;
+    var filament: f32 = 0.0;
     loop {
         let _e64 = i;
         if (_e64 < 5) {
@@ -201,11 +201,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let rotatedUV = (vec2<f32>(((cos(spinAngle) * toCenter.x) - (sin(spinAngle) * toCenter.y)), ((sin(spinAngle) * toCenter.x) + (cos(spinAngle) * toCenter.y))) + zoom_center);
             let _e126 = noise(((rotatedUV * 6.0) + vec2<f32>((time * 0.15), 0.0)));
             let _e132 = noise(((rotatedUV * 6.0) + vec2<f32>(0.0, (time * 0.15))));
-            let flowUV = (rotatedUV + ((vec2<f32>(_e126, _e132) * 0.015) * layerDepth_1));
+            // ── Idea 1: Gyroid veil warp (native) ──
+            let gp = vec3<f32>(rotatedUV * 9.0, layerDepth_1 * 3.1 + time * 0.35);
+            let gf = gyroidField(gp);
+            let gval = gf.x;
+            let ggrad = gf.yz;
+            let sheet = (0.10 + bass * 0.12);
+            filament = filament + IDEA_1 * exp(-(gval * gval) / (sheet * sheet)) * (1.0 - 0.5 * layerDepth_1);
+            let flowUV = (rotatedUV + ((vec2<f32>(_e126, _e132) * 0.015) * layerDepth_1)) + IDEA_1 * ggrad * 0.012 * (0.4 + layerDepth_1);
             let transformed = (((flowUV - zoom_center) / vec2(layerZoom)) + zoom_center);
             let _e142 = ping_pong_v2_(transformed);
             let _e146 = textureSampleLevel(readTexture, u_sampler, _e142, 0.0);
-            let sampleColor = _e146.xyz;
+            // ── Idea 2: Depth-strata nebula tint (native) ──
+            let sampleColor = _e146.xyz * mix(vec3<f32>(1.0), strataTint(layerDepth_1), IDEA_2);
             let _e151 = textureSampleLevel(readDepthTexture, non_filtering_sampler, _e142, 0.0);
             let sampleDepth = _e151.x;
             let density = exp((-(layerDepth_1) * 1.5));
@@ -228,12 +236,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e179 = accumulatedDepth;
     let _e180 = totalWeight;
     let baseDepth = (_e179 / max(_e180, 0.0001));
-    if (arrayLength((&extraBuffer)) > 0u) {
-        let _e192 = extraBuffer[0];
-        chroma = _e192;
-    } else {
-        chroma = 0.02;
-    }
+    // ── Rescue 1: HEAD used extraBuffer[0] (= bass) as the raw UV split: dead at idle,
+    // a near-full-frame shift when loud. Bounded base split + bass swell.
+    chroma = 0.006 + bass * 0.014;
     let _e196 = uv;
     let _e197 = chroma;
     let _e203 = textureSampleLevel(readTexture, u_sampler, (_e196 + vec2<f32>((_e197 * baseDepth), 0.0)), 0.0);
@@ -257,7 +262,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let depthY = _e250.x;
     let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
     let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
-    let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
+    // Idea 1 cont.: gyroid sheet filaments glow violet-cyan over the strata.
+    let filGlow = (filament / 3.75) * (0.55 + bass * 0.6);
+    // Idea 2 cont.: chromatic layer carries the averaged strata tint ratio.
+    let strataRatio = baseColor / max(vec3<f32>(dot(baseColor, vec3<f32>(0.3333))), vec3<f32>(0.02));
+    let tintedChroma = mix(chromaticColor, chromaticColor * clamp(strataRatio, vec3<f32>(0.0), vec3<f32>(2.0)), IDEA_2 * 0.8);
+    let finalColor = (tintedChroma + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6))) + vec3<f32>(0.55, 0.45, 1.0) * filGlow;
     let fogDensity_1 = u.zoom_params.w;
     let _e273 = uv;
     let _e274 = reconstruct_normal(_e273, baseDepth);

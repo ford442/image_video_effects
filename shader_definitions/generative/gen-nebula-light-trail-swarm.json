@@ -29,7 +29,9 @@
     "depth-aware",
     "temporal",
     "stromgren-stratification",
-    "recombination-afterglow"
+    "recombination-afterglow",
+    "airy-diffraction",
+    "bow-shock"
   ],
   "params": [
     {

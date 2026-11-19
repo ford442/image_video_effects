@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: action-potential packets (hash-gated pulses run along each fiber into the glow); hyphal jitter (per-strand wandering offsets turn the grid into an organic web); cursor synapse firing (nodes near the pointer swell and fire)
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: action-potential packets (hash-gated pulses run along each fiber into the glow); hyphal jitter (per-strand wandering offsets turn the grid into an organic web); cursor synapse firing (nodes near the pointer swell and fire); anastomosis bridges (hash-gated diagonal fusion hyphae join neighbouring nodes); septal cross-walls (chitin septa ring each strand, packets light them)
 //  A packing: ACES display RGBA, a = coverage (fogged hit) + glow; C unread
 // ═══════════════════════════════════════════════════════════════════
 //  A flight down a twisting lattice of bio-metallic nodes and fibers.
@@ -17,6 +17,8 @@ const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const FAR: f32 = 20.0;
 const MAX_STEPS: i32 = 110;
+const IDEA_4: f32 = 1.0;
+const IDEA_5: f32 = 1.0;
 
 fn rot2D(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -92,6 +94,7 @@ struct Scene {
     d: f32,
     packetE: f32,
     fireE: f32,
+    along: f32,   // Idea 5: coordinate along the nearest strand
 };
 
 fn mapScene(p: vec3<f32>, mouseQ: vec3<f32>, synapseGain: f32) -> Scene {
@@ -134,7 +137,24 @@ fn mapScene(p: vec3<f32>, mouseQ: vec3<f32>, synapseGain: f32) -> Scene {
     let fz = length(qRep.xy - offZ) - 0.02; // Z-axis fibers
     let fy = length(qRep.xz - offY) - 0.02; // Y-axis fibers
     let fx = length(qRep.yz - offX) - 0.02; // X-axis fibers
-    let dFiber = min(fz, min(fy, fx));
+    var dFiber = min(fz, min(fy, fx));
+
+    // ── Idea 4: anastomosis bridges (native) ──
+    // Hyphae fuse: a hash-gated diagonal strand joins node c to node c+(1,-1,0)
+    // (rotated per pair onto the xz / yz diagonals too). Half of each bridge
+    // lives in either cell, gated by the same pair hash so it is continuous.
+    // cheap pair hash (one dot + sin each) instead of two hash31 calls
+    let hk = vec3<f32>(12.9898, 78.233, 37.719);
+    let hp = fract(sin(dot(cell, hk)) * 43758.5453);
+    let hm = fract(sin(dot(cell - vec3<f32>(1.0, -1.0, 0.0), hk)) * 43758.5453);
+    let dg = normalize(vec3<f32>(1.0, -1.0, 0.0)); // anti-diagonal: the camera rides the (+,+) cell corner line, keep bridges off it
+    let sAl = dot(qRep, dg);
+    let spanD = scale * 1.41421356;
+    let sp = clamp(sAl, 0.0, spanD * 0.5);
+    let sm = clamp(sAl, -spanD * 0.5, 0.0);
+    let bp = length(qRep - dg * sp) - 0.03 + select(1e3, 0.0, hp > 0.7);
+    let bm = length(qRep - dg * sm) - 0.03 + select(1e3, 0.0, hm > 0.7);
+    dFiber = min(dFiber, mix(1e3, min(bp, bm), IDEA_4));
 
     var d = smin(dNode, dFiber, 0.2);
 
@@ -143,10 +163,13 @@ fn mapScene(p: vec3<f32>, mouseQ: vec3<f32>, synapseGain: f32) -> Scene {
 
     // Idea 1: packets on whichever strand is nearest, mids push them brighter.
     let ptime = u.config.x * u.zoom_params.y * 1.5;
-    var pk = packet(cell.xy, q.z, scale, ptime);
+    // Pick the nearest strand first, evaluate one packet (was up to three).
+    var col2 = cell.xy;
     var fd = fz;
-    if (fy < fd) { pk = packet(cell.xz + 41.0, q.y, scale, ptime); fd = fy; }
-    if (fx < fd) { pk = packet(cell.yz + 83.0, q.x, scale, ptime); fd = fx; }
+    var al = q.z;
+    if (fy < fd) { col2 = cell.xz + 41.0; fd = fy; al = q.y; }
+    if (fx < fd) { col2 = cell.yz + 83.0; fd = fx; al = q.x; }
+    let pk = packet(col2, al, scale, ptime);
     let packetE = pk * exp(-max(fd, 0.0) * 10.0) * (1.0 + mids * 1.5);
 
     let fireE = fire * exp(-max(dNode, 0.0) * 5.0);
@@ -155,6 +178,7 @@ fn mapScene(p: vec3<f32>, mouseQ: vec3<f32>, synapseGain: f32) -> Scene {
     s.d = d;
     s.packetE = packetE;
     s.fireE = fireE;
+    s.along = al / scale;
     return s;
 }
 
@@ -198,6 +222,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var fireGlow: f32 = 0.0;
     var steps: i32 = MAX_STEPS;
     var hit: bool = false;
+    var hitAlong: f32 = 0.0;
+    var hitPacket: f32 = 0.0;
 
     let glowIntens = u.zoom_params.z;
     let pulseSpeed = u.zoom_params.y;
@@ -217,6 +243,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         fireGlow += s.fireE * near * 0.5;
 
         if (d < 0.001) {
+            hitAlong = s.along;
+            hitPacket = s.packetE;
             steps = i;
             hit = true;
             break;
@@ -249,6 +277,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ao = 1.0 - f32(steps) / f32(MAX_STEPS);
 
         col = mix(c2, c1, diff) * ao + vec3<f32>(spec);
+
+        // ── Idea 5: septal cross-walls (native) ──
+        // Chitin septa partition each hypha every quarter cell: a dark wall
+        // with a bright pore rim; a passing packet floods the septum white.
+        let sw = abs(fract(hitAlong * 4.0) - 0.5);
+        let wall = 1.0 - smoothstep(0.03, 0.08, sw);
+        let rim = smoothstep(0.03, 0.06, sw) * (1.0 - smoothstep(0.06, 0.12, sw));
+        let septum = col * (1.0 - wall * 0.75) + c1 * rim * (0.6 + hitPacket * 2.0) * ao;
+        col = mix(col, septum, IDEA_5);
     }
 
     // Add emissive glow

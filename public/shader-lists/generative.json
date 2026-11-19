@@ -9646,7 +9646,9 @@
       "depth-output",
       "click-reactive",
       "aces-tonemap",
-      "semantic-alpha"
+      "semantic-alpha",
+      "log-density-tone",
+      "lyapunov-tint"
     ],
     "feedbackPacking": "A/C = accumulated density, hue phase, tube depth, semantic alpha; exact raw attractor state"
   },
@@ -20812,7 +20814,9 @@
       "depth-aware",
       "temporal",
       "stromgren-stratification",
-      "recombination-afterglow"
+      "recombination-afterglow",
+      "airy-diffraction",
+      "bow-shock"
     ],
     "params": [
       {
@@ -29302,7 +29306,9 @@
       "optical-flow",
       "curl-noise-advection",
       "diffusion-feedback",
-      "generated-depth"
+      "generated-depth",
+      "doppler-streak-fringe",
+      "cooling-afterglow"
     ]
   },
   {
@@ -31403,7 +31409,7 @@
     "id": "nebula-gyroid",
     "name": "Nebula Gyroid",
     "url": "shaders/nebula-gyroid.wgsl",
-    "description": "Ethereal, flowing organic form created with raymarched gyroid SDFs. Features iridescent lighting, multiple blended gyroid layers, and mouse-reactive domain warping for a fluid geometry effect.",
+    "description": "Ethereal layered-zoom nebula around the cursor: five depth strata flow along a gyroid field whose thin sheets glow as filaments, tinted hot-core to cold-rim, with bass-driven vortex and chromatic split.",
     "tags": [
       "generative",
       "gyroid",
@@ -31420,7 +31426,6 @@
       "reactive"
     ],
     "features": [
-      "raymarched",
       "mouse-driven",
       "audio-reactive",
       "audio-driven"
