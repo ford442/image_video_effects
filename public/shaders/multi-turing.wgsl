@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Multiscale Turing Patterns
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-19
+//  Ideas: substrate depletion halo; cross-scale membrane
+//  A packing: raw sim (a1, b1, a2, b2)
+// ═══════════════════════════════════════════════════════════════════
 // Multiscale Turing Patterns - Multiple reaction-diffusion systems combined
 // Based on Jonathan McCabe's multiscale patterns
 //  Rescue: 2026-10-05 — HEAD ran Gray-Scott with D·dt = 1 on an unnormalised 5-point Laplacian
@@ -52,6 +61,16 @@ fn grayScottStep(ab: vec2<f32>, lap: vec2<f32>, feed: f32, kill: f32) -> vec2<f3
     clamp(a + da * DT, 0.0, 1.0),
     clamp(b + db * DT, 0.0, 1.0)
   );
+}
+
+fn aces(x_in: vec3<f32>) -> vec3<f32> {
+  let x = max(x_in, vec3<f32>(0.0));
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // HSV to RGB helper
@@ -153,19 +172,41 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Colour: different hues for the two scales. Stable Gray-Scott keeps b in ~0.1..0.35
   // (HEAD's 0..1 range was the checkerboard), so stretch it for display.
+  // Bass only retouches the display mix. Feed, kill, and diffusion stay put.
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.5);
+  let mids = clamp(plasmaBuffer[0].y, 0.0, 1.5);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.5);
   let patternValue1 = smoothstep(0.04, 0.32, scale1.y);
   let patternValue2 = smoothstep(0.04, 0.32, scale2.y);
-  let combinedPattern = patternValue1 * 0.6 + patternValue2 * 0.4;
+  let w1 = clamp(0.6 + bass * 0.1, 0.45, 0.8);
+  let combinedPattern = patternValue1 * w1 + patternValue2 * (1.0 - w1);
   let hue1 = 0.55 + patternValue1 * 0.1; // Cyan-ish
   let hue2 = 0.15 + patternValue2 * 0.1; // Orange-ish
   let color1 = hsv2rgb(hue1 * 6.0, 0.7, patternValue1);
   let color2 = hsv2rgb(hue2 * 6.0, 0.6, patternValue2);
 
-  // Blend with source image
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let patternColor = color1 * 0.6 + color2 * 0.4;
-  let finalColor = mix(sourceColor.rgb, patternColor, combinedPattern * 0.7 + 0.1);
+  // ── Idea 1: substrate depletion halo. a falls before b rises.
+  let depleted = clamp((0.92 - scale1.x) * 3.2, 0.0, 1.0);
+  let halo = depleted * (1.0 - patternValue1);
 
-  textureStore(writeTexture, pixel, vec4<f32>(finalColor, 1.0));
+  // ── Idea 2: cross-scale membrane where |b1 − b2| changes across a pixel.
+  let dHere = abs(scale1.y - scale2.y);
+  let right = stateAt(pixel + vec2<i32>(1, 0), sizeI);
+  let up = stateAt(pixel + vec2<i32>(0, 1), sizeI);
+  let membraneGrad = abs(abs(right.y - right.w) - dHere) + abs(abs(up.y - up.w) - dHere);
+  let membrane = smoothstep(0.012, 0.045, membraneGrad) * smoothstep(0.02, 0.055, dHere);
+
+  var patternColor = color1 * w1 + color2 * (1.0 - w1);
+  let haloTint = mix(vec3<f32>(0.22, 0.30, 0.42), vec3<f32>(0.16, 0.34, 0.40), clamp(treble, 0.0, 1.0));
+  patternColor = mix(patternColor, patternColor * haloTint, halo);
+  patternColor = patternColor + vec3<f32>(0.88, 0.92, 0.78) * membrane * (0.32 + 0.2 * clamp(mids, 0.0, 1.0));
+
+  // Blend with source image. A stays the raw fields stored above.
+  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let finalColor = mix(sourceColor.rgb, patternColor, combinedPattern * 0.7 + 0.1);
+  let display = aces(finalColor);
+  let alpha = clamp(combinedPattern * 0.72 + halo * 0.25 + membrane * 0.4 + sourceColor.a * 0.12, 0.0, 1.0);
+
+  textureStore(writeTexture, pixel, vec4<f32>(display, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

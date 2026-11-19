@@ -6,8 +6,8 @@
 //  Complexity: High
 //  Chunks From: chunk-library (hash12)
 //  Created: 2026-04-18
-//  Upgraded: 2026-09-06
-//  Ideas: joint bilateral (depth in range); luma-range RGB scale
+//  Upgraded: 2026-09-06, 2026-11-19
+//  Ideas: joint bilateral (depth in range); luma-range RGB scale; chroma-aware range; flat-region hold
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -118,9 +118,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let neighborLuma = dot(neighbor.rgb, vec3<f32>(0.299, 0.587, 0.114));
             let centerLuma = dot(center.rgb, vec3<f32>(0.299, 0.587, 0.114));
             let lumaDist = abs(neighborLuma - centerLuma);
+            // ── Idea 1: chroma-aware range. Same-luma, different-hue neighbours stop sharing a weight.
+            let chromaDist = length((neighbor.rgb - vec3<f32>(neighborLuma)) - (center.rgb - vec3<f32>(centerLuma)));
             let nDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + offset, 0.0).r;
             let depthDist = abs(nDepth - depth);
-            let rangeDist = lumaDist + depthDist * 0.65;
+            let rangeDist = lumaDist + depthDist * 0.65 + chromaDist * 0.85;
             let rangeWeight = exp(-rangeDist * rangeDist / (2.0 * depthColorSigma * depthColorSigma + 0.001));
 
             let weight = spatialWeight * rangeWeight;
@@ -151,8 +153,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     result.b = mix(result.b, caB, edgeMag * (1.0 + treble));
 
     // Temporal feedback: dream persistence
+    // ── Idea 2: flat-region hold. Smooth dream regions keep C; edges let it go.
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
-    result = mix(result, prev.rgb, 0.08 * (1.0 + mids));
+    let dreamGap = length(center.rgb - result);
+    let hold = mix(0.16, 0.02, smoothstep(0.0, 0.22, dreamGap)) * (1.0 + mids);
+    result = mix(result, prev.rgb, clamp(hold, 0.0, 0.45));
 
     // ACES tone mapping
     result = acesToneMap(result * 1.1);

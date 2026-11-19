@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Frequency Domain Notch
 //  Category: image
-//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware
+//  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Convolution Type: spatial-frequency-notch-approximation
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: oriented cosine notch; residual cut mix
+//  Upgraded: 2026-09-08, 2026-11-19
+//  Ideas: oriented cosine notch; residual cut mix; first-harmonic cosine; Hann kernel window
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -118,7 +118,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let dUse = mix(d, dOriented, mouseFactor);
                 let sample = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
                 
-                let kernel = cos(dUse * targetFreq * 6.28318) * exp(-d * d * 0.05);
+                // ── Idea 1: first-harmonic cosine. Idea 2: Hann window on the same support.
+                let dNorm = d / max(f32(maxRadius) * 1.41421356, 1.0);
+                let hann = 0.5 + 0.5 * cos(min(dNorm, 1.0) * 3.14159265);
+                let fundamental = cos(dUse * targetFreq * 6.2831853);
+                let harmonic = cos(dUse * targetFreq * 12.5663706);
+                let kernel = (fundamental + 0.4 * harmonic) * exp(-d * d * 0.05) * hann;
                 bandAccum += sample * kernel;
                 bandWeight += abs(kernel);
             }

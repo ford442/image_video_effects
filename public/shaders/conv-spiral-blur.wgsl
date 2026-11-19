@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal
 //  Convolution Type: logarithmic-spiral-convolution
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: golden-ratio arm spacing; Archimedean/log spiral mix
+//  Upgraded: 2026-09-08, 2026-11-19
+//  Ideas: golden-ratio arm spacing; Archimedean/log spiral mix; finite arm width; arc-length exposure
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -113,10 +113,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 spiralR * sin(spiralTheta)
             );
 
+            // ── Idea 1: finite arm width — the station plus one sample along the tangent normal.
+            let tangent = vec2<f32>(-sin(spiralTheta), cos(spiralTheta));
+            let halfW = (1.2 + t * 5.0) * depthBlurFactor;
             let sampleUV = clamp(uv + sampleOffset, vec2<f32>(0.0), vec2<f32>(1.0));
+            let edgeUV = clamp(uv + sampleOffset + tangent * halfW * pixelSize, vec2<f32>(0.0), vec2<f32>(1.0));
 
-            let w = exp(-t * 3.0) * (1.0 - t * 0.5);
-            let sample = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
+            // ── Idea 2: arc-length exposure. The exp envelope stays; outer coils carry less.
+            let dTheta = 12.5663706 / f32(max(maxSamples, 1));
+            let arc = max(spiralR, 0.004) * dTheta;
+            let w = exp(-t * 3.0) * (1.0 - t * 0.5) / (arc * 28.0 + 0.35);
+            let sample = 0.5 * (
+                textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb +
+                textureSampleLevel(readTexture, u_sampler, edgeUV, 0.0).rgb
+            );
             accumColor += sample * w;
             accumWeight += w;
             coverage += 1.0;

@@ -4,28 +4,11 @@
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Chunks From: iso-hills
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-05-30, 2026-11-19
+//  Ideas: index contours; fall-line ticks on the index
+//  A packing: raw relief (smoothHeight, contour, shade, alpha)
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -127,7 +110,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Marching Cubes-style contour extraction
   let stepped = floor(height * contourSteps) / contourSteps;
   let smoothHeight = mix(stepped, height, smoothness * 0.5);
-  let contour = 1.0 - smoothstep(0.012, 0.045, abs(fract(smoothHeight * contourSteps) - 0.5));
+  // ── Idea 1: index contours. Every 5th level is a wider line.
+  let level = i32(floor(smoothHeight * contourSteps));
+  let indexBand = select(0.0, 1.0, ((level % 5) + 5) % 5 == 0);
+  let contourInner = mix(0.012, 0.020, indexBand);
+  let contourOuter = mix(0.045, 0.090, indexBand);
+  let contour = 1.0 - smoothstep(contourInner, contourOuter, abs(fract(smoothHeight * contourSteps) - 0.5));
 
   // Elevation-based color palette: valley -> meadow -> rock -> snow
   let valley = vec3<f32>(0.06, 0.22 + bass * 0.06, 0.08);
@@ -142,7 +130,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Contour hachures for topographic map aesthetic
   let hachure = contour * (0.6 + 0.4 * sin(smoothHeight * contourSteps * 18.0 + uv.x * 30.0));
-  let hachureColor = vec3<f32>(0.12, 0.10, 0.06) * hachure * 0.35;
+  // ── Idea 2: fall-line ticks along the downhill vector, on the index contours.
+  let down = vec2<f32>(-hdx, -hdy);
+  let downN = down / max(length(down), 0.0001);
+  let stroke = abs(fract(dot(uv, downN) * mix(40.0, 90.0, smoothness)) - 0.5);
+  let fallStroke = (1.0 - smoothstep(0.06, 0.22, stroke)) * contour * indexBand;
+  let hachureColor = vec3<f32>(0.12, 0.10, 0.06) * (hachure * 0.35 + fallStroke * 0.5);
 
   // HDR snow sparkle on summit normals
   let snowSparkle = smoothstep(0.9, 1.0, smoothHeight) * pow(max(shade, 0.0), 4.0) * (0.5 + treble * 0.5);
