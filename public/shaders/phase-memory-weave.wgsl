@@ -2,7 +2,9 @@
 //  Phase Memory Weave v4 — Optimizer pass
 //  Category: generative
 //  Features: ginzburg-landau, allen-cahn, multi-scale-memory,
-//            opalescent-interfaces, audio-driven, mouse-thermal
+//            opalescent-interfaces, audio-driven, mouse-thermal,
+//            mouse-driven, audio-reactive, upgraded-rgba, phase-vortex-cores,
+//            memory-ghost-contours
 //  Upgrades: fast-atan2, branchless-audio, early-exit, named-consts,
 //            TAU-constant, pm-alpha, reduced-sqrt-calls
 //  v4: gradient-keyed opalescence (mix ~0.3), latch-proof memory
@@ -10,28 +12,11 @@
 //      ring (bounded uniform ripples), shader-specific
 //      slider rewiring (phase bias / memory kernel / turbulence /
 //      ring forcing)
+//  Upgraded: 2026-11-19
+//  Ideas: phase-vortex cores with chirality tint; memory ghost contours where history disagrees with now
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 const MEM_CLAMP: f32 = 1.2;      // luma-echo-warp lesson: memory never exceeds this
@@ -91,14 +76,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let p3 = u.zoom_params.z; // Turbulence: GL epsilon + chaotic jitter
   let p4 = u.zoom_params.w; // Mouse Disturbance: thermal + ring forcing
 
-  let hasSpring = arrayLength(&extraBuffer) >= 139u;
-  var mouse = rawMouse; var springVel = vec2<f32>(0.0); var lastTime = time; var initialized = false;
-  if (hasSpring) { mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]); springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]); lastTime = extraBuffer[137]; initialized = extraBuffer[138] > 0.5; }
-  if (!initialized) { mouse = rawMouse; springVel = vec2<f32>(0.0); }
-  let dt = select(0.0, clamp(time - lastTime, 0.0, 0.05), initialized);
-  let omega = 8.0; let springDecay = exp(-omega * dt); let springDelta = mouse - rawMouse; let springTemp = (springVel + omega * springDelta) * dt;
-  springVel = (springVel - omega * springTemp) * springDecay; mouse = rawMouse + (springDelta + springTemp) * springDecay;
-  if (hasSpring && gid.x == 0u && gid.y == 0u) { extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y; extraBuffer[135] = springVel.x; extraBuffer[136] = springVel.y; extraBuffer[137] = time; extraBuffer[138] = 1.0; }
+  // HEAD sprung the cursor through extraBuffer[133..138], which the host
+  // re-uploads every frame, so the spring never ran; use the cursor directly.
+  let mouse = rawMouse;
 
   let dims = vec2<i32>(textureDimensions(dataTextureC));
   let maxCoord = dims - vec2<i32>(1);
@@ -132,12 +112,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var ringActivity = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i++) {
-    let ripple = u.ripples[i]; let ringAge = time - ripple.z;
+    let ripple = u.ripples[i]; let ringAge = u.config.x - ripple.z; // ripple.z is in raw seconds (HEAD compared against time*0.5: rings never fired)
     if (ringAge < 0.0 || ringAge > RING_LIFETIME) { continue; }
     let ringFade = 1.0 - ringAge / RING_LIFETIME;
     let ringDelta = (length((uv - ripple.xy) * aspectVec) - ringAge * ringSpeed) / max(ringWidth, 1e-4);
     let ringGauss = exp(-0.5 * ringDelta * ringDelta) * ringFade;
-    ringForcing += ringGauss * select(-1.0, 1.0, (i & 1u) == 0u) * (0.4 + p4 * 1.2);
+    // Per-frame nudge (applied every frame the front passes): HEAD's 0.4..1.6
+    // was tuned while rings were dead and floods the frame to crystal once live.
+    ringForcing += ringGauss * select(-1.0, 1.0, (i & 1u) == 0u) * (0.4 + p4 * 1.2) * 0.12;
     ringActivity += ringGauss;
   }
 
@@ -148,8 +130,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let epsilon  = 0.035 + p3 * 0.04;        // p3: interface energy
   let mobility = 0.15 + mids * 0.6;        // mids: grain boundary mobility
   let reaction = rho * (equilibrium * equilibrium - rho2);
-  let dR = lapR * epsilon - reaction * psiR;
-  let dI = lapI * epsilon - reaction * psiI;
+  // Rescue: HEAD scaled the laplacian by epsilon*mobility (~0.005/frame),
+  // so domains never coarsened past pixel scale and per-pixel jitter won:
+  // the picture was white noise on seed stripes. Diffusion now runs at
+  // 3*epsilon (0.105..0.225, under the 0.25 explicit-Euler limit); mids
+  // mobility still drives the local reaction.
+  let diffusion = epsilon * 3.0;
+  let dR = lapR * diffusion / mobility - reaction * psiR;
+  let dI = lapI * diffusion / mobility - reaction * psiI;
 
   // Memory kernel (exponential-decay blend, clamped pre-tint, latch-proof)
   let memoryBlend = clamp(mix(psiR, slowMem * MEM_DECAY, 0.6), -MEM_CLAMP, MEM_CLAMP);
@@ -158,14 +146,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let newI = mix(psiI + dI * mobility, theta * 0.1, memStrength * 0.03);
 
   // Branchless audio seeding (replaces bass>0.55 per-pixel branch)
-  let seedValue = fract(dot(uv, vec2<f32>(12.9898, 78.233)) + time * 0.2) - 0.5;
+  // (HEAD: fract(dot(uv, k) + t) is a linear ramp → diagonal seed stripes.)
+  let seedValue = fract(sin(dot(uv * 37.0, vec2<f32>(12.9898, 78.233)) + time * 0.2) * 43758.5453) - 0.5;
   let initializationSeed = select(0.0, seedValue * 0.12, rho2 < 1e-7);
   let seedNoise = initializationSeed + max(bass - 0.55, 0.0) * seedValue * 0.4;
 
   // Turbulent jitter, gated to the fluid state (p3: chaos strength)
   let fluidGate = smoothstep(0.7, 0.3, rho);
-  let turbSeed = fract(sin(dot(uv * 9.0 + vec2<f32>(time * 0.7, -time * 0.5),
-                   vec2<f32>(12.9898, 78.233))) * 43758.5453) - 0.5;
+  // Smooth (bilinear value-noise, ~1/14 frame cells) instead of per-pixel hash:
+  // HEAD's jitter was white noise every frame and drowned the domains.
+  let tq = uv * 14.0 + vec2<f32>(time * 0.7, -time * 0.5);
+  let ti = floor(tq); let tf = fract(tq); let tw = tf * tf * (3.0 - 2.0 * tf);
+  let th = vec4<f32>(
+    fract(sin(dot(ti, vec2<f32>(12.9898, 78.233))) * 43758.5453),
+    fract(sin(dot(ti + vec2<f32>(1.0, 0.0), vec2<f32>(12.9898, 78.233))) * 43758.5453),
+    fract(sin(dot(ti + vec2<f32>(0.0, 1.0), vec2<f32>(12.9898, 78.233))) * 43758.5453),
+    fract(sin(dot(ti + vec2<f32>(1.0, 1.0), vec2<f32>(12.9898, 78.233))) * 43758.5453));
+  let turbSeed = mix(mix(th.x, th.y, tw.x), mix(th.z, th.w, tw.x), tw.y) - 0.5;
   let turbulence = turbSeed * p3 * 0.3 * fluidGate;
 
   // Capillary waves + mouse thermal injection (branchless select)
@@ -227,6 +224,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Memory sheen: multi-scale history visible as a faint pre-tint glow
   let memSheen = clamp(slowMem * MEM_DECAY + finalR * 0.15, -MEM_CLAMP, MEM_CLAMP);
   baseCol += vec3<f32>(0.05, 0.07, 0.10) * memSheen * (0.4 + p2 * 0.6);
+
+  // ── Idea 1: phase-vortex cores ─────────────────────────────────
+  // GL fields carry topological defects: points where the phase winds by
+  // ±2π around a loop. Sum wrapped phase steps around the 4-neighbour
+  // ring; |winding|≈1 marks a core. +1 glows warm, −1 cool.
+  let thR = fast_atan2(rx.g, rx.r);
+  let thU = fast_atan2(uy.g, uy.r);
+  let thL = fast_atan2(lx.g, lx.r);
+  let thD = fast_atan2(dy.g, dy.r);
+  let w1 = thU - thR; let w2 = thL - thU; let w3 = thD - thL; let w4 = thR - thD;
+  let wrapd = vec4<f32>(w1, w2, w3, w4) - TAU * round(vec4<f32>(w1, w2, w3, w4) / TAU);
+  let winding = (wrapd.x + wrapd.y + wrapd.z + wrapd.w) / TAU;
+  let core = smoothstep(0.5, 0.9, abs(winding)) * (1.0 - smoothstep(0.0, 0.6, finalRho));
+  let coreTint = select(vec3<f32>(0.35, 0.7, 1.4), vec3<f32>(1.5, 0.9, 0.35), winding > 0.0);
+  baseCol += coreTint * core * (0.6 + treble * 0.5);
+
+  // ── Idea 2: memory ghost contours ──────────────────────────────
+  // Where the slow memory disagrees with the present field, etch faint
+  // iso-lines of the remembered state: old domain walls linger as ghosts.
+  let memDiff = abs(slowMem - finalR);
+  let ghostBand = smoothstep(0.84, 0.96, abs(fract(slowMem * 4.0) - 0.5) * 2.0);
+  let ghost = ghostBand * smoothstep(0.08, 0.4, memDiff) * (0.3 + p2 * 0.7);
+  baseCol = mix(baseCol, vec3<f32>(0.75, 0.8, 0.95), ghost * 0.35);
 
   let tone = acesToneMap(baseCol * (0.7 + finalRho * 0.8));
 

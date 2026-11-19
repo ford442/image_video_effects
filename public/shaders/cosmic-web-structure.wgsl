@@ -2,8 +2,13 @@
 //  cosmic-web-structure
 //  Category: advanced-hybrid
 //  Features: voronoi-filaments, structure-tensor, lic-flow,
-//            mouse-driven, depth-aware
+//            mouse-driven, depth-aware, audio-reactive, upgraded-rgba
 //  Complexity: Very High
+//  Upgraded: 2026-11-19
+//  Ideas: cluster knots where three Voronoi cells meet (F3−F1); LIC follows the true filament tangent (perp of ∇border);
+//         void redshift — deep cell interiors cool toward dim red, filaments blue-shift
+//  Rescued 2026-11-19: "filament direction" was the mouse direction; ripple age compared speed-scaled time to absolute start
+//  A packing: ACES display RGBA (alpha = web coverage)
 //  Chunks From: cosmic-web.wgsl, conv-structure-tensor-flow.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-16 — Generative & Cosmic Enhancer
@@ -14,26 +19,7 @@
 //  well distorts both the Voronoi field and the tensor eigenvectors.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash3(p: vec3<f32>) -> vec3<f32> {
     var p3 = fract(p * vec3<f32>(0.1031, 0.1030, 0.0973));
@@ -59,6 +45,28 @@ fn voronoi3(p: vec3<f32>) -> vec2<f32> {
         }
     }
     return vec2<f32>(sqrt(f1), sqrt(f2));
+}
+
+// Same lattice as voronoi3, also keeping F3: a small F3−F1 means three cells meet (a cluster node).
+fn voronoi3n(p: vec3<f32>) -> vec3<f32> {
+    let n = floor(p);
+    let f = fract(p);
+    var f1 = 1.0;
+    var f2 = 1.0;
+    var f3 = 1.0;
+    for (var k = -1; k <= 1; k++) {
+        for (var j = -1; j <= 1; j++) {
+            for (var i = -1; i <= 1; i++) {
+                let g = vec3<f32>(f32(i), f32(j), f32(k));
+                let r = g + hash3(n + g) - f;
+                let d = dot(r, r);
+                if (d < f1) { f3 = f2; f2 = f1; f1 = d; }
+                else if (d < f2) { f3 = f2; f2 = d; }
+                else if (d < f3) { f3 = d; }
+            }
+        }
+    }
+    return sqrt(vec3<f32>(f1, f2, f3));
 }
 
 fn fbm(p: vec3<f32>) -> f32 {
@@ -130,6 +138,10 @@ fn lic(uv: vec2<f32>, direction: vec2<f32>, pixelSize: vec2<f32>, steps: i32, st
     return accum / max(weight, 0.001);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
     return a + b * cos(6.28318 * (c * t + d));
 }
@@ -143,10 +155,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var uv = (uv_screen - 0.5) * vec2<f32>(res.x / res.y, 1.0) + 0.5;
     let time = u.config.x * u.zoom_params.z;
     let pixelSize = 1.0 / res;
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+    let treble = plasmaBuffer[0].z;
 
     // Parameters
     let warpStrength = u.zoom_params.x;
-    let density = u.zoom_params.y;
+    let density = u.zoom_params.y * (1.0 + bass * 0.35);
     let licSteps = i32(mix(8.0, 24.0, u.zoom_params.w));
     let coherencyBoost = mix(0.5, 4.0, u.zoom_params.w);
 
@@ -164,8 +179,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let warp = fbm(p);
     p += vec3<f32>(warp * warpStrength);
 
-    var v = voronoi3(p);
+    let v3 = voronoi3n(p);
+    let v = v3.xy;
     let border = v.y - v.x;
+    // Idea 1: cluster knots — galaxies gather where three cells (three filaments) meet.
+    let knot = smoothstep(0.22, 0.0, v3.z - v3.x) * (0.8 + mids * 0.6);
+    // Idea 2: filament tangent from the border field's gradient (forward differences, 2 extra lookups).
+    let eps = 0.02;
+    let vx = voronoi3(p + vec3<f32>(eps, 0.0, 0.0));
+    let vy = voronoi3(p + vec3<f32>(0.0, eps, 0.0));
+    let gradB = vec2<f32>((vx.y - vx.x) - border, (vy.y - vy.x) - border);
+    let tangent = select(vec2<f32>(1.0, 0.0), normalize(vec2<f32>(-gradB.y, gradB.x)), length(gradB) > 1e-5);
     let filament = 1.0 / (border * 10.0 + 0.05);
     let webDensity = smoothstep(0.0, 1.0, filament * density);
 
@@ -189,7 +213,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let boostedCoherency = pow(coherency, 1.0 / coherencyBoost);
 
     // Blend filament direction with tensor eigenvector
-    let filamentDir = dirToMouse;
+    let filamentDir = tangent;
     eigenvec = normalize(mix(eigenvec, filamentDir, webDensity * 0.5));
 
     // Ripple turbulence
@@ -199,7 +223,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ripple = u.ripples[i];
         let rPos = ripple.xy;
         let rStart = ripple.z;
-        let rElapsed = time * 0.5 - rStart;
+        let rElapsed = u.config.x - rStart;
         if (rElapsed > 0.0 && rElapsed < 3.0) {
             let rDist = length(uv_screen - rPos);
             let wave = exp(-pow((rDist - rElapsed * 0.3) * 8.0, 2.0));
@@ -220,12 +244,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let flowAngle = atan2(eigenvec.y, eigenvec.x) * 0.15915 + 0.5;
     let flowColor = palette(flowAngle, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
 
-    var color = mix(colVoid, colFilament, webDensity);
+    // Idea 3: void redshift — far from any wall the void reddens and dims; dense walls blue-shift.
+    let voidDepth = smoothstep(0.05, 0.6, border);
+    let colVoidDeep = vec3<f32>(0.09, 0.012, 0.03);
+    var color = mix(mix(colVoid, colVoidDeep, voidDepth), colFilament * vec3<f32>(0.85, 1.0, 1.15), webDensity);
     color = mix(color, colCore, smoothstep(0.8, 1.0, webDensity));
     color = mix(color, flowColor, boostedCoherency * 0.5);
     color = color * (0.3 + 0.7 * boostedCoherency) * (0.5 + 0.5 * licValue);
+    // Idea 3 (cont.): the redshift also tints what the flow palette laid over the void.
+    color *= mix(vec3<f32>(1.0), vec3<f32>(1.15, 0.5, 0.55), voidDepth * (1.0 - webDensity) * 0.7);
+    // Knots glow on top of the LIC-modulated web (not multiplied away in flat image regions).
+    color += vec3<f32>(1.0, 0.85, 0.65) * knot * webDensity * (0.6 + treble * 0.3);
 
-    textureStore(writeTexture, coord, vec4<f32>(color, licValue));
+    let outRGB = acesToneMap(color * 0.8);
+    let alpha = clamp(0.25 + 0.75 * max(webDensity, knot), 0.0, 1.0);
+    let outC = vec4<f32>(outRGB, alpha);
+    textureStore(writeTexture, coord, outC);
+    textureStore(dataTextureA, coord, outC);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv_screen, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

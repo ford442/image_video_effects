@@ -3,13 +3,17 @@
   "name": "Mycelium Network",
   "category": "generative",
   "url": "shaders/mycelium-network.wgsl",
-  "description": "Underground fungal hyphae network with pulsing nutrient flows traveling along branches. Audio triggers bright nutrient pulses.",
+  "description": "Underground fungal hyphae network with pulsing nutrient flows traveling along branches. Neighbouring tips fuse into anastomosis bridges that shuttle nutrients, fruiting primordia knots swell on bass, and clicks launch a nutrient packet through the net.",
   "features": [
     "audio-reactive",
     "generative",
     "branching-network",
     "upgraded-rgba",
-    "pulsing-nutrients"
+    "pulsing-nutrients",
+    "mouse-driven",
+    "anastomosis-bridges",
+    "fruiting-primordia",
+    "click-pulse-packets"
   ],
   "params": [
     {

@@ -5146,7 +5146,7 @@
     "url": "shaders/gen-bismuth-hyper-crystals.wgsl",
     "type": "generative",
     "category": "generative",
-    "description": "Witness the mesmerizing growth of non-Euclidean hopper crystals that refract light into a shifting, iridescent spectrum. This shader creates a slowly mutating, metallic fractal geometry inspired by the stepped, stair-like structure of bismuth crystals.",
+    "description": "Witness the mesmerizing growth of non-Euclidean hopper crystals that refract light into a shifting, iridescent spectrum. This shader creates a slowly mutating, metallic fractal geometry inspired by the stepped, stair-like structure of bismuth crystals. Each hopper terrace carries its own oxide-film band, and a molten growth shell sweeps outward with the growth cycle.",
     "features": [
       "bismuth",
       "iridescent",
@@ -5548,7 +5548,7 @@
       "temporal",
       "mouse-driven"
     ],
-    "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack α from mouse Y drives C_L=2πα (thin airfoil). Stall at ~15° creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping.",
+    "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack α from mouse Y drives C_L=2πα (thin airfoil). Stall at ~15° creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping. The plumage is covered in eye-like ocelli whose pupils dilate with bass, and each wingbeat leaves a downwash wake of glow streaming below the wings.",
     "workgroup_size": [
       16,
       16,
@@ -9077,7 +9077,7 @@
     "id": "gen-cyclic-automaton",
     "name": "Greenberg-Hastings Automaton",
     "url": "shaders/gen_cyclic_automaton.wgsl",
-    "description": "Excitable cellular medium with firing, refractory cooling, bass-driven spontaneous ignition, directional held-mouse painting, and timestamp-bounded click wavefronts.",
+    "description": "Excitable cellular medium with firing, refractory cooling, bass-driven spontaneous ignition, directional held-mouse painting, and timestamp-bounded click wavefronts. Sparse ignition lets diamond wavefronts form; ember spiral-rotor cores mark phase singularities and white seams flash where waves collide head-on.",
     "features": [
       "upgraded-rgba",
       "depth-aware",
@@ -11685,7 +11685,7 @@
     "tags": [
       "generative"
     ],
-    "description": "A raymarched quantum medusa with chromatic tentacles, held-mouse gravity, finite click waves, temporal bioluminescence, and three-band plasma response.",
+    "description": "A raymarched quantum medusa with eight helical marginal tentacles and a spiral oral arm, translucent mesoglea, chromatic tentacles, held-mouse gravity, finite click waves, temporal bioluminescence, and three-band plasma response.",
     "workgroup_size": [
       16,
       16,
@@ -18148,7 +18148,9 @@
     "features": [
       "audio-reactive",
       "mouse-driven",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "lobate-margin",
+      "areolate-cracks"
     ],
     "feedbackPacking": "A/C = display RGB + pattern_density in A.a"
   },
@@ -20008,7 +20010,9 @@
       "audio-reactive",
       "mouse-driven",
       "upgraded-rgba",
-      "click-reactive"
+      "click-reactive",
+      "reconnection-flares",
+      "radiation-belt"
     ],
     "params": [
       {
@@ -29726,7 +29730,7 @@
       "chromatic-aberration",
       "light-attenuation"
     ],
-    "description": "Spinning radial arches and sanctum rings form a gothic vortex illuminated by bass-lit cores. Enhanced with volumetric god rays, 6-pointed starburst diffraction spikes, chromatic aberration at edges, multi-layered sanctum glow, and realistic light attenuation.",
+    "description": "Spinning radial arches and sanctum rings form a gothic vortex illuminated by bass-lit cores. Enhanced with volumetric god rays, 6-pointed starburst diffraction spikes, chromatic aberration at edges, multi-layered sanctum glow, and realistic light attenuation. Incense smoke wisps curl upward wherever a god-ray shaft lights them, and each stained-glass pane flickers like a votive candle behind it (treble quickens the flicker).",
     "workgroup_size": [
       16,
       16,
@@ -31350,13 +31354,17 @@
     "name": "Mycelium Network",
     "category": "generative",
     "url": "shaders/mycelium-network.wgsl",
-    "description": "Underground fungal hyphae network with pulsing nutrient flows traveling along branches. Audio triggers bright nutrient pulses.",
+    "description": "Underground fungal hyphae network with pulsing nutrient flows traveling along branches. Neighbouring tips fuse into anastomosis bridges that shuttle nutrients, fruiting primordia knots swell on bass, and clicks launch a nutrient packet through the net.",
     "features": [
       "audio-reactive",
       "generative",
       "branching-network",
       "upgraded-rgba",
-      "pulsing-nutrients"
+      "pulsing-nutrients",
+      "mouse-driven",
+      "anastomosis-bridges",
+      "fruiting-primordia",
+      "click-pulse-packets"
     ],
     "params": [
       {
@@ -31680,7 +31688,7 @@
     "name": "Phase Memory Weave",
     "url": "shaders/phase-memory-weave.wgsl",
     "category": "generative",
-    "description": "Authoritative Ginzburg-Landau state packed as psiR, psiI, slow memory, and activity, with exact center/neighbor loads, sprung thermal focus, bounded click phase fronts, opalescent ACES display, semantic alpha, and source depth.",
+    "description": "Authoritative Ginzburg-Landau state packed as psiR, psiI, slow memory, and activity, with exact center/neighbor loads, coarsening domains, glowing phase-vortex cores tinted by chirality, ghost contours of remembered domain walls, click phase fronts, opalescent ACES display, semantic alpha, and source depth.",
     "features": [
       "ginzburg-landau",
       "allen-cahn",
@@ -31691,10 +31699,14 @@
       "temporal",
       "exact-history",
       "raw-state-feedback",
-      "spring-interaction",
       "click-reactive",
       "aces-tone-map",
-      "semantic-alpha"
+      "semantic-alpha",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba",
+      "phase-vortex-cores",
+      "memory-ghost-contours"
     ],
     "tags": [
       "viscous",

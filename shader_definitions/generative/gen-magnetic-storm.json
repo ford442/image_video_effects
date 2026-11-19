@@ -27,7 +27,9 @@
     "audio-reactive",
     "mouse-driven",
     "upgraded-rgba",
-    "click-reactive"
+    "click-reactive",
+    "reconnection-flares",
+    "radiation-belt"
   ],
   "params": [
     {

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: raymarch, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: twinning-seam terraces from folded-axis coincidence lines; Bragg scintillation bursts phase-locked to fold-lineage families
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: twinning-seam terraces from folded-axis coincidence lines; Bragg scintillation bursts phase-locked to fold-lineage families; stepped oxide-film thickness per hopper terrace; molten growth-front shell sweeping outward with the growth cycle
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back as HDR for a light temporal blend
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -198,10 +198,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let spec = pow(max(dot(n, halfDir), 0.0), max(u.zoom_params.w * 100.0, 2.0));
 
         // Idea 3: fold-lineage colour — same palette, phase offset by the fold branch.
-        let lineage = mapLineage(p).y;
+        let lin3 = mapLineage(p);
+        let lineage = lin3.y;
+
+        // Idea 6: oxide film thickens one quantum per hopper terrace, so each step
+        // carries its own interference band instead of a smooth hue sweep.
+        let terrace = floor(length(p) * 1.25);
+        let oxide = fract(terrace * 0.381) * 0.35;
 
         // Iridescence based on position and normal
-        let thickness = length(p) * 0.1 + dot(n, viewDir) * 0.5 + lineage * 0.4;
+        let thickness = length(p) * 0.1 + dot(n, viewDir) * 0.5 + lineage * 0.4 + oxide;
         let albedo = iridescence(thickness, fft * 0.5);
 
         col = albedo * (diff * 0.5 + 0.5) + vec3<f32>(spec);
@@ -216,6 +222,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let braggPhase = 0.5 + 0.5 * sin(lineage * 6.28318 + u.config.x * 1.2);
         let bragg = pow(max(dot(n, halfDir), 0.0), 24.0) * braggPhase;
         col += vec3<f32>(1.25, 1.05, 0.82) * bragg * 0.35;
+
+        // Idea 7: molten growth front — a shell of cooling melt rides outward with the
+        // growth cycle, so the terraces crystallise from the core to the rim.
+        let frontR = growth * R;
+        let front = exp(-abs(length(p) - frontR) * 3.0) * smoothstep(0.02, 0.15, growth);
+        col += vec3<f32>(1.3, 0.5, 0.1) * front * (0.28 + bass * 0.35);
 
         // Fake AO
         let ao = 1.0 - f32(steps) / f32(MAX_STEPS);

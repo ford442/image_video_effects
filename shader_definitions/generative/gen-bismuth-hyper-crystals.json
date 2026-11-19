@@ -4,7 +4,7 @@
   "url": "shaders/gen-bismuth-hyper-crystals.wgsl",
   "type": "generative",
   "category": "generative",
-  "description": "Witness the mesmerizing growth of non-Euclidean hopper crystals that refract light into a shifting, iridescent spectrum. This shader creates a slowly mutating, metallic fractal geometry inspired by the stepped, stair-like structure of bismuth crystals.",
+  "description": "Witness the mesmerizing growth of non-Euclidean hopper crystals that refract light into a shifting, iridescent spectrum. This shader creates a slowly mutating, metallic fractal geometry inspired by the stepped, stair-like structure of bismuth crystals. Each hopper terrace carries its own oxide-film band, and a molten growth shell sweeps outward with the growth cycle.",
   "features": [
     "bismuth",
     "iridescent",
