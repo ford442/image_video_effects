@@ -3,32 +3,15 @@
 //  Category: generative
 //  Features: generative, audio-reactive, branching-network, pulsing-nutrients,
 //            upgraded-rgba, branchless, anti-moire, click-pulse-packets,
-//            growth-tropism, bass-heartbeat, worley-thickness
+//            growth-tropism, bass-heartbeat, worley-thickness,
+//            anastomosis-bridges, fruiting-primordia, mouse-driven
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-07, interactivist upgrade 2026-07-22
+//  Upgraded: 2026-06-07, interactivist upgrade 2026-07-22, 2026-11-19
+//  Ideas: anastomosis bridges fuse tips across cells; fruiting primordia knots swell on bass; click packets from the ripple queue
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ── Constants ─────────────────────────────────────────────────────
 const MAX_BRANCHES: i32 = 5;
@@ -72,6 +55,23 @@ fn fast_atan2(y: f32, x: f32) -> f32 {
     return r;
 }
 
+// Sample-to-segment distance (anastomosis bridges).
+fn segDist(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> vec2<f32> {
+    let ab = b - a;
+    let t = clamp(dot(p - a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+    return vec2<f32>(length(p - a - ab * t), t);
+}
+
+// Trunk tip of cell `c`, in that cell's centred local frame (same
+// seeding + tropism as the per-pixel trunk, so bridges meet real tips).
+fn trunkTip(c: vec2<f32>, mouseUV: vec2<f32>, aspect: vec2<f32>, density: f32, leanRate: f32) -> vec2<f32> {
+    let dir = hash22(c) - 0.5;
+    let len = 0.3 + hash21(c + vec2<f32>(1.0, 0.0)) * 0.4;
+    let toM = normalize((mouseUV - (c + vec2<f32>(0.5)) / density) * aspect + vec2<f32>(1e-6));
+    let g = normalize(mix(normalize(dir + vec2<f32>(1e-6)), toM, leanRate) + vec2<f32>(1e-6));
+    return g * len;
+}
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
     return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -95,25 +95,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let pulseSpeed = u.zoom_params.z * 3.0;
     let glowIntensity = u.zoom_params.w;
 
-    // ── Click state: rising-edge nutrient pulse packet ────────────
-    // extraBuffer[0..4] reserved, [5..132] = engine FFT bins. This shader uses [133..136]:
-    //   [5] = previous mouse-down state (rising-edge detector)
-    //   [6] = time of last click (packet launch time)
-    //   [7..8] = UV of last click (packet origin)
-    // Only thread (0,0) writes; all threads read last frame's state.
+    // ── Click state: newest entry of the engine ripple queue ──────
+    // (HEAD kept click state in extraBuffer[133..136], which the host
+    // re-uploads every frame, so the packet never launched.)
     let mouseUV = u.zoom_config.yz;
-    let mouseDown = u.zoom_config.w;
-    let prevDown = extraBuffer[133];
-    let clickTime = extraBuffer[134];
-    let clickPos = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (gid.x == 0u && gid.y == 0u) {
-        extraBuffer[133] = mouseDown;
-        if (mouseDown > 0.5 && prevDown < 0.5) {
-            extraBuffer[134] = time;
-            extraBuffer[135] = mouseUV.x;
-            extraBuffer[136] = mouseUV.y;
-        }
-    }
+    let rippleCount = min(u32(u.config.y), 50u);
+    let lastRipple = u.ripples[max(rippleCount, 1u) - 1u];
+    let clickTime = select(-1e3, lastRipple.z, rippleCount > 0u);
+    let clickPos = lastRipple.xy;
 
     // Expanding pulse packet traveling outward from the click point.
     // Speed scales with the Pulse Speed slider; decays with age.
@@ -157,7 +146,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ── Worley thickness: strands vary in width, heartbeat swells ─
     let thickVar = 0.6 + worley(p * 0.5) * 0.8;
-    let trunkWidth = TRUNK_WIDTH * thickVar * (1.0 + heartbeat * 0.2);
+    // Pixel floor: at thumbnail / small working sizes the 0.015-cell
+    // strands were sub-pixel and the network vanished (HEAD meanL 0.009).
+    let pxCell = networkDensity / minRes;
+    let trunkWidth = max(TRUNK_WIDTH * thickVar, pxCell * 1.1) * (1.0 + heartbeat * 0.2);
 
     let trunkEnd = grownDir * trunkLen;
     let trunkN = normalize(trunkEnd + vec2<f32>(1e-6));
@@ -173,8 +165,49 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     color = color + vec3<f32>(0.4, 0.8, 0.5) * trunk * (0.3 + mids * 0.3);
     color = color + vec3<f32>(1.0, 0.9, 0.6) * pulse * trunk;
-    glow = glow + trunk + pulse * 2.0;
+    // HEAD added `pulse` unmasked: it depends only on trunk projection, so
+    // alpha/depth carried whole rectangular slabs across each cell.
+    glow = glow + trunk * (1.0 + pulse * 2.0);
     hypha = hypha + trunk;
+
+    // ── Idea 1: anastomosis bridges ───────────────────────────────
+    // Real mycelium fuses neighbouring hyphae into a net. Every cell's
+    // trunk tip may fuse with each 4-neighbour's tip; the fuse hash is
+    // keyed on the unordered pair, so both cells draw the same link and
+    // it stays continuous across the cell border.
+    let myTip = trunkEnd;
+    var bridge = 0.0;
+    var bridgeT = 0.0;
+    for (var k = 0; k < 4; k = k + 1) {
+        let ax = select(vec2<f32>(0.0, 1.0), vec2<f32>(1.0, 0.0), (k & 1) == 0);
+        let d = select(ax, -ax, k >= 2);
+        let pairKey = cellId + min(d, vec2<f32>(0.0));
+        let fuse = step(0.45, hash21(pairKey + ax * 7.3 + vec2<f32>(11.0, 5.0)));
+        let b = trunkTip(cellId + d, mouseUV, aspect, networkDensity, leanRate) + d;
+        let sd = segDist(cellUV, myTip, b);
+        let m = smoothstep(trunkWidth * 0.55, 0.0, sd.x) * fuse;
+        bridgeT = select(bridgeT, sd.y, m > bridge);
+        bridge = max(bridge, m);
+    }
+    bridge = bridge * lodFade;
+    // Nutrients shuttle across fused links in a slow back-and-forth.
+    let shuttle = smoothstep(0.12, 0.0, abs(bridgeT - (0.5 + 0.5 * sin(time * (0.5 + pulseSpeed)))));
+    color = color + vec3<f32>(0.35, 0.65, 0.45) * bridge * (0.35 + mids * 0.3);
+    color = color + vec3<f32>(1.0, 0.85, 0.55) * shuttle * bridge * (0.6 + bass);
+    glow = glow + bridge * (0.6 + shuttle);
+    hypha = hypha + bridge;
+
+    // ── Idea 2: fruiting primordia ────────────────────────────────
+    // ~30% of trunk tips carry a pinhead knot that swells with bass:
+    // cream cap, darker rim, so the colony reads as about to fruit.
+    let hasKnot = step(0.7, hash21(seed + vec2<f32>(9.0, 3.0)));
+    let knotR = trunkWidth * (1.6 + bass * 1.4 + heartbeat * 0.4);
+    let knotD = length(cellUV - myTip);
+    let knot = smoothstep(knotR, knotR * 0.6, knotD) * hasKnot;
+    let rim = smoothstep(knotR * 1.25, knotR, knotD) * (1.0 - smoothstep(knotR, knotR * 0.7, knotD)) * hasKnot;
+    color = color + vec3<f32>(0.95, 0.88, 0.7) * knot * (0.5 + glowIntensity * 0.6);
+    color = color * (1.0 - rim * 0.5);
+    glow = glow + knot * 1.2;
 
     // ── Branches (branchless: fixed 5 iterations, masked) ─────────
     let trunkAngle = fast_atan2(trunkEnd.y, trunkEnd.x);
@@ -200,7 +233,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         color = color + vec3<f32>(0.3, 0.7, 0.4) * branch * 0.5;
         color = color + vec3<f32>(0.8, 1.0, 0.7) * tipGlow * branch * glowIntensity;
         color = color + vec3<f32>(1.0, 0.95, 0.7) * bPulse * branch;
-        glow = glow + (branch + tipGlow * 0.5 + bPulse) * isActive;
+        glow = glow + branch * (1.0 + tipGlow * 0.5 + bPulse);
         hypha = hypha + branch;
     }
 
@@ -231,7 +264,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let alpha = clamp(glow * 0.4 + 0.1 + bass * 0.05, 0.0, 1.0);
     color = acesToneMap(color * 1.1);
 
-    let outRGBA = vec4<f32>(color * alpha, alpha);
+    // Straight (non-premultiplied) display RGB: HEAD multiplied by alpha
+    // here as well, darkening the picture twice under compositing.
+    let outRGBA = vec4<f32>(color, alpha);
 
     textureStore(writeTexture, coord, outRGBA);
     textureStore(dataTextureA, coord, vec4<f32>(color, alpha));

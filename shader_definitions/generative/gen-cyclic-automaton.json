@@ -2,7 +2,7 @@
   "id": "gen-cyclic-automaton",
   "name": "Greenberg-Hastings Automaton",
   "url": "shaders/gen_cyclic_automaton.wgsl",
-  "description": "Excitable cellular medium with firing, refractory cooling, bass-driven spontaneous ignition, directional held-mouse painting, and timestamp-bounded click wavefronts.",
+  "description": "Excitable cellular medium with firing, refractory cooling, bass-driven spontaneous ignition, directional held-mouse painting, and timestamp-bounded click wavefronts. Sparse ignition lets diamond wavefronts form; ember spiral-rotor cores mark phase singularities and white seams flash where waves collide head-on.",
   "features": [
     "upgraded-rgba",
     "depth-aware",

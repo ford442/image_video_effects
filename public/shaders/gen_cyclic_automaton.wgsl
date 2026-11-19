@@ -4,31 +4,12 @@
 //  Features: upgraded-rgba, aces-tone-map, depth-aware, audio-reactive, mouse-driven, temporal
 //  Complexity: Medium
 //  Scientific: Greenberg-Hastings excitable media with cardinal-wave triggering, refractory cooling, and bass-driven spontaneous ignition
-//  Upgraded: 2026-09-27
-//  Ideas: cardinal chirality on firing; just-fired refractory halo; pacemaker vs wave; cooldown ticks
+//  Upgraded: 2026-09-27, 2026-11-19
+//  Ideas: cardinal chirality on firing; just-fired refractory halo; pacemaker vs wave; cooldown ticks; spiral-rotor phase-singularity cores; head-on collision annihilation seams
 //  A packing: raw state, firingMask, refractoryProgress, bloom
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // extraBuffer layout (shader-owned [133..138] only):
 //   spring mouse xy, velocity xy, lastTime, initialized
@@ -37,8 +18,13 @@ fn clampCoord(p: vec2<i32>, size: vec2<i32>) -> vec2<i32> {
   return clamp(p, vec2<i32>(0, 0), size - vec2<i32>(1, 1));
 }
 
+// Integer PCG hash: the old sin-hash lost precision at large time offsets and
+// printed a diagonal lattice over the whole field.
 fn hash21(p: vec2<f32>) -> f32 {
-  return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
+  var h = u32(i32(p.x)) * 747796405u + u32(i32(p.y)) * 2891336453u + 2246822519u;
+  h = ((h >> ((h >> 28u) + 4u)) ^ h) * 277803737u;
+  h = (h >> 22u) ^ h;
+  return f32(h) / 4294967295.0;
 }
 
 fn decodeState(v: f32, numStates: i32) -> i32 {
@@ -74,7 +60,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coord = vec2<i32>(global_id.xy);
   let size = vec2<i32>(i32(resolution.x), i32(resolution.y));
   let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
-  let time = u.config.x * 6.5; // Fast motion upgrade
 
   let inputColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
   let inputDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -148,12 +133,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   // ── Ignition sources ─────────────────────────────────────────────
-  let rand = hash21(vec2<f32>(f32(coord.x), f32(coord.y)) + vec2<f32>(time * 31.1, time * 17.3));
-  let spontaneousProb = spontaneousBase * (0.2 + bass * 4.2);
+  let frameSeed = f32(u32(u.config.x * 60.0) % 65536u);
+  let rand = hash21(vec2<f32>(f32(coord.x) + frameSeed * 613.0, f32(coord.y) + frameSeed * 389.0));
+  // Sparse ignition: HEAD fired ~1% of cells per frame, a uniform mush with no wavefronts.
+  let spontaneousProb = spontaneousBase * 0.03 * (0.3 + bass * 2.0);
   // Treble ignition sparks: a fine, fast hash-noise pattern gated by hi-hat
   // energy seeds new wave centers scattered across the field.
-  let sparkHash = hash21(vec2<f32>(f32(coord.x), f32(coord.y)) * 1.618 + vec2<f32>(time * 113.7, -time * 91.3));
-  let trebleSparkProb = spontaneousBase * treble * 9.0 * smoothstep(0.35, 0.95, sparkHash);
+  let sparkHash = hash21(vec2<f32>(f32(coord.y) + frameSeed * 211.0, f32(coord.x) + frameSeed * 977.0 + 50000.0));
+  let trebleSparkProb = spontaneousBase * treble * 0.08;
   let trebleSpark = sparkHash > 1.0 - clamp(trebleSparkProb, 0.0, 0.9);
   let ignite = (cardFiring > 0) || (rand < spontaneousProb) || trebleSpark
     || (mouseMask > 0.02) || (clickIgnition > 0.28);
@@ -190,6 +177,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let earlyRefr = refractoryMask * (1.0 - smoothstep(0.0, 0.14, refractoryProgress)) * smoothstep(0.03, 0.22, trailMax);
   let tracer = clamp(leadingEdge + earlyRefr * 0.6, 0.0, 1.0);
 
+  // Idea 5 — spiral-rotor cores: a phase singularity is where every phase of the
+  // cycle (rest, fire, early cooling, late cooling) meets inside one 3x3 block.
+  // Those cells are the pivots GH spirals rotate around; mark them as embers.
+  var phaseBits = 0u;
+  let nb = array<i32, 9>(currentState, n, s, e, w, ne, nw, se, sw);
+  for (var k = 0; k < 9; k = k + 1) {
+    let st = nb[k];
+    let rpK = refractoryProgressOf(st, numStates);
+    let cls = select(select(select(3u, 2u, rpK < 0.5), 1u, st == 1), 0u, st == 0);
+    phaseBits = phaseBits | (1u << cls);
+  }
+  let rotorCore = select(0.0, 1.0, phaseBits == 15u);
+
+  // Idea 6 — collision seams: a resting cell lit from opposite sides at once is
+  // where two wavefronts meet head-on and annihilate (GH waves never pass through).
+  let headOn = (n == 1 && s == 1) || (e == 1 && w == 1);
+  let collision = select(0.0, 1.0, isResting && headOn);
+
   // ── Coloring ─────────────────────────────────────────────────────
   let rpCurve = pow(refractoryProgress, cooldownCurve);
   let restColor = vec3<f32>(0.04, 0.01, 0.12) + vec3<f32>(0.18, 0.08, 0.42) * bloom * 0.22;
@@ -222,6 +227,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   generatedColor += vec3<f32>(0.08, 0.12, 0.22) * smoothstep(0.2, 1.0, mids) * (1.0 - refractoryMask) * 0.15;
   generatedColor += tracerColor * tracer * (0.55 + bloomStrength * 0.9);
   generatedColor += vec3<f32>(0.9, 0.95, 1.0) * select(0.0, 1.0, trebleSpark) * 0.35 * (1.0 - firingMask);
+  generatedColor += vec3<f32>(1.0, 0.42, 0.08) * rotorCore * (0.55 + bass * 0.4);
+  generatedColor += vec3<f32>(0.95, 1.0, 1.0) * collision * (0.5 + mids * 0.3);
   generatedColor += vec3<f32>(0.22, 0.75, 1.0) * clickIgnition * (0.25 + mids * 0.35);
 
   let opacity = 0.92;

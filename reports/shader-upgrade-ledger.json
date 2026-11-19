@@ -544,8 +544,17 @@
       "history": []
     },
     "cosmic-web-structure": {
-      "hash": "93a964d93bfd1986",
-      "history": []
+      "hash": "6bb325b2c2183716",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "6bb325b2c2183716",
+          "prev_hash": "93a964d93bfd1986",
+          "commit": "98352d8f",
+          "note": null
+        }
+      ]
     },
     "crt-tv-stipple": {
       "hash": "bda3ad91cb2dc5ef",
@@ -5341,7 +5350,7 @@
       ]
     },
     "gen-bismuth-hyper-crystals": {
-      "hash": "fa622f1f6df8a89e",
+      "hash": "1973e07451612db9",
       "history": [
         {
           "event": "upgraded",
@@ -5350,6 +5359,14 @@
           "prev_hash": "c99e827b6645aae3",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "1973e07451612db9",
+          "prev_hash": "fa622f1f6df8a89e",
+          "commit": "98352d8f",
+          "note": null
         }
       ]
     },
@@ -5417,7 +5434,7 @@
       ]
     },
     "gen-celestial-aether-seraphim-wings": {
-      "hash": "e0317d227de2cc79",
+      "hash": "0bf63fcea8786071",
       "history": [
         {
           "event": "upgraded",
@@ -5426,6 +5443,14 @@
           "prev_hash": "c936d56ef03009e0",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "0bf63fcea8786071",
+          "prev_hash": "e0317d227de2cc79",
+          "commit": "98352d8f",
+          "note": null
         }
       ]
     },
@@ -6977,7 +7002,7 @@
       ]
     },
     "gen-ethereal-quantum-medusa": {
-      "hash": "e4e5f380f18fd39e",
+      "hash": "70ffe5af0d6344a8",
       "history": [
         {
           "event": "upgraded",
@@ -6986,6 +7011,14 @@
           "prev_hash": "3a8ab65131fa3860",
           "commit": "d74e665b",
           "note": "2026-10-10 ethereal/cymatic/labyrinth ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-10-10-ethereal-cymatic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "70ffe5af0d6344a8",
+          "prev_hash": "e4e5f380f18fd39e",
+          "commit": "98352d8f",
+          "note": null
         }
       ]
     },
@@ -8523,7 +8556,7 @@
       ]
     },
     "gen-lichen-reaction-diffusion": {
-      "hash": "03bb9fb3cc2d86a7",
+      "hash": "6e5709749eb03a6c",
       "history": [
         {
           "event": "upgraded",
@@ -8532,6 +8565,14 @@
           "prev_hash": "a9816ccf87abf4a0",
           "commit": "cc600bb4",
           "note": "2026-10-10 lichen/liquid/luminescent ten (Claude) — agents/swarm-outputs/claude-2026-10-10-lichen-liquid-luminescent-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "6e5709749eb03a6c",
+          "prev_hash": "03bb9fb3cc2d86a7",
+          "commit": "98352d8f",
+          "note": null
         }
       ]
     },
@@ -9077,7 +9118,7 @@
       ]
     },
     "gen-magnetic-storm": {
-      "hash": "4fe401a816a674d0",
+      "hash": "4026ccd0589ac979",
       "history": [
         {
           "event": "upgraded",
@@ -9086,6 +9127,14 @@
           "prev_hash": "46fa2647ffc8dfd2",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "4026ccd0589ac979",
+          "prev_hash": "4fe401a816a674d0",
+          "commit": "98352d8f",
+          "note": null
         }
       ]
     },
@@ -11342,7 +11391,7 @@
       ]
     },
     "gen-vortex-cathedral": {
-      "hash": "aeac42830f85077f",
+      "hash": "c256853a578d7200",
       "history": [
         {
           "event": "upgraded",
@@ -11351,6 +11400,14 @@
           "prev_hash": "00058833539275b2",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "c256853a578d7200",
+          "prev_hash": "aeac42830f85077f",
+          "commit": "98352d8f",
+          "note": null
         }
       ]
     },
@@ -11448,8 +11505,17 @@
       "history": []
     },
     "gen-cyclic-automaton": {
-      "hash": "53b4b44d43444400",
-      "history": []
+      "hash": "ea675f4adeab02ff",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "ea675f4adeab02ff",
+          "prev_hash": "53b4b44d43444400",
+          "commit": "98352d8f",
+          "note": null
+        }
+      ]
     },
     "gen-fluffy-raincloud": {
       "hash": "aa344827da1efd1d",
@@ -12004,8 +12070,17 @@
       ]
     },
     "mycelium-network": {
-      "hash": "5d80dbecc3d9a859",
-      "history": []
+      "hash": "1c26452977e1153d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "1c26452977e1153d",
+          "prev_hash": "5d80dbecc3d9a859",
+          "commit": "98352d8f",
+          "note": null
+        }
+      ]
     },
     "nebula-gyroid": {
       "hash": "368300a0b3fd1cd2",
@@ -12068,8 +12143,17 @@
       ]
     },
     "phase-memory-weave": {
-      "hash": "e532b6902489aab1",
-      "history": []
+      "hash": "147f1395bf699954",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:42:37.348Z",
+          "hash": "147f1395bf699954",
+          "prev_hash": "e532b6902489aab1",
+          "commit": "98352d8f",
+          "note": null
+        }
+      ]
     },
     "phosphorescent-jellyfish": {
       "hash": "65edae29ff9a4a9d",

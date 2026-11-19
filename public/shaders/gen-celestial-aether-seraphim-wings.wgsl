@@ -11,7 +11,8 @@
 //  Upgraded: 2026-10-10
 //  Ideas: stall-vortex shedding perturbs the feather fold geometry past the
 //         stall angle (turbulent breakup, not just a color tint); lift-direction
-//         hue shift tints the leading edge warm/cool by the sign of AOA; aether plumage contour lines; angelic halo refraction
+//         hue shift tints the leading edge warm/cool by the sign of AOA; aether plumage contour lines; angelic halo refraction;
+//         wing ocelli (eyed plumage); downwash wake trails
 //  A packing: display RGBA (same as writeTexture), exact history read fixed
 // ═══════════════════════════════════════════════════════════════════
 
@@ -205,6 +206,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Stall region = turbulent red/orange chaos
     let turb = vec3<f32>(1.0, 0.4, 0.1) * stall * (0.5 + bass * 1.5);
     col += turb;
+
+    // Idea: wing ocelli — seraph plumage is "full of eyes": iris rings in a 3D
+    // cell lattice on the surface, pupils dilating with bass.
+    let cell = fract(p * 1.6) - 0.5;
+    let er = length(cell.xy) + abs(cell.z) * 0.6;
+    let iris = smoothstep(0.03, 0.0, abs(er - 0.18)) + smoothstep(0.07 + bass * 0.04, 0.03, er) * 0.6;
+    col += mix(vec3<f32>(0.2, 0.7, 1.0), base_col, 0.4) * iris * (0.25 + fresnel * 0.6) * (1.0 + treble * 0.5);
   }
 
   // Add volumetric glow
@@ -212,7 +220,7 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   col += vec3<f32>(glow * 0.015) * glowCol;
 
   // Idea 2: Angelic halo refraction (a giant floating ring above)
-  let haloDist = length(uv - vec2<f32>(0.0, 0.6)) - 0.5;
+  let haloDist = length(uv - vec2<f32>(0.0, -0.6)) - 0.5; // rescue: screen y grows downward, -0.6 is above
   let haloRing = smoothstep(0.05, 0.0, abs(haloDist));
   col += vec3<f32>(1.0, 0.9, 0.4) * haloRing * (0.5 + treble);
 
@@ -231,7 +239,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   // textureSampleLevel against an rgba32float history, which the binding
   // contract forbids)
   let prev = textureLoad(dataTextureC, coords, 0);
-  col = mix(prev.rgb * 0.96, col, 0.25);
+  // Idea: downwash wake — each wingbeat pushes air down; history is pulled from
+  // the texel above so glow streams below the ascending wings (bass = stronger beat).
+  let wakeShift = i32(2.0 + bass * 4.0);
+  let wakeC = clamp(coords - vec2<i32>(0, wakeShift), vec2<i32>(0), vec2<i32>(res) - 1);
+  let wake = textureLoad(dataTextureC, wakeC, 0);
+  let hist = mix(prev.rgb, wake.rgb, 0.6);
+  col = max(mix(hist * 0.96, col, 0.25), mix(prev.rgb * 0.96, col, 0.25));
 
   let outColor = vec4<f32>(col, alpha);
   textureStore(writeTexture, coords, outColor);
