@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: temporal, chromatic, depth-aware, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: differential-cage precession that offsets the planet gear arm over time; bobbin charge knots where wrapped threads graze energized gear rims
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: Rule 90 gear-tooth automaton passing bits across the mesh; capstan wrap of threads onto the gear rims; differential-cage precession that offsets the planet gear arm over time; bobbin charge knots where wrapped threads graze energized gear rims; shuttle flight laying a weft pick each tooth pitch; heat-blued temper colours on the gear faces
 //  A packing: HDR linear RGB (pre-ACES) + semantic alpha; C read back exactly as HDR colour for echo trails and chromatic smear
 // ═══════════════════════════════════════════════════════════════════
 
@@ -42,7 +42,9 @@ const TAU: f32 = 6.28318530718;
 // Planet gear arm: its centre sits at (1.2, 0.5) in the arm frame (HEAD placement, verbatim).
 const PLANET_BETA: f32 = 0.39479112;   // atan2(0.5, 1.2): arm-frame direction of the planet centre
 const PLANET_PHI0: f32 = -3.73587137;  // self-spin phase so a planet gap faces a sun tooth at the mesh
-const CA_EPOCH: i32 = 24;              // generations between fresh seeds punched in at the mesh
+const CA_EPOCH: i32 = 24;
+const IDEA_5: f32 = 1.0;
+const IDEA_6: f32 = 1.0;              // generations between fresh seeds punched in at the mesh
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -200,6 +202,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pitch_pt = planet_centre * (0.8 / max(length(planet_centre), 1e-3));
     tooth_emit += vec3<f32>(1.0, 0.85, 0.6) * handed * flash * exp(-length(distorted_p - pitch_pt) * 28.0) * 1.2;
 
+    // ── Idea 6: heat-blued temper colours on the gear faces (native) ──
+    // Like a tempered clock spring: straw at the rim, through bronze and purple to blue
+    // toward the hub; mesh friction near the pitch point warms the face back toward straw.
+    let face_depth = max(-gear_d, 0.0);
+    let mesh_heat = exp(-length(distorted_p - pitch_pt) * 3.0);
+    let temper_t = clamp(face_depth / 0.55 - mesh_heat * 0.45, 0.0, 1.0) * 3.0;
+    let straw = vec3<f32>(0.85, 0.68, 0.32);
+    let bronze = vec3<f32>(0.62, 0.36, 0.16);
+    let purple = vec3<f32>(0.38, 0.14, 0.44);
+    let steel_blue = vec3<f32>(0.12, 0.24, 0.62);
+    let temper = select(select(mix(purple, steel_blue, temper_t - 2.0), mix(bronze, purple, temper_t - 1.0), temper_t < 2.0),
+                        mix(straw, bronze, temper_t), temper_t < 1.0);
+    let face_mask = 1.0 - smoothstep(-0.01, 0.0, gear_d);
+    bg_color = mix(bg_color, temper * 0.32 * (1.0 + 0.35 * sin(gear_d * 50.0)), face_mask * 0.8 * IDEA_6);
+
     // Idea 2: capstan wrap. Threads are looked up in a space swirled about each hub by the gear's own
     // SDF band, turning with the gear's spin sense (sun clockwise, planet counter-clockwise).
     let wrap_turn = 0.9 * (0.4 + rotation_speed);
@@ -271,8 +288,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         prev_color = max(textureLoad(dataTextureC, back_coord, 0).xyz, vec3<f32>(0.0));
     }
 
+    // ── Idea 5: shuttle flight (native) ── each tooth pitch the shuttle is thrown across the
+    // loom (direction alternates by generation parity, lane by generation hash), laying a brass
+    // weft pick behind it that the C echo keeps after the shuttle is gone.
+    let throw_dir = select(-1.0, 1.0, imod(gen, 2) == 0);
+    let lane_y = (hash12(vec2<f32>(f32(gen), 3.1)) * 2.0 - 1.0) * 0.8;
+    let x_start = -throw_dir * aspect * 1.15;
+    let x_shuttle = x_start + throw_dir * gen_age * aspect * 2.3;
+    let weft_y = lane_y + 0.012 * sin(p.x * 31.0 + f32(gen));
+    let weft_len = (x_shuttle - x_start) * throw_dir;
+    let weft_s = (p.x - x_start) * throw_dir;
+    let in_pick = step(0.0, weft_s) * step(weft_s, weft_len);
+    let weft = exp(-abs(p.y - weft_y) / 0.006) * in_pick;
+    let sh = (p - vec2<f32>(x_shuttle, lane_y)) / vec2<f32>(0.1, 0.022);
+    let shuttle = exp(-dot(sh, sh) * 1.5);
+    let shuttle_emit = (vec3<f32>(1.0, 0.7, 0.35) * weft * 0.55 + vec3<f32>(1.0, 0.85, 0.55) * shuttle * 1.4)
+        * (1.0 + mids * 0.5) * IDEA_5;
+    thread_cov = max(thread_cov, max(weft, shuttle) * IDEA_5);
+
     // Combine everything (HDR, linear)
-    var final_color = bg_color + gear_glow + tooth_emit + thread_glow;
+    var final_color = bg_color + gear_glow + tooth_emit + thread_glow + shuttle_emit;
 
     // Mix with temporal decay
     final_color = mix(final_color, max(final_color, prev_color * 0.95), temporal_decay);

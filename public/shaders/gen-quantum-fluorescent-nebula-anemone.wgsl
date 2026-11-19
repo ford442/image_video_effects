@@ -3,33 +3,18 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: nematocyst pulse beads crawling the tentacles; Stokes-shift amber afterglow from C history; crenulated breathing oral disc
+//  Upgraded: 2026-09-27, 2026-11-19
+//  Ideas: nematocyst pulse beads crawling the tentacles; Stokes-shift amber afterglow from C history; crenulated breathing oral disc; acrorhagi tip bulbs with Schlick cuticle sheen; touch retraction (clicked arms contract and re-extend)
 //  A packing: raw field state (glow history, fog, quantum, alpha); ACES only on writeTexture
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=ClickCount (NOT audio), z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Fluorescence Intensity, y=Tentacle Density, z=Audio Reactivity, w=Nebula Density
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Fluorescence Intensity, y=Tentacle Density, z=Audio Reactivity, w=Nebula Density
 
 const PI: f32 = 3.14159265359;
+const IDEA4: f32 = 1.0;
+const BG_GAIN: f32 = 0.4;
+const IDEA5: f32 = 1.0;
 
 fn hash(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -173,11 +158,33 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                 sin(p.y * quantumFreq * 0.8 + time * 5.0);
     let quantum = (qWave * 0.5 + 0.5) * 0.8;
 
+    // === Ripple interaction ===
+    var rippleInfluence = 0.0;
+    var retract = 0.0;
+    for (var i = 0; i < 20; i++) {
+        let r = u.ripples[i];
+        // r.z is the click start time (r.w is always 0): strength decays with age
+        let age = time - r.z;
+        if (r.z > 0.0 && age >= 0.0 && age < 6.0) {
+            let d = length(uv - r.xy);
+            if (d < 0.35) {
+                rippleInfluence += (0.35 - d) * exp(-age * 1.0) * 2.5;
+            }
+            // ── Idea 5: touch retraction (native) ── arms near a touch snap in fast,
+            // then re-extend over ~2.5 s.
+            let snap = smoothstep(0.0, 0.12, age) * exp(-age * 1.2);
+            retract = max(retract, snap * (1.0 - smoothstep(0.15, 0.45, d)));
+        }
+    }
+
+    retract = retract * IDEA5;
+
     // === Fluorescent anemone tentacles ===
     var anemone = 0.0;
     var tentacleColor = vec3<f32>(0.0);
     var tentacleEmission = 0.0;
     var beads = vec3<f32>(0.0);
+    var tipGlow = vec3<f32>(0.0);
 
     let warmLight = vec3<f32>(1.4, 0.7, 0.25);
     let coolLight = vec3<f32>(0.25, 0.8, 1.6);
@@ -189,15 +196,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let tentacleP = rot(angle) * p;
 
         let sway = sin(time * 3.0 + fi * 1.7) * 0.4;
-        let dist = length(tentacleP + vec2<f32>(sway, 0.0)) - 1.6;
+        // ── Rescue 1: real radial arms ── HEAD's `length(rot*p) - 1.6` is the same ring for
+        // every i (rotation keeps length), so 22 rings stacked into a white disc. Each arm
+        // now lies along +x of its rotated frame, tapers, and bends with the sway.
+        let armLen = 2.1 * (1.0 - 0.55 * retract);
+        let along = tentacleP.x - 0.55;
+        let lateral = tentacleP.y + sway * 0.35 * along * sin(along * 1.8 - time * 2.0 + fi);
+        let wHalf = (0.13 - 0.07 * clamp(along / armLen, 0.0, 1.0)) * (1.0 + 0.8 * retract);
+        let lenMask = smoothstep(-0.1, 0.15, along) * (1.0 - smoothstep(armLen - 0.25, armLen, along));
+        let dist = abs(lateral) / wHalf;
 
-        let mouseDir = normalize(mouse - uv + 0.0001);
         let reach = tentacleReach * 0.8;
         let mouseInfluence = max(0.0, 1.0 - length(uv - mouse) * 3.5) * reach;
 
         // Tentacle Density: soft-gated count, all 22 visible at the 0.5 default
         let tentGate = clamp(tentacleDensity * 44.0 - fi, 0.0, 1.0);
-        let tent = exp(-dist * dist * (3.5 - mouseInfluence * 1.2)) * tentGate;
+        let tent = exp(-dist * dist * (1.0 - mouseInfluence * 0.35)) * lenMask * tentGate;
         anemone += tent * 0.75;
 
         // Iridescent hue per tentacle
@@ -208,30 +222,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let lit = tentColor * warmLight * 0.6 + tentColor * coolLight * 0.45;
 
         // Fresnel rim based on radial falloff
-        let rim = pow(1.0 - clamp(dist * 0.6, 0.0, 1.0), 4.0);
+        let rimX = clamp(dist * 0.6, 0.0, 1.0);
+        let rim = rimX * rimX * rimX * rimX * step(0.0, along) * lenMask;
         let rimLit = rimLight * rim * 2.5;
 
         tentacleColor += (lit + rimLit) * tent * fluorescence;
         tentacleEmission += tent * fluorescence;
 
         // [Idea 1] Nematocyst pulse beads: sparse photophores crawling each band
-        let q = tentacleP + vec2<f32>(sway, 0.0);
-        let beadPhase = atan2(q.y, q.x) * 7.0 - time * 1.6 + fi * 2.39;
+        let beadPhase = along * 7.0 - time * 1.6 + fi * 2.39;
         let bead = pow(max(cos(beadPhase), 0.0), 24.0) * tent;
         beads += mix(tentColor, vec3<f32>(1.6, 1.5, 1.2), 0.6) * bead;
-    }
 
-    // === Ripple interaction ===
-    var rippleInfluence = 0.0;
-    for (var i = 0; i < 20; i++) {
-        let r = u.ripples[i];
-        // r.z is the click start time (r.w is always 0): strength decays with age
-        let age = time - r.z;
-        if (r.z > 0.0 && age >= 0.0 && age < 6.0) {
-            let d = length(uv - r.xy);
-            if (d < 0.35) {
-                rippleInfluence += (0.35 - d) * exp(-age * 1.0) * 2.5;
-            }
+        // ── Idea 4: acrorhagi tip bulbs (Fresnel–Schlick cuticle) ──
+        // A swollen bulb caps each arm; cos(theta) from its spherical profile drives
+        // F = F0 + (1-F0)(1-cos)^5, so the cuticle edge flares in a hue-shifted sheen.
+        let tipC = vec2<f32>(armLen + 0.5, -sway * 0.35 * (armLen - 0.05) * sin((armLen - 0.05) * 1.8 - time * 2.0 + fi));
+        let bulbR = 0.17 * (1.0 + 0.5 * retract) * (1.0 + 0.15 * sin(time * 2.3 + fi * 3.1));
+        let bx = length(tentacleP - tipC) / bulbR;
+        if (bx < 1.0 && tentGate > 0.0) {
+            let inBulb = 1.0 - smoothstep(0.92, 1.0, bx);
+            let cosT = sqrt(max(1.0 - bx * bx, 0.0));
+            let om = 1.0 - cosT;
+            let schlick = 0.04 + 0.96 * om * om * om * om * om;
+            let sheen = hsv2rgb(vec3<f32>(fract(hueShift + 0.33 + schlick * 0.4), 0.7, 1.0));
+            tipGlow += (tentColor * 0.6 * cosT + sheen * schlick * 2.2) * inBulb * tentGate;
         }
     }
 
@@ -254,12 +269,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let rays = god_rays(uv, time, nebulaDensity * 1.4);
 
     // === Final composition (HDR) ===
-    var hdr = vec3<f32>(prev.rgb) * 0.86;
+    // Rescue 1 (exposure): with the arms no longer stacked, HEAD's wash terms alone sat at
+    // meanL ~0.7 on a black source; the space behind the anemone is scaled by BG_GAIN.
+    var hdr = vec3<f32>(prev.rgb) * 0.4;
+    var bg = vec3<f32>(0.0);
 
     // Nebula glow (cool + warm mix)
-    hdr += nebula * vec3<f32>(0.5, 0.25, 1.2) * 0.9;
-    hdr += nebula2 * vec3<f32>(0.7, 0.4, 1.1) * 0.7;
-    hdr += fog * mix(vec3<f32>(0.2, 0.5, 1.0), vec3<f32>(1.0, 0.5, 0.2), 0.4) * 0.6;
+    bg += nebula * vec3<f32>(0.5, 0.25, 1.2) * 0.9;
+    bg += nebula2 * vec3<f32>(0.7, 0.4, 1.1) * 0.7;
+    bg += fog * mix(vec3<f32>(0.2, 0.5, 1.0), vec3<f32>(1.0, 0.5, 0.2), 0.4) * 0.6;
 
     // [Idea 1] beads, [Idea 2] amber afterglow, [Idea 3] oral disc
     hdr += beads * 0.35 * (0.5 + fluorescence) * (1.0 + audio * 0.5);
@@ -268,10 +286,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     hdr += lip * vec3<f32>(1.6, 0.9, 0.5) * 0.7 * (0.5 + fluorescence);
 
     // Quantum sparkles
-    hdr += quantum * vec3<f32>(1.2, 0.9, 1.8) * 0.45;
+    bg += quantum * vec3<f32>(1.2, 0.9, 1.8) * 0.45;
 
     // Anemone tentacles with emission
     hdr += tentacleColor * 0.95;
+    hdr += tipGlow * (0.5 + fluorescence) * (1.0 + audio * 0.4) * IDEA4;
     hdr += anemone * vec3<f32>(1.1, 0.5, 1.8) * 0.8;
 
     // Mouse attraction glow
@@ -281,7 +300,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Ripple boost + god rays
     hdr += vec3<f32>(0.7, 0.25, 1.5) * rippleInfluence * 0.7;
-    hdr += vec3<f32>(1.3, 1.0, 1.6) * rays * 0.55;
+    bg += vec3<f32>(1.3, 1.0, 1.6) * rays * 0.55;
+
+    hdr += bg * BG_GAIN;
 
     // Audio reactivity boost (plasmaBuffer, scaled by the Audio Reactivity slider)
     hdr *= 1.0 + audio * 0.35;

@@ -5,8 +5,8 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback
 //  Complexity: High
 //  Chunks From: gen-protocell-division.wgsl (upgraded-rgba stack)
-//  Upgraded: 2026-09-27
-//  Ideas: bunch-crossing bursts at the ring planes; magnetic beam steering + betatron wobble; momentum dispersion in the bends; synchrotron sideband comb; Cherenkov wake cones
+//  Upgraded: 2026-09-27, 2026-11-19
+//  Ideas: bunch-crossing bursts at the ring planes; magnetic beam steering + betatron wobble; momentum dispersion in the bends; synchrotron sideband comb; Cherenkov wake cones; Airy-disc aperture diffraction; synchrotron radiation fan on the sleeve
 //  A packing: HDR linear radiance RGB (pre-ACES) + semantic alpha; C read back as HDR history
 //  By: Claude Code Batch 3B
 // ═══════════════════════════════════════════════════════════════════
@@ -79,6 +79,20 @@ fn tunnelSlope(z: f32, time: f32, warp: f32) -> vec2<f32> {
                      -sin(z * 0.15 * warp - time * 0.5) * 0.225 * warp * warp);
 }
 
+const IDEA_6: f32 = 1.0;
+const IDEA_7: f32 = 1.0;
+
+// Idea 6: Airy pattern of a circular aperture, (2 J1(x)/x)^2. J1 uses the small-x series below
+// x = 2.4 and the asymptotic sqrt(2/(pi x)) cos(x - 3pi/4) form above it.
+fn airy(x: f32) -> f32 {
+    let xs = max(x, 1e-4);
+    let jSmall = 0.5 * xs * (1.0 - xs * xs / 8.0 + xs * xs * xs * xs / 192.0);
+    let jLarge = sqrt(2.0 / (3.14159265 * xs)) * cos(xs - 2.35619449);
+    let j1 = select(jLarge, jSmall, xs < 2.4);
+    let a = 2.0 * j1 / xs;
+    return a * a;
+}
+
 fn clampLen(v: vec2<f32>, m: f32) -> vec2<f32> {
     let l = length(v);
     return select(v, v * (m / l), l > m);
@@ -139,18 +153,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Mouse interaction (Magnetic Anomaly)
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
-    let springOmega = 8.0;
-    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
-    mouse += mouseVelocity * springDt;
-    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
-        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = time;
-    }
+    // ── Rescue 1: HEAD sprung this through extraBuffer[133..138], which is re-uploaded as zero
+    // every frame, so the spring reset to rawMouse each frame (a no-op plus a racy write). ──
+    let mouse = rawMouse;
     let mouseNdc = (mouse - vec2<f32>(0.5)) * vec2<f32>(res.x / res.y, 1.0);
     let anomalyTarget = normalize(vec3<f32>(mouseNdc * 0.75, 1.0));
     rd = normalize(mix(rd, anomalyTarget, clamp(anomaly_pull * 0.08, 0.0, 0.4)));
@@ -192,6 +197,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let spec = pow(max(dot(reflect(rd, n), L), 0.0), 32.0);
         col += vec3<f32>(0.8, 0.9, 1.0) * spec * (1.0 - depth) * beamFall;
         col += vec3<f32>(0.25, 0.35, 0.9) * max(dot(n, L), 0.0) * 0.12 * beamFall * (1.0 - depth);
+
+        // ── Idea 7: synchrotron radiation fan (native) — where the containment field bends the
+        // orbit, the beam radiates tangentially onto the OUTER wall of the bend: a warm-white
+        // stripe on the obsidian sleeve on the side the local bend points away from.
+        if (!isRing) {
+            let slope = tunnelSlope(p.z, time, tunnel_warp);
+            let bendMag = length(slope);
+            let outward = select(vec2<f32>(1.0, 0.0), -slope / bendMag, bendMag > 1e-5);
+            let wallDir = normalize(tunnelXY + vec2<f32>(1e-5, 0.0));
+            let facing = max(dot(wallDir, outward), 0.0);
+            let fan = facing * facing * facing * facing * smoothstep(0.0, 0.08, bendMag);
+            col += vec3<f32>(1.0, 0.72, 0.45) * fan * 0.55 * IDEA_7 * (1.0 + audio * 0.8) * (1.0 - depth);
+        }
 
         // Idea 1: the ring whose bunch crossing just fired glows magenta along its rim.
         if (isRing) {
@@ -259,6 +277,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Idea 2/3: beam cross-section threading the ring aperture (traces the steered, wobbling orbit).
         plasma += exp(-r3 * r3 * 10.0) * vec3<f32>(0.55, 0.45, 1.0) * 0.08 * atten;
+        // ── Idea 6: Airy-disc aperture diffraction (§12.2 Airy disc) — the beam spot threading
+        // the circular ring aperture carries (2J1(x)/x)^2 sidelobes; first dark ring at r ≈ 0.45.
+        let ax = r3 * 8.5;
+        let airyRings = vec3<f32>(airy(ax.x), airy(ax.y), airy(ax.z)) * (1.0 - exp(-r3 * r3 * 10.0));
+        plasma += airyRings * vec3<f32>(0.55, 0.45, 1.0) * 0.9 * atten * IDEA_6;
 
         // Idea 1: bunch-crossing burst — core flash + debris shell expanding out to the ring.
         let ev = crossingEvent(ringId, zk, collision_rate, time);

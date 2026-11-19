@@ -5,28 +5,12 @@
 //            hydrothermal-plumes, bioluminescence, mouse-flow-distortion, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-30
+//  Upgraded: 2026-11-19
+//  Ideas: soot occlusion (Beer-Lambert plume extinction); underlit plume (HG forward scatter of vent glow); Riftia tubeworm thicket with retracting gill plumes
+//  A packing: HDR display history (rgb ≤ 7, alpha) — C reads it back for advection
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -90,6 +74,10 @@ fn curlNoise(p: vec2<f32>, time: f32) -> vec2<f32> {
   return vec2<f32>(dy, -dx);
 }
 
+const IDEA_1: f32 = 1.0;
+const IDEA_2: f32 = 1.0;
+const IDEA_3: f32 = 1.0;
+
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = x * (x * 0.15 + 0.05) + 0.004;
   let b = x * (x * 0.15 + 0.50) + 0.06;
@@ -126,14 +114,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let microbeDensity = u.zoom_params.w;
 
   let aspect = res.x / res.y;
-  let p = uv * vec2<f32>(aspect, 1.0);
+  // ── Rescue 1: world-up frame — uv.y=0 is the TOP row; the seafloor is p.y=0 ──
+  let p = vec2<f32>(uv.x * aspect, 1.0 - uv.y);
 
   // Vent position at bottom center
   let ventPos = vec2<f32>(aspect * 0.5, 0.05);
 
   // Mouse distorts vent flow
   let mouseUV = mouse * 0.5 + 0.5;
-  let mouseUVAspect = mouseUV * vec2<f32>(aspect, 1.0);
+  let mouseUVAspect = vec2<f32>(mouseUV.x * aspect, 1.0 - mouseUV.y);
   let mouseDist = length(p - mouseUVAspect);
   let mouseInfluence = exp(-mouseDist * mouseDist * 2.0);
 
@@ -236,7 +225,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Ocean floor
   let floorNoise = fbm2(p * vec2<f32>(8.0, 3.0) + vec2<f32>(0.0, 0.5), 5);
   let floorColor = vec3<f32>(0.02, 0.025, 0.03) * (0.7 + floorNoise * 0.5);
-  let floorMask = smoothstep(0.08, 0.0, uv.y);
+  let floorMask = smoothstep(0.08, 0.0, p.y);
 
   // Vent structure
   let ventDist = length(p - ventPos);
@@ -260,7 +249,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let microbeFlash = smoothstep(0.1, 0.0, abs(microbePhase - 0.5)) * step(0.7, microbeHash);
   let microbePos = (microbeGrid + 0.5) / (8.0 + microbeDensity * 12.0);
   let microbeDistField = length(p - microbePos);
-  let microbeGlow = exp(-microbeDistField * microbeDistField * 200.0) * microbeFlash * treble * 2.0;
+  let microbeGlow = exp(-microbeDistField * microbeDistField * 1500.0) /* Rescue 2: dot fits its cell (was square tiles) */ * microbeFlash * treble * 2.0;
 
   // Microbe colors: bioluminescent greens and blues
   let microbeHue = fract(microbeHash * 0.3 + 0.25);
@@ -279,28 +268,58 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Turbulence particles color
   let turbColor = vec3<f32>(0.7, 0.8, 0.9) * turbParticles;
 
-  var color = floorColor + floorMask * ventColor * ventWall + ventColor * chimneyMask
-    + plumeColor + turbColor;
+  // ── Idea 3: Riftia tubeworm thicket (native) — white tubes + red gill plumes ──
+  // along the floor; sway with the curl field, gills retract under click heat.
+  let wormCell = floor(p.x * 34.0);
+  let wormSeed = hash21(vec2<f32>(wormCell, 3.7));
+  let nearChimney = exp(-abs(p.x - ventPos.x + 0.04) * 1.6);
+  let wormH = (0.06 + wormSeed * 0.11) * step(0.25, wormSeed) * nearChimney;
+  let sway = (curl.x * 0.012 + sin(time * 1.3 + wormSeed * 9.0) * 0.004) * clamp(p.y / max(wormH, 0.001), 0.0, 1.0);
+  let wormX = (wormCell + 0.5) / 34.0 + sway;
+  let tubeD = abs(p.x - wormX);
+  let tube = smoothstep(0.007, 0.0035, tubeD) * step(p.y, wormH) * step(0.0, p.y);
+  let retract = clamp(clickHeat * 2.5, 0.0, 1.0);
+  let gillR = 0.018 * (1.0 - retract * 0.8);
+  let gillD = length((p - vec2<f32>(wormX, wormH + gillR * 0.6)) * vec2<f32>(1.0, 1.4));
+  let gill = smoothstep(gillR, gillR * 0.4, gillD) * step(0.001, wormH);
+  let worms = (vec3<f32>(0.75, 0.72, 0.62) * tube * (0.35 + heatGlow * 0.4)
+    + vec3<f32>(1.1, 0.06, 0.05) * gill * (0.6 + bass * 0.8)) * IDEA_3;
+
+  // ── Idea 1: soot occlusion (Beer–Lambert) — the black smoker is opaque ──
+  // sulfide particulate; its optical depth attenuates the lit floor behind it.
+  let sootTau = totalPlume * (1.2 + height * 2.5) * (0.6 + turbulence * 0.6);
+  let sootT = mix(1.0, exp(-sootTau * 1.6), IDEA_1);
+  var color = (floorColor + floorMask * ventColor * ventWall + ventColor * chimneyMask + worms) * sootT
+    + plumeColor * mix(1.0, 0.55 + 0.45 * sootT, IDEA_1) + turbColor;
+
+  // ── Idea 2: underlit plume (Henyey–Greenstein, g = 0.6) — vent glow ──
+  // scattered toward the viewer by soot; strongest just above the orifice.
+  let hgDir = normalize(p - ventPos + vec2<f32>(0.0, 0.0001));
+  let hgCos = hgDir.y;  // viewer looks along the column axis (screen-up)
+  let hgG = 0.6;
+  let hgPhase = (1.0 - hgG * hgG) / pow(max(1.0 + hgG * hgG - 2.0 * hgG * hgCos, 1e-3), 1.5) * 0.25;
+  let underlit = totalPlume * hgPhase * exp(-distFromVent * 2.2) * heatGlow * (1.0 + bass * 1.5);
+  color += vec3<f32>(1.0, 0.42, 0.12) * underlit * 1.4 * IDEA_2;
   color = color + microbeColor * microbeGlow;
   color += vec3<f32>(0.42, 0.72, 0.88) * bubbles * (0.35 + treble * 0.75);
 
   // Vent glow adds warm light with temperature-based tint (350C max reference)
   let tempFactor = clamp(ventGlow * 1.2 + totalPlume * 0.2, 0.0, 1.0);
-  color = color + ventTempColor(tempFactor) * ventGlow * 0.5;
+  color = max(color, vec3<f32>(0.0)) + ventTempColor(tempFactor) * ventGlow * 0.5;
 
   // Semantic alpha: plume density + glow + microbes + vent wall
   let alphaLive = clamp(totalPlume * 0.78 + ventGlow * 0.6 + microbeGlow * 0.5
-    + ventWall * 0.7 + chimneyMask * 0.92 + bubbles * 0.25, 0.0, 1.0);
+    + ventWall * 0.7 + chimneyMask * 0.92 + bubbles * 0.25 + max(tube, gill) * 0.9 * IDEA_3, 0.0, 1.0);
 
   // Advect exact HDR display history upward with the smoker plume.
-  let historyOffset = vec2<i32>(round(vec2<f32>(curl.x * 2.0 + clickFlow.x, 1.0 + turbulence * 2.0)));
+  let historyOffset = vec2<i32>(round(vec2<f32>(curl.x * 2.0 + clickFlow.x, -(1.0 + turbulence * 2.0))));  // Rescue 1: history rises (reads from below)
   prev = textureLoad(dataTextureC, clamp(vec2<i32>(global_id.xy) - historyOffset,
     vec2<i32>(0), vec2<i32>(res) - vec2<i32>(1)), 0);
   let feedbackMask = smoothstep(0.04, 0.35, prev.a) * totalPlume * (0.24 + bass * 0.12);
   let temporal = mix(color, prev.rgb * 0.97, feedbackMask);
   let alpha = mix(alphaLive, prev.a * 0.96, feedbackMask * 0.55);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(temporal), alpha));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(acesToneMap(max(temporal, vec3<f32>(0.0))), alpha));
   textureStore(dataTextureA, global_id.xy, vec4<f32>(min(temporal, vec3<f32>(7.0)), alpha));
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(clamp(totalPlume * 0.46
     + ventGlow * 0.32 + microbeGlow * 0.18 + chimneyMask * 0.62, 0.0, 1.0), 0.0, 0.0, 0.0));

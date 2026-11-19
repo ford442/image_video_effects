@@ -1079,7 +1079,7 @@
     "name": "Deep Sea Thermal Vent",
     "category": "generative",
     "url": "shaders/deep-sea-thermal-vent.wgsl",
-    "description": "A layered black-smoker ecosystem with carbonate chimneys, mineral crust, stratified billows, rising bubbles and microbes, mouse-steered jets, click heat fronts, and advected HDR plume history.",
+    "description": "A layered black-smoker ecosystem with carbonate chimneys, mineral crust, stratified billows, rising bubbles and microbes, soot-occluded underlit plumes, Riftia tubeworms, mouse-steered jets, click heat fronts, and advected HDR plume history.",
     "features": [
       "audio-reactive",
       "temporal-feedback",
@@ -6779,7 +6779,7 @@
       "music",
       "reactive"
     ],
-    "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter. Bunches colliding at the containment rings flash magenta debris shells, the beam is steered toward the magnetic anomaly while it betatron-wobbles through the ring apertures, and the tunnel's bends split it into dispersed colour fringes.",
+    "description": "A hyper-speed journey down an infinite magnetic containment tunnel where sub-atomic particles collide and shatter into vibrant, audio-reactive showers of exotic matter. Bunches colliding at the containment rings flash magenta debris shells, the beam is steered toward the magnetic anomaly while it betatron-wobbles through the ring apertures, and the tunnel's bends split it into dispersed colour fringes while synchrotron light fans onto the outer wall.",
     "workgroup_size": [
       16,
       16,
@@ -6792,7 +6792,6 @@
     "url": "shaders/gen-chromodynamic-plasma-collider.wgsl",
     "features": [
       "raymarched-containment-tunnel",
-      "sprung-magnetic-anomaly",
       "bounded-collision-plasma",
       "click-collision-shells",
       "temporal-feedback",
@@ -15111,7 +15110,7 @@
     "id": "gen-grok41-plasma",
     "name": "Spherical Harmonics Plasma",
     "url": "shaders/gen_grok41_plasma.wgsl",
-    "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils. A polar hood caps high latitudes, and jet zero-crossings darken into belt edges.",
+    "description": "Audio-reactive 3D gas giant using Y(l,m) spherical harmonics with HDR ACES tone mapping, Rayleigh limb scattering, mouse-driven light, and treble-triggered lightning tendrils. A polar hood caps high latitudes, and jet zero-crossings darken into billowing belt edges as a moon shadow transits the disc.",
     "features": [
       "mouse-driven",
       "depth-aware",
