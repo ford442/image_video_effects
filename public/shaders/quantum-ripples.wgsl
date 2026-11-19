@@ -1,32 +1,15 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Quantum Ripples
 //  Category: image
-//  Techniques: mouse-driven, interactive, audio-reactive, temporal-feedback,
+//  Techniques: mouse-driven, interactive, audio-reactive, upgraded-rgba, temporal-feedback,
 //             depth-aware, chromatic-aberration, domain-warped-fbm, curl-turbulence,
 //             voronoi-displacement, sdf-masking, audio-palette
 //  Complexity: Medium-High
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-11-19 (prev 2026-07-08)
+//  Ideas: twin interference nodes; crest-tangent chroma
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -178,8 +161,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let twinAxis = vec2<f32>(cos(time * 1.3), sin(time * 1.1)) * (0.07 + u.zoom_params.z * 0.1);
     let twinA = clamp(mouse + twinAxis, vec2<f32>(0.0), vec2<f32>(1.0));
     let twinB = clamp(mouse - twinAxis, vec2<f32>(0.0), vec2<f32>(1.0));
-    disp += waveField(sampleUv + voroDisp, twinA, aspect, time, freq * PHI, spd * 1.1, 0.35) * 0.42;
-    disp -= waveField(sampleUv + voroDisp, twinB, aspect, time + PI, freq * PHI, spd * 1.1, 0.35) * 0.42;
+    let wa = waveField(sampleUv + voroDisp, twinA, aspect, time, freq * PHI, spd * 1.1, 0.35);
+    let wb = waveField(sampleUv + voroDisp, twinB, aspect, time + PI, freq * PHI, spd * 1.1, 0.35);
+    disp += wa * 0.42;
+    disp -= wb * 0.42;
+    // ── Idea 1: twin interference nodes. Opposite phase cancels where wa ≈ wb. ──
+    let pairAmp = clamp(min(length(wa), length(wb)) * 14.0, 0.0, 1.0);
+    let cancel = exp(-length(wa - wb) * 22.0) * pairAmp;
+    let reinforce = exp(-length(wa + wb) * 22.0) * pairAmp;
 
     // Superpose historical ripple sources (max 8 for performance)
     let rippleCount = min(u32(u.config.y), 8u);
@@ -215,6 +204,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ca = chromaticAberration(srcUV, caAmt);
     color = mix(color, ca, clamp(csh + depth * 0.3, 0.0, 1.0));
 
+    // ── Idea 2: crest-tangent chroma — R/B split along the wavefront, not the frame radius ──
+    let dispLen = length(disp);
+    let tangent = vec2<f32>(-disp.y, disp.x) / max(dispLen, 1e-4);
+    let crestShift = tangent * csh * (0.003 + treble * 0.002);
+    let crestR = textureSampleLevel(readTexture, u_sampler, clamp(srcUV + crestShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+    let crestB = textureSampleLevel(readTexture, u_sampler, clamp(srcUV - crestShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+    color = mix(color, vec3<f32>(crestR, color.g, crestB), clamp(dispLen * 8.0 * csh, 0.0, 0.75));
+
     // Audio-driven palette + energy-based hue shift
     let energy = length(disp) / (amp * activeAmp + 0.001);
     let palT = energy * 0.6 + time * 0.08 + voro.y * 0.2 + mids * 0.3;
@@ -224,6 +221,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                       vec3<f32>(1.0, 1.0, 0.9),
                       vec3<f32>(0.0, 0.33, 0.67));
     color = mix(color, color * pal * (1.0 + bass * 0.4), clamp(csh * energy + bass * 0.2, 0.0, 1.0));
+    color = color * (1.0 - cancel * 0.5);
+    color = color + pal * reinforce * (0.22 + mids * 0.15);
 
     // Probability-cloud interference and chromatic Voronoi diffraction.
     let probability = exp(-length(boxUv) * (3.0 + freq * 0.04))
@@ -236,9 +235,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
            * (0.5 + mids + treble * 0.5);
 
     let shift = energy * csh * sin(time * 0.5) * 0.3;
-    color.r += shift + energy * treble * 0.08;
-    color.b -= shift;
-    color += vec3<f32>(energy * bass * 0.12);
+    color = vec3<f32>(color.r + shift + energy * treble * 0.08, color.g, color.b - shift);
+    color = color + vec3<f32>(energy * bass * 0.12);
 
     // Temporal feedback with decay
     let decay = 0.97 - csh * 0.03;

@@ -3485,8 +3485,17 @@
       ]
     },
     "voronoi-dynamics": {
-      "hash": "2c374900b4b086bc",
-      "history": []
+      "hash": "4329b293bd321f04",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "4329b293bd321f04",
+          "prev_hash": "2c374900b4b086bc",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
+        }
+      ]
     },
     "voronoi": {
       "hash": "3052f5382b09c496",
@@ -5585,7 +5594,7 @@
       ]
     },
     "gen-chaos-game-ifs": {
-      "hash": "3953d2c4dfa3b50b",
+      "hash": "f1652c2e860b6a9b",
       "history": [
         {
           "event": "upgraded",
@@ -5594,6 +5603,14 @@
           "prev_hash": "da01a03d79012904",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "f1652c2e860b6a9b",
+          "prev_hash": "3953d2c4dfa3b50b",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -6442,7 +6459,7 @@
       ]
     },
     "gen-dmt-fractal-zoom": {
-      "hash": "c6872886eaf7e723",
+      "hash": "6b8ea11db9bcdb71",
       "history": [
         {
           "event": "upgraded",
@@ -6451,6 +6468,14 @@
           "prev_hash": "eedb2cf5c9aee98f",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "6b8ea11db9bcdb71",
+          "prev_hash": "c6872886eaf7e723",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -8444,8 +8469,17 @@
       ]
     },
     "gen-lenia-2": {
-      "hash": "56eee3e5055a7a7d",
-      "history": []
+      "hash": "201d63979f0d8fb1",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "201d63979f0d8fb1",
+          "prev_hash": "56eee3e5055a7a7d",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-lichen-reaction-diffusion": {
       "hash": "03bb9fb3cc2d86a7",
@@ -8626,8 +8660,17 @@
       ]
     },
     "gen-lorenz-attractor": {
-      "hash": "a73d3efd0ad37ce3",
-      "history": []
+      "hash": "394dd7d26db2553f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "394dd7d26db2553f",
+          "prev_hash": "a73d3efd0ad37ce3",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-luminescent-aether-plasma-astro-axolotl": {
       "hash": "c9b33075edf4beab",
@@ -11210,7 +11253,7 @@
       ]
     },
     "gen-wasm-hls-physarum-swarm": {
-      "hash": "afc1184fae4851ee",
+      "hash": "34c3e3ccdd30a3a1",
       "history": [
         {
           "event": "upgraded",
@@ -11219,6 +11262,14 @@
           "prev_hash": "4cbd2e11ac2f4e42",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "34c3e3ccdd30a3a1",
+          "prev_hash": "afc1184fae4851ee",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -11910,8 +11961,17 @@
       "history": []
     },
     "phosphorescent-jellyfish": {
-      "hash": "9e8b134bf44e7444",
-      "history": []
+      "hash": "65edae29ff9a4a9d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "65edae29ff9a4a9d",
+          "prev_hash": "9e8b134bf44e7444",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
+        }
+      ]
     },
     "plasma-jet-stream": {
       "hash": "f397ffc850a73e74",
@@ -12859,7 +12919,7 @@
       ]
     },
     "ripple-bloom": {
-      "hash": "9aef21e46926985a",
+      "hash": "49ad756dfb098259",
       "history": [
         {
           "event": "upgraded",
@@ -12868,6 +12928,14 @@
           "prev_hash": "05c1cbd329e40db5",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "49ad756dfb098259",
+          "prev_hash": "9aef21e46926985a",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -17196,8 +17264,17 @@
       ]
     },
     "quantum-ripples": {
-      "hash": "8f30f667bcc3a057",
-      "history": []
+      "hash": "ecf3604618ea7d94",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T15:12:36.003Z",
+          "hash": "ecf3604618ea7d94",
+          "prev_hash": "8f30f667bcc3a057",
+          "commit": "d0efc8a3",
+          "note": "2026-11-19 attractor-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/BRIEFS.md"
+        }
+      ]
     },
     "quantum-superposition": {
       "hash": "6d1654da4447d57f",

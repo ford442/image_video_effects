@@ -7,7 +7,9 @@
 //            color-grading, anamorphic-streaks, lens-dirt
 //  Complexity: High
 //  Created: 2026-05-30
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-11-19 (prev 2026-06-28)
+//  Ideas: deep-water dispersion (§12.2D); crest steepening; capillary ripples on the crest
+//  A packing: raw wave state (signed ripple, height, bloomAmount, alpha). ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -162,13 +164,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
 
-  // Huygens wavelet construction: multiple frequency ripples with dispersion
+  // Huygens wavelet construction: three bands, now with deep-water dispersion.
+  let prevWave = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
   let distToMouse = length((uv - mouse) * vec2<f32>(aspect, 1.0));
   var ripple = 0.0;
   var rippleHeight = 0.0;
   for (var f: i32 = 0; f < 3; f = f + 1) {
     let freq = 8.0 + f32(f) * 10.0;
-    let phase = distToMouse * freq - time * rippleSpeed * (1.0 + f32(f) * 0.15);
+    // ── Idea 1: deep-water dispersion (§12.2D). Phase speed √(tanh(kd)/k). ──
+    let kd = freq * waterDepth * 0.12;
+    let phaseSpeed = rippleSpeed * sqrt(max(tanh(kd) / max(freq * 0.04, 1e-3), 0.02));
+    let phase = distToMouse * freq - time * phaseSpeed;
     let decay = exp(-distToMouse * (3.0 + f32(f) * 0.8));
     let wave = sin(phase) * decay;
     ripple = ripple + wave * (1.0 - f32(f) * 0.2);
@@ -176,6 +182,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   ripple = ripple * rippleAmount * 0.4;
   rippleHeight = rippleHeight * rippleAmount;
+
+  // ── Idea 2: crest steepening — a rising crest, read from C.g, sharpens ──
+  let rising = clamp((rippleHeight - max(prevWave.g, 0.0)) * 3.0, 0.0, 1.0);
+  rippleHeight = rippleHeight * (1.0 + rising * 0.28);
+
+  // ── Idea 3: capillary ripples ride the existing crest ──
+  let crestEarly = smoothstep(0.15, 0.75, rippleHeight);
+  let cap = sin(distToMouse * 54.0 - time * rippleSpeed * 2.1) * crestEarly * rippleAmount * 0.02;
+  ripple = ripple + cap;
 
   let displacedUV = clamp(uv + vec2<f32>(ripple * 0.02, ripple * 0.015), vec2<f32>(0.0), vec2<f32>(1.0));
   var color = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;

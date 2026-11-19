@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Phosphorescent Jellyfish
 //  Category: generative
-//  Features: mouse-driven, audio-reactive, temporal, chromatic, depth-aware
+//  Features: mouse-driven, audio-reactive, temporal, chromatic, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Description: Glowing jellyfish with trailing tentacle bioluminescence.
 //               Bass pulses the bell contraction, mids create tentacle wave
@@ -9,30 +9,12 @@
 //               Mouse attracts the jellyfish swarm (while pressed);
 //               clicks startle the nearest jelly into a jet-propulsion dart.
 //  Created: 2026-05-30
-//  Upgraded: 2026-07-22 — ACES + hue-preserving HDR clamp, per-jelly
-//            spectrum bands, click-startle dart impulse.
+//  Upgraded: 2026-11-19 (prev 2026-07-22)
+//  Ideas: contraction velum; manubrium
+//  A packing: HDR display RGB + alpha (ACES on writeTexture only)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265;
 // Maximum HDR stack allowed before tonemapping; anything above is
@@ -201,6 +183,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bellDist = sdBell(uv - jPos, size, pulse);
     let bellGlow = exp(-bellDist * bellDist * 200.0) * glowIntensity;
 
+    // ── Idea 1: contraction velum — the lower margin lights while the bell squeezes ──
+    let pBell = uv - jPos;
+    let radNow = size * (1.0 + pulse * 0.15);
+    let squeeze = clamp(-cos(time * 3.0 + fj), 0.0, 1.0);
+    let margin = exp(-abs(length(pBell) - radNow) * 36.0) * smoothstep(0.15, -0.45, pBell.y / max(radNow, 0.02));
+    let velum = margin * squeeze * (0.45 + bandLow) * glowIntensity;
+
+    // ── Idea 2: manubrium — short oral arm under the dome, not another tentacle ──
+    let manuRel = pBell - vec2<f32>(0.0, -radNow * 0.42);
+    let manu = exp(-dot(manuRel, manuRel) / max(radNow * radNow * 0.06, 1e-4)) * glowIntensity * (0.28 + squeeze * 0.4);
+
     // Photophore sparkles driven by this jelly's high band
     let sparkleUV = floor((uv - jPos) * 40.0 + time * 10.0 * bandHigh);
     let sparkle = step(0.97, hash21(sparkleUV)) * bandHigh * 2.0;
@@ -220,7 +213,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += bellCol * bellGlow * 0.8;
     col += bellCol * sparkleGlow;
     col += bellCol * tentGlow * 0.6;
-    alpha += bellGlow + tentGlow * 0.5 + sparkleGlow;
+    col += bellCol * velum;
+    col += bellCol * manu * 0.7;
+    alpha += bellGlow + tentGlow * 0.5 + sparkleGlow + velum * 0.8 + manu * 0.45;
     depthVal = max(depthVal, bellGlow + tentGlow);
   }
 
@@ -228,9 +223,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cStr = 0.004 + bass * 0.006;
   let cDir = normalize(uv01 - vec2<f32>(0.5) + vec2<f32>(0.001));
 
-  let prevR = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * (1.0 + mids), 0.0).r;
-  let prevG = textureSampleLevel(dataTextureC, u_sampler, uv01 + cDir * cStr * (0.7 + bass * 0.5), 0.0).g;
-  let prevB = textureSampleLevel(dataTextureC, u_sampler, uv01 - cDir * cStr * (1.2 + treble), 0.0).b;
+  // Exact C loads. The chroma offset is a pixel step so rgba32float history is not filtered.
+  let pix = vec2<i32>(global_id.xy);
+  let resI = vec2<i32>(i32(resolution.x), i32(resolution.y)) - vec2<i32>(1);
+  let offR = cDir * cStr * (1.0 + mids) * resolution;
+  let offG = cDir * cStr * (0.7 + bass * 0.5) * resolution;
+  let offB = -cDir * cStr * (1.2 + treble) * resolution;
+  let prevR = textureLoad(dataTextureC, clamp(pix + vec2<i32>(offR), vec2<i32>(0), resI), 0).r;
+  let prevG = textureLoad(dataTextureC, clamp(pix + vec2<i32>(offG), vec2<i32>(0), resI), 0).g;
+  let prevB = textureLoad(dataTextureC, clamp(pix + vec2<i32>(offB), vec2<i32>(0), resI), 0).b;
   var prevCol = vec3<f32>(prevR, prevG, prevB);
 
   // Temporal feedback blend — persistence mapping untouched by design;

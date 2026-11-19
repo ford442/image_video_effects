@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: growth-field membranes — the zero crossing of each species' Lenia growth mapping G(U) is rendered as a glowing cell wall, brighter on the advancing (dM/dt>0) front; mass-field gel relief — per-species mass gradient gives creature normals for diffuse/specular shading with Beer-Lambert absorption through thick bodies
+//  Upgraded: 2026-11-19 (prev 2026-09-14)
+//  Ideas: growth-field membranes; mass-field gel relief; cytoplasm cores; competition furrows
 //  A packing: raw sim state (species R mass, species G mass, species B mass, species A mass) — C feeds back as Lenia state; ACES display RGBA on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Global Growth, y=Kernel Radius, z=Evolution Speed, w=Cross-Species Mix
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Global Growth, y=Kernel Radius, z=Evolution Speed, w=Cross-Species Mix
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -225,6 +207,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     membraneCov = max(membraneCov, wall);
   }
 
+  // ── Idea: cytoplasm cores — the peak of G(U), which the wall throws away ──
+  var cyto = vec3<f32>(0.0);
+  for (var s: i32 = 0; s < 4; s = s + 1) {
+    let core = smoothstep(0.35, 0.9, growthField[s]) * smoothstep(0.06, 0.22, state[s]);
+    cyto = cyto + speciesHue[s] * core;
+  }
+
   // ── Idea 2: mass-field gel relief ──
   // Total mass gradient from 4 exact neighbour loads gives a creature normal;
   // thick bodies absorb light per Beer-Lambert through their DNA colour.
@@ -240,11 +229,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
   let spec = pow(max(dot(normal, halfV), 0.0), 48.0) * (0.25 + audioHigh * 0.9);
 
   let density = dot(newState, vec4<f32>(0.25));
+  // ── Idea: competition furrows — negative cross-species terms darken the overlap ──
+  let suppress = max(-interactions.r, 0.0) + max(-interactions.g, 0.0) + max(-interactions.b, 0.0) + max(-interactions.a, 0.0);
+  let furrow = clamp(suppress * 8.0, 0.0, 1.0) * smoothstep(0.06, 0.22, density);
   let thickness = density * 3.0;
   let absorb = exp(-thickness * (vec3<f32>(1.0) - dnaColor) * 1.2);
   var litColor = finalColor * (0.7 + 0.5 * diffuse) * mix(vec3<f32>(1.0), absorb, 0.5);
   litColor = litColor + vec3<f32>(spec) * smoothstep(0.02, 0.12, density);
   litColor = litColor + membrane * (0.45 + audioMid * 0.5);
+  litColor = litColor + cyto * 0.32;
+  litColor = litColor * (1.0 - furrow * 0.55);
 
   let display = acesToneMap(litColor * 1.25);
   let alpha = clamp(density * 1.35 + membraneCov * 0.35, 0.0, 0.96);

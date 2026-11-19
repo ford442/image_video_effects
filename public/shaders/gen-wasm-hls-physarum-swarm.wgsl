@@ -5,9 +5,8 @@
 //            upgraded-rgba, temporal-feedback, chromatic-trails
 //  Complexity: High
 //  Created: 2026-06-28
-//  Upgraded: 2026-10-10  (RESCUED: HEAD kept agent state in extraBuffer, which the runtime
-//            re-uploads every frame, so every agent re-seeded and the sim was static noise)
-//  Ideas: peristaltic streaming; tube-shaded veins and foraging front; fusion knots; spent sheath
+//  Upgraded: 2026-11-19 (prev 2026-10-10)
+//  Ideas: peristaltic streaming; tube-shaded veins and foraging front; fusion knots; spent sheath; refractory deposit; food exhaust; sensor-fan width
 //  A packing: raw sim state (trail, mx, my, hue); ACES on writeTexture only
 //  Rescue: Eulerian agents. |m| = agent mass, m/|m| = heading. No extraBuffer use.
 // ═══════════════════════════════════════════════════════════════════
@@ -196,7 +195,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let diffused = (sumT / 9.0) * decayRate;
   let depositScale = (1.0 - decayRate) / DEC_REF;   // decay changes persistence, not brightness
-  let trailNew = clamp(diffused + 0.05 * audioDeposit * massNew * (1.0 - diffused) * depositScale, 0.0, 1.0);
+  // ── Idea: refractory deposit — an abandoned tube (high trail, low mass) stops feeding itself ──
+  let here = state(coord);
+  let refractory = smoothstep(0.18, 0.5, here.x) * (1.0 - smoothstep(0.04, 0.22, length(here.yz)));
+  let trailNew = clamp(diffused + 0.05 * audioDeposit * massNew * (1.0 - diffused) * depositScale * (1.0 - 0.5 * refractory), 0.0, 1.0);
   let hueNew = mix(bestH, time * 0.05, 0.01);
 
   // A = raw sim state (trail, mx, my, hue). No ACES on stored fields.
@@ -207,7 +209,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gx = 0.5 * (tN[5] - tN[3]);
   let gy = 0.5 * (tN[7] - tN[1]);
   let hs = 8.0 / (sumT / 9.0 + 0.06);
-  let nrm = normalize(vec3<f32>(-gx * hs, -gy * hs, 1.0));
+  // ── Idea: sensor-fan width — a wider sensor angle is a wider vein ──
+  let fan = mix(0.72, 1.45, u.zoom_params.x);
+  let nrm = normalize(vec3<f32>(-gx * hs / fan, -gy * hs / fan, 1.0));
   let L = normalize(vec3<f32>(-0.45, -0.55, 0.7));
   let Hh = normalize(L + vec3<f32>(0.0, 0.0, 1.0));
   let diff = max(dot(nrm, L), 0.0);
@@ -239,7 +243,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cov2 = max(cov, front * 0.8);
 
   let uv = pos / res;
-  let vidColor = textureSampleLevel(readTexture, u_sampler, (pos + 0.5) / res, 0.0).rgb;
+  var vidColor = textureSampleLevel(readTexture, u_sampler, (pos + 0.5) / res, 0.0).rgb;
+  // ── Idea: food exhaust — spent sheath has eaten the photo underneath ──
+  let foodL = dot(vidColor, vec3<f32>(0.333));
+  let eaten = spent * clamp(foodL * 1.5, 0.0, 1.0);
+  vidColor = mix(vidColor, vidColor * vec3<f32>(0.32, 0.36, 0.30), eaten * 0.85);
   var col = mix(vidColor, tube, cov2);
   col += vec3<f32>(0.2, 0.1, 0.4) * bass * trailNew * 0.5;      // audio bloom (kept)
 

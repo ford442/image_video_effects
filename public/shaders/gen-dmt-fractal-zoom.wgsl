@@ -9,8 +9,8 @@
 //    smooth coloring uses log(log|z|)/log(2)
 //  Chunks From: gen-dmt-fractal-zoom (original)
 //  Created: 2026-05-31
-//  Upgraded: 2026-10-10
-//  Ideas: escape-argument spokes; interior nucleus
+//  Upgraded: 2026-11-19 (prev 2026-10-10)
+//  Ideas: escape-argument spokes; interior nucleus; cardioid and period-2 contours; equipotential rings
 //  A packing: ACES display RGBA in A (C read as display history)
 //  By: Kimi Agent
 // ═══════════════════════════════════════════════════════════════════
@@ -213,7 +213,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let spokePhase = min(fract(argHue * 6.0), 1.0 - fract(argHue * 6.0));
     let spoke = 1.0 - smoothstep(0.0, 0.045, spokePhase);
     color += dmtRainbow(argHue, colorShift + 0.15) * spoke * intensity * 0.45;
+    // ── Idea: equipotential rings — radial partner of the argument spokes ──
+    let equip = fract(log2(max(zMag, 1.01)) * 0.5);
+    let equipBand = 1.0 - smoothstep(0.0, 0.07, min(equip, 1.0 - equip));
+    color = color * (1.0 - equipBand * 0.22 * intensity);
   }
+
+  // ── Idea: main cardioid and period-2 bulb, the set's anatomy while zoomed out ──
+  let qx = fractalC.x - 0.25;
+  let qv = qx * qx + fractalC.y * fractalC.y;
+  let card = qv * (qv + qx) - 0.25 * fractalC.y * fractalC.y;
+  let bulb = (fractalC.x + 1.0) * (fractalC.x + 1.0) + fractalC.y * fractalC.y - 0.0625;
+  let cardEdge = exp(-abs(card) * 22.0);
+  let bulbEdge = exp(-abs(bulb) * 48.0);
+  let wide = smoothstep(0.45, 1.15, zoomFactor);
+  color = color + dmtRainbow(colorShift + 0.04, 0.0) * (cardEdge * 0.18 + bulbEdge * 0.22) * wide;
 
   // Second fractal layer at different scale for depth
   let c2 = fractalC * 1.5 + vec2<f32>(sin(time * 0.07) * 0.1, cos(time * 0.09) * 0.1);
