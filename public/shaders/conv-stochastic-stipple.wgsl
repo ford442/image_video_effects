@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware
 //  Convolution Type: weighted-voronoi-stippling-convolution
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: paper ground under dots; gradient-stretched ellipses
+//  Upgraded: 2026-09-08, 2026-11-19
+//  Ideas: paper ground under dots; gradient-stretched ellipses; one Lloyd step; nib rim
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -122,13 +122,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Depth-based stipple size
     let dotRadius = density * 0.45 * mix(1.2, 0.7, depth);
     let cellCenter = hash22(cellCoord) * 0.6 + 0.2;
+    // ── Idea 1: one Lloyd step toward the bright centroid of this cell.
+    let cellOrigin = cellCoord * cellSize;
+    let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+    let p0 = clamp(cellOrigin + cellSize * vec2<f32>(0.2, 0.2), vec2<f32>(0.0), vec2<f32>(1.0));
+    let p1 = clamp(cellOrigin + cellSize * vec2<f32>(0.8, 0.2), vec2<f32>(0.0), vec2<f32>(1.0));
+    let p2 = clamp(cellOrigin + cellSize * vec2<f32>(0.2, 0.8), vec2<f32>(0.0), vec2<f32>(1.0));
+    let p3 = clamp(cellOrigin + cellSize * vec2<f32>(0.8, 0.8), vec2<f32>(0.0), vec2<f32>(1.0));
+    let b0 = dot(textureSampleLevel(readTexture, u_sampler, p0, 0.0).rgb, lumaW);
+    let b1 = dot(textureSampleLevel(readTexture, u_sampler, p1, 0.0).rgb, lumaW);
+    let b2 = dot(textureSampleLevel(readTexture, u_sampler, p2, 0.0).rgb, lumaW);
+    let b3 = dot(textureSampleLevel(readTexture, u_sampler, p3, 0.0).rgb, lumaW);
+    let site = (vec2<f32>(0.2, 0.2) * b0 + vec2<f32>(0.8, 0.2) * b1 + vec2<f32>(0.2, 0.8) * b2 + vec2<f32>(0.8, 0.8) * b3) / max(b0 + b1 + b2 + b3, 0.0001);
+    let dotCentre = mix(cellCenter, site, 0.7);
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let gx = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(pixelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
     let gy = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
     let gdir = vec2<f32>(gx - meanLuma, gy - meanLuma);
     let glen = max(length(gdir), 0.0001);
     let gN = gdir / glen;
-    let delta = cellUV - cellCenter;
+    let delta = cellUV - dotCentre;
     let along = dot(delta, gN);
     let across = dot(delta, vec2<f32>(-gN.y, gN.x));
     let ellipse = length(vec2<f32>(along * 0.72, across * 1.28));
@@ -150,6 +163,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let edgeNoise = hash12(cellCoord * 3.7 + vec2<f32>(time * 0.05));
     let edgeFactor = smoothstep(0.3, 0.7, edgeNoise);
     var finalColor = mix(stippleColor, meanColor * 1.2, edgeFactor * 0.2);
+    // ── Idea 2: nib rim. Inside the ellipse the edge is darker than the core.
+    let nibDark = mix(1.0, 0.72, smoothstep(dotRadius * 0.5, max(dotRadius, 0.0001), ellipse));
+    finalColor = mix(finalColor, finalColor * nibDark, inDot);
 
     // Temporal feedback: stipple morphing
     let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);

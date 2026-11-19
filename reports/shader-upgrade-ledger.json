@@ -2761,7 +2761,7 @@
       ]
     },
     "iso-hills": {
-      "hash": "8ac4b529814eb757",
+      "hash": "5916755a50ce3ff2",
       "history": [
         {
           "event": "upgraded",
@@ -2770,6 +2770,14 @@
           "prev_hash": "bd53f250446fee08",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "5916755a50ce3ff2",
+          "prev_hash": "8ac4b529814eb757",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -2889,7 +2897,7 @@
       ]
     },
     "multi-turing": {
-      "hash": "35e8853078cdb78e",
+      "hash": "ae809063c4aa9e48",
       "history": [
         {
           "event": "upgraded",
@@ -2898,6 +2906,14 @@
           "prev_hash": "9e95cbe1427ce928",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "ae809063c4aa9e48",
+          "prev_hash": "35e8853078cdb78e",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -13372,7 +13388,7 @@
       ]
     },
     "conv-bilateral-dream": {
-      "hash": "c6f993e68c5942cd",
+      "hash": "9d8252dbb590124d",
       "history": [
         {
           "event": "upgraded",
@@ -13381,11 +13397,19 @@
           "prev_hash": "a947eecab7395d72",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "9d8252dbb590124d",
+          "prev_hash": "c6f993e68c5942cd",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
     "conv-bilateral-grid-splat": {
-      "hash": "a9eb5e73cfc4c06d",
+      "hash": "194a01a948d84241",
       "history": [
         {
           "event": "upgraded",
@@ -13394,6 +13418,14 @@
           "prev_hash": "f7712f41a1f9503d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "194a01a948d84241",
+          "prev_hash": "a9eb5e73cfc4c06d",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -13424,7 +13456,7 @@
       ]
     },
     "conv-frequency-domain-notch": {
-      "hash": "87f2b07a53120a85",
+      "hash": "35234d08029f0135",
       "history": [
         {
           "event": "upgraded",
@@ -13433,6 +13465,14 @@
           "prev_hash": "013caf85490d24b6",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "35234d08029f0135",
+          "prev_hash": "87f2b07a53120a85",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -13484,7 +13524,7 @@
       ]
     },
     "conv-morphological-erosion-dilation": {
-      "hash": "3879df5751df0f18",
+      "hash": "f663d279235c7a08",
       "history": [
         {
           "event": "upgraded",
@@ -13493,11 +13533,19 @@
           "prev_hash": "5ce36d6f4593e4fb",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "f663d279235c7a08",
+          "prev_hash": "3879df5751df0f18",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
     "conv-non-local-means": {
-      "hash": "2ec1cd5c11a726a9",
+      "hash": "66a07fd31b1587d2",
       "history": [
         {
           "event": "upgraded",
@@ -13506,6 +13554,14 @@
           "prev_hash": "6809cdd6385b7ab1",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "66a07fd31b1587d2",
+          "prev_hash": "2ec1cd5c11a726a9",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -13531,7 +13587,7 @@
       ]
     },
     "conv-spiral-blur": {
-      "hash": "847a7728ae233ccb",
+      "hash": "4e0723b99bdd82d3",
       "history": [
         {
           "event": "upgraded",
@@ -13540,6 +13596,14 @@
           "prev_hash": "fdd84a10f2176121",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "4e0723b99bdd82d3",
+          "prev_hash": "847a7728ae233ccb",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -13557,7 +13621,7 @@
       ]
     },
     "conv-stochastic-stipple": {
-      "hash": "c78ad0a77b35ba71",
+      "hash": "995604b9450fe5ea",
       "history": [
         {
           "event": "upgraded",
@@ -13566,6 +13630,14 @@
           "prev_hash": "f8d39ce6be2d2da4",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "995604b9450fe5ea",
+          "prev_hash": "c78ad0a77b35ba71",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },
@@ -19749,7 +19821,7 @@
       ]
     },
     "film-gate-weave": {
-      "hash": "56299bd256af08a6",
+      "hash": "0931996680cfafbb",
       "history": [
         {
           "event": "upgraded",
@@ -19758,6 +19830,14 @@
           "prev_hash": "7ac58675f138a427",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:18:47.036Z",
+          "hash": "0931996680cfafbb",
+          "prev_hash": "56299bd256af08a6",
+          "commit": "c6dcd84d",
+          "note": "2026-11-19 conv / field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-conv-field-ten/BRIEFS.md"
         }
       ]
     },

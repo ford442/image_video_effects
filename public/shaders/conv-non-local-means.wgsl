@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Convolution Type: non-local-means
 //  Complexity: Very High
-//  Upgraded: 2026-09-08
-//  Ideas: luma-weighted patch SSD; gradient-aligned search
+//  Upgraded: 2026-09-08, 2026-11-19
+//  Ideas: luma-weighted patch SSD; gradient-aligned search; Gaussian patch window; centre-luma preselection
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -45,7 +45,9 @@ fn patchDistance(uv1: vec2<f32>, uv2: vec2<f32>, patchRadius: i32, pixelSize: ve
             let diff = p1 - p2;
             let lumaDiff = dot(diff, vec3<f32>(0.299, 0.587, 0.114));
             let chroma = diff - vec3<f32>(lumaDiff);
-            dist += lumaDiff * lumaDiff + dot(chroma, chroma) * 0.35;
+            // ── Idea 1: Gaussian patch window. Centre tap stays at weight 1.
+            let window = exp(-f32(dx * dx + dy * dy) / (2.0 * max(f32(patchRadius * patchRadius), 1.0)));
+            dist += (lumaDiff * lumaDiff + dot(chroma, chroma) * 0.35) * window;
         }
     }
     return dist;
@@ -126,9 +128,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let alongEdge = abs(dot(normalize(offsetDir + vec2<f32>(0.0001)), tangentN));
             
             let pd = patchDistance(uv, neighborUV, patchRadius, pixelSize);
-            let weight = exp(-pd / effectiveH) * (1.0 + alongEdge * 0.55);
-            
             let neighborColor = textureSampleLevel(readTexture, u_sampler, neighborUV, 0.0).rgb;
+            // ── Idea 2: centre-luma preselection. A neighbour whose own centre disagrees is not a match.
+            let nLuma = dot(neighborColor, vec3<f32>(0.299, 0.587, 0.114));
+            let centreGate = exp(-(nLuma - lumaC) * (nLuma - lumaC) / max(effectiveH * 4.0, 0.0001));
+            let weight = exp(-pd / effectiveH) * (1.0 + alongEdge * 0.55) * centreGate;
             accumColor += neighborColor * weight;
             accumWeight += weight;
             similaritySum += weight;

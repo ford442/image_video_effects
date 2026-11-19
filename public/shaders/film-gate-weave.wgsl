@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, upgraded-rgba, mouse-driven
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: frame-line reveal; wandering scratches; reel-change cue dots
+//  Upgraded: 2026-09-28, 2026-11-19
+//  Ideas: frame-line reveal; wandering scratches; reel-change cue dots; density-weighted grain (§12.2A); registration-pin weave
 //  A packing: (rgb.r, scratch, 0, alpha) — C.g is the scratch field
 // ═══════════════════════════════════════════════════════════════════
 // 35mm gate weave at 24 fps, dust, hair, persistent scratches via C.g, splice tape,
@@ -99,11 +99,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let barDist = min(abs(stripY - barCentre), abs(stripY + period - barCentre));
   let barEdge = 1.5 / max(resolution.y, 1.0);
   let barCov = 1.0 - smoothstep(barH * 0.5 - barEdge, barH * 0.5, barDist);
-  let sampleUV = clamp(vec2<f32>(uv.x + anchorPull.x, stripY), vec2<f32>(0.0), vec2<f32>(1.0));
+  // ── Idea 2: registration-pin weave. One sideways kick per frame, same slider as the vertical weave.
+  let pinX = (hash21(vec2<f32>(frameId, 4.2)) - 0.5) * weaveAmount * 0.85;
+  let sampleUV = clamp(vec2<f32>(uv.x + anchorPull.x + pinX, stripY), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let color = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
   let grainSize = mix(1.5, 0.6, depth);
-  let grain = (dyeCloudGrain(uv, frameId, grainSize) - 0.5) * 0.08 * (1.0 + treble * 0.3);
+  // ── Idea 1: density-weighted grain (§12.2A). Midtones grain; clear base and dense black stay quieter.
+  let grainRaw = (dyeCloudGrain(uv, frameId, grainSize) - 0.5) * 0.08 * (1.0 + treble * 0.3);
+  let printLuma = clamp(dot(color.rgb, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+  let density = sqrt(max(printLuma * (1.0 - printLuma), 0.0)) * 2.0;
+  let grain = grainRaw * mix(0.25, 1.0, density);
 
   let dustNoise = hash21(floor(uv * resolution * 0.4) + frameId * 0.15);
   let dust = step(1.0 - dustAmount * 0.04, dustNoise) * 0.25;
