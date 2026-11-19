@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: sand grains bounced off antinodes and packed onto nodal lines; Faraday subharmonic surface ripples above a bass drive threshold; sand streaming down the |c| gradient (flow-map advected); meniscus specular glint from the plate-mode slope
+//  Upgraded: 2026-10-10; 2026-11-19
+//  Ideas: nodal sand; Faraday ripples; gradient streaming; meniscus glint; crossing piles; free-edge clearance
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -194,13 +194,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pSand = uv * vec2<f32>(aspect, 1.0);
     let sandA = sandGrains(pSand + gradDir * ph0 * flowAmp, abs(c_val) * damp, u.config.x, treble);
     let sandB = sandGrains(pSand + gradDir * ph1 * flowAmp, abs(c_val) * damp, u.config.x, treble);
-    let sand = mix(sandB, sandA, wFlow);
+    let sandRaw = mix(sandB, sandA, wFlow);
+    // ── Idea 1: crossing piles ─────────────────────────────────────
+    // A nodal line is |c|≈0. A crossing is also flat, so sand piles
+    // there instead of lying in a thin line.
+    let crossing = exp(-c0 * c0 * 36.0) * exp(-gradLen * 0.22);
+    // ── Idea 2: free-edge clearance ────────────────────────────────
+    // A free plate edge is an antinode. Sand leaves the frame margin.
+    let edgeMargin = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+    let freeEdge = smoothstep(0.0, 0.055, edgeMargin);
+    let sand = sandRaw * freeEdge * (1.0 + crossing * 2.2);
 
     let warm = blackbodyRGB(3500.0 + bass * 3000.0 + sin(t * 0.7) * 1000.0) * intensity * 3.0;
     let cool = blackbodyRGB(8500.0 + cos(t * 0.4) * 2000.0) * (intensity * 0.6 + ridge * 0.8);
     var hdr = mixOkLab(warm, cool, ridge * 0.5 + 0.25) * (1.0 + intensity);
     let sandCol = vec3<f32>(1.0, 0.86, 0.6) * (0.35 + intensity * 0.5) * min(param_glow, 2.5);
     hdr = hdr + sandCol * sand * 0.8;
+    hdr = hdr + vec3<f32>(1.0, 0.94, 0.8) * crossing * freeEdge * 0.28 * min(param_glow, 2.5);
     hdr = hdr + vec3<f32>(0.4, 0.8, 1.0) * max(faraday, 0.0) * faradayGain * antinode * 0.5 * param_glow;
     // Idea 4: meniscus glint. The fluid film's slope is the plate-mode
     // gradient; a key light + sky tint give a wet specular on antinode slopes.

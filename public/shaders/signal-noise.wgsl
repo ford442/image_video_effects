@@ -3,9 +3,8 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
-//  Ideas: luma-shouldered noise; real quantisation staircase; dot crawl on
-//         vertical luma edges
+//  Upgraded: 2026-09-21; 2026-11-19
+//  Ideas: luma-shouldered noise; quantisation staircase; dot crawl; chroma delay line (§12.2B); dropout burst (§12.2B)
 //  A packing: ACES display RGBA (C is read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -162,6 +161,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var yuv = rgbToYuv(col);
 
+  // ── Idea 1: chroma delay line (§12.2B) ────────────────────────────
+  // Composite chroma lags luma. U and V come from a sample a few pixels
+  // to the left; luma stays the full-resolution pixel. Amount is the
+  // existing chroma slider.
+  let delayPx = clamp(chromaStrength, 0.0, 1.5) * 4.0;
+  let delayUV = clamp(uvGlitch - vec2<f32>(delayPx / max(resolution.x, 1.0), 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+  let delayed = rgbToYuv(textureSampleLevel(readTexture, u_sampler, delayUV, 0.0).rgb);
+  let delayMix = clamp(chromaStrength, 0.0, 1.0);
+  yuv = vec3<f32>(yuv.x, mix(yuv.y, delayed.y, delayMix), mix(yuv.z, delayed.z, delayMix));
+
   // ── Idea 1: luma-shouldered noise ─────────────────────────────────
   // Composite and tape noise lives in the darks and cleans up toward the
   // highlights. HEAD injected it flat, which reads as a uniform veil over
@@ -196,6 +205,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   yuv.z = yuv.z - crawl * vEdge * chromaStrength * 0.22;
 
   col = yuvToRgb(yuv);
+
+  // ── Idea 2: dropout burst (§12.2B) ───────────────────────────────
+  // A rare line-wide streak with an exponential tail from the left.
+  // The head-switch band at the bottom of the frame is unchanged.
+  let lineId = floor(uv.y * resolution.y);
+  let dropGate = step(0.985 - clamp(vhsIntensity, 0.0, 1.0) * 0.03, hash11(lineId + floor(time * 6.0) * 13.0));
+  let tail = exp(-uv.x * (6.0 + hash11(lineId + 2.7) * 14.0));
+  let dropout = dropGate * tail;
+  let dropCol = mix(vec3<f32>(0.02), vec3<f32>(0.92), hash11(lineId + 9.0));
+  col = mix(col, dropCol, dropout);
 
   let scanline = sin(uv.y * resolution.y * 3.14159) * 0.05 * mids;
   col = col - scanline;

@@ -6,31 +6,14 @@
 //            phyllotaxis-lattice, iq-palette-strands
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-06-07
+//  Upgraded: 2026-06-07; 2026-11-19
+//  Ideas: Fibonacci lattice; strand hue; crossing bloom; sacred ring; strand over-under
+//  A packing: pre-ACES display RGB + alpha (trail mixes before ACES). ACES on writeTexture only
 //  Visualist upgrade: 2026-07-22 — Fibonacci dot lattice, cosine-palette
 //    strand hue cycling, trail clamp @1.2, crossing bloom lift.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ── Constants ─────────────────────────────────────────────────────
 const PHI: f32 = 1.61803398875;
@@ -137,7 +120,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let bg = vec3<f32>(0.005, 0.005, 0.01);
         textureStore(writeTexture, coord, vec4<f32>(bg, 0.0));
         textureStore(writeDepthTexture, coord, vec4<f32>(1.0, 0.0, 0.0, 1.0));
-        textureStore(dataTextureA, coord, vec4<f32>(0.0));
+        textureStore(dataTextureA, coord, vec4<f32>(bg, 0.0));
         return;
     }
 
@@ -146,6 +129,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // strand can receive its own slow cosine-palette hue offset.
     var pattern = 0.0;
     var strandIdx = 0.0;
+    var topTap = 0.0;
+    var secondTap = 0.0;
     for (var i = 0u; i < KNOT_TAPS; i = i + 1u) {
         let fi = f32(i);
         let k = knots + fi * 0.5;
@@ -155,12 +140,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let tap = smoothstep(0.92, 1.0, weave) * pow(0.7, fi);
         pattern = pattern + tap;
         strandIdx = strandIdx + tap * fi;
+        // ── Idea 2: strand over-under ────────────────────────────────
+        // Keep the brightest tap and the runner-up. Where they separate,
+        // the winner stays bright and the under strand recedes.
+        let promote = step(topTap, tap);
+        secondTap = mix(secondTap, topTap, promote);
+        topTap = max(topTap, tap);
+        let promote2 = step(secondTap, tap) * (1.0 - promote);
+        secondTap = mix(secondTap, tap, promote2);
     }
     // Mean strand index 0..1 across taps (guard the empty-field divide).
     let strandT = strandIdx / max(pattern, 1e-4) * (1.0 / f32(KNOT_TAPS - 1u));
 
-    // ── Sacred ring mask ──────────────────────────────────────────
-    let ring = smoothstep(0.55, 0.75, abs(r - 0.5 + mouse.x * 0.1));
+    // ── Idea 1: sacred ring ─────────────────────────────────────────
+    // The old threshold started at 0.55, and abs(r-0.5) never reaches
+    // that inside the disc, so the emerald band was absent. It now sits
+    // on r≈0.5. The mouse shift is the same term as before.
+    let ringR = 0.50 - mouse.x * 0.1;
+    let ringRad = abs(r - ringR);
+    let ring = 1.0 - smoothstep(0.0, 0.045, ringRad);
+    let ringU = clamp(ringRad / 0.045, 0.0, 1.0);
+    let ringRound = sqrt(max(1.0 - ringU * ringU, 0.0));
 
     // ── Phi-harmonic nodes (branchless: always 7, soft-masked) ────
     for (var i = 0u; i < MAX_PHI_LAYERS; i = i + 1u) {
@@ -190,7 +190,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let strandHue = iqPalette(strandT + time * 0.03 + bass * 0.05);
     let strandColor = mix(gold, strandHue, 0.35);
     color = color + strandColor * pattern * glow * (1.0 + bass * 0.2);
+    let underMask = sat(secondTap * 3.0) * smoothstep(0.02, 0.22, topTap - secondTap);
+    color = color * mix(1.0, 0.72, underMask);
+    color = color + strandColor * topTap * underMask * glow * 0.35;
     color = color + emerald * ring * glow * (1.0 + mids * 0.15);
+    color = color + vec3<f32>(1.0, 0.95, 0.75) * ringRound * glow * 0.18;
     color = color + sapphire * pattern * ring * 0.4 * (1.0 + treble * 0.2);
     color = color + mix(gold, strandHue, 0.2) * latticeOnStrand * 0.8;
 
@@ -198,8 +202,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let crossing = smoothstep(1.1, 2.2, pattern + latticeOnStrand * 0.5);
     color = color + strandColor * crossing * glow * 0.22 * (1.0 + treble * 0.3);
 
-    // ── Temporal feedback via dataTextureC (clamped pre-tint) ─────
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    // ── Temporal feedback via exact C (clamped pre-tint) ──────────
+    // A used to store (pattern, ring, lattice) while this mix read C
+    // as color. Store the pre-ACES color the trail actually blends.
+    let prev = textureLoad(dataTextureC, coord, 0);
     let accum = mix(color, prev.rgb * 0.9, 0.03 + bass * 0.01);
     color = min(accum, vec3<f32>(TRAIL_CLAMP));
 
@@ -208,6 +214,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let alpha = sat(0.1 + presence * 0.9);
     let depth = sat(0.9 - pattern * 0.5 - ring * 0.3 - latticeOnStrand * 0.2);
 
+    let stored = vec4<f32>(color, alpha);
     color = acesToneMap(color * 1.1);
 
     // Premultiplied alpha writeback for slot-chain compositing
@@ -215,5 +222,5 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     textureStore(writeTexture, coord, outRGBA);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 1.0));
-    textureStore(dataTextureA, coord, vec4<f32>(pattern, ring, latticeOnStrand, alpha));
+    textureStore(dataTextureA, coord, stored);
 }

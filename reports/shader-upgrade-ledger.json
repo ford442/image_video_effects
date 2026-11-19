@@ -5581,7 +5581,7 @@
       ]
     },
     "gen-celestial-weave": {
-      "hash": "1a6b656b33ad41d8",
+      "hash": "edd4478a601dc3bf",
       "history": [
         {
           "event": "upgraded",
@@ -5590,6 +5590,14 @@
           "prev_hash": "48cd4045f7f8373d",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "edd4478a601dc3bf",
+          "prev_hash": "1a6b656b33ad41d8",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
         }
       ]
     },
@@ -6391,7 +6399,7 @@
       ]
     },
     "gen-cycloid-bloom": {
-      "hash": "2a4c287ae68655c0",
+      "hash": "37717b2644fffe0b",
       "history": [
         {
           "event": "upgraded",
@@ -6400,6 +6408,14 @@
           "prev_hash": "4c8d71e14afc5d98",
           "commit": "2c248569",
           "note": "2026-10-11 mid twelve (grok) — docs/agents/swarm-outputs/cursor-2026-10-11-mid-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "37717b2644fffe0b",
+          "prev_hash": "2a4c287ae68655c0",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
         }
       ]
     },
@@ -8971,7 +8987,7 @@
       ]
     },
     "gen-luminous-fluid-chladni-resonator": {
-      "hash": "f88cfcca963e70d8",
+      "hash": "57376d7e271c26d7",
       "history": [
         {
           "event": "upgraded",
@@ -8980,6 +8996,14 @@
           "prev_hash": "fd2398b32910f957",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "57376d7e271c26d7",
+          "prev_hash": "f88cfcca963e70d8",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
         }
       ]
     },
@@ -9684,8 +9708,17 @@
       ]
     },
     "gen-percolation-threshold": {
-      "hash": "dfee3247a61cd0c5",
-      "history": []
+      "hash": "ff156e75db25ee54",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "ff156e75db25ee54",
+          "prev_hash": "dfee3247a61cd0c5",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
+        }
+      ]
     },
     "gen-phase-transition-memory-weave": {
       "hash": "80483454e3222f1d",
@@ -12205,8 +12238,17 @@
       ]
     },
     "sacred-geometry-torus": {
-      "hash": "9b9c313490883cc1",
-      "history": []
+      "hash": "c2de20c50adf9891",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "c2de20c50adf9891",
+          "prev_hash": "9b9c313490883cc1",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
+        }
+      ]
     },
     "sand-dunes": {
       "hash": "dde5ac63d9b69f0d",
@@ -16613,7 +16655,7 @@
       ]
     },
     "mouse-electromagnetic-aurora": {
-      "hash": "c5f1e0eb850b05bc",
+      "hash": "ac0fdd45bc5e2d97",
       "history": [
         {
           "event": "upgraded",
@@ -16622,6 +16664,14 @@
           "prev_hash": "1dcc4d5949e28769",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "ac0fdd45bc5e2d97",
+          "prev_hash": "c5f1e0eb850b05bc",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
         }
       ]
     },
@@ -18640,7 +18690,7 @@
       ]
     },
     "liquid-jelly": {
-      "hash": "a5e9924cd77fcb58",
+      "hash": "7f8b0f706200f9c4",
       "history": [
         {
           "event": "upgraded",
@@ -18649,6 +18699,14 @@
           "prev_hash": "53744b82c10e8d09",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "7f8b0f706200f9c4",
+          "prev_hash": "a5e9924cd77fcb58",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
         }
       ]
     },
@@ -18903,7 +18961,7 @@
       ]
     },
     "liquid-zoom": {
-      "hash": "2d9db9855586becd",
+      "hash": "57ba0793f74a143e",
       "history": [
         {
           "event": "upgraded",
@@ -18912,6 +18970,14 @@
           "prev_hash": "657b75b751f9f5e8",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "57ba0793f74a143e",
+          "prev_hash": "2d9db9855586becd",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
         }
       ]
     },
@@ -19911,7 +19977,7 @@
       ]
     },
     "signal-noise": {
-      "hash": "c3d1db9f96e805b8",
+      "hash": "01bccc410815b2b0",
       "history": [
         {
           "event": "upgraded",
@@ -19920,6 +19986,14 @@
           "prev_hash": "40c681dcf1f79797",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "01bccc410815b2b0",
+          "prev_hash": "c3d1db9f96e805b8",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
         }
       ]
     },
@@ -21862,7 +21936,7 @@
       ]
     },
     "gen-luminescent-singularity-loom": {
-      "hash": "5f53ed2a4b1586b7",
+      "hash": "ce5a739cc65a57d1",
       "history": [
         {
           "event": "added",
@@ -21870,6 +21944,14 @@
           "hash": "5f53ed2a4b1586b7",
           "commit": "a26af174",
           "note": "2026-10-10 luminescent/magnetic ten (Claude) — agents/swarm-outputs/claude-2026-10-10-luminescent-magnetic-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T16:20:16.438Z",
+          "hash": "ce5a739cc65a57d1",
+          "prev_hash": "5f53ed2a4b1586b7",
+          "commit": "98352d8f",
+          "note": "2026-11-19 zoom/weave ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-zoom-weave-ten/BRIEFS.md"
         }
       ]
     },

@@ -19,8 +19,8 @@ Static analysis cannot prove the index stays in the safe zone; human triage acce
 
 | Line | Expression | Triage |
 |-----:|------------|--------|
-| 83 | `gid.y` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
-| 84 | `u32(latticeH) + gid.y` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 65 | `gid.y` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
+| 66 | `u32(latticeH) + gid.y` | const-indexed spring/state slots at extraBuffer[133..138]; static analysis cannot prove bound |
 
 ### `public/shaders/gen-physarum-sacred-geometry.wgsl`
 

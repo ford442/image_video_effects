@@ -6,7 +6,7 @@
     "mouse-driven",
     "upgraded-rgba"
   ],
-  "description": "The mouse acts as a moving electric charge: field lines stream from it, the E field distorts UVs, and motion-induced B rotates hue and raises aurora curtains. Clicks drop opposite charges.",
+  "description": "The mouse acts as a moving electric charge: field lines stream from it, the E field distorts UVs, and motion-induced B rotates hue and raises aurora curtains that lean with the E×B drift. Faint log-spaced equipotentials ring the charge. Clicks drop opposite charges.",
   "params": [
     {
       "id": "chargeStrength",

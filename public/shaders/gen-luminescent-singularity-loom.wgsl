@@ -3,9 +3,9 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: gravitational ray-bending around the singularity (Einstein-ring stretch of the thread lattice); weft shuttle beads running along the folded threads; bass-plucked thread vibration
-//  A packing: ACES+gamma display RGBA (was the surface normal; C is never read)
+//  Upgraded: 2026-10-10; 2026-11-19
+//  Ideas: gravitational ray-bending; shuttle beads; bass pluck; heddle shed; pluck antinode glint
+//  A packing: ACES+gamma display RGBA (C is never read)
 // ═══════════════════════════════════════════════════════════════════
 // zoom_params: x = Thread Density, y = Loom Speed, z = Glow Intensity, w = Color Shift
 
@@ -75,6 +75,11 @@ fn threadField(p: vec3<f32>) -> vec3<f32> {
         q = abs(q) - vec3<f32>(0.5, 0.5, 0.5) * density;
         let qr = q.xy * rot2D(time * 0.1 + fi);
         q = vec3<f32>(qr, q.z);
+        // ── Idea 1: heddle shed ──────────────────────────────────────
+        // Alternate threads lift and drop with loom speed so a shed opens
+        // through the same fold. The shuttle beads already run the axis.
+        let shed = sin(time * 0.85) * 0.07 * select(-1.0, 1.0, (i & 1) == 0);
+        q = vec3<f32>(q.x, q.y + shed, q.z);
         // Idea 3: plucked thread — radius swells along a travelling wave
         let cyl = length(q.xy) - 0.05 * (fi + 1.0) * (1.0 + threadPluck(q.z, fi, time));
         if (cyl < d) {
@@ -195,6 +200,12 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let bead = smoothstep(0.92, 1.0, beadWave) * smoothstep(0.12, 0.0, th.x) * smoothstep(0.5, 0.9, m);
         beadAmt = bead;
         col += palette(m + 0.35 + th.z * 0.12, u.zoom_params.w) * bead * (1.2 + u.zoom_params.z * 1.5) * (1.0 + treble * 0.4);
+        // ── Idea 2: pluck antinode glint ─────────────────────────────
+        // threadPluck already swells the radius. The fat half of that
+        // wave catches a cool highlight on the thread surface.
+        let pluck = threadPluck(th.y, th.z, loomT);
+        let antinode = smoothstep(0.1, 0.48, pluck) * smoothstep(0.09, 0.0, th.x);
+        col += vec3<f32>(0.7, 0.9, 1.0) * antinode * (0.3 + u.zoom_params.z * 0.45);
 
         depth = t / 20.0;
     }

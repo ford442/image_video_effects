@@ -5,7 +5,9 @@
 //  Complexity: High
 //  A/C packing: display RGBA, exact bounded advected history. B unused.
 //  extraBuffer[133..138]: sprung pointer position/velocity + init flag.
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23; 2026-11-19
+//  Ideas: finite-speed shear; jiggle overshoot streaks; Poisson bulge; capillary pinch of the soliton
+//  A packing: ACES display RGBA (alpha is gel thickness)
 //
 //  Batch 67 — fast motion / psychedelic / high energy:
 //    A. Finite-speed shear wave. A real gel does not deform everywhere at
@@ -108,7 +110,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lobeDelta = pAspect - lobeCenter;
   let lobeDist = max(length(lobeDelta), 0.0001);
   let lobePulse = exp(-lobeDist * lobeDist * 18.0) * sin(lobeDist * 25.0 - time * 7.0);
-  let soliton = 1.0 / cosh(clamp((pAspect.x + 0.22 * sin(pAspect.y * 8.0) - sin(time * 1.7) * 0.48) * 8.0, -8.0, 8.0));
+  let solitonLine = 1.0 / cosh(clamp((pAspect.x + 0.22 * sin(pAspect.y * 8.0) - sin(time * 1.7) * 0.48) * 8.0, -8.0, 8.0));
+  // ── Idea 2: capillary pinch ──────────────────────────────────────
+  // The ridge pinches into beads along its length. Motion, lime, and
+  // the highlight below all read this same beaded filament.
+  let bead = 0.55 + 0.45 * (0.5 + 0.5 * cos(pAspect.y * 26.0 - time * 1.6));
+  let soliton = solitonLine * (0.35 + 0.65 * bead);
   let lobeFlow = vec2<f32>(lobeDelta.x / aspect, lobeDelta.y) / lobeDist * lobePulse * wobbleStrength * 0.24;
   let solitonFlow = vec2<f32>(0.0, cos(pAspect.y * 13.0 + time * 4.0)) * soliton * wobbleStrength * 0.16;
 
@@ -124,6 +131,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tetherEnvelope = exp(-mouseDist * mix(7.0, 3.2, u.zoom_params.z));
   let tetherPhase = sin(time * elasticity * 1.2 - mouseDist * 14.0);
   let tetherForce = (mouseDelta / mouseDist) * tetherPhase * tetherEnvelope * (0.012 + wobbleStrength * 0.4) * (1.0 + isMouseDown * 2.5);
+  // ── Idea 1: Poisson bulge ────────────────────────────────────────
+  // Nearly incompressible: an inward tether piles the gel up, an
+  // outward tether thins it. Sign only — thickness still drives candy.
+  let outward = dot(tetherForce, mouseDelta);
+  let poisson = clamp(-outward * 22.0, -0.35, 0.6) * tetherEnvelope;
   displacement += vec2<f32>(tetherForce.x / aspect, tetherForce.y) * foreground;
   wobbleEnergy += tetherEnvelope * abs(tetherPhase);
 
@@ -196,7 +208,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let normal = normalize(vec3<f32>(-displacement * 28.0 + historySlope, 1.0));
   let fresnel = fresnelSchlick(max(normal.z, 0.0), 0.045);
 
-  let thickness = clamp(0.12 + length(displacement) * 22.0 + wobbleEnergy * 0.12, 0.0, 1.8);
+  let thickness = clamp(0.12 + length(displacement) * 22.0 + wobbleEnergy * 0.12 + poisson, 0.0, 1.8);
 
   // Palette keyed to gel THICKNESS, with a per-band FFT hue offset so the
   // colour field reacts across the spectrum instead of pumping on one level,
@@ -213,7 +225,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let absorption = exp(-thickness * vec3<f32>(1.6, 1.05, 0.6));
 
   let bioLime = vec3<f32>(0.48, 1.0, 0.18) * soliton * (0.08 + audio.z * 0.2);
-  var rgb = mix(scatterTint, baseColor.rgb, absorption) + scatterTint * edgeEnergy * (0.2 + audio.y * 0.42) + fresnel * vec3<f32>(0.22, 0.34, 0.42) + bioLime;
+  let beadGlint = vec3<f32>(0.85, 1.0, 0.75) * smoothstep(0.82, 1.0, bead) * solitonLine * (0.12 + audio.z * 0.15);
+  var rgb = mix(scatterTint, baseColor.rgb, absorption) + scatterTint * edgeEnergy * (0.2 + audio.y * 0.42) + fresnel * vec3<f32>(0.22, 0.34, 0.42) + bioLime + beadGlint;
 
   let trailMix = clamp((0.06 + u.zoom_params.x * 0.2) * clamp(history.a, 0.0, 1.0), 0.03, 0.3);
   rgb = mix(rgb, history.rgb, trailMix);

@@ -382,7 +382,7 @@
     "id": "liquid-jelly",
     "name": "Liquid Jelly",
     "url": "shaders/liquid-jelly.wgsl",
-    "description": "Spring-damped jelly deformation with bounded pointer inertia, exact-load thickness slopes, soft recovery, subsurface scattering, three-band audio, click waves, ACES output, and semantic alpha.",
+    "description": "Spring-damped jelly deformation with bounded pointer inertia, exact-load thickness slopes, soft recovery, subsurface scattering, three-band audio, click waves, ACES output, and semantic alpha. An inward tether thickens the gel and an outward one thins it; the soliton ridge pinches into beads.",
     "features": [
       "audio-reactive",
       "depth-aware",
@@ -1478,7 +1478,7 @@
     "id": "liquid-zoom",
     "name": "Liquid Zoom",
     "url": "shaders/liquid-zoom.wgsl",
-    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. Replaces the previous two-layer version whose depth write picked a dominant layer with a hard threshold that popped on every crossing. Clicks emit bounded zoom pulses. Simple liquid warp, not full ferro.",
+    "description": "Endless zoom-through built from four phase-offset parallax layers composited back-to-front by scene depth, each owning two FFT bins so the stack pulses through the spectrum. The previous frame smears toward the zoom center along the ray, and the radial chromatic split grows off the zoom axis. Clicks emit bounded zoom pulses. Simple liquid warp, not full ferro.",
     "features": [
       "mouse-driven",
       "held-drag",
