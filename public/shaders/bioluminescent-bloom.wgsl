@@ -6,7 +6,9 @@
 //            per-tendril-spectrum, spring-damper-nutrient
 //  Complexity: Very High
 //  Created: 2026-05-31
-//  Upgraded: 2026-07-26 (batch 16)
+//  Upgraded: 2026-07-26 (batch 16), 2026-11-19
+//  Ideas: Tendril spore shedding (glowing tendril nodes seed v into the Gray-Scott colony); Photophore halos (soft inverse-square bloom around tendril nodes, Glow Radius scales it); Quorum front rim (|grad v| lights the advancing colony front)
+//  A packing: dataTextureA = (u, v, glow, density) Gray-Scott state (unchanged)
 //
 //  Upgrade notes:
 //   - Fixed double ACES tonemap (was applied twice, washing highlights).
@@ -20,26 +22,12 @@
 //     as pursuit rather than snapping to the cursor.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+const IDEA_1: f32 = 1.0;
+const IDEA_2: f32 = 1.0;
+const IDEA_3: f32 = 1.0;
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount (engine), z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=TendrilCount, y=PulseSpeed, z=DotDensity, w=GlowRadius
-  ripples: array<vec4<f32>, 50>,
-};
+// zoom_params: x=TendrilCount, y=PulseSpeed, z=DotDensity, w=GlowRadius
 
 fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
@@ -120,12 +108,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Background bioluminescent tendrils ──────────────────────────
     var bgCol = vec3<f32>(0.0, 0.02, 0.05);
     var bgGlow = 0.0;
+    var sporeField = 0.0;
+    var halo = 0.0;
+    let haloR = 0.010 + glowRadius * 0.020;
 
     for (var ti = 0; ti < tendrilCount; ti = ti + 1) {
         let tf = f32(ti);
         // Per-tendril spectrum: each strand listens to its own FFT bin
         // and phase-offsets its pulse, so tendrils dance independently.
-        let band = plasmaBuffer[(ti % 8) + 1].x;
+        // ── Rescue 4: HEAD read plasmaBuffer[(ti%8)+1] (out of range). Each
+        // strand now listens to its own blend of bass/mids/treble.
+        let bw = fract(tf * 0.37);
+        let band = mix(mix(bass, mids, bw), treble, fract(tf * 0.61) * 0.5);
         let baseAngle = (tf / f32(tendrilCount) - 0.5) * 1.5 + 1.5708;
         let wave = sin(uv.x * 8.0 + tf * 2.1 + time * pulseSpeed + band * 3.0) * 0.15;
         let wave2 = cos(uv.x * 15.0 - tf * 1.7 + time * pulseSpeed * 1.3 + band * 5.0) * 0.08;
@@ -147,11 +141,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let nodeSize = 0.012 * pulse * (1.0 + treble * 0.5 + band * 0.5);
             let node = smoothstep(nodeSize, 0.0, td);
             bgGlow = bgGlow + node * 2.0;
+            // ── Idea 2: Photophore halos (Soft inverse-square bloom) ──
+            let hq = td / haloR;
+            halo = halo + pulse * 0.15 / (1.0 + hq * hq);
+            // ── Idea 1: Tendril spore shedding (native) ──
+            sporeField = max(sporeField, node * pulse);
         }
 
         let tendrilCol = vec3<f32>(0.1, 0.8, 0.6) * (0.5 + mids * 0.3 + band * 0.2);
         bgCol = bgCol + tendrilCol * smoothstep(1.0, 0.0, minTendrilDist);
     }
+    bgCol = bgCol + IDEA_2 * vec3<f32>(0.15, 0.75, 0.65) * min(halo, 1.5) * (0.6 + treble * 0.6);
 
     // ── Scattered glow dots ─────────────────────────────────────────
     // Dot Density slider gates how many grid cells ignite, and scales
@@ -173,12 +173,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     bgCol = bgCol + vec3<f32>(0.05, 0.15, 0.2) * ambient;
 
     // ── Reaction-diffusion Gray-Scott colony layer ──────────────────
-    let prev = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
-    let texel = 1.0 / res;
-    let left = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(-texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let right = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let up = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let down = textureSampleLevel(dataTextureC, u_sampler, clamp(uv + vec2<f32>(0.0, -texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    // ── Rescue 5: exact textureLoad on the history (HEAD used a filtering sampler).
+    let pix = vec2<i32>(global_id.xy);
+    let maxP = vec2<i32>(res) - vec2<i32>(1);
+    let prev = textureLoad(dataTextureC, pix, 0);
+    let left = textureLoad(dataTextureC, clamp(pix + vec2<i32>(-1, 0), vec2<i32>(0), maxP), 0);
+    let right = textureLoad(dataTextureC, clamp(pix + vec2<i32>(1, 0), vec2<i32>(0), maxP), 0);
+    let up = textureLoad(dataTextureC, clamp(pix + vec2<i32>(0, 1), vec2<i32>(0), maxP), 0);
+    let down = textureLoad(dataTextureC, clamp(pix + vec2<i32>(0, -1), vec2<i32>(0), maxP), 0);
 
     let Du = 0.18;
     let Dv = 0.09;
@@ -209,11 +211,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     un = un + pellet * 0.4;
 
     // Treble flash events (stress response)
-    let flash = step(0.75, treble) * hash21(uv * 20.0 + time * 3.0) * 0.25;
+    // ── Rescue 3: HEAD seeded 25 % hash noise into v over the WHOLE frame on
+    // loud treble (frame went white). Now only sparse stress cells flash.
+    let flashCell = floor(uv * 24.0);
+    let flashSpot = smoothstep(0.35, 0.0, length(fract(uv * 24.0) - 0.5));
+    let flash = step(0.75, treble) * step(0.97, hash21(flashCell + floor(time * 4.0))) * flashSpot * 0.25;
     vn = vn + flash;
+    // Idea 1 cont. / Rescue 2: v never seeded at idle in HEAD (colony dead).
+    // Glowing tendril nodes shed spores into the colony.
+    vn = vn + IDEA_1 * sporeField * 0.06;
 
     un = clamp(un, 0.0, 1.0);
     vn = clamp(vn, 0.0, 1.0);
+
+    // ── Idea 3: Quorum front rim (native) ──
+    let gradV = length(vec2<f32>(right.g - left.g, up.g - down.g));
+    let rim = smoothstep(0.02, 0.10, gradV) * IDEA_3;
 
     // Quorum sensing glow activation
     let quorum = smoothstep(0.18, 0.28, vn);
@@ -244,31 +257,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bloomCol = huePreserveClamp(vec3<f32>(0.4, 0.8, 1.0) * bloom, 1.2);
     col = col + bloomCol;
 
+    col = col + rim * vec3<f32>(0.35, 0.55, 1.0) * (0.8 + mids * 0.6);
+
     // Chromatic aberration
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
     col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
     // Single ACES tone map (the old second pass washed out highlights)
-    col = acesToneMap(col);
+    col = acesToneMap(max(col, vec3<f32>(0.0)));
 
     let alpha = clamp(density * glow * attenuation + bgGlow * 0.1, 0.0, 1.0);
 
     
     var clickFront = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
+    let rAspect = u.config.z / max(u.config.w, 1.0);
     let screenUV = vec2<f32>(vec2<i32>(global_id.xy)) / vec2<f32>(u.config.z, u.config.w);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let event = u.ripples[i];
         let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
+        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(rAspect, 1.0)) - age * 0.38) * 58.0);
     }
     
     let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
     let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
 
-    let __finalRGB = vec4<f32>(col, alpha).rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(__finalRGB, vec4<f32>(col, alpha).a));
+    let finalRGB = vec4<f32>(col, alpha).rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
+    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, vec4<f32>(col, alpha).a));
     textureStore(dataTextureA, global_id.xy, vec4<f32>(un, vn, glow, density));
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(glow * 0.4 * attenuation, 0.0, 0.0, 0.0));
 }

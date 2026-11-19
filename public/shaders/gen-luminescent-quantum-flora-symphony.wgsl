@@ -3,32 +3,15 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-13
-//  Ideas: golden-angle phyllotaxis florets on core bulb; KIFS-space petal veins + backlit translucency; stem node rings + rising sap pulse
+//  Upgraded: 2026-09-13, 2026-11-19
+//  Ideas: golden-angle phyllotaxis florets on core bulb; KIFS-space petal veins + backlit translucency; stem node rings + rising sap pulse; Fresnel–Schlick dew-wet petal cuticle sheen; luminescent petal-margin aura (near-miss silhouette halo)
 //  A packing: ACES display RGB + spore accumulation in .a (C not read)
 // ═══════════════════════════════════════════════════════════════════
 // History: 2026-08-03 (swarm b31, optimizer): canonical uniforms fix,
 // smooth-union SDF flora (stem + KIFS petals + core bulb), hex-tessellation
 // spore field, adaptive raymarch steps + fold LOD, real depth + dataTextureA.
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1, y=0 top), .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Petal Complexity, y=Gravity Twist, z=Spore Density, w=Core Intensity
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Petal Complexity, y=Gravity Twist, z=Spore Density, w=Core Intensity
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
 const MAX_DIST: f32 = 10.0;
@@ -38,6 +21,8 @@ const SMIN_K: f32 = 0.22;          // smooth-union blend radius
 const PETAL_R: f32 = 0.5;
 const GOLDEN_ANGLE: f32 = 2.39996323;
 const FLORETS: f32 = 140.0;
+const IDEA_4: f32 = 1.0;
+const IDEA_5: f32 = 1.0;
 const MAT_STEM: f32 = 1.0;  const MAT_PETAL: f32 = 2.0;  const MAT_CORE: f32 = 3.0;
 fn rot2D(a: f32) -> mat2x2<f32> {
     return mat2x2<f32>(cos(a), -sin(a), sin(a), cos(a));
@@ -196,11 +181,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var hit = false;
     var mat = 0.0;
     var spore = 0.0;
+    var minD = 10.0;      // Idea 5: closest approach of a missing ray
+    var minT = 0.0;
     for (var i = 0; i < steps; i++) {
         let p = ro + rd * t;
         let m = map(p, folds, petal, twist, bass);
         let eps = 0.0008 * (1.0 + t * 0.6);
         if (m.x < eps) { hit = true; mat = m.y; break; }
+        let closer = m.x < minD;
+        minT = select(minT, t, closer);
+        minD = min(minD, m.x);
         // Spore volumetric accumulation (Spore Density), saturating early exit
         spore += exp(-max(m.x, 0.0) * 6.0) * 0.012 * sporeDensity;
         if (spore > 1.5 || t > MAX_DIST) { break; }
@@ -231,6 +221,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let ph = phyllotaxis(p, time * 0.15);
         let floretCol = mix(vec3<f32>(1.0, 0.85, 0.35), vec3<f32>(0.4, 1.0, 0.7), ph.y);
         let floret = ph.x * (0.6 + mids * 0.4);
+        // ── Idea 4: Fresnel–Schlick dew-wet petal cuticle (§12.2 Fresnel–Schlick) ──
+        // A wet waxy cuticle (F0≈0.04) mirrors a cool sky glow at grazing angles;
+        // dew beads (hex lattice on the petal) sparkle with treble.
+        let cosV = clamp(dot(n, -rd), 0.0, 1.0);
+        let om = 1.0 - cosV;
+        let schlick = 0.04 + 0.96 * om * om * om * om * om;
+        let rdir = reflect(rd, n);
+        let sky = mix(vec3<f32>(0.25, 0.1, 0.45), vec3<f32>(0.6, 0.95, 1.0), clamp(rdir.y * 0.5 + 0.5, 0.0, 1.0));
+        let bead = 1.0 - smoothstep(0.0, 0.1, hexBorder(p.xz * 9.0 + p.y * 3.0) - 0.35);
+        let dew = sky * schlick * (0.2 + coreInt * 0.1) + vec3<f32>(1.0) * bead * schlick * (1.2 + treble * 2.0);
+        col += dew * isPetal * IDEA_4;
+
         col = mix(col, col * (0.35 + 0.65 * ph.x) + floretCol * floret * coreInt * 0.35, isCore);
 
         // Idea 2 — veins in KIFS fold space + backlit petal translucency
@@ -263,6 +265,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (arrayLength(&extraBuffer) > 40u) { fft = extraBuffer[5u + (gid.x + gid.y) % 32u]; }
     let sporeCol = vec3<f32>(0.15, 0.7, 0.9) * (hexGlow * (0.4 + treble) + spore * (0.6 + fft * 0.5 + mids * 0.3));
     col += sporeCol * select(1.0, 0.35, hit);
+    // ── Idea 5: luminescent petal-margin aura (native) ──
+    // Rays that graze the bloom without landing carry its closest approach:
+    // the silhouette breathes a petal-coloured halo that pulses with mids.
+    let auraCol = mix(vec3<f32>(0.2, 0.8, 1.0), vec3<f32>(0.9, 0.3, 1.0), 0.5 + 0.5 * sin(time + minT * 0.7));
+    let aura = exp(-minD * 12.0) * (0.55 + mids * 0.6) * coreInt * 0.35;
+    col += auraCol * aura * select(1.0, 0.0, hit) * IDEA_5;
     col += vec3<f32>(0.01, 0.03, 0.06) * (1.0 - length(uv)); // abyssal backdrop
 
     col = acesToneMap(col * 1.2);

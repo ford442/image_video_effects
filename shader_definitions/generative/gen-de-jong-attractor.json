@@ -69,7 +69,9 @@
     "depth-output",
     "click-reactive",
     "aces-tonemap",
-    "semantic-alpha"
+    "semantic-alpha",
+    "log-density-tone",
+    "lyapunov-tint"
   ],
   "feedbackPacking": "A/C = accumulated density, hue phase, tube depth, semantic alpha; exact raw attractor state",
   "x-meta": {
