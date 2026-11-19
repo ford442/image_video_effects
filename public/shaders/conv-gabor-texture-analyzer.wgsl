@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Convolution Type: gabor-filter-bank
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: even/odd quadrature energy; dominant-orientation grain
+//  Upgraded: 2026-09-08, 2026-11-19
+//  Ideas: even/odd quadrature energy; dominant-orientation grain; orientation-coherence saturation; line-vs-edge phase classing
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -37,7 +37,8 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn gaborResponse(uv: vec2<f32>, theta: f32, freq: f32, sigma: f32, pixelSize: vec2<f32>) -> f32 {
+// Returns the quadrature pair (even, odd); magnitude = length().
+fn gaborResponse(uv: vec2<f32>, theta: f32, freq: f32, sigma: f32, pixelSize: vec2<f32>) -> vec2<f32> {
     var evenR = 0.0;
     var oddR = 0.0;
     let radius = i32(ceil(sigma * 3.0));
@@ -61,7 +62,7 @@ fn gaborResponse(uv: vec2<f32>, theta: f32, freq: f32, sigma: f32, pixelSize: ve
             oddR += luma * gaussian * sin(phase);
         }
     }
-    return sqrt(evenR * evenR + oddR * oddR);
+    return vec2<f32>(evenR, oddR);
 }
 
 fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> vec3<f32> {
@@ -122,10 +123,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let effectiveFreq = freq * (1.0 + rippleFreqMod);
     
     // Four-orientation Gabor filter bank with bass-driven rotation
-    let r0 = gaborResponse(uv, 0.0 + rotationOffset + bassOrientation, effectiveFreq, sigma, pixelSize) * responseScale;
-    let r45 = gaborResponse(uv, 0.785398 + rotationOffset + bassOrientation, effectiveFreq, sigma, pixelSize) * responseScale;
-    let r90 = gaborResponse(uv, 1.570796 + rotationOffset + bassOrientation, effectiveFreq, sigma, pixelSize) * responseScale;
-    let r135 = gaborResponse(uv, 2.356194 + rotationOffset + bassOrientation, effectiveFreq, sigma, pixelSize) * responseScale;
+    let q0 = gaborResponse(uv, 0.0 + rotationOffset + bassOrientation, effectiveFreq, sigma, pixelSize) * responseScale;
+    let q45 = gaborResponse(uv, 0.785398 + rotationOffset + bassOrientation, effectiveFreq, sigma, pixelSize) * responseScale;
+    let q90 = gaborResponse(uv, 1.570796 + rotationOffset + bassOrientation, effectiveFreq, sigma, pixelSize) * responseScale;
+    let q135 = gaborResponse(uv, 2.356194 + rotationOffset + bassOrientation, effectiveFreq, sigma, pixelSize) * responseScale;
+    let r0 = length(q0);
+    let r45 = length(q45);
+    let r90 = length(q90);
+    let r135 = length(q135);
     
     // Map signed responses to psychedelic color palette
     let pal0 = palette(r0 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.33, 0.67));
@@ -134,14 +139,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pal135 = palette(r135 * 0.5 + 0.5, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0), vec3<f32>(0.0, 0.67, 0.33));
     
     // Composite: each orientation colors its response
-    var color = vec3<f32>(0.0);
-    color += pal0 * abs(r0);
-    color += pal45 * abs(r45);
-    color += pal90 * abs(r90);
-    color += pal135 * abs(r135);
-    
+    // Rescue: HEAD blended the four palettes linearly by magnitude, which
+    // averaged to flat grey. Weights are raised to the 4th power so the
+    // dominant orientation's hue owns the pixel.
+    let w4 = pow(vec4<f32>(r0, r45, r90, r135) / (max(max(r0, r45), max(r90, r135)) + 0.001), vec4<f32>(4.0));
+    var color = (pal0 * w4.x + pal45 * w4.y + pal90 * w4.z + pal135 * w4.w) / (w4.x + w4.y + w4.z + w4.w + 0.001);
+
     let totalResponse = abs(r0) + abs(r45) + abs(r90) + abs(r135) + 0.001;
-    color = color / totalResponse;
+
+    // Idea 3: orientation coherence — oriented texture (one filter dominates)
+    // keeps full hue; isotropic regions (flat fields, blobs) fall to a muted
+    // luma read of the source, so the analyzer segments texture from non-texture.
+    let rMax = max(max(r0, r45), max(r90, r135));
+    let rMin = min(min(r0, r45), min(r90, r135));
+    let coherence = smoothstep(0.08, 0.6, (rMax - rMin) / (rMax + rMin + 0.001)) * smoothstep(0.02, 0.15, rMax);
+    let srcLuma = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, vec3<f32>(0.299, 0.587, 0.114));
+    color = mix(vec3<f32>(srcLuma * 0.55 + 0.1), color, mix(0.5, 1.0, coherence) * (0.85 + mids * 0.3));
 
     let bestA = abs(r0);
     let bestB = max(abs(r45), abs(r90));
@@ -152,6 +165,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     domTheta = select(domTheta, 2.356194, abs(r135) >= bestA && abs(r135) >= abs(r45) && abs(r135) >= abs(r90));
     let grain = 0.5 + 0.5 * sin(dot(uv, vec2<f32>(cos(domTheta), sin(domTheta))) * (90.0 + freq * 400.0));
     color = mix(color, color * (0.82 + grain * 0.28), clamp(bestC * 0.12, 0.0, 0.45));
+
+    // Idea 4: line vs edge — at the dominant orientation the quadrature phase
+    // says what the feature is. Even-dominant = a line (bright thin ridge for a
+    // light line, dark for a dark line); odd-dominant = a step edge, drawn as
+    // bipolar relief (lit side / shadow side by the odd sign). Treble sharpens.
+    var qd = q0;
+    qd = select(qd, q45, domTheta > 0.5 && domTheta < 1.0);
+    qd = select(qd, q90, domTheta > 1.0 && domTheta < 2.0);
+    qd = select(qd, q135, domTheta > 2.0);
+    let qMag = length(qd) + 0.001;
+    let lineness = abs(qd.x) / qMag;
+    let classGain = clamp(qMag * 0.35, 0.0, 1.0) * (0.7 + treble * 0.5);
+    let lineTerm = sign(qd.x) * smoothstep(0.75, 0.95, lineness);
+    let edgeTerm = (qd.y / qMag) * smoothstep(0.75, 0.95, 1.0 - lineness * lineness);
+    color = color * (1.0 + (lineTerm * 0.55 + edgeTerm * 0.4) * classGain);
     
     // Boost saturation
     color = color * 1.3;

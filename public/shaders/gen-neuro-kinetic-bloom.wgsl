@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: dendritic bifurcation (tertiary spine forks off every side-branch tip); saltatory action potentials hopping node-to-node along the axon; myelin pearling instability that swells/relaxes the trunk radius in bead trains; synaptic bouton crowns at branch terminals
+//  Upgraded: 2026-09-14, 2026-11-19
+//  Ideas: dendritic bifurcation (tertiary spine forks off every side-branch tip); saltatory action potentials hopping node-to-node along the axon; myelin pearling instability that swells/relaxes the trunk radius in bead trains; synaptic bouton crowns at branch terminals; vesicle release burst (boutons flash and shed a vesicle shell when the saltatory spike arrives); astrocyte haze (glial glow accumulated along the ray near the axons)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -84,6 +84,13 @@ fn map(p: vec3<f32>, sprung_mouse: vec2<f32>, held: f32) -> vec3<f32> {
     let boutonA = length(pos - tipA) - 0.15;
     let boutonB = length(pos - tipB) - 0.15;
     let boutons = min(boutonA, boutonB);
+    // IDEA 5: vesicle release — when the conduction front reaches the terminal,
+    // a thin shell of neurotransmitter vesicles expands off each bouton.
+    let releasePhaseRaw = fract(u.config.x * (0.35 + bass * 0.25) + hash31(cell));
+    let release = smoothstep(0.8, 1.0, releasePhaseRaw);
+    let shellR = 0.18 + release * 0.45;
+    let shell = abs(min(length(pos - tipA), length(pos - tipB)) - shellR);
+    let vesicleGlow = exp(-shell * 18.0) * release * (1.0 - release * 0.6);
     let bloomBranch = min(min(min(d_branch, min(sideA, sideB)), spines), boutons);
 
     // Native idea 2: saltatory conduction — a spike front sweeps the axon but only
@@ -93,7 +100,8 @@ fn map(p: vec3<f32>, sprung_mouse: vec2<f32>, held: f32) -> vec3<f32> {
     let zFront = -branch_length + conductionPhase * 2.0 * branch_length;
     let nodeFront = floor(zFront / nodeSpacing) * nodeSpacing;
     let onAxon = exp(-max(d_branch - 0.05, 0.0) * 12.0);
-    let actionPotential = exp(-abs(pos.z - nodeFront) * 5.0) * onAxon;
+    let actionPotential = exp(-abs(pos.z - nodeFront) * 5.0) * onAxon
+        + vesicleGlow + exp(-max(boutons, 0.0) * 10.0) * release * 1.5;
 
     // Vein displacement
     let vein = sin(pos.z * 10.0 - u.config.x * 5.0) * sin(atan2(pos.y, pos.x) * 6.0);
@@ -131,26 +139,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
     let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
 
-    // Sprung cursor state: [133..134] pos, [135..136] vel, [137] init flag, [138] last time.
-    let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouse = rawMouse;
-    var mouseVelocity = vec2<f32>(0.0);
-    var springDt = 0.016;
-    if (arrayLength(&extraBuffer) > 138u) {
-        if (extraBuffer[137] > 0.5) {
-            mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-            mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-            springDt = clamp(u.config.x - extraBuffer[138], 0.001, 0.05);
-        }
-    }
-    let springOmega = 8.0;
-    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
-    mouse += mouseVelocity * springDt;
-    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
-        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = u.config.x;
-    }
+    // HEAD sprung the cursor through extraBuffer[133..138], which is re-uploaded
+    // (zeroed) every frame, so the spring never held state — use the cursor directly.
+    let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let uv01 = (vec2<f32>(coords) + vec2<f32>(0.5)) / vec2<f32>(dims);
     let uv = (vec2<f32>(coords) - 0.5 * vec2<f32>(dims)) / f32(dims.y);
@@ -160,6 +151,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var t = 0.0;
     var mat_id = 0.0;
     var actionPotential = 0.0;
+    var astro = 0.0; // IDEA 6: astrocyte haze accumulated near the tissue
     for(var i = 0; i < 80; i++) {
         let p = ro + rd * t;
         let res = map(p, mouse, held);
@@ -168,6 +160,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             actionPotential = res.z;
             break;
         }
+        astro += exp(-max(res.x, 0.0) * 6.0) * 0.012;
         t += max(res.x, 0.002);
     }
 
@@ -201,10 +194,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             clickBloom = max(clickBloom, exp(-abs(radius - age * 0.18) * 65.0) * exp(-age * 1.5));
         }
     }
+    // astrocyte haze: soft violet glial glow, mids swell it
+    col += vec3<f32>(0.25, 0.12, 0.45) * astro * (0.6 + mids * 0.8) * (0.5 + u.zoom_params.z * 0.5);
     col += vec3<f32>(0.08, 1.1, 0.55) * clickBloom * (0.5 + mids * 0.35);
 
     // Alpha encodes bloom presence: lit vein mass over the void, never flat 1.0
-    let alpha = clamp(select(0.0, 0.25, hit) + glowMass + treble * 0.1 + clickBloom * 0.35, 0.0, 0.97);
+    let alpha = clamp(select(0.0, 0.25, hit) + glowMass + astro * 0.15 + treble * 0.1 + clickBloom * 0.35, 0.0, 0.97);
     let out = vec4<f32>(acesToneMap(col * 1.1), alpha);
 
     // Depth: ray-march hit distance mapped to [0,1] (near = closer to camera)

@@ -3054,12 +3054,30 @@
       ]
     },
     "physarum-gemini": {
-      "hash": "5727c20a9823f7c3",
-      "history": []
+      "hash": "3d989437b7ddaa1a",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "3d989437b7ddaa1a",
+          "prev_hash": "5727c20a9823f7c3",
+          "commit": "8b35ba3b",
+          "note": null
+        }
+      ]
     },
     "physarum-grokcf1": {
-      "hash": "907de75322f4e320",
-      "history": []
+      "hash": "6885daf30065c926",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "6885daf30065c926",
+          "prev_hash": "907de75322f4e320",
+          "commit": "8b35ba3b",
+          "note": null
+        }
+      ]
     },
     "physarum": {
       "hash": "4fb47e78721cc035",
@@ -4684,8 +4702,17 @@
       ]
     },
     "emergent-calligraphic-weave": {
-      "hash": "19d97c70ee42cbad",
-      "history": []
+      "hash": "ad0041f600262765",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "ad0041f600262765",
+          "prev_hash": "19d97c70ee42cbad",
+          "commit": "8b35ba3b",
+          "note": null
+        }
+      ]
     },
     "fire_smoke_volumetric": {
       "hash": "e6fc628dceaa7077",
@@ -9622,7 +9649,7 @@
       ]
     },
     "gen-neuro-kinetic-bloom": {
-      "hash": "eba2ba1455d09c02",
+      "hash": "d8f0602de4c33c43",
       "history": [
         {
           "event": "upgraded",
@@ -9631,6 +9658,14 @@
           "prev_hash": "f54113019852c226",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "d8f0602de4c33c43",
+          "prev_hash": "eba2ba1455d09c02",
+          "commit": "8b35ba3b",
+          "note": null
         }
       ]
     },
@@ -13430,7 +13465,7 @@
       ]
     },
     "conv-difference-of-gaussians-cascade": {
-      "hash": "0a4e7f07b39089d9",
+      "hash": "c64c537b8a1ce6dd",
       "history": [
         {
           "event": "upgraded",
@@ -13439,6 +13474,14 @@
           "prev_hash": "0b29e0a2f033db1e",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "c64c537b8a1ce6dd",
+          "prev_hash": "0a4e7f07b39089d9",
+          "commit": "8b35ba3b",
+          "note": null
         }
       ]
     },
@@ -13477,7 +13520,7 @@
       ]
     },
     "conv-gabor-texture-analyzer": {
-      "hash": "302df1312dcf1b48",
+      "hash": "d9a6669a0c418bfd",
       "history": [
         {
           "event": "upgraded",
@@ -13486,6 +13529,14 @@
           "prev_hash": "fd0974f3de018670",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "d9a6669a0c418bfd",
+          "prev_hash": "302df1312dcf1b48",
+          "commit": "8b35ba3b",
+          "note": null
         }
       ]
     },
@@ -19688,7 +19739,7 @@
       ]
     },
     "cyber-terminal-ascii": {
-      "hash": "8adb656c54eeb746",
+      "hash": "754338a13fb00cba",
       "history": [
         {
           "event": "upgraded",
@@ -19697,6 +19748,14 @@
           "prev_hash": "3562f8448d749373",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "754338a13fb00cba",
+          "prev_hash": "8adb656c54eeb746",
+          "commit": "8b35ba3b",
+          "note": null
         }
       ]
     },
@@ -19984,7 +20043,7 @@
       ]
     },
     "pixelation-drift": {
-      "hash": "9c0bda4ffb776d84",
+      "hash": "b57d6a22227c1b12",
       "history": [
         {
           "event": "upgraded",
@@ -19993,6 +20052,14 @@
           "prev_hash": "43a24815ed648653",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "b57d6a22227c1b12",
+          "prev_hash": "9c0bda4ffb776d84",
+          "commit": "8b35ba3b",
+          "note": null
         }
       ]
     },
@@ -20044,7 +20111,7 @@
       ]
     },
     "scanline-drift": {
-      "hash": "373eb65964769dbd",
+      "hash": "95c9b6eaf11a370e",
       "history": [
         {
           "event": "upgraded",
@@ -20053,6 +20120,14 @@
           "prev_hash": "86f4d9b292affdcf",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "95c9b6eaf11a370e",
+          "prev_hash": "373eb65964769dbd",
+          "commit": "8b35ba3b",
+          "note": null
         }
       ]
     },
@@ -20167,7 +20242,7 @@
       ]
     },
     "xerox-degrade": {
-      "hash": "87149cdb57c0fdf5",
+      "hash": "8a4b6a9df681620d",
       "history": [
         {
           "event": "upgraded",
@@ -20176,6 +20251,14 @@
           "prev_hash": "7c0e23efdcd9e510",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T19:03:42.664Z",
+          "hash": "8a4b6a9df681620d",
+          "prev_hash": "87149cdb57c0fdf5",
+          "commit": "8b35ba3b",
+          "note": null
         }
       ]
     },
