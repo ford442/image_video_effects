@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: upgraded-rgba, depth-aware, audio-reactive, mouse-driven,
 //            spherical-harmonics, animated
-//  Upgraded: 2026-10-17
-//  Ideas: zonal jets; storm-eye vortex; polar hood; belt boundaries
+//  Upgraded: 2026-10-17, 2026-11-19
+//  Ideas: zonal jets; storm-eye vortex; polar hood; belt boundaries; moon-transit shadow; Kelvin–Helmholtz belt billows
 //  A packing: raw pattern, stormMask, limbT, validity
 // ═══════════════════════════════════════════════════════════════════
 
@@ -12,6 +12,8 @@
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+const IDEA_5: f32 = 1.0;
+const IDEA_6: f32 = 1.0;
 
 fn rotateX(p: vec3<f32>, angle: f32) -> vec3<f32> {
     let c = cos(angle);
@@ -131,11 +133,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mids = audioBands.y;
     let treble = audioBands.z;
 
-    // Per-bin FFT: each spherical-harmonic family dances to its own range.
-    // l1 (Y1x) <- bass bins 1..3, l2 (Y2x) <- mid bins 4..6, l3 (Y3x) <- treble bins 7..8.
-    let bassBins = (plasmaBuffer[1].x + plasmaBuffer[2].x + plasmaBuffer[3].x) / 3.0;
-    let midBins = (plasmaBuffer[4].x + plasmaBuffer[5].x + plasmaBuffer[6].x) / 3.0;
-    let trebleBins = (plasmaBuffer[7].x + plasmaBuffer[8].x) / 2.0;
+    // ── Rescue 2: plasmaBuffer[1..8] is out of range (only [0].xyz carries audio) ──
+    // l1 (Y1x) <- bass, l2 (Y2x) <- mids, l3 (Y3x) <- treble.
+    let bassBins = bass;
+    let midBins = mids;
+    let trebleBins = treble;
 
     // Mouse for view + light direction
     let mouse = vec2<f32>(u.zoom_config.y, u.zoom_config.z) * 2.0 - 1.0;
@@ -152,7 +154,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let viewRotY = mouse.x * 0.5 * mouseInfluence;
     let viewRotX = mouse.y * 0.3 * mouseInfluence;
     let ro_final = rotateY(rotateX(ro_rotated, viewRotX), viewRotY);
-    let rd_final = rotateY(rotateX(rd, viewRotX), viewRotY);
+    // ── Rescue 1: HEAD orbited ro but not rd, so the globe slid off frame and sat
+    // behind the camera for half the orbit. Orbit the view ray with the camera.
+    let rd_orbit = rotateY(rotateX(rd, sin(time * 0.2) * 0.1), rotTime);
+    let rd_final = rotateY(rotateX(rd_orbit, viewRotX), viewRotY);
 
     let oc = ro_final - sphereCenter;
     let a = dot(rd_final, rd_final);
@@ -177,7 +182,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let delta = (uv_norm - ripple.xy) * vec2<f32>(screenAspect, 1.0);
         let dist = length(delta);
         let angle = atan2(delta.y, delta.x);
-        let strength = clamp(ripple.w, 0.0, 1.0) * exp(-age * 2.2);
+        // ── Rescue 3: ripples[i].w is always 0 (padding) — unit strength ──
+        let strength = exp(-age * 2.2);
         let ring = exp(-abs(dist - age * 0.42) * 90.0);
         let branches = pow(0.5 + 0.5 * sin(angle * 11.0 + dist * 95.0 - age * 31.0), 8.0);
         clickLightning += strength * ring * (0.35 + branches);
@@ -257,8 +263,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         baseColor = mix(baseColor, stormTint, stormMask * 0.18);
 
         // Idea 2 — storm eye: warm vortex from existing Worley mask × latitude well
-        let eyeLat = exp(-pow(theta - 1.15, 2.0) * 7.0);
-        let eyeLon = exp(-pow(sin(phi * 0.5 + time * 0.08), 2.0) * 6.0);
+        let eyeDt = theta - 1.15; // ── Rescue 4: pow(negative, 2) → x*x ──
+        let eyeLat = exp(-eyeDt * eyeDt * 7.0);
+        let eyeS = sin(phi * 0.5 + time * 0.08);
+        let eyeLon = exp(-eyeS * eyeS * 6.0);
         let stormEye = stormMask * eyeLat * eyeLon;
         baseColor = mix(baseColor, vec3<f32>(0.95, 0.38, 0.18), clamp(stormEye * 0.45, 0.0, 0.4));
 
@@ -266,12 +274,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let polarHood = pow(abs(cos(theta)), 5.0);
         baseColor = mix(baseColor, vec3<f32>(0.74, 0.80, 0.90), polarHood * 0.42);
         // Idea 4 — belt edges at the zero-crossings of the existing jet sine
-        let jetPhase = theta * 18.0 + time * 0.35 + pattern * 0.4;
+        // ── Idea 6: Kelvin–Helmholtz billows (native) — the jet shear (l2) curls the
+        // belt edge with a longitude wave that rolls downstream, so edges scallop.
+        let khAmp = 0.35 + l2 * 0.9;
+        let khWave = sin(phi * 14.0 - time * 1.6 + theta * 3.0);
+        let jetPhase = theta * 18.0 + time * 0.35 + pattern * 0.4 + IDEA_6 * khAmp * khWave * abs(khWave);
         let beltEdge = smoothstep(0.86, 0.99, abs(cos(jetPhase)));
         baseColor = baseColor * (1.0 - beltEdge * 0.32);
 
+        // ── Idea 5: moon-transit shadow (native) — a moon's umbra + penumbra crosses the
+        // disc on a tilted track (in view space so it rides the face, not the bands).
+        let viewN = rotateY(rotateX(normal, -viewRotX), -viewRotY);
+        let orbitN = rotateY(viewN, -rotTime);
+        let transitPhase = fract(timeRaw * 0.025 + 0.42) * 2.6 - 1.3;
+        let shadowC = vec2<f32>(transitPhase, 0.22 - transitPhase * 0.12);
+        let shadowD = length(orbitN.xy - shadowC);
+        let umbra = 1.0 - smoothstep(0.11, 0.14, shadowD);
+        let penumbra = 1.0 - smoothstep(0.14, 0.23, shadowD);
+        let moonShadow = IDEA_5 * clamp(umbra * 0.62 + penumbra * 0.28, 0.0, 0.9) * step(0.0, orbitN.z);
+
         // HDR accumulation (boost before tone map)
-        var litColor = baseColor * (diff * 1.1 + ambient) * 1.4 + vec3<f32>(spec) * 1.5;
+        var litColor = baseColor * (diff * 1.1 + ambient) * (1.0 - moonShadow) * 1.4 + vec3<f32>(spec) * 1.5 * (1.0 - moonShadow);
 
         // ─── Creative: Rayleigh-style blue limb scattering ───
         let rayleigh = pow(limbT, 2.5);

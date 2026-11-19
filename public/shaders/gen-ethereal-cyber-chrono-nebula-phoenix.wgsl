@@ -3,14 +3,17 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-11-19
 //  Ideas: wing feather filaments along SDF edge; tail ember convection streaks;
 //         2nd pass: molting sparks peel off the wing edge and drift upward;
-//         ash-to-flame rebirth cycle (bass re-ignites); three-feather head crest
+//         ash-to-flame rebirth cycle (bass re-ignites); three-feather head crest;
+//         3rd pass: pyre aura (soft inverse-square bloom); chrono-dial wing ocelli
 //  A packing: raw telemetry in A (trap, d, nebula, alpha) — C reads fields
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 const PI: f32 = 3.14159265359;
+const IDEA_1: f32 = 1.0;
+const IDEA_2: f32 = 1.0;
 // Stateless: no extraBuffer state (the engine re-uploads extraBuffer every
 // frame, so the old [133..137] halo spring was dead and tore across workgroups).
 fn rot(a: f32) -> mat2x2<f32> {
@@ -109,8 +112,10 @@ fn sdPhoenix(p: vec2<f32>, wingspan: f32) -> f32 {
     // the saved 0.1–1.0 range is fully live.
     let wingUV = rot(0.25 + min(wingspan, 0.5) * 2.0) * vec2<f32>(wingX, wingY);
     let wing = length(vec2<f32>(wingUV.x * 0.35 / wingspan, wingUV.y * 2.5)) - 0.12;
-    let tailUV = vec2<f32>(p.x * 2.0, p.y + 0.35);
-    let tail = length(vec2<f32>(tailUV.x, max(0.0, -tailUV.y))) - 0.1 + 0.08 * sin(p.y * 20.0);
+    // ── Rescue 1: bounded tail (y ∈ [-0.59,-0.25]); HEAD's max(0,-(y+0.35)) was an
+    // infinite stripe through the whole bird for every y > -0.35 ──
+    let tailUV = vec2<f32>(p.x * 2.0, p.y + 0.42);
+    let tail = length(vec2<f32>(tailUV.x, max(0.0, abs(tailUV.y) - 0.17))) - 0.1 + 0.08 * sin(p.y * 20.0);
     return min(min(min(body, wing), tail), sdHeadCrest(p));
 }
 
@@ -135,8 +140,8 @@ fn wingFeatherFilaments(p: vec2<f32>, wingspan: f32, edge: f32, t: f32) -> f32 {
 
 // Native idea 2: rising ember convection along the tail SDF axis.
 fn tailEmberConvection(p: vec2<f32>, t: f32, bass: f32) -> f32 {
-    let tailUV = vec2<f32>(p.x * 2.0, p.y + 0.35);
-    let inTail = smoothstep(0.18, 0.0, length(vec2<f32>(tailUV.x, max(0.0, -tailUV.y))));
+    let tailUV = vec2<f32>(p.x * 2.0, p.y + 0.42);  // Rescue 1: same bounded segment as sdPhoenix
+    let inTail = smoothstep(0.18, 0.0, length(vec2<f32>(tailUV.x, max(0.0, abs(tailUV.y) - 0.17))));
     let axisPhase = -tailUV.y * 20.0 - t * (2.8 + bass * 1.8);
     let streak = 0.5 + 0.5 * sin(axisPhase + sin(tailUV.x * 32.0) * 2.5);
     let streakFine = pow(0.5 + 0.5 * sin(axisPhase * 2.4 + tailUV.x * 48.0), 3.0);
@@ -281,6 +286,24 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let sparks = moltingSparks(p, gradP, upP, wingspan, time, treble);
     phoenixColor += vec3<f32>(1.0, 0.62, 0.25) * sparks * (0.8 + plasma * 1.2 + bass);
 
+    // ── Idea 2: chrono-dial wing ocelli (native) — an eye-spot dial on each ──
+    // wing with a sweeping clock hand (hand angle = time × orbit spin).
+    let ocWa = 0.25 + min(wingspan, 0.5) * 2.0;     // wing sweep from sdPhoenix
+    let ocSemi = 0.12 * wingspan / 0.35;             // wing long semi-axis
+    let ocC = vec2<f32>(0.06, 0.12) + 0.55 * ocSemi * vec2<f32>(cos(ocWa), sin(ocWa));
+    let ocQ = vec2<f32>(abs(p.x), p.y) - ocC;
+    let ocR = length(ocQ);
+    let ocRad = clamp(ocSemi * 0.45, 0.022, 0.06);
+    let ocRing = exp(-abs(ocR - ocRad) * 260.0) + 0.6 * exp(-abs(ocR - ocRad * 0.45) * 300.0);
+    let handAng = time * (0.8 + spinRate * 2.4) * sign(p.x + 1e-4);
+    let handDir = vec2<f32>(sin(handAng), cos(handAng));
+    let along = dot(ocQ, handDir);
+    let handD = length(ocQ - handDir * clamp(along, 0.0, ocRad * 0.9));
+    let ocHand = exp(-handD * 380.0);
+    let ocTicks = smoothstep(0.82, 0.98, cos(atan2(ocQ.y, ocQ.x + 1e-5) * 12.0)) * exp(-abs(ocR - ocRad * 0.8) * 300.0);
+    let ocelli = (ocRing + ocHand * 1.3 + ocTicks * 0.7) * smoothstep(ocRad * 1.4, ocRad, ocR) * rebirth.x * IDEA_2;
+    phoenixColor += vec3<f32>(1.0, 0.82, 0.35) * ocelli * (1.2 + treble);
+
     // Phoenix attention halo at the cursor.
     let mouseDist = length(uv01 - mouse);
     let mouseGlow = exp(-mouseDist * 20.0) * (0.3 + bass);
@@ -289,13 +312,22 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Composite over video background.
     var color = mix(video.rgb, phoenixColor, clamp(density + shell * 0.5 + ashAmt * 0.5 + sparks + fireFront, 0.0, 1.0));
     color = mix(color, bgColor, 0.35 * (1.0 - density));
+    // ── Idea 1: pyre aura (soft inverse-square bloom, §12.2) — the burning ──
+    // body lights the scene around it; I/(1+(d/r)²) normalised so the shell
+    // energy is unchanged, bass and rebirth fire feed it.
+    let auraR = 0.06 + plasma * 0.05;
+    let auraX = max(d, 0.0) / auraR;
+    let aura = 1.0 / (1.0 + auraX * auraX) * (1.0 - baseDensity * 0.7);
+    let auraHeat = (0.35 + bass * 0.9 + fireFront * 2.0) * mix(0.4, 1.0, rebirth.x);
+    color += mix(vec3<f32>(1.0, 0.45, 0.12), pal, 0.3) * aura * auraHeat * 0.55 * IDEA_1;
 
     // HDR taming: hue-preserving clamp at ~2.0, then ACES before store.
     color = huePreserveClamp(color, 2.0);
     color = acesTonemap(max(color, vec3<f32>(0.0)));
 
     // Meaningful alpha: emission + occlusion, not forced to 1.0.
-    let alpha = clamp(density + shell * 0.4 + chronoGlow * 0.2 + ashAmt * 0.4 + min(sparks, 1.0) * 0.6, 0.0, 1.0);
+    let alpha = clamp(density + shell * 0.4 + chronoGlow * 0.2 + ashAmt * 0.4 + min(sparks, 1.0) * 0.6
+        + aura * auraHeat * 0.25 * IDEA_1 + min(ocelli, 1.0) * 0.5, 0.0, 1.0);
 
     // Depth: phoenix in front, input depth preserved where transparent.
     let depth = mix(inDepth, 0.2 + density * 0.6, clamp(density + shell * 0.5, 0.0, 1.0));

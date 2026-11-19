@@ -3,7 +3,7 @@
   "name": "Deep Sea Thermal Vent",
   "category": "generative",
   "url": "shaders/deep-sea-thermal-vent.wgsl",
-  "description": "A layered black-smoker ecosystem with carbonate chimneys, mineral crust, stratified billows, rising bubbles and microbes, mouse-steered jets, click heat fronts, and advected HDR plume history.",
+  "description": "A layered black-smoker ecosystem with carbonate chimneys, mineral crust, stratified billows, rising bubbles and microbes, soot-occluded underlit plumes, Riftia tubeworms, mouse-steered jets, click heat fronts, and advected HDR plume history.",
   "features": [
     "audio-reactive",
     "temporal-feedback",

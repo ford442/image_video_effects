@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-17
-//  Ideas: fold-generation hopper terraces; alternating-parity twin-boundary seams; basal cleavage sheen from fold faces; treble micro-serration on later folds; ledge-cast step shadows down the hopper stairs; fresh-cleave silver fronts that strip and regrow the oxide film
+//  Upgraded: 2026-10-17, 2026-11-19
+//  Ideas: fold-generation hopper terraces; alternating-parity twin-boundary seams; basal cleavage sheen from fold faces; treble micro-serration on later folds; ledge-cast step shadows down the hopper stairs; fresh-cleave silver fronts that strip and regrow the oxide film; recess-thickened oxide that shifts sheltered hopper steps to a higher interference order; molten bismuth bath the crystal is pulled from
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -206,9 +206,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Normalized pixel coordinates (from -1 to 1)
     let uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
 
-    // Ray origin and direction
-    let ro = vec3<f32>(0.0, 0.0, -3.0 + t);
-    let rd = normalize(vec3<f32>(uv.x, uv.y, 1.0));
+    // ── Rescue 1: the camera flew straight down +z at 1.25 units/s through a finite
+    // crystal (ro.z = -3 + t), so after ~3 s every ray missed and the frame stayed black
+    // forever; screen-up was also world-down. It now orbits the crystal at Speed's rate,
+    // looking at it, with screen-up = world-up. ──
+    let orbitA = t * 0.22;
+    let ro = vec3<f32>(sin(orbitA) * 5.2, 1.1 + 0.45 * sin(t * 0.13), -cos(orbitA) * 5.2);
+    let fwd = normalize(vec3<f32>(0.0, -0.15, 0.0) - ro);
+    let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), fwd));
+    let upv = cross(fwd, right);
+    let rd = normalize(uv.x * right - uv.y * upv + 1.3 * fwd);
 
     // Raymarching
     var d0 = 0.0;
@@ -225,7 +232,16 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var alpha = 0.0;
     var depth = 0.0;
 
-    if (d0 < MAX_DIST) {
+    // ── Idea 8: molten bismuth bath (native) — hopper crystals are pulled from a melt;
+    // a dull liquid-metal surface sits under the crystal with a heat-coloured crucible
+    // glow at its foot and a slow convection shimmer. Rays that reach it before the
+    // crystal shade the melt instead of the black void. ──
+    let IDEA_8 = 1.0;
+    let meltY = -2.1;
+    let tMelt = select(MAX_DIST * 2.0, (meltY - ro.y) / rd.y, rd.y < -0.001);
+    let meltHit = IDEA_8 > 0.5 && tMelt < d0 && tMelt < MAX_DIST;
+
+    if (d0 < MAX_DIST && !meltHit) {
         let surface = map(p);
         let n = calcNormal(p);
         let v = -rd; // View direction
@@ -264,6 +280,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let aoStep = 0.1;
         let ao = clamp(map(p + n * aoStep).d / aoStep, 0.0, 1.0);
 
+        // ── Idea 7: recess-thickened oxide (native) — sheltered hopper steps oxidise
+        // longer and grow a thicker film, so occluded recesses advance one interference
+        // order (gold → magenta → blue) while exposed faces keep the thin-film hue. ──
+        let IDEA_7 = 1.0;
+        let shelter = (1.0 - ao) * filmGrowth * IDEA_7;
+        let thickFilm = palette(phase + 0.5 + shelter * 0.35, iridescence);
+
         // Pointable Idea 5: ledge-cast step shadows on the direct light only.
         var lit = 1.0;
         if (ndotl > 0.0) { lit = ledgeShadow(p + n * 0.004, lightDir); }
@@ -286,6 +309,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         col = mix(albedo * (ndotl * 0.8 * stepShadow + 0.2) * ao + vec3<f32>(spec) * 0.5 * stepShadow,
                   col, filmGrowth);
         col += bareMetal * freshEdge * (0.18 + spec * 0.8) * stepShadow;
+        // Idea 7 applied: deep recesses keep a dim but saturated thick-film glow.
+        col = mix(col, thickFilm * (0.22 + 0.5 * ndotl * stepShadow), smoothstep(0.05, 0.6, shelter) * 0.8);
 
         // Fog
         col = mix(col, vec3<f32>(0.05, 0.05, 0.1), 1.0 - exp(-0.02 * d0 * d0));
@@ -296,6 +321,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             0.0,
             1.0
         );
+    }
+
+    if (meltHit) {
+        let mp = ro + rd * tMelt;
+        let rFoot = length(mp.xz);
+        let shimmer = 0.5 + 0.5 * sin(mp.x * 3.1 + sin(mp.z * 2.3 + t * 0.7) * 1.6 + t * 0.4);
+        let fres = 0.04 + 0.96 * pow(1.0 - clamp(-rd.y, 0.0, 1.0), 5.0);
+        let melt = vec3<f32>(0.20, 0.19, 0.22) * (0.35 + 0.25 * shimmer) + vec3<f32>(0.55, 0.5, 0.6) * fres * 0.5;
+        let crucible = vec3<f32>(1.0, 0.38, 0.1) * exp(-rFoot * 0.9) * (0.55 + 0.6 * plasmaBuffer[0].x);
+        let footShadow = mix(0.45, 1.0, smoothstep(0.4, 1.6, rFoot));
+        col = (melt * footShadow + crucible) * IDEA_8;
+        col = mix(col, vec3<f32>(0.05, 0.05, 0.1), 1.0 - exp(-0.02 * tMelt * tMelt));
+        depth = clamp(1.0 - tMelt / MAX_DIST, 0.0, 1.0);
+        alpha = clamp(0.4 + depth * 0.3, 0.0, 1.0);
     }
 
     let coord = vec2<i32>(id.xy);
