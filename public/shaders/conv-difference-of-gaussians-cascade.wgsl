@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Convolution Type: multi-scale-DoG
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: Marr-Hildreth zero-crossing ridges; source-tied XDoG tanh
+//  Upgraded: 2026-09-08, 2026-11-19
+//  Ideas: Marr-Hildreth zero-crossing ridges; source-tied XDoG tanh; scale-selected blob polarity halos; DoG-gradient relief lit from the pointer
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -150,6 +150,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dogN = dog(clamp(uv + vec2<f32>(0.0, pixelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), pixelSize, s0, s0 * 1.6) * contrast;
     let dogE = dog(clamp(uv + vec2<f32>(pixelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), pixelSize, s0, s0 * 1.6) * contrast;
     let zeroCross = select(0.0, 1.0, (dog0 * dogN) < 0.0 || (dog0 * dogE) < 0.0);
+
+    // Idea 3: scale-selected blob halos. DoG is a blob detector: the scale with
+    // the strongest |response| is the blob's characteristic size, its sign the
+    // polarity. Light blobs glow warm, dark blobs cool; coarser winning scale =
+    // softer, wider halo (lower gain per unit response). Bass swells it.
+    let mags = abs(vec4<f32>(dog0, dog1, dog2, dog3));
+    var blobR = dog0;
+    var blobGain = 1.0;
+    blobGain = select(blobGain, 0.8, mags.y > abs(blobR));
+    blobR = select(blobR, dog1, mags.y > abs(blobR));
+    blobGain = select(blobGain, 0.6, mags.z > abs(blobR));
+    blobR = select(blobR, dog2, mags.z > abs(blobR));
+    blobGain = select(blobGain, 0.45, mags.w > abs(blobR));
+    blobR = select(blobR, dog3, mags.w > abs(blobR));
+    let blobAmt = clamp(abs(blobR) * 6.0 * blobGain, 0.0, 1.0) * (0.6 + bass * 0.5);
+    let blobTint = select(vec3<f32>(0.35, 0.6, 1.25), vec3<f32>(1.3, 0.85, 0.45), blobR > 0.0);
+    color = mix(color, color * blobTint + blobTint * 0.08, blobAmt * 0.55);
+
+    // Idea 4: DoG-gradient relief. The fine DoG already sampled N/E is a height
+    // field; its gradient, lit from the pointer direction, embosses the edge
+    // bands so the cascade reads as carved rather than flat-coloured.
+    let dGrad = vec2<f32>(dogE - dog0, dogN - dog0);
+    let toLight = mousePos - uv;
+    let lightDir = toLight / max(length(toLight), 0.05);
+    let relief = clamp(dot(dGrad, lightDir) * (14.0 + mids * 8.0), -1.0, 1.0);
+    color = color * (1.0 + relief * 0.45);
     color = mix(color, color * vec3<f32>(0.12, 0.10, 0.08), zeroCross * 0.55 * (0.5 + treble * 0.4));
     
     // Chromatic aberration on detected edges

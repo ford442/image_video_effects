@@ -490,7 +490,7 @@
     "id": "cyber-terminal-ascii",
     "name": "Cyber Terminal ASCII",
     "url": "shaders/cyber-terminal-ascii.wgsl",
-    "description": "Scrolling grid of luma-picked SDF glyphs in phosphor green (or colour-blended) with a binary decode lens at the cursor that widens while held, click packet bursts and C phosphor persistence. Ideas: hex-dump decode (lens cells show the two hex nibbles of their luma byte from a 4x6 bitmap font), typewriter row entry (the row entering at the bottom types in left-to-right behind a blinking block cursor at a bass-driven rate), and bit-error flicker (treble flips random glyphs to a neighbour index for one frame, leaving a brief green after-image). ACES display.",
+    "description": "Scrolling grid of luma-picked SDF glyphs in phosphor green (or colour-blended) with a binary decode lens at the cursor that widens while held, click packet bursts and C phosphor persistence. Ideas: hex-dump decode (lens cells show the two hex nibbles of their luma byte from a 4x6 bitmap font), typewriter row entry (the row entering at the bottom types in left-to-right behind a blinking block cursor at a bass-driven rate), and bit-error flicker (treble flips random glyphs to a neighbour index for one frame, leaving a brief green after-image). ACES display. Second pass: line-buffer misalignment (a drifting, mids-widened band of rows reads its picture a whole number of cells sideways, amber-tinted) and a reverse-video selection rim around the lens (wider while held).",
     "workgroup_size": [
       16,
       16,
@@ -1476,7 +1476,7 @@
     "id": "pixelation-drift",
     "name": "Pixelation Drift",
     "url": "shaders/pixelation-drift.wgsl",
-    "description": "Dynamic pixelated mosaic with audio-reactive pixel sizing, chromatic RGB pixel separation, depth-aware sizing, organic noise drift, and temporal persistence.",
+    "description": "Dynamic pixelated mosaic with audio-reactive pixel sizing, chromatic RGB pixel separation, depth-aware sizing, organic noise drift, and temporal persistence. Ideas: block area average, block colour quantisation, drift-lit tile bevel, quadtree detail split (high-variance tiles subdivide into four half-size tiles, treble lowers the threshold) and block-ordered Bayer dither on the coarse palette.",
     "params": [
       {
         "id": "pixelSize",
@@ -1714,7 +1714,7 @@
     "id": "scanline-drift",
     "name": "Scanline Drift",
     "url": "shaders/scanline-drift.wgsl",
-    "description": "Horizontal strip drift with RGB split: strips shear into each other like stretched tape, displaced lines reveal an h-sync blanking porch at the wrap seam, and fast-drifting strips smear along their velocity. Pointer band jitter, held boost, click tears, treble flicker, ACES output.",
+    "description": "Horizontal strip drift with RGB split: strips shear into each other like stretched tape, displaced lines reveal an h-sync blanking porch at the wrap seam, and fast-drifting strips smear along their velocity. Pointer band jitter, held boost, click tears, treble flicker, ACES output. The bottom lines skew in a VCR head-switching band, and tape dropouts streak short white comets along single scan rows.",
     "workgroup_size": [
       16,
       16,
@@ -2158,7 +2158,7 @@
     "id": "xerox-degrade",
     "name": "Xerox Degrade",
     "url": "shaders/xerox-degrade.wgsl",
-    "description": "Repeated photocopy degradation with halftone dots, ordered dither, spring smear, held burst, capped ripples, exact C memory, and three-band audio.",
+    "description": "Repeated photocopy degradation with halftone dots, ordered dither, spring smear, held burst, capped ripples, exact C memory, and three-band audio. Platen dust specks and glass scratches print in the same place on every copy, and each generation lands slightly rotated so the image creeps off-square over a copy-of-a-copy chain.",
     "workgroup_size": [
       16,
       16,

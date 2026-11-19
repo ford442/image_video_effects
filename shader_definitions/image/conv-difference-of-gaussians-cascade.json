@@ -1,7 +1,7 @@
 {
   "id": "conv-difference-of-gaussians-cascade",
   "name": "Difference of Gaussians Cascade",
-  "description": "Multi-scale Difference-of-Gaussians at 4 scales with signed response storage. Creates neural-edge glow where edges at different scales colorize differently. RGBA32FLOAT stores signed bipolar responses in all channels. Mouse controls scale emphasis.",
+  "description": "Multi-scale Difference-of-Gaussians at 4 scales with signed response storage. Creates neural-edge glow where edges at different scales colorize differently. RGBA32FLOAT stores signed bipolar responses in all channels. Mouse controls scale emphasis. The strongest scale picks each blob's size and polarity for warm (light) or cool (dark) halos, and the fine DoG gradient is embossed as relief lit from the pointer.",
   "url": "shaders/conv-difference-of-gaussians-cascade.wgsl",
   "features": [
     "advanced-convolution",

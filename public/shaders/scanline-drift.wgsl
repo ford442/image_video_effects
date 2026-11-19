@@ -4,14 +4,15 @@
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag
 //  Complexity: Medium
 //  Upgraded: 2026-09-28
-//  Ideas: tape-stretch shear; h-sync porch at the wrap seam; drift-velocity smear
+//  Upgraded: 2026-11-19
+//  Ideas: tape-stretch shear; h-sync porch at the wrap seam; drift-velocity smear;
+//         head-switching skew band; tape dropout streaks
 //  A packing: ACES display RGBA (C read back as colour for the tear blend)
 // ═══════════════════════════════════════════════════════════════════
 // Horizontal strips drift sideways with RGB split; a pointer band adds
 // jitter, mouse.x boosts strip edges, held boosts jitter, clicks tear.
 // Audio: bass -> drift speed / exposure, mids -> jitter, treble -> per-strip
-// flicker (plasmaBuffer[0].xyz only). The extraBuffer[133..138] band spring
-// is kept from HEAD but is a runtime no-op (that range is zeroed per frame).
+// flicker (plasmaBuffer[0].xyz only). The pointer band follows mouse.y.
 
 #include "_prelude.wgsl"
 // zoom_params: x=DriftSpeed, y=LineHeight, z=Jitter, w=ColorShift
@@ -86,35 +87,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let treble = plasmaBuffer[0].z;
 
     let held = u.zoom_config.w > 0.5;
-    var mouse = u.zoom_config.yz;
+    let mouse = u.zoom_config.yz;
 
     let driftSpeed = u.zoom_params.x * 2.0 * (1.0 + bass * 0.2);
     let lineHeight = mix(0.001, 0.1, u.zoom_params.y);
     let jitter = u.zoom_params.z * 0.1 * (1.0 + mids * 0.3) * select(1.0, 1.35, held);
     let colorShiftBase = u.zoom_params.w * 0.05;
 
-    var bandPos = mouse.y;
-    let hasSpring = arrayLength(&extraBuffer) > 138u;
-    if (hasSpring && extraBuffer[138] > 0.5) {
-      bandPos = extraBuffer[133];
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasSpring) {
-      var springVel = extraBuffer[134];
-      if (extraBuffer[138] <= 0.5) {
-        bandPos = mouse.y;
-        springVel = 0.0;
-      } else {
-        let dt = clamp(time - extraBuffer[137], 0.001, 0.05);
-        let omega = 8.0;
-        let accel = (mouse.y - bandPos) * (omega * omega) - springVel * (2.0 * omega);
-        springVel += accel * dt;
-        bandPos += springVel * dt;
-      }
-      extraBuffer[133] = bandPos;
-      extraBuffer[134] = springVel;
-      extraBuffer[137] = time;
-      extraBuffer[138] = 1.0;
-    }
+    // Rescue: HEAD ran a mouse.y spring in extraBuffer[133..138], which is
+    // zeroed every frame (never persisted) — removed; the band tracks mouse.y.
+    let bandPos = mouse.y;
 
     // Determine which horizontal strip we are in
     let stripId = floor(uv.y / lineHeight);
@@ -154,13 +136,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // strips shear into one another like stretched tape. Upper 70% = HEAD.
     let stretch = smoothstep(0.7, 1.0, stripUVy);
     let offset = mix(driftA.x + tearA * 0.12, driftB.x + tearB * 0.12, stretch);
-    let driftVel = mix(driftA.y, driftB.y, stretch);
+    var driftVel = mix(driftA.y, driftB.y, stretch);
+
+    // Idea 4 — head-switching skew band: the bottom few % of the frame is
+    // where a VCR's video heads swap, so those lines bend sideways (more the
+    // lower they sit), wobble per field, and carry a dark ragged edge. Its
+    // height scales with Jitter; bass kicks the skew.
+    let hsH = 0.025 + u.zoom_params.z * 0.035;
+    let hsT = smoothstep(1.0 - hsH, 1.0, uv.y);
+    let hsField = hash11(floor(time * 30.0) + 0.5);
+    let hsSkew = hsT * (0.06 + hsField * 0.05) * (1.0 + bass * 0.6);
+    driftVel += hsT * driftSpeed * 0.3;
     let colorShift = colorShiftBase * (1.0 + tearChroma);
 
     // Color separation
-    let rOffset = offset + colorShift;
-    let gOffset = offset;
-    let bOffset = offset - colorShift;
+    let rOffset = offset + hsSkew + colorShift;
+    let gOffset = offset + hsSkew;
+    let bOffset = offset + hsSkew - colorShift;
 
     // Idea 3 — drift-velocity smear: each strip streaks along its own drift
     // velocity over a ~0.2 s "exposure" (bass lengthens it), so fast strips
@@ -177,6 +169,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var color = vec3<f32>(r, g, b);
     color *= mix(0.8, 1.0, lineDark);
+
+    // Idea 5 — tape dropout streaks: oxide flaking off the tape loses the
+    // signal for a moment, leaving a short white comet on one scan row that
+    // trails off in the drift direction. Rows/positions rehash ~8×/s;
+    // treble raises the count. Head-switch band darkens instead (ragged edge).
+    let row = floor(uv.y * resolution.y * 0.5);
+    let dropSeed = floor(time * 8.0);
+    let dropOn = step(0.978 - treble * 0.01 - mouseEffect * 0.004, hash11(row * 1.37 + dropSeed * 19.1));
+    let dropX = hash11(row * 7.9 + dropSeed);
+    let dropLen = 0.03 + hash11(row + dropSeed * 3.3) * 0.12;
+    let along = (uv.x - dropX) * select(1.0, -1.0, driftVel < 0.0);
+    let comet = dropOn * smoothstep(0.0, 0.004, along) * (1.0 - smoothstep(0.0, dropLen, along));
+    color = mix(color, vec3<f32>(0.95), comet * 0.85);
+    color *= 1.0 - hsT * 0.5 * hash11(row + dropSeed);
 
     // Idea 2 — h-sync porch: where each channel's displaced line wraps
     // (fract seam) the blanking interval shows through — a dark porch a few

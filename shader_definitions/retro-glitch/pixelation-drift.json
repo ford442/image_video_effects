@@ -2,7 +2,7 @@
   "id": "pixelation-drift",
   "name": "Pixelation Drift",
   "url": "shaders/pixelation-drift.wgsl",
-  "description": "Dynamic pixelated mosaic with audio-reactive pixel sizing, chromatic RGB pixel separation, depth-aware sizing, organic noise drift, and temporal persistence.",
+  "description": "Dynamic pixelated mosaic with audio-reactive pixel sizing, chromatic RGB pixel separation, depth-aware sizing, organic noise drift, and temporal persistence. Ideas: block area average, block colour quantisation, drift-lit tile bevel, quadtree detail split (high-variance tiles subdivide into four half-size tiles, treble lowers the threshold) and block-ordered Bayer dither on the coarse palette.",
   "params": [
     {
       "id": "pixelSize",

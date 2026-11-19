@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, upgraded-rgba, mouse-driven, click-reactive, held-drag
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: hex-dump decode (lens cells show the two hex nibbles of their luma byte from a 4x6 bitmap font); typewriter row entry (the row entering at the bottom types in left-to-right behind a block cursor, bass-driven rate); bit-error flicker (treble flips random glyphs to a neighbour index for a frame, leaving a brief green after-image via C)
+//  Upgraded: 2026-09-28, 2026-11-19
+//  Ideas: hex-dump decode (lens cells show the two hex nibbles of their luma byte from a 4x6 bitmap font); typewriter row entry (the row entering at the bottom types in left-to-right behind a block cursor, bass-driven rate); bit-error flicker (treble flips random glyphs to a neighbour index for a frame, leaving a brief green after-image via C); line-buffer misalignment (a drifting band of rows, mids-widened, reads its picture a whole number of cells sideways, amber-tinted); reverse-video selection rim (the ring of cells just outside the lens draws inverted, wider while held)
 //  A packing: pre-ACES linear display RGB + glyph coverage alpha; C read back as colour (after-image persistence)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -107,7 +107,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // and the lens drifted a full screen per cycle).
   let cellCenter = (cellId + 0.5 - vec2<f32>(0.0, scroll)) / gridDims;
 
-  let inputColor = textureSampleLevel(readTexture, u_sampler, clamp(cellCenter, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  // IDEA 4 — line-buffer misalignment: a band of rows (mids widen it) drifts down the screen and
+  // reads its picture from a whole number of cells to the side, like a terminal whose line buffer
+  // slipped by a few characters. The glyph grid itself stays put; only the data under it shifts.
+  let bandCentre = fract(time * 0.07) * (gridDims.y + 12.0) - 6.0;
+  let bandHalf = 1.0 + mids * 4.0;
+  let inBand = f32(abs(cellId.y - bandCentre) < bandHalf);
+  let slip = floor(2.0 + hash12(vec2<f32>(floor(time * 0.07), 5.0)) * 6.0 + bass * 4.0);
+  let sampleCentre = cellCenter + vec2<f32>(inBand * slip / gridDims.x, 0.0);
+  let inputColor = textureSampleLevel(readTexture, u_sampler, clamp(sampleCentre, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
   let luma = dot(inputColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
   let toMouse = (cellCenter - mouse) * vec2<f32>(aspect, 1.0);
@@ -141,6 +149,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     charMask = getCharacter(glyphIdx, cellUV);
   }
 
+  // IDEA 5 — reverse-video selection rim: the ring of cells just outside the decoder lens is drawn
+  // inverted (filled block with the glyph cut out), like a terminal mouse selection. Holding widens it.
+  let rimWidth = (1.5 + select(0.0, 1.5, held)) / gridDims.y;
+  let onRim = f32(distMouse > decodeRadius && distMouse < decodeRadius + rimWidth);
+  let cellInset = step(0.06, min(min(cellUV.x, 1.0 - cellUV.x), min(cellUV.y, 1.0 - cellUV.y)));
+  charMask = mix(charMask, cellInset * (1.0 - charMask), onRim);
+
   // IDEA 2 — typewriter row entry. The row whose cell is sliding in at the bottom edge types in
   // left-to-right as it enters; bass drives the type rate so the line lands early on a beat.
   // A block cursor sits at the typing position and blinks.
@@ -169,6 +184,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var outputColor = mix(phosphor, inputColor.rgb, colorMode) * charMask * glowStrength;
   // Flipped glyphs flash hotter so the after-image is visible.
   outputColor *= 1.0 + flipped * 1.5;
+  // Selection rim reads brighter, and the slipped band is tinted amber so the misalignment reads.
+  outputColor *= 1.0 + onRim * 0.6;
+  outputColor *= mix(vec3<f32>(1.0), vec3<f32>(1.6, 0.85, 0.35), inBand * (1.0 - colorMode) * 0.7);
   outputColor = mix(outputColor, vec3<f32>(0.8, 1.0, 1.0), isDecoder * 0.8) * (1.0 + clickBurst * 0.5);
   // Block cursor draws in phosphor green even inside the lens/colour mode.
   outputColor = mix(outputColor, vec3<f32>(0.2, 1.0, 0.35) * glowStrength * 1.5, blockCursor * entering);

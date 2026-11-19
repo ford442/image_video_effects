@@ -2,7 +2,7 @@
   "id": "xerox-degrade",
   "name": "Xerox Degrade",
   "url": "shaders/xerox-degrade.wgsl",
-  "description": "Repeated photocopy degradation with halftone dots, ordered dither, spring smear, held burst, capped ripples, exact C memory, and three-band audio.",
+  "description": "Repeated photocopy degradation with halftone dots, ordered dither, spring smear, held burst, capped ripples, exact C memory, and three-band audio. Platen dust specks and glass scratches print in the same place on every copy, and each generation lands slightly rotated so the image creeps off-square over a copy-of-a-copy chain.",
   "workgroup_size": [
     16,
     16,

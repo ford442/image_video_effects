@@ -1217,7 +1217,7 @@
     "name": "Emergent Calligraphic Weave",
     "url": "shaders/emergent-calligraphic-weave.wgsl",
     "category": "generative",
-    "description": "Sumi-e ink wash simulation with pressure-sensitive Bézier brush strokes, ink viscosity flow, paper absorption capillary action, and dry-brush texture. Audio drives brush speed and splatter; mouse acts as the brush with pressure from click duration. Depth scales paper grain.",
+    "description": "Sumi-e ink wash simulation with pressure-sensitive Bézier brush strokes, ink viscosity flow, paper absorption capillary action, and dry-brush texture. Audio drives brush speed and splatter; mouse acts as the brush with pressure from click duration. Depth scales paper grain. Ink ribbons are laid along the curl field's own flow lines and lift as the brush runs dry, ink pools in dark beads at stroke tails, and wet ink wicks along the paper fibres.",
     "features": [
       "stroke-based",
       "brush-dynamics",
@@ -1230,7 +1230,12 @@
       "audio-field",
       "mouse-influence",
       "temporal",
-      "upgraded-rgba"
+      "upgraded-rgba",
+      "streamline-strokes",
+      "ink-pooling",
+      "fiber-wicking",
+      "mouse-driven",
+      "audio-reactive"
     ],
     "tags": [
       "calligraphic",
@@ -22054,7 +22059,7 @@
       "raymarching",
       "volumetric"
     ],
-    "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound. Additional structure adds myelin pearling instability and synaptic bouton crowns at branch terminals.",
+    "description": "A vast, deep-sea garden of biomechanical, neon-veined flora that dynamically uncoils and pulses with quantum energy, its tendrils whipping and synchronizing to the rhythm of sound. Additional structure adds myelin pearling instability and synaptic bouton crowns at branch terminals. Boutons flash and shed an expanding vesicle shell when the saltatory spike arrives, and a violet astrocyte haze glows around the tissue.",
     "workgroup_size": [
       16,
       16,
@@ -22115,7 +22120,9 @@
       "depth-output",
       "dendritic-bifurcation",
       "saltatory-action-potentials",
-      "aces-tonemap"
+      "aces-tonemap",
+      "vesicle-release-burst",
+      "astrocyte-haze"
     ]
   },
   {
