@@ -2,7 +2,7 @@
   "id": "galaxy-sim",
   "name": "Galaxy Simulation",
   "url": "shaders/galaxy.wgsl",
-  "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow.",
+  "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow. Dust lanes trace the inner edge of each arm; young blue stars and pink HII knots cluster along the arms.",
   "features": [
     "depth-aware",
     "upgraded-rgba",

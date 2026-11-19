@@ -3,14 +3,16 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: macroblock motion vector; residual spark
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: macroblock motion vector; residual spark; 4:2:0 chroma block bleed (§12.2B); intra-refresh sweep (GOP column wipe)
 //  A packing: raw sim (offset.xy, confidence, age)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
+// Intra-refresh column sweep period in seconds (one GOP).
+const REFRESH_PERIOD: f32 = 9.0;
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33);
@@ -100,6 +102,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let macroblockMV = mvAxis * (dot(offset, mvAxis) / max(dot(mvAxis, mvAxis), 0.0001));
   offset = mix(offset, macroblockMV, 0.72);
   offset = clamp(offset, vec2<f32>(-0.4), vec2<f32>(0.4));
+  // ── Idea 2: intra-refresh sweep (codec GOP artifact). A band two macroblocks wide sweeps left→right
+  // every REFRESH_PERIOD s; inside it the stored vector field is wiped (offset / confidence / age → 0),
+  // like a column of intra-coded macroblocks clearing accumulated prediction error. Block-quantized,
+  // so it follows the Block Size slider; the vector jump lights the existing residual spark below.
+  let refreshCols = max(1.0, ceil(1.0 / blockSize));
+  let sweepCol = floor(fract(time / REFRESH_PERIOD) * (refreshCols + 2.0)) - 1.0;
+  let refreshBand = step(abs(blockId.x - sweepCol - 0.5), 1.0);
+  offset *= 1.0 - refreshBand;
+  confidence *= 1.0 - refreshBand;
+  age *= 1.0 - refreshBand;
   // Idea: residualSpark — chroma where the stored vector changed this frame.
   let residualSpark = smoothstep(0.0015, 0.02, length(offset - previous.xy)) * corruption;
   textureStore(dataTextureA, pixel, vec4<f32>(offset, confidence, age));
@@ -113,6 +125,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let chromaOffset = vec2<f32>(blockSize * 0.5, 0.0);
   hdr.r = textureSampleLevel(readTexture, u_sampler, clamp(distortedUv + chromaOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
   hdr.b = textureSampleLevel(readTexture, u_sampler, clamp(distortedUv - chromaOffset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  // ── Idea 1: 4:2:0 chroma block bleed (§12.2B). Luma stays the displaced pixel's own; chroma (rgb − Y)
+  // is pulled toward one tap at the macroblock centre of the displaced position, weighted by how corrupt
+  // the pixel's block is. Calm state (confidence ≈ 0) and corruption = 0 reproduce the previous look.
+  let lumaW = vec3<f32>(0.2126, 0.7152, 0.0722);
+  let blockCentreUv = (floor(distortedUv / blockSize) + vec2<f32>(0.5)) * blockSize;
+  let blockTap = textureSampleLevel(readTexture, u_sampler, clamp(blockCentreUv, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  let chromaBleed = smoothstep(0.2, 0.8, confidence) * corruption;
+  hdr += ((blockTap - vec3<f32>(dot(blockTap, lumaW))) - (hdr - vec3<f32>(dot(hdr, lumaW)))) * chromaBleed;
   if (quantize > 0.0) { let levels = 18.0 - quantize * 16.0; hdr = floor(hdr * levels) / levels; }
   hdr += vec3<f32>(0.03, 0.015, 0.05) * treble * hash12(vec2<f32>(uv.x * 100.0, floor(uv.y * 8.0 + time)));
   hdr += vec3<f32>(0.22, 0.04, 0.08) * residualSpark * (0.35 + treble);
