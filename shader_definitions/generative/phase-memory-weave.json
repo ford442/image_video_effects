@@ -3,7 +3,7 @@
   "name": "Phase Memory Weave",
   "url": "shaders/phase-memory-weave.wgsl",
   "category": "generative",
-  "description": "Authoritative Ginzburg-Landau state packed as psiR, psiI, slow memory, and activity, with exact center/neighbor loads, sprung thermal focus, bounded click phase fronts, opalescent ACES display, semantic alpha, and source depth.",
+  "description": "Authoritative Ginzburg-Landau state packed as psiR, psiI, slow memory, and activity, with exact center/neighbor loads, coarsening domains, glowing phase-vortex cores tinted by chirality, ghost contours of remembered domain walls, click phase fronts, opalescent ACES display, semantic alpha, and source depth.",
   "features": [
     "ginzburg-landau",
     "allen-cahn",
@@ -14,10 +14,14 @@
     "temporal",
     "exact-history",
     "raw-state-feedback",
-    "spring-interaction",
     "click-reactive",
     "aces-tone-map",
-    "semantic-alpha"
+    "semantic-alpha",
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba",
+    "phase-vortex-cores",
+    "memory-ghost-contours"
   ],
   "tags": [
     "viscous",

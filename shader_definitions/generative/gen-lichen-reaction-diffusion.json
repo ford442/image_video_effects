@@ -25,7 +25,9 @@
   "features": [
     "audio-reactive",
     "mouse-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "lobate-margin",
+    "areolate-cracks"
   ],
   "feedbackPacking": "A/C = display RGB + pattern_density in A.a",
   "x-meta": {

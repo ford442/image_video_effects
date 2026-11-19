@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Alfvén kinks; auroral oval; whistler-chorus rising tones; plasmapause density step
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: Alfvén kinks; auroral oval; whistler-chorus rising tones; plasmapause density step; reconnection X-point flares; radiation-belt drift band
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -210,6 +210,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let aurora_gain = (0.35 + u.zoom_params.w * 0.5) * (1.0 + bass * 0.4) * (1.0 + held * 0.8);
   let aurora = (green_edge + red_crown * 0.35) * rays * aurora_gain;
   col += (vec3<f32>(0.25, 1.0, 0.45) * green_edge + vec3<f32>(0.9, 0.12, 0.2) * red_crown * 0.35) * rays * aurora_gain;
+
+  // ── IDEA 5: reconnection X-point flares ──
+  // Where the curl field and the pole's dipole cancel, |B| collapses to a null point (the pinched
+  // "X" knots in the line pattern). Field lines reconnect there and fling plasma out along B as
+  // twin jets; the flare brightens with storm power and bass.
+  let nullness = exp(-b_mag * b_mag * 0.7);
+  let jetAxis = abs(dot(rel, field_dir)) / pole_dist;
+  let flick = 0.6 + 0.4 * sin(t * (2.0 + flow_speed * 3.0) + energy * 12.0);
+  let flare = nullness * (0.5 + 0.5 * jetAxis) * flick * (0.8 + u.zoom_params.w * 1.2) * (1.0 + bass * 0.6);
+  col += vec3<f32>(1.0, 0.85, 0.55) * flare * (0.35 + field_line * 0.65);
+
+  // ── IDEA 6: radiation-belt drift band ──
+  // Trapped electrons between the plasmapause and the auroral oval drift azimuthally round the pole;
+  // they mirror-bounce, so the belt is brightest at its two turning shells and beaded where bunches drift.
+  let beltC = 0.5 * (pauseR + oval_r);
+  let beltW = 0.05 + mids * 0.03;
+  let beltX = (pole_dist - beltC) / beltW;
+  let mirror = exp(-beltX * beltX * 1.2) * (0.35 + 0.65 * beltX * beltX);
+  let drift = pow(0.5 + 0.5 * sin(theta * 9.0 - t * flow_speed * 1.6 + pole_dist * 14.0), 4.0);
+  col += vec3<f32>(0.75, 0.55, 1.0) * mirror * (0.3 + drift * 0.9) * (0.5 + treble * 0.6);
 
   // Shock fronts
   col += vec3<f32>(0.6, 0.7, 1.3) * shock * (0.7 + bass * 0.5);

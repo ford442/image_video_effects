@@ -12,7 +12,7 @@
     "temporal",
     "mouse-driven"
   ],
-  "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack \u03b1 from mouse Y drives C_L=2\u03c0\u03b1 (thin airfoil). Stall at ~15\u00b0 creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping.",
+  "description": "A majestic hyper-dimensional array of fractal wings enriched with aerodynamic lift physics. Angle of attack \u03b1 from mouse Y drives C_L=2\u03c0\u03b1 (thin airfoil). Stall at ~15\u00b0 creates turbulent breakdown. Bass drives flapping frequency via damped oscillation. Temporal feedback, chromatic aberration, and ACES tone mapping. The plumage is covered in eye-like ocelli whose pupils dilate with bass, and each wingbeat leaves a downwash wake of glow streaming below the wings.",
   "workgroup_size": [
     16,
     16,

@@ -2552,7 +2552,7 @@
     "id": "cosmic-web-structure",
     "name": "Cosmic Web Structure",
     "url": "shaders/cosmic-web-structure.wgsl",
-    "description": "Catalog entry for Cosmic Web Structure.",
+    "description": "Cosmic dark-matter web: Voronoi filaments with glowing cluster knots at cell junctions and redshifted voids, streaked by LIC along the true filament tangent blended with the image's structure tensor; mouse gravity well, click turbulence, bass-pulsed density.",
     "tags": [
       "voronoi-filaments",
       "structure-tensor",
@@ -2561,7 +2561,14 @@
     "features": [
       "voronoi-filaments",
       "structure-tensor",
-      "lic-flow"
+      "lic-flow",
+      "mouse-driven",
+      "audio-reactive",
+      "click-reactive",
+      "depth-aware",
+      "aces-tonemap",
+      "semantic-alpha",
+      "upgraded-rgba"
     ],
     "params": [
       {

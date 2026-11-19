@@ -2,7 +2,7 @@
   "id": "cosmic-web-structure",
   "name": "Cosmic Web Structure",
   "url": "shaders/cosmic-web-structure.wgsl",
-  "description": "Catalog entry for Cosmic Web Structure.",
+  "description": "Cosmic dark-matter web: Voronoi filaments with glowing cluster knots at cell junctions and redshifted voids, streaked by LIC along the true filament tangent blended with the image's structure tensor; mouse gravity well, click turbulence, bass-pulsed density.",
   "tags": [
     "voronoi-filaments",
     "structure-tensor",
@@ -11,7 +11,14 @@
   "features": [
     "voronoi-filaments",
     "structure-tensor",
-    "lic-flow"
+    "lic-flow",
+    "mouse-driven",
+    "audio-reactive",
+    "click-reactive",
+    "depth-aware",
+    "aces-tonemap",
+    "semantic-alpha",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -52,6 +59,42 @@
     }
   ],
   "x-meta": {
-    "seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Warp Strength",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Density",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Time",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "LIC Steps",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }

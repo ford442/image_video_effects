@@ -7,7 +7,7 @@
 //  Complexity: High
 //  Created: 2026-05-31
 //  Upgraded: 2026-10-10
-//  Ideas: crepuscular shafts; stained-glass piers; second vault; rib groins; rose window
+//  Ideas: crepuscular shafts; stained-glass piers; second vault; rib groins; rose window; incense wisps in shafts; votive pane flicker
 //  A packing: ACES display RGBA (HEAD stored arches/rings/centerLight but read C back as colour)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -164,10 +164,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var color = vec3<f32>(0.02, 0.01, 0.03);
   // IDEA 2: each pier is one stained-glass pane (tint fades toward the sanctum)
-  let pierGlass = stainedGlass(floor(spinA * archCount / PI));
+  let paneId = floor(spinA * archCount / PI);
+  // Idea: votive pane flicker — each pane breathes like candlelight behind it (treble quickens it).
+  let flickT = time * (3.0 + treble * 4.0);
+  let fh0 = fract(sin((paneId + floor(flickT) * 17.0) * 91.7) * 43758.5453);
+  let fh1 = fract(sin((paneId + floor(flickT + 1.0) * 17.0) * 91.7) * 43758.5453);
+  let votive = 0.6 + 0.8 * mix(fh0, fh1, smoothstep(0.0, 1.0, fract(flickT)));
+  let pierGlass = stainedGlass(paneId) * votive;
   let glassFade = smoothstep(0.05, 0.35, r);
-  color = color + mix(vec3<f32>(0.42, 0.15, 0.65), pierGlass * 0.75, 0.4 * glassFade) * chromaR;
-  color = color + mix(vec3<f32>(0.75, 0.55, 0.85), pierGlass, 0.3 * glassFade) * chromaG;
+  color = color + mix(vec3<f32>(0.42, 0.15, 0.65), pierGlass * 0.75, 0.4 * glassFade) * chromaR * votive;
+  color = color + mix(vec3<f32>(0.75, 0.55, 0.85), pierGlass, 0.3 * glassFade) * chromaG * votive;
   color = color + vec3<f32>(0.15, 0.3, 0.55) * chromaB;
   color = color + vec3<f32>(0.9, 0.7, 1.0) * centerLight * (0.5 + smoothBass);
   // Idea: rib groins — stone where adjacent arch sectors meet.
@@ -195,6 +201,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Warm golden god rays (cathedral sunlight), stained by the panes they cross
   let rayColor = vec3<f32>(1.0, 0.85, 0.6) * rays1.rgb * (0.5 + smoothBass * 0.5) * sanctum;
   color = color + rayColor;
+  // Idea: incense wisps — rising, curling smoke that only shows where a shaft lights it.
+  let sm = vec2<f32>(p.x * 3.0 + sin(p.y * 4.0 + time * 0.7) * 0.6, p.y * 2.0 - time * 0.35);
+  let wisp = pow(0.5 + 0.5 * sin(sm.x * 2.3 + sin(sm.y * 3.1) * 1.7) * sin(sm.y * 1.9 + sm.x * 0.8), 3.0);
+  color = color + vec3<f32>(1.0, 0.88, 0.7) * wisp * godRayIntensity * (1.2 + haze * 2.0) * (1.0 + mids * 0.4);
 
   // Secondary volumetric beams from arches (cooler blue-white)
   let archLightPos = vec2<f32>(0.5 + sin(time * 0.3) * 0.3, 0.5 + cos(time * 0.2) * 0.2);

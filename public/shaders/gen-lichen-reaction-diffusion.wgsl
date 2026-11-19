@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: lichen, reaction-diffusion, organic, audio-reactive, mouse-interactive, semantic-alpha, upgraded-rgba
 //  Complexity: Medium-High
-//  Upgraded: 2026-10-10
-//  Ideas: thallus growth rings around deposits; apothecia cups on dense patches; prothallus zone lines where colonies meet; soredia dust along patch edges; pointer/click hydration bloom
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: thallus growth rings around deposits; apothecia cups on dense patches; prothallus zone lines where colonies meet; soredia dust along patch edges; pointer/click hydration bloom; lobate pale growth-front margin; areolate crust cracks on dense thallus
 //  A packing: display RGB + pattern_density in A.a
 // ═══════════════════════════════════════════════════════════════════
 
@@ -59,10 +59,14 @@ fn evalLichen(uv_in: vec2<f32>, time: f32, p2: f32, pattern_scale: f32, feed: f3
   let v2 = smoothstep(0.3, 0.7, n1) * (1.0 - smoothstep(0.6, 0.9, n2));
   let v3 = smoothstep(0.4, 0.6, n1) * smoothstep(0.4, 0.6, n2) * 0.8 + smoothstep(0.3, 0.5, n3) * 0.2;
   let v4 = fract(n1 * 3.0 + n2 * 2.0 + time * p2 * 0.05) * 0.5 + n3 * 0.3;
-  let c1 = step(fk_diff, 0.01);
-  let c2 = step(0.01, fk_diff) * step(fk_diff, 0.02);
-  let c3 = step(0.02, fk_diff) * step(fk_diff, 0.035);
-  let c4 = step(0.035, fk_diff);
+  // Rescue: regimes cross-fade over a narrow f/k band (was hard step() → straight diagonal seams across the frame)
+  let e1 = smoothstep(0.007, 0.013, fk_diff);
+  let e2 = smoothstep(0.017, 0.023, fk_diff);
+  let e3 = smoothstep(0.032, 0.038, fk_diff);
+  let c1 = 1.0 - e1;
+  let c2 = e1 - e2;
+  let c3 = e2 - e3;
+  let c4 = e3;
   return v1 * c1 + v2 * c2 + v3 * c3 + v4 * c4 + n4 * 0.15 - 0.075;
 }
 
@@ -175,6 +179,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let zoneLine = 1.0 - smoothstep(0.0, zoneHalf, abs(pattern_val.g - 0.42));
   color = mix(color, vec3<f32>(0.07, 0.055, 0.045), zoneLine * 0.78);
 
+  // Idea 6 — lobate margin: just inside each zone line the young growth front is a pale, thickened rim
+  // (foliose lobe tips are lighter than the older centre); same iso, offset inward by ~3 zone half-widths.
+  let inward = pattern_val.g - 0.42;
+  let marginRim = smoothstep(0.0, zoneHalf * 1.5, inward) * (1.0 - smoothstep(zoneHalf * 2.0, zoneHalf * 5.0, inward));
+  color = mix(color, color * 1.18 + vec3<f32>(0.10, 0.10, 0.06), marginRim * 0.6);
+
+  // Idea 7 — areolate crust: dense crustose thallus dries into polygonal areolae; dark cracks on a Voronoi
+  // edge network whose cell size follows the pattern scale, so cracks only open where the crust is thick.
+  let crust = smoothstep(0.5, 0.72, pattern_density) * (1.0 - disk * fruiting);
+  if (crust > 0.001) {
+  let aGrid = uv * pattern_scale * 3.2;
+  let aId = floor(aGrid);
+  let aF = fract(aGrid);
+  var d1 = 8.0;
+  var d2 = 8.0;
+  // 2×2 neighbourhood (jitter ≤ 0.5 keeps the nearest two sites inside it) — 4 cells, not 9
+  let aBase = aId + step(vec2<f32>(0.5), aF) - 1.0;
+  for (var ay = 0; ay <= 1; ay++) {
+    for (var ax = 0; ax <= 1; ax++) {
+      let cid = aBase + vec2<f32>(f32(ax), f32(ay));
+      let hsh = hashf(dot(cid, vec2<f32>(12.9, 78.2)));
+      let pt = cid + vec2<f32>(hsh, hashf(hsh * 63.1 + 4.7)) * 0.5 + 0.25 - aGrid;
+      let dd = dot(pt, pt);
+      if (dd < d1) { d2 = d1; d1 = dd; } else if (dd < d2) { d2 = dd; }
+    }
+  }
+  let crackW = sqrt(d2) - sqrt(d1);
+  let crack = (1.0 - smoothstep(0.02, 0.07, crackW)) * crust;
+  color = mix(color, color * 0.45, crack * 0.75);
+  }
+
   // Idea 4 — soredia: powdery propagule granules crowd the soft edge of each patch (treble glints them)
   let edgeBand = smoothstep(0.18, 0.34, pattern_density) * (1.0 - smoothstep(0.46, 0.62, pattern_density));
   let sorGrid = uv * pattern_scale * 7.0;
@@ -224,8 +259,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ACES tone mapping
   color = acesToneMap(color * 1.3);
 
+  // Rescue: alpha was density × frame-to-frame change × depth ≈ 0 everywhere (meanA 0.000) → output invisible
+  // under alpha compositing. Alpha is now thallus coverage over bare rock, lifted where growth is active.
   let growth_activity = abs(pattern_density - prevVal);
-  let alpha = pattern_density * growth_activity * depth;
+  let alpha = clamp(smoothstep(0.3, 0.75, pattern_density) * 0.7 + 0.3 + growth_activity * 2.0, 0.0, 1.0);
 
   textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
   textureStore(writeDepthTexture, pixel, vec4<f32>(pattern_density, 0.0, 0.0, 0.0));
