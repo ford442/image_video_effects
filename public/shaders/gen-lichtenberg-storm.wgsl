@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: stepped-leader return stroke racing out along every branch; violet corona sheath around etched channels (exact C blur, treble flicker)
+//  Upgraded: 2026-11-19
+//  Ideas: stepped-leader return stroke racing out along every branch; violet corona sheath around etched channels (exact C blur, treble flicker); stepped-leader dark gaps; bead lightning on cooling channels
 //  A packing: raw sim state (A = afterglow energy, etched charge, shock ring, 1; not tone-mapped)
 //  Kept from Batch 36: spring-smoothed electrode (extraBuffer 133..138), etched-channel bias, click shockwave ring, OkLab + blackbody grade, FFT-split sparkle
 // ═══════════════════════════════════════════════════════════════════
@@ -107,7 +107,10 @@ fn licht(p: vec2<f32>, seed: vec2<f32>, branches: f32, jitter: f32, t: f32, etch
   let front = fract(t * 0.7 + phase) * 0.75;
   let behind = smoothstep(front + 0.03, front - 0.03, r);
   let head = exp(-(r - front) * (r - front) * 500.0);
-  let stroke = 0.45 + 0.55 * behind + 0.9 * head;
+  // ── Idea: stepped-leader gaps — behind the head the channel is bright steps with dark intervals
+  let stepPhase = abs(fract(r * 8.0 - front) - 0.5);
+  let stepLit = 1.0 - smoothstep(0.04, 0.22, stepPhase);
+  let stroke = 0.45 + 0.55 * behind * (0.35 + 0.65 * stepLit) + 0.9 * head;
   return max(smoothstep(0.12, 0.0, r), smoothstep(0.55, 0.45, dend) * smoothstep(0.6, 0.0, r) * stroke);
 }
 
@@ -267,6 +270,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let corona = clamp(haloSum * 0.25 * 1.7 - prevCharge * 0.9, 0.0, 1.0);
   let coronaFlicker = 0.75 + 0.25 * sin(t * 37.0 + h12(vec2<f32>(gid.xy) * 0.07) * 6.28) * (0.4 + treble);
   col += vec3<f32>(0.42, 0.22, 1.0) * corona * coronaFlicker * (0.5 + treble * 0.9) * glow * 0.55;
+
+  // ── Idea: bead lightning — hot knots on etched charge that the live stroke has left
+  let beadN = pow(max(0.5 + 0.5 * sin(uv.x * 90.0 + uv.y * 70.0 - t * 2.0), 0.0), 12.0);
+  let beads = beadN * smoothstep(0.15, 0.45, prevCharge) * (1.0 - smoothstep(0.15, 0.55, energy));
+  col += hotCore * beads * (0.35 + mids * 0.55) * glow;
 
   // Storm field background
   let field = fbm(uv * 4.0 + t * 0.2) * 0.04;

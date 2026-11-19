@@ -5,36 +5,15 @@
 //  Complexity: High
 //  Chunks From: none (original)
 //  Created: 2026-05-09
-//  Upgraded: 2026-09-13 (prev 2026-05-31)
-//  Ideas: finite-time Lyapunov ridges from a shadow twin orbit;
-//         wing-switch symbolic banding (x sign-flip count);
-//         flow-advected feedback along the seed's Lorenz velocity
+//  Upgraded: 2026-11-19
+//  Ideas: finite-time Lyapunov ridges from a shadow twin orbit; wing-switch symbolic banding (x sign-flip count); flow-advected feedback along the seed's Lorenz velocity; Poincaré section knots; nonzero-equilibrium eyes
 //  A packing: ACES display RGBA (C read back as display colour)
 //  b32 Interactivist: 2026-08-03 — SDF tube ray along the attractor
 //    trajectory, kaleidoscopic orbit-trap backdrop, mouse orbit camera,
 //    guarded ripple deformation, real depth (was flat 0.5 clobber)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -215,6 +194,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let twistRate = mids * 0.35 + time * 0.05;
     var tubeGlow = 0.0;
     var tHit = 1e5;
+    var prevZ = tp.z;
     for (var i: i32 = 0; i < 44; i = i + 1) {
         let ddx = sigma * (tp.y - tp.x);
         let ddy = tp.x * (rho - tp.z) - tp.y;
@@ -227,8 +207,23 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let tQ = dot(tw - ro3, rd3);
         let dQ = length(ro3 + rd3 * clamp(tQ, 0.0, 120.0) - tw) - rippleWave * 1.5;
         tubeGlow += exp(-max(dQ, 0.0) * max(dQ, 0.0) / (tubeR * tubeR)) * 0.05;
+        // ── Idea: Poincaré knot — the section z = ρ−1 = 27, a bright bead where the orbit crosses
+        let section = (tp.z - 27.0) * (prevZ - 27.0) < 0.0;
+        let knotR = max(tubeR * 0.45, 0.2);
+        tubeGlow += select(0.0, exp(-max(dQ, 0.0) * max(dQ, 0.0) / (knotR * knotR)) * 0.42, section);
+        prevZ = tp.z;
         if (dQ < tubeR && tQ > 0.0 && tQ < tHit) { tHit = tQ; }
     }
+    // ── Idea: equilibrium eyes — the nonzero fixed points the wings circle, z shifted by ρ−1
+    let eyeR = max(tubeR * 0.7, 0.45);
+    let eqA = vec3<f32>(8.485, 8.485, 0.0);
+    let eqB = vec3<f32>(-8.485, -8.485, 0.0);
+    let tA = dot(eqA - ro3, rd3);
+    let dA = length(ro3 + rd3 * clamp(tA, 0.0, 120.0) - eqA);
+    let tB = dot(eqB - ro3, rd3);
+    let dB = length(ro3 + rd3 * clamp(tB, 0.0, 120.0) - eqB);
+    tubeGlow += exp(-dA * dA / (eyeR * eyeR)) * select(0.0, 1.0, tA > 0.0) * 0.28;
+    tubeGlow += exp(-dB * dB / (eyeR * eyeR)) * select(0.0, 1.0, tB > 0.0) * 0.28;
     let tubeHue = fract(colorShift + t * 0.15 + pathLength * 0.001);
     let tubeCol = hsv2rgb(vec3<f32>(tubeHue, 0.7, 1.0));
     rgb += tubeCol * tubeGlow * (0.4 + glowIntensity * 1.2);

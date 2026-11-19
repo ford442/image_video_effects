@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Rayleigh shape modes; neck beading; meniscus thin-film; nephroid caustic crescent
+//  Upgraded: 2026-11-19
+//  Ideas: Rayleigh shape modes; neck beading; meniscus thin-film; nephroid caustic crescent; satellite droplet; Fresnel-Schlick metal (§12.2F); Young-Laplace neck darkening
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -96,10 +96,25 @@ fn neckBeading(p: vec2<f32>, info: FieldInfo, time: f32, mids: f32, nBalls: i32)
   return sin(along * 6.28318 / lambda - time * (1.5 + mids * 2.0)) * growth * bridge * window * (0.22 + mids * 0.25);
 }
 
+// ── Idea: satellite droplet — a pinched bead at the bridge midpoint once stretch passes the Plateau threshold
+fn satelliteDrop(p: vec2<f32>, info: FieldInfo, nBalls: i32) -> f32 {
+  if (nBalls < 2 || info.f2 <= 0.0) { return 0.0; }
+  let c1 = g_center[info.i1];
+  let c2 = g_center[info.i2];
+  let L = max(length(c2 - c1), 0.001);
+  let stretch = L / max(g_radius[info.i1] + g_radius[info.i2], 0.001);
+  let growth = smoothstep(1.7, 2.9, stretch);
+  let rSat = min(g_radius[info.i1], g_radius[info.i2]) * 0.32 * growth;
+  let mid = (c1 + c2) * 0.5;
+  let d2 = dot(p - mid, p - mid);
+  return (rSat * rSat) / (d2 + 0.00008) * growth;
+}
+
 fn fieldAt(p: vec2<f32>, time: f32, mids: f32, nBalls: i32) -> vec2<f32> {
   let info = fieldRaw(p, time, nBalls);
   let bead = neckBeading(p, info, time, mids, nBalls);
-  return vec2<f32>(info.f * (1.0 + bead), bead);
+  let sat = satelliteDrop(p, info, nBalls);
+  return vec2<f32>(info.f * (1.0 + bead) + sat, bead);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -248,7 +263,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var generatedColor = vec3<f32>(0.01, 0.01, 0.015);
   generatedColor = generatedColor + baseMetal * surfaceMask * 0.6;
   generatedColor = generatedColor + vec3<f32>(1.0, 0.95, 0.9) * spec * surfaceMask;
-  generatedColor = generatedColor + mix(baseMetal, envCol * baseMetal * 1.5, 0.35) * fresnel * surfaceMask * 0.5;
+  // ── Idea: Fresnel–Schlick conductor — Metal Hue is F0, grazing goes white (§12.2F)
+  let cosNv = max(dot(normal, view), 0.0);
+  let f0 = mix(vec3<f32>(0.04), baseMetal, 0.92);
+  let schlick = f0 + (vec3<f32>(1.0) - f0) * pow(1.0 - cosNv, 5.0);
+  generatedColor = generatedColor + envCol * schlick * surfaceMask;
   generatedColor = generatedColor + subSurf;
   generatedColor = generatedColor + caustic;
   generatedColor = generatedColor + mergeGlow;
@@ -257,6 +276,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   generatedColor = generatedColor + vec3<f32>(0.75, 0.92, 1.0) * nephroid * (0.85 + treble * 0.35);
   generatedColor = generatedColor + vec3<f32>(0.5, 0.7, 0.9) * rippleRing * 0.25;
   generatedColor = generatedColor + vec3<f32>(0.9, 0.95, 1.0) * trebleSpark;
+
+  // ── Idea: Young–Laplace darkening — a tight neck (large field gradient) is high pressure
+  let laplace = smoothstep(8.0, 34.0, gradLen) * surfaceMask * (0.4 + roughness);
+  generatedColor = generatedColor * (1.0 - laplace * 0.32);
 
   generatedColor = acesToneMapping(generatedColor * (1.4 + bassEnv * 0.5));
 

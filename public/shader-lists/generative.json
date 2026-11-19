@@ -28851,7 +28851,8 @@
       "curl-noise-flow",
       "worley-cells",
       "thermal-diffusion",
-      "ripple-reactive"
+      "ripple-reactive",
+      "upgraded-rgba"
     ]
   },
   {
@@ -28989,7 +28990,8 @@
       "audio-reactive",
       "temporal-feedback",
       "mouse-interaction",
-      "depth-output"
+      "depth-output",
+      "upgraded-rgba"
     ]
   },
   {
