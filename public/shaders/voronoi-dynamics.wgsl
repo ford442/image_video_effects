@@ -2,37 +2,22 @@
 //  Voronoi Dynamics - Interactive Bubble Physics
 //  Category: artistic
 //  Features: interactive, depth-aware, physics, mouse-driven, audio-reactive
-//  Upgraded: 2026-09-11
-//  Ideas: repulsion/attraction sliders now drive real bubble inflation and
-//         pointer-ward merge (previously computed and discarded); bass/mids
-//         audio pulse on bubble size and iridescent edge-hue cycling
+//  Upgraded: 2026-11-19 (prev 2026-09-11)
+//  Ideas: pointer bubble inflation; pointer-ward merge; Plateau junctions; border-oriented iridescence
 //  A packing: raw sim state (centroidPos, nearestDist, nearestIdx) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 // Dynamic Voronoi cells with physics-based centroid movement
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>; // centroid positions
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>; // velocities
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>; // read previous
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=unused, y=MouseX, z=MouseY, w=unused
-  zoom_params: vec4<f32>,  // x=CentroidCount, y=Repulsion, z=Attraction, w=EdgeWidth
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=CentroidCount, y=Repulsion, z=Attraction, w=EdgeWidth
 
 const PI: f32 = 3.14159265359;
 const MAX_CENTROIDS: i32 = 32;
+
+// Third-nearest distance and the two closest site positions (Plateau border).
+var<private> voronoiThird: f32;
+var<private> voronoiNearestPos: vec2<f32>;
+var<private> voronoiSecondPos: vec2<f32>;
 
 // Hash functions
 fn hash21(p: vec2<f32>) -> f32 {
@@ -65,51 +50,78 @@ fn getCentroid(index: i32, time: f32) -> vec2<f32> {
 fn findNearestCentroid(uv: vec2<f32>, time: f32, centroidCount: i32, mouse: vec2<f32>) -> vec3<f32> {
   var nearestDist = 1e10;
   var secondDist = 1e10;
+  var third = 1e10;
   var nearestIdx = 0;
-  
+  var nearestPos = vec2<f32>(0.5);
+  var secondPos = vec2<f32>(0.5);
+
   // Check regular centroids
   for (var i = 0; i < centroidCount; i = i + 1) {
     if (i >= MAX_CENTROIDS) { break; }
     let centroid = getCentroid(i, time);
     let dist = length(uv - centroid);
-    
+
     if (dist < nearestDist) {
+      third = secondDist;
       secondDist = nearestDist;
+      secondPos = nearestPos;
       nearestDist = dist;
+      nearestPos = centroid;
       nearestIdx = i;
     } else if (dist < secondDist) {
+      third = secondDist;
       secondDist = dist;
+      secondPos = centroid;
+    } else if (dist < third) {
+      third = dist;
     }
   }
-  
+
   // Mouse as dynamic centroid
   let mouseDist = length(uv - mouse);
   if (mouseDist < nearestDist) {
+    third = secondDist;
     secondDist = nearestDist;
+    secondPos = nearestPos;
     nearestDist = mouseDist;
+    nearestPos = mouse;
     nearestIdx = -1; // Special index for mouse
   } else if (mouseDist < secondDist) {
+    third = secondDist;
     secondDist = mouseDist;
+    secondPos = mouse;
+  } else if (mouseDist < third) {
+    third = mouseDist;
   }
-  
+
   // Check ripple positions as temporary centroids
   for (var r = 0; r < 50; r = r + 1) {
-    var ripple = u.ripples[r];
+    let ripple = u.ripples[r];
     if (ripple.z > 0.0) {
-      var rippleAge = time - ripple.z;
+      let rippleAge = time - ripple.z;
       if (rippleAge > 0.0 && rippleAge < 2.0) {
-        var dist = length(uv - ripple.xy);
+        let dist = length(uv - ripple.xy);
         if (dist < nearestDist) {
+          third = secondDist;
           secondDist = nearestDist;
+          secondPos = nearestPos;
           nearestDist = dist;
+          nearestPos = ripple.xy;
           nearestIdx = 100 + r; // Ripple indices
         } else if (dist < secondDist) {
+          third = secondDist;
           secondDist = dist;
+          secondPos = ripple.xy;
+        } else if (dist < third) {
+          third = dist;
         }
       }
     }
   }
-  
+
+  voronoiThird = third;
+  voronoiNearestPos = nearestPos;
+  voronoiSecondPos = secondPos;
   return vec3<f32>(nearestDist, secondDist, f32(nearestIdx));
 }
 
@@ -207,8 +219,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let gradient = 1.0 - effDist * 2.0;
   cellColor = cellColor * (0.8 + gradient * 0.2);
 
-  // Iridescent edge coloring — mids speed the hue cycle
-  let edgeHue = fract(f32(nearestIdx) * 0.1 + time * (0.1 + mids * 0.35));
+  // Iridescent edge coloring — mids speed the hue cycle.
+  // ── Idea: border-oriented iridescence, the angle of the shared edge ──
+  let border = voronoiNearestPos - voronoiSecondPos;
+  let borderAng = atan2(border.y, border.x) * 0.15915494;
+  let edgeHue = fract(f32(nearestIdx) * 0.1 + time * (0.1 + mids * 0.35) + borderAng * 0.35);
   let edgeColor = hsv2rgb(edgeHue, 0.7, 1.0);
 
   // Bubble-like specular highlight
@@ -237,6 +252,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   
   // Blend with edge
   finalColor = mix(edgeColor * 0.3, finalColor, edge);
+
+  // ── Idea: Plateau junctions — the third site collapses onto the border ──
+  let junction = exp(-abs(voronoiThird - secondDist) / max(edgeWidth * 3.0, 1e-4));
+  let triple = junction * (1.0 - edge);
+  finalColor = finalColor + vec3<f32>(0.8, 0.9, 1.0) * triple * 0.6;
   
   // Add highlight
   finalColor = finalColor + vec3<f32>(highlight + bubbleHighlight * 0.2);

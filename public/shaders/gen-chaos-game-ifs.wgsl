@@ -4,8 +4,8 @@
 //  Features: generative, audio-reactive, upgraded-rgba, temporal-ghosting, chromatic-attractors,
 //            bass-scale-pulse, upgraded-rgba, aces-tone-map
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: last-vertex occupancy tint; Sierpinski hole; iterate age; median scaffold; fixed-point glints; contraction echo
+//  Upgraded: 2026-11-19 (prev 2026-10-10)
+//  Ideas: last-vertex occupancy tint; Sierpinski hole; iterate age; median scaffold; fixed-point glints; contraction echo; excised midpoint triangle; corner lock
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -78,6 +78,8 @@ fn hue2rgb(h: f32) -> vec3<f32> {
     return clamp(p - 1.0, vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
+var<private> ifsCornerLock: f32;
+
 fn sdSeg2(p: vec2<f32>, a: vec2<f32>, b: vec2<f32>) -> f32 {
     let pa = p - a;
     let ba = b - a;
@@ -92,7 +94,8 @@ fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec4<f32> {
     let s = sin(rot);
     var lastPick = 0.0;
     var settle = 0.0;
-    
+    var cornerRun = 0.0;
+
     for (var i: i32 = 0; i < iter; i = i + 1) {
         let fi = f32(i);
         let a1 = vec2<f32>(-0.5 * c - 0.0 * s, -0.5 * s + 0.0 * c);
@@ -101,7 +104,10 @@ fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec4<f32> {
         
         let h = hash12(p + vec2<f32>(fi * 0.1, time * 0.01));
         let scale = 0.5 + bass * 0.1;
-        lastPick = select(0.0, select(1.0, 2.0, h > 0.66), h >= 0.33);
+        let pick = select(0.0, select(1.0, 2.0, h > 0.66), h >= 0.33);
+        // ── Idea: corner lock — successive identical vertex picks ──
+        cornerRun = select(cornerRun, cornerRun + 1.0, i > 0 && abs(pick - lastPick) < 0.25);
+        lastPick = pick;
         
         p = select(
             select(
@@ -117,6 +123,7 @@ fn ifsPoint(uv: vec2<f32>, iter: i32, time: f32, bass: f32) -> vec4<f32> {
         settle += exp(-dot(p, p) * 1.6) * w;
     }
     settle = clamp(settle / max(f32(iter) * 0.5, 1.0), 0.0, 1.0);
+    ifsCornerLock = cornerRun / max(f32(max(iter - 1, 1)), 1.0);
     return vec4<f32>(p, lastPick, settle);
 }
 
@@ -194,6 +201,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       select(0.0, 1.0, lastPick >= 1.5)
     );
     finalRGB = mix(finalRGB, finalRGB * (0.55 + occ * 0.7), 0.35);
+    // ── Idea: corner lock deepens the occupancy tint of a repeated vertex ──
+    finalRGB = mix(finalRGB, finalRGB * (0.55 + occ), clamp(ifsCornerLock, 0.0, 1.0) * 0.7);
     // Idea 2 — Sierpinski hole (far from last iterate origin)
     let hole = smoothstep(0.35, 1.2, d_g);
     finalRGB *= 1.0 - hole * 0.28;
@@ -208,6 +217,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tri = (uv - 0.5) * vec2<f32>(resolution.x / max(resolution.y, 1.0), 1.0);
     let scaffold = exp(-min(sdSeg2(tri, v1, v2), min(sdSeg2(tri, v2, v3), sdSeg2(tri, v3, v1))) * 95.0);
     finalRGB += vec3<f32>(0.72, 0.84, 1.0) * scaffold * 0.38;
+    // ── Idea: excised midpoint triangle — the first open set of the chaos game ──
+    let cen = (v1 + v2 + v3) / 3.0;
+    let holeR = length((v1 + v2) * 0.5 - cen);
+    let excise = 1.0 - smoothstep(holeR * 0.25, max(holeR * 0.72, holeR * 0.25 + 1e-4), length(tri - cen));
+    finalRGB = finalRGB * (1.0 - excise * 0.62);
     // Idea: fixed-point glints at the three vertices the scaffold already draws.
     let glint = exp(-length(tri - v1) * 70.0) + exp(-length(tri - v2) * 70.0) + exp(-length(tri - v3) * 70.0);
     finalRGB += vec3<f32>(1.0, 0.86, 0.45) * glint * 0.55;

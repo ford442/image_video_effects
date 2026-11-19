@@ -12,35 +12,14 @@
 //    smooth-union capsule chain along a live hero trajectory and
 //    sphere-traced with cone-grown LOD; treble mirror-folds the
 //    splat plane across the lobe axis.
-//  Upgraded: 2026-09-13 (prev 2026-06-06 / geometry b32: 2026-08-03)
-//  Ideas: per-wing accumulated density (lobe identity survives feedback);
-//         speed-weighted splat tint (fast outer sweeps burn hot, slow
-//         equilibrium spirals stay deep)
+//  Upgraded: 2026-11-19 (prev 2026-09-13 / 2026-06-06 / geometry b32: 2026-08-03)
+//  Ideas: per-wing accumulated density; speed-weighted splat tint; lobe-switch bridge; equilibrium eyes; tube bend wear
 //  A packing: raw sim — r=right-wing density, g=left-wing density,
 //             b=speed-weighted density, a=display alpha (not tone-mapped)
 // ═══════════════════════════════════════════════════════════════════
 //  zoom_params: x=sigma(8–14), y=rho_mod(0–14), z=glow_radius(+tube radius), w=decay
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 // ─── Geometry budget constants (b32) ───
@@ -93,6 +72,22 @@ fn heroDE(p: vec3<f32>, r: f32) -> f32 {
 // ─── 2D symmetry fold: mirror across the lobe axis (x = 0) ───
 fn mirror_fold(x: f32, amt: f32) -> f32 {
     return mix(x, abs(x), amt);
+}
+
+// ── Idea: tube bend wear — turning angle at the hero polyline joints ──
+fn heroBend(p: vec3<f32>) -> f32 {
+    var best = 1e5;
+    var bend = 0.0;
+    for (var k = 1u; k < HERO_SEGS; k = k + 1u) {
+        let a = heroOrbit[k] - heroOrbit[k - 1u];
+        let b = heroOrbit[k + 1u] - heroOrbit[k];
+        let turn = 1.0 - dot(a, b) / max(length(a) * length(b), 1e-4);
+        let d = sdCapsule(p, heroOrbit[k], heroOrbit[k + 1u], 0.0);
+        let closer = d < best;
+        bend = select(bend, turn, closer);
+        best = min(best, d);
+    }
+    return clamp(bend, 0.0, 1.0);
 }
 
 fn palette(t: f32, hueOff: f32) -> vec3<f32> {
@@ -157,7 +152,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var contribR = 0.0;
     var contribB = 0.0;
-    var contribS = 0.0;   // Idea 2: speed-weighted splat
+    var contribS = 0.0;   // speed-weighted splat
+    var contribX = 0.0;   // Idea: lobe-switch bridge
     let invR2   = 1.0 / (glowR * glowR);
     for (var i = 0u; i < 52u; i = i + 1u) {
         let pPrev = p;
@@ -172,16 +168,22 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         // Flow speed |dp/dt| (dt = 0.010): slow near C± spirals, fast on outer sweeps
         let speedN = smoothstep(20.0, 200.0, length(p - pPrev) * 100.0);
         contribS += g * speedN;
+        // ── Idea: lobe-switch bridge — the trajectory burns where x changes sign ──
+        let crossed = select(0.0, 1.0, pPrev.x * p.x < 0.0);
+        contribX += g * crossed;
     }
     contribR *= (1.0 / 52.0);
     contribB *= (1.0 / 52.0);
     contribS *= (1.0 / 52.0);
+    contribX *= (1.0 / 52.0);
 
-    // Idea 1: per-wing temporal density — each lobe keeps its own history
+    // Per-wing temporal density. The bridge is shared density in both wing
+    // channels so the join survives the existing feedback packing.
     let prevC = textureLoad(dataTextureC, coord, 0);
     let keep  = clamp(decay, 0.0, 0.999);
-    let accR  = mix(contribR, prevC.r, keep);
-    let accB  = mix(contribB, prevC.g, keep);
+    let bridge = contribX * 0.85;
+    let accR  = mix(contribR + bridge, prevC.r, keep);
+    let accB  = mix(contribB + bridge, prevC.g, keep);
     let accS  = mix(contribS, prevC.b, keep);
     let accumulated = accR + accB;
 
@@ -232,6 +234,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let dif = max(dot(n, lig), 0.0);
         let rim = pow(1.0 - max(dot(n, -rd), 0.0), 2.5 + bass * 2.0);
         tubeCol = baseCol * (0.25 + dif * 0.75) + palette(trap + 0.5, 0.2) * rim * (0.6 + bass * 0.5);
+        // ── Idea: tube bend wear ──
+        let bend = heroBend(pos);
+        tubeCol = tubeCol + vec3<f32>(0.62, 0.82, 1.0) * smoothstep(0.04, 0.45, bend) * 0.55;
         tubeDepth = clamp(1.0 - t / MARCH_FAR, 0.0, 1.0);
     }
 
@@ -250,6 +255,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let meanSpeed = clamp(accS / max(accumulated, 1e-4), 0.0, 1.0);
     col *= 0.55 + 0.75 * meanSpeed;
     col += vec3<f32>(1.0, 0.86, 0.62) * density * meanSpeed * meanSpeed * (0.35 + treble * 0.15);
+    // ── Idea: equilibrium eyes at C± = (±√(β(ρ−1)), ρ−1) ──
+    let eyeP = vec2<f32>(sq, rho - 1.0);
+    let eyeM = vec2<f32>(-sq, rho - 1.0);
+    let viewXZ = vec2<f32>(viewX, viewZ);
+    let eye = exp(-length(viewXZ - eyeP) * 0.55) + exp(-length(viewXZ - eyeM) * 0.55);
+    col = col * (1.0 - eye * 0.62);
+    // Accumulated bridge: both wing channels lit where the switch has been passing
+    let bridgeMix = min(accR, accB) / max(accumulated, 1e-4);
+    col = col + vec3<f32>(0.86, 0.93, 1.0) * bridgeMix * density * 0.7;
     col += palette(density + 0.55, 0.15) * glow3d * (1.0 + bass);  // tube aura bleed
     col = mix(col, tubeCol * 1.4, select(0.0, 0.85, hit));         // branchless composite
 

@@ -37,6 +37,7 @@ _Learn about the person you're helping. Update this as you go._
   - 2026-11-01: sent cursor/batch-31 (Cursor(1)), twelve fireworks and ember shaders (fireworks-depth-parade through gen-stardust-nebula). Notes in `docs/agents/swarm-outputs/grok-2026-11-01-batch-31/`.
   - 2026-11-02: sent cursor/batch-36 (Cursor(2)), twelve halftone, stipple, and ink shaders (halftone through graphic-novel). `graphic-novel` is `graphic_novel.wgsl`. Notes in `docs/agents/swarm-outputs/grok-2026-11-02-batch-36/`.
   - 2026-11-02: sent cursor/batch-35 (Cursor(1)), twelve neon edge and contour shaders (neon-contour-drag through posterize-neon-edges). Notes in `docs/agents/swarm-outputs/cursor-2026-11-02-batch-35/`.
+  - 2026-11-19: sent an attractor / field ten by line count (gen-lorenz-attractor through gen-wasm-hls-physarum-swarm, 263–254 lines). `dla-crystals.wgsl` is the single-pass file; the catalog id still runs the multipass graph. Notes in `docs/agents/swarm-outputs/grok-2026-11-19-attractor-field-ten/`.
 
 ## 2026-11-02 — cursor/batch-35 neon edge and contour (12 shaders)
 
