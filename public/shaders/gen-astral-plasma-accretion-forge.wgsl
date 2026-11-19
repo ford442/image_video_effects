@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: midplane dust-lane absorption (front-to-back transmittance, Core Temp sublimation radius); Keplerian shear lanes (Omega ∝ r^-1.5 two-phase flow-map); gravitational redshift of disk temperature and intensity; Rossby-vortex eye knots; polar reconnection flare knots
+//  Upgraded: 2026-11-19
+//  Ideas: midplane dust-lane absorption (front-to-back transmittance, Core Temp sublimation radius); Keplerian shear lanes (Omega ∝ r^-1.5 two-phase flow-map); gravitational redshift of disk temperature and intensity; Rossby-vortex eye knots; polar reconnection flare knots; orbital Doppler beaming; Schwarzschild photon ring
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -239,7 +239,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let phi = atan2(p.z, p.x);
             let rossby = exp(-pow((length(p.xz) - 1.6) * 3.2, 2.0))
                        * pow(0.5 + 0.5 * sin(phi * 7.0 - u.config.x * 1.8 + dust * 4.0), 5.0);
-            let c = get_color(local_temp) * g * (1.0 - 0.9 * dust) + vec3<f32>(1.0, 0.72, 0.35) * rossby * 0.22;
+            // ── Idea: orbital Doppler beaming — approaching limb of the Keplerian disk, not the polar flare
+            let rXz = max(length(p.xz), 1e-3);
+            let ePhi = vec3<f32>(-p.z, 0.0, p.x) / rXz;
+            let omegaK = min(pow(1.5 / max(rXz, 0.35), 1.5), 6.0);
+            let betaLos = clamp(dot(ePhi, rd) * omegaK * accretion_spin * 0.18, -0.4, 0.4);
+            let doppler = (1.0 + betaLos) / max(1.0 - betaLos, 0.3);
+            let diskW = 1.0 - smoothstep(0.1, 0.55, abs(p.y));
+            let beamed = mix(1.0, doppler * doppler, diskW);
+            let c = (get_color(local_temp) * g * (1.0 - 0.9 * dust) + vec3<f32>(1.0, 0.72, 0.35) * rossby * 0.22) * beamed;
             color = color + trans * c * dens * 0.05;
             trans = trans * exp(-dens * 0.05 * core_density * (1.0 + 8.0 * dust));
             if (t_surface < 0.0 && trans < 0.9) {
@@ -267,6 +275,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pole = exp(-length(ro.xy + rd.xy * max(t, 1.0)) * 2.4);
     let recon = pow(0.5 + 0.5 * sin((ro.z + rd.z * max(t, 1.0)) * 6.0 - u.config.x * 5.5), 6.0);
     color += vec3<f32>(1.0, 0.9, 0.55) * pole * recon * (0.08 + audio * 0.25);
+    // ── Idea: Schwarzschild photon ring — critical impact parameter 2.598 × the horizon radius already used
+    let bImp = length(cross(ro, rd));
+    let photonRing = exp(-abs(bImp - 0.5196) * 42.0);
+    color += get_color(clamp(core_temp, 0.0, 1.0)) * photonRing * (0.4 + flux_intensity * 0.7);
 
     // ACES display + semantic alpha (plasma coverage / horizon occluder / glow)
     let display = acesToneMap(color);

@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: thermal, topography, rainbow, audio-reactive, mouse-interactive, semantic-alpha, aces-tone-mapping, chromatic-aberration, temporal-feedback, depth-aware, domain-warped-fbm, curl-noise-flow, worley-cells, thermal-diffusion, ripple-reactive
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: watershed drainage channels; saddle-point thermal eddy blooms; magma caldera sinks; tectonic fault-line shears
+//  Upgraded: 2026-11-19
+//  Ideas: watershed drainage channels; saddle-point thermal eddy blooms; magma caldera sinks; tectonic fault-line shears; slope-aspect sun; fumarole summit vents
 //  By: Kimi Agent (Bright batch)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -183,6 +183,12 @@ fn sampleTerrain(uv: vec2<f32>, res: vec2<f32>, time: f32, params: vec4<f32>, mo
     color += vec3<f32>(1.0, 0.95, 0.7) * majorContour * 0.8 * intensity * midsPulse;
     let shadow = 1.0 - smoothstep(0.0, 0.6, slope);
     color *= 0.7 + shadow * 0.3;
+    // ── Idea: slope-aspect sun — the height gradient already computed, dotted with a drifting azimuth
+    let slopeVec = vec2<f32>(hR - hL, hU - hD);
+    let sunAz = time * (0.15 + speed * 0.25);
+    let sunDir = vec2<f32>(cos(sunAz), sin(sunAz));
+    let aspectLit = 0.78 + 0.22 * dot(slopeVec / max(length(slopeVec), 1e-4), sunDir);
+    color *= aspectLit;
     let specular = pow(max(1.0 - slope * 4.0, 0.0), 16.0) * intensity;
     color += vec3<f32>(1.0, 1.0, 0.9) * specular;
     // Curl-noise advected flow lines: divergence-free thermal currents
@@ -206,6 +212,9 @@ fn sampleTerrain(uv: vec2<f32>, res: vec2<f32>, time: f32, params: vec4<f32>, mo
     let saddle = exp(-abs(lap) * 12.0) * exp(-slope * 7.0) * (contour * 0.6 + majorContour * 0.4);
     let eddy = saddle * (0.5 + 0.5 * sin(t * 2.2 + tp.x * 5.0 - tp.y * 4.0));
     color += vec3<f32>(0.95, 0.35, 1.0) * eddy * (0.12 + audio.y * 0.22);
+    // ── Idea: fumarole vents — convex summits (low slope, negative laplacian), not the saddle eddies
+    let summit = exp(-slope * 10.0) * smoothstep(0.0, 0.14, -lap);
+    color += vec3<f32>(1.0, 0.93, 0.72) * summit * (0.32 + audio.x * 0.45) * intensity;
     color *= 1.0 + intensity * 1.0;
     let contourDensity = contour * 0.5 + majorContour * 0.5;
     return vec4<f32>(color, contourDensity);

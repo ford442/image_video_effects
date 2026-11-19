@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, click-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: lub-dub double beat; systolic pressure wavefront through the tissue; oxygenation gradient (magenta core to cyan rim); Purkinje conduction flashes; diastolic refill glow wash
+//  Upgraded: 2026-11-19
+//  Ideas: lub-dub double beat; systolic pressure wavefront through the tissue; oxygenation gradient (magenta core to cyan rim); Purkinje conduction flashes; diastolic refill glow wash; pericardial sac; valve-closure flash; refractory dip
 //  A packing: raw HDR display history (bounded 0..5) in A.rgb, coverage in A.a; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
@@ -179,11 +179,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var d_min = 1000.0;
     var hit_mat = 0.0;
     var glow = 0.0;
+    var peri = 0.0;
+    var prevD = 10.0;
 
     for (var i = 0; i < 100; i++) {
         let p = camPos + rayDir * t;
         let d_mat = map(p);
         let d = d_mat.x;
+
+        // ── Idea: pericardial sac — a membrane just outside the myocardium. A step that jumps the band still counts.
+        let sacNear = 1.0 - smoothstep(0.0, 0.07, abs(d - 0.055));
+        let sacCross = (prevD - 0.055) * (d - 0.055) <= 0.0 && d < prevD;
+        peri = max(peri, max(sacNear, select(0.0, 0.9, sacCross)));
+        prevD = d;
 
         // Volumetric accumulation (Bioluminescent fog and subsurface scattering)
         if (d < 0.2) {
@@ -251,9 +259,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Idea 5: diastolic refill glow wash between contractions.
         let refill = smoothstep(0.45, 0.8, ageS1) * (1.0 - smoothstep(0.82, 1.0, ageS1));
         col += vec3<f32>(0.15, 0.55, 0.95) * refill * (0.1 + u.zoom_params.w * 0.2);
+        col += vec3<f32>(0.72, 0.88, 1.0) * peri * (0.08 + fresnel * 1.25);
+        // ── Idea: valve-closure flash — a snap at S1, a weaker snap at S2, not the traveling wave
+        let snap = exp(-ageS1 * 26.0) + exp(-ageS2 * 34.0) * 0.5;
+        col += vec3<f32>(1.0, 0.96, 0.9) * snap * (0.12 + spec * 1.3) * (0.35 + u.zoom_params.y);
+        // ── Idea: refractory dip — the muscle desaturates just after S1, before diastolic refill
+        let refractory = smoothstep(0.05, 0.14, ageS1) * (1.0 - smoothstep(0.16, 0.34, ageS1));
+        col = mix(col, col * vec3<f32>(0.62, 0.66, 0.72), refractory * 0.5 * (0.35 + u.zoom_params.y));
     } else {
         // Void (Bioluminescent Fog)
         col = vec3<f32>(0.05, 0.0, 0.1) * min(glow, 4.0) * u.zoom_params.w;
+        col += vec3<f32>(0.45, 0.75, 1.0) * peri * (0.22 + u.zoom_params.w * 0.25);
         // Floating particles could be added here as noise
         let noise = fract(sin(dot(uv, vec2<f32>(12.9898, 78.233))) * 43758.5453);
         col += vec3<f32>(0.2, 0.8, 1.0) * step(0.999, noise) * u.zoom_params.w * 0.5;

@@ -1,10 +1,12 @@
-// ----------------------------------------------------------------
-// Galactic Aether-Crystal Geode-Core
-// Category: generative
-// Upgraded: 2026-10-10
-// Ideas: agate banding (concentric growth bands in the shell wall warped by the cellular crack field); amethyst zoning (crystal tint deepens toward the shell and clears toward the core, with a phantom growth line); kept: druse sparkle on the inner cavity wall; gas convection swirl in the hollow
-// A packing: ACES display RGBA
-// ----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════
+//  Galactic Aether-Crystal Geode-Core
+//  Category: generative
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-19
+//  Ideas: agate banding; amethyst zoning; druse sparkle; gas convection swirl; weathering rind; fluid inclusions; march-step occlusion
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 // zoom_params: x=Crystal Density, y=Core Glow, z=Fractal Iterations, w=Gas Density
@@ -184,9 +186,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var p = ro;
 
     var volLight = 0.0; // Volumetric scattering accumulation
+    var marchSteps = 0;
 
     // Raymarching Loop
     for (var i = 0; i < 100; i = i + 1) {
+        marchSteps = marchSteps + 1;
         p = ro + rd * t;
         d = map(p);
 
@@ -224,6 +228,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             let agateBand = smoothstep(0.35, 0.65, agateWave);
             let agateCol = mix(vec3<f32>(0.32, 0.1, 0.5), vec3<f32>(0.82, 0.78, 0.92), agateBand);
             col += agateCol * (0.15 + 0.85 * diff) * 0.38;
+            // ── Idea: weathering rind — ochre crust on the outside of the shell, past the agate
+            let rind = smoothstep(3.22, 3.48, length(p));
+            let rindMottle = hash31(floor(p * 7.0));
+            col = mix(col, vec3<f32>(0.42, 0.28, 0.14) * (0.75 + 0.25 * rindMottle), rind * 0.78);
 
             // Subsurface glow from inside
             let innerDist = length(p) - 3.0;
@@ -249,6 +257,17 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
             col *= mix(vec3<f32>(1.0), zoneTint * 1.3, 0.55);
             let phantom = exp(-sq((fract(length(p) * 3.2 + 0.15 * n.y) - 0.5) * 14.0));
             col += vec3<f32>(0.8, 0.6, 1.0) * phantom * 0.18 * (1.0 + treble * 0.3);
+            // ── Idea: fluid inclusions — bubbles trapped in the crystal, finer as Crystal Density rises
+            let inclFreq = 7.0 + u.zoom_params.x * 4.0;
+            let inclCell = floor(p * inclFreq);
+            let inclSeed = hash31(inclCell);
+            let inclCenter = inclCell + vec3<f32>(
+                hash31(inclCell + vec3<f32>(3.1, 1.7, 0.4)),
+                hash31(inclCell + vec3<f32>(0.6, 2.2, 1.1)),
+                hash31(inclCell + vec3<f32>(1.4, 0.3, 2.8)));
+            let inclD = length(p * inclFreq - inclCenter);
+            let inclusion = (1.0 - smoothstep(0.04, 0.14, inclD)) * step(0.84, inclSeed);
+            col += vec3<f32>(0.8, 0.92, 1.0) * inclusion * (0.35 + spec * 2.0);
 
             // Crystal glowing edges
             col += vec3<f32>(0.1, 0.8, 0.9) * pow(1.0 - max(dot(n, viewDir), 0.0), 4.0) * coreGlowIntensity * (0.5 + treble * 0.2);
@@ -276,6 +295,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
            col = vec3<f32>(pow(1.0 - bgNoise * 10.0, 5.0));
        }
     }
+
+    // ── Idea: march-step occlusion — crevices that took many steps are darker than a facing wall
+    let marchAo = select(1.0, clamp(1.0 - f32(marchSteps) * 0.0055, 0.48, 1.0), t < 20.0);
+    col *= marchAo;
 
     let coord = vec2<i32>(id.xy);
     let previous = textureLoad(dataTextureC, coord, 0).rgb;

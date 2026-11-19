@@ -1,38 +1,20 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Topology Flow - Topological surface flow with Morse theory
 //  Category: generative
-//  Features: procedural, gradient flow, critical point detection
+//  Features: procedural, gradient flow, critical point detection, audio-reactive, upgraded-rgba
 //  Created: 2026-03-22
 //  By: Agent 4A
 //  Upgrade (Batch 36 / Visualist): split-toned relief palette,
 //  warm-key/cool-fill relief lighting, HDR flow lines + critical
 //  point glow (bloom-ready), valley haze, ACES grade, audio-
 //  reactive energy, bounded mouse stir, semantic alpha.
-//  Upgraded: 2026-09-27
-//  Ideas: Morse index from the Hessian determinant; separatrix whiskers on saddles
+//  Upgraded: 2026-11-19
+//  Ideas: Morse index from the Hessian determinant; separatrix whiskers on saddles; persistence-weighted critical points; source/sink flow tint; critical level set through saddles
 //  A packing: linear/HDR history in A; ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=time, y=rippleCount, zw=resolution
-  zoom_config: vec4<f32>,  // x=time, yz=mouse_uv (0-1, y=0 top), w=mouse_down
-  zoom_params: vec4<f32>,  // x=flow speed, y=complexity, z=particle density, w=trail persistence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=flow speed, y=complexity, z=particle density, w=trail persistence
 
 // ── Color science helpers ─────────────────────────────────────────
 // ACES filmic approximation (HDR in, display-ready out)
@@ -222,24 +204,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // === HDR FLOW ENERGY (bloom-ready, bass-charged) ===
     let flowIntensity = flowAccum * 0.12;
     let flowDir = normalize(grad + vec2<f32>(0.0001, 0.0));
-    let flowCol = vec3<f32>(0.35 + flowDir.x * 0.4, 0.55 + flowDir.y * 0.4, 1.05) * (1.15 + bass * 0.55);
+    // ── Idea: source/sink tint — divergent flow (trace < 0) runs warm, convergent flow runs cold
+    let conv = clamp(traceH * 0.45, -1.0, 1.0);
+    let flowTint = mix(vec3<f32>(1.2, 0.62, 0.32), vec3<f32>(0.38, 0.7, 1.25), conv * 0.5 + 0.5);
+    let flowCol = vec3<f32>(0.35 + flowDir.x * 0.4, 0.55 + flowDir.y * 0.4, 1.05) * (1.15 + bass * 0.55) * flowTint;
     col = mix(col, flowCol, min(flowIntensity, 0.6));
 
+    // ── Idea: persistence — a shallow Hessian is noise; only a deep critical point lights up
+    let persistence = smoothstep(0.02, 0.22, abs(detH));
     // === CRITICAL POINTS: HDR glow, treble sparkle ===
     var critBoost = 0.0;
     if (critical == 1) {
         // Peak - hot golden beacon (HDR > 1)
-        col += vec3<f32>(1.40, 1.05, 0.62) * (0.55 + treble * 0.65);
-        critBoost = 0.6;
+        col += vec3<f32>(1.40, 1.05, 0.62) * (0.55 + treble * 0.65) * persistence;
+        critBoost = 0.6 * persistence;
     } else if (critical == 2) {
         // Valley - deep indigo sink with cool charge
-        col = mix(col, vec3<f32>(0.02, 0.10, 0.42), 0.55);
-        col += vec3<f32>(0.05, 0.25, 0.90) * treble * 0.4;
-        critBoost = 0.4;
+        col = mix(col, vec3<f32>(0.02, 0.10, 0.42), 0.55 * persistence);
+        col += vec3<f32>(0.05, 0.25, 0.90) * treble * 0.4 * persistence;
+        critBoost = 0.4 * persistence;
     } else if (critical == 3) {
         // Saddle - warm gold hinge
-        col += vec3<f32>(1.05, 0.85, 0.25) * (0.40 + treble * 0.5);
-        critBoost = 0.5;
+        col += vec3<f32>(1.05, 0.85, 0.25) * (0.40 + treble * 0.5) * persistence;
+        critBoost = 0.5 * persistence;
     }
 
     // Contour lines + FFT shimmer trace
@@ -254,7 +241,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let whisker = exp(-transDeriv * transDeriv * 40.0)
         * (1.0 - smoothstep(-0.08, 0.0, detH))
         * smoothstep(0.4, 0.05, length(grad));
-    col += vec3<f32>(1.0, 0.92, 0.55) * whisker * 0.85;
+    col += vec3<f32>(1.0, 0.92, 0.55) * whisker * 0.85 * persistence;
+    // ── Idea: critical level set — the height contour that passes through the saddle
+    let saddleMask = (1.0 - smoothstep(-0.06, 0.0, detH)) * (1.0 - smoothstep(0.04, 0.32, length(grad)));
+    let levelDev = (fract(h * 10.0) - 0.5) * 2.0;
+    let critLevel = exp(-levelDev * levelDev * 6.0) * saddleMask;
+    col += vec3<f32>(1.0, 0.9, 0.42) * critLevel * 0.55;
 
     // Soft local lantern glow around the cursor
     col += vec3<f32>(0.90, 0.75, 0.50) * stir * (0.10 + 0.25 * mDown);

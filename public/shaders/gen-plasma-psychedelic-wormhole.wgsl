@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: photon-sphere subrings at the wormhole throat (nested lensed images shrinking by e^-pi); click-spawned transient lensing masses (point-mass deflection + Einstein ring) bending the tunnel coordinates; ergosphere frame-drag shear near throat; Kelvin-Helmholtz wall billow rolls
+//  Upgraded: 2026-11-19
+//  Ideas: photon-sphere subrings at the wormhole throat (nested lensed images shrinking by e^-pi); click-spawned transient lensing masses (point-mass deflection + Einstein ring) bending the tunnel coordinates; ergosphere frame-drag shear near throat; Kelvin-Helmholtz wall billow rolls; chromatic Einstein ring (§12.2F Cauchy); throat plunge curtain
 //  A packing: ACES display RGBA in A (feedback recovers HDR trail via analytic inverse ACES)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -143,7 +143,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // thin-lens deflection alpha = thetaE^2 / b pulls the tunnel coordinates toward
     // it; the Einstein radius thetaE blooms then evaporates with age.
     var p = uv + tunnelShift;
-    var einsteinRing = 0.0;
+    var einsteinRGB = vec3<f32>(0.0);
     let rippleCount = min(u32(u.config.y), 50u);
     for (var i = 0u; i < rippleCount; i = i + 1u) {
         let rip = u.ripples[i];
@@ -152,12 +152,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let lensPos = (rip.xy - 0.5) * res / min(res.x, res.y);
             let bvec = uv - lensPos;
             let bimp = length(bvec) + 1e-3;
-            let thetaE = 0.11 * smoothstep(0.0, 0.25, age) * exp(-age * 0.9) * (1.0 + bass * 0.4);
+            let ageGate = smoothstep(0.0, 0.25, age) * exp(-age * 0.9);
+            let thetaE = 0.11 * ageGate * (1.0 + bass * 0.4);
             p -= bvec / bimp * (thetaE * thetaE / bimp);
-            einsteinRing += exp(-abs(bimp - thetaE) * 90.0) * smoothstep(0.0, 0.25, age) * exp(-age * 0.9);
+            // ── Idea: chromatic Einstein ring (§12.2F Cauchy) — R/G/B critical radii. Deflection stays the green radius.
+            einsteinRGB += vec3<f32>(
+                exp(-abs(bimp - thetaE * 0.90) * 110.0),
+                exp(-abs(bimp - thetaE) * 110.0),
+                exp(-abs(bimp - thetaE * 1.10) * 110.0)
+            ) * ageGate;
         }
     }
-    einsteinRing = min(einsteinRing, 2.0);
+    einsteinRGB = min(einsteinRGB, vec3<f32>(2.0));
 
     let r = length(p);
     let theta = atan2(p.y, p.x);
@@ -249,6 +255,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let photonFlicker = 0.75 + 0.25 * sin(theta * 3.0 - time * (2.0 + speed * 3.0));
     col += blackbodyColor(mix(6500.0, 10000.0, treble)) * photonRing * photonFlicker * 0.35 * intensity * (1.0 + treble * 0.6);
 
+    // ── Idea: throat plunge curtain — inside the photon sphere the flow falls radially instead of orbiting
+    let plungeZone = smoothstep(throatR * 1.25, throatR * 0.45, r);
+    let plungeSpoke = pow(max(0.5 + 0.5 * sin(theta * (5.0 + scale * 6.0)), 0.0), 5.0);
+    let plungeFall = exp(-abs(fract(tunnelDepth * 0.22 - time * (0.7 + speed * 1.4)) - 0.5) * 9.0);
+    col += plasmaPalette(fract(0.08 + audioColor), plasmaTemp) * plungeSpoke * plungeFall * plungeZone * 0.5 * intensity * (0.7 + bass * 0.5);
+
     // Tunnel edge rings
     let ringFreq = 6.0;
     let rings = sin(tunnelDepth * ringFreq - time * 3.0) * 0.5 + 0.5;
@@ -272,7 +284,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col += plasmaPalette(streakHue, plasmaTemp) * streaks * 0.3 * intensity;
 
     // Einstein rings of the click lenses (hot white-blue caustic)
-    col += blackbodyColor(9000.0) * einsteinRing * 0.9 * (0.4 + intensity * 0.6);
+    col += einsteinRGB * (0.65 + intensity * 0.4);
 
     // Vignette and radial falloff
     let vignette = smoothstep(1.2, 0.0, r);

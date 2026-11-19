@@ -36,7 +36,8 @@
     "curl-noise-flow",
     "worley-cells",
     "thermal-diffusion",
-    "ripple-reactive"
+    "ripple-reactive",
+    "upgraded-rgba"
   ],
   "x-meta": {
     "upgrade": {

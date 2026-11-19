@@ -30,7 +30,8 @@
     "audio-reactive",
     "temporal-feedback",
     "mouse-interaction",
-    "depth-output"
+    "depth-output",
+    "upgraded-rgba"
   ],
   "x-meta": {
     "upgrade": {

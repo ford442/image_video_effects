@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mathematical, chaos, visualization, audio-parameter, mouse-exploration, temporal-evolution, density-color
 //  Complexity: Medium
-//  Upgraded: 2026-10-11
-//  Ideas: continuous color-scheme mix; period-window ridges at lyap≈0; transient ghost; cobweb ticks; period-3 window; superstable points
+//  Upgraded: 2026-11-19
+//  Ideas: continuous color-scheme mix; period-window ridges at lyap≈0; transient ghost; cobweb ticks; period-3 window; superstable points; Feigenbaum cascade hairlines; invariant-density cusps; cobweb fixed-point tick
 //  A packing: HDR density RGB + alpha
 // ═══════════════════════════════════════════════════════════════════
 
@@ -240,6 +240,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Superstable points — the orbit crossing x = 0.5.
     let superstable = exp(-abs(targetX - 0.5) * 70.0) * density;
     col += vec3<f32>(1.0, 0.96, 0.82) * superstable * 0.55;
+    // ── Idea: Feigenbaum cascade hairlines — the period-doubling landmarks and their accumulation point
+    let rSpan = max(rMax - rMin, 1e-4);
+    let c0 = exp(-abs(uv.x - (3.0 - rMin) / rSpan) * resolution.x * 0.42) * step(rMin, 3.0) * step(3.0, rMax);
+    let c1 = exp(-abs(uv.x - (3.44949 - rMin) / rSpan) * resolution.x * 0.42) * step(rMin, 3.44949) * step(3.44949, rMax) * 0.72;
+    let c2 = exp(-abs(uv.x - (3.54409 - rMin) / rSpan) * resolution.x * 0.42) * step(rMin, 3.54409) * step(3.54409, rMax) * 0.5;
+    let c3 = exp(-abs(uv.x - (3.56441 - rMin) / rSpan) * resolution.x * 0.42) * step(rMin, 3.56441) * step(3.56441, rMax) * 0.36;
+    let c4 = exp(-abs(uv.x - (3.56995 - rMin) / rSpan) * resolution.x * 0.5) * step(rMin, 3.56995) * step(3.56995, rMax) * 0.85;
+    let cascade = max(c0, max(c1, max(c2, max(c3, c4))));
+    col += vec3<f32>(0.86, 0.74, 1.0) * cascade * 0.75;
+    // ── Idea: invariant-density cusps — near r=4 the measure piles up at the band endpoints
+    let cuspDen = sqrt(max(targetX * (1.0 - targetX), 1e-3));
+    let cusp = clamp(0.07 / cuspDen, 0.0, 1.0) * density * smoothstep(3.6, 3.98, r);
+    col += vec3<f32>(0.78, 0.86, 1.0) * cusp * 0.28;
+    // ── Idea: cobweb fixed point — parabola meets the diagonal at x=1-1/r, in the pointer column
+    let fixedX = clamp(1.0 - 1.0 / max(pointerR, 1.01), 0.0, 1.0);
+    let fixedTick = exp(-abs(uv.y - fixedX) * resolution.y * 0.4) * onColumn;
+    col += vec3<f32>(0.55, 1.0, 0.72) * fixedTick * 0.75;
 
     // A fast chaos scanner races through the parameter axis, illuminating
     // derivative-rich branches without changing the logistic-map geometry.
