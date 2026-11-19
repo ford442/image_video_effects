@@ -3,37 +3,21 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, held-drag, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: chaos filaments (domain_chaos twists+shears each warp octave, ridged strands); warp lens (warp_amount scales the domain warp, held pointer coils it into a swirling gravity well); photoevaporation pillars (dark eroded dust columns pointing at the core with bright ionised tips)
-//  A packing: display RGBA (post-ACES, x audio gain) + semantic alpha; C read back as colour history and convex-mixed into the pre-ACES frame, as HEAD
+//  Upgraded: 2026-09-28, 2026-11-19
+//  Ideas: chaos filaments (domain_chaos twists+shears each warp octave, ridged strands); warp lens (warp_amount scales the domain warp, held pointer coils it into a swirling gravity well); photoevaporation pillars (dark eroded dust columns pointing at the core with bright ionised tips); stellar-wind streaming (C history advected along curl-noise gas lanes + outward wind); Stromgren shell (thin [O III]-teal ionisation front crumpled by gas density, bass inflates it)
+//  A packing: display RGBA (post-ACES, x audio gain) + semantic alpha; C read back (exact texel, advected offset) as colour history and convex-mixed into the pre-ACES frame, as HEAD
 // ═══════════════════════════════════════════════════════════════════
 // Deep-space nebula core with layered plasma clouds, gravity-well mouse interaction,
 // audio-reactive shockwaves / sparkles, and temporal feedback trails.
 // Enriched with Wolfram Alpha Hydrogen Balmer Series astrophysics data.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x: time, y: ripple count, zw: resolution
-    zoom_config: vec4<f32>,  // x: time, yz: mouse UV (y=0 top), w: held (> 0.5)
-    zoom_params: vec4<f32>,  // x: density, y: chaos, z: warpAmt, w: speed
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x: density, y: chaos, z: warpAmt, w: speed
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
+const IDEA4: f32 = 1.0;
+const IDEA5: f32 = 1.0;
 
 // --- ACES Filmic Tone Mapping ---
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -269,6 +253,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let rimCol = mix(vec3<f32>(1.0, 0.45, 0.32), vec3<f32>(0.65, 0.92, 1.0), ionization);
     col += rimCol * (rimBand * rimW * 1.4 + evapHalo * 0.35) * (0.8 + ionization * 1.2 + bass * 0.6);
 
+    // ── Idea 5: Strömgren shell (native) ──
+    // The ionised bubble ends in a thin [O III]-teal front; its radius breathes with bass
+    // and is crumpled by the local gas density; dust pillars hide it.
+    let stromR = 0.55 + 0.3 * ionization + 0.22 * (nebula - 0.5);
+    let shellD = (dist - stromR) * 16.0;
+    let shell = exp(-shellD * shellD) * (1.0 - pillarMask) * (0.35 + 0.65 * nebula);
+    col += vec3<f32>(0.25, 1.0, 0.78) * shell * IDEA5 * (1.1 + 0.8 * bass);
+
     // Mouse glow when active — seeds new star formation
     if (mouseDown > 0.5) {
         let mouseGlow = exp(-mDist * 4.0) * 0.5;
@@ -283,7 +275,26 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     col *= vig;
 
     // Temporal feedback with audio-driven mix
-    let prev = textureLoad(dataTextureC, coords, 0);
+    // ── Idea 4: stellar-wind streaming (curl-noise advection) ──
+    // History is fetched upstream along curl(psi) of a slow gas-lane potential plus an
+    // outward wind from the core, so trails flow instead of sitting on their pixel.
+    let psiP = p * 1.6 + vec2<f32>(t * 0.04 * speed, 3.1);
+    let eps = 0.02;
+    let psi0 = vnoise2(psiP);
+    let dPx = (vnoise2(psiP + vec2<f32>(eps, 0.0)) - psi0) / eps;
+    let dPy = (vnoise2(psiP + vec2<f32>(0.0, eps)) - psi0) / eps;
+    let curl = vec2<f32>(dPy, -dPx);
+    let wind = p / max(dist, 1e-3) * smoothstep(0.05, 0.4, dist);
+    let flowPx = (curl * 0.7 + wind * 0.25) * (dims.y / 384.0) * IDEA4;
+    // Sub-pixel fetch: manual bilinear over four exact texel loads (no sampler on C).
+    let srcPx = clamp(texel - flowPx, vec2<f32>(0.0), dims - 2.0);
+    let s0 = vec2<i32>(floor(srcPx));
+    let fr = srcPx - floor(srcPx);
+    let c00 = textureLoad(dataTextureC, s0, 0);
+    let c10 = textureLoad(dataTextureC, s0 + vec2<i32>(1, 0), 0);
+    let c01 = textureLoad(dataTextureC, s0 + vec2<i32>(0, 1), 0);
+    let c11 = textureLoad(dataTextureC, s0 + vec2<i32>(1, 1), 0);
+    let prev = mix(mix(c00, c10, fr.x), mix(c01, c11, fr.x), fr.y);
     let feedbackMix = 0.25 + bassSmooth * 0.08;
     col = mix(prev.rgb * 0.96, col, feedbackMix);
 
@@ -296,8 +307,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let sparkle = smoothstep(0.995, 1.0, grain) * trebleSmooth * 3.0;
     col += vec3<f32>(sparkle * 0.8, sparkle, sparkle * 1.2);
 
-    // ACES tone mapping + semantic alpha
-    col = acesToneMap(col * 1.1);
+    // ACES tone mapping + semantic alpha (clamp >= 0 first: rings/CA can go negative)
+    col = acesToneMap(max(col, vec3<f32>(0.0)) * 1.1);
     let alpha = clamp(length(col) * 1.2 + well * 0.2 + sparkle, 0.2, 0.95);
 
     let outColor = vec4<f32>(col * (0.8 + overall * 0.4), alpha);

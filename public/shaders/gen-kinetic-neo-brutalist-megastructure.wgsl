@@ -3,9 +3,10 @@
 //  Category: generative
 //  Features: raymarched, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
+//  Upgraded: 2026-10-10, 2026-11-19
 //  Ideas: grinding interlock with friction seams; server-core slits with rack LEDs;
-//         friction-seam concrete spalling and chips; sparse elevated transit trusses
+//         friction-seam concrete spalling and chips; sparse elevated transit trusses;
+//         over-relaxed canyon march; repulsion-shell stress fractures
 //  A packing: ACES display RGBA (C read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -123,7 +124,8 @@ fn grindStroke(h: f32) -> f32 {
 // returns (distance, material id = hash + neon*10, friction seam weight, spall weight)
 fn map(p: vec3<f32>) -> vec4<f32> {
     var pos = swayed(p);
-    let cell = round(pos / SPACING);
+    // Rescue 1: one floating layer of megablocks (y is not repeated), see cameraOrigin().
+    let cell = round(pos / SPACING) * vec3<f32>(1.0, 0.0, 1.0);
     pos = pos - SPACING * cell;
     let hc = hash13(cell);
     let params = buildingParamsFromHash(hc);
@@ -186,16 +188,33 @@ fn map(p: vec3<f32>) -> vec4<f32> {
     let surfaceSpall = select(spall, 0.0, bridgeD < chippedBodyD);
     d = min(chippedBodyD, bridgeD);
 
-    let mouseX = (u.zoom_config.y * 2.0 - 1.0) * 10.0;
-    let mouseY = (u.zoom_config.z * 2.0 - 1.0) * 10.0;
     // repulsion field rides 15 units ahead of the flying camera so the pointer stays live
-    let camZ = -10.0 + u.config.x * u.zoom_params.w;
-    let mouse_pos = vec3<f32>(mouseX, mouseY, camZ + 15.0);
+    let mouse_pos = repulsionCentre();
     let dist_to_mouse = length(p - mouse_pos);
     if (dist_to_mouse < u.zoom_params.y) {
         d += (u.zoom_params.y - dist_to_mouse) * 0.5;
     }
     return vec4<f32>(d, hc + neon * 10.0, seam, surfaceSpall);
+}
+
+// ── Rescue 1: the camera flew along x=0,y=0 through a lattice repeated in y as well, i.e.
+// inside the tower column of every cell (flat teal frames for most of the sway; screen-up
+// was world-down). Now a single floating layer of blocks is overflown from just above the
+// tallest roofs, pitched down, along the street between two block rows. ──
+const CAM_PITCH: f32 = 0.42;
+fn cameraOrigin() -> vec3<f32> {
+    let sway = sin(u.config.x * 0.5) * 2.0;
+    return vec3<f32>(SPACING * 0.5 - sway, 5.6, -10.0 + u.config.x * u.zoom_params.w);
+}
+
+fn cameraRay(uv: vec2<f32>) -> vec3<f32> {
+    return normalize(vec3<f32>(uv.x, -uv.y - CAM_PITCH, 1.0));
+}
+
+fn repulsionCentre() -> vec3<f32> {
+    let aspect = u.config.z / max(u.config.w, 1.0);
+    let muv = vec2<f32>((u.zoom_config.y - 0.5) * aspect, u.zoom_config.z - 0.5);
+    return cameraOrigin() + cameraRay(muv) * 15.0;
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -215,22 +234,39 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let bass = plasmaBuffer[0].x;
     let treble = plasmaBuffer[0].z;
     let time = u.config.x;
-    let ro = vec3<f32>(0.0, 0.0, -10.0 + time * u.zoom_params.w);
-    let rd = normalize(vec3<f32>(uv, 1.0));
+    let ro = cameraOrigin();
+    let rd = cameraRay(uv);
     var t = 0.0;
     var mat_id = 0.0;
     var seam = 0.0;
     var spall = 0.0;
+    // ── Idea 5: Over-relaxed sphere tracing (§12.2) — the canyon is long and its walls are
+    // nearly parallel to the ray, so ω=1.6 steps reach the far vanishing blocks within the
+    // same 100 iterations; a step whose spheres stop overlapping falls back to plain d. ──
+    let IDEA_5 = 1.0;
+    var omega = mix(1.0, 1.6, IDEA_5);
+    var prevD = 0.0;
+    var stepLen = 0.0;
     for(var i = 0; i < 100; i++) {
         let p = ro + rd * t;
         let res = map(p);
-        if (res.x < 0.001 || t > 50.0) {
+        let d = res.x;
+        let sorFail = omega > 1.0 && abs(d) + prevD < stepLen;
+        if (sorFail) {
+            // spheres no longer overlap: return to the unrelaxed step and continue plainly
+            stepLen -= omega * stepLen;
+            omega = 1.0;
+        } else {
+            stepLen = d * omega;
+        }
+        prevD = abs(d);
+        if (!sorFail && (d < 0.001 || t > 50.0)) {
             mat_id = res.y;
             seam = res.z;
             spall = res.w;
             break;
         }
-        t += res.x;
+        t += stepLen;
     }
     var col = vec3<f32>(0.01);
     var alpha = 0.0;
@@ -287,6 +323,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let led = slit * (1.0 - smoothstep(0.12, 0.3, ledCenter)) * blink * (1.0 + treble * 2.0);
         let ledTint = mix(vec3<f32>(0.0, 1.0, 0.8), vec3<f32>(1.0, 0.25, 0.3), step(0.85, ledSeed));
         col += (vec3<f32>(0.0, 0.55, 0.45) * slit * (0.6 + bass) + ledTint * led * 2.0) * u.zoom_params.z;
+
+        // ── Idea 6: repulsion-shell stress fractures (native) — concrete just outside the
+        // pointer's repulsion shell is being crushed back; hairline cracks open in the
+        // board-formed faces and glow with the same friction heat as the seams. ──
+        let IDEA_6 = 1.0;
+        let shellR = max(u.zoom_params.y, 0.001);
+        let shellDist = length(p - repulsionCentre()) - shellR;
+        let shellBand = (1.0 - smoothstep(0.0, shellR * 1.2, shellDist)) * step(-0.05, shellDist);
+        let crackUv = local * 3.1;
+        let crackA = abs(fract(crackUv.x + crackUv.y * 0.37 + hash13(floor(crackUv) + cellHash) * 0.6) - 0.5);
+        let crackB = abs(fract(crackUv.z * 1.3 - crackUv.y * 0.61) - 0.5);
+        let crack = 1.0 - smoothstep(0.015, 0.06, min(crackA, crackB));
+        col *= 1.0 - shellBand * 0.35 * IDEA_6;
+        col += vec3<f32>(1.0, 0.5, 0.16) * crack * shellBand * (1.6 + bass) * IDEA_6;
 
         let fog = volumetricFog(ro, rd, t);
         col = col * fog.a + fog.rgb;

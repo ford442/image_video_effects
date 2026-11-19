@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: Cauchy click shocks; Descartes bows and Alexander band; supernumerary fringes; ray-bow knots
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: Cauchy click shocks; Descartes bows and Alexander band; supernumerary fringes; ray-bow knots; burst comet tails; shock-front ray refraction
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 //  Shock front propagates radially: r_shock = r0 + speed*time
@@ -17,6 +17,8 @@
 
 const PI: f32 = 3.141592653589793;
 const TAU: f32 = 6.283185307179586;
+const IDEA_5: f32 = 1.0;
+const IDEA_6: f32 = 1.0;
 
 // Canonical ACES Filmic Tone Mapping
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -147,6 +149,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ---- RAINBOW RAYS ----
     let numRays = 36.0;
     let rayAngle = angle / TAU + 0.5;
+    // ── Idea 6: shock-front ray refraction (native) ──
+    // The front is a density jump: rays crossing it kink angularly by the signed
+    // derivative of the front's gaussian profile, so the ring reads as a lens.
+    let shockD = radius - shockR;
+    let shockKink = shockD * exp(-shockD * shockD * 220.0) * 6.5 * (0.6 + bass) * IDEA_6;
 
     for (var r: f32 = 0.0; r < numRays; r = r + 1.0) {
         let rayPhase = r / numRays;
@@ -156,7 +163,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let wobble = fbm(vec2<f32>(r * 0.3, time * 0.5 * speed)) * 0.15 * intensity;
         let wobble2 = vnoise(vec2<f32>(radius * 3.0, r + time * speed)) * 0.1 * intensity;
 
-        let angleDiff = angle - rayCenterAngle + wobble + wobble2;
+        let angleDiff = angle - rayCenterAngle + wobble + wobble2 + shockKink;
         let wrappedDiff = fract(angleDiff / TAU + 0.5) - 0.5;
         let distFromRay = abs(wrappedDiff) * TAU;
 
@@ -179,8 +186,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Idea: bow knots — rays brighten where they cross the primary Descartes bow.
         let bowKnot = exp(-abs(radius - 0.442) * 48.0);
         col += rayColor * rayMask * bowKnot * intensity * 1.1;
-        col += rayColor * shockIntensity * radialFalloff * mix(0.35, 1.15, behind);
-        col += vec3<f32>(0.55, 0.75, 1.0) * shockIntensity * ahead * radialFalloff * 0.28;
+        // ── Rescue 1: HEAD added these two shock terms once per ray with no ray mask
+        // (36x an unmasked ring -> white frame for most of the shock cycle). The front
+        // now lights only the rays it crosses (lobe 3x the ray width). ──
+        let shockLobe = smoothstep(rayWidth * 3.0, 0.0, distFromRay);
+        col += rayColor * shockIntensity * radialFalloff * mix(0.35, 1.15, behind) * shockLobe;
+        col += vec3<f32>(0.55, 0.75, 1.0) * shockIntensity * ahead * radialFalloff * 0.28 * shockLobe;
     }
 
     // ---- PARTICLE BURSTS ALONG RAYS ----
@@ -194,7 +205,23 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
         // Particles move outward along ray
         let currentRadius = fract(burstRadius + time * burstSpeed * speed * 0.08);
-        let burstPos = vec2<f32>(cos(burstAngle), sin(burstAngle)) * currentRadius;
+        let burstDir = vec2<f32>(cos(burstAngle), sin(burstAngle));
+        let burstPos = burstDir * currentRadius;
+        // ── Idea 5: burst comet tails (native) ── streak length follows the burst's own speed.
+        let tailLen = min(0.03 + 0.1 * burstSpeed * (0.3 + speed), currentRadius);
+
+        // Idea 5: one tail per burst trails back toward the origin along the burst ray,
+        // fading and reddening (hue lag) with distance behind the head.
+        let rel = centerUV - burstPos;
+        let along = dot(rel, burstDir);
+        let perp = dot(rel, vec2<f32>(-burstDir.y, burstDir.x));
+        let tw = max(0.006 * scale, 0.0055);
+        let behindT = clamp(-along / tailLen, 0.0, 1.0);
+        let inTail = step(along, 0.0) * step(-along, tailLen);
+        let tail = exp(-perp * perp / (tw * tw)) * (1.0 - behindT) * (1.0 - behindT) * inTail;
+        let tailHue = fract(b / numBursts + time * 0.1 * speed + colorShift + 0.1);
+        let tailCol = mix(neonSpectrum(tailHue), vec3<f32>(1.0, 0.25, 0.35), behindT * 0.6);
+        col += tailCol * tail * intensity * 2.2 * (1.0 + mouseDown) * IDEA_5;
 
         // Multiple particles per burst
         for (var p: f32 = 0.0; p < 3.0; p = p + 1.0) {
