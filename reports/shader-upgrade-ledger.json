@@ -1071,8 +1071,17 @@
       ]
     },
     "fractal-noise-dissolve-nlm": {
-      "hash": "501a03e2edca99a1",
-      "history": []
+      "hash": "8e6aaf8fc1dc7334",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "8e6aaf8fc1dc7334",
+          "prev_hash": "501a03e2edca99a1",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "frost-reveal-crystal": {
       "hash": "3c439a9f75098366",
@@ -2126,7 +2135,7 @@
       ]
     },
     "alpha-paint-thickness": {
-      "hash": "14a4e4329f6dec2e",
+      "hash": "454b3cce693f0598",
       "history": [
         {
           "event": "upgraded",
@@ -2135,6 +2144,14 @@
           "prev_hash": "386282af65cec871",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "454b3cce693f0598",
+          "prev_hash": "14a4e4329f6dec2e",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -3242,8 +3259,17 @@
       ]
     },
     "quantum-wormhole": {
-      "hash": "8456327c3b55b6a3",
-      "history": []
+      "hash": "26bdf25f8b42d8eb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "26bdf25f8b42d8eb",
+          "prev_hash": "8456327c3b55b6a3",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "radiating-displacement": {
       "hash": "3968857746fda3ea",
@@ -10269,8 +10295,17 @@
       ]
     },
     "gen-protocell-division": {
-      "hash": "3c7afb8076974b08",
-      "history": []
+      "hash": "7d1c4bc1c388e68d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "7d1c4bc1c388e68d",
+          "prev_hash": "3c7afb8076974b08",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "gen-psychedelic-layered-time-stamps": {
       "hash": "28f9993c6d048a12",
@@ -13141,7 +13176,7 @@
       ]
     },
     "hybrid-reaction-diffusion-glass": {
-      "hash": "76a0f10a75407481",
+      "hash": "ce9805834ed17ee8",
       "history": [
         {
           "event": "upgraded",
@@ -13150,6 +13185,14 @@
           "prev_hash": "ae7131fd0cb94e29",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "ce9805834ed17ee8",
+          "prev_hash": "76a0f10a75407481",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -13293,7 +13336,7 @@
       ]
     },
     "bismuth-crystallizer": {
-      "hash": "2c955d60d96cd46a",
+      "hash": "aef3d39ef192a7df",
       "history": [
         {
           "event": "upgraded",
@@ -13302,6 +13345,14 @@
           "prev_hash": "f2059cf8d91a4152",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "aef3d39ef192a7df",
+          "prev_hash": "2c955d60d96cd46a",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -14359,7 +14410,7 @@
       ]
     },
     "luma-refraction": {
-      "hash": "84a66ddacf3546d8",
+      "hash": "0e355e575130b8f3",
       "history": [
         {
           "event": "upgraded",
@@ -14368,6 +14419,14 @@
           "prev_hash": "4f609f3498a5c3d2",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "0e355e575130b8f3",
+          "prev_hash": "84a66ddacf3546d8",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -16382,8 +16441,17 @@
       ]
     },
     "kaleido-portal-interactive": {
-      "hash": "54084f816ddad3ea",
-      "history": []
+      "hash": "a44e7b2c5132b3b6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "a44e7b2c5132b3b6",
+          "prev_hash": "54084f816ddad3ea",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "kimi-chromatic-warp": {
       "hash": "6e3f62e562b3f4c7",
@@ -17037,8 +17105,17 @@
       ]
     },
     "mouse-time-crystal": {
-      "hash": "ccc2b78e25604c7a",
-      "history": []
+      "hash": "42e10700285a8e25",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "42e10700285a8e25",
+          "prev_hash": "ccc2b78e25604c7a",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "mouse-voronoi-mosaic": {
       "hash": "fbb84099047b105f",
@@ -17803,8 +17880,17 @@
       ]
     },
     "reactive-glass-grid": {
-      "hash": "34bb90badfa3acf1",
-      "history": []
+      "hash": "4da100f31c478b06",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "4da100f31c478b06",
+          "prev_hash": "34bb90badfa3acf1",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "reality-tear": {
       "hash": "e4a6a34675e41581",
@@ -17833,7 +17919,7 @@
       ]
     },
     "refractive-bubbles": {
-      "hash": "78731dc8b2f5263f",
+      "hash": "e6a2c31266b3df53",
       "history": [
         {
           "event": "upgraded",
@@ -17842,6 +17928,14 @@
           "prev_hash": "3de58970c188db66",
           "commit": "1008b956",
           "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "e6a2c31266b3df53",
+          "prev_hash": "78731dc8b2f5263f",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },

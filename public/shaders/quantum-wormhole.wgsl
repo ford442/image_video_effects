@@ -3,29 +3,12 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal
 //  Complexity: High
-//  Upgraded: 2026-08-23
+//  Upgraded: 2026-08-23, 2026-11-20
+//  Ideas: frame drag on the curl; gravitational redshift; Einstein ring
+//  A packing: ACES display RGBA (C is the color trail)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -90,18 +73,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let burstIntensity = 0.25 + bass * 0.35;
   let voidThreshold = 0.25 - treble * 0.08;
   let rotationSpeed = 0.15 + mids * 0.25 + held * 0.15;
-  let depthInf = 0.5 + (1.0 - smoothstep(0.0, 0.4, length((uv - mouse) * vec2<f32>(aspect, 1.0)))) * 0.35;
+  let throat = (uv - mouse) * vec2<f32>(aspect, 1.0);
+  let throatR = length(throat);
+  let depthInf = 0.5 + (1.0 - smoothstep(0.0, 0.4, throatR)) * 0.35;
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
   let p4 = to4D(uv, time * rotationSpeed, mouse);
   let phase = atan2(p4.w, p4.z);
-  let vel = curlField(uv, texelSize) * flowStrength * (1.0 + held * 0.3);
+  // ── Idea 1: frame drag ────────────────────────────────────────
+  // Tangential add on the curl this shader already advects.
+  // Intensity (twistScale) scales the drag.
+  let tang = vec2<f32>(-throat.y, throat.x);
+  let drag = tang / max(length(tang), 0.0001) * twistScale * exp(-throatR * 3.2) * 0.12;
+  let vel = curlField(uv, texelSize) * flowStrength * (1.0 + held * 0.3) + drag;
 
   var hsv = rgb2hsv(src.rgb);
   hsv.x = fract(hsv.x + twistScale * phase / TAU + bass * 0.05);
   hsv.y = hsv.y * (1.0 + (1.0 - depth) * depthInf * 0.3);
+  // ── Idea 2: gravitational redshift ────────────────────────────
+  // Light climbing out of the throat loses saturation and value.
+  let well = exp(-throatR * 4.5);
+  hsv.y = hsv.y * (1.0 - well * 0.5);
+  hsv.z = hsv.z * (1.0 - well * 0.4);
 
   let oilSlick = 0.5 + 0.5 * cos(TAU * (vec3<f32>(phase * 0.3 + time * 0.2) + vec3<f32>(0.0, 0.33, 0.67)));
   var newRGB = hsv2rgb(hsv) * (0.85 + oilSlick * 0.15);
@@ -113,6 +108,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let voidFlip = select(0.0, 1.0, hsv.z < voidThreshold);
   newRGB = mix(newRGB, -newRGB, voidFlip);
+
+  // ── Idea 3: Einstein ring ─────────────────────────────────────
+  // A thin annulus resamples the photo from the far side of the throat.
+  let ringR = 0.11 + twistScale * 0.045;
+  let annulus = exp(-abs(throatR - ringR) * 70.0);
+  let away = throat / max(throatR, 0.0001);
+  let echoUV = clamp(mouse - away * (ringR * ringR) / max(throatR, 0.035), vec2<f32>(0.0), vec2<f32>(1.0));
+  let echo = textureSampleLevel(readTexture, u_sampler, echoUV, 0.0).rgb;
+  newRGB = mix(newRGB, max(echo, vec3<f32>(0.0)), annulus * 0.72);
 
   let helix = sin(atan2(uv.y - mouse.y, uv.x - mouse.x) * 5.0 + time * (1.5 + treble));
   let warpedUV = clamp(uv + vel * trailLength + vec2<f32>(helix, -helix) * 0.008 * held, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -130,7 +134,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let finalRGB = aces(mix(warpedPrev * persistence + newRGB * (1.0 - persistence), newRGB + oilSlick * clickRing * 0.25, clickRing * 0.4));
   let luma = dot(finalRGB, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = clamp(0.3 + luma * 0.5 + clickRing * 0.12, 0.15, 1.0);
+  let alpha = clamp(0.3 + luma * 0.5 + clickRing * 0.12 + annulus * 0.22, 0.15, 1.0);
   let finalPixel = vec4<f32>(finalRGB, alpha);
 
   textureStore(dataTextureA, pixel, finalPixel);

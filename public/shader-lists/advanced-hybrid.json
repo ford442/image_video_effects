@@ -5018,7 +5018,7 @@
     "id": "fractal-noise-dissolve-nlm",
     "name": "Fractal Noise Dissolve Nlm",
     "url": "shaders/fractal-noise-dissolve-nlm.wgsl",
-    "description": "Fractal Noise Dissolve Nlm",
+    "description": "Fractal-noise erosion around the pointer. Unique patches burn on a wider front, repetitive patches on a tighter one. The survivor keeps the NLM residual; the hole keeps ash under the burn.",
     "tags": [
       "fractal-dissolve",
       "non-local-means",
@@ -5027,7 +5027,10 @@
     "features": [
       "fractal-dissolve",
       "non-local-means",
-      "self-similarity-map"
+      "self-similarity-map",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

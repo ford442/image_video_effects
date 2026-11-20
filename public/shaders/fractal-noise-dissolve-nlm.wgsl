@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  fractal-noise-dissolve-nlm
 //  Category: advanced-hybrid
-//  Features: fractal-dissolve, non-local-means, self-similarity-map
+//  Features: fractal-dissolve, non-local-means, self-similarity-map, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Chunks From: fractal-noise-dissolve.wgsl, conv-non-local-means.wgsl
-//  Created: 2026-04-18
-//  By: Agent CB-21 — Distortion & Material Enhancer
+//  Upgraded: 2026-11-20
+//  Ideas: similarity-scaled edge; NLM residual; ash
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  A fractal noise dissolve where the NLM self-similarity map drives
 //  edge behavior — unique texture regions dissolve slower while
@@ -13,26 +13,11 @@
 //  patterns with artistic patch-based smoothing on remaining areas.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(.1031, .1030, .0973));
@@ -122,21 +107,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         nlmResult = mix(center, accumColor / accumWeight, nlmMix);
     }
 
-    // Dissolve mask: distance from mouse + noise + similarity bias
+    // ── Idea 1: similarity-scaled edge ────────────────────────────
+    // Repetitive patches burn on a tighter front. Edge Width is the base.
+    let edgeScale = mix(1.4, 0.62, clamp(dissolveBias / 0.15, 0.0, 1.0));
+    let edgeW = max(edgeWidth * edgeScale, 0.001);
     let dist = distance(uv * vec2<f32>(aspect, 1.0), mousePos * vec2<f32>(aspect, 1.0));
-    let mask = smoothstep(radius, radius + edgeWidth, dist + (n * 0.2 - 0.1) - dissolveBias);
+    let front = dist + (n * 0.2 - 0.1) - dissolveBias;
+    let mask = smoothstep(radius, radius + edgeW, front);
 
-    // Burn effect at edge
-    let edge = 1.0 - smoothstep(radius, radius + edgeWidth * 2.0, dist + (n * 0.2 - 0.1) - dissolveBias);
-    let burn = vec3<f32>(1.0, 0.5, 0.2) * edge * 2.0 * (1.0 - mask);
+    // Burn effect at edge. Bass flares the existing fire.
+    let bass = plasmaBuffer[0].x;
+    let edge = 1.0 - smoothstep(radius, radius + edgeW * 2.0, front);
+    let burn = vec3<f32>(1.0, 0.5, 0.2) * edge * (2.0 + bass * 0.5) * (1.0 - mask);
 
-    // Apply NLM smoothing to remaining pixels, dissolve to black
-    var finalColor = nlmResult * mask + burn;
+    // ── Idea 2: NLM residual ──────────────────────────────────────
+    // Detail the filter removed, put back on the surviving side.
+    // NLM Mix still owns how smooth that side is.
+    let residual = (center - nlmResult) * (1.0 - nlmMix) * mask * 0.85;
+    // ── Idea 3: ash ───────────────────────────────────────────────
+    // The dissolved side keeps a dark remainder under the burn.
+    let ash = nlmResult * 0.07 * (1.0 - mask);
+    var finalColor = nlmResult * mask + residual + ash + burn;
+    finalColor = aces(max(finalColor, vec3<f32>(0.0)));
 
     // Importance map in alpha: unique textures = high alpha = survive longer
     let importance = 1.0 - avgSimilarity;
+    let alpha = clamp(importance * mask + edge * 0.35, 0.0, 1.0);
+    let pixel = vec2<i32>(global_id.xy);
 
-    textureStore(writeTexture, global_id.xy, vec4<f32>(finalColor, importance * mask));
+    textureStore(writeTexture, pixel, vec4<f32>(finalColor, alpha));
+    textureStore(dataTextureA, pixel, vec4<f32>(finalColor, alpha));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));

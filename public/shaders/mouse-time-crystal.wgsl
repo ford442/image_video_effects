@@ -1,11 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  mouse-time-crystal
 //  Category: interactive-mouse
-//  Features: mouse-driven, temporal, crystal-growth
+//  Features: mouse-driven, temporal, crystal-growth, audio-reactive, upgraded-rgba
 //  Complexity: Very High
-//  Chunks From: chunk-library.md (hash12, palette)
-//  Created: 2026-04-18
-//  By: Agent 2C
+//  Upgraded: 2026-11-20
+//  Ideas: growth-face glint; cooling rim; density veins
+//  A packing: raw (age, branchID, density, temperature); ACES on display only
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse clicks seed crystal growth points. Crystals grow over time
 //  using diffusion-limited aggregation modulated by image luminance.
@@ -14,26 +14,7 @@
 //  Alpha = crystal color temperature (age gradient).
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -49,6 +30,10 @@ fn palette(t: f32, a: vec3<f32>, b: vec3<f32>, c: vec3<f32>, d: vec3<f32>) -> ve
 
 fn getLuma(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -67,9 +52,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let glowIntensity = u.zoom_params.w;
 
   let mousePos = u.zoom_config.yz;
+  let bass = plasmaBuffer[0].x;
+  let coord = vec2<i32>(global_id.xy);
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
 
   // Read previous crystal state (R=age, G=branchID, B=density, A=temperature)
-  let prevState = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+  let prevState = textureLoad(dataTextureC, coord, 0);
   var crystalAge = prevState.r;
   var branchID = prevState.g;
   var density = prevState.b;
@@ -104,14 +92,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Crystal growth: DLA-like expansion from existing crystals
   if (crystalAge > 0.0) {
-    crystalAge = crystalAge + 0.016 * growthRate;
-    temperature = temperature * 0.995;
+    crystalAge = crystalAge + 0.016 * growthRate * (1.0 + bass * 0.25);
+    // ── Idea 2: cooling rim ───────────────────────────────────────
+    // Flat interiors lose heat. The growth front stays hot.
+    let front = clamp(gradient * 3.0, 0.0, 1.0);
+    temperature = temperature * mix(0.988, 0.998, front);
 
     // Diffuse density to neighbors (simulate aggregation)
-    let n = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, px.y), 0.0);
-    let s = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0, px.y), 0.0);
-    let e = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(px.x, 0.0), 0.0);
-    let w = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(px.x, 0.0), 0.0);
+    let n = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), hi), 0);
+    let s = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), hi), 0);
+    let e = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), hi), 0);
+    let w = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), hi), 0);
 
     // If neighbor is crystallized and we're not, chance to crystallize
     let neighborAge = max(max(n.r, s.r), max(e.r, w.r));
@@ -153,11 +144,24 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseHeat = exp(-mouseDist * mouseDist * 200.0) * 0.2;
   finalColor = finalColor + vec3<f32>(1.0, 0.9, 0.7) * mouseHeat * crystalMask;
 
+  // ── Idea 1: growth-face glint ─────────────────────────────────
+  // The luma gradient that already steers sticking is the face normal.
+  let face = vec2<f32>(luma - right, luma - up);
+  let faceN = face / max(length(face), 0.0001);
+  let light2 = normalize(vec2<f32>(0.45, 0.75));
+  let glint = pow(max(dot(faceN, light2), 0.0), 16.0) * crystalMask * (0.12 + glowIntensity * 0.4);
+  finalColor = finalColor + vec3<f32>(0.85, 0.95, 1.0) * glint;
+
+  // ── Idea 3: density veins ─────────────────────────────────────
+  let vein = smoothstep(0.6, 2.4, density) * crystalMask;
+  finalColor = mix(finalColor, finalColor * vec3<f32>(0.52, 0.6, 0.68), vein * 0.4);
+  finalColor = aces(max(finalColor, vec3<f32>(0.0)));
+
   // Store crystal state
   textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(crystalAge, branchID, density, temperature));
 
   // Alpha = crystal color temperature (maps to warm/cool)
-  let alpha = clamp(temperature * 0.5 + crystalMask * 0.5, 0.0, 1.0);
+  let alpha = clamp(temperature * 0.5 + crystalMask * 0.4 + glint * 0.25 + vein * 0.1, 0.0, 1.0);
 
   textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
 
