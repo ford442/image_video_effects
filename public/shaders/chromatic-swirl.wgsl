@@ -3,31 +3,12 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, rich-chromatic-aberration, volumetric-swirl, depth-falloff, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: angular chromatic (R/G/B at different swirl angles); animate as continuous spin
+//  Upgraded: 2026-09-08, 2026-11-20
+//  Ideas: angular chromatic (R/G/B at different swirl angles); animate as continuous spin; Cauchy radial lateral colour (§12.2F); Rayleigh in-scatter of the absorbed light (§12.2F)
 //  A packing: telemetry (dist/radius, angle, aberration, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══════════════════════════════════════════════════════════════
 //  SPECTRAL PHYSICS CONSTANTS
@@ -119,17 +100,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let angR = baseAngle * (1.0 + aberration * 2.8);
     let angG = baseAngle;
     let angB = baseAngle * (1.0 - aberration * 2.2);
+
+    // ── Idea 1: Cauchy radial lateral colour (§12.2F) ───────────────
+    // n(λ) = A + B/λ²: a wavelength-dependent medium also magnifies each channel
+    // differently, on top of the per-channel swirl angle. λ in µm from the
+    // WAVELENGTH_* constants this file already owns; strength rides `aberration`.
+    // R is sampled nearer the pointer (larger image), B farther (smaller image).
+    let lamUm = vec3<f32>(WAVELENGTH_RED, WAVELENGTH_GREEN, WAVELENGTH_BLUE) * 0.001;
+    let invLam2 = vec3<f32>(1.0) / (lamUm * lamUm);
+    let cauchyScale = vec3<f32>(1.0) + aberration * 0.25 * (invLam2 - vec3<f32>(invLam2.y));
+    let xyR = vec2<f32>(x_corr, y_corr) * cauchyScale.x;
+    let xyG = vec2<f32>(x_corr, y_corr) * cauchyScale.y;
+    let xyB = vec2<f32>(x_corr, y_corr) * cauchyScale.z;
     let uvR = clamp(vec2<f32>(
-        (x_corr * cos(angR) - y_corr * sin(angR)) / aspect,
-        x_corr * sin(angR) + y_corr * cos(angR)
+        (xyR.x * cos(angR) - xyR.y * sin(angR)) / aspect,
+        xyR.x * sin(angR) + xyR.y * cos(angR)
     ) + center, vec2<f32>(0.001), vec2<f32>(0.999));
     let uvG = clamp(vec2<f32>(
-        (x_corr * cos(angG) - y_corr * sin(angG)) / aspect,
-        x_corr * sin(angG) + y_corr * cos(angG)
+        (xyG.x * cos(angG) - xyG.y * sin(angG)) / aspect,
+        xyG.x * sin(angG) + xyG.y * cos(angG)
     ) + center, vec2<f32>(0.001), vec2<f32>(0.999));
     let uvB = clamp(vec2<f32>(
-        (x_corr * cos(angB) - y_corr * sin(angB)) / aspect,
-        x_corr * sin(angB) + y_corr * cos(angB)
+        (xyB.x * cos(angB) - xyB.y * sin(angB)) / aspect,
+        xyB.x * sin(angB) + xyB.y * cos(angB)
     ) + center, vec2<f32>(0.001), vec2<f32>(0.999));
 
     let r = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
@@ -151,7 +144,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalAlpha = dot(vec3<f32>(alphaR, alphaG, alphaB), luminanceWeights);
     
     // === Visual Flourish: Rich atmospheric color + depth ===
-    let baseCol = vec3<f32>(r * alphaR, g * alphaG, b * alphaB);
+    let transmit = vec3<f32>(alphaR, alphaG, alphaB);
+
+    // ── Idea 2: Rayleigh in-scatter of the absorbed light (§12.2F) ──
+    // Beer–Lambert above only removes energy (the thick core goes dead black).
+    // A turbid medium re-emits a fraction ω of what it extinguishes, with a
+    // λ⁻⁴ spectrum, so (1 − T) becomes a blue-weighted haze, never more than
+    // ω of the removed light. Spectrum is luminance-normalised.
+    let rayleigh = pow(vec3<f32>(WAVELENGTH_GREEN) / vec3<f32>(WAVELENGTH_RED, WAVELENGTH_GREEN, WAVELENGTH_BLUE), vec3<f32>(4.0));
+    let rayleighTint = rayleigh / dot(rayleigh, luminanceWeights);
+    let srcLuma = dot(vec3<f32>(r, g, b), luminanceWeights);
+    let inScatter = (vec3<f32>(1.0) - transmit) * (0.18 * srcLuma) * rayleighTint;
+
+    let baseCol = vec3<f32>(r, g, b) * transmit + inScatter;
     
     // Audio-reactive color temperature and saturation
     let warm = bass * 0.18;

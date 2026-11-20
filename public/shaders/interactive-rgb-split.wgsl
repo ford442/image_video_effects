@@ -3,34 +3,18 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: wavelength-scaled R/G/B split along the existing offset; lateral vs longitudinal mix
+//  Upgraded: 2026-09-08, 2026-11-20
+//  Ideas: wavelength-scaled R/G/B split along the existing offset; lateral vs longitudinal mix; Brown–Conrady radial growth of the lateral split (§12.2B); per-channel spectral band smear
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse-localized chromatic split. Mode < 0.5 is radial (longitudinal);
 //  mode >= 0.5 is directional (lateral). Ripples perturb the field.
+//  Radial lateral colour grows ~r³ about the pointer; each channel integrates
+//  a spectral band instead of one wavelength.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Strength, y=Falloff, z=Mode, w=AngleOffset
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Strength, y=Falloff, z=Mode, w=AngleOffset
 
 fn tentAlpha(x: f32) -> f32 {
   return smoothstep(0.0, 0.4, x) * (1.0 - smoothstep(0.4, 1.0, x));
@@ -56,6 +40,20 @@ fn schlickFresnel(cosTheta: f32, F0: f32) -> f32 {
 
 fn gaussianMask(dist: f32, sigma: f32) -> f32 {
   return exp(-dist * dist / (2.0 * sigma * sigma));
+}
+
+// ── Idea 2: spectral band smear ─────────────────────────────────────
+// A sensor channel integrates a band of wavelengths, not one: three taps at
+// s·(1−band), s, s·(1+band) with 1-2-1 weights. The centroid stays at s, so the
+// split geometry is unchanged; the hard ghost becomes a continuous gradient.
+// `axis` already scales with |field|, so the band closes where the split does.
+fn bandSample(uv: vec2<f32>, axis: vec2<f32>, s: f32, band: f32) -> vec3<f32> {
+  let lo = clamp(uv + axis * (s * (1.0 - band)), vec2<f32>(0.0), vec2<f32>(1.0));
+  let mid = clamp(uv + axis * s, vec2<f32>(0.0), vec2<f32>(1.0));
+  let hi = clamp(uv + axis * (s * (1.0 + band)), vec2<f32>(0.0), vec2<f32>(1.0));
+  return textureSampleLevel(readTexture, u_sampler, lo, 0.0).rgb * 0.25
+       + textureSampleLevel(readTexture, u_sampler, mid, 0.0).rgb * 0.5
+       + textureSampleLevel(readTexture, u_sampler, hi, 0.0).rgb * 0.25;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -99,7 +97,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Compute SINGLE smooth displacement field
   var smoothOffset = vec2<f32>(0.0);
   if (mode < 0.5) {
-    smoothOffset = (uv - mouse) * amount;
+    // ── Idea 1: Brown–Conrady radial growth (§12.2B) ───────────────
+    // Lateral colour of a real lens is not linear in radius: r' = r(1 + k1 r² + k2 r⁴)
+    // about the optical axis (the pointer). Zero under the pointer, superlinear
+    // outward. Directional mode is a prism (no axis) and keeps its uniform shift.
+    let r2 = dist * dist;
+    let bcRadial = 1.0 + 0.6 * r2 + 0.25 * r2 * r2;
+    smoothOffset = (uv - mouse) * amount * bcRadial;
   } else {
     let angle = angleOffset * 6.2831;
     let s = sin(angle);
@@ -132,13 +136,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let latLen = max(length(latDir), 0.0001);
   let lateral = (latDir / latLen) * length(field) * (1.0 - longW);
   let splitAxis = field * longW + lateral;
-  let uvR = clamp(uv + splitAxis * 1.15, vec2<f32>(0.0), vec2<f32>(1.0));
-  let uvG = clamp(uv + splitAxis * 0.70, vec2<f32>(0.0), vec2<f32>(1.0));
-  let uvB = clamp(uv + splitAxis * 1.35, vec2<f32>(0.0), vec2<f32>(1.0));
+  // R / G / B keep HEAD's scales 1.15 / 0.70 / 1.35 as band centres.
+  let bandW = 0.22;
   let splitColor = vec3<f32>(
-    textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r,
-    textureSampleLevel(readTexture, u_sampler, uvG, 0.0).g,
-    textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b
+    bandSample(uv, splitAxis, 1.15, bandW).r,
+    bandSample(uv, splitAxis, 0.70, bandW).g,
+    bandSample(uv, splitAxis, 1.35, bandW).b
   );
   let displacedUV = clamp(uv + field, vec2<f32>(0.0), vec2<f32>(1.0));
   let baseColor = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0).rgb;
@@ -170,6 +173,5 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeTexture, pixel, outColor);
   textureStore(dataTextureA, pixel, outColor);
 
-  let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, pixel, vec4<f32>(d, 0.0, 0.0, 0.0));
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

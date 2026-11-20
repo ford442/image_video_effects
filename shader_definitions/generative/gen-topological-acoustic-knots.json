@@ -11,7 +11,7 @@
     "abstract",
     "music"
   ],
-  "description": "Orientational director field inspired by liquid crystals where audio frequencies drive topological defect creation, motion, and annihilation. Mouse can pin or create defects. Iridescent oil-slick coloring with flowing directional fields.",
+  "description": "Orientational director field inspired by liquid crystals where audio frequencies drive topological defect creation, motion, and annihilation. Mouse can pin or create defects. Iridescent oil-slick coloring with flowing directional fields. Defect glow is tinted by Frank splay vs bend (comet head vs tail), director stripes melt into an isotropic core (order parameter), and defect cores are hot spots rather than frame-filling glare.",
   "workgroup_size": [
     16,
     16,

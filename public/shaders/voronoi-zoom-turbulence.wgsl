@@ -3,8 +3,8 @@
 //  Category: geometric
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-11
-//  Ideas: F2−F1 edge neon rim; bass-driven centroid inflation pulse
+//  Upgraded: 2026-09-11, 2026-11-20
+//  Ideas: F2−F1 edge neon rim; bass-driven centroid inflation pulse; exact bisector wall distance → chamfer bevel (Worley border, tactic 1); turbulent lattice warp (§12.2E additive domain twist)
 //  A packing: ACES display RGBA (cell agitation in alpha)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -90,14 +90,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseInfl = u.zoom_params.w;
 
   let uvScaled = vec2<f32>(uv.x * aspect, uv.y) * density;
-  let iSt = floor(uvScaled);
-  let fSt = fract(uvScaled);
+
+  // Idea 4 — turbulent lattice warp (§12.2E additive domain twist): the lattice coordinate is
+  // bent by a slow analytic travelling swirl before the cell lookup, so the walls curve and
+  // breathe. Only the cell geometry moves: the image sample below is built from the un-warped
+  // uvScaled plus the zoom shift, so the picture itself is not distorted. Rides the existing
+  // Turbulence Speed role; amplitude stays under ~0.31 cell.
+  let warpT = time * (0.16 + speed * 0.12);
+  let warpAmp = 0.22 * (1.0 + mids * 0.4);
+  let lat = uvScaled + warpAmp * vec2<f32>(
+    sin(uvScaled.y * 0.9 + uvScaled.x * 0.35 + warpT),
+    sin(uvScaled.x * 0.77 - uvScaled.y * 0.41 - warpT * 0.8));
+  let iSt = floor(lat);
+  let fSt = fract(lat);
 
   var minDist = 8.0;
   var second = 8.0;
   var minPoint = vec2<f32>(0.0);
   var cellId = vec2<f32>(0.0);
   var siteTan = vec2<f32>(1.0, 0.0);
+  var third = 8.0;
+  var secondVec = vec2<f32>(8.0, 0.0);
+  var thirdVec = vec2<f32>(0.0, 8.0);
 
   for (var y = -1; y <= 1; y = y + 1) {
     for (var x = -1; x <= 1; x = x + 1) {
@@ -107,12 +121,35 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       let diff = neighbor + point - fSt;
       let dist = length(diff);
       let closer = dist < minDist;
+      // Idea 3 bookkeeping: keep the 2nd/3rd nearest site vectors (branchless shift cascade).
+      let nearer2 = dist < second;
+      let nearer3 = dist < third;
+      thirdVec = select(select(thirdVec, diff, nearer3), secondVec, nearer2);
+      third = select(select(third, dist, nearer3), second, nearer2);
+      secondVec = select(select(secondVec, diff, nearer2), minPoint, closer);
       second = select(min(second, dist), minDist, closer);
       minPoint = select(minPoint, diff, closer);
       cellId = select(cellId, iSt + neighbor, closer);
       minDist = min(minDist, dist);
     }
   }
+
+  // Idea 3 — exact bisector wall distance (Worley border, tactic 1): F2−F1 stays as the neon-rim
+  // proxy, but its width swells at vertices and with wall angle. The true distance to a bisector,
+  // dot(0.5*(a+b), normalize(b−a)), has a constant width and also yields the wall normal (a → b).
+  // The nearest wall of a pixel is the bisector against its 2nd or 3rd nearest site, both already
+  // found by the loop above (taking the min of the two keeps it continuous at cell vertices).
+  let abB = secondVec - minPoint;
+  let nB = abB * inverseSqrt(max(dot(abB, abB), 1e-6));
+  let wdB = dot(0.5 * (minPoint + secondVec), nB);
+  let abC = thirdVec - minPoint;
+  let nC = abC * inverseSqrt(max(dot(abC, abC), 1e-6));
+  let wdC = dot(0.5 * (minPoint + thirdVec), nC);
+  let useC = wdC < wdB;
+  let wallDist = max(select(wdB, wdC, useC), 0.0);
+  let wallN = select(nB, nC, useC);
+  let bevelT = 1.0 - smoothstep(0.0, 0.16, wallDist);
+  let bevelAmt = bevelT * bevelT;
 
   let edgeGap = second - minDist;
   let edge = clamp(edgeGap * 4.2, 0.0, 1.0);
@@ -150,7 +187,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     * sin(time * (4.2 + speed * 2.0) + randVal * TAU);
   let holdPull = select(0.0, 0.12, held) * smoothstep(0.4, 0.0, distMouse);
 
-  let uvScaledNew = uvScaled + zoomShift + conveyor - minPoint * holdPull;
+  // Idea 3 (cont.) — convex glass-tile chamfer: toward each wall the sample reaches outward along
+  // the wall normal (content compresses at the bevel, like a lenslet edge).
+  let bevelShift = wallN * bevelAmt * 0.2;
+
+  let uvScaledNew = uvScaled + zoomShift + conveyor - minPoint * holdPull + bevelShift;
   let uvNew = clamp(vec2<f32>(uvScaledNew.x / aspect, uvScaledNew.y) / max(density, 0.001), vec2<f32>(0.0), vec2<f32>(1.0));
 
   let src = textureSampleLevel(readTexture, u_sampler, uvNew, 0.0);
@@ -161,6 +202,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hdr = satBoost(src.rgb, 0.28 + treble * 0.2);
   hdr = mix(hdr, hdr * palette(hueT), 0.22 + edge * 0.18);
   hdr = hdr + palette(hueT + 0.33) * pulse * 0.35;
+  // Idea 3 (cont.) — the bevel facet catches a fixed key light from the upper left (uv y is down).
+  hdr = hdr * (1.0 + bevelAmt * 0.34 * dot(wallN, vec2<f32>(-0.55, -0.83)));
   hdr = mix(hdr, hist.rgb, 0.18 + edge * 0.12);
   hdr = hdr + palette(hueT + 0.62) * neonRim * (1.15 + mids * 0.25);
 

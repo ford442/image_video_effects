@@ -2,12 +2,13 @@
   "id": "gen-chrono-erosion-feedback-melting",
   "name": "Chrono Erosion",
   "url": "shaders/gen-chrono-erosion-feedback-melting.wgsl",
-  "description": "Datamosh-like flow effect where video melts along a curl-noise vector field with feedback decay and audio-driven turbulence.",
+  "description": "Datamosh-like flow effect where video melts along a curl-noise vector field with feedback decay and audio-driven turbulence. Strong flow lanes keep their trails longer and tear into rigid 16 px macroblocks; the feedback loop reads history exactly (no half-texel drift), per-strip turbulence follows the live FFT, and ACES shapes the display.",
   "features": [
     "audio-reactive",
     "temporal",
     "mouse-driven",
-    "feedback"
+    "feedback",
+    "upgraded-rgba"
   ],
   "tags": [
     "erosion",

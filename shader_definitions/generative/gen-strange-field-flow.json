@@ -13,7 +13,7 @@
     "abstract",
     "fractal"
   ],
-  "description": "A strange-attractor flow field blending Peter de Jong and Clifford attractor maps. Each pixel evaluates iterated orbit density and paints acid-neon whorls. Attractor coefficients pulse to bass and treble, morphing the topology. Temporal persistence burns psychedelic trails.",
+  "description": "A strange-attractor flow field blending Peter de Jong and Clifford attractor maps. Each pixel evaluates iterated orbit density and paints acid-neon whorls. Attractor coefficients pulse to bass and treble, morphing the topology. Temporal persistence burns psychedelic trails. Each orbit now carries a fold count (soft axis-crossing itinerary) that shifts hue by cell, and the Pickover stalks take the tint of the iterate that grazed the axis.",
   "workgroup_size": [
     16,
     16,
