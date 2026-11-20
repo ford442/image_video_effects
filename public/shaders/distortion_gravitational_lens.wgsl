@@ -1,36 +1,25 @@
 // ═══════════════════════════════════════════════════════════════════════════════
+//  Gravitational Lens
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, relativistic, hdr
+//  Complexity: High
+//  Upgraded: 2026-11-20
+//  Ideas: critical-curve magnification glow (§12.2F); Doppler-beamed accretion disk (§12.2F blackbody)
+//  A packing: display RGBA (tone-mapped; alpha = lens coverage / emission)
+// ═══════════════════════════════════════════════════════════════════════════════
 //  distortion_gravitational_lens.wgsl - Einstein Ring Gravitational Lensing
-//  
+//
 //  Agent: Algorithmist + Visualist
 //  Techniques:
 //    - Schwarzschild metric ray deflection
 //    - Einstein ring formation
 //    - Multiple mass points (galaxy cluster)
 //    - Accretion disk visualization
-//  
+//
 //  Target: 4.7★ rating
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 
@@ -43,28 +32,48 @@ struct Mass {
 
 // Gravitational deflection angle
 // Simplified Schwarzschild deflection: alpha = 4GM/(c^2 * b)
-// where b is impact parameter
-fn deflectionAngle(rayPos: vec2<f32>, mass: Mass) -> vec2<f32> {
+// where b is impact parameter:  alpha = -normalize(delta) * M R / (dist + 0.001),
+// zero inside 0.1 R (singularity cutoff). Written below as alpha = -delta * g(r),
+// g = K / (r (r + 0.001)), K = M R - the identical law, in a form whose derivative
+// is free (Idea 1) so one sqrt / reciprocal serves both (HEAD paid sqrt + normalize).
+struct LensTerm {
+    alpha: vec2<f32>,   // deflection (toward the mass), HEAD's deflectionAngle
+    jac: vec3<f32>,     // d alpha / d theta as (Axx, Axy, Ayy)
+};
+
+// ── Idea 1 helper: lens Jacobian of one mass ───────────────────────────────
+// d alpha / d theta = -(g I + (g'/r) delta delta^T); its determinant combination
+// det(I - A/2) = 0 is the critical curve (the Einstein ring).
+fn lensAt(rayPos: vec2<f32>, mass: Mass) -> LensTerm {
     let delta = rayPos - mass.pos;
-    let dist2 = dot(delta, delta);
-    let dist = sqrt(dist2);
-    
-    // Avoid singularity
-    if (dist < mass.radius * 0.1) {
-        return vec2<f32>(0.0);
-    }
-    
-    // Deflection magnitude (simplified GR)
-    let deflectionMagnitude = mass.mass * mass.radius / (dist + 0.001);
-    
-    // Direction is perpendicular to radius (toward mass)
-    return -normalize(delta) * deflectionMagnitude;
+    let dist = sqrt(dot(delta, delta));
+    let live = step(mass.radius * 0.1, dist);          // HEAD's singularity cutoff
+    let r = max(dist, 1e-4);
+    let K = mass.mass * mass.radius;
+    let inv = 1.0 / (r * (r + 0.001));
+    let g = K * inv;
+    let c = -K * (2.0 * r + 0.001) * inv * inv / r;    // g'(r) / r
+    var t: LensTerm;
+    t.alpha = -delta * (g * live);
+    t.jac = live * vec3<f32>(-(g + c * delta.x * delta.x),
+                             -(c * delta.x * delta.y),
+                             -(g + c * delta.y * delta.y));
+    return t;
+}
+
+// One bounds-masked tap (HEAD returned black outside the image; same result, branchless,
+// and the mask doubles as lens coverage for the alpha)
+fn lensTap(p: vec2<f32>) -> vec4<f32> {
+    let inb = f32(all(p >= vec2<f32>(0.0)) && all(p <= vec2<f32>(1.0)));
+    let rgb = textureSampleLevel(readTexture, u_sampler, clamp(p, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    return vec4<f32>(rgb * inb, inb);
 }
 
 // Accretion disk temperature coloring (blackbody)
-fn accretionDiskColor(radius: f32, innerRadius: f32) -> vec3<f32> {
+fn accretionDiskColor(radius: f32, innerRadius: f32, doppler: f32) -> vec3<f32> {
     // Temperature falls off as r^(-3/4) for thin disk
-    let temp = pow(innerRadius / radius, 0.75);
+    // ── Idea 2: observed T = D * T_emitted (doppler = 1 reproduces the symmetric disk)
+    let temp = pow(innerRadius / radius, 0.75) * doppler;
     
     // Blackbody approximation
     var color: vec3<f32>;
@@ -78,12 +87,8 @@ fn accretionDiskColor(radius: f32, innerRadius: f32) -> vec3<f32> {
         color = vec3<f32>(0.3, 0.05, 0.05); // Dark red
     }
     
-    return color * temp * temp; // Intensity ~ T^2 (Stefan-Boltzmann-ish)
-}
-
-// Einstein ring calculation
-fn einsteinRadius(mass: f32, distance: f32) -> f32 {
-    return sqrt(mass) * distance * 0.1;
+    // Intensity ~ T^2 (Stefan-Boltzmann-ish); the extra D makes it I_obs = D^3 I_em
+    return color * temp * temp * doppler;
 }
 
 // Tone mapping
@@ -111,12 +116,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Mouse position as primary mass
     let mousePos = u.zoom_config.yz;
-    let audioPulse = u.zoom_config.w;
-    
+    // Rescue: HEAD read zoom_config.w (mouse_down) as "audioPulse". The click
+    // keeps its HEAD role (feeds the hole, pumps the disk); audio is bass now.
+    let held = u.zoom_config.w;
+    let bass = plasmaBuffer[0].x;
+
     // Define masses
     var masses: array<Mass, 5>;
-    masses[0] = Mass(mousePos, 2.0 + audioPulse * 2.0, 0.02 * lensStrength);
-    
+    masses[0] = Mass(mousePos, 2.0 + held * 2.0 + bass * 0.8, 0.02 * lensStrength);
+
     // Additional orbiting masses
     for (var i: i32 = 1; i < 5; i = i + 1) {
         if (i < numMasses) {
@@ -133,61 +141,85 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             );
         }
     }
-    
+
     // Ray starting position (screen space)
     var rayPos = uv;
-    
-    // Accumulate deflections from all masses
+
+    // Accumulate deflections from all masses (+ the Jacobian they imply)
     var totalDeflection = vec2<f32>(0.0);
+    var jac = vec3<f32>(0.0);
     for (var i: i32 = 0; i < numMasses; i = i + 1) {
-        totalDeflection += deflectionAngle(rayPos, masses[i]);
+        let term = lensAt(rayPos, masses[i]);
+        totalDeflection += term.alpha;
+        jac += term.jac;
     }
-    
+
     // Apply deflection to get source position
     let sourcePos = rayPos - totalDeflection * 0.5;
-    
+
     // Chromatic aberration: different deflection per channel
     let deflectionR = totalDeflection * (1.0 + aberration);
     let deflectionB = totalDeflection * (1.0 - aberration);
     let sourcePosR = rayPos - deflectionR * 0.5;
     let sourcePosG = sourcePos;
     let sourcePosB = rayPos - deflectionB * 0.5;
-    
+
+    // d(sourcePos)/d(uv) = I - 0.5 A, the lens Jacobian (symmetric) used by Idea 1
+    let jxx = 1.0 - 0.5 * jac.x;
+    let jxy = -0.5 * jac.y;
+    let jyy = 1.0 - 0.5 * jac.z;
+
     // Sample background with lensing
-    var color = vec3<f32>(0.0);
-    
-    // Check if source positions are in bounds
-    if (all(sourcePosR >= vec2<f32>(0.0)) && all(sourcePosR <= vec2<f32>(1.0))) {
-        color.r = textureSampleLevel(readTexture, u_sampler, sourcePosR, 0.0).r;
-    }
-    if (all(sourcePosG >= vec2<f32>(0.0)) && all(sourcePosG <= vec2<f32>(1.0))) {
-        color.g = textureSampleLevel(readTexture, u_sampler, sourcePosG, 0.0).g;
-    }
-    if (all(sourcePosB >= vec2<f32>(0.0)) && all(sourcePosB <= vec2<f32>(1.0))) {
-        color.b = textureSampleLevel(readTexture, u_sampler, sourcePosB, 0.0).b;
-    }
-    
+    let tapR = lensTap(sourcePosR);
+    let tapG = lensTap(sourcePosG);
+    let tapB = lensTap(sourcePosB);
+    var color = vec3<f32>(tapR.r, tapG.g, tapB.b);
+    let coverage = (tapR.a + tapG.a + tapB.a) / 3.0;
+
+    // ── Idea 1: critical-curve magnification (§12.2F) ───────────────────────
+    // Flux per pixel goes as mu = 1/|det J|; it diverges where det J = 0 - the
+    // Einstein ring of the primary and the distorted curves of the cluster masses.
+    // (Rescue: HEAD's ring highlight fed einsteinRadius() the pixel's own distance,
+    // so it only ever drew a dot at the cursor.)
+    let detJ = clamp(jxx * jyy - jxy * jxy, -50.0, 50.0);
+    let crit = exp(-(detJ / 0.2) * (detJ / 0.2));
+    let ringGain = crit * lensStrength;
+    color *= 1.0 + ringGain * 0.8;                         // magnified background light
+
     // Add accretion disk around primary mass
     let toPrimary = uv - masses[0].pos;
     let distPrimary = length(toPrimary);
     let innerDisk = masses[0].radius * 3.0;
     let outerDisk = masses[0].radius * 15.0;
-    
+    var diskEmit = 0.0;
+
     if (distPrimary > innerDisk && distPrimary < outerDisk) {
-        let diskTemp = accretionDiskColor(distPrimary, innerDisk);
-        let diskPattern = sin(atan2(toPrimary.y, toPrimary.x) * 20.0 + time * 2.0);
-        let diskGlow = smoothstep(outerDisk, innerDisk, distPrimary) * 
+        // ── Idea 2: Doppler-beamed disk (§12.2F blackbody + beaming) ────────
+        // Keplerian speed beta ~ r^-1/2; an inclined disk shows the approaching
+        // side (left) hotter and brighter: D = 1/(1 - beta_los), T_obs = D T,
+        // I_obs = D^3 I. Divided by the angular mean of D^3 so the ring-average
+        // brightness stays at HEAD's.
+        let phi = atan2(toPrimary.y, toPrimary.x);
+        let orbitBeta = 0.38 * sqrt(innerDisk / distPrimary);
+        let betaLos = -0.8 * orbitBeta * (toPrimary.x / distPrimary);   // cos(phi)
+        let dop = 1.0 / (1.0 - betaLos);
+        let b2 = 0.64 * orbitBeta * orbitBeta;
+        let omb = 1.0 - b2;
+        let dopNorm = omb * omb * sqrt(omb) / (1.0 + 0.5 * b2);   // (1-b^2)^2.5 / (1+b^2/2)
+
+        let diskTemp = accretionDiskColor(distPrimary, innerDisk, dop) * dopNorm;
+        let diskPattern = sin(phi * 20.0 + time * 2.0);
+        let diskGlow = smoothstep(outerDisk, innerDisk, distPrimary) *
                        (0.7 + diskPattern * 0.3);
-        
-        color += diskTemp * diskGlow * diskIntensity * (1.0 + audioPulse * 2.0);
+
+        let diskGain = diskIntensity * (1.0 + held * 2.0 + bass * 1.5);
+        color += diskTemp * diskGlow * diskGain;
+        diskEmit = diskGlow * diskIntensity;
     }
-    
-    // Einstein ring highlight
-    let einsteinR = einsteinRadius(masses[0].mass, length(toPrimary));
-    let ringDist = abs(distPrimary - einsteinR);
-    let ringGlow = smoothstep(0.02, 0.0, ringDist) * lensStrength;
-    color += vec3<f32>(0.8, 0.9, 1.0) * ringGlow * 0.5;
-    
+
+    // Einstein ring highlight (cool tint along the critical curve)
+    color += vec3<f32>(0.8, 0.9, 1.0) * ringGain * 0.5;
+
     // Gravitational redshift near mass
     let redshift = smoothstep(masses[0].radius * 10.0, masses[0].radius, distPrimary);
     color.r += color.r * redshift * 0.3;
@@ -200,6 +232,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vignette = 1.0 - length(uv - 0.5) * 0.3;
     color *= vignette;
     
-    textureStore(writeTexture, coord, vec4<f32>(color, 1.0));
+    // Semantic alpha: lens coverage (void where rays leave the frame), lifted by emission
+    let alpha = clamp(mix(0.55, 1.0, coverage) + max(ringGain, diskEmit) * 0.5, 0.0, 1.0);
+    let finalOut = vec4<f32>(color, alpha);
+
+    textureStore(writeTexture, coord, finalOut);
+    textureStore(dataTextureA, coord, finalOut);
     textureStore(writeDepthTexture, coord, vec4<f32>(length(totalDeflection), 0.0, 0.0, 1.0));
 }

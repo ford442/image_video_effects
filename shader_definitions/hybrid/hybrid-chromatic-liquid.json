@@ -2,7 +2,7 @@
   "id": "hybrid-chromatic-liquid",
   "name": "Hybrid Chromatic Liquid",
   "url": "shaders/hybrid-chromatic-liquid.wgsl",
-  "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field. Audio reactivity pulses dot size and ink density with the music.",
+  "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field. The split follows the liquid surface slope (steep ripples disperse hard along the gradient) and the rippled surface carries a normal-driven Fresnel rim and specular glint. Bass swells the liquid; the cursor pulls and rings it.",
   "features": [
     "mouse-driven",
     "hybrid",
@@ -11,7 +11,8 @@
     "flow-field",
     "fresnel",
     "randomization-safe",
-    "audio-reactive"
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -68,6 +69,42 @@
       "flow-field pattern (luma-flow-field.wgsl)"
     ],
     "created_by": "Agent 2A - Shader Surgeon",
-    "created_date": "2026-03-22"
+    "created_date": "2026-03-22",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Flow Field Scale",
+          "default": 0.4,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Liquid Distortion",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "RGB Split",
+          "default": 0.3,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Flow Speed",
+          "default": 0.5,
+          "min": 0,
+          "max": 1,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }

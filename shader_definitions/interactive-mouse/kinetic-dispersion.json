@@ -2,7 +2,7 @@
   "id": "kinetic-dispersion",
   "name": "Kinetic Dispersion",
   "url": "shaders/kinetic-dispersion.wgsl",
-  "description": "Mouse-velocity dispersion effect with RGB split, block scattering, and audio-reactive intensity.",
+  "description": "Mouse-velocity dispersion effect with RGB split, block scattering, and audio-reactive intensity. Cracked blocks now stay shattered and relax behind the cursor, and block edges glint where neighbouring blocks tear apart.",
   "features": [
     "mouse-driven",
     "audio-reactive",
