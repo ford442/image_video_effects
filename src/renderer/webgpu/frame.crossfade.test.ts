@@ -77,17 +77,31 @@ describe('cue crossfade in the frame loop', () => {
     renderer.renderFrame(state);
     renderer.startCrossfade(state, 2000);
     renderer.renderFrame(state);
-    now += 1000;
+    state.currentTime += 1; // the ramp runs on the frame's simulation time (#1401)
     renderer.renderFrame(state);
     fake.reset();
 
-    now += 1001; // past the end of the ramp
+    state.currentTime += 1.001; // past the end of the ramp
     renderer.renderFrame(state);
     expect(summarizeOps(fake.ops)).toEqual([IN, P, 'compute:chained-a', PRESENT]);
     expect(fake.ops.filter((o) => o.op === 'setPipeline').slice(-1)).toEqual([
       { op: 'setPipeline', label: 'blitPipeline' },
     ]);
     expect(fake.ops.filter((o) => o.op === 'setBindGroup' && o.index === 1)).toEqual([]);
+  });
+
+  it('a stepped render ramps on render time: wall time passing alone does not end the fade', () => {
+    const { fake, state, renderer } = build();
+    renderer.renderFrame(state);
+    renderer.startCrossfade(state, 2000);
+    renderer.renderFrame(state);
+    fake.reset();
+
+    now += 60_000; // a slow offline frame: a minute of wall time, no simulation time
+    renderer.renderFrame(state);
+    expect(fake.ops.filter((o) => o.op === 'setBindGroup' && o.index === 1)).toEqual([
+      { op: 'setBindGroup', index: 1, label: 'crossfadeHoldBG' },
+    ]);
   });
 
   it('param-only frames never copy, allocate or bind a hold', () => {

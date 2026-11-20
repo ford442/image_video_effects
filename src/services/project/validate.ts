@@ -9,6 +9,7 @@ import {
 } from '../layerChainShare';
 import {
   MAX_TIMELINE_EVENTS,
+  MAX_TIMELINE_KEYFRAMES,
   parseVjSetExport,
   type VjSetExportPayload,
   type VjTimeline,
@@ -43,7 +44,10 @@ const SLOT_PARAM_KEYS: Array<keyof SlotParams> = [
 ];
 const QUALITY_MODES = new Set<RenderQualityMode>(['battery', 'balanced', 'ultra', 'auto']);
 const SOURCE_KINDS = new Set(['image', 'video', 'webcam', 'generative', 'stream', 'none']);
-const TIMELINE_PARAM_KEYS = new Set(['zoomParam1', 'zoomParam2', 'zoomParam3', 'zoomParam4']);
+/** Every SlotParams key (#1401: the recorder samples all of them, not only the four sliders). */
+const TIMELINE_PARAM_KEYS = new Set<string>(SLOT_PARAM_KEYS);
+const TIMELINE_SOURCE_TYPES = new Set(['image', 'video', 'webcam', 'generative', 'live']);
+const KEYFRAME_EASES = new Set(['linear', 'step', 'easeIn', 'easeOut', 'easeInOut']);
 const FORBIDDEN_REF = /^(?:data|blob):|MediaStream|permission/i;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -230,16 +234,59 @@ function validateBindings(raw: unknown, path: string, errors: string[]): Control
   return sanitized;
 }
 
+function validateTimelineSource(raw: unknown, path: string, errors: string[]): void {
+  if (!isRecord(raw)) {
+    errors.push(`${path} must be an object`);
+    return;
+  }
+  checkExtraKeys(raw, ['type', 'url', 'seekSec', 'shader'], path, errors);
+  if (typeof raw.type !== 'string' || !TIMELINE_SOURCE_TYPES.has(raw.type)) errors.push(`${path}.type is not recognized`);
+  if (raw.url !== undefined && (typeof raw.url !== 'string' || !raw.url || raw.url.length > 2048 || FORBIDDEN_REF.test(raw.url))) {
+    errors.push(`${path}.url must be a saved media reference (no data:/blob: URLs)`);
+  }
+  if (raw.seekSec !== undefined && (!isFiniteNumber(raw.seekSec) || raw.seekSec < 0)) errors.push(`${path}.seekSec must be >= 0`);
+  if (raw.shader !== undefined && (typeof raw.shader !== 'string' || !raw.shader || raw.shader.length > 128)) {
+    errors.push(`${path}.shader must be a shader id of at most 128 characters`);
+  }
+}
+
+/** Returns how many keyframes were present (0 when absent). */
+function validateKeyframes(raw: unknown, path: string, errors: string[]): number {
+  if (raw === undefined) return 0;
+  if (!Array.isArray(raw) || raw.length > MAX_TIMELINE_KEYFRAMES) {
+    errors.push(`${path} must be an array of at most ${MAX_TIMELINE_KEYFRAMES} keyframes`);
+    return 0;
+  }
+  raw.forEach((k, i) => {
+    const kPath = `${path}[${i}]`;
+    if (!isRecord(k)) {
+      errors.push(`${kPath} must be an object`);
+      return;
+    }
+    checkExtraKeys(k, ['t', 'slot', 'key', 'value', 'ease'], kPath, errors);
+    const valid = isFiniteNumber(k.t) && k.t >= 0
+      && Number.isInteger(k.slot) && Number(k.slot) >= 0 && Number(k.slot) < MAX_SHARED_SLOTS
+      && typeof k.key === 'string' && TIMELINE_PARAM_KEYS.has(k.key)
+      && isFiniteNumber(k.value)
+      && typeof k.ease === 'string' && KEYFRAME_EASES.has(k.ease);
+    if (!valid) errors.push(`${kPath} has an invalid time, slot, key, value or ease`);
+  });
+  return raw.length;
+}
+
 function validateVjTimeline(raw: unknown, path: string, errors: string[]): VjTimeline | null {
   if (!isRecord(raw)) {
     errors.push(`${path} must be an object`);
     return null;
   }
-  checkExtraKeys(raw, ['hz', 'durationMs', 'events'], path, errors);
+  checkExtraKeys(raw, ['hz', 'durationMs', 'events', 'keyframes'], path, errors);
   if (!isFiniteNumber(raw.hz) || raw.hz <= 0 || raw.hz > 120) errors.push(`${path}.hz must be greater than 0 and at most 120`);
   if (!isFiniteNumber(raw.durationMs) || raw.durationMs < 0) errors.push(`${path}.durationMs must be a non-negative number`);
-  if (!Array.isArray(raw.events) || raw.events.length === 0 || raw.events.length > MAX_TIMELINE_EVENTS) {
-    errors.push(`${path}.events must contain 1-${MAX_TIMELINE_EVENTS} events`);
+  const keyframeCount = validateKeyframes(raw.keyframes, `${path}.keyframes`, errors);
+  // A keyframes-only timeline (#1401) may have no recorded events.
+  const minEvents = keyframeCount > 0 ? 0 : 1;
+  if (!Array.isArray(raw.events) || raw.events.length < minEvents || raw.events.length > MAX_TIMELINE_EVENTS) {
+    errors.push(`${path}.events must contain ${minEvents}-${MAX_TIMELINE_EVENTS} events`);
     return null;
   }
   let lastT = 0;
@@ -266,6 +313,9 @@ function validateVjTimeline(raw: unknown, path: string, errors: string[]): VjTim
       if (typeof event.key !== 'string' || !TIMELINE_PARAM_KEYS.has(event.key) || !isFiniteNumber(event.value)) {
         errors.push(`${eventPath} has an invalid parameter key or value`);
       }
+    } else if (event.kind === 'source') {
+      checkExtraKeys(event, ['t', 'slot', 'kind', 'value'], eventPath, errors);
+      validateTimelineSource(event.value, `${eventPath}.value`, errors);
     } else {
       errors.push(`${eventPath}.kind is not recognized`);
     }

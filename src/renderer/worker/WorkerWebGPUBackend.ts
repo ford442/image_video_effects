@@ -42,6 +42,10 @@ import {
   type DisplayP3Result,
 } from '../webgpuBootProbe';
 import type { FrameInput, RenderEvent, RenderInitInfo, RenderSnapshot, TestRenderState } from './protocol';
+import type { FrameInputSnapshot, OfflineRenderInfo, OfflineRenderOptions } from '../offlineRender';
+
+/** A 4K frame of a deep graph on a slow GPU (or SwiftShader) can take a while. */
+const OFFLINE_RPC_TIMEOUT_MS = 180_000;
 import { connectRenderWorker, RenderWorkerClient } from './renderWorkerClient';
 import { registerShaderCompileService } from '../../utils/shaderCompileService';
 import { claimDeviceGeneration, clearRendererDevice, publishRendererDevice } from '../deviceRegistry';
@@ -774,6 +778,46 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
 
   getOutputStatus(): OutputStatus[] {
     return this.snap?.outputs?.map((o) => ({ ...o })) ?? [];
+  }
+
+  // ── Offline render (#1401): the worker steps its own clock, no rAF ─────────
+
+  private offlineActive = false;
+
+  isOfflineRenderActive(): boolean {
+    return this.offlineActive;
+  }
+
+  getMaxTextureDimension2D(): number {
+    return this.info?.maxTextureDimension2D ?? 0;
+  }
+
+  async beginOfflineRender(options: OfflineRenderOptions): Promise<OfflineRenderInfo> {
+    if (!this.client || this.lost) throw new Error('render worker is not running');
+    // Whatever the page queued so far belongs to the live picture: send it before the gate.
+    this.flush();
+    this.offlineActive = true;
+    try {
+      return await this.client.rpc({ type: 'beginOfflineRender', options: { ...options } }, OFFLINE_RPC_TIMEOUT_MS);
+    } catch (e) {
+      this.offlineActive = false;
+      throw e;
+    }
+  }
+
+  /** The presented frame at exactly `timeSec`, rendered and grabbed in the worker, transferred here. */
+  async renderFrameAt(timeSec: number, input: FrameInputSnapshot = {}): Promise<VideoFrame | null> {
+    if (!this.client || this.lost) {
+      input.videoFrame?.close();
+      throw new Error('render worker is not running');
+    }
+    return this.client.rpc({ type: 'renderFrameAt', timeSec, input }, OFFLINE_RPC_TIMEOUT_MS);
+  }
+
+  async endOfflineRender(): Promise<void> {
+    this.offlineActive = false;
+    if (!this.client || this.lost) return;
+    await this.client.rpc({ type: 'endOfflineRender' }, OFFLINE_RPC_TIMEOUT_MS);
   }
 
   /** VideoFrame of the next presented frame, transferred from the worker (recording). */

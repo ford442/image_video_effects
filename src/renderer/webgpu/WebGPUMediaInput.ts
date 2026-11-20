@@ -168,10 +168,13 @@ function liveContext(source: MediaContextSource): WebGPUMediaInputContext {
   return typeof source === 'function' ? source() : source;
 }
 
+/** Anything already decoded that drawImage / createImageBitmap accept. */
+export type DecodedImageSource = HTMLImageElement | ImageBitmap | ScratchCanvas;
+
 async function uploadStillBitmap(
   ctxSource: MediaContextSource,
   state: WebGPUMediaInputState,
-  img: HTMLImageElement | ImageBitmap,
+  img: DecodedImageSource,
   rect: { x: number; y: number; w: number; h: number },
 ): Promise<boolean> {
   if (!hasCopyExternalImage(liveContext(ctxSource)) || typeof createImageBitmap !== 'function') return false;
@@ -499,7 +502,7 @@ export function updateVideoFrame(
 export async function ingestDecodedImage(
   ctxSource: MediaContextSource,
   state: WebGPUMediaInputState,
-  img: HTMLImageElement | ImageBitmap,
+  img: DecodedImageSource,
   srcW: number,
   srcH: number,
 ): Promise<void> {

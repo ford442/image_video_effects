@@ -437,6 +437,7 @@ export function AppShell(props: AppShellProps) {
                         onCopyChainShareLink={copyChainShareLink}
                         onApplySharedChain={applySharedChain}
                         getCurrentChain={getCurrentChain}
+                        getRenderer={() => rendererRef.current}
                         renderQualityMode={renderQualityMode}
                         onRenderQualityChange={onRenderQualityChange}
                         sourceAutoExposure={sourceAutoExposure}

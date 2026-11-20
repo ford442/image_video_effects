@@ -29,6 +29,7 @@ on:
           - wasm-encode-parity
           - compositor-golden
           - compositor-golden-swiftshader
+          - golden-frames-swiftshader
       runner_label:
         description: Runner label with a real GPU (self-hosted)
         type: string
@@ -37,6 +38,10 @@ on:
         description: Fail (instead of writing a stub) when no adapter is present
         type: boolean
         default: true
+      update_goldens:
+        description: golden-frames-swiftshader only — regenerate tests/golden-frames (download the artifact and commit it)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -46,7 +51,7 @@ jobs:
     # Falls back to ubuntu-latest so the workflow stays syntactically runnable;
     # on a GPU-less runner the specs write a stub report and skip unless strict.
     # The SwiftShader suite needs no GPU, so it never waits for the `gpu` runner.
-    runs-on: ${{ inputs.suite == 'compositor-golden-swiftshader' && 'ubuntu-latest' || inputs.runner_label || 'ubuntu-latest' }}
+    runs-on: ${{ (inputs.suite == 'compositor-golden-swiftshader' || inputs.suite == 'golden-frames-swiftshader') && 'ubuntu-latest' || inputs.runner_label || 'ubuntu-latest' }}
     timeout-minutes: 60
 
     steps:
@@ -120,6 +125,28 @@ jobs:
         run: npx playwright test tests/compositor-golden.swiftshader.spec.ts --project=swiftshader
         env:
           CI: true
+
+      # Offline-render golden frames (#1401): renderFrameAt on a stepped clock, SwiftShader.
+      # With update_goldens the run writes tests/golden-frames/ (uploaded below) instead of comparing.
+      - name: Run offline-render golden frames (SwiftShader)
+        if: inputs.suite == 'golden-frames-swiftshader'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+          npx playwright test tests/golden-frames.swiftshader.spec.ts --project=swiftshader
+        env:
+          CI: true
+          UPDATE_GOLDENS: ${{ inputs.update_goldens && '1' || '0' }}
+
+      - name: Upload golden frames
+        if: always() && inputs.suite == 'golden-frames-swiftshader'
+        uses: actions/upload-artifact@v7
+        with:
+          name: golden-frames
+          path: |
+            tests/golden-frames/
+            test-results/golden-export.*
+          retention-days: 30
+          if-no-files-found: warn
 
       - name: Upload reports
         if: always()

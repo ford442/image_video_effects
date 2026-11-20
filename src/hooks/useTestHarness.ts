@@ -282,6 +282,18 @@ export function useTestHarness({
                     const blob = await session.stop();
                     return { kind: session.kind, size: blob.size, type: blob.type, frames };
                 },
+                /**
+                 * Offline render (#1401): stepped frames of one shader on a fixed input, as
+                 * SHA-256 + PNG (golden frames), and the full Render job on a synthetic set.
+                 */
+                renderOfflineFrames: async (req: import('../dev/offlineHarness').OfflineFramesRequest) => {
+                    const { renderOfflineFrames } = await import('../dev/offlineHarness');
+                    return renderOfflineFrames(manager, req);
+                },
+                exportOfflineClip: async (req: import('../dev/offlineHarness').OfflineClipRequest) => {
+                    const { exportOfflineClip } = await import('../dev/offlineHarness');
+                    return exportOfflineClip(manager, req);
+                },
                 setNodeScale: (slot: number, nodeId: string, scale: number) =>
                     manager.setNodeScale(slot, nodeId, scale),
                 getAdapterSummary: () => {

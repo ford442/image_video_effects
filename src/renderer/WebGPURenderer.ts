@@ -61,8 +61,10 @@ import {
   clearSourceTexture,
   restoreSourceFromOffscreen,
   WebGPUMediaInputContext,
+  type ScratchCanvas,
 } from './webgpu/WebGPUMediaInput';
-import { HISTORY_DEPTH, ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
+import { getModulationRuntime } from '../modulation/runtime';
+import { AUDIO_FFT_BINS, HISTORY_DEPTH, ShaderSlot, SlotMode, WG_SIZE_X, WG_SIZE_Y, WG_SIZE_1D } from './webgpu/webgpuConstants';
 import type { InternalColorFormat } from '../config/formatPolicy';
 import { DEFAULT_FORMAT_CAPABILITIES, DeviceFormatCapabilities, inferRequiresRgba32Float } from '../config/formatPolicy';
 import { UNKNOWN_ADAPTER_IDENTITY, type AdapterIdentity } from '../config/adapterIdentity';
@@ -100,10 +102,45 @@ import {
 import type { FrameSlotDispatchPlan } from './webgpu/slotDispatch';
 import { defaultSlotLayer, isPassThroughLayer, normalizeSlotLayer, type SlotLayer } from './layerState';
 import { DEFAULT_HDR_TONE_MAP, normalizeHdrToneMap, type HdrToneMapSettings } from '../services/hdrOutput';
-import type { TransferredVideoFrames, VideoIngestStats } from './media/videoFramePump';
+import type { VideoIngestStats } from './media/videoFramePump';
 import { VideoIngest } from './media/videoIngest';
 import { compileCheckWgsl } from './webgpu/compileCheck';
 import { registerShaderCompileService } from '../utils/shaderCompileService';
+import { createRealtimeClock, createSteppedClock, type RenderClock, type SteppedRenderClock } from './webgpu/renderClock';
+import { TransferredVideoFrames, safeClose } from './media/videoFramePump';
+import {
+  frameTimestampUs,
+  validateOfflineRenderOptions,
+  type FrameInputSnapshot,
+  type OfflineRenderInfo,
+  type OfflineRenderOptions,
+} from './offlineRender';
+
+/** A pending "give me the next presented frame" request (recording, capture, offline). */
+interface FrameGrab {
+  timestampUs: number;
+  durationUs?: number;
+  resolve: (frame: VideoFrame | null) => void;
+}
+
+/** An offline job (#1401) and the live renderer state it put aside. */
+interface OfflineSession {
+  clock: SteppedRenderClock;
+  fps: number;
+  /** The job's own video input: frames arrive in renderFrameAt snapshots only. */
+  video: TransferredVideoFrames;
+  /** Restored by endOfflineRender; live policy changes during the job land here. */
+  live: {
+    clock: RenderClock;
+    canvasW: number;
+    canvasH: number;
+    resolutionScale: number;
+    adaptiveQuality: boolean;
+    colorFormat: InternalColorFormat;
+  };
+}
+
+const OFFLINE_SILENT_BINS = new Float32Array(AUDIO_FFT_BINS);
 
 /** `?no_direct_present` keeps the present blit even where the swapchain could be written directly. */
 function directPresentDisabledByUrl(): boolean {
@@ -213,7 +250,12 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** Read by diagnostics; written only by init / teardown / device loss. */
   initialized = false;
   private animationId: number | null = null;
-  private startTime = 0;
+  /** Simulation time source (#1401): realtime while live, stepped during an offline render. */
+  private clock: RenderClock = createRealtimeClock();
+  /** The active offline render (#1401), with the live state it replaced; null while live. */
+  private offline: OfflineSession | null = null;
+  /** The render worker's live video source (setTransferredVideo), restored after an offline job. */
+  private liveTransferredVideo: TransferredVideoFrames | null = null;
   private frameCount = 0;
   private lastFPSTime = 0;
   private fps = 0;
@@ -262,7 +304,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   /** The canvas this renderer presents to (an OffscreenCanvas in the render worker). */
   private presentCanvas: HTMLCanvasElement | OffscreenCanvas | null = null;
   /** Pending "give me the next presented frame" requests (recording / capture). */
-  private frameGrabs: Array<{ timestampUs: number; resolve: (frame: VideoFrame | null) => void }> = [];
+  private frameGrabs: FrameGrab[] = [];
   /** WebCodecs VideoFrame ingest (element path as fallback). */
   private readonly videoIngest = new VideoIngest(videoFrameIngestDisabledByUrl());
 
@@ -375,8 +417,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
       this.frameState = createFrameState(createRendererFrameHost(this.createFrameContext()));
       this.initialized = true;
-      this.startTime = performance.now() / 1000;
-      this.lastFPSTime = this.startTime;
+      this.clock = createRealtimeClock();
+      this.lastFPSTime = performance.now() / 1000;
       this.frameRenderer.startRenderLoop(this.frameState);
 
       console.log(
@@ -926,6 +968,205 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     }
   }
 
+  /** The device's 2D texture limit: the largest edge an offline job (#1401) can render. */
+  getMaxTextureDimension2D(): number {
+    return this.device?.limits?.maxTextureDimension2D ?? 0;
+  }
+
+  /** True while an offline job (#1401) owns the renderer. */
+  isOfflineRenderActive(): boolean {
+    return this.offline !== null;
+  }
+
+  /**
+   * Start an offline job (#1401): stop the rAF loop, switch to a stepped clock, resize the
+   * render target to `width × height` and start every simulation from a clean slate
+   * (fresh working textures, sim-ring frame 0, no ripples, no crossfade), so the same job
+   * renders the same frames every time on the same adapter. A job that is already running
+   * is replaced.
+   */
+  async beginOfflineRender(options: OfflineRenderOptions): Promise<OfflineRenderInfo> {
+    const device = this.device;
+    const state = this.frameState;
+    if (!device || !state?.initialized) throw new Error('renderer is not initialized');
+    const maxDim = device.limits?.maxTextureDimension2D ?? 8192;
+    const opts = validateOfflineRenderOptions(options, maxDim);
+    if (this.offline) await this.endOfflineRender();
+
+    this.frameRenderer.stopRenderLoop(state);
+    // Nothing of the live loop may still be in flight when the textures are replaced.
+    await device.queue.onSubmittedWorkDone();
+    if (this.device !== device || !state.initialized) throw new Error('renderer was torn down');
+
+    // Live recorders waiting for a frame get none: this job's frames are its own.
+    this.resolveFrameGrabs(null);
+    // A running cue fade belongs to the live picture; duration 0 cancels it.
+    this.frameRenderer.startCrossfade(state, 0);
+
+    const clock = createSteppedClock(opts.fps, 0);
+    const offlineVideo = new TransferredVideoFrames();
+    this.offline = {
+      clock,
+      fps: opts.fps,
+      video: offlineVideo,
+      live: {
+        clock: this.clock,
+        canvasW: this.canvasW,
+        canvasH: this.canvasH,
+        resolutionScale: this.resolutionScale,
+        adaptiveQuality: this.adaptiveQuality,
+        colorFormat: this.colorFormat,
+      },
+    };
+    this.clock = clock;
+    this.currentTime = clock.now();
+    this.adaptiveQuality = false;
+    // Its own (initially empty) video source: a live <video> or worker pump never feeds it.
+    this.videoIngest.setExternalSource(offlineVideo);
+    this.resolutionScale = opts.resolutionScale;
+    try {
+      await this.resizeRenderTarget(opts.width, opts.height, true);
+    } catch (e) {
+      // e.g. an 8K target the device cannot allocate: hand the live picture back, then fail.
+      await this.endOfflineRender();
+      throw e;
+    }
+    this.resetSimulationState();
+
+    return {
+      width: this.canvasW,
+      height: this.canvasH,
+      scaledW: this.scaledW,
+      scaledH: this.scaledH,
+      fps: opts.fps,
+      maxTextureDimension2D: maxDim,
+    };
+  }
+
+  /**
+   * Render exactly one frame at simulation time `timeSec` from `input` and return what was
+   * presented, as a VideoFrame stamped `timeSec` (µs). No rAF is involved, so a hidden tab
+   * or a GPU slower than real time changes how long the job takes, not what it renders.
+   */
+  async renderFrameAt(timeSec: number, input: FrameInputSnapshot = {}): Promise<VideoFrame | null> {
+    const session = this.offline;
+    const state = this.frameState;
+    if (!session) {
+      safeClose(input.videoFrame ?? null);
+      throw new Error('no offline render is active (call beginOfflineRender first)');
+    }
+    if (!state?.initialized || !this.device || !this.presentCanvas) {
+      safeClose(input.videoFrame ?? null);
+      return null;
+    }
+    if (!Number.isFinite(timeSec) || timeSec < 0) {
+      safeClose(input.videoFrame ?? null);
+      throw new RangeError(`renderFrameAt needs a time >= 0 (got ${timeSec})`);
+    }
+
+    this.applyOfflineInput(session, input);
+    session.clock.seek(timeSec);
+    this.currentTime = session.clock.now();
+
+    const timestampUs = frameTimestampUs(session.clock.frame, session.fps);
+    const durationUs = input.durationUs ?? Math.round(1_000_000 / session.fps);
+    let resolveGrab: (frame: VideoFrame | null) => void = () => {};
+    const grabbed = new Promise<VideoFrame | null>((resolve) => { resolveGrab = resolve; });
+    // Seeks off the frame grid (timeSec not a multiple of 1/fps) keep their exact time.
+    const exactUs = Math.abs(timeSec * session.fps - session.clock.frame) < 1e-6 ? timestampUs : Math.round(timeSec * 1e6);
+    const grab: FrameGrab = { timestampUs: exactUs, durationUs, resolve: resolveGrab };
+    this.frameGrabs.push(grab);
+    try {
+      this.frameRenderer.renderFrame(state);
+    } finally {
+      // A frame that never reached submit (teardown mid-call) answers null, never hangs.
+      const pending = this.frameGrabs.indexOf(grab);
+      if (pending >= 0) {
+        this.frameGrabs.splice(pending, 1);
+        grab.resolve(null);
+      }
+    }
+    return grabbed;
+  }
+
+  /** End the offline job: back to the live size, clock, quality policy and rAF loop. */
+  async endOfflineRender(): Promise<void> {
+    const session = this.offline;
+    if (!session) return;
+    this.offline = null;
+    session.video.detach();
+    const live = session.live;
+    this.clock = live.clock;
+    this.adaptiveQuality = live.adaptiveQuality;
+    this.ripples = [];
+    this.videoIngest.setExternalSource(this.liveTransferredVideo);
+    const state = this.frameState;
+    if (!this.device || !state?.initialized) return;
+
+    await this.device.queue.onSubmittedWorkDone();
+    if (!state.initialized || this.frameState !== state) return;
+    this.resolutionScale = live.resolutionScale;
+    await this.resizeRenderTarget(live.canvasW, live.canvasH, true);
+    if (live.colorFormat !== this.colorFormat) this.setColorFormat(live.colorFormat);
+    if (this.offline === null && this.frameState === state && state.initialized && state.animationId === null) {
+      this.frameRenderer.startRenderLoop(state);
+    }
+  }
+
+  /** The complete input of one offline frame; absent fields are neutral, never live values. */
+  private applyOfflineInput(session: OfflineSession, input: FrameInputSnapshot): void {
+    const [mx, my] = input.mouse ?? [0.5, 0.5];
+    this.mouseX = mx;
+    this.mouseYShader = my;
+    this.mouseDown = !!input.mouseDown;
+    const [bass, mid, treble] = input.audio ?? [0, 0, 0];
+    updateAudioData(this.audioDepth, bass, mid, treble);
+    updateAudioFrequencyBins(this.audioDepth, input.bins ?? OFFLINE_SILENT_BINS);
+    for (const [slot, p1, p2, p3, p4] of input.slotParams ?? []) this.setSlotParams(slot, p1, p2, p3, p4);
+    this.ripples = [];
+    if (input.videoFrame) session.video.push(input.videoFrame);
+  }
+
+  /** What the first frame of a simulation sees: nothing left over from earlier frames. */
+  private resetSimulationState(): void {
+    this.simRing.resetFrame();
+    this.audioDepth.historyHead = 0;
+    this.ripples = [];
+    getModulationRuntime().resetState();
+  }
+
+  /**
+   * Resize the canvas (the swapchain follows) and every canvas- or working-sized texture.
+   * `fresh` recreates the textures even at the same size: zeroed feedback / history.
+   * The current still is letterboxed again at the new size (the page can re-send the
+   * full-resolution source afterwards for the best quality).
+   */
+  private async resizeRenderTarget(width: number, height: number, fresh: boolean): Promise<void> {
+    const device = this.device;
+    const canvas = this.presentCanvas;
+    if (!device || !canvas) return;
+    const sizeChanged = width !== this.canvasW || height !== this.canvasH;
+    if (!sizeChanged && !fresh) return;
+    // Keep a reference to the current picture before the offscreen is replaced.
+    const prior: ImageBitmap | ScratchCanvas | null = this.mediaState.still?.bitmap ?? this.mediaState.offscreen ?? null;
+    if (canvas.width !== width) canvas.width = width;
+    if (canvas.height !== height) canvas.height = height;
+    this.canvasW = width;
+    this.canvasH = height;
+    this.updateScaledDimensions();
+    this.resources.recreateScaleTextures(
+      device, this.canvasW, this.canvasH, this.scaledW, this.scaledH, this.colorFormat,
+    );
+    this.rebuildComputeBindGroup();
+    this.lastBlitReadTex = null;
+    if (this.inputSource === 'generative') return;
+    if (!sizeChanged) {
+      restoreSourceFromOffscreen(this.getMediaContext(), this.mediaState);
+    } else if (prior) {
+      await ingestDecodedImage(() => this.getMediaContext(), this.mediaState, prior, prior.width, prior.height);
+    }
+  }
+
   async loadShader(id: string, url: string): Promise<boolean> {
     const ok = await this.pipeline.shaderManager.loadShader(
       this.device, this.pipeline.pipelineLayout, id, url,
@@ -1125,6 +1366,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   addRipple(x: number, y: number): void {
+    // Live clicks must not land in an offline render (its input is the snapshot).
+    if (this.offline) return;
     if (this.ripples.length >= MAX_RIPPLES) this.ripples.shift();
     this.ripples.push({ x, y, startTime: this.currentTime });
   }
@@ -1202,6 +1445,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   setResolutionScale(scale: number): void {
     const snapped = Math.round(Math.max(0.25, Math.min(1.0, scale)) * 8) / 8;
+    if (this.offline) {
+      // The page's performance policy keeps running during a job: apply its choice afterwards.
+      this.offline.live.resolutionScale = snapped;
+      return;
+    }
     if (this.resolutionScale === snapped) return;
     this.resolutionScale = snapped;
     this.updateScaledDimensions();
@@ -1220,6 +1468,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   setColorFormat(format: InternalColorFormat): void {
+    if (this.offline) {
+      // A format change recreates every working texture (and wipes simulation state).
+      this.offline.live.colorFormat = format;
+      return;
+    }
     if (this.colorFormat === format) return;
     this.colorFormat = format;
     this.gpuChores.setColorFormat(format);
@@ -1247,8 +1500,10 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   setAdaptiveQuality(enabled: boolean, targetFPS = 60): void {
-    this.adaptiveQuality = enabled;
     this.targetFPS = targetFPS;
+    // Adaptive quality reacts to FPS; an offline frame's FPS says nothing about quality.
+    if (this.offline) this.offline.live.adaptiveQuality = enabled;
+    else this.adaptiveQuality = enabled;
   }
 
   private updateScaledDimensions(): void {
@@ -1278,8 +1533,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       set context(v) { r.context = v; },
       get initialized() { return r.initialized; },
       set initialized(v) { r.initialized = v; },
-      get startTime() { return r.startTime; },
-      set startTime(v) { r.startTime = v; },
+      get clock() { return r.clock; },
+      set clock(v) { r.clock = v; },
       get currentTime() { return r.currentTime; },
       set currentTime(v) { r.currentTime = v; },
       get animationId() { return r.animationId; },
@@ -1395,6 +1650,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   }
 
   beforeFrame(): void {
+    // Offline frames take their input from renderFrameAt's snapshot only (the worker's
+    // live SAB ring is not drained into them).
+    if (this.offline) return;
     this.beforeFrameHook?.();
   }
 
@@ -1421,7 +1679,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
    * COPY_SRC needed). Resolves null when no frame will come (teardown).
    */
   grabPresentedFrame(timestampUs: number): Promise<VideoFrame | null> {
-    if (!this.initialized || !this.presentCanvas || typeof VideoFrame === 'undefined') {
+    // An offline job owns every presented frame: a live recorder skips ticks meanwhile.
+    if (!this.initialized || !this.presentCanvas || typeof VideoFrame === 'undefined' || this.offline) {
       return Promise.resolve(null);
     }
     return new Promise((resolve) => this.frameGrabs.push({ timestampUs, resolve }));
@@ -1434,7 +1693,11 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
         continue;
       }
       try {
-        grab.resolve(new VideoFrame(canvas, { timestamp: grab.timestampUs, alpha: 'discard' }));
+        grab.resolve(new VideoFrame(canvas, {
+          timestamp: grab.timestampUs,
+          ...(grab.durationUs !== undefined ? { duration: grab.durationUs } : {}),
+          alpha: 'discard',
+        }));
       } catch (e) {
         console.warn('[WebGPU] frame grab failed:', e);
         grab.resolve(null);
@@ -1455,7 +1718,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
 
   /** Render-worker video: frames arrive as transfers (null when the source stops). */
   setTransferredVideo(source: TransferredVideoFrames | null): void {
-    this.videoIngest.setExternalSource(source);
+    this.liveTransferredVideo = source;
+    // An offline job keeps its own source; the live one is restored when it ends.
+    if (!this.offline) this.videoIngest.setExternalSource(source);
   }
 
   getVideoIngestStats(): VideoIngestStats {
@@ -1648,6 +1913,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.nodeScales.clear();
     this.videoIngest.detach();
     this.resolveFrameGrabs(null);
+    // An offline job dies with its device; the next init starts live.
+    this.offline?.video.detach();
+    this.offline = null;
     this.initialized = false;
     this.gpuChores.destroy();
     this.simRing.destroy();

@@ -15,6 +15,8 @@ import type { MyVjSet } from '../../../services/myVjSets';
 import type { UseProjectFileReturn } from '../../../hooks/useProjectFile';
 import { ProjectFilePanel } from './ProjectFilePanel';
 import { usePersistedToggle } from '../../../hooks/usePersistedToggle';
+import type { UseOfflineRenderReturn } from '../../../hooks/useOfflineRender';
+import { RenderPanel } from './RenderPanel';
 
 export interface VjStudioPanelProps {
     studioOpen: boolean;
@@ -26,6 +28,8 @@ export interface VjStudioPanelProps {
     liveControl: UseLiveControlReturn;
     osc?: UseOscControlReturn;
     recorder?: UseSetRecorderReturn;
+    /** VJ Studio → Render (#1401): offline export of the recorded set. */
+    offlineRender?: UseOfflineRenderReturn;
     isAiVjMode: boolean;
     autoTransitionOpen: boolean;
     setAutoTransitionOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -78,6 +82,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     liveControl,
     osc,
     recorder,
+    offlineRender,
     isAiVjMode,
     autoTransitionOpen,
     setAutoTransitionOpen,
@@ -109,6 +114,7 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
     const [shareOpen, setShareOpen] = usePersistedToggle('vj.share', true);
     const [midiOpen, setMidiOpen] = usePersistedToggle('vj.midi', true);
     const [oscOpen, setOscOpen] = usePersistedToggle('vj.osc', () => osc?.oscEnabled ?? false);
+    const [renderOpen, setRenderOpen] = usePersistedToggle('vj.render', false);
     // A section restored as open never fires its open handler, so seed its data here.
     const [history, setHistory] = useState<VJHistoryEntry[]>(() => (historyOpen ? loadVJHistory() : []));
     const [myVjSets, setMyVjSets] = useState<MyVjSet[]>(() => (setsOpen ? loadMyVjSets() : []));
@@ -403,6 +409,21 @@ export const VjStudioPanel: React.FC<VjStudioPanelProps> = ({
                             </div>
                         )}
                     </div>
+
+                    {/* Render (#1401): offline, frame-accurate export of the recorded set */}
+                    {recorder && offlineRender && (
+                        <div>
+                            <div
+                                className="gold-section-header"
+                                style={{ fontSize: '11px', marginTop: 0, cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}
+                                onClick={() => setRenderOpen(o => !o)}
+                            >
+                                <span>🎞 Render{offlineRender.busy ? ' ●' : ''}</span>
+                                <span>{renderOpen ? '▼' : '▶'}</span>
+                            </div>
+                            {renderOpen && <RenderPanel offline={offlineRender} recorder={recorder} slotCount={modes.length} />}
+                        </div>
+                    )}
 
                     {/* My sets */}
                     {onApplySharedChain && (

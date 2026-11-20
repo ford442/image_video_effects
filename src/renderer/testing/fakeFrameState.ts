@@ -9,6 +9,7 @@ import { CONSERVATIVE_BINDING_USAGE, ShaderBindingUsage } from '../ShaderCompila
 import { createAudioDepthState } from '../webgpu/audioDepth';
 import type { WebGPUFrameState } from '../webgpu/frameState';
 import { createDisabledTimestampQueries } from '../webgpu/WebGPUTiming';
+import { createSteppedClock } from '../webgpu/renderClock';
 import { PHYSICAL_SLOT_LIMIT } from '../slotOrchestrator';
 import type { ShaderSlot, SlotMode } from '../webgpu/webgpuConstants';
 import type { FakeGpu } from './fakeGpu';
@@ -51,7 +52,7 @@ export function createFakeFrameState(
     device: fake.device,
     context: { getCurrentTexture: () => canvasTex } as unknown as GPUCanvasContext,
     initialized: true,
-    startTime: 0,
+    clock: createSteppedClock(60, 1),
     currentTime: 1,
     animationId: null,
 
