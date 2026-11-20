@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, semantic-alpha
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: neon tube core + halo; neon threshold fringe; failing-tube flicker
+//  Upgraded: 2026-10-05, 2026-11-19
+//  Ideas: neon tube core + halo; neon threshold fringe; failing-tube flicker; gas striations; phosphor afterglow
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  Detects edges in the source, overlays glowing neon halos that
@@ -32,7 +32,7 @@ fn valueNoise(p: vec2<f32>) -> f32 {
     );
 }
 
-fn sobel(uv: vec2<f32>, ps: vec2<f32>) -> f32 {
+fn sobel(uv: vec2<f32>, ps: vec2<f32>) -> vec3<f32> {
     let tl = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(-ps.x,  ps.y), 0.0).rgb;
     let tc = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>( 0.0,   ps.y), 0.0).rgb;
     let tr = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>( ps.x,  ps.y), 0.0).rgb;
@@ -45,7 +45,7 @@ fn sobel(uv: vec2<f32>, ps: vec2<f32>) -> f32 {
     let luma = vec3<f32>(0.299, 0.587, 0.114);
     let gx = dot(-tl + tr - 2.0*ml + 2.0*mr - bl + br, luma);
     let gy = dot( tl + 2.0*tc + tr - bl - 2.0*bc - br, luma);
-    return sqrt(gx*gx + gy*gy);
+    return vec3<f32>(gx, gy, sqrt(gx * gx + gy * gy));
 }
 
 // Neon hue from angle
@@ -92,9 +92,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Source colour
     let src = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
 
-    // Edge magnitude
-    var edge = sobel(uv, ps * glowRadius);
-    edge = clamp(edge * edgeSharpness, 0.0, 1.0);
+    // Edge magnitude. The wide tap is the halo; the 1-px tap below keeps the gradient.
+    let wide = sobel(uv, ps * glowRadius);
+    var edge = clamp(wide.z * edgeSharpness, 0.0, 1.0);
     edge = edge * (1.0 + bass * 2.0);
 
     let aspect = dims.x / dims.y;
@@ -117,7 +117,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Idea 1: neon tube core + halo — a 1-px Sobel tap marks the glass
     // centre of each tube; it burns near-white inside the wide coloured
     // halo that GlowRadius spreads.
-    let coreEdge  = clamp(sobel(uv, ps) * edgeSharpness, 0.0, 1.0);
+    let coreTap = sobel(uv, ps);
+    let coreEdge  = clamp(coreTap.z * edgeSharpness, 0.0, 1.0);
     let core      = smoothstep(0.55, 0.95, coreEdge) * clamp(edge, 0.0, 1.0);
 
     // Idea 3: failing-tube flicker — coarse sign "segments" occasionally
@@ -135,7 +136,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let angle     = atan2(uv.y - 0.5, uv.x - 0.5) + time * 0.5 + bass * PI;
     let neonCol   = neonColor(angle, neonSat);
     let tubeCore  = mix(neonCol, vec3<f32>(1.0, 0.98, 0.95), 0.75) * core * 0.65 * (1.0 + bass);
-    let neonGlow  = (neonCol * edge * (1.0 + bass * 1.5) + tubeCore) * flick;
+    // ── Idea 4: gas striations ────────────────────────────────────
+    // The core Sobel gradient was only a magnitude. Bands run along
+    // the tube, so they vary across its tangent.
+    let glen = length(coreTap.xy);
+    let tubeTangent = vec2<f32>(-coreTap.y, coreTap.x) / max(glen, 0.0001);
+    let along = dot((uv - 0.5) * vec2<f32>(aspect, 1.0), tubeTangent);
+    let stria = 0.7 + 0.3 * sin(along * 64.0 + time * 4.5);
+    let striaMix = smoothstep(0.04, 0.35, glen) * clamp(edge, 0.0, 1.0);
+    let neonGlow  = (neonCol * edge * (1.0 + bass * 1.5) + tubeCore) * flick * mix(1.0, stria, striaMix);
 
     // Interior dissolve into colour noise
     let noiseUV   = uv * 18.0 + vec2<f32>(time * 3.2, time * 1.9);
@@ -155,8 +164,17 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     interior      = mix(interior, noiseCol, eaten);
     let fringeCol = neonCol * fringe * 0.9 * (1.0 + bass) * flick;
 
+    // ── Idea 5: phosphor afterglow ───────────────────────────────
+    // C is the previous display. The excess over the photo is leftover
+    // tube light, and it is held back where a tube is currently lit.
+    let prev = textureLoad(dataTextureC, coord, 0);
+    let prevL = dot(prev.rgb, vec3<f32>(0.299, 0.587, 0.114));
+    let prevChroma = length(prev.rgb - vec3<f32>(prevL));
+    let leftover = max(prev.rgb - src.rgb, vec3<f32>(0.0));
+    let after = leftover * clamp(prevChroma * 3.0, 0.0, 1.0) * 0.62 * (1.0 - clamp(edge, 0.0, 1.0));
+
     // Blend: edges overlay on interior, then ACES on display RGB
-    var finalRGB = interior + neonGlow + fringeCol;
+    var finalRGB = interior + neonGlow + fringeCol + after;
     finalRGB = acesToneMap(max(finalRGB, vec3<f32>(0.0)));
 
     // Semantic alpha: eaten interior loses coverage, neon light keeps it

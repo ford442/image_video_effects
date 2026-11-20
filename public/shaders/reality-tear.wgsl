@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  Swarm upgrade 2026-08-02: spring-damped tear center, click rifts,
-//  angular FFT sector voices + per-sector treble burn flicker.
+//  Upgraded: 2026-05-23, 2026-11-19
+//  Ideas: torn-paper curl; fiber pull; void parallax
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -35,6 +16,16 @@ const TAU: f32 = 6.28318530718;
 fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
     return fract(sin(h) * 43758.5453123);
+}
+
+fn aces(x_in: vec3<f32>) -> vec3<f32> {
+    let x = max(x_in, vec3<f32>(0.0));
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn valueNoise2D(p: vec2<f32>) -> f32 {
@@ -122,14 +113,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let currentRadius = radiusBase + (noiseVal - 0.5) * jaggedness * radiusBase;
 
-    // Base sample (full vec4 to preserve alpha)
-    let baseSample = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    // ── Idea 1: torn-paper curl ───────────────────────────────────
+    // The lip lifts along the tangent of the existing rim. Away from
+    // the rim the offset is zero and the photo is unmoved.
+    let radial = uv_c - mouse_c;
+    let radialDir = radial / max(length(radial), 0.0001);
+    let tangent = vec2<f32>(-radialDir.y, radialDir.x);
+    let edgeLift = 1.0 - smoothstep(0.0, max(borderWidth * 3.0, 0.004), abs(dist - currentRadius));
+    let curl = tangent * edgeLift * max(borderWidth, 0.002) * (1.4 + jaggedness);
+    // ── Idea 2: fiber pull ────────────────────────────────────────
+    // Sparse angle bins just outside the hole yank the photo inward.
+    // Jaggedness still owns how hard they pull.
+    let fiber = smoothstep(0.62, 0.9, hash21(vec2<f32>(floor((angle + PI) * 18.0), 3.7)));
+    let pastRim = dist - currentRadius;
+    let outsideBand = smoothstep(0.0, max(borderWidth, 0.004), pastRim)
+                    * (1.0 - smoothstep(0.0, 0.05 + jaggedness * 0.06, pastRim));
+    let pull = -radialDir * fiber * outsideBand * (0.01 + jaggedness * 0.028);
+    let tearWarp = curl + pull;
+    let photoUV = clamp(uv + vec2<f32>(tearWarp.x / aspectRatio, tearWarp.y), vec2<f32>(0.0), vec2<f32>(1.0));
+
+    let baseSample = textureSampleLevel(readTexture, u_sampler, photoUV, 0.0);
     let baseRGB = baseSample.rgb;
     let baseA = baseSample.a;
 
-    // Void region
+    // ── Idea 3: void parallax ─────────────────────────────────────
+    // The hole looks through to a slightly enlarged copy. Static Noise
+    // still scales the hash that is mixed over that copy.
     let staticNoise = hash21(uv * 100.0 + time);
-    let distUV = clamp(uv + vec2<f32>(staticNoise * 0.05), vec2<f32>(0.0), vec2<f32>(1.0));
+    let through = tearPos + (uv - tearPos) * 1.12;
+    let distUV = clamp(through + vec2<f32>(staticNoise * 0.05), vec2<f32>(0.0), vec2<f32>(1.0));
     let distortedSample = textureSampleLevel(readTexture, u_sampler, distUV, 0.0);
     let voidStatic = vec3<f32>(staticNoise * staticAmt);
     let inverted = vec3<f32>(1.0) - distortedSample.rgb;
@@ -186,8 +198,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let alpha = clamp(baseA * 0.4 + voidMask * 0.4 + borderMask * 0.6 + edgeProx * 0.3 + bass * 0.1, 0.0, 1.0);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+    let display = aces(finalRGB);
 
-    textureStore(writeTexture, coord, vec4<f32>(finalRGB, alpha));
+    textureStore(writeTexture, coord, vec4<f32>(display, alpha));
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(finalRGB, alpha));
+    textureStore(dataTextureA, coord, vec4<f32>(display, alpha));
 }

@@ -4,7 +4,9 @@
   "url": "shaders/mirror-dimension.wgsl",
   "description": "A rotating kaleidoscope that fractures reality. Mouse moves the center of symmetry.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

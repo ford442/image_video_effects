@@ -11732,7 +11732,8 @@
       "trails",
       "depth-aware",
       "16x16-workgroup"
-    ]
+    ],
+    "updated": true
   },
   {
     "id": "stipple-engraving",

@@ -3,31 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-08-30
+//  Upgraded: 2026-08-30, 2026-11-19
+//  Ideas: orbit-trap veins; interior windows
 //  A packing: ACES display RGBA
 //  Motion: nested zoom-burst packets + orbital pointer spin
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -45,15 +27,18 @@ fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
   return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
 }
 
-fn mandelbrot(c: vec2<f32>, maxIter: i32) -> vec2<f32> {
+fn mandelbrot(c: vec2<f32>, maxIter: i32) -> vec3<f32> {
   var z = vec2<f32>(0.0);
   var i = 0;
+  var trap = 1000000.0;
   for (; i < maxIter; i = i + 1) {
     if (dot(z, z) > 4.0) { break; }
     z = vec2<f32>(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+    // ── Idea 1: orbit trap (§12.2E) ──────────────────────────────
+    trap = min(trap, length(z));
   }
   let smoothI = select(f32(i), f32(i) - log2(log2(max(dot(z, z), 1.0001))) + 4.0, dot(z, z) > 1.0);
-  return vec2<f32>(smoothI, f32(maxIter));
+  return vec3<f32>(smoothI, f32(maxIter), trap);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -121,6 +106,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let paletteT = fract(baseIter / 50.0 + time * paletteSpeed * 0.1 + binA * 0.05);
   var mandelColor = palette(paletteT, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 0.9, 0.75), vec3<f32>(0.0, 0.33, 0.67));
   let insideSet = baseIter >= baseResult.y - 0.5;
+  // ── Idea 1: orbit-trap veins ──────────────────────────────────
+  // Closest approach during the existing iteration, multiplied into
+  // the existing palette. The inside colour is still replaced below.
+  let vein = exp(-clamp(baseResult.z, 0.0, 6.0) * 6.0);
+  mandelColor = mandelColor * (1.0 + vein * vec3<f32>(0.5, 0.32, 0.12));
   var finalColor = select(mandelColor, vec3<f32>(0.02, 0.0, 0.04), insideSet);
   var finalIter = baseIter;
   var portalAmt = 0.0;
@@ -139,7 +129,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       + (uv - portalCenter) * vec2<f32>(depthScale * aspect, depthScale);
     let portalResult = mandelbrot(portalCoord, maxIterBase + 16);
     let portalT = fract(portalResult.x / 50.0 + time * paletteSpeed * 0.1 + f32(i) * 0.2);
-    let portalColor = palette(portalT, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 0.8, 0.6), vec3<f32>(0.1, 0.4, 0.7));
+    let pVein = exp(-clamp(portalResult.z, 0.0, 6.0) * 6.0);
+    let portalColor = palette(portalT, vec3<f32>(0.5), vec3<f32>(0.5), vec3<f32>(1.0, 0.8, 0.6), vec3<f32>(0.1, 0.4, 0.7))
+      * (1.0 + pVein * vec3<f32>(0.45, 0.28, 0.1));
     let pInside = portalResult.x >= portalResult.y - 0.5;
     let pColor = select(portalColor, vec3<f32>(0.05, 0.0, 0.1), pInside);
     let edgeGlow = smoothstep(portalRadius, portalRadius * 0.85, portalDist) - smoothstep(portalRadius * 0.85, portalRadius * 0.7, portalDist);
@@ -153,6 +145,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   var hdr = mix(finalColor, inputColor.rgb * 0.45 + finalColor * 0.55, 0.28);
+  // ── Idea 2: interior windows ──────────────────────────────────
+  // The bulbs open onto the photo. Portal Blend owns the opening;
+  // at 0 the interior stays the flat dark colour above.
+  let bulb = select(0.0, 1.0, insideSet) * portalBlend * exp(-clamp(baseResult.z, 0.0, 6.0) * 2.0);
+  hdr = mix(hdr, inputColor.rgb, bulb);
   hdr = mix(hdr, hist.rgb, 0.12 * (1.0 - portalAmt));
   hdr = hdr + vec3<f32>(0.55, 0.85, 1.0) * portalAmt * (0.15 + treble * 0.1 + binB * 0.06);
   let luma = dot(hdr, vec3<f32>(0.2126, 0.7152, 0.0722));

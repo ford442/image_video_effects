@@ -3,11 +3,9 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: heat-shimmer refraction; scorch band; fractal pinholes
+//  Upgraded: 2026-10-05, 2026-11-19
+//  Ideas: heat-shimmer refraction; scorch band; fractal pinholes; char cracks; ember lift
 //  A packing: ACES display RGBA
-// ═══════════════════════════════════════════════════════════════════
-//  Upgraded: 2026-08-01 (Batch 23)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -155,6 +153,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let sepia = luma * vec3<f32>(0.62, 0.40, 0.22);
     baseColor = vec4<f32>(mix(baseColor.rgb, sepia, scorch * 0.6) * (1.0 - scorch * 0.45), baseColor.a);
 
+    // ── Idea 4: char cracks ───────────────────────────────────────
+    // Ridges of the erosion noise the front already uses. They darken
+    // only the scorched photo, so the unburned frame is unchanged.
+    let ridge = 1.0 - abs(fract(n * 3.0) - 0.5) * 2.0;
+    let crack = smoothstep(0.86, 0.97, ridge) * scorch;
+    baseColor = vec4<f32>(baseColor.rgb * (1.0 - crack * 0.82), baseColor.a);
+
     let edge = max(max(1.0 - smoothstep(radius, radius + edgeWidth * 2.0, contour), clickEdge), pinEdge);
     let burnRaw = vec3<f32>(1.0, 0.45 + treble * 0.2, 0.18 + mids * 0.2)
       * edge * burnColor * 4.0 * (1.0 - mask);
@@ -163,6 +168,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Edge glow from audio
     let edgeGlow = vec3<f32>(0.5 + bass * 0.3, 0.3, 0.8) * edge * bass * 0.5;
     var finalColor = baseColor.rgb * mask + burn + edgeGlow;
+    // ── Idea 5: ember lift ────────────────────────────────────────
+    // Sparse cells in the burned hole scroll upward. Burn Intensity
+    // still owns how bright they are.
+    let emberCell = floor(uv * vec2<f32>(aspect, 1.0) * 120.0 + vec2<f32>(0.0, time * 16.0));
+    let emberH = hash22(emberCell);
+    let ember = step(0.997, emberH.x) * (1.0 - mask) * burnAmt;
+    finalColor = finalColor + vec3<f32>(1.0, 0.4 + emberH.y * 0.25, 0.08) * ember * (0.7 + emberH.y);
     finalColor = acesToneMap(max(finalColor * depthFade, vec3<f32>(0.0)));
     let alpha = clamp(baseColor.a * mask + edge * 0.42 + bass * 0.05, 0.04, 1.0);
     let depthOut = clamp(depth + edge * 0.06 - scorch * 0.02, 0.0, 1.0);

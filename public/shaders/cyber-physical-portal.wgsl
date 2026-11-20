@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
-//  Cyber Physical Portal — Batch 66
-//  fp128 Kerr lensing angle, closed-form accretion runners, racing rim
-//  packets, C smear through the throat, capped click EMP, held deepens
-//  well, ACES + semantic alpha.
+//  Cyber Physical Portal
+//  Category: visual-effects
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-19
+//  Ideas: fp128 frame-drag; accretion runners; rim packets; throat smear; photon ring; Doppler beaming
+//  A packing: throat-smear RGB + alpha (C is smear history)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -130,6 +133,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var portalColor = mix(chromaticLensed, chromaticLensed * vec3<f32>(0.3, 0.95, 0.55) + cyanMagenta * 0.4, 0.5);
   portalColor = portalColor + hologram;
   portalColor = portalColor + cyanMagenta * rimMask * glow * 0.6;
+
+  // ── Idea 1: photon ring ───────────────────────────────────────
+  // A tight orbit between the horizon and the outer rim, warmer and
+  // thinner than the four accretion bands.
+  let photonR = eventHorizon + (portalRadius - eventHorizon) * 0.62;
+  let photon = exp(-abs(dist - photonR) * 220.0) * (1.0 - coreMask);
+  portalColor = portalColor + vec3<f32>(1.0, 0.9, 0.62) * photon * (0.45 + glow);
+
+  // ── Idea 2: Doppler beaming ───────────────────────────────────
+  // The approaching limb brightens. Swirl Amount is the spin; at 0
+  // the disk is flat.
+  let spinK = clamp(lensingStrength / 4.5, 0.0, 1.0);
+  let doppler = 1.0 + spinK * 0.42 * cos(angle);
+  portalColor = portalColor * mix(1.0, doppler, mask * (1.0 - coreMask));
 
   var clickBurst = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);

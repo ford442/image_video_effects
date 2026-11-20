@@ -2884,8 +2884,17 @@
       ]
     },
     "mirror-dimension": {
-      "hash": "9854cadb59a90167",
-      "history": []
+      "hash": "b704513d3c5f75db",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "b704513d3c5f75db",
+          "prev_hash": "9854cadb59a90167",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
+        }
+      ]
     },
     "mosaic-reveal": {
       "hash": "ee96a5b3100c364e",
@@ -14048,7 +14057,7 @@
       ]
     },
     "fractal-noise-dissolve": {
-      "hash": "22baceae9ae749b8",
+      "hash": "e6c3cd43726f495e",
       "history": [
         {
           "event": "upgraded",
@@ -14065,6 +14074,14 @@
           "prev_hash": "8e73e2dd2f4c0b0d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "e6c3cd43726f495e",
+          "prev_hash": "22baceae9ae749b8",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
         }
       ]
     },
@@ -14389,7 +14406,7 @@
       ]
     },
     "neon-pulse-dissolve": {
-      "hash": "4b4bc72e4f74a3d5",
+      "hash": "7a652a358315a087",
       "history": [
         {
           "event": "upgraded",
@@ -14398,6 +14415,14 @@
           "prev_hash": "6b2ad2a973bb774c",
           "commit": "0910248e",
           "note": "2026-10-05 dissolve & reveal ten (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-dissolve-reveal-ten/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "7a652a358315a087",
+          "prev_hash": "4b4bc72e4f74a3d5",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
         }
       ]
     },
@@ -16956,8 +16981,17 @@
       ]
     },
     "mouse-mandelbrot-zoom-portal": {
-      "hash": "184ae5d58371f0c8",
-      "history": []
+      "hash": "96776d891f540e20",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "96776d891f540e20",
+          "prev_hash": "184ae5d58371f0c8",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
+        }
+      ]
     },
     "mouse-neural-dreamscape": {
       "hash": "e844c1cc19b45900",
@@ -17610,8 +17644,17 @@
       ]
     },
     "quad-mirror": {
-      "hash": "17637d4e2b1ef557",
-      "history": []
+      "hash": "5d63abda144fd9f8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "5d63abda144fd9f8",
+          "prev_hash": "17637d4e2b1ef557",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
+        }
+      ]
     },
     "quantized-ripples": {
       "hash": "c998481491e47112",
@@ -17674,8 +17717,17 @@
       "history": []
     },
     "quantum-tunnel-interactive": {
-      "hash": "b6c2f4f6b5c4c9cc",
-      "history": []
+      "hash": "cacbe84abdb966d3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "cacbe84abdb966d3",
+          "prev_hash": "b6c2f4f6b5c4c9cc",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
+        }
+      ]
     },
     "radial-hex-lens": {
       "hash": "5e54c8ec622ccb0f",
@@ -17755,8 +17807,17 @@
       "history": []
     },
     "reality-tear": {
-      "hash": "90c9c38818303a9d",
-      "history": []
+      "hash": "e4a6a34675e41581",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "e4a6a34675e41581",
+          "prev_hash": "90c9c38818303a9d",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
+        }
+      ]
     },
     "refraction-shards": {
       "hash": "f1cbfd82f777b1c0",
@@ -18157,12 +18218,30 @@
       ]
     },
     "split-dimension": {
-      "hash": "9f1086c0cfb41acf",
-      "history": []
+      "hash": "38ca4ee1a3977f97",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "38ca4ee1a3977f97",
+          "prev_hash": "9f1086c0cfb41acf",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
+        }
+      ]
     },
     "stereoscopic-3d": {
-      "hash": "bc5d4f9c896eb8bc",
-      "history": []
+      "hash": "93d209fcda42201d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "93d209fcda42201d",
+          "prev_hash": "bc5d4f9c896eb8bc",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
+        }
+      ]
     },
     "stipple-engraving": {
       "hash": "dfd5a2c32de410cd",
@@ -21441,7 +21520,7 @@
       ]
     },
     "cyber-physical-portal": {
-      "hash": "fb8d0b3b85a2b1e5",
+      "hash": "3835ba2787be7f6b",
       "history": [
         {
           "event": "upgraded",
@@ -21450,6 +21529,14 @@
           "prev_hash": "e007424a4c49533d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T21:02:02.017Z",
+          "hash": "3835ba2787be7f6b",
+          "prev_hash": "fb8d0b3b85a2b1e5",
+          "commit": "7a6adff5",
+          "note": "2026-11-19 mirror/portal ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-mirror-portal-ten/BRIEFS.md"
         }
       ]
     },
