@@ -53,6 +53,13 @@ export class ModRouter {
     this.live = routes.map((route) => ({ route, source: createSourceEvaluator(route.source) }));
   }
 
+  /** Fresh evaluators for the same routes (no carried envelope / sample-and-hold state). */
+  reset(): void {
+    this.live = this.live.map(({ route }) => ({ route, source: createSourceEvaluator(route.source) }));
+    this.sums.clear();
+    this.lastSources = [];
+  }
+
   get routeCount(): number {
     return this.live.length;
   }

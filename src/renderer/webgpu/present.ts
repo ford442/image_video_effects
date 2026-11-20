@@ -58,7 +58,16 @@ export class WebGPUPresenter {
   /** The layout is rebuilt with the present pipelines (HDR on / off, colour format). */
   private scaleBindGroupLayout: GPUBindGroupLayout | null = null;
   /** Live cue crossfade: the frozen previous picture mixed in by the present pass. */
-  private readonly hold = new PresentHold();
+  private readonly hold: PresentHold;
+
+  /**
+   * `clockMs` is the crossfade ramp's time source: the frame loop passes the frame's
+   * simulation time, so a cue fades over render time (stepped offline renders included).
+   */
+  constructor(clockMs?: () => number) {
+    this.hold = new PresentHold(clockMs);
+  }
+
   /** What the last present drew (a cue's hold is a copy of exactly that); null before the first. */
   private presented: { device: GPUDevice; generative: boolean; format: GPUTextureFormat } | null = null;
 

@@ -33,6 +33,9 @@ import type { DirectPresentStatus, ShaderPrecisionInfo } from '../WebGPURenderer
 import type { CanvasColorState, DisplayP3Result, WebGpuProbeSerializable } from '../webgpuBootProbe';
 import type { ResolvedRoute } from '../../modulation/types';
 import type { AttachOutputResult, OutputStatus } from '../webgpu/outputs';
+import type { FrameInputSnapshot, OfflineRenderInfo, OfflineRenderOptions } from '../offlineRender';
+
+export type { FrameInputSnapshot, OfflineRenderInfo, OfflineRenderOptions };
 
 /** What the worker scope supports (sent once, before init). */
 export interface RenderWorkerCaps {
@@ -135,6 +138,8 @@ export interface RenderInitInfo {
   adapterSummary?: string;
   adapterAttemptLabel?: string | null;
   supportsSubgroups?: boolean;
+  /** The worker device's limit: the largest offline output edge (#1401). */
+  maxTextureDimension2D?: number;
   lastInitError?: string;
 }
 
@@ -178,6 +183,16 @@ export type RenderRpc =
       height: number;
       config: unknown;
     }
+  /**
+   * Offline render (#1401): stop the rAF loop and step a fresh clock at `options.fps`, at
+   * `options.width × height`. The worker drops live `frameInput` / `videoFrame` until
+   * `endOfflineRender`; renderFrameAt snapshots are the only input.
+   */
+  | { type: 'beginOfflineRender'; requestId: number; options: OfflineRenderOptions }
+  /** One frame at exactly `timeSec` from `input`; answers the presented VideoFrame (transferred). */
+  | { type: 'renderFrameAt'; requestId: number; timeSec: number; input: FrameInputSnapshot }
+  /** Back to the live size, clock and rAF loop. */
+  | { type: 'endOfflineRender'; requestId: number }
   | { type: 'dispose'; requestId: number };
 
 export interface CompileMessage {
@@ -199,6 +214,9 @@ export interface RenderRpcResults {
   compileCheck: CompileMessage[];
   benchmarkUncapped: UncappedBenchResult | null;
   attachOutput: AttachOutputResult;
+  beginOfflineRender: OfflineRenderInfo;
+  renderFrameAt: VideoFrame | null;
+  endOfflineRender: true;
   dispose: true;
 }
 
@@ -235,6 +253,8 @@ export interface RenderSnapshot {
   canvasColor?: CanvasColorState;
   /** Attached stage outputs (webgpu/outputs.ts). */
   outputs?: OutputStatus[];
+  /** An offline render owns the renderer (#1401): the rAF loop is stopped. */
+  offlineRender?: boolean;
   /** How page input reaches the worker. */
   inputChannel: 'sab' | 'postMessage';
   /** The input the worker's renderer currently holds (proves the channel works). */
@@ -303,6 +323,9 @@ export const RENDER_RPC_TYPES = [
   'compileCheck',
   'benchmarkUncapped',
   'attachOutput',
+  'beginOfflineRender',
+  'renderFrameAt',
+  'endOfflineRender',
   'dispose',
 ] as const;
 
@@ -331,6 +354,8 @@ export function transferablesOf(message: RenderToWorker | RenderEvent): Transfer
       return [message.data.buffer];
     case 'frameInput':
       return message.input.bins ? [message.input.bins.buffer] : [];
+    case 'renderFrameAt':
+      return message.input.videoFrame ? [message.input.videoFrame as unknown as Transferable] : [];
     default:
       return [];
   }

@@ -14,6 +14,7 @@ import {
   type WebGpuProbeHandoff,
 } from './backendLifecycle';
 import * as inputBridge from './inputSourceBridge';
+import type { FrameInputSnapshot, OfflineRenderInfo, OfflineRenderOptions } from './offlineRender';
 import {
   PerformancePolicyState,
   RendererPerformanceStatus,
@@ -613,10 +614,12 @@ export class RendererManager {
     return loadShadersForBackend(this.backend(), this.slotPolicy(), this.slotCallbacks(), shaders, this.loadShaderBound);
   }
   setActiveShader(id: string): void {
+    if (this.heldForOfflineJob()) return;
     this.fireArmedCrossfade(this.activeShaderChangesPicture(id));
     setActiveShader(this.backend(), id);
   }
   setSlotShader(index: number, id: string): void {
+    if (this.heldForOfflineJob()) return;
     this.fireArmedCrossfade(this.slotChangesPicture(index, { shaderId: id || null, enabled: !!id }));
     setSlotShader(this.backend(), this.slotPolicy(), index, id);
   }
@@ -647,6 +650,7 @@ export class RendererManager {
   }
   setSlotMode(index: number, mode: 'chained' | 'parallel'): void {
     if (index >= 0 && index < PHYSICAL_SLOT_LIMIT) this.slotModes[index] = mode;
+    if (this.heldForOfflineJob()) return;
     const before = this.currentRenderer?.getSlotState?.(index) ?? null;
     // Only a slot that renders something changes the picture when its mode flips.
     this.fireArmedCrossfade(!!before?.enabled && !!before.shaderId && before.mode !== mode);
@@ -657,6 +661,7 @@ export class RendererManager {
     if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return;
     const next = normalizeSlotLayer(layer);
     this.slotLayers[index] = next;
+    if (this.heldForOfflineJob()) return;
     const r = this.shaderRenderer();
     if (isWebGpuBackend(r)) r.setSlotLayer?.(index, next);
   }
@@ -704,6 +709,7 @@ export class RendererManager {
     return false;
   }
   setInputSource(source: InputSource): void {
+    if (this.heldForOfflineJob()) return;
     this.lastInputSource = source;
     inputBridge.setInputSource(this.currentRenderer, source);
   }
@@ -721,6 +727,8 @@ export class RendererManager {
     clearRipples(this.backend());
   }
   async loadImage(url: string): Promise<string> {
+    // The live image changes after the job (restoreLive reloads the current one).
+    if (this.heldForOfflineJob()) return url;
     this.lastImageUrl = url;
     const resolved = await inputBridge.loadImage(this.currentRenderer, url);
     if (resolved) this.lastImageUrl = resolved;
@@ -892,6 +900,115 @@ export class RendererManager {
     if (isWasmBackend(r)) return r.getPassTimings();
     return [];
   }
+  // ── Offline render (#1401): stepped clock, renderFrameAt, TS WebGPU only ────────
+
+  /** True when the active backend can render offline (TS WebGPU, page or render worker). */
+  supportsOfflineRender(): boolean {
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) && !!r.initialized && typeof r.beginOfflineRender === 'function';
+  }
+
+  /** The largest output edge an offline job can ask for (0 when no TS device). */
+  getMaxTextureDimension2D(): number {
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) ? r.getMaxTextureDimension2D() : 0;
+  }
+
+  isOfflineRenderActive(): boolean {
+    const r = this.shaderRenderer();
+    return isWebGpuBackend(r) && r.isOfflineRenderActive();
+  }
+
+  async beginOfflineRender(options: OfflineRenderOptions): Promise<OfflineRenderInfo> {
+    const r = this.shaderRenderer();
+    if (!isWebGpuBackend(r)) throw new Error('offline render needs the TypeScript WebGPU renderer');
+    // A cue armed for the live picture must not fire on the job's first shader swap.
+    this.crossfadeArm.disarm();
+    // Hold live stack / source changes from now on: they would land mid-render.
+    this.offlineOwned = true;
+    try {
+      return await r.beginOfflineRender(options);
+    } catch (e) {
+      this.offlineOwned = false;
+      throw e;
+    }
+  }
+
+  async renderFrameAt(timeSec: number, input?: FrameInputSnapshot): Promise<VideoFrame | null> {
+    const r = this.shaderRenderer();
+    if (!isWebGpuBackend(r)) {
+      input?.videoFrame?.close();
+      throw new Error('offline render needs the TypeScript WebGPU renderer');
+    }
+    return r.renderFrameAt(timeSec, input);
+  }
+
+  async endOfflineRender(): Promise<void> {
+    this.offlineOwned = false;
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) await r.endOfflineRender();
+  }
+
+  /**
+   * The job's own stack / source calls (#1401). While a job owns the renderer, the same
+   * calls from the live UI (auto image switch, AutoDJ, roulette, a slider's shader pick)
+   * are held, so nothing lands mid-render; the job's restoreLive re-syncs the live state.
+   */
+  offlineJobControls(): {
+    setSlotShader: (index: number, id: string) => void;
+    setInputSource: (source: InputSource) => void;
+    loadImage: (url: string) => Promise<string>;
+  } {
+    return {
+      setSlotShader: (index, id) => this.asOfflineJob(() => this.setSlotShader(index, id)),
+      setInputSource: (source) => this.asOfflineJob(() => this.setInputSource(source)),
+      loadImage: (url) => this.asOfflineJob(() => this.loadImage(url)),
+    };
+  }
+
+  private offlineOwned = false;
+  private offlineBypass = 0;
+
+  private asOfflineJob<T>(fn: () => T): T {
+    this.offlineBypass++;
+    try {
+      return fn();
+    } finally {
+      this.offlineBypass--;
+    }
+  }
+
+  /** A live (non-job) call while an offline job owns the renderer. */
+  private heldForOfflineJob(): boolean {
+    return this.offlineOwned && this.offlineBypass === 0;
+  }
+
+  /** The live render target size (the canvas, before the working-size scale). */
+  getOutputSize(): { width: number; height: number } {
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) {
+      const { full } = r.getResolutionScale();
+      if (full.w > 0 && full.h > 0) return { width: full.w, height: full.h };
+    }
+    return { width: this.config.width, height: this.config.height };
+  }
+
+  /** The page's `<video>` the active backend ingests (null without one). */
+  getVideoElement(): HTMLVideoElement | null {
+    return inputBridge.readRendererVideo(this.currentRenderer);
+  }
+
+  /**
+   * Re-send the CPU-side still (image / last canvas) so it is letterboxed at the renderer's
+   * current size: an offline job calls it after resizing, and again after restoring.
+   */
+  async reloadInputStill(): Promise<boolean> {
+    const r = this.currentRenderer;
+    const still = inputBridge.readCpuInputBitmap(r);
+    if (!r?.loadImageFromElement || !still || still instanceof HTMLVideoElement) return false;
+    return !!(await r.loadImageFromElement(still));
+  }
+
   /** Bench only (#1080): vsync-free ms/frame from the active TS or C++ backend. */
   async benchmarkUncapped(frames: number): Promise<UncappedBenchResult | null> {
     return (await this.shaderRenderer()?.benchmarkUncapped?.(frames)) ?? null;

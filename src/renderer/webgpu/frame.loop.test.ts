@@ -5,6 +5,7 @@
 import { setRendererErrorHandler, type RendererError } from '../ErrorHandling';
 import { WebGPUFrameRenderer } from './frame';
 import type { WebGPUFrameState } from './frameState';
+import { createRealtimeClock } from './renderClock';
 
 describe('WebGPUFrameRenderer.startRenderLoop', () => {
   let queued: Array<() => void>;
@@ -32,7 +33,7 @@ describe('WebGPUFrameRenderer.startRenderLoop', () => {
   };
 
   it('keeps scheduling frames after renderFrame throws, and reports the error once', () => {
-    const state = { initialized: true, startTime: 0, currentTime: 0, animationId: null } as unknown as WebGPUFrameState;
+    const state = { initialized: true, clock: createRealtimeClock(), currentTime: 0, animationId: null } as unknown as WebGPUFrameState;
     const renderer = new WebGPUFrameRenderer();
     let calls = 0;
     vi.spyOn(renderer, 'renderFrame').mockImplementation(() => {
@@ -50,7 +51,7 @@ describe('WebGPUFrameRenderer.startRenderLoop', () => {
   });
 
   it('stops scheduling once the state is no longer initialized', () => {
-    const state = { initialized: true, startTime: 0, currentTime: 0, animationId: null } as unknown as WebGPUFrameState;
+    const state = { initialized: true, clock: createRealtimeClock(), currentTime: 0, animationId: null } as unknown as WebGPUFrameState;
     const renderer = new WebGPUFrameRenderer();
     vi.spyOn(renderer, 'renderFrame').mockImplementation(() => {
       state.initialized = false;

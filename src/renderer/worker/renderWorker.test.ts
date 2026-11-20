@@ -155,6 +155,17 @@ function fakeRenderer() {
     getOutputStatus: () => [...outputs].map(([id, o]) => ({
       id, width: o.width, height: o.height, format: 'bgra8unorm' as GPUTextureFormat, framesPresented: 3, singular: false,
     })),
+    offlineActive: false,
+    beginOfflineRender: vi.fn(async (options: { width: number; height: number; fps: number }) => {
+      r.offlineActive = true;
+      return { width: options.width, height: options.height, scaledW: options.width, scaledH: options.height, fps: options.fps, maxTextureDimension2D: 8192 };
+    }),
+    renderFrameAt: vi.fn(async (timeSec: number) => ({ timestamp: Math.round(timeSec * 1e6) }) as unknown as VideoFrame),
+    endOfflineRender: vi.fn(async () => {
+      r.offlineActive = false;
+    }),
+    isOfflineRenderActive: () => r.offlineActive,
+    getMaxTextureDimension2D: () => 8192,
   };
   /** What WebGPURenderer does when its device.lost resolves while rendering. */
   const lose = (reason = 'unknown') => {
@@ -375,6 +386,51 @@ describe('render worker host ↔ client', () => {
     await flushPorts();
     expect(fake.calls.map(([name]) => name)).toEqual(['updateMouse', 'setParam', 'setSlotParams', 'clearRipples', 'addRipple']);
     expect(fake.calls[2]![1]).toEqual([2, 0.1, 0.2, 0.3, 0.4]);
+  });
+
+  it('offline render (#1401): begin → renderFrameAt → end over RPCs, live input dropped in between', async () => {
+    const { mainPort, fake, posted } = setup();
+    const client = await connectRenderWorker(mainPort);
+    const init = await client.rpc({ type: 'init', canvas: {} as OffscreenCanvas, config: CONFIG, colorOptIns: {}, appBaseUrl: '/' });
+    expect(init.maxTextureDimension2D).toBe(8192);
+    const info = await client.rpc({ type: 'beginOfflineRender', options: { width: 3840, height: 2160, fps: 60 } });
+    expect(info).toMatchObject({ width: 3840, height: 2160, fps: 60 });
+    expect(fake.raw.beginOfflineRender).toHaveBeenCalledWith({ width: 3840, height: 2160, fps: 60 });
+    const lastSnapshot = () => [...posted].reverse().find((e) => e.type === 'snapshot');
+    expect(lastSnapshot()).toMatchObject({ snapshot: { offlineRender: true } });
+
+    fake.calls.length = 0;
+    client.send({ type: 'frameInput', input: { mouse: [0.1, 0.1], slotParams: [[0, 0, 0, 0, 0]] } });
+    const live = { close: vi.fn() } as unknown as VideoFrame;
+    client.send({ type: 'setVideoActive', active: true });
+    client.send({ type: 'videoFrame', frame: live });
+    await flushPorts();
+    expect(fake.calls.filter(([n]) => n === 'updateMouse' || n === 'setSlotParams')).toEqual([]);
+    expect((live as unknown as { close: Mock }).close).toHaveBeenCalled();
+
+    const bins = new Float32Array(128);
+    const frame = await client.rpc({ type: 'renderFrameAt', timeSec: 0.5, input: { mouse: [0.2, 0.8], bins } });
+    expect(frame).toEqual({ timestamp: 500_000 });
+    expect(fake.raw.renderFrameAt).toHaveBeenCalledWith(0.5, expect.objectContaining({ mouse: [0.2, 0.8] }));
+
+    expect(await client.rpc({ type: 'endOfflineRender' })).toBe(true);
+    expect(fake.raw.endOfflineRender).toHaveBeenCalled();
+    expect(lastSnapshot()).toMatchObject({ snapshot: { offlineRender: false } });
+    client.send({ type: 'frameInput', input: { mouse: [0.3, 0.3] } });
+    await flushPorts();
+    expect(fake.calls.filter(([n]) => n === 'updateMouse')).toEqual([['updateMouse', [0.3, 0.3]]]);
+  });
+
+  it('offline RPCs fail cleanly without a renderer, and transfer the frame both ways', async () => {
+    const { mainPort } = setup();
+    const client = await connectRenderWorker(mainPort);
+    await expect(client.rpc({ type: 'beginOfflineRender', options: { width: 64, height: 64, fps: 30 } }))
+      .rejects.toThrow('render worker has no renderer');
+    const videoFrame = { close: vi.fn() } as unknown as VideoFrame;
+    expect(transferablesOf({ type: 'renderFrameAt', requestId: 1, timeSec: 0, input: { videoFrame } })).toEqual([videoFrame]);
+    expect(transferablesOf({ type: 'renderFrameAt', requestId: 1, timeSec: 0, input: {} })).toEqual([]);
+    await expect(client.rpc({ type: 'renderFrameAt', timeSec: 0, input: { videoFrame } })).rejects.toThrow('no renderer');
+    expect((videoFrame as unknown as { close: Mock }).close).toHaveBeenCalled();
   });
 
   it('drains the SAB input ring before every frame when the page shares memory', async () => {

@@ -57,6 +57,14 @@ export class ModulationRuntime {
     for (const [k, v] of Object.entries(values)) if (Number.isFinite(v)) this.external.set(k, v);
   }
 
+  /**
+   * Forget per-route evaluator state (envelopes, sample & hold, random walks) so an offline
+   * render (#1401) starts every source as a fresh session would. Routes are kept.
+   */
+  resetState(): void {
+    this.router.reset();
+  }
+
   /** Seam for #1401: a RenderClock replaces the frame-time clock. null restores it. */
   setClock(clock: ModClock | null): void {
     this.injectedClock = clock;

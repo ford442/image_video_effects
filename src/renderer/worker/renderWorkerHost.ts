@@ -111,6 +111,11 @@ export type HostedRenderer = Pick<
   | 'setOutputConfig'
   | 'setOutputSize'
   | 'getOutputStatus'
+  | 'beginOfflineRender'
+  | 'renderFrameAt'
+  | 'endOfflineRender'
+  | 'isOfflineRenderActive'
+  | 'getMaxTextureDimension2D'
 >;
 
 export interface RenderWorkerHostDeps {
@@ -162,6 +167,11 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   let inputRing: InputRingReader | null = null;
   /** The device generation `init` bound this worker to; null until then (or when init sent none). */
   let generation: number | null = null;
+  /**
+   * An offline render owns the renderer (#1401): live `frameInput` and pumped `videoFrame`s
+   * are dropped (closed) until it ends, so nothing from the page leaks into its frames.
+   */
+  let offlineActive = false;
   const gpuErrors: string[] = [];
 
   deps.setErrorSink((error) => deps.post({ type: 'error', error }));
@@ -214,6 +224,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     outputs: r.getOutputStatus(),
     gpuErrors: [...gpuErrors],
     liveGpuDevices: deps.liveDeviceCount?.() ?? 0,
+    offlineRender: offlineActive,
     inputChannel: inputRing ? 'sab' : 'postMessage',
     input: r.getInputEcho(),
   });
@@ -248,7 +259,10 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
   };
 
   const commands: CommandHandlers = {
-    frameInput: ({ input }) => withRenderer((r) => applyFrameInput(r, input)),
+    frameInput: ({ input }) => {
+      if (offlineActive) return;
+      withRenderer((r) => applyFrameInput(r, input));
+    },
     setActiveShader: ({ id }) => withRenderer((r) => r.setActiveShader(id)),
     setSlotShader: ({ index, id }) => withRenderer((r) => r.setSlotShader(index, id)),
     setSlotEnabled: ({ index, enabled }) => withRenderer((r) => r.setSlotEnabled(index, enabled)),
@@ -266,7 +280,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       }
     },
     videoFrame: ({ frame }) => {
-      if (video && renderer) video.push(frame);
+      if (video && renderer && !offlineActive) video.push(frame);
       else safeClose(frame);
     },
     setResolutionScale: ({ scale }) => withRenderer((r) => r.setResolutionScale(scale)),
@@ -357,6 +371,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
         adapterSummary: r.getAdapterSummary(),
         adapterAttemptLabel: r.getAdapterAttemptLabel(),
         supportsSubgroups: r.getSupportsSubgroups(),
+        maxTextureDimension2D: r.getMaxTextureDimension2D(),
       };
     },
     loadShader: async ({ id, url }) => (renderer ? renderer.loadShader(id, url) : false),
@@ -389,6 +404,32 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       if (!renderer) return { ok: false, error: lostRenderer ? 'render device lost' : 'render worker has no renderer' };
       return renderer.attachOutput(id, canvas, width, height, config);
     },
+    beginOfflineRender: async ({ options }) => {
+      if (!renderer) throw new Error(lostRenderer ? 'render device lost' : 'render worker has no renderer');
+      // Gate first: input that arrives while the begin awaits the GPU must not land either.
+      offlineActive = true;
+      try {
+        const info = await renderer.beginOfflineRender(options);
+        postSnapshot();
+        return info;
+      } catch (e) {
+        offlineActive = renderer?.isOfflineRenderActive() ?? false;
+        throw e;
+      }
+    },
+    renderFrameAt: async ({ timeSec, input }) => {
+      if (!renderer) {
+        safeClose(input.videoFrame ?? null);
+        throw new Error(lostRenderer ? 'render device lost' : 'render worker has no renderer');
+      }
+      return renderer.renderFrameAt(timeSec, input);
+    },
+    endOfflineRender: async () => {
+      offlineActive = false;
+      if (renderer) await renderer.endOfflineRender();
+      postSnapshot();
+      return true;
+    },
     dispose: async () => {
       stopSnapshots();
       const r = renderer ?? lostRenderer;
@@ -396,6 +437,7 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
       lostRenderer = null;
       r?.setBeforeFrame(null);
       r?.setFatalErrorHandler(null);
+      offlineActive = false;
       inputRing = null;
       video?.detach();
       video = null;
