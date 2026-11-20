@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal, upgraded-rgba
 //  Convolution Type: morphological
 //  Complexity: Medium
-//  Upgraded: 2026-09-08
-//  Ideas: black-hat beside top-hat; SE-axis ridge skeleton
+//  Upgraded: 2026-09-08, 2026-11-19
+//  Ideas: black-hat beside top-hat; SE-axis ridge skeleton; parabolic structuring element; contact relief
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -96,6 +96,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var maxVal = vec3<f32>(-999.0);
     var minLuma = 999.0;
     var maxLuma = -999.0;
+    // ── Idea 1: parabolic structuring element. Scores carry k·r²; stored colours do not.
+    var erodeScore = vec3<f32>(999.0);
+    var dilateScore = vec3<f32>(-999.0);
+    var minOff = vec2<f32>(0.0);
+    var maxOff = vec2<f32>(0.0);
+    var minLumaP = 999.0;
+    var maxLumaP = -999.0;
+    let support = max(f32(maxRadius * maxRadius), 1.0);
 
     for (var dy = -maxRadius; dy <= maxRadius; dy++) {
         for (var dx = -maxRadius; dx <= maxRadius; dx++) {
@@ -115,8 +123,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let sample = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
             let luma = dot(sample, vec3<f32>(0.299, 0.587, 0.114));
 
-            minVal = min(minVal, sample);
-            maxVal = max(maxVal, sample);
+            let r2 = dxF * dxF + dyF * dyF;
+            let penalty = 0.12 * r2 / support;
+            let eScore = sample + vec3<f32>(penalty);
+            let dScore = sample - vec3<f32>(penalty);
+            let takeER = eScore.r < erodeScore.r;
+            let takeEG = eScore.g < erodeScore.g;
+            let takeEB = eScore.b < erodeScore.b;
+            erodeScore = vec3<f32>(
+                select(erodeScore.r, eScore.r, takeER),
+                select(erodeScore.g, eScore.g, takeEG),
+                select(erodeScore.b, eScore.b, takeEB)
+            );
+            minVal = vec3<f32>(
+                select(minVal.r, sample.r, takeER),
+                select(minVal.g, sample.g, takeEG),
+                select(minVal.b, sample.b, takeEB)
+            );
+            let takeDR = dScore.r > dilateScore.r;
+            let takeDG = dScore.g > dilateScore.g;
+            let takeDB = dScore.b > dilateScore.b;
+            dilateScore = vec3<f32>(
+                select(dilateScore.r, dScore.r, takeDR),
+                select(dilateScore.g, dScore.g, takeDG),
+                select(dilateScore.b, dScore.b, takeDB)
+            );
+            maxVal = vec3<f32>(
+                select(maxVal.r, sample.r, takeDR),
+                select(maxVal.g, sample.g, takeDG),
+                select(maxVal.b, sample.b, takeDB)
+            );
+            let lErode = luma + penalty;
+            let lDilate = luma - penalty;
+            let takeE = lErode < minLumaP;
+            let takeD = lDilate > maxLumaP;
+            minLumaP = select(minLumaP, lErode, takeE);
+            maxLumaP = select(maxLumaP, lDilate, takeD);
+            minOff = select(minOff, vec2<f32>(dxF, dyF), takeE);
+            maxOff = select(maxOff, vec2<f32>(dxF, dyF), takeD);
             minLuma = min(minLuma, luma);
             maxLuma = max(maxLuma, luma);
         }
@@ -143,6 +187,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let blendRGB = mix(erosion, dilation, erosionDilationBlend);
     var baseResult = blendRGB + gradient * 0.3 + hatMix * 0.22;
     baseResult = mix(baseResult, baseResult * vec3<f32>(0.18, 0.16, 0.14), skeleton * 0.4);
+    // ── Idea 2: contact relief. The SE's bright and dark contacts shade the existing gradient.
+    let contact = maxOff - minOff;
+    let contactN = contact / max(length(contact), 0.0001);
+    let facing = clamp(dot(contactN, vec2<f32>(0.62, 0.42)) * 0.5 + 0.5, 0.0, 1.0);
+    let relief = mix(0.84, 1.14, facing);
+    let reliefMask = clamp(gradientLuma * 1.6, 0.0, 1.0);
+    baseResult = baseResult * mix(1.0, relief, reliefMask);
 
     // Chromatic aberration on morphological boundaries
     let caStrength = gradientLuma * 0.02 + bass * 0.005;

@@ -4,8 +4,8 @@
 //  Features: advanced-convolution, rgba32float-exploiting, mouse-driven, audio-reactive, depth-aware, temporal
 //  Convolution Type: bilateral-grid-fast-approximate
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: joint depth range; adjacent luma-bin slice
+//  Upgraded: 2026-09-08, 2026-11-19
+//  Ideas: joint depth range; adjacent luma-bin slice; trilinear centre slice; base-detail reconstruction
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //
@@ -115,14 +115,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             let intensityDist = abs(sampleLuma - centerLuma);
             let intensityWeight = exp(-intensityDist * intensityDist / (2.0 * effectiveIntensitySigma * effectiveIntensitySigma + 0.001));
 
-            let gridBin = floor(sampleLuma * gridQuant) / gridQuant;
-            let binCenter = (gridBin + 0.5 / gridQuant);
-            let binDist = abs(sampleLuma - binCenter);
-            let binWeight = exp(-binDist * binDist * gridQuant * gridQuant * 2.0);
-            let neighborBin = gridBin + select(-1.0, 1.0, sampleLuma >= binCenter) / gridQuant;
-            let binMix = mix(binWeight, exp(-pow(sampleLuma - neighborBin - 0.5 / gridQuant, 2.0) * gridQuant * gridQuant * 2.0), 0.35);
+            // ── Idea 1: trilinear centre slice. Home bin weight is (1 − frac), next bin is frac.
+            let cPos = clamp(centerLuma, 0.0, 0.999) * gridQuant;
+            let sBin = floor(clamp(sampleLuma, 0.0, 0.999) * gridQuant);
+            let cBin = floor(cPos);
+            let cFrac = fract(cPos);
+            let sliceHome = select(0.0, 1.0 - cFrac, abs(sBin - cBin) < 0.5);
+            let sliceNext = select(0.0, cFrac, abs(sBin - (cBin + 1.0)) < 0.5);
+            let sliceW = sliceHome + sliceNext;
 
-            let weight = spatialWeight * intensityWeight * binMix * depthWeight;
+            let weight = spatialWeight * intensityWeight * sliceW * depthWeight;
             accumColor += sample.rgb * weight;
             accumWeight += weight;
             depthDiscontinuity += depthDist;
@@ -133,6 +135,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (accumWeight > 0.001) {
         result = accumColor / accumWeight;
     }
+    // ── Idea 2: base-detail reconstruction. Coarser luma bins give more of the residual back.
+    let quant = clamp(8.0 / max(gridQuant, 1.0), 0.0, 1.0);
+    result = result + (center.rgb - result) * 0.35 * quant;
 
     // Psychedelic enhancement
     let binHue = floor(centerLuma * gridQuant) / gridQuant;
