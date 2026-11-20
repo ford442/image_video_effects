@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: audio-reactive, mouse-driven, click-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-28
-//  Ideas: true capillary wave (height + velocity wave equation, click rings travel on their own); Fresnel horizon reflection (glancing slopes mirror a cool-top / warm-floor studio gradient)
+//  Upgraded: 2026-09-28, 2026-11-20
+//  Ideas: true capillary wave (height + velocity wave equation, click rings travel on their own); Fresnel horizon reflection (glancing slopes mirror a cool-top / warm-floor studio gradient); non-wetting meniscus at the frame; trough tarnish
 //  A packing: raw wave state (h height, v velocity, 1/pi validity tag, semantic alpha*0.8), never tone-mapped; C read back exactly as h,v (foreign/NaN C -> 0)
 // ═══════════════════════════════════════════════════════════════════
 // Stylized liquid-metal mirror with travelling capillary packets and click impacts.
@@ -121,7 +121,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resNorm = clamp(540.0 / max(resolution.y, 1.0), 0.125, 4.0);
     let rainForce = (rainTrack * dropGate - audio.z * 0.035 * 0.12 * dropDuty) * 0.35 * pow(resNorm, 1.5);
     let clickForce = clickFront * impactAmount * 0.12 * 0.4 * pow(resNorm, 0.7);
-    let accel = K1 * lap + K2 * lap2 - GRAVITY * prev.x + viscousNu * lapV + pressForce + rainForce + clickForce;
+    // ── Idea 3: non-wetting meniscus
+    // Mercury pulls away from the frame. The spring is a tiny addend, not a
+    // new Laplacian stiffness, so the K1/K2 step stays inside its stability bound.
+    let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+    let meniscus = smoothstep(0.045, 0.0, edgeDist) * (-0.12 - prev.x) * 0.06;
+    let accel = K1 * lap + K2 * lap2 - GRAVITY * prev.x + viscousNu * lapV + pressForce + rainForce + clickForce + meniscus;
     let vel = clamp((prev.y + accel) * damping, -0.5, 0.5);
     let height = clamp(prev.x + vel, -1.0, 1.0);
 
@@ -159,6 +164,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let metalTint = mix(vec3<f32>(0.65, 0.68, 0.72), vec3<f32>(0.84, 0.87, 0.92), metallic);
     var color = mix(input.rgb, reflected * metalTint, 0.25 + reflectAmount * 0.65);
+    // ── Idea 4: trough tarnish
+    // Crests stay the mirror. Hollows take a warm oxide and reflect less.
+    // Metallic Sheen still sets the mirror tint.
+    let trough = smoothstep(0.02, -0.12, surfaceH);
+    color = mix(color, color * vec3<f32>(0.45, 0.38, 0.32), trough * (0.35 + (1.0 - clamp(metallic, 0.0, 1.0)) * 0.25));
     let specular = pow(clamp(0.5 + surfaceH * 0.8 - length(slope), 0.0, 1.0), 5.0) * (0.3 + audio.x * 0.7);
     color = max(color + vec3<f32>(0.95, 0.98, 1.0) * specular * reflectAmount, vec3<f32>(0.0));
     let waveEnergy = abs(surfaceH) + length(slope) * 0.5;

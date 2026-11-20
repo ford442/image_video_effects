@@ -4,8 +4,17 @@
   "created_at": "2026-10-03T22:58:19.121Z",
   "shaders": {
     "aero-chromatics-prismatic": {
-      "hash": "344266ab41c4262a",
-      "history": []
+      "hash": "68851d47029c2cdc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "68851d47029c2cdc",
+          "prev_hash": "344266ab41c4262a",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
+        }
+      ]
     },
     "aerogel-smoke-hdr": {
       "hash": "e21514b5db1c72ac",
@@ -1378,8 +1387,17 @@
       ]
     },
     "glass-wipes-coupled": {
-      "hash": "4e38f08061151890",
-      "history": []
+      "hash": "92a9ae6432d6c458",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "92a9ae6432d6c458",
+          "prev_hash": "4e38f08061151890",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
+        }
+      ]
     },
     "gravitational-lensing-nlm": {
       "hash": "2d6f93eefcd15b84",
@@ -1933,8 +1951,17 @@
       "history": []
     },
     "spec-iridescence-engine": {
-      "hash": "96ff94e49419343b",
-      "history": []
+      "hash": "4882c7f93f280a71",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "4882c7f93f280a71",
+          "prev_hash": "96ff94e49419343b",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
+        }
+      ]
     },
     "spec-prismatic-dispersion": {
       "hash": "9a89ef0afec32734",
@@ -2633,8 +2660,17 @@
       "history": []
     },
     "encaustic-wax": {
-      "hash": "dce413794a13f750",
-      "history": []
+      "hash": "02377f0dfbb7eb3f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "02377f0dfbb7eb3f",
+          "prev_hash": "dce413794a13f750",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
+        }
+      ]
     },
     "engraving-stipple": {
       "hash": "56219f9e9dd2145b",
@@ -2692,8 +2728,17 @@
       ]
     },
     "frosty-window": {
-      "hash": "d52e34d095553e92",
-      "history": []
+      "hash": "48c3c8daa7ad3819",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "48c3c8daa7ad3819",
+          "prev_hash": "d52e34d095553e92",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
+        }
+      ]
     },
     "galaxy-sim": {
       "hash": "66b707653406f2ef",
@@ -11418,8 +11463,17 @@
       ]
     },
     "gen-turing-morphogenesis": {
-      "hash": "8ea8d2e6b0241caf",
-      "history": []
+      "hash": "d8ca64adc342e42e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "d8ca64adc342e42e",
+          "prev_hash": "8ea8d2e6b0241caf",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
+        }
+      ]
     },
     "gen-velocity-bloom": {
       "hash": "ee6693cc8f4f7819",
@@ -14522,7 +14576,7 @@
       ]
     },
     "mercury-temporal-mirror": {
-      "hash": "f96e59b0d295045b",
+      "hash": "b45b510ebfbb35e6",
       "history": [
         {
           "event": "upgraded",
@@ -14531,6 +14585,14 @@
           "prev_hash": "53a24cc297afced2",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "b45b510ebfbb35e6",
+          "prev_hash": "f96e59b0d295045b",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
         }
       ]
     },
@@ -17167,8 +17229,17 @@
       ]
     },
     "mouse-polarized-light-field": {
-      "hash": "e8498749e4b4394b",
-      "history": []
+      "hash": "dccf3fee66653a45",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "dccf3fee66653a45",
+          "prev_hash": "e8498749e4b4394b",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
+        }
+      ]
     },
     "mouse-synesthetic-sound-paint": {
       "hash": "1805d09395f9654a",
@@ -18636,7 +18707,7 @@
       ]
     },
     "virtual-lens": {
-      "hash": "657e52d898c5b5a9",
+      "hash": "c0c18499e7a8d73a",
       "history": [
         {
           "event": "upgraded",
@@ -18645,6 +18716,14 @@
           "prev_hash": "6c0074005247d66e",
           "commit": "1008b956",
           "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "c0c18499e7a8d73a",
+          "prev_hash": "657e52d898c5b5a9",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
         }
       ]
     },
@@ -20975,8 +21054,17 @@
       ]
     },
     "photonic-caustics": {
-      "hash": "42bdb9e4dfb43000",
-      "history": []
+      "hash": "4c7680385ed4ff38",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:39:38.873Z",
+          "hash": "4c7680385ed4ff38",
+          "prev_hash": "42bdb9e4dfb43000",
+          "commit": "9468de86",
+          "note": "2026-11-20 optical/matter ten (grok) — docs/agents/swarm-outputs/grok-2026-11-20-optical-matter-ten"
+        }
+      ]
     },
     "pixel-sand": {
       "hash": "80fac9244f3ce4ce",

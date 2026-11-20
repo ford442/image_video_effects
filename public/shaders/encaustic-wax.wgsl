@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, painterly, thermal-flow
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: cooling wax bloom; held-mouse iron scrape
-//  A packing: telemetry RGBA (ridge, pigment, heatMouse, alpha)
+//  Upgraded: 2026-09-08, 2026-11-20
+//  Ideas: cooling wax bloom; held-mouse iron scrape; heat soak behind the iron; scrape furrow
+//  A packing: telemetry RGBA (ridge, pigment, soaked heat, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -72,6 +53,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let dims = u.config.zw;
   if (gid.x >= u32(dims.x) || gid.y >= u32(dims.y)) { return; }
 
+  let coord = vec2<i32>(gid.xy);
   let uv = vec2<f32>(gid.xy) / dims;
   let time = u.config.x;
   let mouse = u.zoom_config.yz;
@@ -89,7 +71,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let heatGlobal = audio.x * 0.5;
   let mouseDist = length((mouse - uv) * vec2<f32>(aspect, 1.0));
   let heatMouse = 1.0 - smoothstep(0.0, 0.45, mouseDist);
-  let heat = heatGlobal + heatMouse * (0.5 + audio.x * 0.5);
+  // ── Idea 3: heat soak
+  // Wax holds the iron. Last frame's heat decays in place and keeps the
+  // melt moving after the pointer leaves. Trusted only when C.a is in the
+  // range this shader writes, so a foreign frame cannot soak the whole plate.
+  let prev = textureLoad(dataTextureC, coord, 0);
+  let trusted = step(0.05, prev.a) * step(prev.a, 0.985);
+  let prevHeat = clamp(prev.b, 0.0, 1.0) * trusted;
+  let soaked = max(heatMouse, prevHeat * 0.86);
+  let heat = heatGlobal + soaked * (0.5 + audio.x * 0.5);
   let viscosity = 1.0 / (1.0 + heat * 3.0);
 
   // Depth-driven wax thickness: nearer = thicker pigment build-up
@@ -121,7 +111,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let base = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
   // Impasto ridge from top strata
-  let ridge = smoothstep(0.30, 0.80, strataMask) * relief;
+  // ── Idea 4: scrape furrow
+  // The groove is where the iron was, not where it is. It lowers the ridge
+  // until the soaked heat fades.
+  let furrow = prevHeat * (1.0 - heatMouse);
+  let ridge = smoothstep(0.30, 0.80, strataMask) * relief * (1.0 - furrow * 0.7);
   let normal = vec3<f32>(flow * 10.0, 1.0 - length(flow) * 5.0);
   let lightDir = normalize(vec3<f32>(0.3, 0.5, 1.0));
   let ndotl = max(dot(normalize(normal), lightDir), 0.0);
@@ -153,7 +147,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let cool = 1.0 - heat;
   let waxBloom = vec3<f32>(0.94, 0.95, 0.92) * cool * cool * (0.10 + (1.0 - strataMask) * 0.08);
   let held = step(0.5, u.zoom_config.w);
-  let scrape = heatMouse * held;
+  let scrape = max(heatMouse * held, furrow * 0.65);
   finalColor = mix(finalColor, base.rgb, scrape * 0.48);
   finalColor = finalColor + vec3<f32>(1.0, 0.96, 0.88) * spec + sss + sparkle + waxBloom;
   finalColor = finalColor * (1.0 + canvas) + vec3<f32>(bloom);
@@ -164,7 +158,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let finalAlpha = clamp(waxOpacity * pigmentDeposit * depth, 0.08, 0.98);
   let outDepth = clamp(mix(depth, 0.25 + ridge * 0.75, 0.25), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(gid.xy), vec4<f32>(finalColor, finalAlpha));
-  textureStore(writeDepthTexture, vec2<i32>(gid.xy), vec4<f32>(outDepth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, vec2<i32>(gid.xy), vec4<f32>(ridge, pigmentDeposit, heatMouse, finalAlpha));
+  textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+  textureStore(writeDepthTexture, coord, vec4<f32>(outDepth, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, coord, vec4<f32>(ridge, pigmentDeposit, soaked, finalAlpha));
 }

@@ -4,28 +4,13 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            thin-film-interference, spectral-render, semantic-alpha, ACES
 //  Complexity: High
+//  Upgraded: 2026-11-20
+//  Ideas: coefficient of finesse on the two-beam sum; transmitted photo under the film
+//  A packing: ACES display RGBA (C is the color trail)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=FilmThickness, y=FilmIOR, z=Intensity, w=Turbulence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=FilmThickness, y=FilmIOR, z=Intensity, w=Turbulence
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -41,20 +26,36 @@ fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
   return max(vec3<f32>(r, g, b), vec3<f32>(0.0));
 }
 
-fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec3<f32> {
-  let sinTheta_t = sqrt(max(1.0 - cosTheta * cosTheta, 0.0)) / filmIOR;
+fn thinFilmColor(thicknessNm: f32, cosTheta: f32, filmIOR: f32) -> vec4<f32> {
+  let sinTheta_t = sqrt(max(1.0 - cosTheta * cosTheta, 0.0)) / max(filmIOR, 1.01);
   let cosTheta_t = sqrt(max(1.0 - sinTheta_t * sinTheta_t, 0.0));
   let opd = 2.0 * filmIOR * thicknessNm * cosTheta_t;
 
+  // ── Idea 1: coefficient of finesse
+  // The two-beam cosine stays. Higher Film IOR raises interface reflectance
+  // and pulls the peaks toward the Airy shape, so the same soap colors sharpen.
+  let rFace = (filmIOR - 1.0) / max(filmIOR + 1.0, 0.001);
+  let faceR = rFace * rFace;
+  let finesse = 4.0 * faceR / max((1.0 - faceR) * (1.0 - faceR), 1e-4);
+  let peakWeight = clamp(finesse / (finesse + 0.35), 0.0, 0.85);
+  let airyPeak = finesse / max(1.0 + finesse, 1e-3);
+
   var color = vec3<f32>(0.0);
+  var meanR = 0.0;
   var sampleCount = 0.0;
   for (var lambda = 380.0; lambda <= 700.0; lambda += 20.0) {
     let phase = opd / lambda;
-    let interference = cos(phase * 6.2831853) * 0.5 + 0.5;
+    let twoBeam = cos(phase * 6.2831853) * 0.5 + 0.5;
+    let s = sin(phase * 3.14159265);
+    let airy = (finesse * s * s) / max(1.0 + finesse * s * s, 1e-4);
+    let airyN = airy / max(airyPeak, 1e-3);
+    let interference = mix(twoBeam, airyN, peakWeight);
     color += wavelengthToRGB(lambda) * interference;
+    meanR += interference;
     sampleCount += 1.0;
   }
-  return color / max(sampleCount, 1.0);
+  let invCount = 1.0 / max(sampleCount, 1.0);
+  return vec4<f32>(color * invCount, meanR * invCount);
 }
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
@@ -148,7 +149,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  var iridescent = thinFilmColor(thickness, cosTheta, filmIOR);
+  let film = thinFilmColor(thickness, cosTheta, filmIOR);
+  var iridescent = film.rgb;
 
   // Per-wavelength audio energy modulation
   iridescent = vec3<f32>(
@@ -157,14 +159,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     iridescent.b * (1.0 + plasmaBuffer[2u].x * 0.35 + treble * 0.2)
   ) * intensity;
 
-  let fresnel = pow(1.0 - cosTheta, 3.0);
-  var outColor = mix(baseColor, iridescent, fresnel * 0.75 + held * 0.1);
+  let fresnel = pow(clamp(1.0 - cosTheta, 0.0, 1.0), 3.0);
+  // ── Idea 2: transmitted photo
+  // Bright interference bands reflect and take the photo out. Dark bands
+  // leave it. Cover is still the existing Fresnel weight.
+  let cover = clamp(fresnel * 0.75 + held * 0.1, 0.0, 0.92);
+  let taken = cover * clamp(film.a, 0.0, 1.0);
+  var outColor = baseColor * (1.0 - taken) + iridescent * cover;
 
   // Exact dataTextureC persistence
   let prevC = textureLoad(dataTextureC, pixel, 0).rgb;
   outColor = mix(outColor, prevC, 0.08);
 
-  let finalRGB = aces(outColor);
+  let finalRGB = aces(max(outColor, vec3<f32>(0.0)));
   let thicknessAlpha = clamp(thickness / 1000.0 + fresnel * 0.3 + held * 0.1, 0.15, 1.0);
   let finalPixel = vec4<f32>(finalRGB, thicknessAlpha);
 

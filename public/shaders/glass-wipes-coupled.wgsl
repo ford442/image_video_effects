@@ -1,26 +1,15 @@
-// Glass Wipes Coupled — rain on glass with Navier-Stokes viscous fluid coupling and wiper mechanics.
-// A/C stores raw fluid state [vel.xy, vorticity, density]; ACES is presentation-only on writeTexture; depth passes through source depth.
+// ═══════════════════════════════════════════════════════════════════
+//  Glass Wipes Coupled
+//  Category: advanced-hybrid
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-11-20
+//  Ideas: vorticity confinement (§12.2D); glass beading and wiper residue
+//  A packing: raw fluid (vel.xy, vorticity, density)
+// ═══════════════════════════════════════════════════════════════════
+// Rain on glass with viscous coupling and a wiper. ACES is presentation-only.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -97,6 +86,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Wiper sweeps fluid clear in central path
     let wipeFactor = smoothstep(wiperSize * 0.8, 0.0, dist);
     dens *= (1.0 - wipeFactor * select(0.65, 0.95, held));
+    // ── Idea 2: wiper residue
+    // The blade leaves a wet streak. A hard press leaves less of it.
+    dens = max(dens, wipeFactor * select(0.10, 0.03, held));
   }
 
   // Click ripple interactions = fluid impact shockwaves
@@ -122,6 +114,31 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Evaporation
   dens = max(0.0, dens - 0.0012);
+
+  // ── Idea 2: glass beading
+  // Neighbor density from C. A capped sharpen pulls a film apart into drops
+  // without an unbounded anti-diffusion.
+  let dR = rawStateAt(uv + vec2<f32>(px.x, 0.0), resolution).w;
+  let dL = rawStateAt(uv - vec2<f32>(px.x, 0.0), resolution).w;
+  let dU = rawStateAt(uv + vec2<f32>(0.0, px.y), resolution).w;
+  let dD = rawStateAt(uv - vec2<f32>(0.0, px.y), resolution).w;
+  let dMean = (dR + dL + dU + dD) * 0.25;
+  let sharpen = clamp((dens - dMean) * 0.22, -0.04, 0.04);
+  let beadPull = select(0.0, 0.75, dens > 0.28);
+  dens = mix(dens + sharpen, beadPull, 0.05);
+
+  // ── Idea 1: vorticity confinement (§12.2D)
+  // C.z is the curl the solver already stored and never used. N × ω puts
+  // a little of that spin back. Vortex Strength still scales it.
+  let curlHere = prevRaw.z;
+  let curlR = rawStateAt(uv + vec2<f32>(px.x, 0.0), resolution).z;
+  let curlL = rawStateAt(uv - vec2<f32>(px.x, 0.0), resolution).z;
+  let curlU = rawStateAt(uv + vec2<f32>(0.0, px.y), resolution).z;
+  let curlD = rawStateAt(uv - vec2<f32>(0.0, px.y), resolution).z;
+  let gx = 0.5 * (abs(curlR) - abs(curlL));
+  let gy = 0.5 * (abs(curlU) - abs(curlD));
+  let nHat = vec2<f32>(gx, gy) / max(length(vec2<f32>(gx, gy)), 1e-4);
+  vel = vel + vec2<f32>(nHat.y, -nHat.x) * curlHere * 0.035 * vortexStrength;
 
   // Border damping to prevent edge reflections
   let edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));

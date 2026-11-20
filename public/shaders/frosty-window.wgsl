@@ -4,31 +4,13 @@
 //  Features: upgraded-rgba, depth-aware, interactive, persistence, audio-reactive, temporal
 //  Complexity: High
 //  By: 4-Agent Upgrade Swarm
-//  Upgraded: 2026-09-21 (first 2026-05-30)
+//  Upgraded: 2026-09-21 (first 2026-05-30), 2026-11-20
 //  Ideas: frost nucleates on the window frame and creeps inward along the crystal branches;
-//         cursor meltwater runs down the glass as clear lensing runnels that hold off refreezing
+//         cursor meltwater runs down the glass as clear lensing runnels that hold off refreezing;
+//         hoarfrost needles along the dendrite; rime caps on the branch tips
 //  A packing: R frost, G meltwater, B caustic, A alpha
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn h2(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -142,7 +124,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let off = (crystal * 0.012 + frost * 0.008) * (1.0 + wv);
   let bUV = uv + vec2<f32>(cos(wv * 6.28), sin(wv * 6.28)) * off;
   let blurCol = textureSampleLevel(readTexture, u_sampler, bUV, 0.0).rgb;
-  let rUV = uv + vec2<f32>(cos(dn * 2.0 + t), sin(dn * 2.0 + t)) * frost * 0.015;
+  // ── Idea 3: hoarfrost needles
+  // The dendrite already has an axis. Ice lenses along that spoke, on top of
+  // the isotropic crystal warp.
+  let spoke = atan2(uv.y - 0.5, (uv.x - 0.5) * (res.x / max(res.y, 1.0)));
+  let spokeBin = 1.04719755;
+  let spokeQuant = floor(spoke / spokeBin + 0.5) * spokeBin;
+  let needleDir = vec2<f32>(cos(spokeQuant), sin(spokeQuant));
+  let needle = branch * frost;
+  let rUV = clamp(uv + vec2<f32>(cos(dn * 2.0 + t), sin(dn * 2.0 + t)) * frost * 0.015 + needleDir * needle * 0.012, vec2<f32>(0.0), vec2<f32>(1.0));
   let refractCol = textureSampleLevel(readTexture, u_sampler, rUV, 0.0).rgb;
   let thick = frost * (0.6 + crystal * 0.4);
   let sss = vec3<f32>(0.75, 0.88, 1.0) * thick * thick * 0.35;
@@ -153,6 +143,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let caustic = rainbow * caust * 0.25;
   let sparkle = step(0.92, h2(vp * 100.0 + t)) * treble * crystal * frost * 0.6;
   var col = mix(baseCol, fCol + caustic + sparkle, frost * 0.85);
+  // ── Idea 4: rime caps
+  // Tips of the branch freeze opaque white. The rest of the frost stays the glaze.
+  let rime = smoothstep(0.55, 0.92, branch) * frost;
+  col = mix(col, vec3<f32>(0.93, 0.96, 0.99), rime * 0.62);
   // Idea 2 (display) — a runnel is a thin water lens: it clears the frost it runs through and
   // refracts the view across its width, with a bright meniscus edge.
   let wetEdge = cE.g - cW.g;
@@ -163,7 +157,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = aces(col * 1.2);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let luma = dot(col, vec3<f32>(0.299, 0.587, 0.114));
-  let alpha = mix(luma * 0.15, 0.75 + crystal * 0.25 + caust * 0.35, frost) * (1.0 - wet * 0.35);
+  let alpha = mix(luma * 0.15, 0.75 + crystal * 0.25 + caust * 0.35 + rime * 0.2, frost) * (1.0 - wet * 0.35);
   let finalAlpha = mix(alpha * 0.7, min(alpha * 1.15, 1.0), depth);
   textureStore(writeTexture, coord, vec4<f32>(col, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -6,10 +6,10 @@
 //  Chunks From: chunk-library.md (hash12, hueShift)
 //  Created: 2026-04-18
 //  By: Agent 2C
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-09-21, 2026-11-20
 //  Ideas: chromatic fringe dispersion (per-channel retardation density);
-//         treble-driven fringe shimmer
-//  A packing: display RGBA passthrough (no history)
+//         treble-driven fringe shimmer; Malus extinction; specimen optical path
+//  A packing: ACES display RGBA (C unread)
 // ═══════════════════════════════════════════════════════════════════
 //  Mouse controls polarization angle and birefringence across the
 //  image. Creates interference patterns, color shifts, and moiré
@@ -18,26 +18,7 @@
 //  Alpha channel stores polarization phase.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 (from gen_grid.wgsl) ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -55,6 +36,10 @@ fn hueShift(color: vec3<f32>, hue: f32) -> vec3<f32> {
 
 fn getLuma(c: vec3<f32>) -> f32 {
   return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -95,8 +80,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Malus's law: intensity varies with cos²(2θ)
   let malus = cos(localAngle * 2.0) * cos(localAngle * 2.0);
 
-  // Birefringence phase retardation creates interference colors
-  let retardation = birefringence * (1.0 + mouseInfluence * 2.0) * mouseDist * 3.14159;
+  // ── Idea 4: specimen optical path
+  // Retardation of a plate is birefringence times thickness. Darker parts of
+  // the photo stand in for a thicker specimen, so the existing isochromes
+  // follow the subject instead of a pure radial falloff.
+  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+  let luma = getLuma(baseColor);
+  let specimen = mix(1.18, 0.38, clamp(luma, 0.0, 1.0));
+  let retardation = birefringence * (1.0 + mouseInfluence * 2.0) * mouseDist * 3.14159 * specimen;
   let phase = retardation + time * 0.5;
 
   // Idea 1: chromatic fringe dispersion — each wavelength (channel) sees a
@@ -111,10 +102,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     fringeGc * fringeGc * 0.5 + 0.5,
     fringeB * fringeB * 0.5 + 0.5
   );
-
-  // Sample image
-  let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-  let luma = getLuma(baseColor);
 
   // Polarization-filtered colors: rotate RGB channels by different angles
   let rAngle = localAngle;
@@ -144,6 +131,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var finalColor = mix(filteredColor, baseColor * moire, 0.3);
   finalColor = finalColor + dispersedFringe * vec3<f32>(1.0, 0.85, 0.6) * birefringence * 0.2;
 
+  // ── Idea 3: Malus extinction
+  // The cos² term used to be computed and discarded. Crossed polarizers go
+  // dark on the isogyre; a small leak keeps the field from crushing to black.
+  finalColor = finalColor * mix(0.08, 1.0, malus);
+
   // Ripple vortices: transient polarization spirals
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -165,8 +157,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Alpha = polarization phase
   let alpha = clamp(fract(phase * 0.159), 0.0, 1.0);
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
-  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(finalColor, alpha));
+  let display = aces(max(finalColor, vec3<f32>(0.0)));
+  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(display, alpha));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), vec4<f32>(display, alpha));
 
   // Depth passthrough
   let d = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

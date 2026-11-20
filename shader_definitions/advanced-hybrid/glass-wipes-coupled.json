@@ -17,7 +17,8 @@
     "audio-reactive",
     "temporal-feedback",
     "click-reactive",
-    "raw-persistent-state"
+    "raw-persistent-state",
+    "upgraded-rgba"
   ],
   "params": [
     {

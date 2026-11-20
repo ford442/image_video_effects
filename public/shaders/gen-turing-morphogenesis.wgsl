@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-15, 2026-09-27
-//  Ideas: inhibitor halo around spots; chemical-front ridges where activator ≈ scaled inhibitor; stripe coat-grain along the activator gradient; slow domain patches
+//  Upgraded: 2026-09-15, 2026-09-27, 2026-11-20
+//  Ideas: inhibitor halo around spots; chemical-front ridges where activator ≈ scaled inhibitor; stripe coat-grain along the activator gradient; slow domain patches; chemical boundary from the activator gradient; stain aging along the organic ramp
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Feed Rate, y=Evolution Speed, z=Pattern Scale, w=Color Shift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Feed Rate, y=Evolution Speed, z=Pattern Scale, w=Color Shift
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -108,6 +90,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let tangent = vec2<f32>(-gA.y, gA.x);
   let along = dot(uv * scale, tangent / max(length(tangent), 0.001));
   let grain = smoothstep(0.2, 0.8, 0.5 + 0.5 * sin(along * 14.0));
+  // ── Idea 5: chemical boundary
+  // The activator gradient already orients the coat grain. Where it is steep
+  // the morphogen front is sharp, so the soft threshold tightens there only.
+  let frontSharp = smoothstep(0.02, 0.25, length(gA));
 
   let caStr = 0.003 * (1.0 + bass) * depthScale;
   let rAI = activatorInhibitor(uv + vec2<f32>(caStr, 0.0), scale, time);
@@ -130,6 +116,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     curvature[ch] = abs(diff - vnoise(uv * scale * 3.0 + f32(ch) * 1.7));
   }
 
+  pattern = mix(pattern, smoothstep(vec3<f32>(0.18), vec3<f32>(0.48), pattern), vec3<f32>(frontSharp * 0.65));
+
   let mDist = length(uv - mouse);
   let deposit = exp(-mDist * mDist * 2000.0) * 0.4 * f32(mouseDown);
   pattern += vec3<f32>(deposit);
@@ -145,10 +133,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Idea 2 — chemical-front ridges where activator ≈ scaled inhibitor.
   let front = exp(-abs(gDiff) * 14.0) * (0.35 + treble * 0.4);
 
+  // ── Idea 6: stain aging
+  // Display history is the stain. Pigment that persisted last frame walks
+  // the same organic ramp. Color Shift still sets the global offset.
+  let stain = clamp(dot(prev.rgb, vec3<f32>(0.299, 0.587, 0.114)), 0.0, 1.0);
+  let aged = p4 + stain * 0.16;
   var color = vec3<f32>(
-    organicColor(pattern.r, p4).r,
-    organicColor(pattern.g, p4 + 0.05).g,
-    organicColor(pattern.b, p4 + 0.1).b
+    organicColor(pattern.r, aged).r,
+    organicColor(pattern.g, aged + 0.05).g,
+    organicColor(pattern.b, aged + 0.1).b
   );
   color = color * (1.0 - halo * 0.55) + vec3<f32>(0.12, 0.08, 0.05) * halo;
   color += vec3<f32>(0.95, 0.88, 0.62) * front;
