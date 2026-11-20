@@ -2,6 +2,7 @@
   "id": "snow",
   "name": "Blizzard (Depth-Aware)",
   "url": "shaders/snow.wgsl",
+  "description": "Depth-aware blizzard: three parallax layers of tumbling hexagonal flakes that fall behind nearer scene objects, wind-skewed (pointer X steers it), settling into a snow bank on up-facing surfaces that wind carries downwind in plumes and that melts slowly.",
   "tags": [
     "filter",
     "image-processing"
@@ -9,6 +10,7 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
+    "depth-aware",
     "upgraded-rgba"
   ],
   "params": [

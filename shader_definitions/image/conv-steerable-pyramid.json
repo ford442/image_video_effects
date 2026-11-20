@@ -1,7 +1,7 @@
 {
   "id": "conv-steerable-pyramid",
   "name": "Steerable Pyramid",
-  "description": "Decomposes image into oriented sub-bands at 0, 45, 90, and 135 degrees using steerable filters. RGBA32FLOAT stores full-precision signed sub-band coefficients for lossless reconstruction or artistic boosting. Mouse steers the decomposition angle.",
+  "description": "Decomposes image into oriented sub-bands at 0, 45, 90, and 135 degrees using steerable filters. RGBA32FLOAT stores full-precision signed sub-band coefficients for lossless reconstruction or artistic boosting. Mouse steers the decomposition angle. Each band's quadrature phase (line vs step edge) tints its palette, and a second coarser octave tints broad oriented structure.",
   "url": "shaders/conv-steerable-pyramid.wgsl",
   "features": [
     "advanced-convolution",

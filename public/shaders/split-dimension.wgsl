@@ -3,30 +3,23 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, glitch, upgraded-rgba, audio-reactive
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  upgraded-rgba
+//  Upgraded: 2026-05-23, 2026-11-19
+//  Ideas: registration jump; hinged shear; split lip
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=GlitchIntensity, y=ColorShift, z=NegativeStr, w=SplitAngle
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=GlitchIntensity, y=ColorShift, z=NegativeStr, w=SplitAngle
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x_in: vec3<f32>) -> vec3<f32> {
+    let x = max(x_in, vec3<f32>(0.0));
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 fn get_mouse() -> vec2<f32> {
     var mouse = u.zoom_config.yz;
@@ -131,8 +124,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let n = fract(noise(vec2<f32>(uv.y * 50.0, time * 20.0)) + fftRegion * 0.17);
     let glitchActive = select(0.0, 1.0, (n > 0.8 || clickDamage > 0.02) && glitch_amt > 0.0);
     let glitchOffset = (n - 0.5) * glitch_amt * 0.2 * glitchActive;
+    // ── Idea 1: registration jump ─────────────────────────────────
+    // The glitch half is offset along the split normal, so the two
+    // pictures do not share pixels. Glitch Intensity owns the gap.
+    let tangent = vec2<f32>(-normal.y, normal.x);
+    let jump = normal * glitch_amt * 0.028;
+    // ── Idea 2: hinged shear ──────────────────────────────────────
+    // Shear grows with distance from the seam. At the cut it is zero.
+    let hinge = tangent * d * glitch_amt * 0.055;
     var glitch_uv = uv;
-    glitch_uv.x = glitch_uv.x + glitchOffset + clickShift * glitch_amt;
+    glitch_uv.x = glitch_uv.x + glitchOffset + clickShift * glitch_amt + (jump.x + hinge.x) / aspect;
+    glitch_uv.y = glitch_uv.y + jump.y + hinge.y;
     glitch_uv = clamp(glitch_uv, vec2<f32>(0.0), vec2<f32>(1.0));
 
     let shift = color_shift * 0.05;
@@ -144,14 +146,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     var glitchColor = vec4<f32>(col, mix(baseColor.a, 1.0, glitch_amt * 0.7));
 
-    // Add split line highlight
-    let lineHighlight = select(vec4<f32>(0.5, 0.5, 0.5, 0.0), vec4<f32>(0.0), d >= 0.01);
-    glitchColor = glitchColor + lineHighlight;
-
     let isNormal = select(0.0, 1.0, d < 0.0);
     var finalColor = mix(glitchColor, normalColor, isNormal);
+    // ── Idea 3: split lip ─────────────────────────────────────────
+    // Dark gap, bright shoulders, on the same cut the gray band marked.
+    let gap = 0.0035 + glitch_amt * 0.012 + clickDamage * 0.02;
+    let lip = exp(-abs(d) / max(gap, 0.001));
+    let core = exp(-abs(d) / max(gap * 0.28, 0.0004));
+    let lipRGB = vec3<f32>(0.78, 0.86, 1.0) * lip * (0.42 + treble * 0.3) * (1.0 - core);
+    let lipAlpha = clamp(finalColor.a * (1.0 - core * 0.25) + lip * 0.3, 0.0, 1.0);
+    finalColor = vec4<f32>(finalColor.rgb * (1.0 - core * 0.7) + lipRGB, lipAlpha);
     let peak = max(max(finalColor.r, finalColor.g), finalColor.b);
-    finalColor = vec4<f32>(max(finalColor.rgb, vec3<f32>(0.0)) * min(1.0, 1.8 / max(peak, 0.001)), clamp(finalColor.a, 0.0, 1.0));
+    finalColor = vec4<f32>(aces(max(finalColor.rgb, vec3<f32>(0.0)) * min(1.0, 1.8 / max(peak, 0.001))), lipAlpha);
 
     // Depth follows the selected dimension and gives the fracture line relief.
     let depthNormal = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -3,31 +3,12 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: log-z pulse rings; wavelength-scaled twist
+//  Upgraded: 2026-09-09, 2026-11-19
+//  Ideas: log-z pulse rings; wavelength-scaled twist; pulse ridges; vanishing streak; dark pupil
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
@@ -107,7 +88,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let audioPulse = 1.0 + bass * 0.5;
     // Idea 1 — log-z pulse so rings recede
     let logZ = -log(max(dist, 0.001));
-    let pulse = sin(logZ * 8.0 - time * (pulseSpeed * 10.0 * audioPulse)) * 0.05 * tunnelStrength;
+    let pulsePhase = sin(logZ * 8.0 - time * (pulseSpeed * 10.0 * audioPulse));
+    let pulse = pulsePhase * 0.05 * tunnelStrength;
 
     let twistAngle = angle + (1.0 - smoothstep(0.0, 1.0, dist)) * (spiral * 5.0) * sin(time) + rippleTwist * 1.4 + pulse * 4.0;
 
@@ -142,6 +124,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let luminance = dot(vec3<f32>(cR, cG, cB), vec3<f32>(0.299, 0.587, 0.114));
     let alpha = clamp(luminance + tunnelStrength * 0.3 + abs(pulse) * 2.0 + src.a * 0.2, 0.0, 1.0);
     var color = vec3<f32>(cR, cG, cB);
+
+    // ── Idea 2: vanishing streak ──────────────────────────────────
+    // A shorter radius is further down the tunnel. Pulse Speed owns
+    // how much of that farther sample is mixed in.
+    let streakR = rG * (1.0 - pulseSpeed * 0.28);
+    let offS = vec2<f32>(cos(twistAngle), sin(twistAngle)) * streakR;
+    let uvS = clamp(vec2<f32>(offS.x / aspect, offS.y) + center, vec2<f32>(0.0), vec2<f32>(1.0));
+    let streak = textureSampleLevel(readTexture, u_sampler, uvS, 0.0).rgb;
+    let streakMix = pulseSpeed * tunnelStrength * 0.45 * (1.0 - smoothstep(0.05, 0.85, dist));
+    color = mix(color, streak, clamp(streakMix, 0.0, 0.65));
+
+    // ── Idea 1: pulse ridges ──────────────────────────────────────
+    // The same sine that nudges the radius also occludes the wall.
+    let ridge = smoothstep(0.35, 1.0, pulsePhase) * tunnelStrength;
+    color = color * (1.0 - ridge * 0.28);
+
+    // ── Idea 3: dark pupil ────────────────────────────────────────
+    // The end of the tunnel dims before the existing blue glow is added.
+    let pupil = 1.0 - smoothstep(0.0, 0.03 + tunnelStrength * 0.025, dist);
+    color = color * (1.0 - pupil * 0.82);
 
     let glow = 1.0 - smoothstep(0.0, 0.1, dist);
     let glowColor = vec3<f32>(0.2, 0.4, 1.0) * (1.0 + bass * 2.0);

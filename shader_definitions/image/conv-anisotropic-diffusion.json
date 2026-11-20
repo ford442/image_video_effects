@@ -1,7 +1,7 @@
 {
   "id": "conv-anisotropic-diffusion",
   "name": "Anisotropic Diffusion",
-  "description": "Perona-Malik anisotropic diffusion that smooths along edges but not across them. Creates oil-painting simplification into flat colored regions. Alpha stores per-pixel diffusion coefficient as a process map. Mouse acts as heat source accelerating diffusion.",
+  "description": "Perona-Malik anisotropic diffusion that smooths along edges but not across them. Creates oil-painting simplification into flat colored regions. Alpha stores per-pixel diffusion coefficient as a process map. Mouse acts as heat source accelerating diffusion and raising the edge threshold, so edges soften near the cursor. Conductivity uses a pre-smoothed (Catte-Lions) gradient so speckle conducts while real edges hold, and diagonal neighbours remove the axis bias.",
   "url": "shaders/conv-anisotropic-diffusion.wgsl",
   "features": [
     "advanced-convolution",

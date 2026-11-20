@@ -1,31 +1,16 @@
-// ═══ Quad Mirror ═══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Quad Mirror
 //  Category: geometric
 //  Features: mouse-driven, geometry, upgraded-rgba, fbm-domain-warp,
 //            audio-reactive, seam-warp, chromatic-aberration,
 //            aces-tone-map, temporal-feedback, depth-aware, alpha-layered
 //  Complexity: Medium
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-07-08, 2026-11-19
+//  Ideas: glass bevel; seam split; quadrant registration
+//  A packing: ACES display RGBA
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -143,7 +128,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let ribbonY = cos((abs(r.x) * 8.0 - abs(r.y) * 2.0) * TAU + time * 4.7);
     r += vec2<f32>(ribbonX, ribbonY) * (0.003 + p3 * 0.012) * (0.6 + mids);
     let zoom = max(MIN_ZOOM, 0.5 + mids * 0.1);
-    var sampleUV = mouse - vec2<f32>(abs(r.x + hOffset), abs(r.y + vOffset)) / zoom;
+    let signed = vec2<f32>(r.x + hOffset, r.y + vOffset);
+    let paneSign = sign(signed + vec2<f32>(0.0001, -0.0001));
+    let seamDist = min(abs(signed.x), abs(signed.y));
+    // ── Idea 1: glass bevel ───────────────────────────────────────
+    // The abs() fold is a mathematical line. Pull the sample back into
+    // its pane and darken the crease, wider as Seam Warp opens.
+    let bevel = 1.0 - smoothstep(0.0, 0.004 + seamWarpAmt * 0.35, seamDist);
+    let bevelInset = bevel * (0.002 + seamWarpAmt);
+    // ── Idea 3: quadrant registration ─────────────────────────────
+    // The sign of the pre-abs coordinate biases each pane, so the four
+    // copies do not lock. Seam Warp still owns how far they slip.
+    let qShift = paneSign * vec2<f32>(0.45, -0.30) * seamWarpAmt;
+    var sampleUV = mouse - (abs(signed) + bevelInset) / zoom + qShift;
 
     var clickWave = 0.0;
     let rippleCount = min(u32(u.config.y), 50u);
@@ -173,8 +170,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     sampleUV = domainWarp(sampleUV * noiseFreq + time, warpShimmer * nearSeam, 3);
 
-    // ── Sample and color grade ────────────────────────────────────
-    var color = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+    // ── Idea 2: seam split ────────────────────────────────────────
+    // Resample red and blue along the nearer crease normal. The older
+    // channel-multiply diffraction below stays; this is the spatial split.
+    let seamN = select(vec2<f32>(0.0, paneSign.y), vec2<f32>(paneSign.x, 0.0), abs(signed.x) <= abs(signed.y));
+    let split = (0.003 * (1.0 + bass) + depth * 0.001) * (0.35 + bevel * 2.2);
+    let uvG = clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvR = clamp(sampleUV + seamN * split, vec2<f32>(0.0), vec2<f32>(1.0));
+    let uvB = clamp(sampleUV - seamN * split, vec2<f32>(0.0), vec2<f32>(1.0));
+    let sampG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0);
+    let sampR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+    let sampB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+    var color = vec4<f32>(sampR, sampG.g, sampB, sampG.a);
+    color = vec4<f32>(color.rgb * (1.0 - bevel * 0.58), color.a);
 
     let y = luma(color.rgb);
     let satBoost = 1.0 + mids * 0.4;
