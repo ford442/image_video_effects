@@ -1,43 +1,37 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Gen Raptor Mini Flow
 //  Category: advanced-hybrid
-//  Features: generative, mouse-driven, flow-field, cellular, audio-reactive
+//  Features: generative, mouse-driven, flow-field, cellular, audio-reactive, upgraded-rgba
 //  Complexity: Very High
 //  Chunks From: gen-raptor-mini.wgsl, conv-structure-tensor-flow.wgsl
 //  Created: 2026-04-18
 //  By: Agent CB-5 — Generative & Hybrid Enhancer
+//  Upgraded: 2026-11-20
+//  Ideas: streamlined body along heading (structure-tensor orientation, §12.2A); pursuit wake (soft inverse-square, §12.2F)
+//  A packing: ACES display RGBA (C is never read; A written for the contract)
 // ═══════════════════════════════════════════════════════════════════
 //  Predatory raptor agents navigate structure-tensor flow fields,
 //  hunting along image edges and orientations. Their trails follow
 //  dominant eigenvectors while audio rage pulses through the swarm.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash21 (from gen-raptor-mini.wgsl) ═══
 fn hash21(p: vec2<f32>) -> vec2<f32> {
   var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
   p3 += vec3<f32>(dot(p3, p3.yzx + vec3<f32>(33.33)));
   return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+fn safeNorm(v: vec2<f32>, fallback: vec2<f32>) -> vec2<f32> {
+  let l2 = dot(v, v);
+  return select(fallback, v * inverseSqrt(max(l2, 1e-12)), l2 > 1e-10);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+  let c = max(x, vec3<f32>(0.0));
+  return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn sampleLuma(uv: vec2<f32>, pixelSize: vec2<f32>, dx: i32, dy: i32) -> f32 {
@@ -112,11 +106,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let lambda1 = (trace + diff) * 0.5;
   let lambda2 = (trace - diff) * 0.5;
 
-  // Dominant eigenvector (flow direction)
-  var eigenvec = vec2<f32>(1.0, 0.0);
-  if (abs(Jxy) > 0.0001 || abs(Jxx - lambda1) > 0.0001) {
-    eigenvec = normalize(vec2<f32>(lambda1 - Jyy, Jxy));
-  }
+  // Dominant eigenvector (flow direction). Rescue: the principal-axis angle
+  // θ = ½·atan2(2Jxy, Jxx−Jyy) is the same x ≥ 0 unit vector as the old
+  // normalize(λ1−Jyy, Jxy) but never normalizes the zero vector (Jxy = 0,
+  // Jxx < Jyy, i.e. gradient only in y). Flat areas still give (1, 0).
+  let hasOrient = abs(Jxy) > 0.0001 || abs(Jxx - Jyy) > 0.0001;
+  let eigTheta = select(0.0, 0.5 * atan2(2.0 * Jxy, Jxx - Jyy), hasOrient);
+  let eigenvec = vec2<f32>(cos(eigTheta), sin(eigTheta));
 
   // Coherency: how strongly oriented
   let coherency = select(0.0, (lambda1 - lambda2) / (lambda1 + lambda2 + 0.0001), lambda1 + lambda2 > 0.0001);
@@ -132,31 +128,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var st = uv * scale_pattern * 5.0;
 
   // Blend flow direction with mouse direction
-  let toMouse = normalize(mouse - uv);
+  let toMouse = safeNorm(mouse - uv, vec2<f32>(0.0));
   let flowDir = mix(toMouse, eigenvec, flowInfluence);
 
   // Turn speed controls how intensely they align to flow
-  let dir = mix(normalize(uv), flowDir, turnSpeed);
+  let dir = mix(safeNorm(uv, vec2<f32>(0.0)), flowDir, turnSpeed);
 
-  // Offset cells by time and flow-driven speed
-  st += dir * time * maxSpeed * (1.0 + coherency);
+  // Offset cells by time and flow-driven speed.
+  // Rescue: HEAD added dir to the *sample* point (st += …), which moves the
+  // lattice features along −dir — raptors fled the cursor. Subtracting makes
+  // them travel along dir (toward the prey / along the flow).
+  st -= dir * time * maxSpeed * (1.0 + coherency);
 
   let id = floor(st);
   let f = fract(st) - 0.5;
 
   let rng = hash21(id);
   let bodyRadius = 0.2 * (1.0 + rage * 0.5);
-  let dist = length(f) - bodyRadius;
+
+  // ── Idea 1: streamlined body (structure-tensor orientation → anisotropic kernel, §12.2A)
+  // Measure the body SDF in the raptor's heading frame: stretched along dir by
+  // 1 + 0.8·coherency, squeezed across by the inverse (area-preserving). Strongly
+  // oriented image regions give long slim raptors, flat regions give HEAD's discs.
+  // The stretch is clamped so the body never outgrows its own cell.
+  let heading = safeNorm(dir, eigenvec);
+  let hFrame = vec2<f32>(dot(f, heading), dot(f, vec2<f32>(-heading.y, heading.x)));
+  let stretch = min(1.0 + 0.8 * coherency, max(1.0, 0.48 / bodyRadius));
+  let dist = length(vec2<f32>(hFrame.x / stretch, hFrame.y * stretch)) - bodyRadius;
   let glow_radius = 0.15 + rageDuration * 0.3;
+
+  let flowAngle = atan2(eigenvec.y, eigenvec.x) * 0.15915 + 0.5;
+  let flowHue = vec3<f32>(
+    0.5 + 0.5 * cos(6.28318 * (flowAngle + 0.0)),
+    0.5 + 0.5 * cos(6.28318 * (flowAngle + 0.33)),
+    0.5 + 0.5 * cos(6.28318 * (flowAngle + 0.67))
+  );
 
   if(dist < 0.0) {
     // Raptor body with flow-aligned color
-    let flowAngle = atan2(eigenvec.y, eigenvec.x) * 0.15915 + 0.5;
-    let flowHue = vec3<f32>(
-      0.5 + 0.5 * cos(6.28318 * (flowAngle + 0.0)),
-      0.5 + 0.5 * cos(6.28318 * (flowAngle + 0.33)),
-      0.5 + 0.5 * cos(6.28318 * (flowAngle + 0.67))
-    );
     col = flowHue * (0.5 + 0.5 * rng.x) + vec3<f32>(rage * 0.8, 0.0, 0.0);
 
     // Scale pattern on raptor
@@ -177,9 +186,30 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     col = mix(trail + flowVis, vec3<f32>(0.2, 0.8, 0.3), glow * 0.5);
     alpha = glow * 0.35;
+
+    // ── Idea 2: pursuit wake (soft inverse-square, §12.2F) ───────────────
+    // A raptor moving at max speed drags a comet tail behind it along −heading.
+    // Measured from the body centre so it grows out of the body without a seam;
+    // length grows with speed and coherency but is capped at 0.49 cell so it
+    // never meets the cell edge. Width tapers to a point; brightness falls as
+    // 1/(1+(a/a0)²) — a core radius instead of a singularity.
+    let bodyRear = bodyRadius * stretch;
+    let behind = max(-hFrame.x, 0.0);
+    let tailLen = max(min(bodyRear + (0.12 + 0.26 * maxSpeed) * (1.0 + 0.6 * coherency), 0.49), 0.05);
+    let taper = clamp(1.0 - behind / tailLen, 0.0, 1.0);
+    let tailW = 1.0 * bodyRadius / stretch * taper;
+    let across = exp(-hFrame.y * hFrame.y / (tailW * tailW + 0.002));
+    let a0 = 0.8 * tailLen;
+    let rise = smoothstep(0.0, 0.12, -hFrame.x);   // nothing ahead of the body
+    let wake = rise * taper * across / (1.0 + (behind * behind) / (a0 * a0));
+    col += (flowHue * 0.7 + vec3<f32>(0.3)) * wake * (2.0 + 0.5 * min(rage, 2.0));
+    alpha = max(alpha, wake * 0.5);
   }
 
-  textureStore(writeTexture, coords, vec4<f32>(col, alpha));
+  // Floor: ACES on display RGB, A = display RGBA (C is never read here).
+  let display = acesToneMap(col);
+  textureStore(writeTexture, coords, vec4<f32>(display, alpha));
+  textureStore(dataTextureA, coords, vec4<f32>(display, alpha));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, screen_uv, 0.0).r;
   textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));

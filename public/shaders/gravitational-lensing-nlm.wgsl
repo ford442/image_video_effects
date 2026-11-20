@@ -4,28 +4,13 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            schwarzschild-metric, non-local-means, semantic-alpha, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-11-20
+//  Ideas: Buades-form NLM weights (Gaussian patch + noise-bias subtraction, cached centre patch; §12.2 NLM kernel deepening); disk g-factor (gravitational redshift dims and reddens the disk by the Redshift slider); photon ring from closest approach
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BlackHoleMass, y=DiskBrightness, z=CameraOrbit, w=Redshift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BlackHoleMass, y=DiskBrightness, z=CameraOrbit, w=Redshift
 
 const MAX_STEPS: i32 = 96;
 const MAX_DIST: f32 = 45.0;
@@ -35,7 +20,7 @@ fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
-fn renderAccretionDisk(rayPos: vec3<f32>, rayDir: vec3<f32>, blackHolePos: vec3<f32>, mass: f32) -> vec3<f32> {
+fn renderAccretionDisk(rayPos: vec3<f32>, rayDir: vec3<f32>, blackHolePos: vec3<f32>, mass: f32, redshiftAmount: f32) -> vec3<f32> {
   let rs = 2.0 * mass;
   let innerRadius = rs * 2.8;
   let outerRadius = rs * 14.0;
@@ -55,6 +40,14 @@ fn renderAccretionDisk(rayPos: vec3<f32>, rayDir: vec3<f32>, blackHolePos: vec3<
       else if (temp > 0.5) { color = vec3<f32>(1.0, 0.55, 0.22); }
       else { color = vec3<f32>(0.85, 0.25, 0.12); }
       color = color * beaming * temp * temp;
+      // ── Idea 2: disk g-factor ─────────────────────────────────────────
+      // Beaming above is only the Doppler half of the g-factor. Emission from
+      // deep in the well is also gravitationally redshifted: dimmer (I ∝ g³)
+      // and shifted red, strongest at the inner edge. gravitationalRedshift()
+      // was only ever applied to the far background; the Redshift slider (0 =
+      // HEAD disk) now acts on the disk too.
+      let gGrav = sqrt(max(1.0 - 2.0 * mass / max(distFromCenter, 2.0 * mass), 0.0));
+      color = color * mix(vec3<f32>(1.0), gravitationalRedshift(distFromCenter, mass) * (gGrav * gGrav * gGrav), redshiftAmount);
       return color * smoothstep(outerRadius, innerRadius, distFromCenter);
     }
   }
@@ -67,18 +60,27 @@ fn gravitationalRedshift(r: f32, mass: f32) -> vec3<f32> {
   return vec3<f32>(1.0, factor, factor * 0.8);
 }
 
-fn patchDistance(uv1: vec2<f32>, uv2: vec2<f32>, pixelSize: vec2<f32>) -> f32 {
+// ── Idea 1: Buades-form NLM patch distance (§12.2 NLM kernel deepening) ──
+// HEAD summed a flat 3×3 SSD and re-sampled the centre patch for every
+// neighbour. Here the centre patch is fetched once by the caller, each tap is
+// weighted by a Gaussian (sigma 1 px, scaled so the nine weights sum to 9 and
+// hParam keeps its HEAD meaning), and the neighbour patch's centre tap comes
+// back with the distance so the caller does not load it again.
+fn patchDistance(centre: array<vec3<f32>, 9>, uv2: vec2<f32>, pixelSize: vec2<f32>) -> vec4<f32> {
   var dist = 0.0;
-  for (var dy = -1; dy <= 1; dy = dy + 1) {
-    for (var dx = -1; dx <= 1; dx = dx + 1) {
-      let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
-      let p1 = textureSampleLevel(readTexture, u_sampler, clamp(uv1 + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-      let p2 = textureSampleLevel(readTexture, u_sampler, clamp(uv2 + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
-      let diff = p1 - p2;
-      dist += dot(diff, diff);
-    }
+  var nbCentre = vec3<f32>(0.0);
+  for (var k = 0; k < 9; k = k + 1) {
+    let dx = k % 3 - 1;
+    let dy = k / 3 - 1;
+    let d2 = dx * dx + dy * dy;
+    let wk = 1.8377 * select(select(1.0, 0.6065, d2 == 1), 0.3679, d2 == 2);
+    let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
+    let p2 = textureSampleLevel(readTexture, u_sampler, clamp(uv2 + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    let diff = centre[k] - p2;
+    dist += dot(diff, diff) * wk;
+    nbCentre = select(nbCentre, p2, k == 4);
   }
-  return dist;
+  return vec4<f32>(nbCentre, dist);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -143,26 +145,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let camAngle = time * 0.1 + cameraOrbit + bass * 0.2;
   let ro = vec3<f32>(cos(camAngle) * camDist, sin(camAngle * 0.3) * 5.0, sin(camAngle) * camDist);
 
+  // Rescue: HEAD built `right` as cross(up, forward) (that is LEFT) and added
+  // `up * uvRaw.y` with uvRaw.y growing downward — a 180° roll, so the disk
+  // "floor" rendered overhead. True right/up now, screen-y pointing down.
   let forward = normalize(blackHolePos - ro);
-  let right = normalize(cross(vec3<f32>(0.0, 1.0, 0.0), forward));
-  let up = cross(forward, right);
-  let rd = normalize(forward + right * uvRaw.x * aspect * 0.5 + up * uvRaw.y * 0.5);
+  let right = normalize(cross(forward, vec3<f32>(0.0, 1.0, 0.0)));
+  let up = cross(right, forward);
+  let rd = normalize(forward + right * uvRaw.x * aspect * 0.5 - up * uvRaw.y * 0.5);
 
   var rayPos = ro;
   var rayDir = rd;
   var color = vec3<f32>(0.0);
   var depth = 1.0;
+  var rMin = 1e9;                       // Idea 3: periapsis of the bent ray
 
   for (var i: i32 = 0; i < MAX_STEPS; i = i + 1) {
     let toCenter = rayPos - blackHolePos;
     let r = length(toCenter);
+    rMin = min(rMin, r);
     if (r < eventHorizon) {
       color = vec3<f32>(0.0);
       depth = 0.0;
       break;
     }
     if (r > MAX_DIST) {
-      let bgUV = vec2<f32>(atan2(rayDir.z, rayDir.x) / 6.2831853 + 0.5, rayDir.y * 0.5 + 0.5);
+      // Rescue companion: the 180° un-roll must not move the photo, so look the
+      // panorama up along the direction HEAD's rolled camera would have used
+      // (rotate the escaped direction 180° about the view axis).
+      let bgDir = 2.0 * dot(rayDir, forward) * forward - rayDir;
+      let bgUV = vec2<f32>(atan2(bgDir.z, bgDir.x) / 6.2831853 + 0.5, bgDir.y * 0.5 + 0.5);
       color = textureSampleLevel(readTexture, u_sampler, bgUV, 0.0).rgb;
       let redshift = gravitationalRedshift(r, blackHoleMass);
       color = color * mix(vec3<f32>(1.0), redshift, redshiftIntensity);
@@ -172,7 +183,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let accel = -normalize(toCenter) * blackHoleMass / (r * r);
 
-    let cursorPos3D = vec3<f32>((mouse.x - 0.5) * 6.0 * aspect, (mouse.y - 0.5) * 6.0, 0.0);
+    let cursorPos3D = vec3<f32>((mouse.x - 0.5) * 6.0 * aspect, (0.5 - mouse.y) * 6.0, 0.0);
     let toCursor = cursorPos3D - rayPos;
     let rCursor = length(toCursor);
     let cursorMass = blackHoleMass * 0.25 * (1.0 + held * 2.0 + mids * 0.5);
@@ -182,8 +193,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     rayPos += rayDir * DT * r * 0.5;
   }
 
-  let diskColor = renderAccretionDisk(ro, rd, blackHolePos, blackHoleMass) * diskBrightness;
+  let diskColor = renderAccretionDisk(ro, rd, blackHolePos, blackHoleMass, redshiftIntensity) * diskBrightness;
   color += diskColor;
+
+  // ── Idea 3: photon ring from closest approach ───────────────────────
+  // `r` is computed every step and discarded; its minimum is the periapsis.
+  // Rays that escaped after grazing the horizon pile up on the photon sphere
+  // and give the shadow a thin hot rim. Absorbed rays (rMin < horizon) get 0.
+  let grazing = exp(-max(rMin / eventHorizon - 1.0, 0.0) / 0.05) * step(eventHorizon, rMin);
+  color += vec3<f32>(1.0, 0.82, 0.55) * grazing * 1.0 * (1.0 + treble * 0.5);
 
   let closestApproach = length(ro - blackHolePos);
   let einsteinRadius = sqrt(rs * closestApproach);
@@ -203,15 +221,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var accumWeight = 0.0;
   var similaritySum = 0.0;
 
+  // Idea 1: centre patch fetched once (HEAD re-sampled it for all 24 neighbours)
+  var centrePatch: array<vec3<f32>, 9>;
+  for (var k = 0; k < 9; k = k + 1) {
+    let o = vec2<f32>(f32(k % 3 - 1), f32(k / 3 - 1)) * pixelSize;
+    centrePatch[k] = textureSampleLevel(readTexture, u_sampler, clamp(uv + o, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+  }
+  // Noise-bias term of the Buades weight: max(d² − 2σ², 0). Near-identical
+  // patches reach weight 1 instead of 0.8–0.9, so flat sky smooths fully.
+  let nlmBias = hParam * 0.22;
+
   for (var dy = -2; dy <= 2; dy = dy + 1) {
     for (var dx = -2; dx <= 2; dx = dx + 1) {
       if (dx == 0 && dy == 0) { continue; }
       let offset = vec2<f32>(f32(dx), f32(dy)) * pixelSize;
       let neighborUV = clamp(uv + offset, vec2<f32>(0.001), vec2<f32>(0.999));
-      let pd = patchDistance(uv, neighborUV, pixelSize);
-      let weight = exp(-pd / hParam);
+      let pdn = patchDistance(centrePatch, neighborUV, pixelSize);
+      let weight = exp(-max(pdn.w - nlmBias, 0.0) / hParam);
 
-      let neighborColor = textureSampleLevel(readTexture, u_sampler, neighborUV, 0.0).rgb;
+      let neighborColor = pdn.xyz;
       accumColor += neighborColor * weight;
       accumWeight += weight;
       similaritySum += weight;
@@ -231,7 +259,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   result = mix(result, prevC, 0.07);
 
   let finalRGB = aces(result);
-  let importance = clamp(1.0 - avgSimilarity + ringGlow * 0.4 + held * 0.15, 0.1, 1.0);
+  let importance = clamp(1.0 - avgSimilarity + ringGlow * 0.4 + grazing * 0.25 + held * 0.15, 0.1, 1.0);
   let finalPixel = vec4<f32>(finalRGB, importance);
 
   textureStore(writeTexture, id, finalPixel);

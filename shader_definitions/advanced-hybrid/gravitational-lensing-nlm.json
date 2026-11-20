@@ -2,7 +2,7 @@
   "id": "gravitational-lensing-nlm",
   "name": "Gravitational Lensing NLM",
   "url": "shaders/gravitational-lensing-nlm.wgsl",
-  "description": "Black hole gravitational lensing with non-local means artistic overdrive. Patch-similarity filtering smooths background starfields while preserving unique features like the event horizon and Einstein ring.",
+  "description": "Black hole gravitational lensing with non-local means artistic overdrive. Patch-similarity filtering smooths background starfields while preserving unique features like the event horizon and Einstein ring. The disk is now upright with a gravitational-redshift g-factor (the Redshift slider also dims and reddens the disk), Buades-form NLM weighting (Gaussian patch, noise-bias term) and a thin photon ring on the shadow edge.",
   "features": [
     "advanced-hybrid",
     "schwarzschild-metric",

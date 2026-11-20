@@ -562,7 +562,7 @@
     "id": "hybrid-chromatic-liquid",
     "name": "Hybrid Chromatic Liquid",
     "url": "shaders/hybrid-chromatic-liquid.wgsl",
-    "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field. Audio reactivity pulses dot size and ink density with the music.",
+    "description": "Fluid-like distortion with RGB channel separation flowing along a noise-generated flow field. The split follows the liquid surface slope (steep ripples disperse hard along the gradient) and the rippled surface carries a normal-driven Fresnel rim and specular glint. Bass swells the liquid; the cursor pulls and rings it.",
     "features": [
       "mouse-driven",
       "hybrid",
@@ -571,7 +571,8 @@
       "flow-field",
       "fresnel",
       "randomization-safe",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {

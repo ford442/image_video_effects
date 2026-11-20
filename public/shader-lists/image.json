@@ -1521,7 +1521,7 @@
   {
     "id": "conv-structure-tensor-flow",
     "name": "Structure Tensor Flow",
-    "description": "Computes structure tensor, extracts eigenvectors for dominant texture orientation, and visualizes flow via Line Integral Convolution. RGBA32FLOAT packs eigenvector components, coherency, and LIC intensity. Mouse creates vortices in the flow field.",
+    "description": "Computes structure tensor, extracts eigenvectors for dominant texture orientation, and visualizes flow via Line Integral Convolution. RGBA32FLOAT packs eigenvector components, coherency, and LIC intensity. Mouse creates vortices in the flow field. Streak length follows coherency and re-orients at the midpoint so lines bend along curved contours; orientation hue is pi-periodic (no seam on horizontal structure).",
     "url": "shaders/conv-structure-tensor-flow.wgsl",
     "features": [
       "advanced-convolution",

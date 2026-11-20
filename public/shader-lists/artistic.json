@@ -1331,7 +1331,7 @@
     "id": "cosmic-flow",
     "name": "Cosmic Flow Pro",
     "url": "shaders/cosmic-flow.wgsl",
-    "description": "Braided magnetohydrodynamic nebula currents with layered domain warping, lensing eddies, click-launched vortices, depth deflection, chromatic source refraction, and advected HDR persistence.",
+    "description": "Braided magnetohydrodynamic nebula currents with layered domain warping, lensing eddies, click-launched vortices, depth deflection, chromatic source refraction, and advected HDR persistence. Dark reddening dust lanes thread between the braids and dim whatever shines through them, and stars are twinkling point sources with Airy cores and diffraction spikes.",
     "params": [
       {
         "id": "speed",
@@ -1371,7 +1371,8 @@
       "audio-driven",
       "click-reactive",
       "braided-flow",
-      "aces-tone-map"
+      "aces-tone-map",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",
@@ -1385,7 +1386,7 @@
     "id": "distortion_gravitational_lens",
     "name": "Gravitational Lens",
     "url": "shaders/distortion_gravitational_lens.wgsl",
-    "description": "Einstein ring gravitational lensing with Schwarzschild metric deflection, accretion disk blackbody radiation, and chromatic aberration",
+    "description": "Einstein ring gravitational lensing with Schwarzschild metric deflection, accretion disk blackbody radiation, and chromatic aberration. The ring is now the true critical curve of the lens (it bends and merges around the cluster masses), and the disk is Doppler-beamed: the approaching side burns hotter and brighter.",
     "tags": [
       "gravity",
       "lens",
