@@ -4,8 +4,8 @@
 //  Features: audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-09-15
-//  Ideas: Lyapunov stretch tint from log|Δstep|; Pickover stalks min(|x|,|y|) on this orbit
+//  Upgraded: 2026-09-15, 2026-11-20
+//  Ideas: Lyapunov stretch tint from log|Δstep|; Pickover stalks min(|x|,|y|) on this orbit; fold count as material — soft axis-crossing count of the orbit shifts hue (§12.2E); trap-hit iteration tints the stalks (§12.2E)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 //  A 2D strange-attractor-inspired vector field where each pixel
@@ -14,26 +14,8 @@
 //  coefficients pulse to audio, producing vivid acid-neon whorls
 //  that morph continuously. Temporal persistence burns trails.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = rippleCount, .zw = resolution
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv, .w = mouse_down
-  zoom_params: vec4<f32>,  // x=Drift Speed, y=Chaos Blend, z=Orbit Density, w=Trail Persistence
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Drift Speed, y=Chaos Blend, z=Orbit Density, w=Trail Persistence
 
 const TAU: f32 = 6.283185307179586;
 const ITERS: i32 = 8;
@@ -102,6 +84,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var orbit_hue   = 0.0;
   var lyap_acc    = 0.0;
   var pickover    = 10.0;
+  var folds       = 0.0;  // Idea 3: soft count of axis crossings along this orbit
+  var trapIter    = 0.0;  // Idea 4: iterate at which the Pickover trap was closest
   var pt = q;
 
   for (var i: i32 = 0; i < ITERS; i = i + 1) {
@@ -112,7 +96,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let stepLen = length(pt - prevPt);
     lyap_acc = lyap_acc + log(max(stepLen, 1.0e-4));
-    pickover = min(pickover, min(abs(pt.x), abs(pt.y)));
+    // ── Idea 3: fold count as material (§12.2E) ─────────────────────
+    // The orbit's symbolic itinerary: each step that carries a coordinate
+    // across an axis is one fold of the map. Soft (smoothstep, not step) so
+    // the cell edges of the folding skeleton do not alias.
+    let xing = vec2<f32>(1.0) - smoothstep(vec2<f32>(-0.12), vec2<f32>(0.12), pt * prevPt);
+    folds = folds + xing.x + xing.y;
+
+    // ── Idea 4: orbit-trap hit time (§12.2E) ────────────────────────
+    // HEAD kept only the min distance; promote *which iterate* made it.
+    let trapNow = min(abs(pt.x), abs(pt.y));
+    trapIter = mix(trapIter, f32(i), f32(trapNow < pickover));
+    pickover = min(pickover, trapNow);
 
     let orbitUV = pt / (scale * 2.0) + 0.5;
     let delta   = abs(uv - orbitUV);
@@ -127,12 +122,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let stretch = clamp((lyap + 0.4) * 1.1, 0.0, 1.0);
   let stalks = exp(-pickover * 9.0);
 
-  let hue = fract(normHue + time * speed * 0.05 + length(q) * 0.04 + stretch * 0.18);
+  let foldHue = folds * 0.045;  // Idea 3: cells that fold alike share a hue family
+  let hue = fract(normHue + time * speed * 0.05 + length(q) * 0.04 + stretch * 0.18 + foldHue);
   let sat = 0.88 + treble * 0.12;
   let val = density_acc * density * (1.0 + bass * 0.6) + stalks * 0.55;
   var color = hsv2rgb(vec3<f32>(hue, sat, 1.0)) * val;
   color = mix(color, vec3<f32>(0.15, 0.55, 1.0) * val, stretch * 0.35);
-  color = color + vec3<f32>(1.0, 0.85, 0.55) * stalks * (0.35 + treble * 0.4);
+  // Idea 4: stalks keep their warm base but lean toward the hue of the
+  // iterate that grazed the axis (early = near the pixel, late = deep orbit).
+  let trapTint = hsv2rgb(vec3<f32>(fract(0.08 + trapIter / f32(ITERS) * 0.8 + time * speed * 0.03), 0.6, 1.0));
+  let stalkCol = mix(vec3<f32>(1.0, 0.85, 0.55), trapTint, 0.55);
+  color = color + stalkCol * stalks * (0.35 + treble * 0.4);
 
   var histUV = uv;
   let pullStrength = 0.003 + speed * 0.002;

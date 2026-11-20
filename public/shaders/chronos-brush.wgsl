@@ -7,9 +7,9 @@
 //  Created: 2024-01-01
 //  Upgraded: 2026-06-28
 //  Rewired: 2026-07-30 (Batch 17 - honest slider semantics, click-stamp blooms, paint/erase mode)
-//  Upgraded: 2026-10-04
-//  Ideas: chronophotograph shutter stamps; thaw drip of fading frozen paint
-//  A packing: raw feedback RGBA (never tonemapped); .a = paint freshness (decays with history)
+//  Upgraded: 2026-10-04, 2026-11-20
+//  Ideas: chronophotograph shutter stamps; thaw drip of fading frozen paint; wet-edge pooling (§12.2C); dwell pressure (§12.2C)
+//  A packing: raw feedback RGBA (never tonemapped); .a = paint freshness (decays with history). writeTexture adds the wet-edge rim (display only, never stored)
 // ═══════════════════════════════════════════════════════════════════
 //  Slider contract (labels now tell the truth):
 //    x = Brush Size         -> brush radius (audio-boosted via bass_env)
@@ -18,26 +18,8 @@
 //    w = Mode (Paint/Erase) -> <=0.5 paints tinted strokes, >0.5 erases to live
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BrushSize, y=FreezeDecay, z=TimeEdgeDistort, w=Mode
-  ripples: array<vec4<f32>, 50>, // xy=click UV, z=click time, w=unused
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BrushSize, y=FreezeDecay, z=TimeEdgeDistort, w=Mode
 
 fn hash11(n: f32) -> f32 {
   return fract(sin(n * 127.1) * 43758.5453);
@@ -81,7 +63,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let diff = (uv - mousePos) * aspectCorrection;
     let dist = length(diff);
 
-    let radius = 0.02 + brushSize * 0.15;
+    // Exact-load bounds shared by every history tap below.
+    let maxCoord = vec2<i32>(resolution) - vec2<i32>(1);
+
+    // Idea 4 — dwell pressure (§12.2C): a held pointer presses harder where it rests. The
+    // pressure is read from the paint-freshness already stored under the cursor, so a brush
+    // that lingers blooms (radius up to 1.6x, deeper freshness) while one sweeping over fresh
+    // canvas stays thin. Real brush kinematics, no spring, no new state.
+    let held = select(0.0, 1.0, u.zoom_config.w > 0.5);
+    let cursorCoord = clamp(vec2<i32>(mousePos * resolution), vec2<i32>(0), maxCoord);
+    let cursorFresh = textureLoad(dataTextureC, cursorCoord, 0).a;
+    let pressure = held * smoothstep(0.2, 0.9, cursorFresh);
+
+    let radius = (0.02 + brushSize * 0.15) * (1.0 + 0.6 * pressure);
     let brush = 1.0 - smoothstep(radius * 0.8, radius, dist);
 
     // ── Temporal distortion: wobble the history fetch, not the live feed ──
@@ -95,7 +89,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let historyUV = clamp(uv + wobble, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // Exact history loads (rgba32float history must not go through a filtering sampler).
-    let maxCoord = vec2<i32>(resolution) - vec2<i32>(1);
     let historyCoord = clamp(vec2<i32>(historyUV * resolution), vec2<i32>(0), maxCoord);
     let heldColor = textureLoad(dataTextureC, historyCoord, 0);
 
@@ -161,10 +154,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         newHistoryColor = mix(newHistoryColor, tintedLive, mixFactor);
     }
 
-    let alpha = clamp(newHistoryColor.a + brushMask * 0.15 + bass * 0.05, 0.0, 1.0);
+    let alpha = clamp(newHistoryColor.a + brushMask * (0.15 + 0.1 * pressure) + bass * 0.05, 0.0, 1.0);
     let finalColor = vec4<f32>(newHistoryColor.rgb, alpha);
 
-    textureStore(writeTexture, vec2<i32>(global_id.xy), finalColor);
+    // Idea 3 — wet-edge pooling (§12.2C): pigment gathers at the boundary of a fresh stroke.
+    // edge = max(-laplacian(a), 0) on the freshness field in C.a (5-point stencil, step follows
+    // the brush's edge softness, 0.2 * radius): positive on the inner shoulder where the paint field turns over, so the
+    // rim darkens and saturates. It rides `a` itself, so a drying stroke loses its rim on its own,
+    // and a pressed brush (Idea 4) pools more. Display only: history in A is not touched, so
+    // nothing accumulates frame to frame.
+    let rimStep = clamp(i32(radius * 0.16 * resolution.y), 2, 12);
+    let aL = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>(-rimStep, 0), vec2<i32>(0), maxCoord), 0).a;
+    let aR = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>(rimStep, 0), vec2<i32>(0), maxCoord), 0).a;
+    let aU = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>(0, -rimStep), vec2<i32>(0), maxCoord), 0).a;
+    let aD = textureLoad(dataTextureC, clamp(historyCoord + vec2<i32>(0, rimStep), vec2<i32>(0), maxCoord), 0).a;
+    let paintLap = aL + aR + aU + aD - 4.0 * heldColor.a;
+    let pool = clamp(-paintLap * (5.0 + 2.5 * pressure), 0.0, 1.0) * smoothstep(0.08, 0.45, heldColor.a);
+    let paintLuma = dot(finalColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let pooled = mix(vec3<f32>(paintLuma), finalColor.rgb, 1.0 + 0.7 * pool) * (1.0 - 0.38 * pool);
+    let shown = vec4<f32>(max(pooled, vec3<f32>(0.0)), alpha);
+
+    textureStore(writeTexture, vec2<i32>(global_id.xy), shown);
     textureStore(dataTextureA, global_id.xy, finalColor);
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

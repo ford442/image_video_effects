@@ -9359,7 +9359,7 @@
     "id": "spec-temporal-path-tracer",
     "name": "Temporal Path Tracer",
     "url": "shaders/spec-temporal-path-tracer.wgsl",
-    "description": "2D path tracer with temporal accumulation. Casts light rays that bounce off image edges, accumulating Monte Carlo samples over time for soft global illumination and color bleeding.",
+    "description": "2D path tracer with temporal accumulation. Casts light rays that bounce off image edges, accumulating Monte Carlo samples over time for soft global illumination and color bleeding. Hit radiance falls off with distance so colour bleed stays local, the marcher's step lattice is jittered so the converged image has no quantisation rings, and the history re-converges when the source changes (or while the pointer light is held) instead of ghosting for 300 frames and then hard-resetting.",
     "tags": [
       "path-tracing",
       "temporal",
@@ -9373,7 +9373,8 @@
       "Monte-Carlo",
       "mouse-driven",
       "HDR",
-      "multi-pass-1"
+      "multi-pass-1",
+      "upgraded-rgba"
     ],
     "params": [
       {
