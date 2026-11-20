@@ -5,7 +5,7 @@
     "category": "hybrid",
     "type": "compute",
     "url": "shaders/hyb-chromatic-circuit.wgsl",
-    "description": "Opal-circuit style hex-grid trace edges, radial pulse glow, and chromatic aberration are layered over the input image while preserving alpha.",
+    "description": "Opal-circuit style hex-grid trace edges, radial pulse glow, and chromatic aberration are layered over the input image while preserving alpha. Live nodes carry drilled via pads that grow with the number of traces landing on them, and each trace is lit as a raised copper ridge under solder mask.",
     "features": [
       "hybrid",
       "hex-grid",

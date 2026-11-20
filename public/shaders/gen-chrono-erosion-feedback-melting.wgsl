@@ -3,29 +3,13 @@
 //  Category: artistic
 //  Description: Datamosh-like flow where video melts along a curl-noise
 //               vector field with feedback decay and audio-driven turbulence.
-//  Features: audio-reactive, temporal, feedback
+//  Features: audio-reactive, temporal, feedback, mouse-driven, upgraded-rgba
+//  Upgraded: 2026-11-20
+//  Ideas: flow-lane persistence (erosion channels: Trail Decay made spatially varying, §12.1 tactic 4); macroblock motion carry (16 px block-centre flow vector, §12.2B)
+//  A packing: display-colour history (HDR <= 1.5, pre-ACES); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(12.9898, 78.233))) * 43758.5453);
@@ -50,12 +34,48 @@ fn curlNoise(p: vec2<f32>, t: f32) -> vec2<f32> {
     return vec2<f32>(dndy, -dndx);
 }
 
+// zoom_params: x=Trail Decay, y=Flow Intensity, z=Turbulence, w=Feedback Mix
+
+// Macroblock edge in pixels (datamosh P-frame motion vectors are per 16x16 block).
+const MB: f32 = 16.0;
+
+fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ── _std/_std_sample.wgsl (verbatim): exact edge-clamped load + 4-load bilinear ──
+// Rescue: HEAD read dataTextureC (rgba32float) through the filtering u_sampler.
+fn loadClamped(tex: texture_2d<f32>, c: vec2<i32>) -> vec4<f32> {
+  let dim = vec2<i32>(textureDimensions(tex));
+  return textureLoad(tex, clamp(c, vec2<i32>(0), dim - vec2<i32>(1)), 0);
+}
+
+fn loadBilinear(tex: texture_2d<f32>, px: vec2<f32>) -> vec4<f32> {
+  let q = px - 0.5;
+  let i = vec2<i32>(floor(q));
+  let f = fract(q);
+  let a = loadClamped(tex, i);
+  let b = loadClamped(tex, i + vec2<i32>(1, 0));
+  let c = loadClamped(tex, i + vec2<i32>(0, 1));
+  let d = loadClamped(tex, i + vec2<i32>(1, 1));
+  return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = u.config.zw;
     if (id.x >= u32(res.x) || id.y >= u32(res.y)) { return; }
 
-    let uv = vec2<f32>(id.xy) / res;
+    // Rescue: pixel centre. HEAD used id/res (the pixel CORNER) for both the live
+    // sample and the history read, so every frame of the loop shifted the feedback
+    // half a texel up-left and blurred it 2x2 (diagonal drift + mush).
+    let px = vec2<f32>(id.xy) + 0.5;
+    let uv = px / res;
     let time = u.config.x;
     let bass = plasmaBuffer[0].x;
     let audioOverall = plasmaBuffer[0].x + plasmaBuffer[0].y + plasmaBuffer[0].z;
@@ -66,41 +86,44 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let flowIntensity = u.zoom_params.y * 0.05 + 0.005;
     let feedbackMix = u.zoom_params.w;
 
-    // Per-band FFT turbulence: the frame is split into 8 vertical strips and
-    // each strip's melt turbulence is scaled by its own FFT bin, so different
-    // bands boil at different energies instead of the whole frame moving as one.
+    // Per-band FFT turbulence: the frame is split into 8 strips and each strip's
+    // melt turbulence is scaled by its own FFT energy, so different bands boil at
+    // different energies instead of the whole frame moving as one.
+    // Rescue: HEAD read plasmaBuffer[1..8].x, which the engine never uploads (only
+    // plasmaBuffer[0] is written) so bandEnergy was always 0. The live FFT is
+    // extraBuffer[5..132] (128 bins); strip b reads octave bin 2^b - 1 (0,1,3,..,127).
     let band = min(u32(uv.y * 8.0), 7u);
-    let bandEnergy = plasmaBuffer[(band % 8u) + 1u].x * 0.5;
+    let fftBin = (1u << band) - 1u;
+    let bandEnergy = 0.25 * (extraBuffer[5u + fftBin] + extraBuffer[5u + min(fftBin + 1u, 127u)]);
     let turbulence = u.zoom_params.z * 2.0 * (1.0 + bandEnergy);
 
-    // Curl-noise flow field
-    var flow = curlNoise(uv * 3.0, time * 0.1) * flowIntensity;
+    // ── Idea 2: macroblock motion carry (§12.2B, datamosh) ──
+    // Real moshed video drags whole 16x16 macroblocks by ONE motion vector. The curl
+    // vector is also evaluated at the block centre; where the field is strong the
+    // pixel's vector is pulled toward the block's, so fast streams tear into rigid
+    // blocks while calm regions stay liquid. Stateless: no motion buffer needed.
+    let curlPix = curlNoise(uv * 3.0, time * 0.1);
+    let blockUv = (floor(vec2<f32>(id.xy) / MB) * MB + 0.5 * MB) / res;
+    let curlBlk = curlNoise(blockUv * 3.0, time * 0.1);
+    let blockCarry = smoothstep(0.3, 0.85, length(curlBlk)) * 0.75;
 
-    // Sprung smudge: a critically-damped spring eases the raw cursor so the
-    // smear finger drags with weight. Persistent state lives in
-    // extraBuffer[133..136] (pos.xy, vel.xy), [137] = initialized flag,
-    // [138] = last spring time. [0..4] reserved, [5..132] engine FFT.
-    let rawMouse = u.zoom_config.yz; // spring target = raw cursor
-    var smudgePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var smudgeVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) {
-        smudgePos = rawMouse;
-        smudgeVel = vec2<f32>(0.0, 0.0);
-    }
-    let springDt = clamp(time - extraBuffer[138], 0.0005, 0.05);
-    let omega = 8.0;
-    let springAccel = omega * omega * (rawMouse - smudgePos) - 2.0 * omega * smudgeVel;
-    smudgeVel = smudgeVel + springAccel * springDt;
-    smudgePos = smudgePos + smudgeVel * springDt;
-    // One invocation persists the shared spring state for the next frame.
-    if (id.x == 0u && id.y == 0u) {
-        extraBuffer[133] = smudgePos.x;
-        extraBuffer[134] = smudgePos.y;
-        extraBuffer[135] = smudgeVel.x;
-        extraBuffer[136] = smudgeVel.y;
-        extraBuffer[137] = 1.0;
-        extraBuffer[138] = time;
-    }
+    // ── Idea 1: flow-lane persistence (erosion channels) ──
+    // Trail Decay is one global weight at HEAD. The curl magnitude it already computed
+    // marks the lanes where material actually streams; there the history keeps its trail
+    // up to 35 % longer, so streaks run along the flow lanes (the channels the melt
+    // erodes) while calm regions heal at exactly HEAD's rate. Scaled by the weight
+    // itself, so Feedback Mix = 0 still means live-only.
+    let lane = smoothstep(0.3, 0.9, length(curlPix));
+
+    // Curl-noise flow field (block-carried where strong)
+    var flow = mix(curlPix, curlBlk, blockCarry) * flowIntensity;
+
+    // Mouse smudge. HEAD eased the cursor with a critically-damped spring whose state
+    // lived in extraBuffer[133..138]; the engine re-uploads all 256 floats every frame
+    // (audioDepth.ts writeExtraBuffer) so that state was zero each frame and the spring
+    // re-initialised to the raw cursor: dead code. Pinned to the raw cursor (identical
+    // behaviour, no fake state).
+    let smudgePos = u.zoom_config.yz;
 
     // Mouse smudge (aspect-corrected so the influence stays circular)
     let uvAspect = uv * vec2<f32>(aspect, 1.0);
@@ -134,17 +157,19 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         flow = flow + vec2<f32>(cos(shockAngle), sin(shockAngle)) * shock;
     }
 
-    // Displaced UV for feedback sample
-    let displacedUV = clamp(uv + flow * (1.0 + turbulence), vec2<f32>(0.0), vec2<f32>(1.0));
+    // Displaced feedback position in pixels (HEAD: clamp(uv + flow*(1+turb)) in uv)
+    let displacedPx = clamp(px + flow * (1.0 + turbulence) * res, vec2<f32>(0.5), res - 0.5);
 
-    // Read current frame and feedback
-    let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let feedback = textureSampleLevel(dataTextureC, u_sampler, displacedUV, 0.0).rgb;
+    // Read current frame and feedback (exact loads, no filtering sampler on the history)
+    let currentS = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+    let current = currentS.rgb;
+    let feedback = loadBilinear(dataTextureC, displacedPx).rgb;
 
     // Melt blend: Feedback Mix scales the decay-derived feedback weight.
     // Default 0.6 reproduces `decay` exactly; lower favors the live frame,
     // higher deepens the mosh.
-    let meltW = clamp(decay * (feedbackMix / 0.6), 0.0, 0.98);
+    let meltBase = clamp(decay * (feedbackMix / 0.6), 0.0, 0.98);
+    let meltW = clamp(meltBase * (1.0 + 0.35 * lane), 0.0, 0.98);
     let melted = mix(current, feedback, meltW);
 
     // Color shift based on flow magnitude
@@ -162,10 +187,13 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     outCol = clamp(outCol, vec3<f32>(0.0), vec3<f32>(1.5));
 
-    // Write feedback to dataTextureA for next frame
+    // Write feedback to dataTextureA for next frame (HDR colour history, pre-ACES)
     textureStore(dataTextureA, id.xy, vec4<f32>(outCol, 1.0));
 
+    // Display: ACES on writeTexture only; alpha = source coverage united with melt energy
+    let meltEnergy = clamp(meltW * (0.5 + flowMag), 0.0, 1.0);
+    let alpha = clamp(currentS.a + (1.0 - currentS.a) * meltEnergy, 0.0, 1.0);
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-    textureStore(writeTexture, id.xy, vec4<f32>(outCol, 1.0));
+    textureStore(writeTexture, id.xy, vec4<f32>(toneMapACES(outCol), alpha));
     textureStore(writeDepthTexture, id.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

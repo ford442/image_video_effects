@@ -2,7 +2,7 @@
   "id": "spec-temporal-path-tracer",
   "name": "Temporal Path Tracer",
   "url": "shaders/spec-temporal-path-tracer.wgsl",
-  "description": "2D path tracer with temporal accumulation. Casts light rays that bounce off image edges, accumulating Monte Carlo samples over time for soft global illumination and color bleeding.",
+  "description": "2D path tracer with temporal accumulation. Casts light rays that bounce off image edges, accumulating Monte Carlo samples over time for soft global illumination and color bleeding. Hit radiance falls off with distance so colour bleed stays local, the marcher's step lattice is jittered so the converged image has no quantisation rings, and the history re-converges when the source changes (or while the pointer light is held) instead of ghosting for 300 frames and then hard-resetting.",
   "tags": [
     "path-tracing",
     "temporal",
@@ -16,7 +16,8 @@
     "Monte-Carlo",
     "mouse-driven",
     "HDR",
-    "multi-pass-1"
+    "multi-pass-1",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -53,6 +54,42 @@
     }
   ],
   "x-meta": {
-    "target_rating": 4.9
+    "target_rating": 4.9,
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Max Bounces",
+          "default": 0.4,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Edge Threshold",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Radiance Scale",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Surface Roughness",
+          "default": 0.3,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }

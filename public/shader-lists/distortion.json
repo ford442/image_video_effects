@@ -1460,7 +1460,7 @@
     "id": "interactive-rgb-split",
     "name": "Interactive RGB Split",
     "url": "shaders/interactive-rgb-split.wgsl",
-    "description": "Smooth alpha-channel translucency blending driven by a single displacement field. Spectral tint via mix, depth-aware compositing, and audio-reactive bass response.",
+    "description": "Smooth alpha-channel translucency blending driven by a single displacement field. Spectral tint via mix, depth-aware compositing, and audio-reactive bass response. Radial mode grows its lateral colour with a Brown–Conrady r³ profile about the pointer, and each channel integrates a spectral band so fringes are continuous gradients instead of three hard ghosts.",
     "features": [
       "mouse-driven",
       "audio-reactive",
