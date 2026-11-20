@@ -6,29 +6,12 @@
 //            branchless-channel-compositing
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-07-08
+//  Upgraded: 2026-07-08, 2026-11-19
+//  Ideas: anaglyph crosstalk; vertical vergence; focal defocus
+//  A packing: raw state (envBass, smoothMouse.xy, trailIntensity)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = delta_time, .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = zoom, .yz = mouse_uv (0-1), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -54,6 +37,16 @@ const CYAN_MASK: vec3<f32> = vec3<f32>(0.0, 1.0, 1.0);
 // ── Helpers ───────────────────────────────────────────────────────
 fn luma(rgb: vec3<f32>) -> f32 {
     return dot(rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+}
+
+fn aces(x_in: vec3<f32>) -> vec3<f32> {
+    let x = max(x_in, vec3<f32>(0.0));
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // Attack/release envelope for bass to eliminate raw strobe
@@ -138,23 +131,46 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let rot = lensRot + smoothMouse.x * MOUSE_ROT_NUDGE + (smoothMouse.y - 0.5) * MOUSE_ROT_TILT;
     sepOffset = rot2(rot) * sepOffset;
 
+    // ── Idea 2: vertical vergence ─────────────────────────────────
+    // A rotated cardboard mount slips the eyes vertically with depth.
+    // Lens Rotation is 0 at the saved default, so the slip is 0 there.
+    let vergence = sceneDepth * lensRot * 0.035;
+    sepOffset = vec2<f32>(sepOffset.x, sepOffset.y + vergence);
+
     // Temporal ghost trails from previous intensity
     let prevIntensity = prev.a;
     let ghost = prevIntensity * GHOST_AMP;
     let redUV  = clamp(uv01 - sepOffset - vec2<f32>(ghost, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let cyanUV = clamp(uv01 + sepOffset + vec2<f32>(ghost, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // ── Optimized anaglyph sampling ─────────────────────────────────
+    // ── Idea 3: focal defocus ─────────────────────────────────────
+    // sceneDepth is already the distance to the focal plane. Off that
+    // plane the photo softens. Focus Offset still places the plane.
+    let blurMix = smoothstep(0.08, 0.55, abs(sceneDepth));
+    let blurOff = vec2<f32>(blurMix * 0.0045, blurMix * 0.0012);
+
     // Early exit when disparity is effectively zero: one sample, no eye split.
     let disparity = length(sepOffset) + ghost;
     var color: vec3<f32>;
     if (disparity < EARLY_EXIT_THRESH) {
-        color = textureSampleLevel(readTexture, u_sampler, uv01, 0.0).rgb;
+        let sharp = textureSampleLevel(readTexture, u_sampler, uv01, 0.0);
+        let soft = textureSampleLevel(readTexture, u_sampler, clamp(uv01 + blurOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+        color = mix(sharp.rgb, soft.rgb, blurMix);
     } else {
         // Branchless channel compositing: red from left eye, green+blue from right eye
-        let leftEye  = textureSampleLevel(readTexture, u_sampler, redUV,  0.0);
-        let rightEye = textureSampleLevel(readTexture, u_sampler, cyanUV, 0.0);
+        let leftSharp  = textureSampleLevel(readTexture, u_sampler, redUV,  0.0);
+        let rightSharp = textureSampleLevel(readTexture, u_sampler, cyanUV, 0.0);
+        let leftSoft  = textureSampleLevel(readTexture, u_sampler, clamp(redUV + blurOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+        let rightSoft = textureSampleLevel(readTexture, u_sampler, clamp(cyanUV + blurOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+        let leftEye = mix(leftSharp, leftSoft, blurMix);
+        let rightEye = mix(rightSharp, rightSoft, blurMix);
         color = leftEye.rgb * RED_MASK + rightEye.rgb * CYAN_MASK;
+        // ── Idea 1: anaglyph crosstalk ────────────────────────────
+        // Cheap glasses leak the other eye. Glitch Jitter owns the leak.
+        let leak = glitchStr * 0.55;
+        let redLeak = dot(rightEye.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)) * leak;
+        let cyanLeak = dot(leftEye.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)) * leak;
+        color = color + vec3<f32>(redLeak * 0.45, cyanLeak * 0.28, cyanLeak * 0.28);
     }
 
     // Treble sparkle + mids warmth
@@ -167,12 +183,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Audio-reactive color boost
     color *= audio_boost(envBass, mids);
 
-    // Pack state for next frame
+    // Pack state for next frame. A is the raw tuple C reads next frame.
+    // Do not tone-map it.
     let state = vec4<f32>(envBass, smoothMouse.x, smoothMouse.y, trailIntensity);
     textureStore(dataTextureA, pixel, state);
 
     // Semantic alpha encodes interaction intensity / bloom weight
     let alpha = compute_alpha(trailIntensity, luma(color), envBass);
-    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
+    textureStore(writeTexture, pixel, vec4<f32>(aces(color), alpha));
     textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

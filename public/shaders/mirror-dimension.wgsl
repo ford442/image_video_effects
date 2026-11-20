@@ -3,31 +3,31 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, click-spin
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
-//  Batch-22 upgrade: 2026-07-31 — spring-damped symmetry center,
-//  click spin kicks, per-segment FFT shimmer, treble seam glow.
+//  Upgraded: 2026-05-17, 2026-11-19
+//  Ideas: mirror bevel; tube caustic; fold fringe
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount/FrameCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x_in: vec3<f32>) -> vec3<f32> {
+    let x = max(x_in, vec3<f32>(0.0));
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn foldUV(ang: f32, rad: f32, off: f32, zm: f32, aspect: f32) -> vec2<f32> {
+    var q = vec2<f32>(cos(ang), sin(ang)) * rad;
+    q = q + vec2<f32>(off * 0.1);
+    q = q * zm;
+    q = vec2<f32>(q.x / max(aspect, 0.001), q.y);
+    q = q + vec2<f32>(0.5);
+    return clamp(q, vec2<f32>(0.0), vec2<f32>(1.0));
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -130,21 +130,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Triangle fold (mirror half of the segment)
     a = abs(a - segmentAngle * 0.5);
 
-    // Convert back to cartesian
-    var uv_new = vec2<f32>(cos(a), sin(a)) * r;
+    // ── Idea 1: mirror bevel ──────────────────────────────────────
+    // The crease is glass, not a line. Inset the sample angle and
+    // darken it. foldCloseness below still uses the mathematical crease.
+    let crease = a;
+    let bevel = 1.0 - smoothstep(0.0, 0.04, crease);
+    a = crease + bevel * 0.02;
 
-    // Offset and zoom
-    uv_new += vec2<f32>(offsetVal * 0.1);
-    uv_new *= zoom;
-
-    // Un-correct aspect and un-center
-    uv_new.x /= aspect;
-    uv_new += 0.5;
-
-    // Clamp displaced UV before sampling
-    let uv_clamped = clamp(uv_new, vec2<f32>(0.0), vec2<f32>(1.0));
-
-    var sampled = textureSampleLevel(readTexture, u_sampler, uv_clamped, 0.0);
+    // ── Idea 3: fold fringe ───────────────────────────────────────
+    // Red and blue take a small angular step, and only on the bevel.
+    let fringe = bevel * 0.05;
+    let uvG = foldUV(a, r, offsetVal, zoom, aspect);
+    let uvR = foldUV(a + fringe, r, offsetVal, zoom, aspect);
+    let uvB = foldUV(max(a - fringe, 0.0), r, offsetVal, zoom, aspect);
+    let sampG = textureSampleLevel(readTexture, u_sampler, uvG, 0.0);
+    let sampR = textureSampleLevel(readTexture, u_sampler, uvR, 0.0).r;
+    let sampB = textureSampleLevel(readTexture, u_sampler, uvB, 0.0).b;
+    var sampled = vec4<f32>(sampR, sampG.g, sampB, sampG.a);
+    sampled = vec4<f32>(sampled.rgb * (1.0 - bevel * 0.68), sampled.a);
+    // ── Idea 2: tube caustic ──────────────────────────────────────
+    // Reflections pile up on the axis. Zoom tightens the hot spot.
+    let caustic = exp(-r * (1.1 + zoom * 0.9)) * 0.38;
+    sampled = vec4<f32>(sampled.rgb * (1.0 + caustic), sampled.a);
 
     // ── Per-segment FFT shimmer ──────────────────────────────────────
     // Each folded segment pulses to its own spectrum bin: ±8% brightness.
@@ -152,7 +159,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     sampled = vec4<f32>(sampled.rgb * (1.0 + (segEnergy - 0.5) * 0.16), sampled.a);
 
     // Meaningful alpha: encodes radial position + fold angle closeness + bass energy
-    let foldCloseness = 1.0 - clamp(a / max(segmentAngle * 0.5, 0.001), 0.0, 1.0);
+    let foldCloseness = 1.0 - clamp(crease / max(segmentAngle * 0.5, 0.001), 0.0, 1.0);
     let radialFactor  = clamp(1.0 - r * 0.8, 0.0, 1.0);
     let alpha = clamp(radialFactor * 0.5 + foldCloseness * 0.3 + bass * 0.2, 0.0, 1.0);
 
@@ -161,7 +168,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let seamGlow = pow(foldCloseness, 6.0) * treble * 0.45;
     let glowColor = vec3<f32>(0.9, 0.95, 1.0) * seamGlow;
 
-    let finalColor = vec4<f32>(sampled.rgb + glowColor, alpha);
+    let finalColor = vec4<f32>(aces(sampled.rgb + glowColor), alpha);
 
     textureStore(writeTexture, coord, finalColor);
 
