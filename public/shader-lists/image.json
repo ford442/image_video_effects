@@ -626,7 +626,7 @@
   {
     "id": "conv-anisotropic-diffusion",
     "name": "Anisotropic Diffusion",
-    "description": "Perona-Malik anisotropic diffusion that smooths along edges but not across them. Creates oil-painting simplification into flat colored regions. Alpha stores per-pixel diffusion coefficient as a process map. Mouse acts as heat source accelerating diffusion.",
+    "description": "Perona-Malik anisotropic diffusion that smooths along edges but not across them. Creates oil-painting simplification into flat colored regions. Alpha stores per-pixel diffusion coefficient as a process map. Mouse acts as heat source accelerating diffusion and raising the edge threshold, so edges soften near the cursor. Conductivity uses a pre-smoothed (Catte-Lions) gradient so speckle conducts while real edges hold, and diagonal neighbours remove the axis bias.",
     "url": "shaders/conv-anisotropic-diffusion.wgsl",
     "features": [
       "advanced-convolution",
@@ -866,12 +866,13 @@
   {
     "id": "conv-fractal-kernel",
     "name": "Fractal Kernel",
-    "description": "Convolution kernel shaped by Mandelbrot set membership. Pixels inside the fractal are sampled, creating alien mathematically beautiful blur patterns. Alpha stores fractal iteration depth. Mouse warps the Mandelbrot center live.",
+    "description": "Convolution kernel shaped by Mandelbrot set membership. Pixels inside the fractal are sampled, creating alien mathematically beautiful blur patterns. Alpha stores fractal iteration depth. Mouse warps the Mandelbrot center live. Interior taps carry circle orbit-trap ring weighting (the kernel is no longer a flat box inside the set), and the same fractal aperture grows with defocus away from the depth under the pointer.",
     "url": "shaders/conv-fractal-kernel.wgsl",
     "features": [
       "advanced-convolution",
       "rgba32float-exploiting",
       "mouse-driven",
+      "depth-aware",
       "upgraded-rgba",
       "audio-reactive"
     ],
@@ -1400,7 +1401,7 @@
   {
     "id": "conv-steerable-pyramid",
     "name": "Steerable Pyramid",
-    "description": "Decomposes image into oriented sub-bands at 0, 45, 90, and 135 degrees using steerable filters. RGBA32FLOAT stores full-precision signed sub-band coefficients for lossless reconstruction or artistic boosting. Mouse steers the decomposition angle.",
+    "description": "Decomposes image into oriented sub-bands at 0, 45, 90, and 135 degrees using steerable filters. RGBA32FLOAT stores full-precision signed sub-band coefficients for lossless reconstruction or artistic boosting. Mouse steers the decomposition angle. Each band's quadrature phase (line vs step edge) tints its palette, and a second coarser octave tints broad oriented structure.",
     "url": "shaders/conv-steerable-pyramid.wgsl",
     "features": [
       "advanced-convolution",

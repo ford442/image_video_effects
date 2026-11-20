@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: channel lag; persistence comet
+//  Upgraded: 2026-10-10, 2026-11-19
+//  Ideas: channel lag; persistence comet; per-primary decay order (§12.1); tail-aligned fringe (§12.1)
 //  A packing: raw sim (intensity, trailHue.rg, persistence)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -126,9 +126,37 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spectralTint = wavelengthToRGB(time * 0.5 + chaos * 3.14 + warp * 2.0);
   let tintStrength = chaos * intensity;
   // Idea: channelLag — R and B sample further along the existing warp.
-  let channelLag = warpDir * shift * (0.35 + chaos);
-  let lagR = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + channelLag, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let lagB = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - channelLag * 0.65, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  // ── Idea 4: tail-aligned fringe ───────────────────────────────────
+  // The trail has an orientation: C.r (stored intensity) is brightest at the
+  // pointer's head and falls away down the tail. Its central-difference
+  // gradient (exact loads, step scales with height) points up-trail, so
+  // -normalize(g) points down-trail. Where the gradient is clear (stamp
+  // edges, decayed tail) a share of that direction is added to the lag so R
+  // drags toward the tail and B leads toward the head; flat stamp interiors
+  // (g ~ 0) keep HEAD's random warp direction.
+  let gs = max(2, i32(resolution.y * 0.012));
+  let gx = textureLoad(dataTextureC, clamp(coord + vec2<i32>(gs, 0), vec2<i32>(0), maxCoord), 0).r
+         - textureLoad(dataTextureC, clamp(coord - vec2<i32>(gs, 0), vec2<i32>(0), maxCoord), 0).r;
+  let gy = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, gs), vec2<i32>(0), maxCoord), 0).r
+         - textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, gs), vec2<i32>(0), maxCoord), 0).r;
+  let gTrail = vec2<f32>(gx, gy);
+  let gMag = length(gTrail);
+  let tailDir = -gTrail / max(gMag, 1e-4);
+  let tailW = smoothstep(0.02, 0.12, gMag);
+  let lagVec = warpDir * (0.35 + chaos) + tailDir * (tailW * 0.8);
+  // ── Idea 3: per-primary decay order ───────────────────────────────
+  // Real channel desync / phosphor trails do not release all three primaries
+  // together: red lingers, blue snaps back first. Each primary's lag
+  // magnitude is a different curve of the same intensity (both = 1 at
+  // intensity 1, so a fresh full-strength trail matches HEAD): as the trail
+  // decays the blue ghost collapses first and a red-only fringe outlasts it.
+  let iSafe = max(intensity, 0.0);
+  let lagAmtR = mix(iSafe, sqrt(iSafe), 0.6);
+  let lagAmtB = iSafe * mix(1.0, sqrt(iSafe), 0.7);
+  let channelLagR = lagVec * (shiftStrength * lagAmtR);
+  let channelLagB = lagVec * (shiftStrength * lagAmtB);
+  let lagR = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV + channelLagR, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let lagB = textureSampleLevel(readTexture, u_sampler, clamp(displacedUV - channelLagB * 0.65, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
   var color = vec3<f32>(lagR, baseColor.g, lagB);
   color = mix(color, color * spectralTint, alpha * tintStrength * 0.45);
 

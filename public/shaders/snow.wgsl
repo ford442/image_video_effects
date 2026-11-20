@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: flake tumble; land fade into the C bank
+//  Upgraded: 2026-09-09, 2026-11-19
+//  Ideas: flake tumble; land fade into the C bank; depth-occluded flake layers; wind-carried bank (saltation)
 //  A packing: accumulation scalar in A.r (raw). Display ACES RGB.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
@@ -73,9 +54,11 @@ fn snow_layer(uv: vec2<f32>, layer: u32, speed: f32, density: f32, wind: f32, ti
     let gust = sin(time * 0.1 + seed) * 0.5 + 0.5;
     let turbulence = sin(uv.y * 8.0 + time * 2.0 + seed) * 0.15 * wind * gust;
     let wind_drift = time * layer_speed * wind * 0.3;
+    // Rescue: HEAD added both time terms, so the pattern (and the flakes) travelled UP and against the
+    // wind sign. Subtracting makes flakes fall (+y is down) and blow toward +x when wind > 0.
     let skewed_uv = vec2<f32>(
-        uv.x * (1.0 + f32(layer) * 0.1) + turbulence + wind_drift,
-        uv.y * (0.8 + f32(layer) * 0.05) + time * layer_speed
+        uv.x * (1.0 + f32(layer) * 0.1) + turbulence - wind_drift,
+        uv.y * (0.8 + f32(layer) * 0.05) - time * layer_speed
     );
     let cell_size = vec2<f32>(40.0, 40.0) / (1.0 + f32(layer) * 0.3);
     let cell = floor(skewed_uv * cell_size);
@@ -90,12 +73,20 @@ fn snow_layer(uv: vec2<f32>, layer: u32, speed: f32, density: f32, wind: f32, ti
     return flake * depth_fade;
 }
 
-fn calculate_normal(uv: vec2<f32>, texel: vec2<f32>) -> vec3<f32> {
+// d(depth)/d(uv) by central differences (library depth: 1 = near, y grows downward).
+fn depth_slope(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
     let dL = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(texel.x, 0.0), 0.0).r;
     let dR = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
     let dU = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).r;
     let dD = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-    return normalize(vec3<f32>(-(dR - dL) * 0.5, -(dD - dU) * 0.5, 1.0));
+    return vec2<f32>(dR - dL, dD - dU) / (2.0 * texel);
+}
+
+// ── Idea 3 (depth-occluded flake layers): each flake layer sits on a virtual depth plane (far → near);
+// a scene pixel clearly nearer than the plane hides that layer's flakes, so far snow falls BEHIND the
+// subject and near snow falls in front. Flat / absent depth (≤ plane) leaves HEAD's flakes untouched.
+fn layer_visible(depth: f32, plane: f32) -> f32 {
+    return 1.0 - 0.85 * smoothstep(plane + 0.04, plane + 0.22, depth);
 }
 
 fn stateAt(pixel: vec2<i32>, dims: vec2<i32>) -> vec4<f32> {
@@ -127,21 +118,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let prev_snow = stateAt(pixel, dims).r;
 
     var snow_acc = 0.0;
-    snow_acc += snow_layer(uv, 0u, speed, density * 0.7, wind, time) * 0.6;
-    snow_acc += snow_layer(uv, 1u, speed, density * 0.9, wind, time) * 0.8;
-    snow_acc += snow_layer(uv, 2u, speed, density, wind, time) * 1.0;
+    // ── Idea 3: far / mid / near layer planes at 0.40 / 0.65 / 0.90 (depth 1 = near)
+    snow_acc += snow_layer(uv, 0u, speed, density * 0.7, wind, time) * 0.6 * layer_visible(depth, 0.40);
+    snow_acc += snow_layer(uv, 1u, speed, density * 0.9, wind, time) * 0.8 * layer_visible(depth, 0.65);
+    snow_acc += snow_layer(uv, 2u, speed, density, wind, time) * 1.0 * layer_visible(depth, 0.90);
     // Idea 2 — land fade: flakes settle into the existing bank
     snow_acc *= 1.0 - prev_snow * 0.85;
 
     var accumulated_snow = 0.0;
-    let normal = calculate_normal(uv, texel);
+    let slope = depth_slope(uv, texel);
+    // HEAD's normal, value-identical (-(dR-dL)*0.5 == -slope.x*texel.x): lighting is unchanged.
+    let normal = normalize(vec3<f32>(-slope.x * texel.x, -slope.y * texel.y, 1.0));
     if (accumulation_amt > 0.01) {
-        let up_factor = smoothstep(0.3, 0.7, normal.y);
+        // Rescue: HEAD thresholded the per-texel-scaled normal.y (≈0 on real depth maps) and with the
+        // wrong sign (depth 1 = near, so a floor has normal.y < 0): Accumulation was dead. Use the
+        // per-uv slope with a fixed relief gain and select UP-facing (-y) surfaces.
+        let relief = normalize(vec3<f32>(-slope * 1.5, 1.0));
+        let up_factor = smoothstep(0.3, 0.7, -relief.y);
         let d_up = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv - vec2<f32>(0.0, texel.y), 0.0).r;
         let edge_factor = 1.0 - smoothstep(0.01, 0.05, abs(depth - d_up));
         let height_factor = smoothstep(0.0, 0.5, depth);
         let accumulation_factor = up_factor * edge_factor * height_factor * accumulation_amt;
-        accumulated_snow = clamp(prev_snow + accumulation_factor * 0.01 - melt_rate, 0.0, 0.8);
+        // ── Idea 4: wind-carried bank (saltation). Wind lifts settled snow off exposed lips and drops it
+        // downwind: blend the bank with its upwind neighbour (exact C load, 1 px along sign(wind)) at a
+        // rate ∝ |wind|. wind = 0 → carried == prev_snow, exactly HEAD.
+        let upwind_px = vec2<i32>(select(-1, 1, wind > 0.0), 0);
+        let upwind_bank = stateAt(pixel - upwind_px, dims).r;
+        let carried = mix(prev_snow, upwind_bank, clamp(abs(wind) * 0.045, 0.0, 0.12));
+        accumulated_snow = clamp(carried + accumulation_factor * 0.01 - melt_rate, 0.0, 0.8);
     }
 
     textureStore(dataTextureA, pixel, vec4<f32>(accumulated_snow, snow_acc, 0.0, 1.0));
