@@ -9,6 +9,25 @@
 import { ArrayBufferTarget, Muxer } from 'webm-muxer';
 import { tagWebmDisplayP3, type WebmColourTag } from './webmColour';
 
+// Offline export (#1401) rides in the same lazy chunk: mp4-muxer is never in the page bundle.
+export {
+  OfflineEncodeSession,
+  OFFLINE_MAX_ENCODE_QUEUE,
+  pickOfflineEncoderConfig,
+  type OfflineEncodeOptions,
+  type PickedOfflineEncoder,
+} from './offlineEncoder';
+export {
+  OfflineRenderCancelled,
+  runOfflineRender,
+  slotParamsFor,
+  type OfflineRenderHost,
+  type OfflineRenderJobOptions,
+  type OfflineRenderProgress,
+  type OfflineRenderResult,
+} from './offlineRenderJob';
+export { openOfflineVideoSource, type OfflineVideoSource } from './offlineVideoSource';
+
 export interface GpuFrameSource {
   readonly kind: 'canvas' | 'readback' | 'worker';
   /** Snapshot the current output as a VideoFrame at `timestampUs`; null skips the tick. */

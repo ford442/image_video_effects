@@ -20,6 +20,7 @@ import { GenerativeSourcePanel } from './panels/GenerativeSourcePanel';
 import { useLiveControl } from './hooks/useLiveControl';
 import { useOscControl } from './hooks/useOscControl';
 import { useSetRecorder } from '../../hooks/useSetRecorder';
+import { useOfflineRender } from '../../hooks/useOfflineRender';
 import { useProjectFile } from '../../hooks/useProjectFile';
 import { useCoordinateNavigation } from './hooks/useCoordinateNavigation';
 import { useShaderMenuOptions } from './hooks/useShaderMenuOptions';
@@ -29,6 +30,7 @@ import { SidebarSearch } from './SidebarSearch';
 import { findEffects, matchesQuery } from './sidebarFilter';
 import { usePersistedToggle } from '../../hooks/usePersistedToggle';
 import type { SharedChain } from '../../services/layerChainShare';
+import { isPortableMediaUrl, type TimelineSource } from '../../services/vjSetExport';
 import type { RenderMode } from '../../renderer/types';
 import type { ControlsProps } from './types';
 import { defaultSlotParams } from '../../app/constants/defaultSlotParams';
@@ -142,6 +144,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     compositing,
     hdrToneMap,
     canvasColor,
+    getRenderer,
 }) => {
     const autoTransition = useAiVjAutoTransition();
     // Recalling a saved VJ set dissolves from the picture on screen over the transition
@@ -193,7 +196,55 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         setAudioReactiveAmount,
     });
 
-    const recorder = useSetRecorder({ modes, slotParams, setMode, onSetSlotParam });
+    // The source is part of a recording (#1401): image / video URL, video position, generative id.
+    const getRecorderSource = (): TimelineSource | null => {
+        switch (inputSource) {
+            case 'image':
+                return { type: 'image', ...(isPortableMediaUrl(currentImageUrl) ? { url: currentImageUrl } : {}) };
+            case 'video': {
+                const video = getRenderer?.()?.getVideoElement() ?? null;
+                return {
+                    type: 'video',
+                    ...(isPortableMediaUrl(selectedVideo) ? { url: selectedVideo } : {}),
+                    ...(video && Number.isFinite(video.currentTime) ? { seekSec: Math.round(video.currentTime * 1000) / 1000 } : {}),
+                };
+            }
+            case 'generative':
+                return { type: 'generative', ...(activeGenerativeShader ? { shader: activeGenerativeShader } : {}) };
+            case 'live':
+                return { type: 'live', ...(isPortableMediaUrl(liveStreamUrl) ? { url: liveStreamUrl } : {}) };
+            default:
+                return { type: 'webcam' };
+        }
+    };
+    const applyRecordedSource = (source: TimelineSource) => {
+        if (source.type === 'webcam' || source.type === 'live') return; // needs a person / a stream
+        setInputSource(source.type);
+        if (source.type === 'image' && source.url) void onLoadProjectImage(source.url);
+        if (source.type === 'video' && source.url) setSelectedVideo(source.url);
+        if (source.type === 'generative' && source.shader) setActiveGenerativeShader?.(source.shader);
+    };
+    const recorder = useSetRecorder({
+        modes,
+        slotParams,
+        setMode,
+        onSetSlotParam,
+        getSource: getRecorderSource,
+        onSource: applyRecordedSource,
+    });
+    const offlineRender = useOfflineRender({
+        getRenderer,
+        timeline: recorder.timeline,
+        modes,
+        slotParams,
+        availableModes,
+        inputSource,
+        currentImageUrl,
+        getSource: getRecorderSource,
+        onBeforeRender: () => {
+            if (recorder.recorderState === 'playing') recorder.stopPlayback();
+        },
+    });
     const projectFile = useProjectFile({
         modes,
         slotParams,
@@ -476,6 +527,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     liveControl={liveControl}
                     osc={osc}
                     recorder={recorder}
+                    offlineRender={offlineRender}
                     isAiVjMode={isAiVjMode}
                     autoTransitionOpen={autoTransition.autoTransitionOpen}
                     setAutoTransitionOpen={autoTransition.setAutoTransitionOpen}

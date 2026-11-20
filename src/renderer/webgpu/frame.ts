@@ -41,7 +41,9 @@ export type {
 
 export class WebGPUFrameRenderer {
   private uniformView: UniformBufferView = createUniformBufferView();
-  private presenter = new WebGPUPresenter();
+  /** Simulation time (ms) of the frame being encoded: the cue crossfade ramps on it (#1401). */
+  private frameTimeMs = 0;
+  private presenter = new WebGPUPresenter(() => this.frameTimeMs);
   /** Staging copy of each enabled slot's zoom_params (16 bytes per slot). */
   private slotParamsBuf: GPUBuffer | null = null;
   private slotParamsDevice: GPUDevice | null = null;
@@ -54,7 +56,9 @@ export class WebGPUFrameRenderer {
   startRenderLoop(state: WebGPUFrameState): void {
     const loop = () => {
       if (!state.initialized) return;
-      state.currentTime = performance.now() / 1000 - state.startTime;
+      // Simulation time comes from the frame state's clock (realtime here; offline renders
+      // stop this loop and step a stepped clock instead, see WebGPURenderer.renderFrameAt).
+      state.currentTime = state.clock.now();
       try {
         this.renderFrame(state);
       } catch (e) {
@@ -157,6 +161,7 @@ export class WebGPUFrameRenderer {
 
     this.statsTracker.onFrameStart(state.device);
     state.beforeFrame?.();
+    this.frameTimeMs = state.currentTime * 1000;
     // Modulation bus (#1513): overlay modulated p1..p4 / opacity on the slots for this
     // frame only; the base values the UI set are restored once the frame is encoded.
     const restoreBase = getModulationRuntime().applyOverlay(state.slots, state.currentTime, state.audioDepth);

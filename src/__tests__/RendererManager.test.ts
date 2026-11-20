@@ -1367,3 +1367,56 @@ describe('RendererManager cue crossfade', () => {
     expect(() => manager.setSlotShader(0, 'rain')).not.toThrow();
   });
 });
+
+describe('RendererManager offline render (#1401)', () => {
+  it('holds live stack / source changes while a job owns the renderer; the job’s own calls pass', async () => {
+    const webgpu = Object.assign(makeMockWebGPU(), {
+      backendKind: 'webgpu',
+      initialized: true,
+      beginOfflineRender: vi.fn().mockResolvedValue({ width: 64, height: 64, scaledW: 64, scaledH: 64, fps: 30, maxTextureDimension2D: 8192 }),
+      renderFrameAt: vi.fn().mockResolvedValue(null),
+      endOfflineRender: vi.fn().mockResolvedValue(undefined),
+      isOfflineRenderActive: vi.fn().mockReturnValue(false),
+      getMaxTextureDimension2D: vi.fn().mockReturnValue(8192),
+      setSlotLayer: vi.fn(),
+      startCrossfade: vi.fn(() => true),
+      setFatalErrorHandler: vi.fn(),
+      setResolutionScale: vi.fn(),
+      setAdaptiveQuality: vi.fn(),
+      setMaxPassesPerFrame: vi.fn(),
+      setFramePassBudget: vi.fn(),
+      setColorFormat: vi.fn(),
+      getSlotState: vi.fn(() => null),
+    });
+    (WebGPURenderer as Mock).mockImplementation(() => webgpu);
+    (WASMRenderer as Mock).mockImplementation(() => makeMockWASM());
+    (JSRenderer as Mock).mockImplementation(() => makeMockJS());
+
+    const manager = new RendererManager(DEFAULT_CONFIG);
+    await manager.init(document.createElement('canvas'));
+    expect(manager.supportsOfflineRender()).toBe(true);
+    await manager.beginOfflineRender({ width: 64, height: 64, fps: 30 });
+    webgpu.setSlotShader.mockClear();
+    webgpu.setInputSource.mockClear();
+    webgpu.loadImage.mockClear();
+
+    manager.setSlotShader(0, 'roulette-pick');
+    manager.setInputSource('video');
+    await manager.loadImage('https://example.com/auto-switch.png');
+    expect(webgpu.setSlotShader).not.toHaveBeenCalled();
+    expect(webgpu.setInputSource).not.toHaveBeenCalled();
+    expect(webgpu.loadImage).not.toHaveBeenCalled();
+
+    const job = manager.offlineJobControls();
+    job.setSlotShader(0, 'from-the-set');
+    job.setInputSource('image');
+    await job.loadImage('https://example.com/set.png');
+    expect(webgpu.setSlotShader).toHaveBeenCalledWith(0, 'from-the-set');
+    expect(webgpu.setInputSource).toHaveBeenCalledWith('image');
+    expect(webgpu.loadImage).toHaveBeenCalledWith('https://example.com/set.png');
+
+    await manager.endOfflineRender();
+    manager.setSlotShader(1, 'live-again');
+    expect(webgpu.setSlotShader).toHaveBeenLastCalledWith(1, 'live-again');
+  });
+});

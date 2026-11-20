@@ -23,12 +23,15 @@ import { ShaderSlot } from './webgpuConstants';
 import type { FrameCompositor, FrameIslands } from './framePlan';
 import type { DirectPresentFrame } from './directPresent';
 import type { FrameSlotDispatchPlan } from './slotDispatch';
+import type { RenderClock } from './renderClock';
 
 export interface WebGPUFrameState {
   device: GPUDevice | null;
   context: GPUCanvasContext | null;
   initialized: boolean;
-  startTime: number;
+  /** Simulation time source (#1401): realtime for the live loop, stepped for offline renders. */
+  clock: RenderClock;
+  /** This frame's simulation time in seconds (from `clock`, or set directly by tests / benches). */
   currentTime: number;
   animationId: number | null;
 
@@ -142,7 +145,7 @@ export interface WebGPUFrameHost {
   device: GPUDevice | null;
   context: GPUCanvasContext | null;
   initialized: boolean;
-  startTime: number;
+  clock: RenderClock;
   currentTime: number;
   animationId: number | null;
   sourceTex: GPUTexture;
@@ -234,8 +237,8 @@ export interface FrameContext {
   set context(v: GPUCanvasContext | null);
   get initialized(): boolean;
   set initialized(v: boolean);
-  get startTime(): number;
-  set startTime(v: number);
+  get clock(): RenderClock;
+  set clock(v: RenderClock);
   get currentTime(): number;
   set currentTime(v: number);
   get animationId(): number | null;
@@ -324,8 +327,8 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     set context(v) { d.context = v; },
     get initialized() { return d.initialized; },
     set initialized(v) { d.initialized = v; },
-    get startTime() { return d.startTime; },
-    set startTime(v) { d.startTime = v; },
+    get clock() { return d.clock; },
+    set clock(v) { d.clock = v; },
     get currentTime() { return d.currentTime; },
     set currentTime(v) { d.currentTime = v; },
     get animationId() { return d.animationId; },
@@ -430,8 +433,8 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     set context(v) { h.context = v; },
     get initialized() { return h.initialized; },
     set initialized(v) { h.initialized = v; },
-    get startTime() { return h.startTime; },
-    set startTime(v) { h.startTime = v; },
+    get clock() { return h.clock; },
+    set clock(v) { h.clock = v; },
     get currentTime() { return h.currentTime; },
     set currentTime(v) { h.currentTime = v; },
     get animationId() { return h.animationId; },

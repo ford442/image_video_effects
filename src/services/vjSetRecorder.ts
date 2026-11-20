@@ -1,20 +1,32 @@
 /**
  * vjSetRecorder.ts — pure helpers for the VJ set recorder (useSetRecorder).
- * Records what is on screen (slot shaders + the four sliders) as diffs.
+ * Records what is on screen (slot shaders, every slot param and the input source) as diffs.
  */
 
-import type { TimelineParamKey, VjTimelineEvent } from './vjSetExport';
+import {
+  TIMELINE_PARAM_KEYS,
+  type TimelineParamKey,
+  type TimelineSource,
+  type VjTimelineEvent,
+} from './vjSetExport';
 
 export const RECORDER_HZ = 20;
 export const PARAM_EPSILON = 1e-3;
-const PARAM_KEYS: TimelineParamKey[] = ['zoomParam1', 'zoomParam2', 'zoomParam3', 'zoomParam4'];
+const PARAM_KEYS = TIMELINE_PARAM_KEYS;
 
 export interface RecorderSnapshot {
   modes: string[];
   params: Array<Partial<Record<TimelineParamKey, number>>>;
+  /** The input source (#1401); absent / null when the recorder was not told. */
+  source?: TimelineSource | null;
 }
 
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
+
+export function sameSource(a: TimelineSource | null | undefined, b: TimelineSource | null | undefined): boolean {
+  if (!a || !b) return !a && !b;
+  return a.type === b.type && a.url === b.url && a.shader === b.shader;
+}
 
 /**
  * Events needed to go from `prev` to `next` at time `t`. With `prev === null`
@@ -22,6 +34,11 @@ const round3 = (v: number) => Math.round(v * 1000) / 1000;
  */
 export function diffSnapshot(prev: RecorderSnapshot | null, next: RecorderSnapshot, t: number): VjTimelineEvent[] {
   const out: VjTimelineEvent[] = [];
+  // A source change comes first: shaders swapped at the same instant read the new source.
+  // A seek alone (same type / url / shader) is playback, not a change.
+  if (next.source && (!prev || !sameSource(prev.source, next.source))) {
+    out.push({ t, slot: 0, kind: 'source', value: { ...next.source } });
+  }
   const slots = Math.min(6, Math.max(next.modes.length, next.params.length));
   for (let slot = 0; slot < slots; slot++) {
     const mode = next.modes[slot];
@@ -42,7 +59,11 @@ export function diffSnapshot(prev: RecorderSnapshot | null, next: RecorderSnapsh
 }
 
 /** Copy only what the recorder compares, so later mutation can't leak in. */
-export function takeSnapshot(modes: readonly string[], params: ReadonlyArray<Partial<Record<TimelineParamKey, number>> | undefined>): RecorderSnapshot {
+export function takeSnapshot(
+  modes: readonly string[],
+  params: ReadonlyArray<Partial<Record<TimelineParamKey, number>> | undefined>,
+  source?: TimelineSource | null,
+): RecorderSnapshot {
   return {
     modes: [...modes],
     params: params.map(p => {
@@ -50,6 +71,7 @@ export function takeSnapshot(modes: readonly string[], params: ReadonlyArray<Par
       for (const k of PARAM_KEYS) if (typeof p?.[k] === 'number') o[k] = p[k];
       return o;
     }),
+    ...(source !== undefined ? { source: source ? { ...source } : null } : {}),
   };
 }
 
@@ -59,16 +81,21 @@ export function takeSnapshot(modes: readonly string[], params: ReadonlyArray<Par
  * instead of being lost sample-to-sample.
  */
 export function applyEvents(base: RecorderSnapshot, events: VjTimelineEvent[]): RecorderSnapshot {
-  const next: RecorderSnapshot = { modes: [...base.modes], params: base.params.map(p => ({ ...p })) };
+  const next: RecorderSnapshot = {
+    modes: [...base.modes],
+    params: base.params.map(p => ({ ...p })),
+    ...(base.source !== undefined ? { source: base.source } : {}),
+  };
   for (const e of events) {
     if (e.kind === 'shader') next.modes[e.slot] = e.value;
-    else (next.params[e.slot] ??= {})[e.key] = e.value;
+    else if (e.kind === 'param') (next.params[e.slot] ??= {})[e.key] = e.value;
+    else next.source = { ...e.value };
   }
   return next;
 }
 
 /** Index of the first event with `t > time` (events sorted by t). */
-export function firstEventAfter(events: VjTimelineEvent[], time: number): number {
+export function firstEventAfter(events: ReadonlyArray<{ t: number }>, time: number): number {
   let lo = 0;
   let hi = events.length;
   while (lo < hi) {

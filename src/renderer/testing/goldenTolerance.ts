@@ -87,3 +87,64 @@ export function imageDeltaE(a: ArrayLike<number>, b: ArrayLike<number>, channels
     max: sorted[sorted.length - 1] ?? 0,
   };
 }
+
+/** Default DSSIM a golden frame may drift by (tests/golden-frames.swiftshader.spec.ts, #1401). */
+export const GOLDEN_FRAME_DSSIM = 0.004;
+
+/**
+ * Structural dissimilarity of two same-sized RGBA (or RGB) byte images: (1 − mean SSIM) / 2
+ * over non-overlapping `window`² luma blocks (BT.709 weights, the usual C1 / C2). 0 is
+ * identical; dssim-style thresholds of a few 1e-3 accept rasteriser / driver noise and
+ * reject a changed shader. Blocks also catch local changes a whole-image mean would hide:
+ * the result is the mean, `worst` the most changed block.
+ */
+export function imageDssim(
+  a: ArrayLike<number>,
+  b: ArrayLike<number>,
+  width: number,
+  height: number,
+  channels = 4,
+  window = 8,
+): { dssim: number; worst: number } {
+  const C1 = (0.01 * 255) ** 2;
+  const C2 = (0.03 * 255) ** 2;
+  const luma = (img: ArrayLike<number>, i: number) =>
+    0.2126 * (img[i] ?? 0) + 0.7152 * (img[i + 1] ?? 0) + 0.0722 * (img[i + 2] ?? 0);
+  let sum = 0;
+  let blocks = 0;
+  let worst = 0;
+  for (let by = 0; by + window <= height; by += window) {
+    for (let bx = 0; bx + window <= width; bx += window) {
+      let ma = 0, mb = 0, va = 0, vb = 0, cov = 0;
+      const n = window * window;
+      for (let y = by; y < by + window; y++) {
+        for (let x = bx; x < bx + window; x++) {
+          const i = (y * width + x) * channels;
+          ma += luma(a, i);
+          mb += luma(b, i);
+        }
+      }
+      ma /= n;
+      mb /= n;
+      for (let y = by; y < by + window; y++) {
+        for (let x = bx; x < bx + window; x++) {
+          const i = (y * width + x) * channels;
+          const da = luma(a, i) - ma;
+          const db = luma(b, i) - mb;
+          va += da * da;
+          vb += db * db;
+          cov += da * db;
+        }
+      }
+      va /= n - 1;
+      vb /= n - 1;
+      cov /= n - 1;
+      const ssim = ((2 * ma * mb + C1) * (2 * cov + C2)) / ((ma * ma + mb * mb + C1) * (va + vb + C2));
+      sum += ssim;
+      blocks++;
+      worst = Math.max(worst, (1 - ssim) / 2);
+    }
+  }
+  if (blocks === 0) return { dssim: 0, worst: 0 };
+  return { dssim: (1 - sum / blocks) / 2, worst };
+}

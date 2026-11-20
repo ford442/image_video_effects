@@ -3,6 +3,8 @@ import {
   captureRgb,
   deltaE76,
   imageDeltaE,
+  GOLDEN_FRAME_DSSIM,
+  imageDssim,
   maxChannelDelta,
   srgb8ToLab,
 } from './goldenTolerance';
@@ -52,5 +54,35 @@ describe('golden-frame tolerance helper (#1512)', () => {
     // screen(a, b) = a + b − ab, then halfway from a.
     expect(out[0]).toBeCloseTo(0.6 + 0.5 * (0.3 - 0.6 * 0.3), 6);
     expect(captureRgb(out)).toEqual(out.slice(0, 3).map(captureByte));
+  });
+});
+
+describe('imageDssim (#1401 golden frames)', () => {
+  const W = 32;
+  const H = 32;
+  const image = (f: (x: number, y: number) => number) => {
+    const data = new Uint8Array(W * H * 4);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const v = Math.max(0, Math.min(255, Math.round(f(x, y))));
+      data.set([v, v, v, 255], (y * W + x) * 4);
+    }
+    return data;
+  };
+  const base = image((x, y) => 128 + 100 * Math.sin(x / 3) * Math.cos(y / 5));
+
+  it('is 0 for identical images and tiny for ±1 noise', () => {
+    expect(imageDssim(base, base, W, H).dssim).toBe(0);
+    const noisy = base.map((v, i) => (i % 4 === 3 ? v : Math.min(255, v + ((i * 7) % 3) - 1)));
+    expect(imageDssim(base, noisy, W, H).dssim).toBeLessThan(GOLDEN_FRAME_DSSIM);
+  });
+
+  it('flags a structural change well above the default threshold, and points at the block', () => {
+    const shifted = image((x, y) => 128 + 100 * Math.sin((x + 2) / 3) * Math.cos(y / 5));
+    expect(imageDssim(base, shifted, W, H).dssim).toBeGreaterThan(10 * GOLDEN_FRAME_DSSIM);
+    const local = base.slice();
+    for (let y = 0; y < 8; y++) for (let x = 0; x < 8; x++) local.set([255, 0, 0, 255], (y * W + x) * 4);
+    const r = imageDssim(base, local, W, H);
+    expect(r.worst).toBeGreaterThan(r.dssim);
+    expect(r.worst).toBeGreaterThan(0.05);
   });
 });

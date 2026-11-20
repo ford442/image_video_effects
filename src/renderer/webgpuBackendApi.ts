@@ -94,6 +94,11 @@ export type WebGPUBackendApi = Pick<
   | 'setFatalErrorHandler'
   | 'getLastDeviceLoss'
   | 'simulateDeviceLoss'
+  | 'beginOfflineRender'
+  | 'renderFrameAt'
+  | 'endOfflineRender'
+  | 'isOfflineRenderActive'
+  | 'getMaxTextureDimension2D'
   | 'initialized'
 > & Required<Pick<Renderer, 'loadImageFromElement' | 'getCpuInputBitmap'>>
   // Worker proxy only: the in-thread renderer records from the page canvas instead.

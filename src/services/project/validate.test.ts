@@ -98,6 +98,44 @@ describe('project file v3 validation', () => {
     expect(validationErrors(raw)).toContain('project.modulation must be an array');
   });
 
+  it('accepts the #1401 timeline additions: every SlotParams key, source events, keyframes', () => {
+    const timeline = {
+      exportVersion: 1,
+      name: 'Set',
+      savedAt: 1,
+      chain: { v: 1, slots: [] },
+      chainString: 'x',
+      timeline: {
+        hz: 20,
+        durationMs: 2000,
+        events: [
+          { t: 0, slot: 0, kind: 'source', value: { type: 'video', url: 'https://cdn.example/v.mp4', seekSec: 4 } },
+          { t: 0, slot: 1, kind: 'param', key: 'depthThreshold', value: 0.4 },
+        ],
+        keyframes: [{ t: 1000, slot: 1, key: 'zoomParam3', value: 0.9, ease: 'easeInOut' }],
+      },
+    };
+    const result = validateProjectFile({ ...minimalProject(), timeline });
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.project.timeline?.timeline?.keyframes).toHaveLength(1);
+    expect(result.ok && result.project.timeline?.timeline?.events[0]).toMatchObject({ kind: 'source' });
+
+    const keyframesOnly = { ...timeline, timeline: { ...timeline.timeline, events: [] } };
+    expect(validateProjectFile({ ...minimalProject(), timeline: keyframesOnly }).ok).toBe(true);
+
+    const bad = {
+      ...timeline,
+      timeline: {
+        ...timeline.timeline,
+        events: [{ t: 0, slot: 0, kind: 'source', value: { type: 'image', url: 'blob:https://app/1' } }],
+        keyframes: [{ t: 0, slot: 0, key: 'zoomParam1', value: 1, ease: 'bounce' }],
+      },
+    };
+    const errors = validationErrors({ ...minimalProject(), timeline: bad }).join(' ');
+    expect(errors).toContain('no data:/blob: URLs');
+    expect(errors).toContain('keyframes[0]');
+  });
+
   it('rejects an extra top-level key', () => {
     expect(validationErrors({ ...minimalProject(), permission: 'granted' }))
       .toContain('project.permission is not allowed');

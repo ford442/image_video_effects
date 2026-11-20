@@ -126,7 +126,7 @@ describe('layerChainShare — 6-slot full param stress', () => {
           { t: 100, slot: 0, kind: 'param', key: 'zoomParam1', value: 0.5 },
           { t: 50, slot: 0, kind: 'param', key: 'zoomParam1', value: 0.6 }, // goes back in time
           { t: 120, slot: 9, kind: 'param', key: 'zoomParam1', value: 0.6 }, // slot out of range
-          { t: 130, slot: 0, kind: 'param', key: 'lightStrength', value: 0.6 }, // not a slider
+          { t: 130, slot: 0, kind: 'param', key: 'agentCount', value: 0.6 }, // not a SlotParams key
           { t: 140, slot: 0, kind: 'param', key: 'zoomParam2', value: 'x' },
           { t: 150, slot: 0, kind: 'shader', value: '' },
           { t: 160, slot: 2, kind: 'shader', value: 'neon-grid' },
