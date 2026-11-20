@@ -8,30 +8,14 @@
 //      + Kimi Optimizer (spring-damped influence, click shatter bursts, per-block FFT voices)
 // ═══════════════════════════════════════════════════════════════════
 //  Created: 2026-05-10
-//  Upgraded: 2026-05-31
+//  Upgraded: 2026-05-31, 2026-11-20
 //  Optimized: 2026-07-31
+//  Ideas: Schmitt-trigger shatter latch via exact C (§12.2B); block-boundary seam from neighbour displacement jump (§12.2B)
+//  A packing: display RGB + A.a = -shatter latch (writeTexture alpha stays semantic)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Sensitivity, y=Scatter, z=Aberration, w=BlockSize
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Sensitivity, y=Scatter, z=Aberration, w=BlockSize
 
 fn hash12(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * .1031);
@@ -88,38 +72,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // y=Scatter scales the per-block displacement kick.
     let scatter = u.zoom_params.y * 0.1 * voiceGain;
 
-    // ── Spring-damped influence center ───────────────────────────
-    // Persistent state in extraBuffer[133..137] ([0..4] reserved,
-    // [5..132] = engine FFT bins): 133/134 = sprung center (uv),
-    // 135/136 = spring velocity, 137 = last update time.
-    var mouse = mouseRaw;
-    var springVel = vec2<f32>(0.0, 0.0);
-    let hasState = arrayLength(&extraBuffer) > 137u;
-    if (hasState) {
-        mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        springVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    }
-    if (global_id.x == 0u && global_id.y == 0u && hasState) {
-        let prevTime = extraBuffer[137];
-        let dt = clamp(time - prevTime, 0.001, 0.05);
-        var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        if (prevTime <= 0.0) {
-            // First touch: seed the spring at the cursor so it never snaps.
-            sPos = mouseRaw;
-            sVel = vec2<f32>(0.0, 0.0);
-        }
-        // Critically damped spring: stiffness = omega^2, damping = 2*omega.
-        let omega = 8.0;
-        let accel = (mouseRaw - sPos) * (omega * omega) - sVel * (2.0 * omega);
-        sVel = sVel + accel * dt;
-        sPos = sPos + sVel * dt;
-        extraBuffer[133] = sPos.x;
-        extraBuffer[134] = sPos.y;
-        extraBuffer[135] = sVel.x;
-        extraBuffer[136] = sVel.y;
-        extraBuffer[137] = time;
-    }
+    // ── Influence center (rescue) ────────────────────────────────
+    // HEAD kept a spring in extraBuffer[133..137]. The engine re-uploads all 256
+    // floats of extraBuffer every frame (audioDepth.ts writeExtraBuffer), zeroing
+    // 133..138, so the spring never persisted (velocity always 0) and every pixel
+    // thread read the centre from a buffer that only thread (0,0) wrote, unordered:
+    // a nondeterministic patchwork of "top-left corner" and "cursor" centres on a
+    // real GPU. The centre is the cursor, read directly.
+    let mouse = mouseRaw;
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthScatter = mix(1.3, 0.7, depth);
@@ -146,10 +106,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
     burst = min(burst, 1.0);
 
-    // Mouse-velocity dispersion: the spring's velocity magnitude
-    // literally boosts intensity while the influence center is moving.
-    let velBoost = min(length(springVel) * 2.0, 0.5);
-    let intensity = clamp(velocity * sensitivity + velBoost + burst * 0.5, 0.0, 1.0);
+    let drive = clamp(velocity * sensitivity + burst * 0.5, 0.0, 1.0);
+
+    // ── Idea 1: Schmitt-trigger shatter latch (§12.2B) ───────────
+    // A field that cracks does not heal instantly. Per pixel: engage above 0.6,
+    // hold while the field is still above 0.25, otherwise relax x0.955 / frame, from
+    // the EXACT previous frame (dataTextureC, never filtered). The latch rides in
+    // A.a as a NEGATIVE number (HEAD's A.a was the semantic alpha, always >= 0, so a
+    // foreign shader's alpha left in a shared A can never read back as a latch).
+    // The cursor now leaves a fading wake of still-shattered blocks, and click
+    // cracks linger - motion becomes visible without the dead velocity state.
+    let prevLatch = clamp(-textureLoad(dataTextureC, coords, 0).a, 0.0, 1.0);
+    let engaged = step(0.6, drive);
+    let holding = step(0.25, drive);
+    let latch = max(prevLatch * mix(0.955, 1.0, holding), engaged);
+    let intensity = max(drive, latch * 0.7);
 
     let safeTime = max(time, 0.001);
     let rnd = hash12(blockUV + vec2<f32>(safeTime * 10.0, safeTime * 20.0));
@@ -159,6 +130,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Click bursts kick the block displacement radially outward.
     displacement = displacement + burstKick.x * 0.05;
     let rgbSplit = intensity * aberration * depthScatter;
+
+    // ── Idea 2: block-boundary seam (§12.2B block-domain) ────────
+    // The tear IS the difference between neighbouring blocks' offsets, which HEAD
+    // never compares. Find the nearest block edge, hash the block across it with the
+    // same time term, and glint a 1 px seam where the two displacements differ.
+    // Scaled by the Scatter-driven kick (scatter = 0 -> no seam) and faded out for
+    // 1-4 px blocks, where "edges" would be every pixel.
+    let inCell = fract(vec2<f32>(coords) / granularity);
+    let toEdge = min(inCell, vec2<f32>(1.0) - inCell) * granularity;     // px to nearest edge, per axis
+    let edgeIsX = toEdge.x <= toEdge.y;
+    let nbStep = select(vec2<f32>(0.0, select(-1.0, 1.0, inCell.y > 0.5)),
+                        vec2<f32>(select(-1.0, 1.0, inCell.x > 0.5), 0.0), edgeIsX);
+    let rndNb = hash12(blockUV + nbStep * granularity / u.config.zw + vec2<f32>(safeTime * 10.0, safeTime * 20.0));
+    let gapPx = abs(rnd - rndNb) * intensity * scatter * depthScatter * u.config.z;
+    let seam = (1.0 - smoothstep(0.4, 1.4, min(toEdge.x, toEdge.y)))
+             * clamp(gapPx * 0.15, 0.0, 1.0) * smoothstep(2.0, 5.0, granularity);
 
     let r = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(displacement - rgbSplit, displacement), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(displacement, displacement), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
@@ -170,6 +157,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Click flash: cracked blocks brighten briefly as the burst decays.
     color = color + vec3<f32>(burst * 0.15, burst * 0.12, burst * 0.2);
+    // Idea 2: cracked-edge glint
+    color = color + vec3<f32>(0.55, 0.68, 1.0) * seam * 0.35;
 
     // Audio shockwave on bass hits
     let shock = sin(mouseDist * 30.0 - time * 10.0) * exp(-mouseDist * 2.0) * bass * 0.5;
@@ -181,6 +170,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let finalRGBA = vec4<f32>(color, alpha);
 
     textureStore(writeTexture, coords, finalRGBA);
-    textureStore(dataTextureA, coords, finalRGBA);
+    // A packing: display RGB + A.a = -latch (read back above as max(-C.a, 0))
+    textureStore(dataTextureA, coords, vec4<f32>(color, -latch));
     textureStore(writeDepthTexture, coords, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

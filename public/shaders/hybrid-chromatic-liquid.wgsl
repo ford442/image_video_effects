@@ -1,198 +1,175 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Hybrid Chromatic Liquid
+//  Category: hybrid
+//  Features: mouse-driven, audio-reactive, liquid-distortion, chromatic-aberration, flow-field, fresnel, upgraded-rgba
+//  Complexity: High
+//  Chunks From: gen_grid.wgsl (fbm2), crystal-facets.wgsl (fresnelSchlick), luma-flow-field.wgsl (flow-field pattern)
+//  Created: 2026-03-22 (Agent 2A - Shader Surgeon)
+//  Upgraded: 2026-11-20
+//  Ideas: slope-driven dispersion (§12.2F Snell direction); surface-normal Fresnel + specular glint (§12.2F)
+//  A packing: display RGBA (A is a plain copy of the output; nothing reads it as a field)
+// ═══════════════════════════════════════════════════════════════════
+//  Fluid-like distortion with RGB channel separation flowing along a
+//  noise-generated flow field. Audio swells the liquid; the cursor pulls
+//  and rings it.
+//
+//  Restored 2026-11-20: from commit 9983b1eb until now this file held an
+//  unrelated halftone/ink print (dot size / edge threshold / levels / ink
+//  density on the four sliders) while the JSON, description and slider
+//  labels all describe THIS effect. The original did not compile
+//  (`let rOffset` was assigned), which is why it was swapped out.
+// ═══════════════════════════════════════════════════════════════════
+
 #include "_prelude.wgsl"
 
-fn getLuma(color_1: vec3<f32>) -> f32 {
-    return dot(color_1, vec3<f32>(0.299, 0.587, 0.114));
+// ═══ CHUNK 1: hash12 (from gen_grid.wgsl) ═══
+fn hash12(p: vec2<f32>) -> f32 {
+    var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
+    p3 = p3 + dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
 }
 
-fn hash12_(p: vec2<f32>) -> f32 {
-    var p3_: vec3<f32>;
-
-    p3_ = fract((vec3<f32>(p.xyx) * 0.1031));
-    let _e7 = p3_;
-    let _e8 = p3_;
-    let _e14 = p3_;
-    p3_ = (_e14 + vec3(dot(_e7, (_e8.yzx + vec3(33.33)))));
-    let _e18 = p3_.x;
-    let _e20 = p3_.y;
-    let _e23 = p3_.z;
-    return fract(((_e18 + _e20) * _e23));
+// ═══ CHUNK 2: valueNoise (from gen_grid.wgsl) ═══
+fn valueNoise(p: vec2<f32>) -> f32 {
+    let i = floor(p);
+    let f = fract(p);
+    let w = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    let a = hash12(i + vec2<f32>(0.0, 0.0));
+    let b = hash12(i + vec2<f32>(1.0, 0.0));
+    let c = hash12(i + vec2<f32>(0.0, 1.0));
+    let d = hash12(i + vec2<f32>(1.0, 1.0));
+    return mix(mix(a, b, w.x), mix(c, d, w.x), w.y);
 }
 
-@compute @workgroup_size(16, 16, 1) 
+// ═══ CHUNK 3: fbm2 (from gen_grid.wgsl) ═══
+fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
+    var value = 0.0;
+    var amplitude = 0.5;
+    var frequency = 1.0;
+    for (var i: i32 = 0; i < octaves; i = i + 1) {
+        value = value + amplitude * valueNoise(p * frequency);
+        amplitude = amplitude * 0.5;
+        frequency = frequency * 2.0;
+    }
+    return value;
+}
+
+// ═══ CHUNK 4: fresnelSchlick (from crystal-facets.wgsl) ═══
+fn fresnelSchlick(cosTheta: f32, F0: f32) -> f32 {
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+// Display tone-map for the added glint only (the photograph and HEAD's highlight are not graded).
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ═══ HYBRID LOGIC: Flow Field + Chromatic Liquid ═══
+@compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
-    var uv: vec2<f32>;
-    var mousePos: vec2<f32>;
-    var gx: vec3<f32> = vec3(0.0);
-    var gy: vec3<f32> = vec3(0.0);
-    var i: i32 = -1;
-    var j: i32;
-    var wx: f32;
-    var wy: f32;
-    var color: vec3<f32>;
-    var finalColor: vec3<f32>;
-    var ink_alpha: f32 = 0.0;
-    var d: f32;
+    let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
 
-    let _e3 = u.config;
-    let resolution = _e3.zw;
-    if ((global_id.x >= u32(resolution.x)) || (global_id.y >= u32(resolution.y))) {
-        return;
-    }
-    uv = (vec2<f32>(global_id.xy) / resolution);
-    let _e20 = u.zoom_config;
-    mousePos = _e20.yz;
+    let ci = vec2<i32>(global_id.xy);
+    let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+    let asp = vec2<f32>(resolution.x / resolution.y, 1.0);   // noise lives in aspect-correct space
     let time = u.config.x;
-    
-    // ═══ AUDIO INPUT ═══
-    let audioOverall = u.config.y;
-    let audioBass = audioOverall * 1.2;
-    let audioPulse = 1.0 + audioBass * 0.3;
-    
+    let bass = plasmaBuffer[0].x;
+    let mids = plasmaBuffer[0].y;
+
+    // Parameters
+    let flowScale = mix(1.0, 5.0, u.zoom_params.x);                              // x: Flow field scale
+    let distortionStrength = mix(0.02, 0.15, u.zoom_params.y) * (1.0 + bass * 0.35); // y: Liquid distortion (bass swells it)
+    let chromaticAmount = u.zoom_params.z * 0.08;                                // z: RGB split
+    let flowSpeed = mix(0.2, 1.5, u.zoom_params.w);                              // w: Animation speed
+    let flowT = time * flowSpeed * 0.1 + mids * 0.1;                             // mids push the phase (additive)
+
+    // Pointer: HEAD's cursor behaviour (held-click ring + cursor pull, HEAD constants), now
+    // bending the liquid's sample point so the JSON's `mouse-driven` stays true.
+    let mousePos = u.zoom_config.yz;
     let isMouseDown = u.zoom_config.w > 0.5;
-    let distToMouse = length(uv - mousePos);
-    let clickRipple = select(0.0, 1.0, isMouseDown) * sin(distToMouse * 40.0 - time * 8.0) * exp(-distToMouse * 4.0) * (1.0 + audioBass * 0.5);
-    let cursorGravity = 1.0 - smoothstep(0.0, 0.3, distToMouse);
-    uv = uv + normalize(uv - mousePos + 0.001) * (clickRipple * 0.05 + cursorGravity * 0.02);
-    let _e30 = u.zoom_params.x;
-    let dotSize = (((_e30 * 20.0) + 2.0) * audioPulse);
-    let _e40 = u.zoom_params.y;
-    let edgeThresh = max(0.01, ((1.0 - _e40) * 0.5));
-    let _e48 = u.zoom_params.z;
-    let levels = (floor((_e48 * 10.0)) + 2.0);
-    let inkDensity = (u.zoom_params.w * (1.0 + audioOverall * 0.4));
-    let pixelSize = (vec2(1.0) / resolution);
-    loop {
-        let _e69 = i;
-        if (_e69 <= 1) {
-        } else {
-            break;
-        }
-        {
-            j = -1;
-            loop {
-                let _e74 = j;
-                if (_e74 <= 1) {
-                } else {
-                    break;
-                }
-                {
-                    let _e77 = i;
-                    let _e79 = j;
-                    let offset = (vec2<f32>(f32(_e77), f32(_e79)) * pixelSize);
-                    let _e85 = uv;
-                    let _e88 = textureSampleLevel(readTexture, u_sampler, (_e85 + offset), 0.0);
-                    let s = _e88.xyz;
-                    let _e90 = getLuma(s);
-                    wx = 0.0;
-                    wy = 0.0;
-                    let _e95 = i;
-                    if (_e95 == -1) {
-                        wx = -1.0;
-                    }
-                    let _e99 = i;
-                    if (_e99 == 1) {
-                        wx = 1.0;
-                    }
-                    let _e103 = j;
-                    if (_e103 == -1) {
-                        wy = -1.0;
-                    }
-                    let _e107 = j;
-                    if (_e107 == 1) {
-                        wy = 1.0;
-                    }
-                    let _e111 = j;
-                    if (_e111 == 0) {
-                        let _e115 = wx;
-                        wx = (_e115 * 2.0);
-                    }
-                    let _e117 = i;
-                    if (_e117 == 0) {
-                        let _e121 = wy;
-                        wy = (_e121 * 2.0);
-                    }
-                    let _e123 = wx;
-                    let _e126 = gx;
-                    gx = (_e126 + vec3((_e90 * _e123)));
-                    let _e128 = wy;
-                    let _e131 = gy;
-                    gy = (_e131 + vec3((_e90 * _e128)));
-                }
-                continuing {
-                    let _e134 = j;
-                    j = (_e134 + 1);
-                }
-            }
-        }
-        continuing {
-            let _e137 = i;
-            i = (_e137 + 1);
-        }
+    let toMouse = uv - mousePos;
+    let distToMouse = length(toMouse);
+    let clickRing = select(0.0, 1.0, isMouseDown) * sin(distToMouse * 40.0 - time * 8.0) * exp(-distToMouse * 4.0) * (1.0 + bass * 0.5);
+    let cursorPull = 1.0 - smoothstep(0.0, 0.3, distToMouse);
+    let uvp = uv + (toMouse / max(distToMouse, 1e-4)) * (clickRing * 0.05 + cursorPull * 0.02);
+
+    // Calculate flow field from FBM
+    let flowUV = uvp * asp * flowScale + vec2<f32>(flowT);
+    let angle1 = fbm2(flowUV, 4) * 6.28318;
+    let angle2 = fbm2(flowUV + vec2<f32>(5.2, 1.3), 4) * 6.28318;
+
+    // Create flow vectors
+    let flow = vec2<f32>(cos(angle1), sin(angle2));
+
+    // Liquid displacement accumulates along flow
+    var displacedUV = uvp;
+    var height0 = 0.0;
+    let steps = 5;
+    for (var i: i32 = 0; i < steps; i = i + 1) {
+        let fi = f32(i) / f32(steps);
+        let noiseVal = fbm2(displacedUV * asp * flowScale + vec2<f32>(time * 0.2), 3);
+        height0 = select(height0, noiseVal, i == 0);   // surface height at the unbent point
+        displacedUV = displacedUV + flow * distortionStrength * noiseVal * (1.0 - fi);
     }
-    let _e139 = gx;
-    let _e140 = gy;
-    let edge = length((_e139 + _e140));
-    let isEdge = select(0.0, 1.0, (edge > edgeThresh));
-    let _e149 = uv;
-    let _e151 = textureSampleLevel(readTexture, u_sampler, _e149, 0.0);
-    color = _e151.xyz;
-    let _e154 = color;
-    let _e155 = getLuma(_e154);
-    let gridPos = (vec2<f32>(global_id.xy) / vec2(dotSize));
-    let gridCenter = (floor(gridPos) + vec2(0.5));
-    let dist = length((gridPos - gridCenter));
-    let radius = (sqrt(_e155) * 0.5);
-    let _e169 = color;
-    color = (floor((_e169 * levels)) / vec3(levels));
-    let dotRadius = ((1.0 - _e155) * 0.7);
-    let isDot = select(0.0, 1.0, (dist < dotRadius));
-    let _e182 = color;
-    finalColor = _e182;
-    if (isEdge > 0.5) {
-        let line_density = ((inkDensity * 0.9) + 0.05);
-        ink_alpha = line_density;
-        let _e192 = finalColor;
-        finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (isEdge * inkDensity));
-    }
-    if (isDot > 0.5) {
-        let dot_coverage = smoothstep(0.0, 0.7, (1.0 - _e155));
-        let dot_alpha = ((dot_coverage * inkDensity) * 0.85);
-        let inkColor = vec3<f32>(0.08, 0.07, 0.09);
-        let _e213 = finalColor;
-        let _e214 = finalColor;
-        finalColor = mix(_e213, (_e214 * 0.7), (isDot * 0.8));
-        let _e220 = ink_alpha;
-        ink_alpha = max(_e220, dot_alpha);
-    }
-    let _e222 = ink_alpha;
-    if (_e222 < 0.01) {
-        ink_alpha = mix(0.15, 0.45, (_e155 * inkDensity));
-    }
-    let _e229 = uv;
-    let _e236 = hash12_((((_e229 * time) * 0.001) + vec2(100.0)));
-    let paper_tex = (0.95 + (0.05 * _e236));
-    let _e241 = ink_alpha;
-    ink_alpha = (_e241 * paper_tex);
-    let _e244 = mousePos.x;
-    if (_e244 >= 0.0) {
-        let _e247 = uv;
-        let _e248 = mousePos;
-        let dVec = (_e247 - _e248);
-        d = length(dVec);
-        let _e254 = d;
-        let vignette = smoothstep(0.8, 0.2, (_e254 * 0.5));
-        let _e258 = finalColor;
-        let cursorGlow = cursorGravity * 0.4;
-        finalColor = (_e258 * vignette) + vec3<f32>(cursorGlow * 0.2, cursorGlow * 0.15, cursorGlow * 0.3);
-        let _e260 = ink_alpha;
-        let _e262 = ink_alpha;
-        ink_alpha = mix(_e260, min(1.0, (_e262 * 1.2)), (vignette * 0.5));
-    }
-    let _e272 = finalColor;
-    let _e273 = ink_alpha;
-    textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(_e272, _e273));
-    let _e277 = ink_alpha;
-    let _e280 = ink_alpha;
-    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(_e277, 0.0, 0.0, _e280));
-    return;
+
+    // ── liquid surface normal from the displacement noise (feeds Ideas 1 and 2) ──
+    // `noiseVal` was computed and thrown away; its gradient is the surface slope. Two forward
+    // differences on the height that the first displacement step already used.
+    let hp = uvp * asp * flowScale + vec2<f32>(time * 0.2);
+    let eps = 0.02;
+    let hx = fbm2(hp + vec2<f32>(eps, 0.0), 3);
+    let hy = fbm2(hp + vec2<f32>(0.0, eps), 3);
+    let slope = vec2<f32>(hx - height0, hy - height0) / eps;
+    let nrm = normalize(vec3<f32>(-slope * 0.5, 1.0));
+
+    // ── Idea 1: slope-driven dispersion (§12.2F Snell direction) ───────
+    // HEAD split R/B by a constant (flow + (1,0)) vector. A refracting liquid disperses by how
+    // much the surface is tilted: steep ripples split hard along the surface gradient, flat
+    // patches stay nearly colour-true. Same slider, same flow offsets, plus a slope term.
+    let steep = smoothstep(0.2, 1.6, length(slope));
+    let splitVec = (flow + vec2<f32>(1.0, 0.0)) * mix(0.6, 1.5, steep) + nrm.xy * 3.0;
+    var rOffset = displacedUV + splitVec * chromaticAmount;
+    var gOffset = displacedUV;
+    var bOffset = displacedUV - splitVec * chromaticAmount;
+
+    // Sample with wrapping for liquid effect
+    rOffset = fract(rOffset);
+    gOffset = fract(gOffset);
+    bOffset = fract(bOffset);
+
+    // Sample input texture
+    let r = textureSampleLevel(readTexture, u_sampler, rOffset, 0.0).r;
+    let g = textureSampleLevel(readTexture, u_sampler, gOffset, 0.0).g;
+    let b = textureSampleLevel(readTexture, u_sampler, bOffset, 0.0).b;
+    var color = vec3<f32>(r, g, b);
+
+    // Add liquid highlights based on distortion magnitude
+    let distortionMag = length(displacedUV - uvp);
+    let highlight = vec3<f32>(0.3, 0.5, 0.7) * distortionMag * 5.0;
+
+    // ── Idea 2: surface-normal Fresnel + specular glint (§12.2F) ───────
+    // HEAD fed Fresnel a fake cos(theta) from screen radius. Feed it the real normal too
+    // (flat water reproduces HEAD exactly) and add a Blinn glint on the same normal, so the
+    // rippled surface carries a wet sheen. Existing (0.8, 0.9, 1.0) rim tint kept.
+    let edgeDist = length(uv - 0.5);
+    let fresnel = fresnelSchlick(nrm.z * (1.0 - edgeDist), 0.1);
+    let halfVec = normalize(normalize(vec3<f32>(-0.4, -0.5, 0.75)) + vec3<f32>(0.0, 0.0, 1.0));
+    let glint = pow(max(dot(nrm, halfVec), 0.0), 160.0) * vec3<f32>(0.9, 0.95, 1.0) * 0.4;
+
+    // HEAD's blue highlight is kept as-is; only the new emissive glint goes through the display curve.
+    color = color + highlight + acesToneMap(glint);
+    color = mix(color, vec3<f32>(0.8, 0.9, 1.0), fresnel * 0.3);
+
+    // Alpha based on distortion
+    let luma = dot(color, vec3<f32>(0.299, 0.587, 0.114));
+    let alpha = clamp(mix(0.5, 1.0, luma + distortionMag * 2.0), 0.0, 1.0);
+
+    // Sample and write depth
+    let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, gOffset, 0.0).r;
+
+    textureStore(writeTexture, ci, vec4<f32>(color, alpha));
+    textureStore(dataTextureA, ci, vec4<f32>(color, alpha));
+    textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depth * (1.0 - distortionMag), 0.0, 0.0, 0.0));
 }

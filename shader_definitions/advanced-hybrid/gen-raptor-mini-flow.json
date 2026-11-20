@@ -2,7 +2,7 @@
   "id": "gen-raptor-mini-flow",
   "name": "Raptor Mini Flow",
   "url": "shaders/gen-raptor-mini-flow.wgsl",
-  "description": "Predatory raptor agents navigate structure-tensor flow fields, hunting along image edges and orientations. Their trails follow dominant eigenvectors while audio rage pulses through the swarm.",
+  "description": "Predatory raptor agents navigate structure-tensor flow fields, hunting along image edges and orientations toward the cursor. Strongly oriented regions stretch them into streamlined bodies, each drags a pursuit wake behind it, and audio rage pulses through the swarm.",
   "tags": [
     "predator",
     "flow-field",
@@ -15,7 +15,8 @@
   "features": [
     "mouse-driven",
     "audio-reactive",
-    "depth-aware"
+    "depth-aware",
+    "upgraded-rgba"
   ],
   "params": [
     {
