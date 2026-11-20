@@ -3,31 +3,12 @@
 //  Category: artistic
 //  Features: mouse-driven, temporal, rgba-state-machine, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: palette-knife ridge; canvas tooth in thin wash
+//  Upgraded: 2026-09-09, 2026-11-20
+//  Ideas: palette-knife ridge; canvas tooth in thin wash; wet edge (§12.2C); directional impasto shadow
 //  A packing: raw pigment.rgb + thickness.a
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn loadC(p: vec2<i32>, res: vec2<f32>) -> vec4<f32> {
     let hi = vec2<i32>(res) - vec2<i32>(1);
@@ -119,6 +100,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let thicknessGradX = (right.a - left.a) / (2.0 * max(ps.x, 0.0001));
     let thicknessGradY = (up.a - down.a) / (2.0 * max(ps.y, 0.0001));
     let thicknessNormal = normalize(vec2<f32>(-thicknessGradX, -thicknessGradY) + vec2<f32>(0.0, 1.0));
+    // ── Idea 1: wet edge (§12.2C) ─────────────────────────────────
+    // Pigment parks where this pixel is thicker than its neighbors.
+    let lapT = (left.a + right.a + up.a + down.a) * 0.25 - thickness;
+    let wetEdge = max(-lapT, 0.0);
 
     let canvasColor = vec3<f32>(0.95, 0.92, 0.88);
     let washMix = smoothstep(0.0, 0.3, thickness);
@@ -135,6 +120,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let shadow = smoothstep(1.0, 2.0, thickness) * 0.15;
     displayColor *= 1.0 - shadow;
 
+    // ── Idea 2: directional impasto shadow ────────────────────────
+    // The existing light throws a shadow where the thickness gradient faces it.
+    let gradLen = length(vec2<f32>(thicknessGradX, thicknessGradY));
+    let gradDir = vec2<f32>(thicknessGradX, thicknessGradY) / max(gradLen, 0.0001);
+    let facing = max(dot(gradDir, lightDir), 0.0);
+    let impastoOcc = facing * smoothstep(0.15, 1.6, gradLen) * 0.28;
+    displayColor *= 1.0 - impastoOcc;
+
     let ridge = smoothstep(1.5, 2.5, thickness);
     let ridgeNoise = fract(sin(dot(uv * 50.0, vec2<f32>(12.0, 78.0))) * 43758.0);
     displayColor += vec3<f32>(1.0, 1.0, 0.9) * ridge * ridgeNoise * 0.1;
@@ -150,6 +143,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let weave = 0.5 + 0.5 * sin(uv.x * 140.0) * sin(uv.y * 140.0);
     let thinWash = 1.0 - smoothstep(0.05, 0.45, thickness);
     displayColor = mix(displayColor, canvasColor * (0.92 + weave * 0.12), thinWash * 0.28);
+    displayColor = displayColor * (1.0 - clamp(wetEdge * 2.2, 0.0, 0.4));
 
     displayColor = clamp(displayColor, vec3<f32>(0.0), vec3<f32>(1.0));
     thickness *= dryingRate;
@@ -157,7 +151,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     textureStore(dataTextureA, coord, vec4<f32>(pigment, thickness));
 
     let sourceA = textureSampleLevel(readTexture, u_sampler, uv, 0.0).a;
-    let outAlpha = clamp(thickness * 0.3 + knifeRidge * 0.15 + sourceA * 0.1 + treble * 0.03, 0.0, 1.0);
+    let outAlpha = clamp(thickness * 0.3 + knifeRidge * 0.15 + wetEdge * 0.25 + impastoOcc * 0.2 + sourceA * 0.1 + treble * 0.03, 0.0, 1.0);
     displayColor = acesToneMap(displayColor);
     textureStore(writeTexture, coord, vec4<f32>(displayColor, outAlpha));
 

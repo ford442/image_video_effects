@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-16
-//  Ideas: terrace rims on the hopper stair; tarnish wells in the stair center
+//  Upgraded: 2026-10-16, 2026-11-20
+//  Ideas: terrace rims; tarnish wells; stair riser; oxide graded across the stair
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -122,7 +122,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let oxideThickness = height * 0.1 * oxidePurity;
     
     // Thin-film interference color shift
-    let interferencePhase = oxideThickness * color_freq + time * 0.1;
+    // ── Idea 2: oxide graded across the stair ─────────────────────
+    // terraceEdge is the position inside the current step. Color runs
+    // from the lip toward the well. Iridescence Freq still sets the rate.
+    let interferencePhase = oxideThickness * color_freq + time * 0.1 + terraceEdge * hitTerrace * 1.7;
     let interferenceColor = vec3<f32>(
         0.5 + 0.5 * cos(interferencePhase),
         0.5 + 0.5 * cos(interferencePhase + 2.0),
@@ -150,9 +153,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let tarnish = smoothstep(0.35, 0.9, terraceEdge) * inCrystal;
     final_color = mix(final_color, final_color * vec3<f32>(0.42, 0.52, 0.36), tarnish * 0.55);
     final_color = final_color + vec3<f32>(1.0, 0.9, 0.68) * rim * (0.35 + treble * 0.15);
+    // ── Idea 1: stair riser ───────────────────────────────────────
+    // Just inward of the bright lip, the vertical face of the step is dark.
+    let riser = smoothstep(0.04, 0.14, terraceEdge) * (1.0 - smoothstep(0.16, 0.32, terraceEdge)) * inCrystal;
+    final_color = final_color * (1.0 - riser * 0.5);
 
     let transmission = (1.0 - metallic * 0.7) * oxidePurity * (1.0 - distFromCenter * 0.5);
-    let alpha = clamp(transmission * (0.55 + rim * 0.45) + tarnish * 0.12, 0.0, 1.0);
+    let alpha = clamp(transmission * (0.55 + rim * 0.45) + tarnish * 0.12 + riser * 0.15, 0.0, 1.0);
     let display = aces(max(final_color, vec3<f32>(0.0)));
     let pixel = vec2<i32>(global_id.xy);
     textureStore(writeTexture, pixel, vec4<f32>(display, alpha));
