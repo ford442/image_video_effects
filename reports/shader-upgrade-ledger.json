@@ -2625,8 +2625,17 @@
       "history": []
     },
     "galaxy-sim": {
-      "hash": "9f20506329643567",
-      "history": []
+      "hash": "66b707653406f2ef",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "66b707653406f2ef",
+          "prev_hash": "9f20506329643567",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
+        }
+      ]
     },
     "gen-chrono-erosion-feedback-melting": {
       "hash": "ecebab7f1967849d",
@@ -2782,7 +2791,7 @@
       ]
     },
     "lenia": {
-      "hash": "b00736a76f3c7d0c",
+      "hash": "12ce66547e2af54b",
       "history": [
         {
           "event": "upgraded",
@@ -2791,6 +2800,14 @@
           "prev_hash": "2f5cb2204ae9d234",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "12ce66547e2af54b",
+          "prev_hash": "b00736a76f3c7d0c",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
         }
       ]
     },
@@ -2820,7 +2837,7 @@
       ]
     },
     "luminance-wind": {
-      "hash": "cb6c1ce43c6d0a8d",
+      "hash": "b488daeda7edda26",
       "history": [
         {
           "event": "upgraded",
@@ -2829,6 +2846,14 @@
           "prev_hash": "545da307c5a1c7e1",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "b488daeda7edda26",
+          "prev_hash": "cb6c1ce43c6d0a8d",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
         }
       ]
     },
@@ -3315,8 +3340,17 @@
       ]
     },
     "snow": {
-      "hash": "dfb74328766f2629",
-      "history": []
+      "hash": "568d97b780e15acf",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "568d97b780e15acf",
+          "prev_hash": "dfb74328766f2629",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
+        }
+      ]
     },
     "spec-blue-noise-stipple": {
       "hash": "31da08b61d290b5a",
@@ -13410,7 +13444,7 @@
       ]
     },
     "conv-anisotropic-diffusion": {
-      "hash": "4e8ef52987c37459",
+      "hash": "42d60d9b35be8830",
       "history": [
         {
           "event": "upgraded",
@@ -13419,6 +13453,14 @@
           "prev_hash": "2d305d455de68b90",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "42d60d9b35be8830",
+          "prev_hash": "4e8ef52987c37459",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
         }
       ]
     },
@@ -13486,7 +13528,7 @@
       ]
     },
     "conv-fractal-kernel": {
-      "hash": "8d02989107b1585f",
+      "hash": "b714fcb1136b3db3",
       "history": [
         {
           "event": "upgraded",
@@ -13495,6 +13537,14 @@
           "prev_hash": "cf8f600020cdf62d",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "b714fcb1136b3db3",
+          "prev_hash": "8d02989107b1585f",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
         }
       ]
     },
@@ -13659,7 +13709,7 @@
       ]
     },
     "conv-steerable-pyramid": {
-      "hash": "d1ef30c1265fc21d",
+      "hash": "19ca7b1acbdaf47d",
       "history": [
         {
           "event": "upgraded",
@@ -13668,6 +13718,14 @@
           "prev_hash": "530a5f85cd653359",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "19ca7b1acbdaf47d",
+          "prev_hash": "d1ef30c1265fc21d",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
         }
       ]
     },
@@ -19684,7 +19742,7 @@
       ]
     },
     "crt-phosphor-decay": {
-      "hash": "b5887ce2090270b8",
+      "hash": "6cd39bc91c6c2246",
       "history": [
         {
           "event": "upgraded",
@@ -19693,6 +19751,14 @@
           "prev_hash": "7d37e01af89b0b05",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "6cd39bc91c6c2246",
+          "prev_hash": "b5887ce2090270b8",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
         }
       ]
     },
@@ -19773,7 +19839,7 @@
       ]
     },
     "data-moshing": {
-      "hash": "5036b79df2797cb4",
+      "hash": "24cbeb743cf22af8",
       "history": [
         {
           "event": "upgraded",
@@ -19782,6 +19848,14 @@
           "prev_hash": "296caa2448d1c360",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "24cbeb743cf22af8",
+          "prev_hash": "5036b79df2797cb4",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
         }
       ]
     },
@@ -20077,7 +20151,7 @@
       ]
     },
     "rgb-glitch-trail": {
-      "hash": "9cc599b50f38bfb1",
+      "hash": "1208b2096b5c12be",
       "history": [
         {
           "event": "upgraded",
@@ -20086,6 +20160,14 @@
           "prev_hash": "b363cd588994386b",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-19T20:28:52.482Z",
+          "hash": "1208b2096b5c12be",
+          "prev_hash": "9cc599b50f38bfb1",
+          "commit": "8c537fe6",
+          "note": "2026-11-19 sonnet/batch-45 (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-19-sonnet-batch-45/"
         }
       ]
     },

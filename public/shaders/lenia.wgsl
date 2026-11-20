@@ -6,7 +6,10 @@
 //          A little viscosity stops the discrete kernel's negative lobes from growing speckle;
 //          empty neighbourhoods re-seed. Ranges are numpy-gated (scripts/sim_models/lenia_rescue.py)
 //          so every slider position keeps the field alive without flooding.
-//  A packing: (field, growth, display trail, 1 = initialised)
+//  Upgraded: 2026-11-19
+//  Ideas: mu parameter localization (Flow-Lenia zones, numpy-gated alive band); kernel-reach aura + growth front
+//  Rescue: 2026-11-19 pow((U - mu) / sigma, 2.0) had a possibly negative base (undefined on real GPUs) -> z * z
+//  A packing: (field, growth, display trail, 1 = initialised) raw state; ideas only change the writeTexture display
 
 #include "_prelude.wgsl"
 
@@ -36,6 +39,15 @@ fn smoothNoise(p: vec2<f32>, epoch: f32, radius: f32) -> f32 {
     let k = 1.6 / radius;
     return 0.5 + 0.25 * (sin(p.x * k * 1.3 + epoch * 1.7 + sin(p.y * k * 0.9))
                        + sin(p.y * k * 1.1 - epoch * 2.3 + sin(p.x * k * 0.7)));
+}
+
+// ── Idea 1: parameter localization (Flow-Lenia). One mu for the whole world self-organises
+// into a single regime; here mu varies in space (zones ~17 kernel radii wide) and drifts over
+// minutes, so spots, dense stripes and sparse gliders coexist. Returns ~0..1, centred on 0.5.
+fn muZone(p: vec2<f32>, time: f32, radius: f32) -> f32 {
+    let k = 1.0 / (3.0 * radius);
+    return 0.5 + 0.25 * (sin(p.x * k * 1.1 + time * 0.045 + sin(p.y * k * 0.8))
+                       + sin(p.y * k * 0.9 - time * 0.037 + sin(p.x * k * 1.3)));
 }
 
 // Smooth blob in a cell of size `cell` px, or 0. `epoch` decorrelates re-seeds.
@@ -75,7 +87,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let dt = (0.05 + u.zoom_params.y * 0.10) * (1.0 + audio.x * 0.35);
     let accumulation = u.zoom_params.z;
     let mu = (0.135 + u.zoom_params.w * 0.035) * (1.0 - audio.z * 0.03);
-    let sigma = mu * 0.094;
+    // ±0.01 around the slider mu: numpy sweep keeps the field alive (never dead / flooded) for
+    // every mu in 0.122..0.185 at all three radius settings; sigma stays 0.094·mu locally.
+    let muLocal = mu + (muZone(p, time, radius) - 0.5) * 0.02;
+    let sigma = muLocal * 0.094;
     let threshold = mix(0.18, 0.72, u.zoom_params.w);
     let cell = 2.6 * radius;
 
@@ -106,7 +121,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         + fieldAt(coord - vec2<i32>(0, 1), size, cell, radius);
     var field = mix(centre, neighbours * 0.25, 0.5);
 
-    let growth = 2.0 * exp(-0.5 * pow((potential - mu) / sigma, 2.0)) - 1.0;
+    let growthZ = (potential - muLocal) / sigma;
+    let growth = 2.0 * exp(-0.5 * growthZ * growthZ) - 1.0;
 
     // Growth packets: travelling bands of nutrient.
     let packetPhase = dot(uv, vec2<f32>(0.846, 0.533)) * (18.0 + radius) - time * (5.0 + u.zoom_params.y * 10.0);
@@ -150,8 +166,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let hue = 0.55 + 0.45 * sin(vec3<f32>(0.0, 2.094, 4.188) + finalValue * 3.14159 + audio * 2.0);
     let growthTint = vec3<f32>(0.10, 0.35, 0.45) * max(growth, 0.0) * smoothstep(0.02, 0.2, field);
     let trailTint = vec3<f32>(0.25, 0.12, 0.40) * trail * (1.0 - finalValue) * accumulation;
-    let color = species * hue + growthTint + trailTint + clickFront * vec3<f32>(0.25, 0.12, 0.05);
-    let alpha = clamp(max(finalValue, trail * 0.7) + clickFront * 0.15 + inoculation, 0.0, 1.0);
+    // ── Idea 2: kernel-reach aura + growth front. The potential U is the creature's sensing field;
+    // outside the body it is faint teal (U relative to mu) and the thin ring where growth > 0 is
+    // the front about to advance. Gated off inside the body so the tints above are unchanged.
+    let outside = 1.0 - smoothstep(0.02, 0.2, field);
+    let sense = smoothstep(0.30 * muLocal, muLocal, potential) * outside;
+    let front = max(growth, 0.0) * outside;
+    let aura = vec3<f32>(0.03, 0.12, 0.17) * sense + vec3<f32>(0.14, 0.38, 0.44) * front;
+    let color = species * hue + growthTint + trailTint + aura + clickFront * vec3<f32>(0.25, 0.12, 0.05);
+    let alpha = clamp(max(finalValue, trail * 0.7) + sense * 0.15 + front * 0.30 + clickFront * 0.15 + inoculation, 0.0, 1.0);
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(dataTextureA, coord, vec4<f32>(field, growth, trail, 1.0));

@@ -290,7 +290,7 @@
     "id": "crt-phosphor-decay",
     "name": "CRT Phosphor Decay",
     "url": "shaders/crt-phosphor-decay.wgsl",
-    "description": "Simulates CRT phosphor persistence with per-channel RGB decay rates, scanline masking, sub-pixel triad rendering, and halation bloom. Audio-reactive brightness flash and scanline flutter. Touch cursor adds static.",
+    "description": "Simulates CRT phosphor persistence with per-channel RGB decay rates, scanline masking, sub-pixel triad rendering, and halation bloom. Audio-reactive brightness flash and scanline flutter. Touch cursor adds static. Bright lines bloom into the scanline gap (beam-current scanline bloom) and the red/blue guns misconverge toward the screen corners, both scaled by Scanline Intensity.",
     "features": [
       "mouse-driven",
       "click-reactive",
@@ -620,7 +620,7 @@
     "name": "Data Moshing",
     "url": "shaders/data-moshing.wgsl",
     "category": "retro-glitch",
-    "description": "Raw accumulated offset state in authoritative A drives motion-compensated macroblock smearing, sprung pointer scrubbing, bounded click corruption, three-band audio, ACES output, and semantic corruption alpha. Each block shares one motion vector, and a residual spark marks where that vector changed.",
+    "description": "Raw accumulated offset state in authoritative A drives motion-compensated macroblock smearing, sprung pointer scrubbing, bounded click corruption, three-band audio, ACES output, and semantic corruption alpha. Each block shares one motion vector, and a residual spark marks where that vector changed. Corrupted macroblocks bleed 4:2:0-style block chroma under crisp luma, and a periodic intra-refresh column sweeps left to right wiping the stored vectors.",
     "tags": [
       "glitch",
       "data-mosh",
@@ -1597,7 +1597,7 @@
     "id": "rgb-glitch-trail",
     "name": "RGB Glitch Trail",
     "url": "shaders/rgb-glitch-trail.wgsl",
-    "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence. Red and blue lag along the warp, and a comet follows the stored intensity.",
+    "description": "Mouse leaves chromatic aberration trails with alpha-channel translucency blending. Uses domain-warped FBM for organic displacement and computes alpha from glitch intensity * temporal persistence. Red and blue lag along the warp, and a comet follows the stored intensity. As a trail decays the blue ghost collapses first and a red fringe lingers, and the fringe drags along the trail's own direction.",
     "params": [
       {
         "id": "decay_rate",

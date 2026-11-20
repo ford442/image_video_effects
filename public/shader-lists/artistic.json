@@ -1926,7 +1926,7 @@
     "id": "galaxy-sim",
     "name": "Galaxy Simulation",
     "url": "shaders/galaxy.wgsl",
-    "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow.",
+    "description": "Audio-reactive spiral galaxy with breathing arms, diffraction-spike stars, mouse-parallax center, and silence-driven reverse flow. Dust lanes trace the inner edge of each arm; young blue stars and pink HII knots cluster along the arms.",
     "features": [
       "depth-aware",
       "upgraded-rgba",
@@ -2580,7 +2580,7 @@
     "id": "lenia",
     "name": "Lenia Cellular Automata",
     "url": "shaders/lenia.wgsl",
-    "description": "A Lenia-inspired continuous cellular field with audio-shaped growth, gliding Lenia structures, traveling growth packets, and click-launched inoculation fronts.",
+    "description": "A Lenia-inspired continuous cellular field with audio-shaped growth, gliding Lenia structures, traveling growth packets, and click-launched inoculation fronts. The growth window varies slowly across the world so different regimes coexist as zones, and a faint sensing aura shows where creatures will expand next.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -2754,7 +2754,7 @@
     "name": "Luminance Wind",
     "category": "artistic",
     "url": "shaders/luminance-wind.wgsl",
-    "description": "Luminance-gated raw HDR history is advected by layered curl gusts, held directional wind, depth parallax, chromatic drift, and traveling click fronts.",
+    "description": "Luminance-gated raw HDR history is advected by layered curl gusts, held directional wind, depth parallax, chromatic drift, and traveling click fronts. Lee-side shelter pockets get curling wake-edge eddies, wind direction veers with depth, and the trail injection is balanced against Trail Decay so a static scene keeps its exposure.",
     "params": [
       {
         "name": "Wind Speed",
@@ -4614,6 +4614,7 @@
     "id": "snow",
     "name": "Blizzard (Depth-Aware)",
     "url": "shaders/snow.wgsl",
+    "description": "Depth-aware blizzard: three parallax layers of tumbling hexagonal flakes that fall behind nearer scene objects, wind-skewed (pointer X steers it), settling into a snow bank on up-facing surfaces that wind carries downwind in plumes and that melts slowly.",
     "tags": [
       "filter",
       "image-processing"
@@ -4621,6 +4622,7 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
+      "depth-aware",
       "upgraded-rgba"
     ],
     "params": [

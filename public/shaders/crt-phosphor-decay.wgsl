@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
-//  Ideas: two-rate phosphor knee; triad-aligned grain bleed; interlaced field parity
+//  Upgraded: 2026-09-21, 2026-11-19
+//  Ideas: two-rate phosphor knee; triad-aligned grain bleed; interlaced field parity; beam-current scanline bloom (§12.2B); dynamic convergence error (§12.2B)
 //  A packing: ACES display RGBA (C is read as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -16,11 +16,11 @@ fn hash12(p: vec2<f32>) -> f32 {
   return fract((p3d.x + p3d.y) * p3d.z);
 }
 
-fn halation(uv: vec2<f32>, spread: f32) -> vec3<f32> {
+fn halation(uv: vec2<f32>, spread: f32, centre: vec3<f32>) -> vec3<f32> {
   let e = vec2<f32>(spread / u.config.z, 0.0);
   var c = textureSampleLevel(readTexture, u_sampler, clamp(uv - e * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.08;
   c += textureSampleLevel(readTexture, u_sampler, clamp(uv - e, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.17;
-  c += textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb * 0.50;
+  c += centre * 0.50;
   c += textureSampleLevel(readTexture, u_sampler, clamp(uv + e, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.17;
   c += textureSampleLevel(readTexture, u_sampler, clamp(uv + e * 2.0, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb * 0.08;
   return c;
@@ -92,8 +92,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let haloSpread = u.zoom_params.z * 4.0 + 0.5;
 
   let depth = textureLoad(readDepthTexture, coord, 0).r;
-  let fresh = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let halo = halation(uv, haloSpread);
+  // ── Idea 5: dynamic convergence error ───────────────────────────
+  // The three guns are never perfectly converged and the misregistration
+  // grows toward the corners: red lands a little outward, blue a little
+  // inward. Radial, linear in r² (0 at centre, ~2 px at a corner); gated
+  // by the raw scanline slider (CRT-ness), so 0 = a converged picture.
+  let cNorm = (uv - 0.5) * vec2<f32>(aspect, 1.0);
+  let r2n = dot(cNorm, cNorm) / (0.25 * (aspect * aspect + 1.0));
+  let convShift = (uv - 0.5) * (0.004 * r2n * clamp(u.zoom_params.y, 0.0, 1.0));
+  let fresh0 = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let convR = textureSampleLevel(readTexture, u_sampler, clamp(uv - convShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let convB = textureSampleLevel(readTexture, u_sampler, clamp(uv + convShift, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
+  let fresh = vec4<f32>(convR, fresh0.g, convB, fresh0.a);
+  let halo = halation(uv, haloSpread, fresh0.rgb);
   let luma = dot(fresh.rgb, vec3<f32>(0.299, 0.587, 0.114));
   let boosted = mix(fresh.rgb, halo, smoothstep(0.3, 0.9, luma) * 0.35 * (0.5 + depth * 0.5)) * (1.0 + bass * 0.3);
 
@@ -133,10 +144,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var outCol = max(boosted * refresh, persist);
 
   let scanFreq = resolution.y * 0.5 * (1.0 + treble * 0.08 + rowVoice * 0.025);
+  // ── Idea 4: beam-current scanline bloom ─────────────────────────
+  // The beam spot grows with beam current, so a bright line swells into the
+  // gap between lines and defocuses the triad: the raster is most visible on
+  // dark/mid content and nearly gone in the whites. `beam` is the luma of the
+  // line being drawn (source + halation, already computed above); the sine
+  // profile slides toward its square root (a flatter-topped, wider line) and
+  // the mask depth is eased.
+  let beam = smoothstep(0.35, 0.95, dot(boosted, vec3<f32>(0.299, 0.587, 0.114)));
   let scanline = sin(uv.y * scanFreq) * 0.5 + 0.5;
-  outCol *= mix(1.0, scanline, scanlineStr * 0.7);
+  let scanProfile = mix(scanline, sqrt(max(scanline, 0.0)), beam);
+  outCol *= mix(1.0, scanProfile, scanlineStr * 0.7);
 
-  outCol *= mix(vec3<f32>(1.0), triadMask(f32(coord.x)), scanlineStr * 0.5);
+  outCol *= mix(vec3<f32>(1.0), triadMask(f32(coord.x)), scanlineStr * 0.5 * (1.0 - 0.4 * beam));
 
   let mDist = length((uv - smoothMouse) * vec2<f32>(aspect, 1.0));
   let mouseFalloff = 1.0 - smoothstep(0.0, 0.12, mDist);

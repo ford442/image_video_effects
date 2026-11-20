@@ -3,7 +3,7 @@
   "name": "Luminance Wind",
   "category": "artistic",
   "url": "shaders/luminance-wind.wgsl",
-  "description": "Luminance-gated raw HDR history is advected by layered curl gusts, held directional wind, depth parallax, chromatic drift, and traveling click fronts.",
+  "description": "Luminance-gated raw HDR history is advected by layered curl gusts, held directional wind, depth parallax, chromatic drift, and traveling click fronts. Lee-side shelter pockets get curling wake-edge eddies, wind direction veers with depth, and the trail injection is balanced against Trail Decay so a static scene keeps its exposure.",
   "params": [
     {
       "name": "Wind Speed",

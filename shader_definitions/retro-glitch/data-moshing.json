@@ -3,7 +3,7 @@
   "name": "Data Moshing",
   "url": "shaders/data-moshing.wgsl",
   "category": "retro-glitch",
-  "description": "Raw accumulated offset state in authoritative A drives motion-compensated macroblock smearing, sprung pointer scrubbing, bounded click corruption, three-band audio, ACES output, and semantic corruption alpha. Each block shares one motion vector, and a residual spark marks where that vector changed.",
+  "description": "Raw accumulated offset state in authoritative A drives motion-compensated macroblock smearing, sprung pointer scrubbing, bounded click corruption, three-band audio, ACES output, and semantic corruption alpha. Each block shares one motion vector, and a residual spark marks where that vector changed. Corrupted macroblocks bleed 4:2:0-style block chroma under crisp luma, and a periodic intra-refresh column sweeps left to right wiping the stored vectors.",
   "tags": [
     "glitch",
     "data-mosh",
