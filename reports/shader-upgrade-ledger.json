@@ -836,8 +836,17 @@
       "history": []
     },
     "distortion-gravitational-prismatic": {
-      "hash": "549d984d723a840a",
-      "history": []
+      "hash": "66fff59d4decdaa4",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "66fff59d4decdaa4",
+          "prev_hash": "549d984d723a840a",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        }
+      ]
     },
     "divine-light-iridescence": {
       "hash": "f650e8f6fcd85a75",
@@ -976,8 +985,17 @@
       ]
     },
     "ethereal-swirl-coupled": {
-      "hash": "a256037b0eeee639",
-      "history": []
+      "hash": "bde4d9e401654e69",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "bde4d9e401654e69",
+          "prev_hash": "a256037b0eeee639",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        }
+      ]
     },
     "fabric-step-gabor": {
       "hash": "21f0a3f293645814",
@@ -1071,8 +1089,17 @@
       ]
     },
     "fractal-noise-dissolve-nlm": {
-      "hash": "501a03e2edca99a1",
-      "history": []
+      "hash": "8e6aaf8fc1dc7334",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "8e6aaf8fc1dc7334",
+          "prev_hash": "501a03e2edca99a1",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "frost-reveal-crystal": {
       "hash": "3c439a9f75098366",
@@ -1239,8 +1266,17 @@
       ]
     },
     "gen-raptor-mini-flow": {
-      "hash": "00a299f444259ff0",
-      "history": []
+      "hash": "d56d59094a39601d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "d56d59094a39601d",
+          "prev_hash": "00a299f444259ff0",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        }
+      ]
     },
     "gen-singularity-forge-blackbody": {
       "hash": "4526175fd253d0af",
@@ -1346,8 +1382,17 @@
       "history": []
     },
     "gravitational-lensing-nlm": {
-      "hash": "20eb92f1bd46bd47",
-      "history": []
+      "hash": "2d6f93eefcd15b84",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "2d6f93eefcd15b84",
+          "prev_hash": "20eb92f1bd46bd47",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        }
+      ]
     },
     "gravitational-lensing": {
       "hash": "ad9afdd184f9b9fd",
@@ -2126,7 +2171,7 @@
       ]
     },
     "alpha-paint-thickness": {
-      "hash": "14a4e4329f6dec2e",
+      "hash": "454b3cce693f0598",
       "history": [
         {
           "event": "upgraded",
@@ -2135,6 +2180,14 @@
           "prev_hash": "386282af65cec871",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "454b3cce693f0598",
+          "prev_hash": "14a4e4329f6dec2e",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -2533,12 +2586,30 @@
       ]
     },
     "cosmic-flow": {
-      "hash": "56a75e34a2873fb3",
-      "history": []
+      "hash": "3c76298d6411e68f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "3c76298d6411e68f",
+          "prev_hash": "56a75e34a2873fb3",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        }
+      ]
     },
     "distortion_gravitational_lens": {
-      "hash": "d4e9e09fec6f2b0e",
-      "history": []
+      "hash": "59428746d66b581c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "59428746d66b581c",
+          "prev_hash": "d4e9e09fec6f2b0e",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        }
+      ]
     },
     "dla-crystals": {
       "hash": "9a3efcbc76840f4c",
@@ -3242,8 +3313,17 @@
       ]
     },
     "quantum-wormhole": {
-      "hash": "8456327c3b55b6a3",
-      "history": []
+      "hash": "26bdf25f8b42d8eb",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "26bdf25f8b42d8eb",
+          "prev_hash": "8456327c3b55b6a3",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "radiating-displacement": {
       "hash": "3968857746fda3ea",
@@ -10269,8 +10349,17 @@
       ]
     },
     "gen-protocell-division": {
-      "hash": "3c7afb8076974b08",
-      "history": []
+      "hash": "7d1c4bc1c388e68d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "7d1c4bc1c388e68d",
+          "prev_hash": "3c7afb8076974b08",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "gen-psychedelic-layered-time-stamps": {
       "hash": "28f9993c6d048a12",
@@ -13031,7 +13120,7 @@
       ]
     },
     "hybrid-chromatic-liquid": {
-      "hash": "d65c269a754f3ae4",
+      "hash": "48ea4bc0372ad362",
       "history": [
         {
           "event": "upgraded",
@@ -13040,6 +13129,14 @@
           "prev_hash": "cafa29cfa71c94b6",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "48ea4bc0372ad362",
+          "prev_hash": "d65c269a754f3ae4",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
         }
       ]
     },
@@ -13141,7 +13238,7 @@
       ]
     },
     "hybrid-reaction-diffusion-glass": {
-      "hash": "76a0f10a75407481",
+      "hash": "ce9805834ed17ee8",
       "history": [
         {
           "event": "upgraded",
@@ -13150,6 +13247,14 @@
           "prev_hash": "ae7131fd0cb94e29",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "ce9805834ed17ee8",
+          "prev_hash": "76a0f10a75407481",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -13293,7 +13398,7 @@
       ]
     },
     "bismuth-crystallizer": {
-      "hash": "2c955d60d96cd46a",
+      "hash": "aef3d39ef192a7df",
       "history": [
         {
           "event": "upgraded",
@@ -13302,6 +13407,14 @@
           "prev_hash": "f2059cf8d91a4152",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "aef3d39ef192a7df",
+          "prev_hash": "2c955d60d96cd46a",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -13760,7 +13873,7 @@
       ]
     },
     "conv-structure-tensor-flow": {
-      "hash": "5e8deb1181d9a340",
+      "hash": "1aef09071401076b",
       "history": [
         {
           "event": "upgraded",
@@ -13769,6 +13882,14 @@
           "prev_hash": "79b2e005822c5a68",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "1aef09071401076b",
+          "prev_hash": "5e8deb1181d9a340",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
         }
       ]
     },
@@ -14359,7 +14480,7 @@
       ]
     },
     "luma-refraction": {
-      "hash": "84a66ddacf3546d8",
+      "hash": "0e355e575130b8f3",
       "history": [
         {
           "event": "upgraded",
@@ -14368,6 +14489,14 @@
           "prev_hash": "4f609f3498a5c3d2",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "0e355e575130b8f3",
+          "prev_hash": "84a66ddacf3546d8",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -16382,8 +16511,17 @@
       ]
     },
     "kaleido-portal-interactive": {
-      "hash": "54084f816ddad3ea",
-      "history": []
+      "hash": "a44e7b2c5132b3b6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "a44e7b2c5132b3b6",
+          "prev_hash": "54084f816ddad3ea",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "kimi-chromatic-warp": {
       "hash": "6e3f62e562b3f4c7",
@@ -16424,8 +16562,17 @@
       ]
     },
     "kinetic-dispersion": {
-      "hash": "6918196745dd8265",
-      "history": []
+      "hash": "5d3ca786919b0341",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "5d3ca786919b0341",
+          "prev_hash": "6918196745dd8265",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        }
+      ]
     },
     "knitted-fabric": {
       "hash": "cb7345f21a731aac",
@@ -17037,8 +17184,17 @@
       ]
     },
     "mouse-time-crystal": {
-      "hash": "ccc2b78e25604c7a",
-      "history": []
+      "hash": "42e10700285a8e25",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "42e10700285a8e25",
+          "prev_hash": "ccc2b78e25604c7a",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "mouse-voronoi-mosaic": {
       "hash": "fbb84099047b105f",
@@ -17803,8 +17959,17 @@
       ]
     },
     "reactive-glass-grid": {
-      "hash": "34bb90badfa3acf1",
-      "history": []
+      "hash": "4da100f31c478b06",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "4da100f31c478b06",
+          "prev_hash": "34bb90badfa3acf1",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
+        }
+      ]
     },
     "reality-tear": {
       "hash": "e4a6a34675e41581",
@@ -17833,7 +17998,7 @@
       ]
     },
     "refractive-bubbles": {
-      "hash": "78731dc8b2f5263f",
+      "hash": "e6a2c31266b3df53",
       "history": [
         {
           "event": "upgraded",
@@ -17842,6 +18007,14 @@
           "prev_hash": "3de58970c188db66",
           "commit": "1008b956",
           "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T05:07:27.699Z",
+          "hash": "e6a2c31266b3df53",
+          "prev_hash": "78731dc8b2f5263f",
+          "commit": "5a7c74aa",
+          "note": "2026-11-20 glass/crystal eleven (grok) — docs/agents/swarm-outputs/grok-2026-11-20-glass-crystal-eleven"
         }
       ]
     },
@@ -19449,8 +19622,17 @@
       ]
     },
     "optical-flow-tracer": {
-      "hash": "b13f10fdba163e3a",
-      "history": []
+      "hash": "54000e921d00dcac",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-20T04:44:35.473Z",
+          "hash": "54000e921d00dcac",
+          "prev_hash": "b13f10fdba163e3a",
+          "commit": "673d780a",
+          "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        }
+      ]
     },
     "pixel-depth-sort": {
       "hash": "fb4083732129d233",

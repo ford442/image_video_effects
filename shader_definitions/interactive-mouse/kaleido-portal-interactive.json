@@ -4,7 +4,9 @@
   "icon": "circle",
   "description": "A circular portal that reveals a kaleidoscopic view of the video, controlled by the mouse.",
   "features": [
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

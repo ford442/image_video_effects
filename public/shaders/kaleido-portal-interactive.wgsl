@@ -8,33 +8,18 @@
 //  Chunks From: kaleido-portal-interactive
 //  Created: 2026-05-30
 //  By: Copilot CLI
-//  Upgraded: 2026-07-30 (Batch 17, Visualist)
-//    - Priority 1: HDR border glow soft-knee + clamped (was up to ~7.0 raw)
-//    - Critically-damped spring on portal center (extraBuffer[133..138])
-//    - Click counter-rotation bursts kick the mandala into a spin
+//  Upgraded: 2026-07-30, 2026-11-20
+//  Ideas: portal lip; spin smear
+//  A packing: raw portal tuple (mask, border, segments/16, alpha); ACES on writeTexture only
+//  Spring center, click spin, and the soft-knee border glow stay.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Radius, y=Segments, z=Rotation, w=Hardness
-  ripples: array<vec4<f32>, 50>,
-};
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+// zoom_params: x=Radius, y=Segments, z=Rotation, w=Hardness
 
 // Persistent shader state in extraBuffer ([133..255] only; 0..132 are reserved/engine):
 //   [133..134] = springed portal center (xy)
@@ -140,6 +125,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalUV = mix(uv, kaleidoUV, mask);
     }
 
+    // ── Idea 1: portal lip ────────────────────────────────────────
+    // The circular edge is a glass lip. Hardness is the lip width.
+    // Radius still places the portal.
+    let lipLo = radius - max(hardness, 0.001) * 2.0;
+    let lipHi = radius + max(hardness, 0.001);
+    let lip = smoothstep(lipLo, radius, dist) * (1.0 - smoothstep(radius, lipHi, dist));
+    let radialDir = distVec / max(dist, 0.0001);
+    finalUV = clamp(finalUV + radialDir * lip * (0.01 + hardness * 0.035), vec2<f32>(0.001), vec2<f32>(0.999));
+
     let border = smoothstep(radius, radius + 0.01, dist) * (1.0 - smoothstep(radius + 0.01, radius + 0.02 + hardness, dist));
 
     // --- Technique 1 (PRIORITY): tame the HDR border glow ------------------
@@ -151,13 +145,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let borderGlow = min(borderGlowSoft, 1.5);
     let borderColor = vec3<f32>(0.5 + treble * 0.2, 0.8 + mids * 0.15, 1.0);
 
+    // ── Idea 2: spin smear ────────────────────────────────────────
+    // Rotation and the click burst are already an angular velocity.
+    let tang = vec2<f32>(-distVec.y, distVec.x) / max(dist, 0.0001);
+    let smear = (abs(rotationSpeed) * 0.012 + abs(burstVel) * 0.0035) * mask;
+    let smearUV = clamp(finalUV + tang * smear, vec2<f32>(0.001), vec2<f32>(0.999));
     let base = textureSampleLevel(readTexture, u_sampler, finalUV, 0.0);
-    var finalColor = base.rgb + borderColor * borderGlow;
-    // Safety net: gentle reinhard on the combined result so nothing leaves
-    // the portal above ~1.7 even if a future edit re-heats the border.
+    let spun = textureSampleLevel(readTexture, u_sampler, smearUV, 0.0);
+    let smearMix = clamp(smear * 28.0, 0.0, 0.55);
+    var finalColor = mix(base.rgb, spun.rgb, smearMix) + borderColor * borderGlow;
+    // Soft-knee border stays. Reinhard, then ACES on the display only.
     finalColor = finalColor / (1.0 + max(finalColor - vec3<f32>(1.0, 1.0, 1.0), vec3<f32>(0.0, 0.0, 0.0)) * 0.3);
+    finalColor = aces(max(finalColor, vec3<f32>(0.0)));
 
-    let finalAlpha = clamp(base.a * (1.0 - mask * 0.25) + border * (0.32 + bass * 0.16) + mask * 0.18, 0.08, 1.0);
+    let finalAlpha = clamp(base.a * (1.0 - mask * 0.25) + border * (0.32 + bass * 0.16) + mask * 0.18 + lip * 0.12, 0.08, 1.0);
     let depth = clamp(textureSampleLevel(readDepthTexture, non_filtering_sampler, finalUV, 0.0).r + mask * 0.04, 0.0, 1.0);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));

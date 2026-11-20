@@ -2,7 +2,7 @@
   "id": "cosmic-flow",
   "name": "Cosmic Flow Pro",
   "url": "shaders/cosmic-flow.wgsl",
-  "description": "Braided magnetohydrodynamic nebula currents with layered domain warping, lensing eddies, click-launched vortices, depth deflection, chromatic source refraction, and advected HDR persistence.",
+  "description": "Braided magnetohydrodynamic nebula currents with layered domain warping, lensing eddies, click-launched vortices, depth deflection, chromatic source refraction, and advected HDR persistence. Dark reddening dust lanes thread between the braids and dim whatever shines through them, and stars are twinkling point sources with Airy cores and diffraction spikes.",
   "params": [
     {
       "id": "speed",
@@ -42,7 +42,8 @@
     "audio-driven",
     "click-reactive",
     "braided-flow",
-    "aces-tone-map"
+    "aces-tone-map",
+    "upgraded-rgba"
   ],
   "tags": [
     "filter",

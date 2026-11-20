@@ -2,7 +2,7 @@
   "id": "distortion-gravitational-prismatic",
   "name": "Distortion Gravitational Prismatic",
   "url": "shaders/distortion-gravitational-prismatic.wgsl",
-  "description": "Einstein-ring gravitational lensing combined with 4-band Cauchy spectral dispersion, accretion disk, and gravitational redshift.",
+  "description": "Einstein-ring gravitational lensing combined with 7-band Cauchy spectral dispersion (energy-normalised, so neutral colours stay neutral), accretion disk, gravitational redshift, and a rainbow Einstein ring whose radius follows each wavelength.",
   "tags": [
     "gravitational-lensing",
     "spectral-dispersion",

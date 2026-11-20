@@ -4,14 +4,10 @@
 //  Features: wave-propagation, mouse-interactive, audio-reactive, upgraded-rgba,
 //            chromatic-refraction, click-raindrops, audio-rain, audio-wave-amplitude
 //  Complexity: Medium
-//  Upgraded: 2026-05-31
-//  Batch 22 (2026-07-31):
-//    - FIX: removed the mask-as-color feedback. The old "temporal wave memory"
-//      mixed dataTextureC.rgb (wave STATE: h in [-10,10], v, 0) into the display
-//      color, injecting simulation garbage into the image. The wave state now
-//      never enters the display path; refraction offsets visualize it honestly.
-//    - Click raindrops: live ripples drop one-shot gaussian wave impulses.
-//    - Audio rain: strong bass transients sprinkle random rain impulses.
+//  Upgraded: 2026-05-31, 2026-11-20
+//  Ideas: click raindrops; audio rain; chromatic refraction; dispersion glint; deep-water dispersion (§12.2D); Cauchy scales (§12.2F)
+//  A packing: raw wave state (h, v, 0, 1); ACES on the refracted display only
+//  Wave state never enters the display path. Click raindrops and audio rain stay.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -23,6 +19,10 @@ fn hash21(p: vec2<f32>) -> f32 {
     var p3 = fract(vec3<f32>(p.xyx) * 0.1031);
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -49,15 +49,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     //  Wave state read (engine-forced A/C contract — VERBATIM)
     //  dataTextureC holds the previous frame's state: r = h, g = v
     // ═══════════════════════════════════════════════════════════════
-    let state = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0);
+    let state = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
     var h = state.r;
     var v = state.g;
 
-    let texel = 1.0 / resolution;
-    let n = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, -texel.y), 0.0).r;
-    let s = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, texel.y), 0.0).r;
-    let e = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(texel.x, 0.0), 0.0).r;
-    let w_val = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(-texel.x, 0.0), 0.0).r;
+    let coord = vec2<i32>(global_id.xy);
+    let hi = vec2<i32>(resolution) - vec2<i32>(1);
+    let n = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), hi), 0).r;
+    let s = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), hi), 0).r;
+    let e = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), hi), 0).r;
+    let w_val = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), hi), 0).r;
 
     // ═══════════════════════════════════════════════════════════════
     //  Wave-equation core (SACRED — VERBATIM)
@@ -69,8 +70,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let imgColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     let luma = dot(imgColor, vec3<f32>(0.299, 0.587, 0.114));
 
-    // Audio-driven wave amplitude
-    let localSpeed = waveSpeed * (0.2 + 1.0 * luma) * (1.0 + bass * 0.3);
+    // ── Idea 1: deep-water dispersion (§12.2D) ─────────────────────
+    // Short crests lag. Wave Speed still sets the scale. Luma still
+    // makes bright regions transmit faster.
+    let curvature = abs(laplacian);
+    let localSpeed = waveSpeed * (0.2 + 1.0 * luma) * (1.0 + bass * 0.3) / (1.0 + curvature * 1.6);
 
     v = v + laplacian * localSpeed;
     v = v * damping;
@@ -135,10 +139,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let normal = vec2<f32>(gradX, gradY);
 
-    // Chromatic refraction: R/G/B see different index of refraction
-    let rOffset = normal * refractionAmt * 0.5 * (1.0 + treble * 0.2);
-    let gOffset = normal * refractionAmt * 0.5;
-    let bOffset = normal * refractionAmt * 0.5 * (1.0 - bass * 0.2);
+    // ── Idea 2: Cauchy scales (§12.2F) ──────────────────────────────
+    // n(λ) = 1 + B/λ², relative to green. Refraction still scales the bend.
+    let lam2 = vec3<f32>(0.4225, 0.3025, 0.2025);
+    let nLam = 1.0 + 0.08 / lam2;
+    let cauchy = nLam / nLam.y;
+    let bend = normal * refractionAmt * 0.5;
+    let rOffset = bend * cauchy.x * (1.0 + treble * 0.2);
+    let gOffset = bend * cauchy.y;
+    let bOffset = bend * cauchy.z * (1.0 - bass * 0.2);
 
     let rUV = clamp(uv - rOffset, vec2<f32>(0.0), vec2<f32>(1.0));
     let gUV = clamp(uv - gOffset, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -155,7 +164,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let chroma = abs(finalColor.r - finalColor.b);
     let glint = chroma * (0.08 + mids * 0.08);
     finalColor = finalColor + vec3<f32>(glint * 0.9, glint * 0.6, glint);
-    finalColor = clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0));
+    finalColor = aces(max(finalColor, vec3<f32>(0.0)));
 
     // ── Semantic alpha: wave crests stay slightly more opaque ──
     let alpha = clamp(0.8 + abs(h) * 0.05, 0.0, 1.0);

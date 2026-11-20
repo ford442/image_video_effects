@@ -5,31 +5,12 @@
 //            upgraded-rgba, aces-tone-map, temporal-feedback, chromatic-aberration
 //  Complexity: High
 //  Created: 2026-05-31
-//  Upgraded: 2026-09-21 (was 2026-06-06)
-//  Ideas: contractile cleavage furrow at the division neck; mitotic nuclei that split ahead of the membrane
+//  Upgraded: 2026-09-21, 2026-11-20
+//  Ideas: contractile cleavage furrow; mitotic nuclei; division scar; nucleolus
 //  A packing: ACES display RGBA, straight colour (writeTexture premultiplied as before)
 //  By: Kimi Code CLI
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn h2(p: vec2<f32>) -> f32 {
   let q = fract(p * vec2<f32>(0.1031, 0.1030));
@@ -84,8 +65,12 @@ fn cellSDF(uv: vec2<f32>, fi: f32, t: f32, bass: f32, mids: f32, treble: f32, te
   let d1 = length(uv - vec2<f32>(cx - split, cy)) - r1;
   let r2 = baseR * (0.85 + div * 0.15) + vibe + warp * 0.02;
   let d2 = length(uv - vec2<f32>(cx + split, cy)) - r2;
-  // Idea 1 — cleavage furrow: a contractile ring across the neck, strongest mid-division.
-  let furrow = 4.0 * div * (1.0 - div) * exp(-pow((uv.x - cx) / 0.012, 2.0)) * exp(-abs(uv.y - cy) * 6.0);
+  // Cleavage furrow (kept): the ring peaks at mid-division.
+  let neck = (uv.x - cx) / 0.012;
+  let ring = exp(-neck * neck) * exp(-abs(uv.y - cy) * 6.0);
+  // ── Idea 1: division scar ─────────────────────────────────────
+  // After the split the same neck stays as a faint seam.
+  let furrow = 4.0 * div * (1.0 - div) * ring + smoothstep(0.62, 0.95, dp) * ring * 0.45;
   // Idea 2 — mitotic nuclei: they divide on an earlier window than the membrane, so they lead it apart.
   let divN = smoothstep(0.12, 0.5, dp);
   let nSplit = mix(0.0, (0.18 + bass * 0.1) * 1.1, divN);
@@ -148,6 +133,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let nucleusRim = exp(-abs(best.w) * 140.0) * inside;
   col = mix(col, col * 0.3 + vec3<f32>(0.22, 0.08, 0.3), nucleusFill * 0.75);
   col += irid * nucleusRim * (0.35 + iridescence * 0.4);
+  // ── Idea 2: nucleolus ──────────────────────────────────────────
+  // A denser core where the nucleus distance is most negative.
+  let nucleolus = (1.0 - smoothstep(-0.04, -0.015, best.w)) * inside;
+  col = mix(col, col * 0.25 + vec3<f32>(0.04, 0.015, 0.06), nucleolus * 0.85);
   let furrowGlow = best.z * inside;
   col += vec3<f32>(1.0, 0.75, 0.55) * furrowGlow * 0.9;
   // Exact history load (HEAD sampled C with a filtering sampler at centred coords).
@@ -158,7 +147,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   col = vec3<f32>(col.r + caStr, col.g, col.b - caStr * 0.5);
 
   col = acesToneMap(col * 1.5);
-  let alpha = clamp(thickness * fresnel * 2.0 + coreGlow * 0.5 + nucleusFill * 0.35 + furrowGlow * 0.4, 0.0, 1.0);
+  let alpha = clamp(thickness * fresnel * 2.0 + coreGlow * 0.5 + nucleusFill * 0.35 + nucleolus * 0.2 + furrowGlow * 0.4, 0.0, 1.0);
   let a = clamp(alpha, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(col * a, a));
   textureStore(writeDepthTexture, coord, vec4<f32>(thickness * 0.5, 0.0, 0.0, 0.0));

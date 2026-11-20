@@ -3,8 +3,8 @@
 //  Category: hybrid
 //  Features: hybrid, reaction-diffusion, glass-distortion, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-12
-//  Ideas: thickness IOR from chemistry; caustic concentrate where ∇·grad < 0
+//  Upgraded: 2026-09-12, 2026-11-20
+//  Ideas: thickness IOR; caustic concentrate; Beer-Lambert absorption (§12.2F); reaction-front meniscus
 //  A packing: raw (chem, |grad|, caustic, coverage)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -146,8 +146,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         vec3<f32>(0.0, 0.33, 0.67)
     );
 
-    var color = mix(bgColor, rdColor, newChem * 0.7);
+    // ── Idea 1: Beer-Lambert (§12.2F) ──────────────────────────────
+    // Thicker chemistry absorbs the photo before the existing mix.
+    // Glass Refraction still scales the bend and this absorption.
+    let absorb = exp(-rdColor * newChem * glassDistortion * 10.0);
+    var color = mix(bgColor * absorb, rdColor, newChem * 0.7);
     color += vec3<f32>(1.0, 0.96, 0.85) * caustic * 0.55;
+    // ── Idea 2: reaction-front meniscus ───────────────────────────
+    // |laplacian| is the chemical boundary the solver already uses.
+    let front = smoothstep(0.015, 0.09, abs(lap));
+    color += vec3<f32>(0.72, 0.88, 1.0) * front * (0.16 + audio.z * 0.06);
 
     let edge = gradMag;
     let fresnel = fresnelSchlick(1.0 - clamp(edge * 5.0, 0.0, 1.0), 0.1);
@@ -156,7 +164,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     color += vec3<f32>(specular);
 
     let mapped = aces(max(color, vec3<f32>(0.0)));
-    let alpha = clamp(bgSample.a * 0.2 + mix(0.6, 0.95, newChem + fresnel * 0.5) + caustic * 0.25, 0.0, 1.0);
+    let alpha = clamp(bgSample.a * 0.2 + mix(0.6, 0.95, newChem + fresnel * 0.5) + caustic * 0.25 + front * 0.15, 0.0, 1.0);
 
     textureStore(writeTexture, id, vec4<f32>(mapped, alpha));
     textureStore(writeDepthTexture, id, vec4<f32>(depth * (1.0 - newChem * 0.3), 0.0, 0.0, 0.0));

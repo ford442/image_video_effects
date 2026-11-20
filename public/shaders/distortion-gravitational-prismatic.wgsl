@@ -4,28 +4,13 @@
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba,
 //            gravitational-lensing, spectral-dispersion, semantic-alpha, ACES
 //  Complexity: Very High
+//  Upgraded: 2026-11-20
+//  Ideas: dense energy-normalised Cauchy spectrum (7 bands, per-channel weights; §12.2F Cauchy dispersion); spectral Einstein ring (per-band ring radius from deflectScale)
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=LensStrength, y=MassCount, z=DiskIntensity, w=CauchyDispersion
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=LensStrength, y=MassCount, z=DiskIntensity, w=CauchyDispersion
 
 const PI: f32 = 3.14159265359;
 
@@ -171,22 +156,51 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // Prismatic dispersion
-  let WAVELENGTHS = array<f32, 4>(450.0, 520.0, 600.0, 680.0);
-  var finalColor = vec3<f32>(0.0);
+  // Primary-mass geometry (hoisted: the spectral ring below needs it per band)
+  let toPrimary = uv - masses[0].pos;
+  let distPrimary = length(toPrimary * vec2<f32>(aspect, 1.0));
+  // Rescue: HEAD passed `distPrimary` as the lens-plane distance, so
+  // |dist − 0.14·dist| < 0.02 held only inside dist ≈ 0.025 — the "Einstein
+  // ring" was a dot on the mass. θE of this file's own deflection law is
+  // sqrt(½·mass·radius) = 0.1·sqrt(mass·lensStrength): pass sqrt(lensStrength).
+  let einsteinR = einsteinRadius(masses[0].mass, sqrt(lensStrength));
 
-  for (var w: i32 = 0; w < 4; w = w + 1) {
-    let ior = cauchyIOR(WAVELENGTHS[w], 1.5, cauchyB);
+  // ── Idea 1: dense, energy-normalised Cauchy spectrum (§12.2F) ───────────
+  // HEAD sampled four wavelengths (450/520/600/680, kept) and summed
+  // wl·dot(sample, wl) without normalising: a neutral source came out ×3 red
+  // (flat 0.6 grey → sRGB 229,182,178) and strong dispersion showed four
+  // coloured ghost copies. Three interleaved bands (485/560/640) smooth the
+  // ghosts into a continuous spectrum, and each channel is now the
+  // band-tint-weighted mean of its own samples (weights sum to 1 per channel),
+  // so white stays white and zero dispersion reproduces the plain lens image.
+  let WAVELENGTHS = array<f32, 7>(450.0, 485.0, 520.0, 560.0, 600.0, 640.0, 680.0);
+  var finalColor = vec3<f32>(0.0);
+  var weightSum = vec3<f32>(0.0);
+  var ringAcc = vec3<f32>(0.0);
+  let ringHue = 550.0 + sin(time * 2.0) * 100.0;   // HEAD's time-cycled ring hue, now a band emphasis
+
+  for (var w: i32 = 0; w < 7; w = w + 1) {
+    let lam = WAVELENGTHS[w];
+    let wl = wavelengthToRGB(lam);
+    let ior = cauchyIOR(lam, 1.5, cauchyB);
     let deflectScale = 1.0 + (ior - 1.5) * 2.0;
     let sourcePos = clamp(rayPos - totalDeflection * 0.5 * deflectScale, vec2<f32>(0.001), vec2<f32>(0.999));
     let sample = textureSampleLevel(readTexture, u_sampler, sourcePos, 0.0);
-    let bandIntensity = dot(sample.rgb, wavelengthToRGB(WAVELENGTHS[w]));
-    finalColor += wavelengthToRGB(WAVELENGTHS[w]) * bandIntensity;
+    finalColor += wl * sample.rgb;
+    weightSum += wl;
+
+    // ── Idea 2: spectral Einstein ring (§12.2F) ──────────────────────────
+    // θE² ∝ deflection, and deflectScale is this band's deflection factor, so
+    // the band's ring sits at θE·sqrt(deflectScale): blue outside, red inside —
+    // a rainbow annulus instead of one ring in one colour.
+    let ringBand = smoothstep(0.014, 0.0, abs(distPrimary - einsteinR * sqrt(deflectScale)));
+    let hueD = (lam - ringHue) / 90.0;
+    ringAcc += wl * (ringBand * (0.4 + 0.6 * exp(-hueD * hueD)));
   }
+  finalColor = finalColor / max(weightSum, vec3<f32>(1e-3));
+  let ringSpectrum = ringAcc / max(weightSum, vec3<f32>(1e-3));
 
   // Accretion disk
-  let toPrimary = uv - masses[0].pos;
-  let distPrimary = length(toPrimary * vec2<f32>(aspect, 1.0));
   let innerDisk = masses[0].radius * 3.0;
   let outerDisk = masses[0].radius * 15.0;
   if (distPrimary > innerDisk && distPrimary < outerDisk) {
@@ -197,12 +211,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     finalColor += diskColor;
   }
 
-  // Einstein ring
-  let einsteinR = einsteinRadius(masses[0].mass, distPrimary);
-  let ringDist = abs(distPrimary - einsteinR);
-  let ringGlow = smoothstep(0.02, 0.0, ringDist) * lensStrength;
-  let ringSpectrum = wavelengthToRGB(550.0 + sin(time * 2.0) * 100.0);
-  finalColor += ringSpectrum * ringGlow * 0.55;
+  // Einstein ring (spectral — accumulated per band above)
+  let ringGlow = clamp(dot(ringSpectrum, vec3<f32>(0.3333)) * 3.0, 0.0, 1.0) * lensStrength;
+  finalColor += ringSpectrum * (1.3 * lensStrength);
 
   // Gravitational redshift
   let redshift = smoothstep(masses[0].radius * 10.0, masses[0].radius, distPrimary);

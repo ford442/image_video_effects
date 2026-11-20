@@ -3991,7 +3991,7 @@
     "id": "distortion-gravitational-prismatic",
     "name": "Distortion Gravitational Prismatic",
     "url": "shaders/distortion-gravitational-prismatic.wgsl",
-    "description": "Einstein-ring gravitational lensing combined with 4-band Cauchy spectral dispersion, accretion disk, and gravitational redshift.",
+    "description": "Einstein-ring gravitational lensing combined with 7-band Cauchy spectral dispersion (energy-normalised, so neutral colours stay neutral), accretion disk, gravitational redshift, and a rainbow Einstein ring whose radius follows each wavelength.",
     "tags": [
       "gravitational-lensing",
       "spectral-dispersion",
@@ -4520,7 +4520,7 @@
     "id": "ethereal-swirl-coupled",
     "name": "Ethereal Swirl Coupled",
     "url": "shaders/ethereal-swirl-coupled.wgsl",
-    "description": "Ethereal Swirl Coupled",
+    "description": "Ethereal Swirl Coupled. Smooth fractal swirl clouds coupled both ways to a viscous mouse-driven fluid: the swirl's wind stirs the fluid and its clouds seed dye, dye filaments refract the photo, and the real vorticity tints the hue. Persistence trails display luma along the flow.",
     "tags": [
       "fluid-coupling",
       "fractal-swirl",
@@ -4533,7 +4533,8 @@
       "fractal-swirl",
       "temporal",
       "mouse-driven",
-      "audio-reactive"
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5018,7 +5019,7 @@
     "id": "fractal-noise-dissolve-nlm",
     "name": "Fractal Noise Dissolve Nlm",
     "url": "shaders/fractal-noise-dissolve-nlm.wgsl",
-    "description": "Fractal Noise Dissolve Nlm",
+    "description": "Fractal-noise erosion around the pointer. Unique patches burn on a wider front, repetitive patches on a tighter one. The survivor keeps the NLM residual; the hole keeps ash under the burn.",
     "tags": [
       "fractal-dissolve",
       "non-local-means",
@@ -5027,7 +5028,10 @@
     "features": [
       "fractal-dissolve",
       "non-local-means",
-      "self-similarity-map"
+      "self-similarity-map",
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -5788,7 +5792,7 @@
     "id": "gen-raptor-mini-flow",
     "name": "Raptor Mini Flow",
     "url": "shaders/gen-raptor-mini-flow.wgsl",
-    "description": "Predatory raptor agents navigate structure-tensor flow fields, hunting along image edges and orientations. Their trails follow dominant eigenvectors while audio rage pulses through the swarm.",
+    "description": "Predatory raptor agents navigate structure-tensor flow fields, hunting along image edges and orientations toward the cursor. Strongly oriented regions stretch them into streamlined bodies, each drags a pursuit wake behind it, and audio rage pulses through the swarm.",
     "tags": [
       "predator",
       "flow-field",
@@ -5801,7 +5805,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "depth-aware"
+      "depth-aware",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6334,7 +6339,7 @@
     "id": "gravitational-lensing-nlm",
     "name": "Gravitational Lensing NLM",
     "url": "shaders/gravitational-lensing-nlm.wgsl",
-    "description": "Black hole gravitational lensing with non-local means artistic overdrive. Patch-similarity filtering smooths background starfields while preserving unique features like the event horizon and Einstein ring.",
+    "description": "Black hole gravitational lensing with non-local means artistic overdrive. Patch-similarity filtering smooths background starfields while preserving unique features like the event horizon and Einstein ring. The disk is now upright with a gravitational-redshift g-factor (the Redshift slider also dims and reddens the disk), Buades-form NLM weighting (Gaussian patch, noise-bias term) and a thin photon ring on the shadow edge.",
     "features": [
       "advanced-hybrid",
       "schwarzschild-metric",

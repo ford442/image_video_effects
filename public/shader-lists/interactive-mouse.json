@@ -4789,7 +4789,9 @@
     "icon": "circle",
     "description": "A circular portal that reveals a kaleidoscopic view of the video, controlled by the mouse.",
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -4999,7 +5001,7 @@
     "id": "kinetic-dispersion",
     "name": "Kinetic Dispersion",
     "url": "shaders/kinetic-dispersion.wgsl",
-    "description": "Mouse-velocity dispersion effect with RGB split, block scattering, and audio-reactive intensity.",
+    "description": "Mouse-velocity dispersion effect with RGB split, block scattering, and audio-reactive intensity. Cracked blocks now stay shattered and relax behind the cursor, and block edges glint where neighbouring blocks tear apart.",
     "features": [
       "mouse-driven",
       "audio-reactive",
@@ -7218,7 +7220,9 @@
     "url": "shaders/mouse-time-crystal.wgsl",
     "features": [
       "mouse-driven",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "description": "Mouse clicks seed crystal growth via diffusion-limited aggregation. Crystals grow along image gradients, aging and cooling over time. Creates organic mineral formations.",
     "params": [
@@ -10073,7 +10077,9 @@
       }
     ],
     "features": [
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "tags": [
       "filter",

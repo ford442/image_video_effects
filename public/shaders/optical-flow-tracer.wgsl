@@ -1,11 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Optical Flow Tracer
 //  Category: post-processing
-//  Features: temporal, history-ring, audio-reactive, mouse-driven,
+//  Features: temporal, history-ring, audio-reactive,
 //             optical-flow, motion-vectors, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-21
-//  Ideas: Shi-Tomasi confidence; pyramidal (coarse-to-fine) Lucas-Kanade
+//  Upgraded: 2026-09-21, 2026-11-20
+//  Ideas: Shi-Tomasi confidence; pyramidal (coarse-to-fine) Lucas-Kanade; Gaussian-weighted LK window (§12.1 tactic 1); temporal flow carry through C (§12.1 tactic 6)
+//  A packing: raw flow field — A.xy = flow*flowScale (px), A.z = |flow|*flowScale*20, A.w = 1; read back raw via exact textureLoad(C) (Idea 4). Not ACES'd.
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
@@ -31,27 +32,9 @@
 //    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=decay, y=flowScale, z=trailAge, w=blend
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
-
-struct Uniforms {
-  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>, // x=decay, y=flowScale, z=trailAge, w=blend
-  ripples: array<vec4<f32>, 50>,
-};
 
 // History ring depth is read at runtime (textureNumLayers) — the renderer
 // may allocate 8, 4 or 1 layers and wraps its head at that count.
@@ -74,10 +57,19 @@ fn lucasKanade(uv: vec2<f32>, pixSz: vec2<f32>, prevLayer: i32,
                stride: f32, half: i32, prior: vec2<f32>) -> vec3<f32> {
   var Axx = 0.0; var Ayy = 0.0; var Axy = 0.0;
   var bx  = 0.0; var by  = 0.0;
+  var wsum = 0.0;
+
+  // ── Idea 3: Gaussian-weighted LK window (§12.1 tactic 1) ──────────
+  // A flat box counts a tap across a motion boundary as much as the centre, so flow leaks
+  // past the rim of a moving object. Lucas-Kanade's own refinement is to weight the window
+  // by a Gaussian (sigma = 0.8*half, 1.2 floor so the 3x3 coarse level keeps rank).
+  let sig2 = max(0.8 * f32(half), 1.2) * max(0.8 * f32(half), 1.2);
 
   let tapStep = pixSz * stride;
   for (var dy = -half; dy <= half; dy++) {
     for (var dx = -half; dx <= half; dx++) {
+      let gw  = exp(-0.5 * f32(dx * dx + dy * dy) / sig2);
+      wsum += gw;
       let off = vec2<f32>(f32(dx), f32(dy)) * tapStep;
       let p   = clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0));
 
@@ -94,13 +86,16 @@ fn lucasKanade(uv: vec2<f32>, pixSz: vec2<f32>, prevLayer: i32,
       let Iy = (down  - up)   * 0.5;
       let It = cur - prev;
 
-      Axx += Ix * Ix;
-      Ayy += Iy * Iy;
-      Axy += Ix * Iy;
-      bx  -= Ix * It;
-      by  -= Iy * It;
+      Axx += gw * Ix * Ix;
+      Ayy += gw * Iy * Iy;
+      Axy += gw * Ix * Iy;
+      bx  -= gw * Ix * It;
+      by  -= gw * Iy * It;
     }
   }
+  // Renormalise to the box's tap count so lambda-min (and every threshold below) keeps its calibration.
+  let nrm = f32((2 * half + 1) * (2 * half + 1)) / max(wsum, 1e-3);
+  Axx *= nrm; Ayy *= nrm; Axy *= nrm; bx *= nrm; by *= nrm;
 
   // ── Idea 1: Shi-Tomasi confidence ─────────────────────────────────
   // LK is only trustworthy where the structure tensor has TWO strong
@@ -154,10 +149,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (histDepth > 1u) {
     let coarse   = lucasKanade(uv, pixSz, prevLayer, 4.0, 1, vec2<f32>(0.0));
     let coarseOk = smoothstep(0.002, 0.03, coarse.z);
-    let prior    = clamp(coarse.xy * coarseOk, vec2<f32>(-8.0), vec2<f32>(8.0));
+    var prior    = clamp(coarse.xy * coarseOk, vec2<f32>(-8.0), vec2<f32>(8.0));
+
+    // ── Idea 4: temporal flow carry through C (§12.1 tactic 6) ───────────────────
+    // A already holds this shader's flow field (A.xy = flow*flowScale, A.w = 1) and C returns last
+    // frame's copy untouched, yet LK starts from scratch every frame — so it only ever sees what
+    // its linearisation can reach, and flickers with sensor noise. A tracker initialises from the
+    // previous estimate (KLT): read last frame's flow where this content WAS (semi-Lagrangian,
+    // coord - prior), undo the stored flowScale, and use it as the fine level's starting point
+    // when it explains the live pixel better than the spatial prior does (+0.01 margin = hysteresis:
+    // the carried velocity has to earn the switch). The fine solve still re-measures the residual
+    // and the Shi-Tomasi gate below is untouched, so a stopped object's flow dies in a few frames.
+    let prevPx   = clamp(coord - vec2<i32>(round(prior)), vec2<i32>(0), vec2<i32>(i32(res.x) - 1, i32(res.y) - 1));
+    let prevC    = textureLoad(dataTextureC, prevPx, 0);
+    let prevFlow = clamp(prevC.xy / max(flowScale, 0.05), vec2<f32>(-16.0), vec2<f32>(16.0));
+    let curL     = luma(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb);
+    let errSpat  = abs(curL - luma(textureSampleLevel(historyTexture, u_sampler, clamp(uv - prior    * pixSz, vec2<f32>(0.0), vec2<f32>(1.0)), prevLayer, 0.0).rgb));
+    let errTemp  = abs(curL - luma(textureSampleLevel(historyTexture, u_sampler, clamp(uv - prevFlow * pixSz, vec2<f32>(0.0), vec2<f32>(1.0)), prevLayer, 0.0).rgb));
+    prior = select(prior, prevFlow, prevC.w > 0.5 && errTemp + 0.01 < errSpat);
+
     let fine     = lucasKanade(uv, pixSz, prevLayer, 1.0, 2, prior);
     // Idea 1 applied: damp the flow where the fine tensor is not a corner.
     flow = fine.xy * smoothstep(0.0005, 0.01, fine.z);
+    // ... and a Kalman-style 35% inertia on top: only real motion is carried (leak-level flow is not
+    // re-fed into the wake) and only while it still explains the live pixel.
+    let errMeas  = abs(curL - luma(textureSampleLevel(historyTexture, u_sampler, clamp(uv - flow * pixSz, vec2<f32>(0.0), vec2<f32>(1.0)), prevLayer, 0.0).rgb));
+    let explains = 1.0 - smoothstep(0.0, 0.04, errTemp - errMeas);
+    flow = mix(flow, prevFlow, 0.35 * step(0.5, prevC.w) * smoothstep(0.5, 1.5, length(prevFlow)) * explains);
   }
 
   // ── Accumulate warped-history trail ────────────────────────────────────────

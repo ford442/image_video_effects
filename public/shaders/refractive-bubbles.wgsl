@@ -3,34 +3,22 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: ball-lens inverted image in each bubble core; thin-film wall colour from wall thickness; bright contact walls where bubbles touch
+//  Upgraded: 2026-10-04, 2026-11-20
+//  Ideas: ball-lens core; thin-film wall; contact walls; Snell rim (§12.2F); Airy disc on the specular (§12.2F)
 //  A packing: ACES display RGBA (alpha = transmission inside, edge proximity outside)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+fn airyDisc(x: f32) -> f32 {
+  let xs = max(abs(x), 1e-4);
+  let j1 = xs * (0.5 - xs * xs * (0.0625 - xs * xs * (0.0026042 - xs * xs * 0.0000543)));
+  let v = 2.0 * j1 / xs;
+  return v * v;
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -86,11 +74,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             bubbleNormal = normalize(vec3<f32>(nXY, z / size));
             bubbleDepth = z;
 
-            // Refract: displace UV based on normal
-            let refracted = uv - nXY * refrStrength * (z / size);
-            // Idea 1: ball lens. A solid glass sphere focuses the scene behind
-            // it into a small upside-down image; the core shows that inverted,
-            // minified view while the rim keeps the bent surroundings.
+            // ── Idea 1: Snell rim (§12.2F) ────────────────────────────
+            // refract() through the sphere normal. The ball-lens mix below
+            // still owns the core. Refraction Index still scales the bend.
+            let eta = 1.0 / (1.2 + refrStrength * 3.0);
+            let incident = vec3<f32>(0.0, 0.0, -1.0);
+            let snell = refract(incident, bubbleNormal, eta);
+            let bounced = reflect(incident, bubbleNormal);
+            let tir = dot(snell, snell) < 1e-8;
+            let bent = select(snell.xy, bounced.xy, tir);
+            let refracted = clamp(uv + bent * refrStrength * 0.45, vec2<f32>(0.0), vec2<f32>(1.0));
+            // Ball lens. The core shows the inverted, minified view.
             let inverted = bubblePos - (uv - bubblePos) * (0.55 + refrStrength * 2.0);
             let invAmt = smoothstep(0.85, 0.25, d / size) * 0.85;
             finalUV = mix(refracted, inverted, invAmt);
@@ -136,7 +130,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let lightDir = normalize(vec3<f32>(-0.5, -0.5, 1.0));
         let specBase = max(dot(bubbleNormal, lightDir), 0.0);
         let spec = pow(specBase, 15.0);
-        color = color + vec4<f32>(spec, spec, spec, 0.0) * 0.8;
+        // ── Idea 2: Airy disc (§12.2F) ──────────────────────────────
+        // Diffraction rings on the highlight this bubble already draws.
+        let airyX = (1.0 - specBase) * 8.0;
+        let ring = airyDisc(airyX) * smoothstep(0.2, 0.75, specBase);
+        color = color + vec4<f32>(spec, spec, spec, 0.0) * 0.8 + vec4<f32>(ring, ring, ring, 0.0) * 0.28;
 
         // Fresnel edge enhancement
         let fresnelEdge = pow(length(bubbleNormal.xy), 3.0);
