@@ -462,11 +462,43 @@
                 "zoomParam1",
                 "zoomParam2",
                 "zoomParam3",
-                "zoomParam4"
+                "zoomParam4",
+                "lightStrength",
+                "ambient",
+                "normalStrength",
+                "fogFalloff",
+                "depthThreshold"
               ]
             },
             "value": {
               "type": "number"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "t",
+            "slot",
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "t": {
+              "type": "number",
+              "minimum": 0
+            },
+            "slot": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 5
+            },
+            "kind": {
+              "const": "source"
+            },
+            "value": {
+              "$ref": "#/$defs/timelineSource"
             }
           }
         }
@@ -492,10 +524,17 @@
         },
         "events": {
           "type": "array",
-          "minItems": 1,
+          "minItems": 0,
           "maxItems": 200000,
           "items": {
             "$ref": "#/$defs/timelineEvent"
+          }
+        },
+        "keyframes": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": {
+            "$ref": "#/$defs/timelineKeyframe"
           }
         }
       }
@@ -808,6 +847,88 @@
             "linear",
             "exp",
             "smooth"
+          ]
+        }
+      }
+    },
+    "timelineSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "image",
+            "video",
+            "webcam",
+            "generative",
+            "live"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "not": {
+            "pattern": "^(?:data|blob):"
+          }
+        },
+        "seekSec": {
+          "type": "number",
+          "minimum": 0
+        },
+        "shader": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "timelineKeyframe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "t",
+        "slot",
+        "key",
+        "value",
+        "ease"
+      ],
+      "properties": {
+        "t": {
+          "type": "number",
+          "minimum": 0
+        },
+        "slot": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "key": {
+          "enum": [
+            "zoomParam1",
+            "zoomParam2",
+            "zoomParam3",
+            "zoomParam4",
+            "lightStrength",
+            "ambient",
+            "normalStrength",
+            "fogFalloff",
+            "depthThreshold"
+          ]
+        },
+        "value": {
+          "type": "number"
+        },
+        "ease": {
+          "enum": [
+            "linear",
+            "step",
+            "easeIn",
+            "easeOut",
+            "easeInOut"
           ]
         }
       }
