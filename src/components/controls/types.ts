@@ -142,4 +142,6 @@ export interface ControlsProps {
     onSetGenerativeShowcaseDelay?: (seconds: number) => void;
     onPreviewImportShader?: (id: string, wgsl: string, name: string) => void;
     onImportStatus?: (message: string) => void;
+    /** The renderer manager (VJ Studio → Render drives offline export through it, #1401). */
+    getRenderer?: () => import('../../renderer/RendererManager').RendererManager | null;
 }

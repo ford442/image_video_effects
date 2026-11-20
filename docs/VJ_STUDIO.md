@@ -19,6 +19,7 @@ VJ Studio is the unified control surface for live visual performance in Pixeloci
 | **OSC** | Opt-in bridge for live desks (TouchOSC, Max, Resolume…) via a local relay |
 | **Audio-reactive** | Drive parameter motion from microphone / audio analysis on every active slot |
 | **Share & export** | Chain URL, VJ set link, JSON export/import, set recorder |
+| **🎞 Render** | Render the recorded set to `.mp4` / `.webm` offline, frame-accurately, at any size / rate ([Render](#render-offline-export)); keyframes |
 | **My VJ sets** | Locally saved stacks (browser storage) |
 | **VJ history** | Restore recent AI-generated stacks |
 
@@ -106,16 +107,48 @@ Recalling a saved set used to cut the picture whenever the shader stack changed:
 - **Duration** is the *Auto Transition → Duration* slider (default 2 s). **0 is a hard cut**, today's behavior.
 - **Where it does not run.** `?renderer=wasm` and `?renderer=js` have no hold and cut (the C++ present path stays frozen). If the hold texture cannot be allocated, that cue cuts: no retry, no drop of the working resolution, and the frame loop keeps running. In the render worker the hold and the mix live on the worker's device; the page sends only the duration (see [`RENDER_WORKER.md`](RENDER_WORKER.md)).
 
-Out of scope: a second live stack rendered in parallel, wipe / luma / shader-authored transitions, and the offline stepped clock and export of #1401 (which will feed the same mix factor).
+The ramp runs on the renderer's simulation clock (`RenderClock`, #1401): live that is wall time, so nothing changes; in an offline render it is the stepped clock, so a fade covers the same frames however slowly they render.
+
+Out of scope: a second live stack rendered in parallel and wipe / luma / shader-authored transitions.
 
 ## Set recorder
 
-Under **Share & export**: **● Record set** samples every slot's shader and its four sliders at 20 Hz, storing only changes. **▶ Play** replays the recording through the same path as MIDI/OSC.
+Under **Share & export**: **● Record set** samples every slot's shader and all of its params (the four sliders plus light strength, ambient, normal strength, fog falloff and depth threshold) at 20 Hz, storing only changes. It also records **source changes**: image URL, video URL with the position it was at, or generative shader id, so a set is self-describing. **▶ Play** replays the recording through the same path as MIDI/OSC (source events switch the source too; webcam and stream sources need a person, so they are only noted).
 
 - What's recorded is what was on screen. That includes audio-reactive motion and the effect of transitions, so playback is deterministic and does not re-roll randomize.
 - During playback, grab any slider to ride it by hand. Playback skips that param until you let go.
 - **Export JSON** includes the recording (the optional `timeline` field in the v1 `.vjset.json`) when *Include recording* is ticked. **Import JSON** restores it. Older builds ignore the field.
 - Recordings are capped at 200 000 events, roughly 7 minutes with audio driving 6 slots and far longer for hand-driven sets. **My VJ sets** (browser storage) keeps the chain only, not the recording.
+- Local uploads (`blob:` URLs) and pasted media (`data:`) are recorded as the source *type* only: they are not saved into files. Older builds read the shader and slider events of a new file and skip the rest.
+
+## Render (offline export)
+
+**🎞 Render** turns the recorded (or imported) set into a video file **frame by frame**, not by recording the live picture. Live, everything is vsync-paced: a 7-pass Physics Lab graph at 2048² records at whatever frame rate the laptop manages, dropped frames included. A render instead steps the renderer's clock by exactly `1 / fps` per frame and waits for each frame, so it can export at sizes and rates the GPU cannot sustain live (4K/60, 8K, 120 fps for slow motion). Every frame is in the file: `round(duration × fps)` frames, frame *n* stamped *n / fps*, nothing dropped or repeated.
+
+| Setting | Choices |
+|---------|---------|
+| Resolution | Match canvas · 720p · 1080p · 1440p · 4K · 8K · Custom (up to the device's `maxTextureDimension2D`) |
+| Frame rate | 24 · 30 · 60 · 120 fps |
+| Format | **MP4** (H.264 → HEVC → AV1 → VP9; what Resolume, Premiere and Instagram take) or **WebM** (VP9 → AV1 → VP8). *Auto* picks the first codec the browser can encode at that size and rate; codec levels follow the frame size and rate (4K/60 H.264 is High@5.2). |
+| Quality | Standard · High · Master: a bitrate ladder by resolution and frame rate, scaled for codec efficiency (1080p30 H.264 High ≈ 12 Mbps, 4K60 ≈ 76 Mbps). The panel shows the frame count, bitrate and estimated file size. |
+| Audio | Optional soundtrack for audio-reactive shaders (see below). The file is **video only**: the soundtrack drives shaders, it is not muxed. |
+
+- **Progress** shows the frame, the render rate and an ETA; **■ Cancel render** stops between frames. The live picture freezes while a render runs and comes back (stack, params, source) when it ends, finished or not.
+- **Where the file goes:** with the File System Access API (Chromium) you pick the file first and it is written to disk as it renders (no memory ceiling for long or 8K renders). Elsewhere the file is built in memory and downloaded at the end.
+- **A hidden tab keeps rendering.** Nothing waits on `requestAnimationFrame` or timers: each frame is an awaited `renderFrameAt` round trip to the renderer (the render worker by default).
+- **Deterministic.** The job starts every simulation from scratch (fresh feedback / history textures, sim-ring frame 0, modulation sources reset) and holds live input out: mouse, sliders, ripples and live video never reach a render frame, and live stack / source changes (auto image switch, AutoDJ, roulette) wait until it ends. The same set rendered twice on the same adapter gives the same frames.
+- **Params** between the 20 Hz samples are interpolated where the slider was moving (two samples ≤ 100 ms apart) and held where it was not, so a 60 fps render does not stair-step.
+- **Sources.** Image and video sources from the recording are loaded by URL. A video gets its own hidden, muted element, seeked to the exact time of every frame (the live `<video>` keeps playing); times past the end wrap around. Webcam, stream and unsaved local sources render the still that was on screen when the render started.
+- **Audio-reactive shaders** get a reproducible signal: the soundtrack is decoded with an `OfflineAudioContext` and analysed per frame like the live analyser (fftSize 256, Blackman window, smoothing 0.8, -100…-30 dB → 128 bins; bass / mid / treble over bins 0–11 / 12–63 / 64–127). Without a soundtrack, audio is silent. Audio-reactive *slider* motion needs no soundtrack: it is already in the recording.
+- **Where it runs:** the TypeScript WebGPU renderer, in the render worker or on the page (`?renderer=main`). `?renderer=wasm` / `js` stay realtime-only.
+
+### Keyframes
+
+Under the Render settings, **◆ Add** places a keyframe: slot, param (any of the nine), time, value and ease (`linear`, `step`, `easeIn`, `easeOut`, `easeInOut`); ✕ removes one. From the first keyframe of a slot / param on, its curve replaces the recorded value; each keyframe's ease shapes the segment that arrives at it, and the last value holds. Keyframes alone (no recording) make a renderable set too. They are saved in the `.vjset.json` / project file as `timeline.keyframes` (additive, `exportVersion` stays 1) and survive a re-record. Live **▶ Play** replays recorded events only; keyframes apply in the render.
+
+### Under the hood
+
+`RenderClock` (`src/renderer/webgpu/renderClock.ts`) is the frame state's time source: realtime wraps `performance.now()`, stepped advances on command. The renderer's `beginOfflineRender({ width, height, fps })` stops the rAF loop, switches to a stepped clock and resizes the render target; `renderFrameAt(t, input)` renders exactly one frame from a complete input snapshot and returns the presented `VideoFrame`; `endOfflineRender()` restores the live size, clock, quality policy and loop. In the render worker these are three RPCs ([`RENDER_WORKER.md`](RENDER_WORKER.md)). `TimelinePlayer` (`src/services/timelinePlayer.ts`) answers "what was on screen at *t*?" without running state. Golden frames for shader PRs use the same path (`tests/golden-frames.swiftshader.spec.ts`).
 
 ## Mobile
 
