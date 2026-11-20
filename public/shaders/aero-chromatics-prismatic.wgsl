@@ -3,31 +3,12 @@
 //  Category: advanced-hybrid
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-06
-//  Ideas: aerodynamic vortex shedding plumes; Schlieren velocity gradient refraction; wavelength-differential feedback trails
+//  Upgraded: 2026-09-06, 2026-11-20
+//  Ideas: aerodynamic vortex shedding plumes; Schlieren velocity gradient refraction; wavelength-differential feedback trails; Kármán street in the wake; Bernoulli thinning
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -98,12 +79,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // ─── Native Idea 1: Aerodynamic Vortex Shedding ───
     // Curl-noise rotational eddies in the wind slipstream
+    // ── Idea 4: Kármán street
+    // Shedding lives downstream of the mouse (freestream is -y), with the
+    // opposite sense on each side of the centerline. Wind Force still scales the wind.
+    let downwind = mouse.y - uv.y;
+    let lateral = (uv.x - mouse.x) * aspect;
+    let wake = smoothstep(0.0, 0.05, downwind) * exp(-(lateral * lateral) / max(0.02 + windStrength * 0.008, 0.001));
     let vortexPhase = time * (1.5 + windStrength * 0.5);
     let curlX = sin(uv.y * 16.0 + vortexPhase) - cos(uv.x * 14.0);
     let curlY = cos(uv.x * 16.0 - vortexPhase) + sin(uv.y * 14.0);
-    let vortexShedding = vec2<f32>(curlX, curlY) * (0.0025 + bass * 0.004) * mouseInfluence;
+    let vortexShedding = vec2<f32>(curlX, curlY) * (0.0025 + bass * 0.004) * wake;
+    let sense = select(-1.0, 1.0, lateral > 0.0);
+    let gyre = vec2<f32>(-sense * downwind, sense * abs(lateral));
+    let street = gyre / max(length(gyre), 0.02) * wake * (0.002 + bass * 0.0025);
 
-    let velocity = (baseWind + mouseWind + vortexShedding) * (luma * 2.0);
+    let velocity = (baseWind + mouseWind + vortexShedding + street) * (luma * 2.0);
 
     // ─── Native Idea 3: Wavelength-Differential Feedback Decay ───
     // Chromatic advection pixel coordinates
@@ -153,6 +143,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let schlierenSample = textureSampleLevel(readTexture, u_sampler, clamp(uv + schlierenOffset, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
     let schlierenMix = smoothstep(0.002, 0.02, speedMag) * 0.45;
     advectedColor = mix(advectedColor, schlierenSample, schlierenMix);
+
+    // ── Idea 5: Bernoulli thinning
+    // Faster air holds less smoke. The slipstream clears toward the photo;
+    // the slow wake keeps the trail.
+    let thin = smoothstep(0.002, 0.02, speedMag);
+    advectedColor = mix(advectedColor, currentFrame.rgb, thin * 0.5);
 
     // Blend advected smoke with prismatic tint
     let lumaFinal = dot(advectedColor, vec3<f32>(0.299, 0.587, 0.114));

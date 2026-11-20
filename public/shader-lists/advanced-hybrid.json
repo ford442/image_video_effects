@@ -6297,7 +6297,8 @@
       "audio-reactive",
       "temporal-feedback",
       "click-reactive",
-      "raw-persistent-state"
+      "raw-persistent-state",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9199,7 +9200,8 @@
       "spectral-render",
       "mouse-driven",
       "audio-reactive",
-      "HDR"
+      "HDR",
+      "upgraded-rgba"
     ],
     "params": [
       {

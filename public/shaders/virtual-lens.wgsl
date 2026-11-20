@@ -3,32 +3,14 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: focal plane at the cursor depth with disc defocus; Fresnel glass reflection of the surroundings
+//  Upgraded: 2026-10-04, 2026-11-20
+//  Ideas: focal plane at the cursor depth with disc defocus; Fresnel glass reflection of the surroundings; spherical aberration on that disc; cos^4 vignetting (§12.2A)
 //  A packing: ACES display RGBA (single magnification UV kept: no per-channel split)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=Magnification, y=Radius, z=Aberration, w=Softness
 
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=Magnification, y=Radius, z=Aberration, w=Softness
-  ripples: array<vec4<f32>, 50>,
-};
 
 fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
   var r = 0.0; var g = 0.0; var b = 0.0;
@@ -95,7 +77,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // a disc whose radius grows with |depth - focus depth|, only inside the glass.
     let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(mouse, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(displacedUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let coc = abs(sceneDepth - focusDepth) * 0.014 * mask * (0.5 + magnification);
+    // ── Idea 3: spherical aberration
+    // Aberration still tints. The outer zone of the singlet also misses the
+    // focal plane, so the existing disc grows with (dist/radius)².
+    let zone = clamp(dist / max(radius, 0.001), 0.0, 1.0);
+    let coc = abs(sceneDepth - focusDepth) * 0.014 * mask * (0.5 + magnification)
+            + aberration * zone * zone * 0.4 * mask;
     var defocus = sampleSafe(displacedUV) * 2.0;
     for (var k = 0; k < 6; k = k + 1) {
         let a = f32(k) * 1.0472;
@@ -153,7 +140,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let opticColor = shimmerColor + vec3<f32>(innerRim);
 
     // Chromatic darkening at lens perimeter for physical realism
-    let edgeDarken = 1.0 - smoothstep(radius * 0.7, radius, dist) * 0.15;
+    // ── Idea 4: cos^4 vignetting (§12.2A)
+    // Illumination through the glass falls as the fourth power of the cosine
+    // of the field angle. Lens Radius is that field. It multiplies the existing darkening.
+    let cosField = sqrt(max(1.0 - zone * zone, 0.0));
+    let cos4 = cosField * cosField * cosField * cosField;
+    let edgeDarken = (1.0 - smoothstep(radius * 0.7, radius, dist) * 0.15) * mix(1.0, cos4, 0.35 * mask);
     let darkenedColor = opticColor * edgeDarken;
 
     // Additional bass-reactive pulse warps the lens edge slightly

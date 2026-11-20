@@ -1,31 +1,17 @@
-// Photonic Caustics — refractive height-field convergence with multi-spectral caustic ribbons and chromatic dispersion.
-// A/C stores raw caustic irradiance (rgb) + caustic alpha; B is unused; depth passes through refracted depth.
-// Upgraded: 2026-09-21
-// Ideas: true Jacobian caustics (1/|det J| of the refraction map, per-channel IOR); Blinn-Phong
-//        glint of the cursor light on the height field
-// Floor: A used to hold ACES display (photo included) that was mixed back as irradiance, so the
-//        photo fed itself into the light every frame. A now holds irradiance only.
+// ═══════════════════════════════════════════════════════════════════
+//  Photonic Caustics
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: High
+//  Upgraded: 2026-09-21, 2026-11-20
+//  Ideas: true Jacobian caustics (1/|det J| of the refraction map, per-channel IOR); Blinn-Phong
+//         glint of the cursor light on the height field; soft inverse-square (§12.2F); fold caustic
+//  A packing: raw irradiance rgb + caustic alpha
+// ═══════════════════════════════════════════════════════════════════
+// A used to hold ACES display (photo included) that was mixed back as irradiance, so the
+// photo fed itself into the light every frame. A now holds irradiance only.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -93,7 +79,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   let toLight = (lightPos - uv) * aspectVec;
   let lightDist = length(toLight);
-  let aperture = exp(-lightDist * (2.8 + 8.0 * (1.0 - lightSize))) * select(1.0, 1.6, held);
+  // ── Idea 3: soft inverse-square (§12.2F)
+  // Light Size is the core radius. The gaussian pool stays; the inverse-square
+  // lengthens the tail where it is brighter than that gaussian.
+  let r0 = max(lightSize * 0.45, 0.02);
+  let invSq = (r0 * r0) / max(lightDist * lightDist + r0 * r0, 1e-4);
+  let aperture = max(exp(-lightDist * (2.8 + 8.0 * (1.0 - lightSize))), invSq) * select(1.0, 1.6, held);
 
   // Refraction bending
   let bend = normal.xy * (ior - 1.0) * (0.02 + lightSize * 0.025);
@@ -134,7 +125,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let iorRGB = vec3<f32>(ior - dispersion * 0.6, ior, ior + dispersion * 0.6);
   let detJ = vec3<f32>(1.0) - (iorRGB - vec3<f32>(1.0)) * bendK * (clamp(lapDepth, -6.0, 6.0) * 0.5 + rippleLap);
   let causticGain = clamp(vec3<f32>(1.0) / max(abs(detJ), vec3<f32>(0.25)), vec3<f32>(0.0), vec3<f32>(4.0));
-  let jacobianLight = (causticGain - vec3<f32>(1.0)) * intensity * (0.12 + aperture * 0.9) * 0.35;
+  // ── Idea 4: fold caustic
+  // The bright curve is the zero of det J, split per channel by the same IOR
+  // triple the Jacobian already uses.
+  let fold = exp(-detJ * detJ * 6.0) * intensity * (0.15 + aperture * 0.5);
+  let jacobianLight = (causticGain - vec3<f32>(1.0)) * intensity * (0.12 + aperture * 0.9) * 0.35 + fold * 0.45;
 
   let spectral = vec3<f32>(1.15 + bass * 0.25, 0.95 + mids * 0.2, 1.25 + treble * 0.35);
   let fresh = bands * spectral * intensity * (0.08 + aperture * 0.55 + clamp(focus * 0.025, 0.0, 0.85))

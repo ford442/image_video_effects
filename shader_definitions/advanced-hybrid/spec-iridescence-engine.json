@@ -17,7 +17,8 @@
     "spectral-render",
     "mouse-driven",
     "audio-reactive",
-    "HDR"
+    "HDR",
+    "upgraded-rgba"
   ],
   "params": [
     {
