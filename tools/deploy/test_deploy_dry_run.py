@@ -44,6 +44,7 @@ def workdir(tmp_path, monkeypatch):
     write(build, "static/js/chunk.js", CHANGED_JS)  # tracked, hash differs
     write(build, "static/css/main.abc123.css", CSS)  # untracked -> new
     write(build, "shaders/a.wgsl", "// shader\n")  # deploy.py uploads, app-only skips
+    write(build, "static/js/main.abc123.js.map", "{}")  # hidden source map: never deployed
 
     manifest = {
         "index.html": {"hash": md5(INDEX_HTML), "size": len(INDEX_HTML)},  # ALWAYS beats a match
@@ -136,9 +137,32 @@ def test_dry_run_touches_nothing_and_opens_no_connection(workdir, module, monkey
     assert snapshot(workdir) == before  # manifest rewritten? files created? mtime bumped?
 
 
-def test_parse_args_keeps_force_and_fresh():
+def test_no_script_plans_source_maps(workdir):
     for module in (deploy, deploy_app_only):
-        assert vars(module.parse_args([])) == {"force": False, "fresh": False, "dry_run": False}
+        plan = module.compute_plan("build", module.load_manifest(), fresh=True)
+        paths = {e.path for e in plan.uploads} | set(plan.unchanged)
+        assert not any(p.endswith(".map") for p in paths)
+
+
+def test_preview_target_has_own_root_manifest_and_ships_shaders(workdir, monkeypatch):
+    for name in ("REMOTE_DIRECTORY", "MANIFEST_FILE", "SKIP_DIRS"):
+        monkeypatch.setattr(deploy_app_only, name, getattr(deploy_app_only, name))
+    deploy_app_only.select_target("preview")
+    assert deploy_app_only.REMOTE_DIRECTORY == "test.1ink.us/image_video_effects-preview"
+    assert deploy_app_only.load_manifest() == {}  # separate manifest from prod
+    plan = deploy_app_only.compute_plan("build", {})
+    up = by_path(plan)
+    assert "shaders/a.wgsl" in up and ".htaccess" in up
+    assert plan.remote_root.endswith("-preview")
+
+
+def test_parse_args_keeps_force_and_fresh():
+    assert vars(deploy.parse_args([])) == {"force": False, "fresh": False, "dry_run": False}
+    assert vars(deploy_app_only.parse_args([])) == {
+        "target": "prod", "force": False, "fresh": False, "dry_run": False,
+    }
+    assert deploy_app_only.parse_args(["--target", "preview"]).target == "preview"
+    for module in (deploy, deploy_app_only):
         assert module.parse_args(["--force"]).force
         assert module.parse_args(["--fresh"]).fresh
         with pytest.raises(SystemExit):

@@ -72,6 +72,10 @@ jobs:
     - name: Build project
       run: npm run build
 
+    # prebuild regenerates committed files; a build must not change them.
+    - name: Verify build leaves the tree clean
+      run: npm run verify:clean-tree
+
     # The storage webhook secret used to be inlined into the bundle; uploads now
     # use server-issued tokens. Fails if the marker (or the secret value, when the
     # repo secret is configured) is found anywhere in the build output (build/).

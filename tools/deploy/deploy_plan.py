@@ -45,6 +45,14 @@ class DeployPlan:
         return sum(e.size for e in self.uploads)
 
 
+# Never deployed: hidden source maps stay local (vite sourcemap: 'hidden').
+SKIP_SUFFIXES = (".map",)
+
+
+def is_skipped_file(name: str) -> bool:
+    return name.endswith(SKIP_SUFFIXES)
+
+
 def walk_build(local_dir: str, skip_dirs: Iterable[str] = ()) -> Iterator[tuple[str, str]]:
     """Yield ``(relative_path, absolute_path)`` for every file, sorted, like the real walkers.
 
@@ -55,6 +63,8 @@ def walk_build(local_dir: str, skip_dirs: Iterable[str] = ()) -> Iterator[tuple[
     for root, dirs, files in os.walk(local_dir):
         dirs[:] = sorted(d for d in dirs if d not in skip)
         for name in sorted(files):
+            if is_skipped_file(name):
+                continue
             full = os.path.join(root, name)
             yield os.path.relpath(full, local_dir), full
 
