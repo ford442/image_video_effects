@@ -21,8 +21,11 @@ function toPixels(rgba: ArrayLike<number>, width: number, height: number): Uint8
     pixels[o] = gammaEncode(rgba[o] ?? 0);
     pixels[o + 1] = gammaEncode(rgba[o + 1] ?? 0);
     pixels[o + 2] = gammaEncode(rgba[o + 2] ?? 0);
-    const a = rgba[o + 3] ?? 1;
-    pixels[o + 3] = Math.min(Math.max(a, 0), 1) * 255;
+    // The canvas presents with alphaMode 'opaque' (src/contracts/canvas_configure.json), so
+    // what the user sees ignores the shader's alpha. Keep the PNG opaque too: a 2D canvas
+    // premultiplies, so a low-alpha pixel would otherwise lose its RGB and a shader that
+    // writes alpha≈0 reads back as a false black_frame in the scanner and thumbnails.
+    pixels[o + 3] = 255;
   }
   return pixels;
 }
