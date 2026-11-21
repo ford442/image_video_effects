@@ -1,14 +1,40 @@
+// ═══════════════════════════════════════════════════════════════════
+//  Liquid Jelly Fluid
+//  Category: liquid-effects
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Upgraded: 2026-11-21
+//  Ideas: translucent jelly body: Beer-Lambert absorption + subsurface wrap on density thickness (§12.2F);
+//         wet-jelly sheen: Fresnel-Schlick + Blinn on the density-gradient surface (§12.2F)
+//  Rescue: per-component +-0.065 velocity clamp (pixel-scale noise under a held pointer) -> magnitude limiter 0.03
+//  A packing: raw sim state (vel.xy, pressure, density); ACES only on writeTexture
+// ═══════════════════════════════════════════════════════════════════
 // Liquid Jelly Fluid — Codex (e) audited vortical elastic dye simulation.
 // A/C packing: velocity.xy / pressure / density. Exact bounded state loads only.
 // B and extraBuffer are intentionally unused; semantic alpha and ACES are retained.
-@group(0) @binding(0) var u_sampler:sampler;@group(0) @binding(1) var readTexture:texture_2d<f32>;@group(0) @binding(2) var writeTexture:texture_storage_2d<rgba32float,write>;@group(0) @binding(3) var<uniform> u:Uniforms;@group(0) @binding(4) var readDepthTexture:texture_2d<f32>;@group(0) @binding(5) var non_filtering_sampler:sampler;@group(0) @binding(6) var writeDepthTexture:texture_storage_2d<r32float,write>;@group(0) @binding(7) var dataTextureA:texture_storage_2d<rgba32float,write>;@group(0) @binding(8) var dataTextureB:texture_storage_2d<rgba32float,write>;@group(0) @binding(9) var dataTextureC:texture_2d<f32>;@group(0) @binding(10) var<storage,read_write> extraBuffer:array<f32>;@group(0) @binding(11) var comparison_sampler:sampler_comparison;@group(0) @binding(12) var<storage,read> plasmaBuffer:array<vec4<f32>>;
-struct Uniforms{config:vec4<f32>,zoom_config:vec4<f32>,zoom_params:vec4<f32>,ripples:array<vec4<f32>,50>,};
+#include "_prelude.wgsl"
+// Rescue J1: HEAD clamped each component to +-0.06/0.065 UV/frame; saturated forcing (held pointer) then left a pixel-scale
+// noise field (velocity roughness 0.23-0.25 at 128/256/512 px) and the dye hue (keyed to atan2(vel)) became white noise.
+fn limitSpeed(v:vec2<f32>)->vec2<f32>{return v*min(1.0,0.03/max(length(v),0.000001));}
 fn stateAt(c:vec2<i32>,dims:vec2<i32>)->vec4<f32>{return textureLoad(dataTextureC,clamp(c,vec2<i32>(0),dims-vec2<i32>(1)),0);}fn stateUV(uv:vec2<f32>,dims:vec2<i32>)->vec4<f32>{return stateAt(vec2<i32>(floor(uv*vec2<f32>(dims))),dims);}fn curlAt(c:vec2<i32>,dims:vec2<i32>)->f32{let l=stateAt(c+vec2<i32>(-1,0),dims).xy;let r=stateAt(c+vec2<i32>(1,0),dims).xy;let d=stateAt(c+vec2<i32>(0,-1),dims).xy;let up=stateAt(c+vec2<i32>(0,1),dims).xy;return 0.5*((r.y-l.y)-(up.x-d.x));}fn aces(x:vec3<f32>)->vec3<f32>{return clamp((x*(2.51*x+0.03))/max(x*(2.43*x+0.59)+0.14,vec3<f32>(0.001)),vec3<f32>(0.0),vec3<f32>(1.0));}
 @compute @workgroup_size(16,16,1)fn main(@builtin(global_invocation_id) gid:vec3<u32>){let res=u.config.zw;if(gid.x>=u32(res.x)||gid.y>=u32(res.y)){return;}let coord=vec2<i32>(gid.xy);let dims=vec2<i32>(res);let uv=(vec2<f32>(gid.xy)+0.5)/res;let aspect=res.x/max(res.y,1.0);let t=u.config.x;let audio=clamp(plasmaBuffer[0].xyz,vec3<f32>(0.0),vec3<f32>(1.0));let viscosity=0.002+u.zoom_params.x*0.065;let dyeGain=0.6+u.zoom_params.y*1.8;let confinement=0.04+u.zoom_params.z*0.32;let elasticity=0.15+u.zoom_params.w*0.85;
- let center=stateAt(coord,dims);var vel=clamp(center.xy,vec2<f32>(-0.06),vec2<f32>(0.06));var density=clamp(center.w,0.0,1.5);let adv=stateUV(clamp(uv-vel,vec2<f32>(0.0),vec2<f32>(1.0)),dims);vel=clamp(adv.xy,vec2<f32>(-0.06),vec2<f32>(0.06));density=clamp(adv.w,0.0,1.5);
+ let center=stateAt(coord,dims);var vel=limitSpeed(center.xy);var density=clamp(center.w,0.0,1.5);let adv=stateUV(clamp(uv-vel,vec2<f32>(0.0),vec2<f32>(1.0)),dims);vel=limitSpeed(adv.xy);density=clamp(adv.w,0.0,1.5);
  let l=stateAt(coord+vec2<i32>(-1,0),dims);let r=stateAt(coord+vec2<i32>(1,0),dims);let d=stateAt(coord+vec2<i32>(0,-1),dims);let up=stateAt(coord+vec2<i32>(0,1),dims);vel+=viscosity*(l.xy+r.xy+d.xy+up.xy-4.0*vel);let divergence=0.5*((r.x-l.x)+(up.y-d.y));let pressure=clamp((l.z+r.z+d.z+up.z-divergence)*0.25,-0.35,0.35);vel-=vec2<f32>(r.z-l.z,up.z-d.z)*0.22;
  let cL=abs(curlAt(coord+vec2<i32>(-1,0),dims));let cR=abs(curlAt(coord+vec2<i32>(1,0),dims));let cD=abs(curlAt(coord+vec2<i32>(0,-1),dims));let cU=abs(curlAt(coord+vec2<i32>(0,1),dims));let grad=vec2<f32>(cR-cL,cU-cD);let g=grad/max(length(grad),0.0001);let curl=curlAt(coord,dims);vel+=vec2<f32>(g.y,-g.x)*curl*confinement;
  let p=(uv-0.5)*vec2<f32>(aspect,1.0);let ribbon=sin(p.y*17.0+sin(p.x*8.0-t*4.0)*2.4-t*6.8);let kh=sin(p.x*24.0+p.y*9.0+t*8.2+ribbon*2.2);vel+=vec2<f32>(cos(p.y*13.0+t*5.0),sin(p.x*11.0-t*4.6))*ribbon*elasticity*0.0014;vel+=vec2<f32>(-sin(p.y*20.0-t*7.0),sin(p.x*19.0+t*6.0))*kh*confinement*0.001;
  let mp=(u.zoom_config.yz-0.5)*vec2<f32>(aspect,1.0);let held=clamp(u.zoom_config.w,0.0,1.0);let mq=p-mp;let md=max(length(mq),0.0001);let stir=vec2<f32>(-mq.y,mq.x)/md*exp(-md*md*34.0);vel+=vec2<f32>(stir.x/aspect,stir.y)*(0.002+held*0.022)*(1.0+audio.x);density+=exp(-md*md*70.0)*held*0.08;
  var packet=0.0;let count=min(u32(max(u.config.y,0.0)),50u);for(var i=0u;i<count;i=i+1u){let rp=u.ripples[i];let age=t-rp.z;if(age>=0.0&&age<3.0){let q=(uv-rp.xy)*vec2<f32>(aspect,1.0);let rd=max(length(q),0.0001);let front=sin((rd-age*0.28)*58.0)*exp(-abs(rd-age*0.28)*18.0-age*0.8);vel+=vec2<f32>(q.x/aspect,q.y)/rd*front*0.012*elasticity;packet+=abs(front);density+=max(front,0.0)*0.09;}}
- vel=clamp(vel,vec2<f32>(-0.065),vec2<f32>(0.065));density=clamp(density*(0.982+viscosity*0.18)+0.0025*(1.0+audio.y),0.0,1.5);textureStore(dataTextureA,coord,vec4<f32>(vel,pressure,density));let srcUV=clamp(uv+vel*1.8,vec2<f32>(0.0),vec2<f32>(1.0));let src=textureSampleLevel(readTexture,u_sampler,srcUV,0.0);let speed=length(vel);let cyan=vec3<f32>(0.0,0.92,1.0);let violet=vec3<f32>(0.38,0.04,1.0);let lime=vec3<f32>(0.54,1.0,0.03);let dye=mix(cyan,violet,0.5+0.5*sin(atan2(vel.y,vel.x)*3.0+t*2.5));let color=mix(dye,lime,clamp(abs(curl)*18.0+packet*0.25,0.0,1.0));var rgb=mix(src.rgb,color,clamp(density*dyeGain*0.55,0.0,0.88));rgb+=color*(speed*5.0+packet*0.15)*(vec3<f32>(0.35)+audio);let alpha=clamp(src.a*0.74+density*0.2+speed*1.8,0.0,1.0);textureStore(writeTexture,coord,vec4<f32>(aces(rgb),alpha));let depth=textureSampleLevel(readDepthTexture,non_filtering_sampler,srcUV,0.0).r;textureStore(writeDepthTexture,coord,vec4<f32>(clamp(depth-density*0.018,0.0,1.0),0.0,0.0,0.0));}
+ vel=limitSpeed(vel);density=clamp(density*(0.982+viscosity*0.18)+0.0025*(1.0+audio.y),0.0,1.5);textureStore(dataTextureA,coord,vec4<f32>(vel,pressure,density));let srcUV=clamp(uv+vel*1.8,vec2<f32>(0.0),vec2<f32>(1.0));let src=textureSampleLevel(readTexture,u_sampler,srcUV,0.0);let speed=length(vel);let cyan=vec3<f32>(0.0,0.92,1.0);let violet=vec3<f32>(0.38,0.04,1.0);let lime=vec3<f32>(0.54,1.0,0.03);let dye=mix(cyan,violet,0.5+0.5*sin(atan2(vel.y,vel.x)*3.0+t*2.5));let color=mix(dye,lime,clamp(abs(curl)*18.0+packet*0.25,0.0,1.0));
+ // ── Idea 1: translucent jelly body (Beer-Lambert + subsurface wrap, §12.2F) ──
+ // HEAD's mix weight density*dyeGain*0.55 IS an optical thickness tau. Instead of painting an opaque dye over the photo,
+ // the photo is seen through the jelly: the dye absorbs the complement of its own colour (cyan jelly eats red), in-scatters
+ // its own colour, and light wrapping past the terminator makes mid-thickness (thin rim) regions glow.
+ let tau=density*dyeGain*0.55;let sigma=(vec3<f32>(1.0)-color)*1.0+vec3<f32>(0.15);let trans=exp(-sigma*tau);
+ let gradUV=vec2<f32>(r.w-l.w,up.w-d.w)*(0.5*res.y);let slope=-gradUV*0.05;let nrm=normalize(vec3<f32>(slope*min(1.0,1.0/max(length(slope),0.0001)),1.0));let lightDir=normalize(vec3<f32>(-0.45,-0.55,0.7));
+ let wrap=clamp((dot(nrm,lightDir)+0.6)/1.6,0.0,1.0);let sss=color*(0.35+0.65*wrap)*(1.0-exp(-tau*1.4))*exp(-tau*0.6)*0.8;
+ var rgb=src.rgb*trans+color*(1.0-exp(-tau*1.2))*0.5+sss;rgb+=color*(speed*5.0+packet*0.15)*(vec3<f32>(0.35)+audio);
+ // ── Idea 2: wet-jelly sheen (Fresnel-Schlick + Blinn on the density-gradient surface, §12.2F) ──
+ // Normal comes from the four neighbour densities HEAD already loads; gated by density so a flat idle jelly is unchanged.
+ let halfV=normalize(lightDir+vec3<f32>(0.0,0.0,1.0));let fres=0.04+0.96*pow(1.0-max(nrm.z,0.0),5.0);let body=smoothstep(0.02,0.3,density);
+ let spec=pow(max(dot(nrm,halfV),0.0),56.0)*body;rgb+=vec3<f32>(1.0,0.97,0.92)*(spec*0.6+fres*0.35*body);
+ let alpha=clamp(src.a*0.74+density*0.2+speed*1.8+spec*0.15+fres*0.08*body,0.0,1.0);
+ textureStore(writeTexture,coord,vec4<f32>(aces(rgb),alpha));let depth=textureSampleLevel(readDepthTexture,non_filtering_sampler,srcUV,0.0).r;textureStore(writeDepthTexture,coord,vec4<f32>(clamp(depth-density*0.018,0.0,1.0),0.0,0.0,0.0));}

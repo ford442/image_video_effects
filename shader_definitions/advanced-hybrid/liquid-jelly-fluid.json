@@ -2,7 +2,7 @@
   "id": "liquid-jelly-fluid",
   "name": "Liquid Jelly Fluid",
   "url": "shaders/liquid-jelly-fluid.wgsl",
-  "description": "Vortical cyan, ultraviolet, and lime elastic dye with Kelvin–Helmholtz curls, pressure projection, vorticity confinement, and strong pointer stirring.",
+  "description": "Vortical cyan, ultraviolet, and lime elastic dye with Kelvin–Helmholtz curls, pressure projection, vorticity confinement, and strong pointer stirring. The photo is seen through the jelly (Beer–Lambert absorption plus a subsurface wrap on the dye thickness) with a wet Fresnel sheen on the density surface; velocity is magnitude-limited so a held pointer stays a swirl instead of pixel noise.",
   "tags": [
     "liquid-jelly",
     "fluid-simulation",
@@ -11,7 +11,8 @@
     "audio-reactive",
     "mouse-driven",
     "temporal-state",
-    "exact-feedback"
+    "exact-feedback",
+    "upgraded-rgba"
   ],
   "features": [
     "liquid-jelly",
@@ -21,7 +22,8 @@
     "audio-reactive",
     "mouse-driven",
     "temporal-state",
-    "exact-feedback"
+    "exact-feedback",
+    "upgraded-rgba"
   ],
   "params": [
     {

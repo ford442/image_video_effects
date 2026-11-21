@@ -3,7 +3,7 @@
   "name": "Liquid Lens",
   "url": "shaders/liquid-lens.wgsl",
   "category": "interactive-mouse",
-  "description": "Moving multi-lobed aqua/amber lenses and orbiting lenslets refract the image through animated caustic meshes, click-launched rings, and held-pointer compression.",
+  "description": "Moving multi-lobed aqua/amber lenses and orbiting lenslets refract the image through animated caustic meshes, click-launched rings, and held-pointer compression. Refraction follows Snell's law (superlinear on steep slopes, so a pressed lens bends harder), the caustic is the real ray density of the warp (bright focal core, dark fold ring, bright rim), and the colour fringe scales with the local deviation instead of a fixed width.",
   "params": [
     {
       "id": "refraction",

@@ -1,0 +1,37 @@
+# NOTES — fork A (liquid-rainbow-prismatic 2nd pass, liquid-lens 1st pass)
+
+Cards and §12.1/§12.4 answers: `BRIEFS-forkA.md` (written before any WGSL edit). All numbers below are SwiftShader at 480², 30 frames, `SRC=img`; **no real-GPU visual QA was done**.
+
+## liquid-rainbow-prismatic (2nd pass; existing Ideas kept verbatim)
+
+- **ADD (Idea 3)** film viewing-angle phase — §12.2F thin-film phase. `tilt = |gradient|·150·(res.y/1080)`, `cosI = 1/√(1+tilt²)`, Snell into the film (n = 1.33) → `cosT`; the three per-channel phases are multiplied by `cosT` (`thickness*19.0*cosT/λ`). Flat film ⇒ `cosT = 1` ⇒ HEAD. Findable: `// Idea 3` block before the Cauchy line + the `phase` line.
+- **ADD (Idea 4)** Fresnel-weighted, energy-conserving film reflectance — §12.2F Fresnel–Schlick on the film. `fresnelF = 0.04 + 0.96(1−cosI)^5`, `fMix = fresnelF − 0.04`; film term ×`(1 + 6·fMix)`, transmitted photo ×`(1 − fMix·(1−blackFilm))`. Alpha now uses `fresnelF` (one normal instead of HEAD's separate ×24-lever normal, which was ≈ 0.04 everywhere). Findable: `// Idea 4` + the `hdr` line.
+- **KEEP VERBATIM:** 4 params/roles, `surface()`, gradient + pointer + ripple fronts, Cauchy nR/nG/nB + uvR/uvG/uvB, EXISTING IDEA 1 (`drain`/`blackFilm`) and IDEA 2 (6-tap dispersed caustic), the 120° offsets in `film`, history mix, audio roles, ACES, depth write.
+- **A packing:** ACES display RGBA, unchanged (C read as colour via `historyAt`; alpha semantic, Fresnel term from the film normal).
+- **Rescues:** none needed. HEAD observation (not changed): the ambient surface gradient is a central difference over ±1 texel, so its magnitude ∝ 1/res; `tilt` is normalised by `res.y/1080` so the ambient angle shift is resolution-independent, while the pointer/ripple gradient terms are not (they were already not in HEAD's refraction).
+- **Visible?** Honest picture: Idea 3 is a broad hue/band shift over the whole film (the phase is ~20–40 rad, so a small `cosT` change moves many bands — same rainbow effect, richer colour variation); Idea 4 is concentrated at the held-pointer core where reflectance rises (`fMix` p99 ≈ 0.19 held, ≈ 0.06 with two clicks) and is easy to miss on a still frame. Diagnostic renders confirmed the quantities, not the "look right" claim.
+- **Diff vs HEAD** (|Δ| > 8/255 on any channel): default 45 %, held pointer 73 %, two clicks 47 % (mean |Δ| 11 / 17 / 12). Large because Idea 3 touches every pixel's band phase; the identity is unchanged (same swirling drained film, same refraction).
+- **Timing** (mr_ab, 4 interleaved rounds, 480², held): p25 ratios 1.03 / 0.99 / 0.99 / 0.93 ⇒ ≈ 1.0×.
+- **Header:** `Upgraded: 2026-09-21, 2026-11-21`; `Ideas:` appended with `film viewing-angle phase cos(theta_t) (§12.2F thin-film phase); Fresnel-weighted energy-conserving film reflectance (§12.2F Fresnel-Schlick)`; `Features:` line added (audio-reactive, mouse-driven, upgraded-rgba — all true).
+- **JSON:** `params` untouched; description extended (visible behaviour changed); `x-meta.upgrade.params` names aligned from "Param 1..4" to Curvature / Dispersion / Film Thickness / Spectral Saturation (metadata only).
+- **Gates:** precommit 1/1, naga-wasm 1/1, dead-sliders 0 new, extrabuffer pass; no extraBuffer use. 0 NaN in default / held / click / params {0,0,0,0}, {.5×4}, {1,.5,1,1}, {1,1,1,1} with audio 0.8/0.7/0.9.
+
+## liquid-lens (1st pass)
+
+- **ADD (Idea 1)** Snell-law refraction — §12.2F Snell vector refraction. `flow = bend·refrK·snellGain(bend)`, `snellGain = (1 − η·cosI/cosT)/(1 − η)` with η = 1/1.33 and slope lever 0.4 on `|bend|`; = 1 at flat, ≈ 1.1 at the unheld core, ≈ 1.7 at the held core, bounded ≤ 4. Skirt, ripples and mesh waves (small slopes) are effectively unchanged. (First tried lever 1.4: held lens became a huge rainbow pinwheel; backed off.)
+- **ADD (Idea 2)** Jacobian-determinant caustic. `area = |det(I − ∂flow/∂p)|` by forward differences (2 px) of the Snell-scaled **main** lens lobe at centre/+x/+y ⇒ `focus = clamp(area−1,0,2)` feeds the existing caustic scalar (`+focus*1.0` inside the clamp, then the unchanged teal↔amber colour), `stretched = clamp(1−area,0,1)` dims the stretched fold ring by ≤ 30 %. Diagnostic render shows the optics: bright focal core, dark fold ring, bright rim. The lenslets are NOT in the difference (3-lobe version measured ≈ 1.35× vs ≈ 1.15× for main-lobe-only; cap is ~1.3×) — they keep the HEAD `|mesh|·|bend|` + `ring` caustic and fringes.
+- **ADD (Idea 3)** deviation-proportional lateral CA (prism law). `spread = dir·dispersion·(1+0.7 treble)·mix(1, clamp(|flow|/0.0445, 0.35, 2), smoothstep(2e-4, 2e-3, |flow|))`: far-field weight stays exactly 1 (= HEAD, so the faint surface-wave shimmer is bit-identical: mean |Δ| 0.0 for r > 0.45 from the pointer), real refraction gets fringe ∝ deviation (floor 0.35, cap 2×), default core ≈ 1.1× HEAD width. No Cauchy (claimed by liquid-metal-prismatic).
+- **KEEP VERBATIM:** 4 params/roles, `lensLobe` geometry + `held` shrink/boost, orbitA/orbitB, `mesh` wave term, ripple fronts + `ring`, teal↔amber caustic colour, history mix `uv−flow·0.35` / `history.a·0.12`, Fresnel tint (×5 normal lever), semantic alpha, audio roles, depth write. Summation order of the lobes is HEAD's `(A+B)+C`.
+- **A packing:** display RGBA history, unchanged (A = writeTexture colour, read back as colour via `boundedLoad`).
+- **Rescues / hygiene (not ideas, no `Upgraded:` implication):** (a) `lensLobe` used `smoothstep(b, b*0.35, d)` with edge0 > edge1 — unspecified/undefined by the GLSL/SPIR-V definition; rewritten `1.0 − smoothstep(b*0.35, b, d)` (identical; verified on a scratch HEAD copy, max |Δ| 1/255). **Latent, unproven on SwiftShader.** (b) exact early-out `if (d >= r*1.13) return 0` in `lensLobe` (boundary radius ≤ 1.13 r, so `h` is already 0 there; verified 0.0 % pixel change on a scratch HEAD copy) — it skips `atan2`/`sin` for pixels outside a lobe and is what pays for the added work.
+- **Diff vs HEAD** (|Δ| > 8/255): default 14 %, held 18 %, two clicks 15 % (mean |Δ| 3.5 / 4.0 / 3.6). Changes are around the lens (r < 0.3 mean |Δ| 8–20); far field identical.
+- **Timing** (mr_ab, 3 interleaved rounds × 80 cycles, 480², held lens, box load avg ≈ 18): p25 ratios 1.11 / 1.30 / 1.17, medians 1.04 / 1.29 / 1.14 ⇒ ≈ 1.15×. Ablation: Snell + CA + early-out ≈ 1.0×; main-lobe Jacobian ≈ 1.15–1.2×; 3-lobe Jacobian ≈ 1.35–1.45× (rejected). Coordinator re-time on a quiet box recommended.
+- **Header:** banner added (`Upgraded: 2026-11-21`, `Ideas:`, `A packing:`); Features tags are the ones already in the JSON, all true (pointer, audio, depth read+write, history).
+- **JSON:** `params` untouched; description extended.
+- **Gates:** precommit 1/1, naga-wasm 1/1, dead-sliders 0 new (2 defs scanned), extrabuffer pass; no extraBuffer use. 0 NaN in default / held / click, params {0,0,0,0}, {1,1,1,1}, {1,.2,1,1} with three clicks and audio 0.8/0.7/0.9.
+
+## Not verified / for the coordinator
+- Real-GPU look of either file (Idea 4 on rainbow is a small area; Idea 1 on lens shows mainly when the pointer is held).
+- Quiet-box re-time of liquid-lens (≈ 1.15× here, noisy box).
+- Rainbow default changes 45 % of pixels at |Δ| > 8 — all from Idea 3's angle phase; if the coordinator wants a quieter ambient, the single constant `150.0` in the `tilt` line is the lever (pointer/fronts keep their effect at any value).
+- Nothing committed; shared generated files, ledger, `reports/`, `src/contracts/*` untouched.

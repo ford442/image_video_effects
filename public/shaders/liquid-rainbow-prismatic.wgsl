@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Liquid Rainbow Prismatic — Cauchy dispersion, thin-film optics, and caustics.
 //  Category: liquid-effects
-//  Upgraded: 2026-09-21
-//  Ideas: gravity drainage + Newton's black film; dispersed caustics
+//  Features: audio-reactive, mouse-driven, upgraded-rgba
+//  Upgraded: 2026-09-21, 2026-11-21
+//  Ideas: gravity drainage + Newton's black film; dispersed caustics; film viewing-angle phase cos(theta_t) (§12.2F thin-film phase); Fresnel-weighted energy-conserving film reflectance (§12.2F Fresnel-Schlick)
 //  A packing: ACES display RGBA (C read as colour via historyAt)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -20,6 +21,15 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>){
  gradient+=vec2<f32>(pd.x/aspect,pd.y)/pr*hover*(0.006+held*0.035)*curvature;var frontEnergy=hover*(0.15+held*1.85);
  let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);for(var i=0u;i<rippleCount;i=i+1u){let e=u.ripples[i];let age=time-e.z;if (age < 0.0 || age > 3.0) { continue; }
   let d=(uv-e.xy)*aspectVec;let r=max(length(d),0.0001);let front=exp(-abs(r-age*(0.2+audio.x*0.09))*72.0)*exp(-age*0.9);gradient+=vec2<f32>(d.x/aspect,d.y)/r*front*(0.012+dispersion);frontEnergy+=front;}
+ // Idea 3: film viewing-angle phase. A film's optical path is 2*n*d*cos(theta_t), so tilting it
+ // blue-shifts its bands (HEAD's phase had no angle term at all). The film slope is the SAME gradient that
+ // refracts the photo (x150, normalised by resolution because that central difference scales with 1/res);
+ // cos(theta_i) from it, Snell into the film (n=1.33) gives cos(theta_t). Flat film => cosT=1 => HEAD exactly.
+ let tilt=length(gradient)*150.0*(resolution.y/1080.0);let cosI=inverseSqrt(1.0+tilt*tilt);let cosT=sqrt(max(1.0-(1.0-cosI*cosI)/1.7689,0.0));
+ // Idea 4: the film is a REFLECTION, so its strength follows the Schlick reflectance of that same tilted
+ // normal; fMix is how far above normal-incidence (0.04) the reflectance has risen. Used below to boost the film
+ // and to take the same energy out of the transmitted photo.
+ let fresnelF=0.04+0.96*pow(1.0-cosI,5.0);let fMix=fresnelF-0.04;
  // Cauchy n(lambda)=A+B/lambda^2 approximated at RGB wavelengths.
  let nR=1.46+dispersion/0.650/0.650;let nG=1.46+dispersion/0.510/0.510;let nB=1.46+dispersion/0.440/0.440;
  let uvR=clamp(uv-gradient*(nR-1.0),vec2<f32>(0.0),vec2<f32>(1.0));let uvG=clamp(uv-gradient*(nG-1.0),vec2<f32>(0.0),vec2<f32>(1.0));let uvB=clamp(uv-gradient*(nB-1.0),vec2<f32>(0.0),vec2<f32>(1.0));
@@ -31,7 +41,7 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>){
  let drain=pow(clamp(uv.y+0.05*surface(p*0.9,time*0.4),0.0,1.0),0.8);
  let thickness=filmScale*mix(swirl,drain,0.45)+frontEnergy*0.08;
  let blackFilm=1.0-smoothstep(0.03,0.11,thickness);
- let phase=vec3<f32>(thickness*19.0/0.650,thickness*19.0/0.510,thickness*19.0/0.440);
+ let phase=vec3<f32>(thickness*19.0*cosT/0.650,thickness*19.0*cosT/0.510,thickness*19.0*cosT/0.440);
  let film=0.5+0.5*cos(phase+vec3<f32>(0.0,2.094,4.188));
  // Idea 2: dispersed caustics. In a dispersive lens each wavelength focuses somewhere else, so
  // each channel's caustic is gathered around ITS OWN refracted uv instead of all around green.
@@ -39,9 +49,9 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>){
   caustic.r+=textureSampleLevel(readTexture,u_sampler,clamp(uvR+o*(nR-0.46),vec2<f32>(0.0),vec2<f32>(1.0)),0.0).r;
   caustic.g+=textureSampleLevel(readTexture,u_sampler,clamp(uvG+o*(nG-0.46),vec2<f32>(0.0),vec2<f32>(1.0)),0.0).g;
   caustic.b+=textureSampleLevel(readTexture,u_sampler,clamp(uvB+o*(nB-0.46),vec2<f32>(0.0),vec2<f32>(1.0)),0.0).b;}caustic/=6.0;
- let history=historyAt(uv-gradient,size);var hdr=vec3<f32>(sr.r,sg.g,sb.b);hdr+=film*saturation*(0.12+audio.z*0.32)*(1.0-blackFilm)+caustic*(0.08+frontEnergy*0.08);
+ let history=historyAt(uv-gradient,size);var hdr=vec3<f32>(sr.r,sg.g,sb.b)*(1.0-fMix*(1.0-blackFilm));hdr+=film*saturation*(0.12+audio.z*0.32)*(1.0+6.0*fMix)*(1.0-blackFilm)+caustic*(0.08+frontEnergy*0.08);
  hdr=mix(hdr,history.rgb,clamp(history.a*(0.08+filmScale*0.09),0.0,0.24));hdr+=vec3<f32>(0.25,0.05,0.35)*audio.x*frontEnergy*0.18;let rgb=aces(hdr);
- let normal=normalize(vec3<f32>(-gradient*24.0,1.0));let fresnel=0.04+0.96*pow(1.0-max(normal.z,0.0),5.0);let sourceAlpha=max(sr.a,max(sg.a,sb.a));let alpha=clamp(sourceAlpha*0.76+thickness*0.12+fresnel*0.24+frontEnergy*0.05,0.0,1.0);
+ let sourceAlpha=max(sr.a,max(sg.a,sb.a));let alpha=clamp(sourceAlpha*0.76+thickness*0.12+fresnelF*0.24+frontEnergy*0.05,0.0,1.0);
  let outputColor=vec4<f32>(rgb,alpha);textureStore(writeTexture,coord,outputColor);textureStore(dataTextureA,coord,outputColor);let depth=textureSampleLevel(readDepthTexture,non_filtering_sampler,uvG,0.0).r;
  textureStore(writeDepthTexture,coord,vec4<f32>(clamp(depth-length(gradient)*0.2,0.0,1.0),0.0,0.0,0.0));
 }

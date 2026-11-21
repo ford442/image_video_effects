@@ -17,8 +17,17 @@
       ]
     },
     "aerogel-smoke-hdr": {
-      "hash": "e21514b5db1c72ac",
-      "history": []
+      "hash": "57c1da85b1e5b7f8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "57c1da85b1e5b7f8",
+          "prev_hash": "e21514b5db1c72ac",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
+        }
+      ]
     },
     "alucinate-hdr": {
       "hash": "6527e533b7634a89",
@@ -112,8 +121,17 @@
       ]
     },
     "atmos-fog-volumetric": {
-      "hash": "e239a2c09ea7412d",
-      "history": []
+      "hash": "14779ef7459bbdf7",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "14779ef7459bbdf7",
+          "prev_hash": "e239a2c09ea7412d",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
+        }
+      ]
     },
     "audio-voronoi-displacement": {
       "hash": "f589c7b9a1b1dd4c",
@@ -1439,8 +1457,17 @@
       ]
     },
     "heat-haze-volumetric": {
-      "hash": "2e8296659a0406f8",
-      "history": []
+      "hash": "4b8c0368873cb197",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "4b8c0368873cb197",
+          "prev_hash": "2e8296659a0406f8",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
+        }
+      ]
     },
     "holographic-failure-iridescence": {
       "hash": "9bcfdafdc1327256",
@@ -1628,8 +1655,17 @@
       ]
     },
     "interactive-magnetic-ripple-em": {
-      "hash": "7ea1d816124029b8",
-      "history": []
+      "hash": "11a95a20794c8c26",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "11a95a20794c8c26",
+          "prev_hash": "7ea1d816124029b8",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
+        }
+      ]
     },
     "interactive-origami-coupled": {
       "hash": "03834a24074b69b7",
@@ -1674,8 +1710,17 @@
       ]
     },
     "liquid-jelly-fluid": {
-      "hash": "d6bbb19bd690e25b",
-      "history": []
+      "hash": "b0cf43461b74e1a2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "b0cf43461b74e1a2",
+          "prev_hash": "d6bbb19bd690e25b",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
+        }
+      ]
     },
     "liquid-magnetic-ferro-em": {
       "hash": "3b64800d626389ab",
@@ -1691,12 +1736,30 @@
       ]
     },
     "liquid-metal-prismatic": {
-      "hash": "0ae6169cc6007ab7",
-      "history": []
+      "hash": "4432c9b4f31983ed",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "4432c9b4f31983ed",
+          "prev_hash": "0ae6169cc6007ab7",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
+        }
+      ]
     },
     "liquid-oil-iridescence": {
-      "hash": "e9244243f93fd96e",
-      "history": []
+      "hash": "93522ce2c032ff08",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "93522ce2c032ff08",
+          "prev_hash": "e9244243f93fd96e",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
+        }
+      ]
     },
     "liquid-smear-structure": {
       "hash": "3ced722148fd513c",
@@ -16894,8 +16957,17 @@
       ]
     },
     "liquid-lens": {
-      "hash": "fe371d7c1fb0b872",
-      "history": []
+      "hash": "238fe5437dffe5b5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "238fe5437dffe5b5",
+          "prev_hash": "fe371d7c1fb0b872",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
+        }
+      ]
     },
     "liquid-time-warp": {
       "hash": "2dde3858dcba1cc8",
@@ -19555,7 +19627,7 @@
       ]
     },
     "liquid-rainbow-prismatic": {
-      "hash": "d9c59e8d2708f4cf",
+      "hash": "f4de8cba2776ad1f",
       "history": [
         {
           "event": "upgraded",
@@ -19564,6 +19636,14 @@
           "prev_hash": "857cd6879af532d9",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T07:11:47.212Z",
+          "hash": "f4de8cba2776ad1f",
+          "prev_hash": "d9c59e8d2708f4cf",
+          "commit": "d5c0fca6",
+          "note": "2026-11-21 sonnet/batch-49 liquid/volumetric/field nine (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-49/"
         }
       ]
     },
