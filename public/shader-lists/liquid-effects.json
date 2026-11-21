@@ -760,6 +760,30 @@
     ]
   },
   {
+    "id": "liquid-original",
+    "name": "Liquid (Interactive) — Original",
+    "url": "shaders/liquid-original.wgsl",
+    "description": "FROZEN REFERENCE — DO NOT UPGRADE. The original default Slot 1 liquid as it ran on go.1ink.us/pixelocity: a faint ambient wobble on the background plus depth-aware expanding click ripples. No sliders (the original reads none). Copy it to a new id to build variations; the upgraded sibling is `liquid`.",
+    "tags": [
+      "filter",
+      "image-processing",
+      "liquid",
+      "reference",
+      "frozen"
+    ],
+    "workgroup_size": [
+      16,
+      16,
+      1
+    ],
+    "supportsDepth": true,
+    "features": [
+      "mouse-driven",
+      "click-reactive",
+      "depth-aware"
+    ]
+  },
+  {
     "id": "liquid-pass1",
     "name": "Liquid (Pass 1)",
     "url": "shaders/liquid-pass1.wgsl",

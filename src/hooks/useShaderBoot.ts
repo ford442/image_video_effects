@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { RenderMode, ShaderEntry, InputSource } from '../renderer/types';
 import type { ImageRecord } from '../types/aiVj';
+import { DEFAULT_SLOT1_SHADER_ID } from '../app/constants/shaderDefaults';
 
 export interface UseShaderBootOptions {
     rendererReady: boolean;
@@ -54,11 +55,14 @@ export function useShaderBoot({
         if (initialMode && initialMode !== 'none') {
             setMode(0, initialMode);
         } else {
-            // Default startup shader: Liquid (Interactive) — matches prior live behavior at go.1ink.us/pixelocity
-            const liquidShader = availableModes.find(s => s.id === 'liquid');
+            // Default startup shader (Slot 1): the FROZEN original Liquid (Interactive), exactly as it
+            // runs live at go.1ink.us/pixelocity. public/shaders/liquid-original.wgsl is a do-not-upgrade
+            // reference — build variations from a copy of it, but keep it as the boot default.
+            // (`liquid` is the upgraded sibling and is no longer the boot default.)
+            const liquidShader = availableModes.find(s => s.id === DEFAULT_SLOT1_SHADER_ID);
             if (liquidShader) {
-                setMode(0, 'liquid' as RenderMode);
-                setStatus('Started with Liquid (Interactive).');
+                setMode(0, DEFAULT_SLOT1_SHADER_ID as RenderMode);
+                setStatus('Started with Liquid (Interactive) — Original.');
             } else {
                 setStatus('Ready. Select a shader from Slot 1 to get started.');
             }
