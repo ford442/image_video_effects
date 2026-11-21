@@ -1,0 +1,71 @@
+name: App smoke
+
+# Release 2/5: the app smoke suite (tests/app-smoke.live.spec.ts) on SwiftShader, in both
+# render threads, failing on any console error / page error / failed or 4xx/5xx request.
+# Without base_url it runs against a fresh build/ served with COOP/COEP; with base_url it
+# runs against that deployed URL in strict mode (no allowlisted hosts).
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Deployed URL to smoke (empty = fresh build/)
+        required: false
+        default: ''
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'vite.config.*'
+      - 'package*.json'
+      - 'playwright.config.ts'
+      - 'tests/app-smoke.live.spec.ts'
+      - '.github/workflows/app-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  app-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL: "skip"
+
+      - name: Build production app
+        if: inputs.base_url == ''
+        run: npm run build
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run app smoke suite
+        run: npm run test:smoke
+        env:
+          CI: true
+          SMOKE_BASE_URL: ${{ inputs.base_url }}
+
+      - name: Upload smoke report (readbacks, screenshots, log summary)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-smoke-report
+          path: |
+            test-results/app-smoke/
+            playwright-report/
+          retention-days: 14

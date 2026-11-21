@@ -67,7 +67,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: '**/*.swiftshader.spec.ts',
+      testIgnore: ['**/*.swiftshader.spec.ts', '**/*.live.spec.ts'],
       // channel 'chromium' = new headless (full browser); headless-shell disables GPU compositing.
       use: GPU_TESTS
         ? { ...desktopChromeNoUa, channel: 'chromium', launchOptions: { args: GPU_LAUNCH_ARGS } }
@@ -103,6 +103,22 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: { args: SWIFTSHADER_WEBGPU_ARGS },
+      },
+    },
+    {
+      // App smoke suite (Release 2/5): core flows x both render threads against
+      // build/ or SMOKE_BASE_URL (a deployed preview). npm run test:smoke.
+      name: 'app-smoke',
+      testMatch: '**/*.live.spec.ts',
+      timeout: 180 * 1000,
+      retries: 0,
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: SWIFTSHADER_WEBGPU_ARGS,
+          // Optional: a preinstalled Chromium when the pinned Playwright build is not downloaded.
+          ...(process.env.SMOKE_CHROMIUM_PATH ? { executablePath: process.env.SMOKE_CHROMIUM_PATH } : {}),
+        },
       },
     },
   ],
