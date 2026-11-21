@@ -44,6 +44,7 @@ export type { UseB3hdModeOptions } from './useB3hdMode';
 export { useRoulette } from './useRoulette';
 export type { UseRouletteOptions, UseRouletteReturn } from './useRoulette';
 
+export { useGeneratorSource } from './useGeneratorSource';
 export { useGenerativeShowcase } from './useGenerativeShowcase';
 export type { UseGenerativeShowcaseOptions, UseGenerativeShowcaseReturn } from './useGenerativeShowcase';
 

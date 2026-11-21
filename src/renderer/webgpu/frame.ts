@@ -182,11 +182,15 @@ export class WebGPUFrameRenderer {
     this.encodeVideoIngest(state, encoder);
 
     const slotPlan = buildFrameSlotDispatchPlan(state);
+    // Generative source: the generator runs ahead of the slot chain and fills readTex (generator.ts).
+    const generator = state.generator?.isActive(state) ? state.generator : null;
     if (slotPlan.enabledCount === 0) {
       // Nothing composites, so this frees the compositor's layer / mask textures (#1512).
       state.getCompositor?.();
       // No effects: still refresh readTex from the (possibly video) source.
+      if (generator) this.writeUniforms(state);
       this.presenter.encodeInputCopy(state, encoder);
+      generator?.encode(state, encoder);
       state.blitReadTex = state.readTex;
       this.presenter.updateBlitBindGroup(state);
       this.presenter.encodePresent(state, encoder);
@@ -200,6 +204,7 @@ export class WebGPUFrameRenderer {
     this.writeUniforms(state);
 
     this.presenter.encodeInputCopy(state, encoder);
+    generator?.encode(state, encoder);
     state.encodePreFxChores?.(encoder);
     // Direct present (#1512): the single slot writes the swapchain; no blit this frame.
     const direct = state.prepareDirectPresent?.(slotPlan) ?? null;

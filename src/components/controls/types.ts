@@ -61,6 +61,9 @@ export interface ControlsProps {
     onUploadVideoTrigger: () => void;
     activeGenerativeShader?: string;
     setActiveGenerativeShader?: (id: string) => void;
+    /** The generative source's four sliders (zoom_params p1..p4) and their setter. */
+    generatorParams?: number[];
+    onGeneratorParam?: (index: number, value: number) => void;
     isAiVjMode: boolean;
     onToggleAiVj: () => void;
     aiVjStatus: AIStatus;

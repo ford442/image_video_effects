@@ -75,6 +75,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
     onUploadImageTrigger,
     onUploadVideoTrigger,
     activeGenerativeShader, setActiveGenerativeShader,
+    generatorParams, onGeneratorParam,
     isAiVjMode,
     onToggleAiVj,
     aiVjStatus,
@@ -239,6 +240,7 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
         slotParams,
         availableModes,
         inputSource,
+        activeGenerativeShader,
         currentImageUrl,
         getSource: getRecorderSource,
         onBeforeRender: () => {
@@ -363,6 +365,9 @@ export const ControlsContainer: React.FC<ControlsProps> = ({
                     activeGenerativeShader={activeGenerativeShader}
                     setActiveGenerativeShader={setActiveGenerativeShader}
                     generativeMenuOptions={generativeMenuOptions}
+                    shaderParams={availableModes.find((s) => s.id === activeGenerativeShader)?.params}
+                    generatorParams={generatorParams}
+                    onGeneratorParam={onGeneratorParam}
                     generativeShowcaseActive={generativeShowcaseActive}
                     generativeShowcaseLocked={generativeShowcaseLocked}
                     generativeShowcaseDelay={generativeShowcaseDelay}

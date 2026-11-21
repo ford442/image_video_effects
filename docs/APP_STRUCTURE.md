@@ -52,6 +52,7 @@ The C++ side keeps `frame.cpp` as its facade until its presentation/dispatch sec
 | `useB3hdMode` | `src/hooks/useB3hdMode.ts` |
 | `useRoulette` | `src/hooks/useRoulette.ts` |
 | `useGenerativeShowcase` | `src/hooks/useGenerativeShowcase.ts` |
+| `useGeneratorSource` | `src/hooks/useGeneratorSource.ts` ([GENERATIVE_SOURCE.md](GENERATIVE_SOURCE.md)) |
 | `useRecording` | `src/hooks/useRecording.ts` |
 | `useRemoteSync` | `src/hooks/useRemoteSync.ts` |
 | `useTestHarness` | `src/hooks/useTestHarness.ts` |

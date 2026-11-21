@@ -83,6 +83,9 @@ export type RenderCommand =
   /** Compositing for one slot (#1512): blend / opacity / mask. */
   | { type: 'setSlotLayer'; index: number; layer: SlotLayer }
   | { type: 'setInputSource'; source: InputSource }
+  /** The generative source (generator.ts): a shader id, or null for off; its four sliders follow. */
+  | { type: 'setGenerator'; id: string | null }
+  | { type: 'setGeneratorParams'; params: [number, number, number, number] }
   | { type: 'updateDepthMap'; data: Float32Array; width: number; height: number }
   | { type: 'setVideoActive'; active: boolean }
   | { type: 'videoFrame'; frame: VideoFrame }
@@ -283,6 +286,8 @@ export const RENDER_COMMAND_TYPES = [
   'setSlotMode',
   'setSlotLayer',
   'setInputSource',
+  'setGenerator',
+  'setGeneratorParams',
   'updateDepthMap',
   'setVideoActive',
   'videoFrame',

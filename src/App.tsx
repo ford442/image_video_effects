@@ -29,6 +29,7 @@ import {
     useB3hdMode,
     useRoulette,
     useGenerativeShowcase,
+    useGeneratorSource,
     useRecording,
     useRemoteSync,
     useTestHarness,
@@ -403,6 +404,18 @@ function MainApp() {
         midiEngageSignal,
     });
 
+    // Generative input: the picked shader runs as the source, ahead of the effect slots.
+    const { generatorParams, setGeneratorParam } = useGeneratorSource({
+        rendererRef,
+        rendererReady,
+        inputSource,
+        activeGenerativeShader,
+        availableModes,
+        setActiveGenerativeShader,
+        setMode,
+        setStatus,
+    });
+
     // MIDI engagement while attract mode is active (independent of Live Control panel)
     useEffect(() => {
         if (!generativeShowcaseActive || generativeShowcaseLocked) return;
@@ -435,7 +448,9 @@ function MainApp() {
         }
         syncInputSourceToRenderer('generative');
         setActiveGenerativeShader(id);
-        void setMode(0, id as RenderMode);
+        // The preview is not in the catalog, so the generator hook leaves it alone: arm it here.
+        // Backends without a generator stage fall back to slot 0.
+        if (!(await manager.setGenerator(id))) void setMode(0, id as RenderMode);
         setShaderCategory('generative');
         setStatus(`Preview loaded: ${name}`);
     }, [syncInputSourceToRenderer, setMode, setStatus]);
@@ -744,6 +759,8 @@ function MainApp() {
                 setIsMuted={setIsMuted}
                 activeGenerativeShader={activeGenerativeShader}
                 setActiveGenerativeShader={setActiveGenerativeShader}
+                generatorParams={generatorParams}
+                onGeneratorParam={setGeneratorParam}
                 fileInputImageRef={fileInputImageRef}
                 fileInputVideoRef={fileInputVideoRef}
                 onFileSelected={handleUploadFileChange}

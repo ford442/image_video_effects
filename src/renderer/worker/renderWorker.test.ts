@@ -73,6 +73,8 @@ function fakeRenderer() {
     restoreRipples: record('restoreRipples'),
     restoreNodeScales: record('restoreNodeScales'),
     setInputSource: record('setInputSource'),
+    setGenerator: record('setGenerator'),
+    setGeneratorParams: record('setGeneratorParams'),
     updateDepthMap: record('updateDepthMap'),
     setTransferredVideo: record('setTransferredVideo'),
     setResolutionScale: record('setResolutionScale'),
@@ -775,6 +777,22 @@ describe('WorkerWebGPUBackend (main-thread proxy)', () => {
     expect(backend.startCrossfade(2000)).toBe(false);
     await flushPorts();
     expect(fake.calls).toEqual([]);
+  });
+
+  it('forwards the generative source and its sliders to the worker renderer', async () => {
+    const { backend, fake } = await backendWithWorker();
+    fake.calls.length = 0;
+    backend.setGenerator('gen-orb');
+    backend.setGeneratorParams(0.1, 0.2, 0.3, 0.4);
+    expect(backend.getGenerator()).toBe('gen-orb');
+    await flushPorts();
+    expect(fake.calls).toContainEqual(['setGenerator', ['gen-orb']]);
+    expect(fake.calls).toContainEqual(['setGeneratorParams', [0.1, 0.2, 0.3, 0.4]]);
+    backend.setGenerator(null);
+    await flushPorts();
+    expect(fake.calls).toContainEqual(['setGenerator', [null]]);
+    expect(backend.getGenerator()).toBeNull();
+    await backend.destroy();
   });
 
   it('forwards runtime graphs to the worker as a setRuntimeGraph command', async () => {

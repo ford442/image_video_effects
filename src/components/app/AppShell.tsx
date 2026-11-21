@@ -66,6 +66,8 @@ export interface AppShellProps {
     setIsMuted: (muted: boolean) => void;
     activeGenerativeShader: string;
     setActiveGenerativeShader: (id: string) => void;
+    generatorParams?: number[];
+    onGeneratorParam?: (index: number, value: number) => void;
     fileInputImageRef: RefObject<HTMLInputElement | null>;
     fileInputVideoRef: RefObject<HTMLInputElement | null>;
     /** `change` handler for the hidden upload inputs (see useLocalMediaUpload). */
@@ -209,6 +211,8 @@ export function AppShell(props: AppShellProps) {
         setIsMuted,
         activeGenerativeShader,
         setActiveGenerativeShader,
+        generatorParams,
+        onGeneratorParam,
         fileInputImageRef,
         fileInputVideoRef,
         onFileSelected,
@@ -391,6 +395,7 @@ export function AppShell(props: AppShellProps) {
                         currentSegment={currentSegment}
                         isMuted={isMuted} setIsMuted={setIsMuted}
                         activeGenerativeShader={activeGenerativeShader} setActiveGenerativeShader={setActiveGenerativeShader}
+                        generatorParams={generatorParams} onGeneratorParam={onGeneratorParam}
                         onUploadImageTrigger={() => fileInputImageRef.current?.click()}
                         onUploadVideoTrigger={() => fileInputVideoRef.current?.click()}
                         isAiVjMode={isAiVjMode} onToggleAiVj={toggleAiVj} aiVjStatus={aiVjStatus}
