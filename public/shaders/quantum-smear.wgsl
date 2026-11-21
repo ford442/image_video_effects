@@ -5,7 +5,9 @@
 //  Complexity: High
 //  Upgraded: 2026-08-23, 2026-11-01
 //  Ideas: still-lock; void rim
-//  A packing: clamped pre-ACES smear RGB (motion history). ACES on writeTexture only.
+//  A packing: last frame's source RGB (motion history). ACES on writeTexture only.
+//  Fix: motion was measured against the brightened smear output, a feedback loop
+//  that ran the frame to flat white; it now compares source against source.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -118,7 +120,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   result = mix(result, vec3<f32>(luminance), blurAmount);
 
   let alpha = clamp(0.35 + luminance * 0.45 + motion * 0.2 + mouseWell * 0.1 + lip * 0.12 + still * 0.08, 0.1, 1.0);
-  let stored = vec4<f32>(clamp(result, vec3<f32>(0.0), vec3<f32>(4.0)), alpha);
+  let stored = vec4<f32>(videoSample.rgb, alpha);
   let display = vec4<f32>(acesToneMap(max(result, vec3<f32>(0.0))), alpha);
 
   textureStore(writeTexture, pixel, display);
