@@ -1,71 +1,50 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Motion Smear - Motion-aware temporal smearing
 //  Category: generative
-//  Features: generative, audio-reactive, mouse-driven, temporal, depth-aware,
-//            upgraded-rgba, aces-tone-map, chromatic-aberration
+//  Features: generative, audio-reactive, temporal, depth-aware, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-03-22
 //  By: Agent 4A
-//  Upgraded: 2026-06-06
+//  Upgraded: 2026-06-06, 2026-11-21
+//  Ideas: shutter tent; upstream trail
+//  A packing: ACES display RGBA (C is that trail)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+fn luma3(rgb: vec3<f32>) -> f32 {
+    return dot(rgb, vec3<f32>(0.299, 0.587, 0.114));
+}
 
-// Detect motion by comparing current and previous frame
-fn detectMotion(uv: vec2<f32>, pixel: vec2<f32>) -> vec2<f32> {
-    let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
-    let previous = textureSampleLevel(dataTextureC, u_sampler, uv, 0.0).rgb;
-    
-    // Luminance of each frame
-    let currLuma = dot(current, vec3<f32>(0.299, 0.587, 0.114));
-    let prevLuma = dot(previous, vec3<f32>(0.299, 0.587, 0.114));
-    
-    // Calculate motion magnitude
-    let diff = abs(currLuma - prevLuma);
-    
-    // Estimate motion direction from gradient
-    let right = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(pixel.x, 0.0), 0.0).rgb;
-    let left = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(pixel.x, 0.0), 0.0).rgb;
-    let up = textureSampleLevel(dataTextureC, u_sampler, uv + vec2<f32>(0.0, pixel.y), 0.0).rgb;
-    let down = textureSampleLevel(dataTextureC, u_sampler, uv - vec2<f32>(0.0, pixel.y), 0.0).rgb;
-    
-    let dx = dot(right - left, vec3<f32>(0.299, 0.587, 0.114)) * 0.5;
-    let dy = dot(up - down, vec3<f32>(0.299, 0.587, 0.114)) * 0.5;
-    
-    // Motion vector (approximate)
+// Motion from this frame versus exact C, and the gradient of that history.
+fn detectMotion(coord: vec2<i32>, dims: vec2<i32>) -> vec2<f32> {
+    let current = textureLoad(readTexture, coord, 0).rgb;
+    let previous = textureLoad(dataTextureC, coord, 0).rgb;
+    let diff = abs(luma3(current) - luma3(previous));
+    let right = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), dims), 0).rgb;
+    let left = textureLoad(dataTextureC, clamp(coord + vec2<i32>(-1, 0), vec2<i32>(0), dims), 0).rgb;
+    let up = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), dims), 0).rgb;
+    let down = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, -1), vec2<i32>(0), dims), 0).rgb;
+    let dx = luma3(right - left) * 0.5;
+    let dy = luma3(up - down) * 0.5;
     return vec2<f32>(dx, dy) * diff * 10.0;
 }
 
-// Apply directional blur along motion vector
-fn directionalBlur(uv: vec2<f32>, dir: vec2<f32>, samples: i32, radius: f32) -> vec3<f32> {
+// ── Idea 1: shutter tent ──────────────────────────────────────────
+// Same eight taps along the motion direction. The head (i = 0) is full
+// weight and the tail thins, which is an open shutter rather than a box.
+fn shutterBlur(uv: vec2<f32>, dir: vec2<f32>, radius: f32) -> vec3<f32> {
     var result = vec3<f32>(0.0);
-    let step = dir * radius / f32(samples);
-    
-    for (var i: i32 = 0; i < samples; i++) {
-        let offset = step * f32(i);
-        result += textureSampleLevel(readTexture, u_sampler, uv + offset, 0.0).rgb;
+    var wsum = 0.0;
+    for (var i: i32 = 0; i < 8; i = i + 1) {
+        let t = f32(i) / 7.0;
+        let w = 1.0 - t * 0.85;
+        let offset = dir * radius * t;
+        let tap = textureSampleLevel(readTexture, u_sampler, clamp(uv + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+        result += tap * w;
+        wsum += w;
     }
-    
-    return result / f32(samples);
+    return result / max(wsum, 0.001);
 }
 
 // Hue shift for trail coloring
@@ -87,9 +66,11 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resolution = u.config.zw;
+    if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
     let bass = plasmaBuffer[0].x;
     let uv = vec2<f32>(global_id.xy) / resolution;
-    let pixel = 1.0 / resolution;
+    let coord = vec2<i32>(global_id.xy);
+    let dims = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
     
     // Parameters - safe randomization
     let persistence = mix(0.7, 0.99, u.zoom_params.x);
@@ -99,43 +80,31 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     
     // Get current frame
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-    let currentLuma = dot(current.rgb, vec3<f32>(0.299, 0.587, 0.114));
     
-    // Get previous trail buffer
-    let prevTrail = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
-    
-    // Detect motion
-    let motion = detectMotion(uv, pixel) * sensitivity;
+    // Detect motion, then read the trail one step upstream of it.
+    let motion = detectMotion(coord, dims) * sensitivity;
     let motionStrength = length(motion);
-    
-    // Calculate decay based on motion
-    let decay = mix(persistence * 0.9, persistence, smoothstep(0.1, 0.5, motionStrength));
-    
-    // Create smeared color
-    var smearedColor = current.rgb;
-    var alpha = current.a;
-    
-    if (motionStrength > 0.01) {
-        // Direction-aware blur
-        let blurDir = normalize(motion + vec2<f32>(0.001));
-        let blurRadius = motionStrength * 0.05 * directionality;
-        
-        // Apply directional blur
-        let blurred = directionalBlur(uv, blurDir, 8, blurRadius);
-        
-        // Color based on velocity - warm for fast, cool for slow
-        let velocityColor = mix(
-            vec3<f32>(0.3, 0.5, 0.9), // Cool - slow
-            vec3<f32>(0.9, 0.6, 0.2), // Warm - fast
-            smoothstep(0.0, 1.0, motionStrength)
-        );
-        
-        // Mix blurred color with velocity tint
-        smearedColor = mix(blurred, blurred * velocityColor * 1.5, 0.4);
-        
-        // Increase alpha where motion is strong
-        alpha = mix(current.a, 1.0, min(motionStrength * 0.5, 0.5));
-    }
+    // ── Idea 2: upstream trail ────────────────────────────────────────
+    // Directionality 0 keeps the ghost on this pixel (omni mode). Otherwise
+    // the decayed light is the history that was just upstream.
+    let stepUv = clamp(motion, vec2<f32>(-0.05), vec2<f32>(0.05)) * directionality;
+    let advectCoord = clamp(vec2<i32>(clamp(uv - stepUv, vec2<f32>(0.0), vec2<f32>(1.0)) * resolution), vec2<i32>(0), dims);
+    let prevTrail = textureLoad(dataTextureC, advectCoord, 0);
+
+    let decay = min(mix(persistence * 0.9, persistence, smoothstep(0.1, 0.5, motionStrength)) * (1.0 + bass * 0.02), 0.985);
+
+    let blurDir = normalize(motion + vec2<f32>(0.001));
+    let blurRadius = motionStrength * 0.05 * directionality;
+    let blurred = shutterBlur(uv, blurDir, blurRadius);
+    let velocityColor = mix(
+        vec3<f32>(0.3, 0.5, 0.9),
+        vec3<f32>(0.9, 0.6, 0.2),
+        smoothstep(0.0, 1.0, motionStrength)
+    );
+    let tinted = mix(blurred, blurred * velocityColor * 1.5, 0.4);
+    let moving = step(0.01, motionStrength);
+    var smearedColor = mix(current.rgb, tinted, moving);
+    var alpha = mix(current.a, mix(current.a, 1.0, min(motionStrength * 0.5, 0.5)), moving);
     
     // Accumulate trails with decay
     let trailContribution = prevTrail.rgb * decay;
@@ -163,7 +132,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Chromatic aberration + ACES
     let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
     finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
-    finalColor = acesToneMap(finalColor * 1.1);
+    finalColor = acesToneMap(max(finalColor, vec3<f32>(0.0)) * 1.1);
 
     // Store accumulated trail
     let trailOutput = vec4<f32>(finalColor, alpha);

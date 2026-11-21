@@ -3,30 +3,12 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-13
-//  Ideas: kaleidoscope ideal vertices; hyperbolic-radius rings (horocycle bands); {p,5} geodesic edges via circle inversion with Jacobian-true width; Escher two-coloring from inversion parity
+//  Upgraded: 2026-09-13, 2026-11-21
+//  Ideas: kaleidoscope ideal vertices; hyperbolic-radius rings (horocycle bands); {p,5} geodesic edges via circle inversion with Jacobian-true width; Escher two-coloring from inversion parity; Poincaré area darkening; ideal-point horocycles
 //  A packing: raw HDR tessellation RGB + coverage alpha (C read raw via textureLoad); ACES on display only
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>, // symmetry, depth color, rotation speed, boundary glow
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: symmetry, depth color, rotation speed, boundary glow
 
 const TAU: f32 = 6.28318530718;
 
@@ -106,7 +88,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let tilePulse = 0.5 + 0.5 * cos(length(z) * (16.0 + symmetry) - time * (0.7 + rotationSpeed * 2.0));
   let depthPhase = recursiveDepth / 8.0;
   var raw = palette(depthPhase * (0.35 + depthColor * 2.4) + time * 0.025 + mids * 0.08);
-  raw *= (0.18 + tilePulse * 0.82) * diskMask * (0.85 + bass * 0.35);
+  // ── Idea 5: Poincaré area darkening ───────────────────────────────
+  // Tile fill only. Edges, vertices, geodesics and the boundary glow are added after.
+  let metric = 1.0 - originalRadius * originalRadius;
+  raw *= (0.18 + tilePulse * 0.82) * diskMask * (0.85 + bass * 0.35) * (0.55 + 0.45 * metric);
   raw += palette(depthPhase + 0.33 + treble * 0.05) * edge * (0.85 + treble * 1.1) * diskMask;
   raw += vec3<f32>(0.4, 0.72, 1.35) * boundary * boundaryGlowCtl * (1.0 + treble * 0.7);
   raw += vec3<f32>(1.0, 0.92, 0.65) * vertexGlow * diskMask * (0.45 + treble * 0.35);
@@ -115,6 +100,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let hypR = 0.5 * log((1.0 + safeR) / max(1.0 - safeR, 0.002));
   let horo = exp(-abs(fract(hypR * 2.4) - 0.5) * 18.0) * diskMask * (1.0 - smoothstep(0.92, 1.0, originalRadius));
   raw += palette(depthPhase + 0.18) * horo * (0.22 + bass * 0.2);
+  // ── Idea 6: ideal-point horocycles ────────────────────────────────
+  // A second family, crowded toward a boundary point that drifts with
+  // Rotation Speed, and only as bright as Boundary Glow allows.
+  let phiH = time * (0.05 + rotationSpeed * 0.12);
+  let tangentPoint = vec2<f32>(cos(phiH), sin(phiH));
+  let hc = length(disk - tangentPoint * 0.55);
+  let idealHoro = exp(-abs(fract(hc * (4.0 + symmetry * 0.15)) - 0.5) * 20.0)
+                * diskMask * smoothstep(0.28, 0.62, originalRadius) * boundaryGlowCtl;
+  raw += palette(depthPhase + 0.47) * idealHoro * 0.34;
 
   // Idea 3: true {p,5} Poincare-disk tiling — fold by p-fold rotation, invert in the
   // edge geodesic (circle orthogonal to the unit circle) until inside the central tile.
