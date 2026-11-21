@@ -20,6 +20,10 @@ An upgrade **adds 2–4 named visual ideas to the existing effect**. It is not a
 
 ---
 
+> **Frozen shaders — never upgrade.** A shader whose header banner says `DO NOT UPGRADE` is a reference, not a candidate: skip it in every batch (`scripts/upgrade-worker.mjs` does automatically). Currently: **`liquid-original`** — the original default Slot 1 effect as live at go.1ink.us/pixelocity, and the boot default. Build variations from a *copy* of it under a new id; leave the original byte-stable. (`liquid` is its upgraded sibling and stays upgradeable.)
+
+---
+
 ## 1. What “upgrade” means
 
 The catalog is ~1,350 effects. Many already have a distinct identity: unsharp-mask sharpen, vignette, brush strokes, tile glitch, double exposure. The job is to make **that** picture richer — a new structure, a new motion, a new optical or tactile beat — while a viewer still recognizes the original effect in the first second.

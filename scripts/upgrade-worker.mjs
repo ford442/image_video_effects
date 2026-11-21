@@ -138,7 +138,10 @@ function eligibility(id) {
   if (!def) return 'no shader_definitions/*/<id>.json';
   const json = JSON.parse(read(def.path));
   if (json.multipass) return 'multipass graph (upgrade by hand: passes share packing)';
-  if (!/@compute/.test(read(wgsl))) return 'not a compute shader';
+  const src = read(wgsl);
+  if (!/@compute/.test(src)) return 'not a compute shader';
+  // Frozen reference shaders (e.g. liquid-original) carry "DO NOT UPGRADE" in their header banner.
+  if (/DO NOT UPGRADE/.test(src.split('\n').slice(0, 30).join('\n'))) return 'frozen reference (header says DO NOT UPGRADE)';
   return null;
 }
 
