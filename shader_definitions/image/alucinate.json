@@ -2,7 +2,7 @@
   "id": "alucinate",
   "name": "Alucinate",
   "url": "shaders/alucinate.wgsl",
-  "description": "Reaction-Diffusion Psychedelia with Gray-Scott Turing patterns, domain-warped FBM, kaleidoscopic IFS fractals, conformal mapping, and audio-reactive color science.",
+  "description": "Reaction-Diffusion Psychedelia with Gray-Scott Turing patterns, domain-warped FBM, kaleidoscopic IFS fractals, conformal mapping, and audio-reactive color science. Mirror facets of the kaleidoscope mirror their chromatic fringes, fold-orbit filigree veins brighten the rainbow overlay, and Turing-cell edges refract the colour taps like tiny lenses. Clicks no longer wipe the picture.",
   "features": [
     "upgraded-rgba",
     "depth-aware",

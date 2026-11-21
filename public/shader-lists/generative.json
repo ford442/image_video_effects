@@ -30213,7 +30213,7 @@
     "id": "generative-psy-swirls",
     "name": "Psychedelic Swirls",
     "url": "shaders/generative-psy-swirls.wgsl",
-    "description": "Multi-layer polar swirl vortex with chromatic hue separation per layer, temporal swirl accumulation, audio-driven twist modulation, HSV rainbow cycles, and ripple glow trails.",
+    "description": "Multi-layer polar swirl vortex with chromatic hue separation per layer, temporal swirl accumulation, audio-driven twist modulation, HSV rainbow cycles, and ripple glow trails. Vortex cores are calm Rankine eyes ringed by a bright wall, the spectrum winds with the polar arms, the core winds against the outer swirl and red leads blue in time (chromatic arm fringes), and the pointer glides instead of jumping.",
     "workgroup_size": [
       16,
       16,

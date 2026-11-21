@@ -5,30 +5,23 @@
 //            upgraded-rgba, aces-tone-map, chromatic-hue-separation, audio-twist,
 //            domain-warped-swirl, mids-hue-fan, feedback-clamp
 //  Complexity: High
-//  Upgraded: 2026-08-03 (Batch 34: sprung interaction, guarded ripples,
-//            non-filtering feedback loads, generated relief depth)
+//  Upgraded: 2026-08-03, 2026-11-09 (Batch 34: sprung interaction, guarded ripples,
+//            non-filtering feedback loads, generated relief depth), 2026-11-21
+//  Ideas: arm-wound hue (spectrum winds with the polar arms); Rankine eye-wall cores
+//         (calm eye + bright wall instead of a pinwheel singularity); Lamb-Oseen core wring
+//         (additive domain twist with a core-profile angular surge, §12.2E: the core winds
+//         against the outer swirl); per-channel flow lag (R leads, B lags the same core surge,
+//         so chromatic arm fringes appear where the core shears)
+//  Rescue: cursor glide kept in A texel (0,0) (extraBuffer[133..138] is re-uploaded zero
+//          every frame, so the old spring never persisted)
+//  Salvage: arm-wound hue, Rankine eye-wall and the glide rescue are sonnet/batch-28 (9acc4b18)
+//           work that jules-bot commit 9b5cd56e reverted; restored 2026-11-21 after an audit
+//  A packing: raw trail colour (clamp 1.2, pre-ACES, C read as colour);
+//             texel (0,0) = (glide.xy, 7, fract(time))
+//  Shared by presets: generative-psy-swirls + psy-swirls (same WGSL, same four slots)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI:  f32 = 3.14159265358979323846;
 const TAU: f32 = 6.28318530717958647692;
@@ -68,18 +61,59 @@ fn hsv2rgb(c: vec3<f32>) -> vec3<f32> {
   return c.z * mix(k.xxx, clamp(p - k.xxx, vec3<f32>(0.0), vec3<f32>(1.0)), c.y);
 }
 
+// ── Idea 3: Lamb-Oseen core profile g = (1 - exp(-s)) / s, s = d^2/rc^2, rc = 0.33 ────────────
+// g(0) = 1 (the core spins as a solid body) and g -> 0 outside it, so a surge of angular phase
+// weighted by g winds the core against the lagging outer swirl (differential rotation).
+// Takes d^2 and uses the [2/2] Pade form 1/(1 + s/2 + s^2/12) (exact to O(s^3), within 3 % of
+// the exponential for s <= 3): no exp, no sqrt, no 0/0 at the eye.
+fn coreProfile(d2: f32) -> f32 {
+    let s = d2 * 9.183;
+    return 1.0 / (1.0 + s * (0.5 + s * 0.08333));
+}
+
 // One swirl arm layer in polar space. hueShift fans the layer's hue
 // rotation so mids energy spreads layers into rainbow fringes.
+// `wring` is the extra arm phase from Idea 3 (core surge x core profile), per colour channel.
 fn layeredSwirlLayer(uv: vec2<f32>, time: f32, twist: f32, freq: f32,
-                     offset: vec2<f32>, hueShift: f32) -> vec3<f32> {
+                     offset: vec2<f32>, hueShift: f32, wring: f32) -> vec3<f32> {
     let d = length(uv - offset);
     let a = atan2(uv.y - offset.y, uv.x - offset.x);
-    let swirl = a + d * twist * freq - time * 0.5;
+    let wound = a + d * twist * freq + wring;    // spatial part of the arm phase (+ core wring)
+    let swirl = wound - time * 0.5;
     let arm = sin(swirl * 3.0) * 0.5 + 0.5;
     let distRipple = sin(d * 10.0 - time * 2.0) * 0.5 + 0.5;
-    let val = arm * distRipple;
-    let hue = fract(d * 0.5 + time * 0.1 + hueShift);
+
+    // ── Idea 2: Rankine eye-wall core ────────────────────────────────
+    // A real vortex has a finite calm eye ringed by its fastest wall; HEAD's
+    // centre is a bare atan2 pinwheel point. Tighter twist -> tighter eye.
+    let coreR = 0.05 + 0.07 / (1.0 + max(twist, 0.0) * 0.5);
+    let eye = smoothstep(coreR * 0.45, coreR, d);
+    let wallX = (d - coreR * 1.25) / (coreR * 0.35);
+    let wall = exp(-wallX * wallX);
+    let val = min(arm * distRipple * eye + wall * 0.5, 1.0);
+
+    // ── Idea 1: arm-wound hue ────────────────────────────────────────
+    // The spectrum follows the polar arms (one full wrap per turn). wound/TAU
+    // jumps by exactly 1.0 across the atan2 seam, so fract() stays continuous.
+    // The existing hue drift in time is untouched.
+    let hue = fract(d * 0.5 + time * 0.1 + hueShift + wound / TAU);
     return hsv2rgb(vec3<f32>(hue, 0.8, val));
+}
+
+// ── Rescue R1: cursor glide in A texel (0,0) ─────────────────────────
+// extraBuffer[133..] is re-uploaded zeroed every frame, so the old spring could
+// never persist (every pixel fell back to the raw cursor). State = A(0,0) =
+// (glide.x, glide.y, GLIDE_MARK, fract(time)); every pixel reads the same C texel
+// and integrates the same step, only pixel (0,0) stores it. First-order glide
+// replacing a dead critically-damped spring: at rest identical, moving the swirl
+// centres lag the cursor by ~1/rate s.
+const GLIDE_MARK: f32 = 7.0;
+fn glideStep(st: vec4<f32>, raw: vec2<f32>, time: f32, rate: f32) -> vec2<f32> {
+    let ok = abs(st.z - GLIDE_MARK) < 0.01 && st.w >= 0.0 && st.w < 1.0;
+    let dt = clamp(fract(time - st.w), 0.001, 0.05);
+    let g = st.xy + (raw - st.xy) * (1.0 - exp(-rate * dt));
+    let snapped = select(g, raw, length(raw - g) < 0.003);
+    return select(raw, snapped, ok);
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -117,18 +151,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let adjustedTwist = twist * (1.0 - depth * depthReduction);
 
     let rawMouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
-    var mouse = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    var mouseVelocity = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-    if (extraBuffer[137] < 0.5) { mouse = rawMouse; mouseVelocity = vec2<f32>(0.0); }
-    let springDt = select(0.016, clamp(time - extraBuffer[138], 0.001, 0.05), extraBuffer[137] > 0.5);
-    let springOmega = 8.0;
-    mouseVelocity += ((rawMouse - mouse) * springOmega * springOmega - mouseVelocity * 2.0 * springOmega) * springDt;
-    mouse += mouseVelocity * springDt;
-    if (global_id.x == 0u && global_id.y == 0u && arrayLength(&extraBuffer) > 138u) {
-        extraBuffer[133] = mouse.x; extraBuffer[134] = mouse.y;
-        extraBuffer[135] = mouseVelocity.x; extraBuffer[136] = mouseVelocity.y;
-        extraBuffer[137] = 1.0; extraBuffer[138] = time;
-    }
+    let glideState = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    let mouse = glideStep(glideState, rawMouse, time, 8.0);
     var p = (uv - 0.5) * vec2<f32>(aspect, 1.0);
     let m = (mouse - 0.5) * vec2<f32>(aspect, 1.0);
 
@@ -144,6 +168,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let warpStrength = 0.10 + u.zoom_params.z * 0.10 + bass * 0.03;
     p = p + (warp - vec2<f32>(0.5)) * warpStrength;
 
+    // ── Idea 3 + 4: the core surges (sinusoidal, bounded) and each colour channel sees the same
+    // surge at a slightly different time: R leads, B lags. The amplitude rides the existing
+    // twist (so the Depth Reduction slider still flattens it). Arm phase = 3 x swirl phase.
+    let coreAmp = 1.2 * adjustedTwist;
+    let surgeOmega = 0.55;
+    let surgeLag = 0.6;
+    let surgeR = coreAmp * sin(surgeOmega * (time + surgeLag));
+    let surgeG = coreAmp * sin(surgeOmega * time);
+    let surgeB = coreAmp * sin(surgeOmega * (time - surgeLag));
+
     // ── Multi-layer swirl with mids-driven chromatic hue fan ──────
     var rLayer = vec3<f32>(0.0);
     var gLayer = vec3<f32>(0.0);
@@ -157,12 +191,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Per-layer hue stagger grows with mids: layers fan out into
         // rainbow fringes on musical peaks.
         let hueFan = fi * mids * 0.06;
+        // One core profile per layer (centre = the G layer's); the +-0.02 R/B offsets are ignored for it.
+        let coreDelta = p - offset;
+        let core = coreProfile(dot(coreDelta, coreDelta));
         rLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2 + treble * 0.1,
-                                    offset + vec2<f32>(fi * 0.02, 0.0), hueFan + mids * 0.10);
+                                    offset + vec2<f32>(fi * 0.02, 0.0), hueFan + mids * 0.10, surgeR * core);
         gLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2,
-                                    offset, hueFan * 0.5);
+                                    offset, hueFan * 0.5, surgeG * core);
         bLayer += layeredSwirlLayer(p, time, adjustedTwist, freq + fi * 0.2 - bass * 0.1,
-                                    offset - vec2<f32>(fi * 0.02, 0.0), hueFan - mids * 0.10);
+                                    offset - vec2<f32>(fi * 0.02, 0.0), hueFan - mids * 0.10, surgeB * core);
     }
     let invLayers = 1.0 / layers;
     rLayer *= invLayers;
@@ -189,12 +226,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // in for trails. FEEDBACK CLAMP: the memory write is clamped
     // pre-tint at 1.2 (luma-echo-warp lesson) so accumulated color
     // can never blow up across frames.
-    let prev = textureLoad(dataTextureC, coord, 0).rgb;
+    // texel (0,0) of C holds the glide state, not colour: use the live colour there.
+    let isGlideTexel = global_id.x == 0u && global_id.y == 0u;
+    let prev = select(textureLoad(dataTextureC, coord, 0).rgb, color, isGlideTexel);
     let trail = mix(color, prev * 0.92, 0.04 + mids * 0.02);
     let trailClamped = clamp(trail, vec3<f32>(0.0), vec3<f32>(1.2));
     let trailTinted = trailClamped * vec3<f32>(0.98, 0.99, 1.02);
+    let trailOut = vec4<f32>(min(trailTinted, vec3<f32>(1.2)), 1.0);
     textureStore(dataTextureA, coord,
-                 vec4<f32>(min(trailTinted, vec3<f32>(1.2)), 1.0));
+                 select(trailOut, vec4<f32>(mouse, GLIDE_MARK, fract(time)), isGlideTexel));
 
     color = mix(color, prev * 0.92, 0.04 + mids * 0.02);
 
