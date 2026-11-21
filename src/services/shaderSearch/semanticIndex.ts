@@ -67,9 +67,9 @@ function normalizeInPlace(v: Float32Array): Float32Array {
 export function centerVector(raw: ArrayLike<number>, mean: Float32Array): Float32Array {
   const out = new Float32Array(mean.length);
   let n = 0;
-  for (let i = 0; i < raw.length; i++) n += raw[i]! * raw[i]!;
+  for (let i = 0; i < raw.length; i++) n += (raw[i] ?? 0) ** 2;
   n = Math.sqrt(n) || 1;
-  for (let i = 0; i < mean.length; i++) out[i] = (raw[i] ?? 0) / n - mean[i]!;
+  for (let i = 0; i < mean.length; i++) out[i] = (raw[i] ?? 0) / n - (mean[i] ?? 0);
   return normalizeInPlace(out);
 }
 
@@ -129,7 +129,7 @@ export function rankShaderSearch(
     const v = index.vectors[i];
     let score = 0;
     if (v) {
-      for (let j = 0; j < q.length; j++) score += v[j]! * q[j]!;
+      for (let j = 0; j < q.length; j++) score += (v[j] ?? 0) * (q[j] ?? 0);
     }
     if (queryText && lexicalMatch(entry, queryText)) score += LEXICAL_BONUS;
     if (v || score > 0) hits.push({ id: entry.id, score });

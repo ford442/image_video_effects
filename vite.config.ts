@@ -79,7 +79,9 @@ export default defineConfig(({ mode }) => {
       outDir: 'build',
       emptyOutDir: true,
       target: 'es2022',
-      sourcemap: true,
+      // Hidden maps: written to build/ for private debugging, no sourceMappingURL in the
+      // shipped JS, and the deploy scripts skip *.map (see tools/deploy).
+      sourcemap: 'hidden',
       rollupOptions: {
         input: { main: path.resolve(__dirname, 'index.html') },
         output: {
