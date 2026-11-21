@@ -3,13 +3,9 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, temporal-ghosting, interference-fringes,
 //            upgraded-rgba, quantum-uncertainty, wave-packet, entanglement-correlation
-//  Ideas:    1. packet re-emission — wave packets are re-emitted from the cursor every few
-//               seconds (HEAD's packets used absolute time and left the screen for good)
-//            2. fringe visibility — double-slit fringes only show where ghost and source
-//               overlap coherently, V = 2√(I₁I₂)/(I₁+I₂)
-//            3. click collapse — a click measures the state: ghosts snap back into the
-//               source with a flash
-//  A packing: chromatic ghost history (raw linear RGB) + alpha; C reads it back.
+//  Upgraded: 2026-11-21
+//  Ideas: packet re-emission; fringe visibility; click collapse; packet chirp; which-path erasure
+//  A packing: raw chromatic ghost history (r, g trail, b, alpha); C reads it back. ACES on display only.
 //  Complexity: Very High
 //  Chunks From: quantum-ghost.wgsl v1
 //  Created: 2026-05-31
@@ -35,8 +31,11 @@ fn gaussianWavePacket(uv: vec2<f32>, center: vec2<f32>, sigma: f32, momentum: ve
   let drift = momentum * time * 0.1;
   let d = uv - center - drift;
   let spread = sigma + time * 0.02;
-  let amp = exp(-dot(d, d) / (2.0 * spread * spread));
-  let phase = dot(d, momentum) * 20.0 - time * 3.0;
+  let amp = exp(-dot(d, d) / max(2.0 * spread * spread, 1e-4));
+  // ── Idea: packet chirp ───────────────────────────────────────────
+  // The envelope already spreads with the packet clock. A factor on
+  // the spatial phase tightens the fringes as that clock advances.
+  let phase = dot(d, momentum) * 20.0 * (1.0 + time * 0.45) - time * 3.0;
   return amp * cos(phase);
 }
 
@@ -115,7 +114,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let i2 = dot(ghostColor.rgb, vec3<f32>(0.299, 0.587, 0.114));
   // Raised to the 6th power so the falloff reads on screen: physical V stays
   // above 0.9 for most photo pairs.
-  let visibility = pow(2.0 * sqrt(max(i1 * i2, 0.0)) / max(i1 + i2, 1e-3), 6.0);
+  // ── Idea: which-path erasure ─────────────────────────────────────
+  // Mouse-down is already a measurement (certainty jumps to 1). While
+  // the pointer is held, the double-slit contrast washes out. The
+  // visibility formula and the click collapse stay.
+  let observed = select(0.0, 1.0, mouseDown > 0.5);
+  let visibility = pow(2.0 * sqrt(max(i1 * i2, 0.0)) / max(i1 + i2, 1e-3), 6.0) * (1.0 - observed * 0.92);
   let fringe = mix(0.5, fringeRaw, visibility);
 
   let rGhostUV = clamp(ghostUV + vec2<f32>(chromaticShift * (1.0 + uncertaintySpread * 3.0), 0.0), vec2<f32>(0.0), vec2<f32>(1.0));

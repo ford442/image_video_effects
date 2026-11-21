@@ -15,7 +15,8 @@
     "guided-filter",
     "depth-aware",
     "edge-preserving",
-    "mouse-driven"
+    "mouse-driven",
+    "upgraded-rgba"
   ],
   "params": [
     {
@@ -56,6 +57,42 @@
     }
   ],
   "x-meta": {
-    "seeded_by": "scripts/seed_orphan_shader_defs.py"
+    "seeded_by": "scripts/seed_orphan_shader_defs.py",
+    "upgrade": {
+      "params": [
+        {
+          "index": 0,
+          "name": "Slice Width",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 1,
+          "name": "Distortion",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 2,
+          "name": "Angle",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        },
+        {
+          "index": 3,
+          "name": "Aberration",
+          "default": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "step": 0.01
+        }
+      ]
+    }
   }
 }

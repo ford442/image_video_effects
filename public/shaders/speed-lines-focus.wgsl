@@ -1,33 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Speed Lines Focus
 //  Category: artistic
-//  Features: [mouse-driven, audio-reactive, upgraded-rgba]
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-23
-//  Batch-21: spring-damped focus point, click action bursts,
-//            angular FFT voices, normalized depth write
-//  upgraded-rgba
+//  Upgraded: 2026-05-23, 2026-11-21
+//  Ideas: spring-damped focus; click speed-line bursts; angular FFT voices; radial ink dashes; stroke taper
+//  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=MouseClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=Time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=BlurStrength, y=LineDensity, z=LineSpeed, w=Contrast
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=BlurStrength, y=LineDensity, z=LineSpeed, w=Contrast
 
 fn hash11(p: f32) -> f32 {
     var p2 = fract(p * .1031);
@@ -41,6 +22,15 @@ fn noise1(p: f32) -> f32 {
     let f = fract(p);
     let u = f * f * (3.0 - 2.0 * f);
     return mix(hash11(i), hash11(i + 1.0), u);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -110,7 +100,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     for (var i = 0; i < samples; i++) {
         let t = f32(i) / f32(samples - 1);
         let scale = 1.0 - t * blurStrength * dist;
-        let sampleUV = mouse + uvCenter * scale;
+        let sampleUV = clamp(mouse + uvCenter * scale, vec2<f32>(0.0), vec2<f32>(1.0));
         blurColor += textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).rgb;
     }
     blurColor = blurColor / f32(samples);
@@ -124,9 +114,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // 2. Speed Lines
     let n = noise1(angle * lineDensity + time * lineSpeed);
-    let lines = smoothstep(0.6, 0.8, n);
     let centerMask = smoothstep(0.2, 0.5, dist);
-    let lineEffectBase = lines * centerMask * contrast;
+    // ── Idea 1: radial ink dashes ────────────────────────────────────
+    // Line Speed already scrolls the angle. The same speed walks a gate
+    // along the ray, and Line Density sets how many breaks, so each band
+    // becomes a streak flying out of the focus. Gaps keep a faint ray.
+    let dashPhase = fract(dist * (6.0 + lineDensity * 0.08) - time * lineSpeed * 0.22);
+    let dash = smoothstep(0.08, 0.22, dashPhase) * (1.0 - smoothstep(0.62, 0.86, dashPhase));
+    let dashInk = mix(0.18, 1.0, dash);
+    // ── Idea 2: stroke taper ─────────────────────────────────────────
+    // Thicker beside the burst, hairline once the stroke has left it.
+    let taper = 1.0 / (1.0 + dist * 3.2);
+    let edge0 = mix(0.84, 0.52, taper);
+    let edge1 = mix(0.96, 0.78, taper);
+    let stroked = smoothstep(edge0, edge1, n);
+    let lineEffectBase = stroked * dashInk * centerMask * contrast;
     var lineEffect = lineEffectBase * voiceGain;
 
     // ── Click action bursts ──────────────────────────────────────────
@@ -155,8 +157,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Composite
     var finalColor = blurColor + vec3<f32>(lineEffect);
 
-    // Optional: Darken edges (Vignette)
-    finalColor *= (1.0 - dist * 0.5);
+    // Optional: Darken edges (Vignette). Clamp so a far focus cannot
+    // push the factor negative — this ACES fit turns negatives bright.
+    finalColor = finalColor * clamp(1.0 - dist * 0.5, 0.0, 1.0);
+    let display = aces(max(finalColor, vec3<f32>(0.0)));
 
     // Depth pass-through
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
@@ -166,7 +170,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let effectIntensity = clamp(blurStrength * dist * 2.0 + lineEffect, 0.0, 1.0);
     let finalAlpha = mix(baseColor.a, 1.0, effectIntensity);
 
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
+    let outColor = vec4<f32>(display, finalAlpha);
+    textureStore(writeTexture, coord, outColor);
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, coord, vec4<f32>(finalColor, finalAlpha));
+    textureStore(dataTextureA, coord, outColor);
 }

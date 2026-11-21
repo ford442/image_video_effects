@@ -3,8 +3,8 @@
 //  Category: image
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-05
-//  Ideas: tangential motion blur along the swirl arc; debris wall at the funnel radius; calm eye
+//  Upgraded: 2026-10-05, 2026-11-21
+//  Ideas: tangential motion blur along the swirl arc; debris wall at the funnel radius; calm eye; hook echo; updraft shear
 //  A packing: ACES display RGBA (no C reader)
 // ═══════════════════════════════════════════════════════════════════
 //  A pixel-level tornado vortex. Each pixel is displaced by a
@@ -115,12 +115,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     // Idea 1: tangential motion blur — taps trail back along the swirl arc,
     // longer where the funnel spins faster, so rotation reads as speed.
+    // ── Idea: updraft shear ──────────────────────────────────────────
+    // Inward Pull is the intake. Its vertical part lifts the picture;
+    // the calm eye stays still. UV y grows downward, so up is negative.
+    let lift = vec2<f32>(0.0, -profile * inwardPull * strength * 0.55) * (1.0 - calm);
     let blurArc = clamp(twist * 0.15, 0.0, 0.4) * (1.0 - calm);
     var acc = vec4<f32>(0.0);
     var sampleUV = uv;
     for (var k = 0; k < 5; k++) {
         let a = rotAngle - blurArc * f32(k) * 0.25;
-        let tapUV = clamp(eye + (rot2(delta, a) + inward) / aspectV + turb + rippleOff, vec2<f32>(0.0), vec2<f32>(1.0));
+        let tapUV = clamp(eye + (rot2(delta, a) + inward) / aspectV + turb + rippleOff + lift, vec2<f32>(0.0), vec2<f32>(1.0));
         if (k == 0) { sampleUV = tapUV; }
         acc += textureSampleLevel(readTexture, u_sampler, tapUV, 0.0) * (1.0 - 0.12 * f32(k));
     }
@@ -146,20 +150,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let spin    = fract(angle / TAU + time * (0.05 + strength * 0.6));
     let chunk   = hash(vec2<f32>(floor(spin * 64.0), floor(dist / wallW * 3.0)));
     let chunkMask = smoothstep(0.4, 0.6, chunk);
+    // ── Idea: hook echo ──────────────────────────────────────────────
+    // One log-spiral arm on the annulus the debris already occupies.
+    let hookArg = angle / TAU - log(max(dist, 0.02)) * 0.45 + time * (0.04 + strength);
+    let hookPhase = fract(hookArg);
+    let hook = smoothstep(0.02, 0.08, hookPhase) * (1.0 - smoothstep(0.16, 0.28, hookPhase));
+    let debrisMask = clamp(chunkMask * 0.65 + hook * 0.9, 0.0, 1.0);
     let debrisUV = clamp(eye + rot2(delta * 1.3, rotAngle * 1.2 + 0.4) / aspectV, vec2<f32>(0.0), vec2<f32>(1.0));
     let debrisSrc = textureSampleLevel(readTexture, u_sampler, debrisUV, 0.0).rgb;
     let dLum = dot(debrisSrc, vec3<f32>(0.299, 0.587, 0.114));
     let debris = mix(vec3<f32>(dLum), debrisSrc, 0.35) * 1.3 + vec3<f32>(0.06);
-    finalRGB = mix(finalRGB, debris, clamp(wall * chunkMask * 0.65, 0.0, 1.0));
+    finalRGB = mix(finalRGB, debris, clamp(wall * debrisMask, 0.0, 1.0));
 
     let display = aces(max(finalRGB, vec3<f32>(0.0)));
 
     // Semantic alpha: source coverage plus funnel and debris density
-    let alpha = clamp(col.a + profile * 0.2 + wall * chunkMask * 0.15, 0.0, 1.0);
+    let alpha = clamp(col.a + profile * 0.2 + wall * debrisMask * 0.15, 0.0, 1.0);
 
     // Depth: scene depth carried along the swirl, debris lifted slightly forward
     let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, sampleUV, 0.0).r;
-    let depth = clamp(sceneDepth + wall * chunkMask * 0.1, 0.0, 1.0);
+    let depth = clamp(sceneDepth + wall * debrisMask * 0.1, 0.0, 1.0);
 
     let outColor = vec4<f32>(display, alpha);
     textureStore(writeTexture, coord, outColor);

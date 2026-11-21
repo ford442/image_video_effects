@@ -3,37 +3,29 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, lighting, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-05-17
+//  Upgraded: 2026-05-17, 2026-11-21
+//  Ideas: spring-weighted light; click fill flashes; elevation contours; valley shade
+//  A packing: ACES display RGBA
 //  Batch-20 polish (2026-07-31): critically-damped spring on the
 //    mouse light, click fill-light flashes, depth-aware relief
-//    height, honest struct/header comments.
-//    extraBuffer persistent state lives in [133..255] ONLY.
+//    height. extraBuffer persistent state lives in [133..255] ONLY,
+//    written from thread (0,0).
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-// ---------------------------------------------------
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,  // x=ReliefHeight, y=LightIntensity, z=Shininess, w=Ambient
-  ripples: array<vec4<f32>, 50>, // per click: x=uvX, y=uvY, z=startTime
-};
+#include "_prelude.wgsl"
+// zoom_params: x=ReliefHeight, y=LightIntensity, z=Shininess, w=Ambient
 
 fn getLuma(color: vec3<f32>) -> f32 {
     return dot(color, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -68,17 +60,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     //   [138]      = init flag.
     //   [0..4] reserved, [5..132] = engine FFT bins — untouched.
     var lightUV = mousePos;
-    if (arrayLength(&extraBuffer) > 138u) {
-        if (extraBuffer[138] < 0.5) {
-            extraBuffer[133] = mousePos.x;
-            extraBuffer[134] = mousePos.y;
-            extraBuffer[135] = 0.0;
-            extraBuffer[136] = 0.0;
-            extraBuffer[137] = time;
-            extraBuffer[138] = 1.0;
+    let hasState = arrayLength(&extraBuffer) > 138u;
+    if (hasState) {
+        if (extraBuffer[138] > 0.5) {
+            lightUV = vec2<f32>(extraBuffer[133], extraBuffer[134]);
         }
-        var sPos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
+    }
+    if (global_id.x == 0u && global_id.y == 0u && hasState) {
+        var sPos = lightUV;
         var sVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+        if (extraBuffer[138] < 0.5) {
+            sPos = mousePos;
+            sVel = vec2<f32>(0.0, 0.0);
+        }
         let dt = clamp(time - extraBuffer[137], 0.0001, 0.05);
         let stiffness = 48.0;
         let damping = 2.0 * sqrt(stiffness); // critical damping
@@ -90,6 +84,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         extraBuffer[135] = sVel.x;
         extraBuffer[136] = sVel.y;
         extraBuffer[137] = time;
+        extraBuffer[138] = 1.0;
         lightUV = sPos;
     }
 
@@ -103,8 +98,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let texelSize = 1.0 / resolution;
 
-    let lumaRight = getLuma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(texelSize.x, 0.0), 0.0).rgb);
-    let lumaTop   = getLuma(textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(0.0, texelSize.y), 0.0).rgb);
+    let lumaRight = getLuma(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+    let lumaTop   = getLuma(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
 
     let dX = lumaRight - luma;
     let dY = lumaTop - luma;
@@ -158,11 +153,29 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let litColor = clamp(color * (vec3<f32>(ambient) + finalDiffuse + clickDiffuse * 0.8) + finalSpecular + clickSpecular * 0.8, vec3<f32>(0.0), vec3<f32>(1.0));
 
+    // ── Idea 1: elevation contours ───────────────────────────────────
+    // Luma is the elevation. Ink sits on its level sets; Relief Height
+    // chooses how many bands, the same slider that scales the normal.
+    let bands = mix(5.0, 16.0, clamp(u.zoom_params.x, 0.0, 1.0));
+    let elev = fract(luma * bands);
+    let contour = 1.0 - smoothstep(0.0, 0.07, min(elev, 1.0 - elev));
+    // ── Idea 2: valley shade ─────────────────────────────────────────
+    // A pocket is a local minimum of the same luma. Neighbors brighter
+    // than the center darken after the light, scaled by Relief Height.
+    let lumaLeft = getLuma(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(texelSize.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+    let lumaBot = getLuma(textureSampleLevel(readTexture, u_sampler, clamp(uv - vec2<f32>(0.0, texelSize.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb);
+    let lap = lumaLeft + lumaRight + lumaTop + lumaBot - 4.0 * luma;
+    let valley = smoothstep(0.012, 0.08, lap) * clamp(u.zoom_params.x, 0.0, 1.0);
+    let creased = litColor * (1.0 - valley * 0.42);
+    let ink = contour * (0.22 + clamp(u.zoom_params.x, 0.0, 1.0) * 0.4);
+    let shaded = mix(creased, creased * vec3<f32>(0.18, 0.13, 0.08), ink);
+    let display = aces(max(shaded, vec3<f32>(0.0)));
+
     // Meaningful alpha: specular highlight + diffuse strength + click
-    // flash energy + original alpha
+    // flash energy + contour ink + original alpha
     let clickEnergy = (clickSpecular.r + clickDiffuse.r) * 0.25;
-    let alpha = clamp(spec * atten * 0.6 + diff * atten * 0.3 + clickEnergy + colorSample.a * 0.15 + bass * 0.05, 0.0, 1.0);
-    let fc = vec4<f32>(litColor, alpha);
+    let alpha = clamp(spec * atten * 0.6 + diff * atten * 0.3 + clickEnergy + contour * 0.12 + colorSample.a * 0.15 + bass * 0.05, 0.0, 1.0);
+    let fc = vec4<f32>(display, alpha);
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), fc);
     textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));

@@ -3946,7 +3946,8 @@
       "guided-filter",
       "depth-aware",
       "edge-preserving",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {

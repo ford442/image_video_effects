@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-10
-//  Ideas: Riemann-zero rails; |ζ|=1 contours; critical sheen; argument ticks; Re/Im nodal walls; prime beat
+//  Upgraded: 2026-10-10, 2026-11-21
+//  Ideas: Riemann-zero rails; |ζ|=1 contours; critical sheen; argument ticks; Re/Im nodal walls; prime beat; analytic slope light; omitted-term grain
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -16,26 +16,49 @@ const LN2: f32 = 0.6931471805599453;
 // zeta(s) = eta(s) / (1 - 2^(1-s)); the denominator is guarded near its
 // removable/numerically delicate points and the result is bounded before the
 // logarithmic height mapping. Precision remains deliberately capped at 96.
-fn zetaEta(s_re: f32, s_im: f32, terms: i32) -> vec2<f32> {
+// Returns (zeta.xy, d(zeta)/d(im).zw). The quotient is the same division
+// as before; .zw is the t-derivative of that quotient, for slope light.
+fn zetaEta(s_re: f32, s_im: f32, terms: i32) -> vec4<f32> {
     var eta = vec2<f32>(0.0);
+    var deta = vec2<f32>(0.0);
     for (var n: i32 = 1; n <= terms; n = n + 1) {
         let ln_n = log(f32(n));
         let phase = -s_im * ln_n;
         let amplitude = exp(-s_re * ln_n);
         let alternating = select(-1.0, 1.0, (n % 2) == 1);
-        eta = eta + alternating * amplitude * vec2<f32>(cos(phase), sin(phase));
+        let cph = cos(phase);
+        let sph = sin(phase);
+        let term = alternating * amplitude;
+        eta = eta + term * vec2<f32>(cph, sph);
+        // d/d(im) of exp(-i t ln n) brings a factor of ln n.
+        deta = deta + term * ln_n * vec2<f32>(sph, -cph);
     }
     let twoPower = exp((1.0 - s_re) * LN2);
-    let denom = vec2<f32>(
-        1.0 - twoPower * cos(s_im * LN2),
-        twoPower * sin(s_im * LN2)
-    );
+    let cD = cos(s_im * LN2);
+    let sD = sin(s_im * LN2);
+    let denom = vec2<f32>(1.0 - twoPower * cD, twoPower * sD);
+    let dden = vec2<f32>(twoPower * sD * LN2, twoPower * cD * LN2);
     let denomSq = max(dot(denom, denom), 1e-5);
-    let continued = vec2<f32>(
+    let w = vec2<f32>(
         eta.x * denom.x + eta.y * denom.y,
         eta.y * denom.x - eta.x * denom.y
-    ) / denomSq;
-    return clamp(continued, vec2<f32>(-128.0), vec2<f32>(128.0));
+    );
+    let wEta = vec2<f32>(
+        deta.x * denom.x + deta.y * denom.y,
+        deta.y * denom.x - deta.x * denom.y
+    );
+    let wDen = vec2<f32>(
+        eta.x * dden.x + eta.y * dden.y,
+        eta.y * dden.x - eta.x * dden.y
+    );
+    let dw = wEta + wDen;
+    let dDenomSq = 2.0 * (denom.x * dden.x + denom.y * dden.y);
+    let zeta = w / denomSq;
+    let dzeta = (dw * denomSq - w * dDenomSq) / max(denomSq * denomSq, 1e-8);
+    return vec4<f32>(
+        clamp(zeta, vec2<f32>(-128.0), vec2<f32>(128.0)),
+        clamp(dzeta, vec2<f32>(-256.0), vec2<f32>(256.0))
+    );
 }
 
 fn hue2rgb(h: f32) -> vec3<f32> {
@@ -99,11 +122,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let y_offset = (landscapeUV.y - 0.5) * 8.0 * (1.0 + param3 * 2.0) + (mouse.y - 0.5) * 4.0;
     
     let terms = i32(floor(mix(24.0, 96.0, clamp(param4, 0.0, 1.0))));
-    let z = zetaEta(sigma, t + y_offset * 0.1, terms);
-    let z_mag = sqrt(z.x * z.x + z.y * z.y);
+    let imag = t + y_offset * 0.1;
+    let packed = zetaEta(sigma, imag, terms);
+    let z = packed.xy;
+    let dz = packed.zw;
+    let z_mag = sqrt(max(z.x * z.x + z.y * z.y, 0.0));
     let z_arg = atan2(z.y, z.x) / (2.0 * 3.14159265);
-    
-    let height = log(1.0 + z_mag) * 0.3 + rippleLift * 0.04;
+
+    // ── Idea: omitted-term grain ─────────────────────────────────────
+    // The first Dirichlet term the precision slider left out. It settles
+    // as Term Precision rises; it is not added back into zeta.
+    let nOmit = f32(terms + 1);
+    let lnOmit = log(nOmit);
+    let omit = cos(-imag * lnOmit) * exp(-sigma * lnOmit);
+    let settle = 0.2 + 0.8 * (1.0 - clamp(param4, 0.0, 1.0));
+
+    let height = log(1.0 + z_mag) * 0.3 + rippleLift * 0.04 + omit * settle * 0.05;
     let ridge = smoothstep(0.5, 1.5, height);
     
     let zeroProximity = 1.0 / (1.0 + z_mag * z_mag * 0.5);
@@ -141,12 +175,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let val = clamp(mix(0.2, 1.0, height + zeroProximity * 0.5 + spectralVoice * 0.10), 0.0, 1.5);
     
     let rgb = hue2rgb(zeroHue) * sat + vec3<f32>(1.0 - sat) * val;
+    // ── Idea: analytic slope light ───────────────────────────────────
+    // d(log|ζ|)/dt from the derivative accumulated in the eta loop.
+    let slope = dot(z, dz) / max(dot(z, z), 1e-4);
+    let shade = 0.70 + 0.30 * clamp(slope * 0.22, -1.0, 1.0);
+    let rgbLit = rgb * shade;
     // Idea: Re(ζ)=0 and Im(ζ)=0 nodal walls. They cross on the zeros.
     let reWall = exp(-z.x * z.x * 6.0);
     let imWall = exp(-z.y * z.y * 6.0);
     // Idea: prime beat — the first Euler factor, cos(t ln 2).
     let primeBeat = 0.5 + 0.5 * cos(t * 0.693147);
-    let rgbRails = rgb + vec3<f32>(0.95, 0.82, 0.45) * zeroRail * 0.85
+    let rgbRails = rgbLit + vec3<f32>(0.95, 0.82, 0.45) * zeroRail * 0.85
+                 + vec3<f32>(0.72, 0.76, 0.82) * omit * settle * 0.65
                  + vec3<f32>(0.25, 0.5, 0.95) * reWall * 0.16
                  + vec3<f32>(0.95, 0.32, 0.38) * imWall * 0.16
                  + vec3<f32>(0.55, 0.38, 0.18) * primeBeat * 0.07 * (0.4 + param4)
