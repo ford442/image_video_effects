@@ -75,3 +75,6 @@ tests/smoke/.bundle/
 public/thumbnails/source-hashes.json
 
 coverage/
+
+# Local deploy hash manifests
+.deploy_app_manifest*.json

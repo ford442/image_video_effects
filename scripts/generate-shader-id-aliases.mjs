@@ -53,6 +53,17 @@ function writeAliases(filePath, aliases, { craCopy = false, skippedCollisions = 
     aliases,
   };
 
+  // Keep the previous date when nothing else changed, so `npm run build` leaves the tree clean.
+  try {
+    const prev = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const sameContent =
+      JSON.stringify({ ...prev, _meta: { ...prev._meta, generated_at: null } }) ===
+      JSON.stringify({ ...payload, _meta: { ...payload._meta, generated_at: null } });
+    if (sameContent && prev?._meta?.generated_at) payload._meta.generated_at = prev._meta.generated_at;
+  } catch {
+    // no previous file: keep today's date
+  }
+
   fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);
 }
 

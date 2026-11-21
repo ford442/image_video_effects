@@ -33,18 +33,42 @@ from deploy_plan import (
     DeployPlan,
     build_plan,
     format_plan,
+    is_skipped_file,
 )
 
 # ── Configuration ────────────────────────────────────────────────────────────
 # Host/user/password come from .env.deploy or DEPLOY_* / FTP_* env vars.
 
 LOCAL_DIRECTORY = "build"
-REMOTE_DIRECTORY = "test.1ink.us/image_video_effects"
+# Deploy targets. "prod" ships the app only (shaders are synced to GCS by
+# sync_shaders_to_storage.py and the lists point there via SHADER_LIST_BASE_URL).
+# "preview" is a self-contained staging copy: built with relative shader paths and
+# uploaded *with* build/shaders/, so it never depends on (or touches) prod storage.
+TARGETS = {
+    "prod": {
+        "remote": "test.1ink.us/image_video_effects",
+        "manifest": ".deploy_app_manifest.json",
+        "skip_dirs": {"shaders"},
+    },
+    "preview": {
+        "remote": "test.1ink.us/image_video_effects-preview",
+        "manifest": ".deploy_app_manifest.preview.json",
+        "skip_dirs": set(),
+    },
+}
 
-MANIFEST_FILE = ".deploy_app_manifest.json"
+REMOTE_DIRECTORY = TARGETS["prod"]["remote"]
+MANIFEST_FILE = TARGETS["prod"]["manifest"]
+# Directories to skip entirely (prod: shaders are synced via storage manager)
+SKIP_DIRS = TARGETS["prod"]["skip_dirs"]
 
-# Directories to skip entirely (shaders are synced via storage manager)
-SKIP_DIRS = {"shaders"}
+
+def select_target(name: str) -> None:
+    global REMOTE_DIRECTORY, MANIFEST_FILE, SKIP_DIRS
+    target = TARGETS[name]
+    REMOTE_DIRECTORY = target["remote"]
+    MANIFEST_FILE = target["manifest"]
+    SKIP_DIRS = target["skip_dirs"]
 
 # Critical files that must ALWAYS be uploaded
 ALWAYS_UPLOAD = {"index.html", ".htaccess", "asset-manifest.json"}
@@ -114,6 +138,8 @@ def upload_directory(sftp, local_path: str, remote_path: str, manifest: dict):
         if item in SKIP_DIRS:
             print(f"  ⏭️  Skipping directory: {item}/")
             continue
+        if is_skipped_file(item):
+            continue
 
         local_item = os.path.join(local_path, item)
         remote_item = f"{remote_path}/{item}"
@@ -140,6 +166,9 @@ def verify_build() -> bool:
     html_path = Path(LOCAL_DIRECTORY) / "index.html"
     if not html_path.exists():
         print("❌  index.html not found. Run 'npm run build' first.")
+        return False
+    if not (Path(LOCAL_DIRECTORY) / ".htaccess").exists():
+        print("❌  build/.htaccess not found (COOP/COEP headers). It comes from public/.htaccess.")
         return False
     return True
 
@@ -176,6 +205,8 @@ def parse_args(argv=None) -> argparse.Namespace:
         description="App-only SFTP deploy of build/ (shaders/ excluded) to DreamHost.",
         allow_abbrev=False,
     )
+    parser.add_argument("--target", choices=sorted(TARGETS), default="prod",
+                        help="prod (default) or preview (staging copy, includes shaders/)")
     parser.add_argument("--force", action="store_true", help="Re-upload all app files")
     parser.add_argument("--fresh", action="store_true", help="Clear manifest and redeploy")
     parser.add_argument("--dry-run", action="store_true",
@@ -200,6 +231,7 @@ def run_dry_run(fresh: bool, force: bool) -> int:
 
 def main(argv=None):
     args = parse_args(argv)
+    select_target(args.target)
     if args.dry_run:
         sys.exit(run_dry_run(fresh=args.fresh, force=args.force))
 
@@ -229,7 +261,8 @@ def main(argv=None):
         client, sftp = open_sftp(creds)
         print("✅  Connected!\n")
 
-        print(f"🚀  Deploying app bundle (shaders excluded)")
+        print(f"🚀  Deploying app bundle [{args.target}]"
+              + (" (shaders excluded)" if "shaders" in SKIP_DIRS else " (with shaders/)"))
         print(f"    Local:  {LOCAL_DIRECTORY}")
         print(f"    Remote: {REMOTE_DIRECTORY}\n")
 

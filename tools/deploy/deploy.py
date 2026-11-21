@@ -20,6 +20,7 @@ from deploy_plan import (
     DeployPlan,
     build_plan,
     format_plan,
+    is_skipped_file,
     walk_build,
 )
 
@@ -156,6 +157,8 @@ def upload_directory(sftp_client, local_path: str, remote_path: str, manifest: d
     skipped_count = 0
 
     for item in os.listdir(local_path):
+        if is_skipped_file(item):
+            continue
         local_item_path = os.path.join(local_path, item)
         remote_item_path = f"{remote_path}/{item}"
         rel_path = os.path.relpath(local_item_path, LOCAL_DIRECTORY)
