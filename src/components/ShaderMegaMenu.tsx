@@ -50,6 +50,32 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const NONE_ID = 'none';
 
+/** Categories longer than this are split across several columns (e.g. Generative). */
+export const MAX_ITEMS_PER_COLUMN = 40;
+
+type MenuGroup = { key: string; label: string; items: ShaderMegaMenuOption[] };
+
+/** Split oversized groups into alphabetical sub-columns labelled by first-letter range. */
+export function splitLargeGroups(groups: MenuGroup[], maxPerColumn = MAX_ITEMS_PER_COLUMN): MenuGroup[] {
+  const out: MenuGroup[] = [];
+  for (const g of groups) {
+    if (g.items.length <= maxPerColumn) {
+      out.push(g);
+      continue;
+    }
+    const chunks = Math.ceil(g.items.length / maxPerColumn);
+    const size = Math.ceil(g.items.length / chunks);
+    for (let i = 0; i < chunks; i++) {
+      const items = g.items.slice(i * size, (i + 1) * size);
+      const first = items[0]?.name.charAt(0).toUpperCase() ?? '';
+      const last = items[items.length - 1]?.name.charAt(0).toUpperCase() ?? '';
+      const range = first === last ? first : `${first}–${last}`;
+      out.push({ key: `${g.key}#${i}`, label: `${g.label} ${range}`, items });
+    }
+  }
+  return out;
+}
+
 export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
   options,
   value,
@@ -93,7 +119,7 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
     }
 
     // Sort by CATEGORY_ORDER, then append unknown categories
-    const ordered: Array<{ key: string; label: string; items: ShaderMegaMenuOption[] }> = [];
+    const ordered: MenuGroup[] = [];
     for (const key of CATEGORY_ORDER) {
       if (map.has(key)) {
         const items = [...map.get(key)!].sort((a, b) => a.name.localeCompare(b.name));
@@ -109,7 +135,7 @@ export const ShaderMegaMenu: React.FC<ShaderMegaMenuProps> = ({
         });
       }
     }
-    return ordered;
+    return splitLargeGroups(ordered);
   }, [filteredOptions]);
 
   // Flat item list for keyboard navigation (column-major order: all items in col0, then col1, etc.)
