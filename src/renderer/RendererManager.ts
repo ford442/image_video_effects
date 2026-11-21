@@ -129,6 +129,9 @@ export class RendererManager {
   private lastDepthMap: { data: Float32Array; width: number; height: number } | null = null;
   private sourceAutoExposure: boolean | null = null;
   private hdrToneMap: HdrToneMapSettings | null = null;
+  /** The generative source (webgpu/generator.ts), replayed onto a rebuilt TS backend. */
+  private generatorId: string | null = null;
+  private generatorParams: [number, number, number, number] = [0.5, 0.5, 0.5, 0.5];
   /** Ripples added since the last clear (performance.now() stamps), for device-loss replay. */
   private rippleLog: Array<{ x: number; y: number; at: number }> = [];
   private readonly config: RendererConfig;
@@ -343,6 +346,7 @@ export class RendererManager {
           await this.resyncShaderStack(this.lastShaderStack);
         }
         this.replaySessionExtras();
+        await this.replayGenerator();
       }
       this.notifyBackendReady();
       return true;
@@ -375,6 +379,15 @@ export class RendererManager {
    * manager, so any rebuilt backend (device-loss recovery included) gets them back (#1512).
    * Layers and auto-exposure are TS-only; WASM always composites as replace.
    */
+  /** Reload + re-arm the generative source on a rebuilt TS backend (its shaders and state are gone). */
+  private async replayGenerator(): Promise<void> {
+    const id = this.generatorId;
+    if (!id) return;
+    const source = this.shaderSources.get(id);
+    const ok = await this.setGenerator(id, source ? { url: source.url, meta: source.meta } : undefined);
+    if (!ok) console.warn(`[RendererManager] generator "${id}" could not be restored on the new backend`);
+  }
+
   private replaySessionExtras(): void {
     const backend = this.backend();
     this.slotModes.forEach((mode, i) => {
@@ -716,6 +729,50 @@ export class RendererManager {
   getInputSource(): InputSource | null {
     return inputBridge.getInputSource(this.currentRenderer) ?? this.lastInputSource;
   }
+
+  /**
+   * The generative source: a shader that produces the picture the effect slots process, without
+   * taking one of them (Generative input mode). `null` turns it off. Loads the shader first when
+   * `load` is given. Resolves false when this backend has no generator stage (WASM, Canvas2D) or
+   * the shader failed to load, so the caller can fall back to a slot.
+   */
+  async setGenerator(
+    id: string | null,
+    load?: { url: string; meta?: ShaderLoadMeta },
+  ): Promise<boolean> {
+    if (!id) {
+      this.generatorId = null;
+      if (this.heldForOfflineJob()) return true;
+      const r = this.shaderRenderer();
+      if (isWebGpuBackend(r)) r.setGenerator(null);
+      return true;
+    }
+    if (!isWebGpuBackend(this.shaderRenderer())) return false;
+    if (load && !(await this.loadShaderBound(id, load.url, load.meta))) return false;
+    // The backend may have been swapped (or lost) while the shader loaded.
+    const r = this.shaderRenderer();
+    if (!isWebGpuBackend(r)) return false;
+    this.fireArmedCrossfade(this.generatorId !== id);
+    this.generatorId = id;
+    if (this.heldForOfflineJob()) return true;
+    r.setGenerator(id);
+    r.setGeneratorParams(...this.generatorParams);
+    return true;
+  }
+  getGenerator(): string | null {
+    return this.generatorId;
+  }
+  /** True when the active backend has a generator stage (TS WebGPU); WASM and Canvas2D do not. */
+  supportsGenerator(): boolean {
+    return isWebGpuBackend(this.shaderRenderer());
+  }
+  /** The generator's four sliders (zoom_params p1..p4). */
+  setGeneratorParams(p1: number, p2: number, p3: number, p4: number): void {
+    this.generatorParams = [p1, p2, p3, p4];
+    if (this.heldForOfflineJob()) return;
+    const r = this.shaderRenderer();
+    if (isWebGpuBackend(r)) r.setGeneratorParams(p1, p2, p3, p4);
+  }
   addRipple(x: number, y: number): void {
     this.rippleLog.push({ x, y, at: performance.now() });
     if (this.rippleLog.length > MAX_RIPPLES) this.rippleLog.shift();
@@ -957,11 +1014,13 @@ export class RendererManager {
   offlineJobControls(): {
     setSlotShader: (index: number, id: string) => void;
     setInputSource: (source: InputSource) => void;
+    setGenerator: (id: string | null, load?: { url: string; meta?: ShaderLoadMeta }) => Promise<boolean>;
     loadImage: (url: string) => Promise<string>;
   } {
     return {
       setSlotShader: (index, id) => this.asOfflineJob(() => this.setSlotShader(index, id)),
       setInputSource: (source) => this.asOfflineJob(() => this.setInputSource(source)),
+      setGenerator: (id, load) => this.asOfflineJob(() => this.setGenerator(id, load)),
       loadImage: (url) => this.asOfflineJob(() => this.loadImage(url)),
     };
   }

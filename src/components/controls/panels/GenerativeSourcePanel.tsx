@@ -7,6 +7,10 @@ export interface GenerativeSourcePanelProps {
     activeGenerativeShader: string;
     setActiveGenerativeShader: (id: string) => void;
     generativeMenuOptions: ShaderMegaMenuOption[];
+    /** The picked shader's declared sliders (labels / ranges); the generator reads the first four. */
+    shaderParams?: Array<{ id: string; name: string; min: number; max: number; step?: number }>;
+    generatorParams?: number[];
+    onGeneratorParam?: (index: number, value: number) => void;
     generativeShowcaseActive?: boolean;
     generativeShowcaseLocked?: boolean;
     generativeShowcaseDelay?: number;
@@ -19,6 +23,9 @@ export const GenerativeSourcePanel: React.FC<GenerativeSourcePanelProps> = ({
     activeGenerativeShader,
     setActiveGenerativeShader,
     generativeMenuOptions,
+    shaderParams,
+    generatorParams,
+    onGeneratorParam,
     generativeShowcaseActive = false,
     generativeShowcaseLocked = false,
     generativeShowcaseDelay = 12,
@@ -50,6 +57,35 @@ export const GenerativeSourcePanel: React.FC<GenerativeSourcePanelProps> = ({
                         🖼️
                     </button>
                 </div>
+
+                {generatorParams && onGeneratorParam && (
+                    <div style={{ marginTop: '10px' }}>
+                        {[0, 1, 2, 3].map((i) => {
+                            const def = shaderParams?.[i];
+                            if (shaderParams && !def) return null;
+                            const min = def?.min ?? 0;
+                            const max = def?.max ?? 1;
+                            const value = generatorParams[i] ?? 0.5;
+                            return (
+                                <div key={i} style={{ marginBottom: '6px' }}>
+                                    <label style={{ fontSize: '11px', color: '#a0a0b0' }}>
+                                        {def?.name ?? `Param ${i + 1}`}: {value.toFixed(2)}
+                                    </label>
+                                    <input
+                                        type="range"
+                                        className="glass-range"
+                                        aria-label={`Generator ${def?.name ?? `param ${i + 1}`}`}
+                                        min={min}
+                                        max={max}
+                                        step={def?.step ?? (max - min) / 100}
+                                        value={value}
+                                        onChange={(e) => onGeneratorParam(i, Number(e.target.value))}
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 <div className="chaos-mode-toggle" style={{ marginTop: '10px' }}>
                     <label className="chaos-label">

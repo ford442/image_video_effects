@@ -55,6 +55,8 @@ export interface UseOfflineRenderOptions {
   slotParams: SlotParams[];
   availableModes: ShaderEntry[];
   inputSource: InputSource;
+  /** The generative source's shader id (used while inputSource is 'generative'). */
+  activeGenerativeShader?: string;
   currentImageUrl?: string;
   /** The live source, the base state before the set's first source event. */
   getSource: () => TimelineSource | null;
@@ -210,6 +212,11 @@ export function useOfflineRender(options: UseOfflineRenderOptions): UseOfflineRe
       },
       setSlotShader: (i, id) => job.setSlotShader(i, id ? resolveShaderId(id) : ''),
       setInputSource: (source) => job.setInputSource(source),
+      setGenerator: async (id) => {
+        const entry = id ? resolveShader(id) : undefined;
+        if (id && !entry) return;
+        await job.setGenerator(entry ? entry.id : null, entry ? { url: entry.url } : undefined);
+      },
       loadImage: (url) => job.loadImage(url),
       reloadInputStill: () => manager.reloadInputStill(),
       restoreLive: async () => {
@@ -220,6 +227,13 @@ export function useOfflineRender(options: UseOfflineRenderOptions): UseOfflineRe
           resolveShader,
           inputSource: live.inputSource,
         });
+        const liveGenerator = live.inputSource === 'generative'
+          ? (live.activeGenerativeShader ? resolveShader(live.activeGenerativeShader) : undefined)
+          : undefined;
+        await manager.setGenerator(
+          liveGenerator ? liveGenerator.id : null,
+          liveGenerator ? { url: liveGenerator.url } : undefined,
+        );
         if (live.inputSource === 'image' && live.currentImageUrl) await manager.loadImage(live.currentImageUrl);
         else await manager.reloadInputStill();
       },

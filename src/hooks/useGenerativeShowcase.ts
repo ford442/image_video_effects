@@ -69,6 +69,8 @@ export function useGenerativeShowcase({
     const activeRef = useRef(false);
     const baseDelayRef = useRef(ATTRACT_DEFAULT_DWELL_SEC);
     const advanceRef = useRef<() => void>(() => {});
+    /** True while slot 0 holds a simulation this showcase put there (it is cleared before the next generator). */
+    const attractOwnsSlot0Ref = useRef(false);
 
     lockedRef.current = generativeShowcaseLocked;
     activeRef.current = generativeShowcaseActive;
@@ -110,15 +112,26 @@ export function useGenerativeShowcase({
             nextShader.category === 'simulation' ? 'image' : 'generative';
         syncInputSourceToRenderer(inputSource);
         setActiveGenerativeShader(nextShader.id);
-        setMode(0, nextShader.id as RenderMode);
 
-        const defaults = getShaderDefaults(nextShader.id, nextShader.params?.length || 4);
-        updateSlotParam(0, {
-            zoomParam1: defaults[0],
-            zoomParam2: defaults[1],
-            zoomParam3: defaults[2],
-            zoomParam4: defaults[3],
-        });
+        if (inputSource === 'generative') {
+            // A generative pick is the source (useGeneratorSource arms it): the effect slots stay
+            // the user's, except a simulation this showcase itself left in slot 0.
+            if (attractOwnsSlot0Ref.current) {
+                attractOwnsSlot0Ref.current = false;
+                setMode(0, 'none' as RenderMode);
+            }
+        } else {
+            // A simulation is an image effect, so it runs in slot 0 over the still.
+            attractOwnsSlot0Ref.current = true;
+            setMode(0, nextShader.id as RenderMode);
+            const defaults = getShaderDefaults(nextShader.id, nextShader.params?.length || 4);
+            updateSlotParam(0, {
+                zoomParam1: defaults[0],
+                zoomParam2: defaults[1],
+                zoomParam3: defaults[2],
+                zoomParam4: defaults[3],
+            });
+        }
 
         setStatus(`🎨 Attract: ${nextShader.name}`);
         scheduleNextAttract(nextShader.id);

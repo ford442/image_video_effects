@@ -6,6 +6,7 @@
  */
 
 import { ShaderBindingUsage } from '../ShaderCompilation';
+import type { GeneratorStage } from './generator';
 import { Ripple } from '../UniformBuffer';
 import { AudioDepthState } from './audioDepth';
 import { WebGPUPipelineModule, WebGPUShaderManager } from './pipeline';
@@ -66,6 +67,8 @@ export interface WebGPUFrameState {
   resolutionScale: number;
 
   slots: ShaderSlot[];
+  /** The generative-source stage (generator.ts); absent or inactive → the plain slot chain. */
+  generator?: GeneratorStage | null;
   getPipeline: (id: string) => GPUComputePipeline | undefined;
   getWorkgroupSize: (id: string) => { x: number; y: number };
   hasPipeline: (id: string) => boolean;
@@ -175,6 +178,7 @@ export interface WebGPUFrameHost {
   scaledH: number;
   resolutionScale: number;
   slots: ShaderSlot[];
+  generator?: GeneratorStage | null;
   shaderManager: WebGPUShaderManager;
   getSimRing: () => GraphSimRingBindings | null;
   getSimHashBuildPipeline: () => GPUComputePipeline | null;
@@ -255,6 +259,7 @@ export interface FrameContext {
   scaledH: number;
   resolutionScale: number;
   slots: ShaderSlot[];
+  generator?: GeneratorStage | null;
   ripples: Ripple[];
   mouseX: number;
   mouseYShader: number;
@@ -362,6 +367,7 @@ export function createRendererFrameHost(d: FrameContext): WebGPUFrameHost {
     get scaledH() { return d.scaledH; },
     get resolutionScale() { return d.resolutionScale; },
     get slots() { return d.slots; },
+    get generator() { return d.generator ?? null; },
     get shaderManager() { return d.pipeline.shaderManager; },
     getSimRing: () => simRingBindings(d.simRing),
     getSimHashBuildPipeline: () => d.pipeline.getSimHashBuildResources()?.pipeline ?? null,
@@ -468,6 +474,7 @@ export function createFrameState(host: WebGPUFrameHost): WebGPUFrameState {
     get scaledH() { return h.scaledH; },
     get resolutionScale() { return h.resolutionScale; },
     get slots() { return h.slots; },
+    get generator() { return h.generator ?? null; },
     getPipeline: (id) => h.shaderManager.getPipeline(id),
     getWorkgroupSize: (id) => h.shaderManager.getWorkgroupSize(id),
     hasPipeline: (id) => h.shaderManager.hasPipeline(id),

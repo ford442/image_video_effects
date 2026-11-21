@@ -8,6 +8,7 @@
 import { Renderer, RendererConfig, ShaderSlotRenderer, GPUTimings, UncappedBenchResult, DeviceLossInfo, type SlotStateSnapshot } from './Renderer';
 import { Ripple, MAX_RIPPLES } from './UniformBuffer';
 import { PHYSICAL_SLOT_LIMIT, checkPhysicalSlotIndex } from './slotOrchestrator';
+import { GeneratorStage, type GeneratorParams, type GeneratorStatus } from './webgpu/generator';
 import { clearRendererDevice, publishRendererDevice, type RendererDeviceThread } from './deviceRegistry';
 import {
   initializeWebGPUDevice,
@@ -228,6 +229,9 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
   private slots: ShaderSlot[] = Array.from({ length: PHYSICAL_SLOT_LIMIT }, (_, i) => ({
     shaderId: null, enabled: false, mode: 'chained' as SlotMode, params: this.slotZoomParams[i], layer: this.slotLayers[i],
   }));
+
+  /** The generative-source stage: runs ahead of the slot chain in Generative input mode (webgpu/generator.ts). */
+  private generator = new GeneratorStage();
 
   private currentTime = 0;
   private mouseX = 0.5;
@@ -1341,6 +1345,33 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     return layer ? { ...layer, mask: { ...layer.mask } } : null;
   }
 
+  /**
+   * The generative source (Generative input mode): a shader that produces the picture the effect
+   * slots process, without taking one of them. Null/'' turns it off. Load the shader first
+   * (`loadShader`); until it is compiled the source stays black. Takes effect next frame.
+   */
+  setGenerator(id: string | null): void {
+    this.generator.setShader(id);
+  }
+
+  getGenerator(): string | null {
+    return this.generator.getShader();
+  }
+
+  /** The generator's four zoom_params sliders. */
+  setGeneratorParams(p1: number, p2: number, p3: number, p4: number): void {
+    this.generator.setParams(p1, p2, p3, p4);
+  }
+
+  getGeneratorParams(): GeneratorParams {
+    return this.generator.getParams();
+  }
+
+  /** What the generator did in the last frame (ran / why not). */
+  getGeneratorStatus(): GeneratorStatus {
+    return this.generator.getStatus();
+  }
+
   setSlotEnabled(index: number, enabled: boolean): void {
     if (index < 0 || index >= PHYSICAL_SLOT_LIMIT) return;
     const slot = this.slots[index];
@@ -1553,6 +1584,7 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
       set resolutionScale(v) { r.resolutionScale = v; },
       get slots() { return r.slots; },
       set slots(v) { r.slots = v; },
+      get generator() { return r.generator; },
       get ripples() { return r.ripples; },
       set ripples(v) { r.ripples = v; },
       get mouseX() { return r.mouseX; },
@@ -1908,6 +1940,8 @@ export class WebGPURenderer implements Renderer, ShaderSlotRenderer {
     this.warmup = null;
     this.islands.destroy();
     this.compositor.destroy();
+    // Private feedback state belongs to the device; the chosen shader + sliders survive a re-init.
+    this.generator.destroy();
     this.frameRenderer.releasePresentHold();
     this.outputs.releaseAll();
     this.nodeScales.clear();

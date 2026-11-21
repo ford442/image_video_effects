@@ -134,6 +134,7 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
   private flushScheduled = false;
 
   private inputSource: InputSource = 'image';
+  private generatorId: string | null = null;
   private colorFormat: InternalColorFormat | null = null;
   private video: HTMLVideoElement | null = null;
   private pump: VideoFramePump | null = null;
@@ -560,6 +561,20 @@ export class WorkerWebGPUBackend implements WebGPUBackendApi {
 
   getInputSource(): InputSource {
     return this.inputSource;
+  }
+
+  /** The generative source (webgpu/generator.ts) lives in the worker's renderer; this mirrors the choice. */
+  setGenerator(id: string | null): void {
+    this.generatorId = id ? id : null;
+    this.client?.send({ type: 'setGenerator', id: this.generatorId });
+  }
+
+  getGenerator(): string | null {
+    return this.generatorId;
+  }
+
+  setGeneratorParams(p1: number, p2: number, p3: number, p4: number): void {
+    this.client?.send({ type: 'setGeneratorParams', params: [p1, p2, p3, p4] });
   }
 
   // ── Media ──────────────────────────────────────────────────────────────────

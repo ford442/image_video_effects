@@ -47,6 +47,11 @@ export interface OfflineRenderHost {
   /** '' clears the slot. */
   setSlotShader(index: number, id: string): void;
   setInputSource(source: InputSource): void;
+  /**
+   * The generative source (Generative input mode): a shader id, or null to turn it off.
+   * Optional: a host without a generator stage renders the recorded slots only.
+   */
+  setGenerator?(id: string | null): Promise<unknown> | void;
   loadImage(url: string): Promise<unknown>;
   /** Re-send the live still at the current render size. */
   reloadInputStill(): Promise<boolean>;
@@ -202,13 +207,17 @@ export async function runOfflineRender(
     const source = state.source;
     if (!source) return;
     if (source.type === 'image' && source.url) {
+      await host.setGenerator?.(null);
       host.setInputSource('image');
       await host.loadImage(source.url);
     } else if (source.type === 'video' && source.url) {
+      await host.setGenerator?.(null);
       host.setInputSource('video');
       video = await openVideo(source.url);
     } else if (source.type === 'generative') {
       host.setInputSource('generative');
+      // The generator is the source the recorded slots process; without a shader id it is off.
+      await host.setGenerator?.(source.shader ?? null);
     }
     // Webcam / stream / an unsaved local file: the live still stays (re-sent at job start).
   };

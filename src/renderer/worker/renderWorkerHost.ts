@@ -54,6 +54,8 @@ export type HostedRenderer = Pick<
   | 'getCompositorStats'
   | 'getSlotState'
   | 'setInputSource'
+  | 'setGenerator'
+  | 'setGeneratorParams'
   | 'updateDepthMap'
   | 'setTransferredVideo'
   | 'setResolutionScale'
@@ -269,6 +271,8 @@ export function createRenderWorkerHost(deps: RenderWorkerHostDeps): RenderWorker
     setSlotMode: ({ index, mode }) => withRenderer((r) => r.setSlotMode(index, mode)),
     setSlotLayer: ({ index, layer }) => withRenderer((r) => r.setSlotLayer(index, layer)),
     setInputSource: ({ source }) => withRenderer((r) => r.setInputSource(source)),
+    setGenerator: ({ id }) => withRenderer((r) => r.setGenerator(id)),
+    setGeneratorParams: ({ params }) => withRenderer((r) => r.setGeneratorParams(...params)),
     updateDepthMap: ({ data, width, height }) => withRenderer((r) => r.updateDepthMap(data, width, height)),
     setVideoActive: ({ active }) => {
       if (active && !video) {
