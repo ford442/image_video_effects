@@ -9188,7 +9188,7 @@
     "id": "prismatic-3d-compositor",
     "name": "Prismatic 3D Compositor (Pass 2)",
     "url": "shaders/prismatic-3d-compositor.wgsl",
-    "description": "Adds parallax shifting, volumetric glow, chromatic aberration and final composite with depth-aware blending.",
+    "description": "Adds parallax shifting, volumetric glow, chromatic aberration and final composite with depth-aware blending. 2026-11-21: aberration follows Cauchy weights (blue bends more than red), the glow takes the light it radiates from bright cores, parallax is iterated on the depth of the fetched point, and the temporal trail now shows as a depth-weighted afterglow.",
     "params": [
       {
         "id": "glowRadius",
@@ -9238,7 +9238,7 @@
     "id": "prismatic-feedback-loop",
     "name": "Prismatic Feedback Loop (Pass 2)",
     "url": "shaders/prismatic-feedback-loop.wgsl",
-    "description": "Raw prismatic accumulation with exact feedback loads, sprung held-pointer deformation, bounded click bursts, live plasma dispersion, ACES output glow, semantic alpha, and source-depth pass-through.",
+    "description": "Raw prismatic accumulation with exact feedback loads, glide-smoothed held-pointer deformation (kept in dataTextureA texel (0,0)), bounded click bursts, live plasma dispersion, ACES output glow, semantic alpha, and source-depth pass-through. The history is re-read through the same prism so fringes compound, and the red/blue taps follow a Cauchy dispersion law (blue refracts harder than red).",
     "params": [
       {
         "id": "feedbackAmount",

@@ -5,14 +5,24 @@
 //            per-band-fft, spring-damper-pointer, velocity-smear,
 //            pigment-diffusion, edge-guided transport, monotone reconstruction,
 //            depth-aware, upgraded-rgba, semantic-alpha, aces
-//  Upgraded: 2026-08-23 (Batch 58B + tensor-guided precision pass)
+//  Upgraded: 2026-08-23 (Batch 58B + tensor-guided precision pass), 2026-11-21
+//  Ideas: bank-and-wake pile-up (§12.2D shallow-water continuity on the drag field);
+//         bristle rake striations across the stroke normal (§12.2C); speed-thinning brush radius (§12.2C)
+//  A packing: pre-ACES pigment RGB + alpha (>= 0.02) read back as C colour;
+//             texel (0,0) holds the pointer state (smoothed pos xy, vel xy), never pigment
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Two structures replace the original "pull toward the cursor" offset:
 //
 //    1. Velocity smear from a spring-damped pointer — the smoothed cursor and
-//       its velocity live in extraBuffer[133..136] (position xy, velocity xy),
-//       written by invocation (0,0) only. The smear direction is now the
-//       pointer's actual travel direction with its speed as the drag length,
+//       its velocity (position xy, velocity xy) ride in texel (0,0) of A, which
+//       becomes C next frame. They used to live in extraBuffer[133..136], but the
+//       engine rewrites all 256 extraBuffer floats before every dispatch, so the
+//       velocity was always 0 (no drag ever happened) and ~70 % of invocations
+//       raced the write and saw the pointer at (0,0). Every invocation now
+//       recomputes the same spring step from last frame's texel (deterministic);
+//       invocation (0,0) alone stores it, and every history load redirects that
+//       texel to (1,0) so state is never read as pigment. The smear direction is
+//       the pointer's actual travel direction with its speed as the drag length,
 //       so flicking the cursor rakes pigment along the stroke. The old code had
 //       no velocity at all — it always pulled toward the cursor centre, which
 //       reads as a sink, not a brush.
@@ -20,6 +30,16 @@
 //    2. Per-band FFT pigment diffusion — the smeared field is blurred along the
 //       stroke normal by a kernel whose width comes from the local FFT bin, so
 //       loud bands bleed pigment sideways while quiet ones keep crisp streaks.
+//       (The bin now comes from the engine's extraBuffer[5 + bin]; plasmaBuffer[1..8]
+//       was never uploaded, so the old per-band term was a constant 0.)
+//
+//  2026-11-21 ideas, all riding the drag field this file already computes:
+//    - bank and wake: the displacement map's divergence piles pigment up ahead of
+//      the brush and thins it behind (continuity), feeding thickness/alpha and a
+//      Beer-Lambert density shade on the pigment before the Mix Strength blend;
+//    - bristle rake: the drag length is modulated across the stroke normal in the
+//      brush frame, leaving striations parallel to the path;
+//    - speed-thinning: fast flicks rake with a narrow brush, slow drags pool wide.
 //
 //  Also fixed: the shader had NO bounds guard (it wrote past the render target
 //  on non-multiple-of-16 resolutions), and it read dataTextureC through the
@@ -48,16 +68,37 @@ fn acesFilm(x: vec3<f32>) -> vec3<f32> {
     return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
 }
 
+// PCG lattice hash — copied verbatim from public/shaders/_std/_std_hash.wgsl
+// (pcg, u32ToUnit, hash11).
+fn pcg(v: u32) -> u32 {
+  let s = v * 747796405u + 2891336453u;
+  let w = ((s >> ((s >> 28u) + 4u)) ^ s) * 277803737u;
+  return (w >> 22u) ^ w;
+}
+fn u32ToUnit(x: u32) -> f32 {
+  return f32(x >> 8u) * (1.0 / 16777216.0);
+}
+fn hash11(p: f32) -> f32 {
+  return u32ToUnit(pcg(bitcast<u32>(p)));
+}
+
+// Pigment history fetch. Texel (0,0) of C carries the pointer state (see header),
+// never pigment, so it is read from its right-hand neighbour instead.
+fn loadC(c: vec2<i32>) -> vec4<f32> {
+    let cc = select(c, vec2<i32>(1, 0), all(c == vec2<i32>(0)));
+    return textureLoad(dataTextureC, cc, 0);
+}
+
 // Exact float32 history fetch with hand-rolled bilinear — dataTextureC must
 // never go through the filtering sampler (see header).
 fn historyBilinear(p: vec2<f32>, dims: vec2<i32>) -> vec4<f32> {
     let maxC = dims - vec2<i32>(1);
     let f = fract(p);
     let i0 = vec2<i32>(floor(p));
-    let s00 = textureLoad(dataTextureC, clamp(i0, vec2<i32>(0), maxC), 0);
-    let s10 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 0), vec2<i32>(0), maxC), 0);
-    let s01 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(0, 1), vec2<i32>(0), maxC), 0);
-    let s11 = textureLoad(dataTextureC, clamp(i0 + vec2<i32>(1, 1), vec2<i32>(0), maxC), 0);
+    let s00 = loadC(clamp(i0, vec2<i32>(0), maxC));
+    let s10 = loadC(clamp(i0 + vec2<i32>(1, 0), vec2<i32>(0), maxC));
+    let s01 = loadC(clamp(i0 + vec2<i32>(0, 1), vec2<i32>(0), maxC));
+    let s11 = loadC(clamp(i0 + vec2<i32>(1, 1), vec2<i32>(0), maxC));
     return mix(mix(s00, s10, f.x), mix(s01, s11, f.x), f.y);
 }
 
@@ -72,11 +113,11 @@ struct HistoryBounds {
 fn historyBounds(p: vec2<f32>, dims: vec2<i32>) -> HistoryBounds {
     let maxC = dims - vec2<i32>(1);
     let c = clamp(vec2<i32>(round(p)), vec2<i32>(0), maxC);
-    let e = textureLoad(dataTextureC, clamp(c + vec2<i32>( 1,  0), vec2<i32>(0), maxC), 0);
-    let w = textureLoad(dataTextureC, clamp(c + vec2<i32>(-1,  0), vec2<i32>(0), maxC), 0);
-    let n = textureLoad(dataTextureC, clamp(c + vec2<i32>( 0,  1), vec2<i32>(0), maxC), 0);
-    let s = textureLoad(dataTextureC, clamp(c + vec2<i32>( 0, -1), vec2<i32>(0), maxC), 0);
-    let m = textureLoad(dataTextureC, c, 0);
+    let e = loadC(clamp(c + vec2<i32>( 1,  0), vec2<i32>(0), maxC));
+    let w = loadC(clamp(c + vec2<i32>(-1,  0), vec2<i32>(0), maxC));
+    let n = loadC(clamp(c + vec2<i32>( 0,  1), vec2<i32>(0), maxC));
+    let s = loadC(clamp(c + vec2<i32>( 0, -1), vec2<i32>(0), maxC));
+    let m = loadC(c);
     var out: HistoryBounds;
     out.low = min(m, min(min(e, w), min(n, s)));
     out.high = max(m, max(max(e, w), max(n, s)));
@@ -115,33 +156,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let mixStrength = 0.1 + (u.zoom_params.w * 0.9);
 
     // ── Structure 1: spring-damped pointer + velocity ────────────────────────
-    // extraBuffer[133..134] = smoothed position, [135..136] = smoothed velocity.
-    // Only invocation (0,0) writes, as the house pattern requires.
+    // ── Rescue R1: the spring state rides in texel (0,0) of C (= last frame's A) as
+    // (smoothed pos xy, smoothed vel xy). extraBuffer[133..136] is re-zeroed by the
+    // engine every frame, so it could never hold velocity. Every invocation derives
+    // the same spring step from that texel (deterministic, no cross-invocation race);
+    // only invocation (0,0) stores it (see the A write below).
     let rawMouse = u.zoom_config.yz;
-    if (global_id.x == 0u && global_id.y == 0u) {
-        var sm = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-        if (sm.x == 0.0 && sm.y == 0.0) { sm = rawMouse; }
-        let dt = 0.016;
-        let k = 1.0 - exp(-9.0 * dt);
-        let next = sm + (rawMouse - sm) * k;
-        let vel = (next - sm) / dt;
-        var smoothVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
-        smoothVel = mix(smoothVel, vel, 0.25);
-        extraBuffer[133] = next.x;
-        extraBuffer[134] = next.y;
-        extraBuffer[135] = smoothVel.x;
-        extraBuffer[136] = smoothVel.y;
-    }
-    let mousePos = vec2<f32>(extraBuffer[133], extraBuffer[134]);
-    let mouseVel = vec2<f32>(extraBuffer[135], extraBuffer[136]);
+    let st = textureLoad(dataTextureC, vec2<i32>(0, 0), 0);
+    // An empty / foreign / non-finite texel is not a pointer state: restart from the raw pointer.
+    let stValid = (st.x != 0.0 || st.y != 0.0)
+        && all(st.xy >= vec2<f32>(0.0)) && all(st.xy <= vec2<f32>(1.0))
+        && all(abs(st.zw) < vec2<f32>(50.0));
+    let smPrev = select(rawMouse, st.xy, stValid);
+    let velPrev = select(vec2<f32>(0.0), st.zw, stValid);
+    let springDt = 0.016;
+    let springK = 1.0 - exp(-9.0 * springDt);
+    let mousePos = smPrev + (rawMouse - smPrev) * springK;
+    let mouseVel = mix(velPrev, (mousePos - smPrev) / springDt, 0.25);
     let held = step(0.5, u.zoom_config.w);
+
+    let speed = length(mouseVel);
+    // ── Idea 3: speed-thinning (§12.2C). A fast flick rakes with a narrow contact patch,
+    // a slow drag pools wide. Brush Size stays the radius at rest (speed 0 → R = brushSize).
+    let brushR = brushSize / (1.0 + 0.35 * speed);
 
     let toMouse = (uv - mousePos) * vec2<f32>(aspect, 1.0);
     let dist = length(toMouse);
-    let brushFalloff = 1.0 - smoothstep(0.0, brushSize, dist);
+    let brushFalloff = 1.0 - smoothstep(0.0, brushR, dist);
 
     // Drag along the pointer's actual travel, not toward its centre.
-    let speed = length(mouseVel);
     let strokeDir = select(vec2<f32>(0.0), mouseVel / max(speed, 1e-5), speed > 1e-4);
     let imageGradient = plateGradient(uv, texel);
     let edgeEnergy = clamp(length(imageGradient) * 5.0, 0.0, 1.0);
@@ -149,7 +192,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Wet pigment follows source contours instead of bleeding across them.
     let guidedDir = normalize(mix(strokeDir, edgeTangent, edgeEnergy * (0.25 + 0.45 * smearStrength)) + vec2<f32>(1e-6));
     let dragLen = clamp(speed * 0.02, 0.0, 0.06) * smearStrength * (0.5 + held);
-    var offset = guidedDir * dragLen * brushFalloff;
+
+    // ── Idea 2: bristle rake (§12.2C stroke tangent / direction, not just magnitude).
+    // The across-stroke coordinate lives in the brush frame (aspect-corrected, so it is
+    // perpendicular on screen); a smooth 1-D bristle profile (0..2x, mean 1) scales the
+    // drag length per lane, and the thin lanes (bristle gaps) let the bare plate show through
+    // via the existing `refresh` term below, so the path is left with striations parallel to
+    // the stroke instead of one smooth shear.
+    let dirA = normalize(guidedDir * vec2<f32>(aspect, 1.0));
+    let across = dot(toMouse, vec2<f32>(-dirA.y, dirA.x));
+    let bristleStep = max(brushR * 0.16, 3.0 * texel.y);      // ~6 bristles per radius, never < 3 px
+    let bristleP = across / bristleStep + 64.0;               // keep floor() on one side of zero
+    let bristleF = fract(bristleP);
+    let bristle = mix(hash11(floor(bristleP)), hash11(floor(bristleP) + 1.0), bristleF * bristleF * (3.0 - 2.0 * bristleF));
+    let rake = clamp(1.0 + 2.2 * (bristle - 0.5), 0.0, 2.0);  // 0..2, mean 1: total drag unchanged, gaps drag nothing
+    var offset = guidedDir * dragLen * brushFalloff * rake;
+
+    // ── Idea 1: bank and wake (§12.2D shallow-water continuity, d(rho)/dt = -div(rho v)).
+    // The history is sampled at uv - offset, so pigment is carried along +offset and its
+    // thickness scales with 1 - div(offset): >1 where the field converges (ahead of the
+    // brush: a bank), <1 where it spreads (the wake). The smooth-envelope divergence is
+    // analytic from the brush falloff's derivative, so it costs no extra taps.
+    let tN = clamp(dist / max(brushR, 1e-4), 0.0, 1.0);
+    let dFall = -6.0 * tN * (1.0 - tN) / max(brushR, 1e-4);    // d(brushFalloff)/d(dist)
+    let radial = toMouse / max(dist, 1e-4);                    // aspect-space unit vector from the brush
+    let divOffset = dragLen * dFall * (guidedDir.x * radial.x * aspect + guidedDir.y * radial.y);
+    let rho = clamp(1.0 - divOffset, 0.6, 1.6);
 
     // ── Bounded click splats ─────────────────────────────────────────────────
     var splat = 0.0;
@@ -172,7 +240,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Band chosen by position so different regions bleed with different bins;
     // the blur runs along the stroke NORMAL, spreading pigment sideways.
     let bandIdx = u32(clamp((uv.x * 0.5 + uv.y * 0.5) * 8.0, 0.0, 7.999));
-    let band = plasmaBuffer[bandIdx + 1u].x;
+    // ── Rescue R2: engine FFT bins live in extraBuffer[5 + bin] (0..1, engine-owned).
+    // plasmaBuffer[1..8] is never uploaded, so the HEAD band term was a constant 0.
+    let fftBin = 5u + bandIdx * 4u;
+    let band = clamp(0.5 * (extraBuffer[fftBin] + extraBuffer[fftBin + 1u]), 0.0, 1.0);
     let bleed = (0.4 + band * 3.2 + mids * 0.8) * (0.5 + smearStrength);
     let normalDir = vec2<f32>(-guidedDir.y, guidedDir.x);
 
@@ -195,12 +266,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Fresh input keeps bleeding in so the field never degenerates; clicks and
     // the brush core inject extra fresh pigment.
-    let refresh = clamp(splat * 0.5 + brushFalloff * held * 0.4, 0.0, 0.9);
+    // Idea 2: bristle gaps (rake < 1) pick fresh plate up, in proportion to how hard the brush is raking.
+    let bareLane = clamp(1.0 - rake, 0.0, 1.0) * brushFalloff * clamp(dragLen * 40.0, 0.0, 1.0);
+    let refresh = clamp(splat * 0.5 + brushFalloff * held * 0.4 + bareLane * 0.35, 0.0, 0.9);
     let keep = decayRate * (1.0 - refresh);
     let blend = mix(currentInput, smeared, keep);
 
     // ── Colour ───────────────────────────────────────────────────────────────
-    var color = mix(currentInput.rgb, blend.rgb, mixStrength);
+    // Idea 1 (display only — A keeps the plain pigment): thicker pigment absorbs more
+    // (Beer-Lambert), so the bank reads deeper and the wake lighter. It rides inside the
+    // Mix Strength blend, so Mix Strength 0 still shows the untouched plate.
+    let pigmentShade = exp(-1.0 * (rho - 1.0));
+    var color = mix(currentInput.rgb, blend.rgb * pigmentShade, mixStrength);
     color += vec3<f32>(0.02, 0.01, 0.0) * smearStrength;
     color += vec3<f32>(1.0, 0.86, 0.7) * splat * 0.25 * (1.0 + bass * 0.6);
     color += vec3<f32>(0.25, 0.45, 0.8) * brushFalloff * held * (0.15 + treble * 0.35);
@@ -211,7 +288,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // ── Semantic alpha ───────────────────────────────────────────────────────
     let normal = normalize(vec3<f32>(offset * 40.0, 1.0));
     let fresnel = schlickFresnel(max(0.0, normal.z), 0.02);
-    let thickness = smearStrength * 2.0 * brushFalloff + 0.2;
+    let thickness = (smearStrength * 2.0 * brushFalloff + 0.2) * rho;   // Idea 1: bank thickens, wake thins
     let absorption = exp(-thickness);
     let baseAlpha = mix(0.4, mix(0.7, 0.95, decayRate), absorption);
     let pigment = clamp(brushFalloff * 0.5 + splat * 0.6 + length(offset) * 12.0, 0.0, 1.0);
@@ -219,8 +296,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let outColor = vec4<f32>(color, alpha);
     textureStore(writeTexture, coord, outColor);
-    // A carries the smeared field forward — it becomes next frame's C.
-    textureStore(dataTextureA, coord, vec4<f32>(blend.rgb, max(alpha, 0.02)));
+    // A carries the smeared field forward — it becomes next frame's C. Texel (0,0)
+    // instead carries the pointer state (R1); loadC() keeps it out of the pigment.
+    let isStateTexel = (global_id.x == 0u) && (global_id.y == 0u);
+    textureStore(dataTextureA, coord, select(vec4<f32>(blend.rgb, max(alpha, 0.02)), vec4<f32>(mousePos, mouseVel), isStateTexel));
 
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

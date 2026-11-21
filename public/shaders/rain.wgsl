@@ -6,28 +6,13 @@
 //  Chunks From: rain
 //  Created: 2026-05-31
 //  By: 4-Agent Shader Upgrade Swarm
+//  Upgraded: 2026-11-21
+//  Ideas: per-lane terminal velocity + shutter-length streaks (bigger drops fall faster and leave longer tails; heads lead downward); Snell vector refraction through each water streak (§12.2F); Beer-Lambert mist on real scene depth (§12.2F)
+//  Rescues: rain fell UP (rainUV.y scrolled the wrong way); droplet lens offset grew linearly with time (dropCenter.y missed the scroll); streaks sat on a perfect comb (all at local.x = 0.5); mist re-rolled as hard cells every 0.5 s and rose
+//  A packing: unchanged diagnostics (dropletAlpha, motionBlurStrength, mistLayer, finalAlpha); nothing reads C. Display RGBA on writeTexture only (ACES).
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash12(p: vec2<f32>) -> f32 {
   return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453);
@@ -36,6 +21,18 @@ fn hash12(p: vec2<f32>) -> f32 {
 fn hash13(p: vec3<f32>) -> f32 {
   return fract(sin(dot(p, vec3<f32>(127.1, 311.7, 74.7))) * 43758.5453);
 }
+
+// Smooth lattice noise for the advected mist (replaces the 2 Hz hash-cell flips).
+fn vnoise(p: vec2<f32>) -> f32 {
+  let i = floor(p);
+  let f = fract(p);
+  let w = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash12(i), hash12(i + vec2<f32>(1.0, 0.0)), w.x),
+             mix(hash12(i + vec2<f32>(0.0, 1.0)), hash12(i + vec2<f32>(1.0, 1.0)), w.x), w.y);
+}
+
+const WATER_IOR: f32 = 1.333;
+const LENS_GAIN: f32 = 3.5;   // visual gain on the water-streak lens offset (the streak is ~1-3 px wide)
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -71,32 +68,46 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let wind = windBase + mouseWind;
   let gust = audio.x * 0.04;
 
-  let rainUV = vec2<f32>(uv.x * rainDensity * aspect + wind * time * 3.0, uv.y * rainDensity + time * fallSpeed);
+  // ── Idea 1: per-lane terminal velocity + shutter-length streaks ───────
+  // A drop column ("lane") draws a size seed: bigger drops fall faster (0.7x..1.3x of the
+  // fall slider), are a little wider and leave a longer tail (tail = speed x exposure, kept
+  // at constant exposure so a long fast streak is not simply brighter). The head leads at the
+  // bottom of the cell, where the splash arcs sit. The scroll sign is fixed (HEAD fell UP).
+  let rx = uv.x * rainDensity * aspect + wind * time * 3.0;
+  let laneSeed = hash12(vec2<f32>(floor(rx), 31.7));
+  let laneSpeed = 0.7 + 0.6 * laneSeed;
+  let rainUV = vec2<f32>(rx, uv.y * rainDensity - time * fallSpeed * laneSpeed);
   let cell = floor(rainUV);
   let local = fract(rainUV);
 
   let dropSeed = hash12(cell);
-  let dropSeed2 = hash13(vec3<f32>(cell, time * 0.1));
 
   let gravity = 1.0 + dropSeed * 2.5;
-  let streakY = local.y - (1.0 - exp(-local.y * gravity));
-  let streakWidth = 0.005 + dropSeed * 0.012;
-  let streakX = abs(local.x - 0.5 + wind * local.y * 0.3);
-  let motionBlur = smoothstep(streakWidth * 2.0, 0.0, streakX) * smoothstep(1.0, 0.15, local.y) * (0.4 + 0.6 * gravity / 3.5);
+  let xc = 0.5 + (hash12(cell + vec2<f32>(5.3, 9.1)) - 0.5) * 0.5;   // breaks the regular comb of columns
+  let tailLen = mix(0.45, 1.0, laneSeed);
+  let behind = 1.0 - local.y;                                        // 0 at the head, 1 at the cell top
+  let exposure = clamp(0.72 / tailLen, 0.8, 1.0);
+  let streakWidth = (0.005 + dropSeed * 0.012) * (0.75 + 0.5 * laneSeed);
+  let slant = wind * local.y * 0.3;
+  let streakX = abs(local.x - xc + slant);
+  let motionBlur = smoothstep(streakWidth * 2.0, 0.0, streakX) * smoothstep(tailLen, 0.15 * tailLen, behind) * (0.4 + 0.6 * gravity / 3.5) * exposure;
 
   let dropletAlpha = motionBlur * step(0.65, dropSeed);
   let splash = step(0.92, local.y) * step(0.75, dropSeed) * smoothstep(0.0, 0.06, streakX) * smoothstep(0.12, 0.0, streakX);
 
-  var dropCenter = cell / vec2<f32>(rainDensity * aspect, rainDensity);
-  dropCenter.x -= wind * time * 3.0 / (rainDensity * aspect);
-  let dropWorld = (uv - dropCenter) * vec2<f32>(aspect, 1.0);
-  let dropDist = length(dropWorld);
-
-  let lensStrength = dropletAlpha * 0.018 * depthScale;
-  let lensR = lensStrength * (1.0 + dropSeed * 0.15);
-  let lensG = lensStrength * (1.0 + dropSeed2 * 0.08);
-  let lensB = lensStrength * (1.0 - dropSeed * 0.12);
-  let displacedUV = clamp(uv + vec2<f32>(wind * 0.015, 0.008) * dropletAlpha + dropWorld * vec2<f32>(lensR - lensG, lensB - lensR) * 40.0, vec2<f32>(0.0), vec2<f32>(1.0));
+  // ── Idea 2: Snell refraction through the water streak (§12.2F) ───────
+  // Each streak is a thin water cylinder; its cross-section normal comes from the streak's own
+  // x-profile and the view ray is refracted into water (eta = 1/1.333). The photo is sampled at
+  // the lateral exit offset: the inverted-image sliver a real streak shows. Replaces HEAD's
+  // dropWorld lens, whose offset grew linearly with time (dropCenter.y missed the scroll).
+  let waterHalfW = streakWidth * 10.0;
+  let sx = clamp((local.x - xc + slant) / waterHalfW, -1.0, 1.0);
+  let bodyT = sqrt(max(1.0 - sx * sx, 0.0));
+  let rayOut = refract(vec3<f32>(0.0, 0.0, -1.0), vec3<f32>(sx, 0.0, bodyT), 1.0 / WATER_IOR);
+  let bendX = rayOut.x / max(-rayOut.z, 0.35);
+  let waterMask = step(0.65, dropSeed) * smoothstep(tailLen, 0.15 * tailLen, behind) * smoothstep(1.0, 0.8, abs(sx));
+  let lensOffset = vec2<f32>(bendX * bodyT * waterHalfW / (rainDensity * aspect) * LENS_GAIN, 0.0) * waterMask * depthScale;
+  let displacedUV = clamp(uv + vec2<f32>(wind * 0.015, 0.008) * dropletAlpha + lensOffset, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let src = textureSampleLevel(readTexture, u_sampler, displacedUV, 0.0);
 
@@ -104,9 +115,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lightEnergy = dot(lightSrc, vec3<f32>(0.299, 0.587, 0.114));
   let bloom = pow(lightEnergy, 3.0) * 2.5 * dropletAlpha * (1.0 + audio.z * 0.5);
 
-  let mistCell = floor(vec2<f32>(uv.x * rainDensity * 0.4 * aspect, uv.y * rainDensity * 0.4 + time * 0.3));
-  let mistNoise = hash12(mistCell + vec2<f32>(floor(time * 2.0), 0.0));
-  let mistLayer = smoothstep(0.45, 0.85, mistNoise) * wetness * 0.18 * depthScale;
+  // ── Idea 3: Beer-Lambert mist on real scene depth (§12.2F) ────────────
+  // Visibility falls with distance: optical depth tau grows with the sight line through the
+  // haze (far = low depth), mistLayer = 1 - exp(-tau). The haze noise is smooth and drifts with
+  // the rain (HEAD re-rolled hard cells every 0.5 s and scrolled them upward).
+  let mistP = vec2<f32>(uv.x * rainDensity * 0.4 * aspect + wind * time * 1.2, uv.y * rainDensity * 0.4 - time * 0.3);
+  let mistNoise = vnoise(mistP);
+  let mistPath = 0.6 + 0.5 * (1.0 - depth);
+  let mistTau = smoothstep(0.35, 0.8, mistNoise) * wetness * 0.12 * mistPath;
+  let mistLayer = 1.0 - exp(-mistTau);
 
   let rainTint = mix(vec3<f32>(0.62, 0.76, 0.94), vec3<f32>(0.52, 0.92, 1.0), audio.y * 0.4);
   let chromaR = src.rgb + rainTint * dropletAlpha * (0.22 + audio.z * 0.18) + vec3<f32>(bloom * 0.9, bloom * 0.4, bloom * 0.15);
