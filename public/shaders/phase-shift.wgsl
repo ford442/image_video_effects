@@ -3,31 +3,12 @@
 //  Category: distortion
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-09
-//  Ideas: per-channel angular period; distance-modulated phase
+//  Upgraded: 2026-09-09, 2026-11-21
+//  Ideas: per-channel angular period; distance-modulated phase; radial zoom-cycle lead; flow group delay
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn ping_pong(a: f32) -> f32 {
     return 1.0 - abs((fract(a * 0.5) * 2.0) - 1.0);
@@ -116,10 +97,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     for (var i = 0; i < 5; i = i + 1) {
         let layerDepth = f32(i) / 4.0;
         let layerSpeed = mix(speedLow, speedHigh, layerDepth);
-        let layerZoom = 1.0 + fract(zoom_time * layerSpeed) * 4.0;
+        // ── Idea 1: radial zoom-cycle lead ───────────────────────────
+        // Layer 0 keeps fract(time * speed). Deeper layers add the
+        // distance phase this stack already computes, so the zoom
+        // wavefront runs outward from the pointer.
+        let zoomClock = fract(zoom_time * layerSpeed + distPhase * layerDepth * 0.45);
+        let layerZoom = 1.0 + zoomClock * 4.0;
+        // ── Idea 2: flow group delay ─────────────────────────────────
+        // A faster back layer shows an older displacement. Equal layer
+        // speeds share one flow.
+        let flowTime = time - layerDepth * (speedHigh - speedLow) * 8.0;
         let flow = vec2<f32>(
-            noise(uv * 6.0 + vec2<f32>(time * 0.15, 0.0)),
-            noise(uv * 6.0 + vec2<f32>(0.0, time * 0.15))
+            noise(uv * 6.0 + vec2<f32>(flowTime * 0.15, 0.0)),
+            noise(uv * 6.0 + vec2<f32>(0.0, flowTime * 0.15))
         );
         let flowUV = uv + flow * 0.015 * layerDepth;
         let transformed = (flowUV - zoom_center) / layerZoom + zoom_center;
