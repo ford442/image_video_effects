@@ -2,7 +2,7 @@
   "id": "atmos-fog-volumetric",
   "name": "Atmospheric Fog Volumetric",
   "url": "shaders/atmos-fog-volumetric.wgsl",
-  "description": "Enhanced volumetric fog combining physical transmittance with interactive depth-layered alpha. Mouse clears fog locally, ripples create swirling disturbances, and height-based density mixes with Beer's Law for atmospheric realism.",
+  "description": "Enhanced volumetric fog combining physical transmittance with interactive depth-layered alpha. Mouse clears fog locally, ripples create swirling disturbances, and height-based density mixes with Beer's Law for atmospheric realism. Fog now integrates only up to the real scene depth (near objects stay clear, distant ones sink into the haze), forward-scatters toward a per-pixel sun direction (warm glare near the sun, cooler away from it), and thins exponentially with height along the view ray.",
   "tags": [
     "volumetric",
     "fog",
@@ -17,7 +17,9 @@
     "mouse-clear",
     "ripple-swirl",
     "beers-law",
-    "rgba-data-channel"
+    "rgba-data-channel",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

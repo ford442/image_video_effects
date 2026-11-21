@@ -884,7 +884,7 @@
     "id": "liquid-rainbow-prismatic",
     "name": "Liquid Rainbow Prismatic",
     "url": "shaders/liquid-rainbow-prismatic.wgsl",
-    "description": "Cauchy-separated RGB refraction through animated thin-film thickness, a six-tap caustic kernel, held lens deformation, and prismatic click fronts.",
+    "description": "Cauchy-separated RGB refraction through animated thin-film thickness, a six-tap caustic kernel, held lens deformation, and prismatic click fronts. Film colour now shifts with the viewing angle of the tilted film (blue-shift toward steep slopes) and the film reflection follows Fresnel reflectance, taking its energy from the transmitted photo.",
     "tags": [
       "liquid-rainbow",
       "prismatic-dispersion",

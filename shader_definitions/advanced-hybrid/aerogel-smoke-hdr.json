@@ -2,7 +2,7 @@
   "id": "aerogel-smoke-hdr",
   "name": "Aerogel Smoke HDR",
   "url": "shaders/aerogel-smoke-hdr.wgsl",
-  "description": "Ethereal aerogel volumetric smoke with HDR bloom enhancement. Silica nanoparticle scattering combines with an HDR bloom kernel that amplifies overbright regions, creating luminous glow around dense scattering zones.",
+  "description": "Ethereal aerogel volumetric smoke with HDR bloom enhancement. Silica nanoparticle scattering combines with an HDR bloom kernel that amplifies overbright regions, creating luminous glow around dense scattering zones. Wavelength-dependent Rayleigh extinction reddens the light that passes through while the scattered haze stays blue; a drifting lamp behind the smoke gives the scatter a direction (forward Mie glare, Rayleigh lobe); the HDR bloom now moves energy out of the core instead of adding to it. Idles as a slow autopilot plume when the pointer is not held.",
   "tags": [
     "volumetric",
     "HDR",
@@ -16,7 +16,9 @@
     "HDR-bloom",
     "rayleigh-mie",
     "rgba-data-channel",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {
