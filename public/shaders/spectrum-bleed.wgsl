@@ -3,9 +3,10 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-09-21, 2026-11-21
 //  Ideas: wavelength-ordered bleed distance; chromatographic advance front;
-//         dry-edge rim
+//         dry-edge rim; chroma delay line (§12.2B);
+//         paper-fibre wicking (§12.2C paper granulation)
 //  A packing: ACES display RGBA (C is read as colour through an advected coord)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -26,6 +27,42 @@ fn rgb2hsv(c: vec3<f32>) -> vec3<f32> {
 fn hsv2rgb(hsv: vec3<f32>) -> vec3<f32> {
   let k = abs(fract(hsv.x + vec3<f32>(0.0, 0.6666667, 0.3333333)) * 6.0 - vec3<f32>(3.0));
   return hsv.z * mix(vec3<f32>(1.0), clamp(k - vec3<f32>(1.0), vec3<f32>(0.0), vec3<f32>(1.0)), hsv.y);
+}
+
+// Integer PCG hash + quintic value noise — copied verbatim from
+// public/shaders/_std/_std_hash.wgsl (pcg2d, u32ToUnit, hashCell21) and
+// _std_noise.wgsl (fade2, valueNoise).
+fn pcg2d(v_in: vec2<u32>) -> vec2<u32> {
+  var v = v_in * 1664525u + 1013904223u;
+  v.x += v.y * 1664525u;
+  v.y += v.x * 1664525u;
+  v = v ^ (v >> vec2<u32>(16u));
+  v.x += v.y * 1664525u;
+  v.y += v.x * 1664525u;
+  v = v ^ (v >> vec2<u32>(16u));
+  return v;
+}
+
+fn u32ToUnit(x: u32) -> f32 {
+  return f32(x >> 8u) * (1.0 / 16777216.0);
+}
+
+fn hashCell21(c: vec2<i32>) -> f32 {
+  return u32ToUnit(pcg2d(bitcast<vec2<u32>>(c)).x);
+}
+
+fn fade2(t: vec2<f32>) -> vec2<f32> {
+  return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+fn valueNoise(p: vec2<f32>) -> f32 {
+  let i = vec2<i32>(floor(p));
+  let u = fade2(fract(p));
+  let a = hashCell21(i);
+  let b = hashCell21(i + vec2<i32>(1, 0));
+  let c = hashCell21(i + vec2<i32>(0, 1));
+  let d = hashCell21(i + vec2<i32>(1, 1));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
 fn blurSource(uv: vec2<f32>, radius: f32) -> vec3<f32> {
@@ -95,7 +132,26 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let lensDist = length((uv - springPos) * aspectVec);
   let lens = smoothstep(0.36, 0.0, lensDist) * select(0.5, 1.0, u.zoom_config.w > 0.5);
   blendFactor = clamp(blendFactor + lens * 0.3, 0.0, 1.0);
-  var hsv = rgb2hsv(spectralBleed(uv, blurRadius));
+
+  // ── Idea 5: paper-fibre wicking (§12.2C paper granulation) ────────
+  // Ink does not creep evenly across a sheet: it runs further down open
+  // fibres and stalls on tight ones. A static (time-free), vertically
+  // stretched value-noise grain scales this pixel's bleed radius, so the
+  // fringes and the advancing front come out fibrous instead of a clean blur.
+  let fibre = valueNoise(vec2<f32>(pixel) / vec2<f32>(2.0, 10.0));
+  let localRadius = blurRadius * (0.55 + 0.9 * fibre);
+
+  // ── Idea 4: chroma delay line (§12.2B, 4:2:0-style) ───────────────
+  // Colour is carried on a narrower, later channel than brightness: the
+  // wavelength-ordered bleed is fetched `delay` texels LEFT of this pixel so
+  // colour trails to the right of an edge, then half of the luma is taken
+  // back from the crisp source. Edges stay firm, the colour smears after
+  // them. The delay rides the existing scale slider (via the local radius).
+  let chromaDelay = vec2<f32>(localRadius * 1.6 / res.x, 0.0);
+  let bleedRaw = spectralBleed(clamp(uv - chromaDelay, vec2<f32>(0.0), vec2<f32>(1.0)), localRadius);
+  let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+  let bleedYC = max(bleedRaw + (dot(source.rgb, lumaW) - dot(bleedRaw, lumaW)) * 0.5, vec3<f32>(0.0));
+  var hsv = rgb2hsv(bleedYC);
   var clickInk = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i = 0u; i < rippleCount; i++) {
@@ -124,7 +180,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let satPrev = rgb2hsv(max(previous.rgb, vec3<f32>(0.0))).y;
   let advance = clamp((satNow - satPrev) * 2.5, -1.0, 1.0);
   let frontGate = 1.0 + advance * 0.75;
-  let persistence = clamp((0.12 + u.zoom_params.x * 0.2 + clickInk * 0.22) * frontGate, 0.0, 0.72);
+  let persistence = clamp((0.12 + u.zoom_params.x * 0.2 + clickInk * 0.22) * frontGate * (0.8 + 0.4 * fibre), 0.0, 0.72);
   hdr = mix(hdr, previous.rgb * (0.93 + bass * 0.02), persistence);
 
   // ── Idea 3: dry-edge rim ──────────────────────────────────────────

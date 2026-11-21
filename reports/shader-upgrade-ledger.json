@@ -4645,8 +4645,17 @@
       ]
     },
     "vortex-distortion": {
-      "hash": "ecde435a2ebf09ed",
-      "history": []
+      "hash": "ccc6336fc86ffe1c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "ccc6336fc86ffe1c",
+          "prev_hash": "ecde435a2ebf09ed",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
+        }
+      ]
     },
     "vortex-pass1": {
       "hash": "b0bab03494aceb5e",
@@ -13237,7 +13246,7 @@
       ]
     },
     "hyb-kaleidoscope-pulse": {
-      "hash": "6edad45969ce7013",
+      "hash": "1b3698beb436e4da",
       "history": [
         {
           "event": "upgraded",
@@ -13246,6 +13255,14 @@
           "prev_hash": "ca4d203e1382cadc",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "1b3698beb436e4da",
+          "prev_hash": "6edad45969ce7013",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
         }
       ]
     },
@@ -13919,7 +13936,7 @@
       ]
     },
     "conv-guided-video-filter": {
-      "hash": "8715955a173167fe",
+      "hash": "cf83e210d9fa91fe",
       "history": [
         {
           "event": "upgraded",
@@ -13928,6 +13945,14 @@
           "prev_hash": "947e4396837ea6fe",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "cf83e210d9fa91fe",
+          "prev_hash": "8715955a173167fe",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
         }
       ]
     },
@@ -15127,7 +15152,7 @@
       ]
     },
     "scanline-cyberpunk": {
-      "hash": "9e6341db3bece17f",
+      "hash": "8cbca9f4cacf1214",
       "history": [
         {
           "event": "upgraded",
@@ -15136,6 +15161,14 @@
           "prev_hash": "ba10eed2ef84e89b",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "8cbca9f4cacf1214",
+          "prev_hash": "9e6341db3bece17f",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
         }
       ]
     },
@@ -15856,8 +15889,17 @@
       ]
     },
     "cyber-focus": {
-      "hash": "c10c070691f4e33e",
-      "history": []
+      "hash": "8eceee10b3c28df8",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "8eceee10b3c28df8",
+          "prev_hash": "c10c070691f4e33e",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
+        }
+      ]
     },
     "cyber-glitch-hologram": {
       "hash": "c669b245ea7056c6",
@@ -17849,8 +17891,17 @@
       ]
     },
     "pixel-focus": {
-      "hash": "c79643a90cd76fab",
-      "history": []
+      "hash": "ad89947fae431b6f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "ad89947fae431b6f",
+          "prev_hash": "c79643a90cd76fab",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
+        }
+      ]
     },
     "pixel-repel": {
       "hash": "ca280318942e03ca",
@@ -20139,12 +20190,30 @@
       ]
     },
     "tone-histogram-apply": {
-      "hash": "2f39898330808070",
-      "history": []
+      "hash": "a82c726cc5b4b3bc",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "a82c726cc5b4b3bc",
+          "prev_hash": "2f39898330808070",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
+        }
+      ]
     },
     "tone-histogram": {
-      "hash": "a304eba77d0b3052",
-      "history": []
+      "hash": "4a698b6f29c6020e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "4a698b6f29c6020e",
+          "prev_hash": "a304eba77d0b3052",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
+        }
+      ]
     },
     "ascii-flow": {
       "hash": "6bda7034d0e056b2",
@@ -20331,7 +20400,7 @@
       ]
     },
     "data-moshing-diffusion": {
-      "hash": "d0bd773aa6cd70e3",
+      "hash": "98c26eda8b8f1f08",
       "history": [
         {
           "event": "upgraded",
@@ -20340,6 +20409,14 @@
           "prev_hash": "5ad8e61a8034cf08",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "98c26eda8b8f1f08",
+          "prev_hash": "d0bd773aa6cd70e3",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
         }
       ]
     },
@@ -20769,7 +20846,7 @@
       ]
     },
     "spectrum-bleed": {
-      "hash": "912070fddb6e9a35",
+      "hash": "2a9f97e29abf2b1a",
       "history": [
         {
           "event": "upgraded",
@@ -20778,6 +20855,14 @@
           "prev_hash": "d80f70852a0c2737",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "2a9f97e29abf2b1a",
+          "prev_hash": "912070fddb6e9a35",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
         }
       ]
     },
@@ -22523,7 +22608,7 @@
       ]
     },
     "rgb-topology": {
-      "hash": "b31fc7615f315ccb",
+      "hash": "34f5f38e707cfe02",
       "history": [
         {
           "event": "upgraded",
@@ -22532,6 +22617,14 @@
           "prev_hash": "ba1e8929ec49cc48",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T05:10:38.896Z",
+          "hash": "34f5f38e707cfe02",
+          "prev_hash": "b31fc7615f315ccb",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
         }
       ]
     },

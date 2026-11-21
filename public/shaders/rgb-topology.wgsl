@@ -6,7 +6,9 @@
 //  Complexity: High
 //  Chunks From: rgb-topology
 //  Created: 2026-05-31
-//  Upgraded: 2026-08-21
+//  Upgraded: 2026-08-21, 2026-11-21
+//  Ideas: hillshade from the height field's own gradient; supplementary dashed half-interval contours in gentle terrain; elevation-proportional channel parallax
+//  A packing: raw line masks [lineR, lineG, lineB, alpha] (not display colour, never ACES) — unchanged
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -76,6 +78,30 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let topoG = (src.g * 0.8 + depth * 0.2) * elevExag + rotUV.y * 0.25;
   let topoB = (src.b * 0.8 + depth * 0.2) * elevExag - length(rotUV) * 0.18;
 
+  // ── Forward differences of the height field (feeds ideas 1 and 2) ───────────────────────
+  // Same height the contours use (photo mean * 0.8 + depth * 0.2, exaggerated), without the
+  // mouse tilt ramps, differenced one texel right / down. Units: height per pixel.
+  let texel = 1.0 / dims;
+  let srcX = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(texel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let srcY = textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, texel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
+  let pixMax = vec2<i32>(dims) - vec2<i32>(1);
+  let depthX = textureLoad(readDepthTexture, min(pixel + vec2<i32>(1, 0), pixMax), 0).r;
+  let depthY = textureLoad(readDepthTexture, min(pixel + vec2<i32>(0, 1), pixMax), 0).r;
+  let h0 = ((src.r + src.g + src.b) * 0.2667 + depth * 0.2) * elevExag;
+  let hX = ((srcX.r + srcX.g + srcX.b) * 0.2667 + depthX * 0.2) * elevExag;
+  let hY = ((srcY.r + srcY.g + srcY.b) * 0.2667 + depthY * 0.2) * elevExag;
+  let gradPix = vec2<f32>(hX - h0, hY - h0);
+  let relief = gradPix * dims.y;
+  let hMean = clamp((topoR + topoG + topoB) * 0.3333, 0.0, 1.0);
+
+  // ── Idea 1: hillshade from the field's own gradient ─────────────────────────────────────
+  // Lambert n.L on the surface z = h. The sun starts in the map's top-left and swings with the
+  // same rotAngle that already tilts the terrain (pointer-owned). shadeN is 1.0 on flat ground.
+  let sunXY = vec2<f32>(-0.62, -0.62);
+  let sunDir = normalize(vec3<f32>(sunXY.x * c - sunXY.y * s, sunXY.x * s + sunXY.y * c, 0.8));
+  let reliefN = normalize(vec3<f32>(-relief * 0.05, 1.0));
+  let shadeN = clamp(dot(reliefN, sunDir) / sunDir.z, 0.4, 1.8);
+
   let intervals = vec3<f32>(1.0, 1.618, 2.414);
   let lineR = 1.0 - smoothstep(0.0, lineThickness, abs(sin((topoR + time * 0.02) * contourDensity * intervals.x)));
   let lineG = 1.0 - smoothstep(0.0, lineThickness, abs(sin((topoG + time * 0.03) * contourDensity * intervals.y)));
@@ -92,6 +118,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let runnerG = smoothstep(0.08, 0.0, abs(fract(topoG * contourDensity * 0.31 - time * (2.1 + mids * 1.2)) - 0.5));
   let helix = smoothstep(0.07, 0.0, abs(fract(atan2(rotUV.y, rotUV.x) / TAU * 6.0 + length(rotUV) * 5.0 - time * 2.6) - 0.5));
 
+  // ── Idea 2: supplementary dashed half-interval contours in gentle terrain ────────────────
+  // Cartographers add dashed intermediate contours where the main ones are far apart. |cos x| is
+  // zero exactly midway between the main |sin x| lines (same phase x per channel). Dashes run
+  // along the contour tangent (perpendicular to the full gradient: image + tilt ramp); the set
+  // fades out as the image slope rises, so steep ground stays clean.
+  let rampPix = 0.3 * vec2<f32>(c * aspect / dims.x, -s / dims.y);
+  let gDir = normalize(gradPix + rampPix + vec2<f32>(1e-6));
+  let along = dot(vec2<f32>(pixel), vec2<f32>(-gDir.y, gDir.x));
+  let dashT = abs(fract(along / (0.016 * dims.y)) - 0.5);
+  let suppVis = (1.0 - smoothstep(0.6, 3.0, length(relief))) * smoothstep(0.30, 0.22, dashT);
+  let suppW = lineThickness * 0.8;
+  let suppR = (1.0 - smoothstep(0.0, suppW, abs(cos((topoR + time * 0.02) * contourDensity * intervals.x)))) * suppVis;
+  let suppG = (1.0 - smoothstep(0.0, suppW, abs(cos((topoG + time * 0.03) * contourDensity * intervals.y)))) * suppVis;
+  let suppB = (1.0 - smoothstep(0.0, suppW, abs(cos((topoB - time * 0.025) * contourDensity * intervals.z)))) * suppVis;
+
   var clickFront = 0.0;
   let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
@@ -102,9 +143,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
   }
 
-  let tilt = rotUV * channelSep * (0.5 + bass * 0.5) * (1.0 + held * 0.35);
+  // ── Idea 3: elevation-proportional parallax (relief displacement) ────────────────────────
+  // High ground leans further from the pointer-centre than low ground, as stereo disparity does.
+  // ~1.0x at mid elevation, so Channel Separation keeps its HEAD amplitude.
+  let tilt = rotUV * channelSep * (0.5 + bass * 0.5) * (1.0 + held * 0.35) * (0.55 + 0.9 * hMean);
   let sampR = textureSampleLevel(readTexture, u_sampler, clamp(uv + tilt, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-  let sampG = textureSampleLevel(readTexture, u_sampler, uv, 0.0).g;
+  let sampG = src.g;
   let sampB = textureSampleLevel(readTexture, u_sampler, clamp(uv - tilt, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
   let phase = time * 0.08 + mids * 0.2;
@@ -117,6 +161,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   contourColor += hypsoR * (indexR * 0.22 + ridgeTick * 0.18 + runnerR * 0.28 + clickFront * 0.4);
   contourColor += hypsoG * (runnerG * 0.22 + helix * 0.18);
   contourColor += hypsoB * helix * 0.12;
+  contourColor += vec3<f32>(suppR * sampR * hypsoR.r, suppG * sampG * hypsoG.g, suppB * sampB * hypsoB.b) * 0.9;
+  contourColor = contourColor * mix(1.0, shadeN, 0.5);
 
   let peakMask = max(max(lineR * topoR, lineG * topoG), lineB * topoB);
   let specDir = normalize(vec3<f32>(rotUV * 0.5, 1.0));
@@ -127,12 +173,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let chromaBlend = mix(vec3<f32>(0.9, 0.25, 0.6), vec3<f32>(0.25, 0.85, 0.95), 0.5 + 0.5 * sin(time * 0.7));
   contourColor = mix(contourColor, contourColor * chromaBlend * 1.3, crossMix * 0.4);
 
-  var finalColor = mix(contourColor, src.rgb, sourceBlend);
+  var finalColor = mix(contourColor, src.rgb * mix(1.0, shadeN, 0.75), sourceBlend);
   finalColor = acesToneMap(finalColor * (1.15 + treble * 0.12 + held * 0.08));
   finalColor = finalColor + vec3<f32>(grain(uv, time));
 
   let contourMask = max(max(lineR, lineG), lineB);
-  let finalAlpha = clamp(contourDensity * 0.012 * channelSep * depth + contourMask * 0.38 + src.a * sourceBlend * 0.25 + clickFront * 0.2, 0.04, 0.98);
+  let suppMask = max(max(suppR, suppG), suppB);
+  let finalAlpha = clamp(contourDensity * 0.012 * channelSep * depth + max(contourMask, suppMask * 0.5) * 0.38 + src.a * sourceBlend * 0.25 + clickFront * 0.2, 0.04, 0.98);
   let outDepth = clamp(mix(depth, 0.18 + contourMask * 0.72, 0.22) + ridgeTick * 0.05, 0.0, 1.0);
 
   let maskOut = vec4<f32>(

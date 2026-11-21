@@ -3,7 +3,7 @@
   "name": "RGB Topology",
   "category": "visual-effects",
   "url": "shaders/rgb-topology.wgsl",
-  "description": "Topographic contour extraction per RGB channel with index isolines, ridge ticks, traveling iso-runners, psychedelic hypsometric ramps, held shear, and bounded click fronts. Feedback A stays [lineR, lineG, lineB, alpha].",
+  "description": "Topographic contour extraction per RGB channel with index isolines, ridge ticks, traveling iso-runners, psychedelic hypsometric ramps, held shear, and bounded click fronts. Feedback A stays [lineR, lineG, lineB, alpha]. Hillshade lit from a sun that swings with the pointer rotation, dashed half-interval supplementary contours in gentle terrain, and elevation-proportional channel parallax.",
   "features": [
     "mouse-driven",
     "audio-reactive",

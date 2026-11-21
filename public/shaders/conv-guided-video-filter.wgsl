@@ -4,9 +4,9 @@
 //  Features: advanced-convolution, edge-preserving, guided-filter,
 //             mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-08
-//  Ideas: depth-augmented guide; exact integer C loads for P
-//  A packing: display RGBA
+//  Upgraded: 2026-09-08, 2026-11-21
+//  Ideas: depth-augmented guide; exact integer C loads for P; edge-aware ε weighting (weighted guided filter Γ, §12.2A); guide-gated anti-halo envelope (§12.2A)
+//  A packing: pre-ACES guided colour state + confidence α (ACES on writeTexture only)
 //
 //  Guided Image Filtering as described in the Next-Gen Convolutions
 //  feature request:
@@ -20,9 +20,16 @@
 //  when applied after artistic effects.
 //
 //  RGBA32FLOAT storage:
-//    RGB — edge-guided reconstruction of dataTextureC
+//    writeTexture RGB — ACES display of the edge-guided reconstruction
+//    dataTextureA RGB — the same reconstruction BEFORE ACES (state read back as
+//                       P next frame; storing the tone-mapped value made a
+//                       self-fed run contract to flat grey 0.728)
 //    A   — |a| coefficient: high = strong edge guidance,
 //           low = smooth region (encodes filter "confidence")
+//
+//  Empty previous pass (dataTextureC all zero: slot 1 / first frame): P falls
+//  back to the source frame, i.e. the classic self-guided edge-preserving
+//  smoother, instead of the old black-forever output.
 //
 //  Mouse interaction:
 //    Mouse proximity sharpens the filter (smaller radius, lower eps)
@@ -58,8 +65,28 @@ fn guidedFilter(
   var sumG2  = 0.0;
   var count  = 0.0;
 
+  // Centre guide, hoisted above the loop: the range envelope (Idea 2) gates on it.
+  let gCentreLuma = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb,
+                      vec3<f32>(0.2126, 0.7152, 0.0722));
+  let gCentreDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let gCentre = mix(gCentreLuma, gCentreDepth, 0.35);
+
+  // Idea 1 accumulators: the 3×3 sub-window of the SAME taps (no extra fetches).
+  var sumG3  = 0.0;
+  var sumG32 = 0.0;
+  // Idea 2 accumulators: P range over the taps on the centre pixel's side of an edge.
+  let tau  = clamp(2.0 * sqrt(epsilon), 0.06, 0.30);
+  var minP = vec3<f32>(1e9);
+  var maxP = vec3<f32>(-1e9);
+
+  // Rescue: an empty previous pass (C all zero here: slot 1 / first frame) used to give
+  // P = 0 → black forever. Decided once per pixel: P falls back to the source frame.
+  let cC0 = textureLoad(dataTextureC, clamp(vec2<i32>(uv * vec2<f32>(cDims)), vec2<i32>(0), cDims - vec2<i32>(1)), 0);
+  let useSrc = max(max(cC0.r, cC0.g), max(cC0.b, cC0.a)) <= 1e-5;
+
   let r = min(radius, 8);
   for (var dy = -r; dy <= r; dy++) {
+    let rowIn = f32(abs(dy) <= 1);
     for (var dx = -r; dx <= r; dx++) {
       let off  = vec2<f32>(f32(dx), f32(dy)) * pixSz;
       let p    = clamp(uv + off, vec2<f32>(0.0), vec2<f32>(1.0));
@@ -68,13 +95,24 @@ fn guidedFilter(
       let gDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, p, 0.0).r;
       let g = mix(gLuma, gDepth, 0.35);
       let ic = clamp(vec2<i32>(p * vec2<f32>(cDims)), vec2<i32>(0), cDims - vec2<i32>(1));
-      let inp = textureLoad(dataTextureC, ic, 0).rgb;
+      // P = exact integer C load (or the already-fetched source tap when C is empty).
+      let inp  = select(textureLoad(dataTextureC, ic, 0).rgb, gRGB, useSrc);
 
       sumG  += g;
       sumP  += inp;
       sumGP += inp * g;
       sumG2 += g * g;
       count += 1.0;
+
+      // ── Idea 1: 3×3 guide moments for the edge-aware ε (weighted guided filter) ──
+      let in3 = rowIn * f32(abs(dx) <= 1);
+      sumG3  += g * in3;
+      sumG32 += g * g * in3;
+
+      // ── Idea 2: P extrema over the taps whose guide is on the centre's side of the edge ──
+      let sameSide = abs(g - gCentre) < tau;
+      minP = min(minP, select(vec3<f32>(1e9), inp, sameSide));
+      maxP = max(maxP, select(vec3<f32>(-1e9), inp, sameSide));
     }
   }
 
@@ -84,16 +122,31 @@ fn guidedFilter(
   let meanG2 = sumG2 / max(count, 1.0);
   let varG   = meanG2 - meanG * meanG;
 
+  // ── Idea 1: edge-aware ε weighting (Li et al. 2015 weighted guided filter) ──
+  // Γ = (σ₃·σ_R + λ)/(χ_ref + λ): large on true edges (both the 3×3 and the whole
+  // window see contrast), small in flat or noise-only areas. ε_eff = ε/Γ — flats
+  // smooth harder (up to ε×2), edges hold (ε/4, a → 1). The eps slider stays the
+  // base regulariser. χ_ref is the flat/noise level the paper's image-wide mean
+  // reduces to (it is dominated by flat pixels), so Γ ≈ 1 on ordinary flats.
+  let meanG3 = sumG3 / 9.0;
+  let sd3    = sqrt(max(sumG32 / 9.0 - meanG3 * meanG3, 0.0));
+  let sdR    = sqrt(max(varG, 0.0));
+  let gammaW = clamp((sd3 * sdR + 1e-5) / (0.0012 + 1e-5), 0.5, 4.0);
+  let epsEff = epsilon / gammaW;
+
   // Linear model: q = a*G + b
-  let a = (meanGP - meanG * meanP) / (varG + epsilon);
+  let a = (meanGP - meanG * meanP) / (varG + epsEff);
   let b = meanP - a * meanG;
 
   // Evaluate at centre pixel
-  let gCentreLuma = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb,
-                      vec3<f32>(0.2126, 0.7152, 0.0722));
-  let gCentreDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  let gCentre = mix(gCentreLuma, gCentreDepth, 0.35);
-  let filtered  = a * gCentre + b;
+  var filtered = a * gCentre + b;
+
+  // ── Idea 2: guide-gated anti-halo envelope ──
+  // q = a·G + b extrapolates past P's own range where guide contrast exceeds the
+  // input's — the overshoot ring around strong edges. Bound it by the extrema of P
+  // on the pixel's own side of the edge, plus a little headroom that grows with ε.
+  let allow = 0.01 + 0.5 * epsilon;
+  filtered = clamp(filtered, minP - vec3<f32>(allow), maxP + vec3<f32>(allow));
 
   // Confidence: magnitude of a coefficient (edge guidance strength)
   let confidence = clamp(length(a) * 2.0, 0.0, 1.0);
@@ -131,16 +184,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Run guided filter
   let result = guidedFilter(uv, pixSz, radius, epsilon, cDims);
 
-  let processed = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), cDims - vec2<i32>(1)), 0).rgb;
+  let cCentre   = textureLoad(dataTextureC, clamp(coord, vec2<i32>(0), cDims - vec2<i32>(1)), 0);
   let original  = textureSampleLevel(readTexture,  u_sampler, uv, 0.0);
+  // Same empty-previous-pass fallback as the filter window (source frame stands in for P).
+  let cHas      = max(max(cCentre.r, cCentre.g), max(cCentre.b, cCentre.a)) > 1e-5;
+  let processed = select(original.rgb, cCentre.rgb, cHas);
 
-  let guidedRGB = acesToneMap(result.rgb * (1.0 + mids * 0.15));
+  // Clamp before ACES: a·G+b can dip negative and the catalog ACES fit maps negatives bright.
+  let guidedLin = max(result.rgb * (1.0 + mids * 0.15), vec3<f32>(0.0));
+  let guidedRGB = acesToneMap(guidedLin);
   let finalRGB  = mix(processed, guidedRGB, guideStr);
   let confidence = clamp(result.a * 0.75 + original.a * 0.25, 0.0, 1.0);
-  let packed = vec4<f32>(finalRGB, confidence);
 
-  textureStore(writeTexture, coord, packed);
-  textureStore(dataTextureA, coord, packed);
+  // Display keeps HEAD's formula. The state fed back as P next frame is the
+  // reconstruction BEFORE ACES — re-reading the tone-mapped value contracted a
+  // self-fed run to ACES's fixed point (flat grey 0.728).
+  let stateRGB = mix(processed, guidedLin, guideStr);
+
+  textureStore(writeTexture, coord, vec4<f32>(finalRGB, confidence));
+  textureStore(dataTextureA, coord, vec4<f32>(stateRGB, confidence));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));

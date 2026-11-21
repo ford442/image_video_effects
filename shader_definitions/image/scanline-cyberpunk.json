@@ -3,7 +3,7 @@
   "name": "Scanline Cyberpunk",
   "url": "shaders/scanline-cyberpunk.wgsl",
   "category": "image",
-  "description": "CRT scanlines and RGB phosphor triads with continuous head-roll packets, fast phosphor runners, held-pointer distortion, click corruption fronts, real audio, and cyberpunk color grading.",
+  "description": "CRT scanlines and RGB phosphor triads with continuous head-roll packets, fast phosphor runners, held-pointer distortion, click corruption fronts, real audio, and cyberpunk color grading. Each head-roll bar now yanks the lines behind it sideways and relaxes exponentially (sync-edge hook), and tape-style dropout bursts flare or black out the signal along a scanline.",
   "tags": [
     "crt",
     "scanlines",

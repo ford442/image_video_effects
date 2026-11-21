@@ -242,7 +242,7 @@
     "category": "hybrid",
     "type": "compute",
     "url": "shaders/hyb-kaleidoscope-pulse.wgsl",
-    "description": "Mirrors the input image into FBM-domain-warped kaleidoscope segments, adds an ACES-tonemapped radial pulse, and writes semantic alpha encoding pulse energy and depth.",
+    "description": "Mirrors the input image into FBM-domain-warped kaleidoscope segments, adds an ACES-tonemapped radial pulse, and writes semantic alpha encoding pulse energy and depth. Mirror-bounce material: each reflection tints/dims the wedge and a hairline groove marks the mirror joints (strength rides Effect Mix); the object cell slowly twists with radius at the pulse speed; wedge count is now a whole number so the mirrors close without a seam.",
     "features": [
       "hybrid",
       "kaleidoscope",

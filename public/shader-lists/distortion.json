@@ -3353,7 +3353,7 @@
       "temporal",
       "upgraded-rgba"
     ],
-    "description": "Lamb-Oseen vortex fluid dynamics with Kelvin-Helmholtz shear instability at vortex boundaries. Multiple interacting vortices from ripple history, velocity-magnitude and vorticity colour coding with chromatic aberration.",
+    "description": "Lamb-Oseen vortex fluid dynamics with Kelvin-Helmholtz shear instability at vortex boundaries. Multiple interacting vortices from ripple history, velocity-magnitude and vorticity colour coding with chromatic aberration. Vorticity confinement re-spins the cores (Viscosity sets how hard) and lets overlapping click vortices bind; a MacCormack back-trace through last frame's velocity field makes the warp follow the arc instead of drifting outward; the pointer vortex keeps a finite core instead of spinning down with session time.",
     "params": [
       {
         "id": "circulation",

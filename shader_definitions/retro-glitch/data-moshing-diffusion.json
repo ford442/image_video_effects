@@ -3,7 +3,7 @@
   "name": "Data Moshing Diffusion",
   "url": "shaders/data-moshing-diffusion.wgsl",
   "category": "retro-glitch",
-  "description": "Anisotropic data-mosh diffusion with exact packed-state advection, rapid chromatic stream packets, held-pointer swirl, and click-launched smear fronts. Diffusion runs along image contours, and each packet leaves a wake. A stores the offset field, not color.",
+  "description": "Anisotropic data-mosh diffusion with exact packed-state advection, rapid chromatic stream packets, held-pointer swirl, and click-launched smear fronts. Diffusion runs along image contours, and each packet leaves a wake. Quantize also sets a macroblock motion carry: the offset history is pulled toward the block-centre motion vector, so the smear steps in a codec-style block lattice. Diffusion uses an isotropic 9-point stencil. A stores the offset field, not color.",
   "tags": [
     "glitch",
     "data-mosh",

@@ -558,7 +558,7 @@
     "name": "Data Moshing Diffusion",
     "url": "shaders/data-moshing-diffusion.wgsl",
     "category": "retro-glitch",
-    "description": "Anisotropic data-mosh diffusion with exact packed-state advection, rapid chromatic stream packets, held-pointer swirl, and click-launched smear fronts. Diffusion runs along image contours, and each packet leaves a wake. A stores the offset field, not color.",
+    "description": "Anisotropic data-mosh diffusion with exact packed-state advection, rapid chromatic stream packets, held-pointer swirl, and click-launched smear fronts. Diffusion runs along image contours, and each packet leaves a wake. Quantize also sets a macroblock motion carry: the offset history is pulled toward the block-centre motion vector, so the smear steps in a codec-style block lattice. Diffusion uses an isotropic 9-point stencil. A stores the offset field, not color.",
     "tags": [
       "glitch",
       "data-mosh",
@@ -1893,7 +1893,7 @@
     "id": "spectrum-bleed",
     "name": "Spectrum Bleed",
     "url": "shaders/spectrum-bleed.wgsl",
-    "description": "Sprung spectrum-ink diffusion with bounded click splatters, read-only FFT shimmer, exact-C persistence, semantic display RGBA in authoritative A, and ACES output.",
+    "description": "Sprung spectrum-ink diffusion with bounded click splatters, read-only FFT shimmer, exact-C persistence, semantic display RGBA in authoritative A, and ACES output. Colour now trails luma to the right of edges (chroma delay line) and a static paper-fibre grain makes the fringes and advancing front fibrous.",
     "workgroup_size": [
       16,
       16,

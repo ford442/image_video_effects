@@ -1110,7 +1110,7 @@
     "name": "Guided Video Filter",
     "url": "shaders/conv-guided-video-filter.wgsl",
     "category": "image",
-    "description": "Guided image filter that uses the original crisp video frame as the guide image to restore sharp edges on heavily processed or convoluted content from the previous slot pass. Eliminates halo artifacts while preserving painterly, glitch, or artistic effects inside smooth regions. Mouse proximity creates a live sharpening lens.",
+    "description": "Guided image filter that uses the original crisp video frame as the guide image to restore sharp edges on heavily processed or convoluted content from the previous slot pass. Eliminates halo artifacts while preserving painterly, glitch, or artistic effects inside smooth regions. Mouse proximity creates a live sharpening lens. Edge-aware epsilon weighting keeps flat regions smooth while true edges stay crisp, a guide-gated range envelope suppresses overshoot halos, and an empty previous pass falls back to the source frame instead of rendering black.",
     "tags": [
       "convolution",
       "guided-filter",
@@ -4195,7 +4195,7 @@
     "name": "Scanline Cyberpunk",
     "url": "shaders/scanline-cyberpunk.wgsl",
     "category": "image",
-    "description": "CRT scanlines and RGB phosphor triads with continuous head-roll packets, fast phosphor runners, held-pointer distortion, click corruption fronts, real audio, and cyberpunk color grading.",
+    "description": "CRT scanlines and RGB phosphor triads with continuous head-roll packets, fast phosphor runners, held-pointer distortion, click corruption fronts, real audio, and cyberpunk color grading. Each head-roll bar now yanks the lines behind it sideways and relaxes exponentially (sync-edge hook), and tape-style dropout bursts flare or black out the signal along a scanline.",
     "tags": [
       "crt",
       "scanlines",

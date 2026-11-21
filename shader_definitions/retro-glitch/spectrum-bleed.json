@@ -2,7 +2,7 @@
   "id": "spectrum-bleed",
   "name": "Spectrum Bleed",
   "url": "shaders/spectrum-bleed.wgsl",
-  "description": "Sprung spectrum-ink diffusion with bounded click splatters, read-only FFT shimmer, exact-C persistence, semantic display RGBA in authoritative A, and ACES output.",
+  "description": "Sprung spectrum-ink diffusion with bounded click splatters, read-only FFT shimmer, exact-C persistence, semantic display RGBA in authoritative A, and ACES output. Colour now trails luma to the right of edges (chroma delay line) and a static paper-fibre grain makes the fringes and advancing front fibrous.",
   "workgroup_size": [
     16,
     16,
