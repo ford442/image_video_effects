@@ -1,32 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  PP Chromatic — Cauchy-dispersed lens with temporal fringe persistence.
 //  Category: post-processing
-//  Upgraded: 2026-08-27 (premium mixed-eight), 2026-09-21
+//  Upgraded: 2026-08-27 (premium mixed-eight), 2026-09-21, 2026-11-21
 //  Ideas: longitudinal (axial) CA across the focal plane; purple fringing
-//         on blown highlights
+//         on blown highlights; Petzval field curvature; comatic radial smear
 //  A packing: A/C store tone-mapped display RGBA. B and extraBuffer unused.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -88,6 +69,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let axial = normalize(vec2<f32>(cos(time * 0.23 + mouse.x * 3.0), sin(time * 0.19 + mouse.y * 3.0))) / aspectVec;
   let tangent = vec2<f32>(-radial.y, radial.x);
   let direction = normalize(mix(mix(radial, axial, smoothstep(0.0, 0.5, mode)), tangent, smoothstep(0.5, 1.0, mode)) * aspectVec) / aspectVec;
+  // ── Idea 3: comatic smear ─────────────────────────────────────────
+  // Off-axis points grow a tail along the smear direction this lens already
+  // uses. Green stays put; red and violet are pulled farther, and the kick
+  // dies on axis. Chromatic Amount still owns the scale.
+  let fieldR = length((warped - center) * aspectVec);
+  let comaKick = direction * (fieldR * fieldR) * chroma * 0.55;
 
   var clickLens = 0.0;
   let rippleCount = min(u32(max(u.config.y, 0.0)), 50u);
@@ -117,11 +104,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let n3 = 1.46 + cauchyB / (lambda3 * lambda3);
   let n4 = 1.46 + cauchyB / (lambda4 * lambda4);
   let baseN = 1.46;
-  let s0 = sampleBand(warped + direction * (n0 - baseN) + causticShift);
+  let s0 = sampleBand(warped + direction * (n0 - baseN) + causticShift + comaKick);
   let s1 = sampleBand(warped + direction * (n1 - baseN) + causticShift * 0.7);
   let s2 = sampleBand(warped + direction * (n2 - baseN));
   let s3 = sampleBand(warped + direction * (n3 - baseN) - causticShift * 0.55);
-  let s4 = sampleBand(warped + direction * (n4 - baseN) - causticShift);
+  let s4 = sampleBand(warped + direction * (n4 - baseN) - causticShift + comaKick * 1.35);
   var hdr = vec3<f32>(s0.r * 0.72 + s1.r * 0.28,
                       s1.g * 0.22 + s2.g * 0.58 + s3.g * 0.20,
                       s3.b * 0.32 + s4.b * 0.68);
@@ -135,7 +122,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // the lens centre, which already follows the pointer. Amount rides the
   // chroma slider, so a preset with no CA gets none of this either.
   let depthHere = textureLoad(readDepthTexture, coord, 0).r;
-  let focusDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(center, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let focusCenter = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(center, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  // ── Idea 4: Petzval field curvature ───────────────────────────────
+  // The focal surface bows with field angle. Distortion's sign flips the bow
+  // (barrel vs pincushion); zero distortion still has a shallow curve.
+  let bow = fieldR * fieldR * (0.12 + abs(curvature) * 0.28);
+  let focusDepth = focusCenter + bow * select(1.0, -1.0, curvature < 0.0);
   let defocus = clamp((depthHere - focusDepth) * 3.0, -1.0, 1.0);
   let axialAmt = clamp(abs(defocus) * 1.5, 0.0, 0.85);
   let soft = defocusDisc(warped, abs(defocus) * (0.002 + chroma * 0.35), aspectVec);

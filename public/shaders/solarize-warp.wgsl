@@ -3,31 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-08-30
+//  Upgraded: 2026-08-30, 2026-11-21
+//  Ideas: per-channel Sabattier; Mackie-line re-exposure
 //  A packing: ACES display RGBA
 //  Motion: domain-warp conveyor + solarize threshold wavefront
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const TAU: f32 = 6.28318530718;
 
@@ -55,8 +37,14 @@ fn fbm(p: vec2<f32>) -> f32 {
 fn sabattier(tone: vec3<f32>, threshold: f32, strength: f32) -> vec3<f32> {
   let luma = dot(tone, vec3<f32>(0.299, 0.587, 0.114));
   let edge = abs(luma - threshold);
-  let invertMask = smoothstep(0.0, 0.12, edge) * step(threshold, luma);
-  var outc = mix(tone, 1.0 - tone, invertMask * strength);
+  // ── Idea 1: per-channel Sabattier ─────────────────────────────────
+  // The three emulsions cross the threshold a little apart. At zero
+  // intensity the split collapses and every mask matches the luma gate.
+  let split = 0.06 * strength;
+  let invR = smoothstep(0.0, 0.12, abs(luma - (threshold - split))) * step(threshold - split, luma);
+  let invG = smoothstep(0.0, 0.12, edge) * step(threshold, luma);
+  let invB = smoothstep(0.0, 0.12, abs(luma - (threshold + split))) * step(threshold + split, luma);
+  var outc = mix(tone, 1.0 - tone, vec3<f32>(invR, invG, invB) * strength);
   let mackie = smoothstep(0.08, 0.0, edge) * strength * 0.55;
   return outc + vec3<f32>(0.85, 0.90, 0.75) * mackie;
 }
@@ -163,6 +151,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   var hdr = mix(solarized, splitTone, influence * 0.45) + grain * 0.018;
   hdr = satBoost(hdr, 0.22 + treble * 0.18);
   hdr = mix(hdr, hist.rgb, 0.16 * (1.0 - influence));
+  // ── Idea 2: re-exposure along the Mackie line ─────────────────────
+  // The second exposure lands where the developing print is most sensitive:
+  // on the contour. Measured on the source luma, before the silver line.
+  let srcLuma = dot(source.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let mackieProx = smoothstep(0.12, 0.0, abs(srcLuma - solarizeThreshold));
+  hdr = mix(hdr, 1.0 - hist.rgb, mackieProx * effectIntensity * 0.35);
   hdr = hdr + vec3<f32>(0.95, 0.72, 0.28) * front * 0.28;
   let rgb = acesFilm(hdr * 1.1);
 
