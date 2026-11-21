@@ -44,7 +44,7 @@ async function boot(page: Page, mode: Mode): Promise<void> {
   const probe = await page.evaluate(() => (window as any).webgpuProbe);
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
   // The app's boot effect puts Liquid in slot 0 once the shader lists load.
-  await page.waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
+  await page.waitForFunction(() => /^liquid(-original)?$/.test((window as any).__pixelocity__.getSlotState(0)?.shaderId ?? ''), null, {
     timeout: 60_000,
     polling: 250,
   });
@@ -118,7 +118,7 @@ test.describe('Generative input source (dedicated generator stage)', () => {
       expect(withLiquid.stdev).toBeGreaterThan(4);
 
       // The generator is not an effect slot: Liquid is still in slot 0, nothing was displaced.
-      expect(await state(page, 0)).toMatchObject({ shaderId: 'liquid', enabled: true });
+      expect(await state(page, 0)).toMatchObject({ shaderId: expect.stringMatching(/^liquid(-original)?$/), enabled: true });
       expect((await state(page, 1)).shaderId).toBeNull();
 
       expect(await gpuErrors(page, mode)).toEqual([]);
@@ -160,7 +160,7 @@ test.describe('Generative input source (dedicated generator stage)', () => {
       await page.waitForFunction(() => (window as any).__pixelocity__.renderer.getGenerator() === null, null, {
         timeout: 30_000,
       });
-      expect(await state(page, 0)).toMatchObject({ shaderId: 'liquid' });
+      expect(await state(page, 0)).toMatchObject({ shaderId: expect.stringMatching(/^liquid(-original)?$/) });
     });
   }
 });

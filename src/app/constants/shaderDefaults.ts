@@ -5,6 +5,9 @@
  */
 export const DEFAULT_SLOT1_SHADER_ID = 'liquid-original';
 
+/** Boot fallback while the frozen default is not yet in the (remote) catalog — the app must never start with an empty Slot 1. */
+export const FALLBACK_SLOT1_SHADER_ID = 'liquid';
+
 // --- Webcam Fun Shaders ---
 export const WEBCAM_FUN_SHADERS = [
     'liquid', 'liquid-chrome-ripple', 'liquid-rainbow', 'liquid-swirl',

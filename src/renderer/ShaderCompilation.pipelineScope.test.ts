@@ -195,6 +195,25 @@ describe('compileShader validation-scope fail-soft', () => {
     expect(reported.some((e) => e.type === 'shader-compile')).toBe(true);
   });
 
+  it('reports a shader that fails bind-group validation instead of silently passing through (Release 3/5)', async () => {
+    const device = makeDevice({ popSequence: [null, null] });
+    const pipelines = new Map<string, GPUComputePipeline>();
+    const ok = await compileShader(
+      device,
+      {} as GPUPipelineLayout,
+      'truncated-download',
+      'this is not valid wgsl {{{',
+      pipelines,
+      new Map(),
+      new Map(),
+      'rgba32float',
+    );
+    expect(ok).toBe(true); // fallback pass-through still renders
+    expect(
+      reported.some((e) => e.type === 'shader-compile' && e.message.includes('"truncated-download"') && /pass-through/i.test(e.message)),
+    ).toBe(true);
+  });
+
   it('still compiles FALLBACK_WGSL storage decls onto the allocated color format', () => {
     expect(FALLBACK_WGSL).toContain('rgba32float');
   });

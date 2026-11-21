@@ -1,4 +1,4 @@
-import React, { RefObject, Suspense, lazy } from 'react';
+import React, { RefObject, Suspense, lazy, useEffect, useState, useSyncExternalStore } from 'react';
 import WebGPUCanvas from '../WebGPUCanvas';
 import Controls from '../Controls';
 import { RenderMode, ShaderEntry, ShaderCategory, InputSource, SlotParams } from '../../renderer/types';
@@ -16,6 +16,13 @@ import type { UseSlotCompositingReturn } from '../../hooks/useSlotCompositing';
 import type { UseHdrToneMapReturn } from '../../hooks/useHdrToneMap';
 import type { UseCanvasColorReturn } from '../../hooks/useCanvasColor';
 import { stagePanelStore } from '../../output/stagePanelStore';
+import { RendererErrorNotice } from './RendererErrorNotice';
+import {
+    dismissErrorNotice,
+    getErrorNotice,
+    installErrorNoticeHandler,
+    subscribeErrorNotice,
+} from '../../renderer/errorNotices';
 
 const LiveStudioTab = lazy(() => import(/* webpackChunkName: "live-studio" */ '../LiveStudioTab'));
 
@@ -167,6 +174,10 @@ export interface AppShellProps {
 }
 
 export function AppShell(props: AppShellProps) {
+    // Surface recoverable renderer errors (shader compile, media load) instead of only logging them.
+    useEffect(() => installErrorNoticeHandler(), []);
+    // The logo GIF is hosted on the production origin; fall back to the text wordmark if it can't load.
+    const [logoFailed, setLogoFailed] = useState(false);
     const {
         compositing,
         hdrToneMap,
@@ -295,20 +306,26 @@ export function AppShell(props: AppShellProps) {
 
     const chromeHidden = !showSidebar && activeTab === 'main';
     const showRemoteButton = !isPublicPixelocityHost();
+    const errorNotice = useSyncExternalStore(subscribeErrorNotice, getErrorNotice, getErrorNotice);
 
     return (
         <>
             {!chromeHidden && (
             <header className="header">
                 <div className="logo-section">
-                    <div style={{ height: '80px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img
-                            src="https://test.1ink.us/image_video_effects/static/media/pixelocity_title_logo_glitch.gif"
-                            alt="Pixelocity"
-                            className="logo-img"
-                            style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
-                        />
-                    </div>
+                    {logoFailed ? (
+                        <div className="logo-text">Pixelocity</div>
+                    ) : (
+                        <div style={{ height: '80px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img
+                                src="https://test.1ink.us/image_video_effects/static/media/pixelocity_title_logo_glitch.gif"
+                                alt="Pixelocity"
+                                className="logo-img"
+                                style={{ height: '100px', width: 'auto', objectFit: 'contain' }}
+                                onError={() => setLogoFailed(true)}
+                            />
+                        </div>
+                    )}
                     <div className="subtitle-text">Image Playpen</div>
                 </div>
                 <div className="header-controls">
@@ -489,6 +506,13 @@ export function AppShell(props: AppShellProps) {
                         webcamVideoElement={videoElementRef.current}
                         onCanvasRef={(el) => { webgpuCanvasRef.current = el; }}
                         shaderCatalog={availableModes}
+                    />
+                    <RendererErrorNotice
+                        notice={errorNotice}
+                        onDismiss={dismissErrorNotice}
+                        onTryAnotherEffect={triggerRoulette}
+                        onTryAnotherImage={inputSource === 'image' ? handleNewRandomImage : undefined}
+                        onUseGenerative={() => syncInputSourceToRenderer('generative')}
                     />
                     <div className="status-bar">
                         <span>{isAiVjMode ? `[AI VJ]: ${aiVjMessage}` : status}</span>

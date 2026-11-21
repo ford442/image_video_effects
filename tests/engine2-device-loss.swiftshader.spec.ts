@@ -60,7 +60,7 @@ async function boot(page: Page, mode: Mode): Promise<void> {
   // loaded; a stack set before that would be overwritten. Tolerant: a build without the
   // default simply never gets one.
   await page
-    .waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
+    .waitForFunction(() => /^liquid(-original)?$/.test((window as any).__pixelocity__.getSlotState(0)?.shaderId ?? ''), null, {
       timeout: 60_000,
       polling: 250,
     })

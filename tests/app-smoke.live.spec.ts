@@ -29,7 +29,8 @@ import { startStaticServer, stopStaticServer, waitForBootDefaultShader } from '.
 const PORT = 3471;
 const DEPLOYED = !!process.env.SMOKE_BASE_URL;
 const BASE_URL = (process.env.SMOKE_BASE_URL || `http://localhost:${PORT}/`).replace(/\/?$/, '/');
-const CI_BLOCKED_HOSTS = ['storage.noahcohn.com', 'storage.googleapis.com', 'images.unsplash.com', 'unsplash.com', 'api.unsplash.com'];
+// test.1ink.us: the header logo GIF (4 MB) is hotlinked from the production origin; the app falls back to a text wordmark.
+const CI_BLOCKED_HOSTS = ['storage.noahcohn.com', 'storage.googleapis.com', 'images.unsplash.com', 'unsplash.com', 'api.unsplash.com', 'test.1ink.us'];
 const ALLOW_HOSTS = (process.env.SMOKE_ALLOW_HOSTS ?? (DEPLOYED ? '' : CI_BLOCKED_HOSTS.join(',')))
   .split(',')
   .map((h) => h.trim())

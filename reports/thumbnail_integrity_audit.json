@@ -1,85 +1,15 @@
 {
-  "generated_at": "2026-10-20T08:35:54.175200Z",
-  "scanned": 1292,
-  "png_fingerprint": "38b30609da59054900da94a9bddef7df8e5c1ff5a413cf6bf149c05fb2a45599",
-  "flagged": 21,
+  "generated_at": "2026-11-21T18:08:49.536056Z",
+  "scanned": 1306,
+  "png_fingerprint": "f5c034e75e684b303d9cfee6a1d7ab23845447c0244c97fb18d99cbfe36916d6",
+  "flagged": 8,
   "summary": {
-    "black_frame": 16,
-    "flat_frame": 5
+    "black_frame": 7,
+    "flat_frame": 1
   },
   "entries": [
     {
-      "id": "bio_lenia_continuous",
-      "in_manifest": true,
-      "reason": "flat_frame",
-      "stats": {
-        "meanLuminance": 0.5005031577084443,
-        "activePixelRatio": 1.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.5019466624537582,
-        "meanG": 0.5141426834408499,
-        "meanB": 0.3611419677731741,
-        "maxChannelStd": 0.009349357385395279
-      }
-    },
-    {
-      "id": "emergent-calligraphic-weave",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
-      "id": "gen-cellular-automata-tapestry",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
-      "id": "gen-crystal-caverns",
-      "in_manifest": true,
-      "reason": "flat_frame",
-      "stats": {
-        "meanLuminance": 0.9958313725496609,
-        "activePixelRatio": 1.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.9803921568615418,
-        "meanG": 1.0,
-        "meanB": 1.0,
-        "maxChannelStd": 1.2563455233770624e-06
-      }
-    },
-    {
       "id": "gen-cybernetic-ferro-coral",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
-      "id": "gen-dragon-curve",
       "in_manifest": true,
       "reason": "black_frame",
       "stats": {
@@ -107,34 +37,6 @@
       }
     },
     {
-      "id": "gen-lichen-reaction-diffusion",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
-      "id": "gen-prismatic-aether-loom",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.02576549019608423,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.35686274509837,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
       "id": "gen-psychedelic-time-warp-kaleidoscope",
       "in_manifest": true,
       "reason": "black_frame",
@@ -146,20 +48,6 @@
         "meanG": 0.0,
         "meanB": 0.0,
         "maxChannelStd": 0.0
-      }
-    },
-    {
-      "id": "gen-quantum-neural-lace",
-      "in_manifest": true,
-      "reason": "flat_frame",
-      "stats": {
-        "meanLuminance": 0.4035192156868704,
-        "activePixelRatio": 1.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.5803921568628705,
-        "meanG": 0.31764705882347605,
-        "meanB": 0.7333333333323891,
-        "maxChannelStd": 1.388968880101759e-06
       }
     },
     {
@@ -205,49 +93,7 @@
       }
     },
     {
-      "id": "gen-xeno-mycelial-resonance-web",
-      "in_manifest": true,
-      "reason": "flat_frame",
-      "stats": {
-        "meanLuminance": 0.5064062745104896,
-        "activePixelRatio": 1.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.6431372549023265,
-        "meanB": 0.6431372549023265,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
       "id": "magnetic-flux-garden",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
-      "id": "molten-gold",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
-      "id": "nebula-gyroid",
       "in_manifest": true,
       "reason": "black_frame",
       "stats": {
@@ -272,34 +118,6 @@
         "meanG": 0.9181578393068334,
         "meanB": 0.894717287549711,
         "maxChannelStd": 0.00727727850959535
-      }
-    },
-    {
-      "id": "retro_phosphor_dream",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.0,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.0,
-        "meanG": 0.0,
-        "meanB": 0.0,
-        "maxChannelStd": 0.0
-      }
-    },
-    {
-      "id": "symbiotic-light-propagation-networks",
-      "in_manifest": true,
-      "reason": "black_frame",
-      "stats": {
-        "meanLuminance": 0.039215686274483165,
-        "activePixelRatio": 0.0,
-        "magentaPixelRatio": 0.0,
-        "meanR": 0.039215686274483165,
-        "meanG": 0.039215686274483165,
-        "meanB": 0.039215686274483165,
-        "maxChannelStd": 6.04284115042848e-08
       }
     }
   ]

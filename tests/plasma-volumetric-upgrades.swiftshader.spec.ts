@@ -22,7 +22,7 @@ test('upgraded shaders compile and produce nonuniform frames on WebGPU', async (
   await page.goto(`http://localhost:${PORT}/?renderer=main&testMode=1`, { waitUntil: 'load' });
   await page.waitForFunction(() => (window as any).webgpuProbe && (window as any).__pixelocity__?.renderer, null, { timeout: 60_000 });
   expect(await page.evaluate(() => (window as any).webgpuProbe.ok)).toBe(true);
-  await page.waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, { timeout: 60_000 });
+  await page.waitForFunction(() => /^liquid(-original)?$/.test((window as any).__pixelocity__.getSlotState(0)?.shaderId ?? ''), null, { timeout: 60_000 });
   await page.evaluate(async () => {
     const api = (window as any).__pixelocity__;
     api.setRenderScale(0.25);

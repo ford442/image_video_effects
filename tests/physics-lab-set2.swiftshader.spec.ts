@@ -79,7 +79,7 @@ async function boot(page: Page): Promise<void> {
   // Let the app's boot put its default shader (Liquid) in slot 0 first: it does so once the shader
   // lists load, and landing mid-test it would replace the sim under the capture.
   await page
-    .waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
+    .waitForFunction(() => /^liquid(-original)?$/.test((window as any).__pixelocity__.getSlotState(0)?.shaderId ?? ''), null, {
       timeout: 60_000,
       polling: 250,
     })

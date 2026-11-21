@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { RenderMode, ShaderEntry, InputSource } from '../renderer/types';
 import type { ImageRecord } from '../types/aiVj';
-import { DEFAULT_SLOT1_SHADER_ID } from '../app/constants/shaderDefaults';
+import { DEFAULT_SLOT1_SHADER_ID, FALLBACK_SLOT1_SHADER_ID } from '../app/constants/shaderDefaults';
 
 export interface UseShaderBootOptions {
     rendererReady: boolean;
@@ -59,10 +59,18 @@ export function useShaderBoot({
             // runs live at go.1ink.us/pixelocity. public/shaders/liquid-original.wgsl is a do-not-upgrade
             // reference — build variations from a copy of it, but keep it as the boot default.
             // (`liquid` is the upgraded sibling and is no longer the boot default.)
-            const liquidShader = availableModes.find(s => s.id === DEFAULT_SLOT1_SHADER_ID);
-            if (liquidShader) {
-                setMode(0, DEFAULT_SLOT1_SHADER_ID as RenderMode);
-                setStatus('Started with Liquid (Interactive) — Original.');
+            // The catalog is served from storage, which only gains liquid-original after a shader sync:
+            // until then fall back to the upgraded sibling so the app never boots with an empty Slot 1.
+            const bootShader =
+                availableModes.find(s => s.id === DEFAULT_SLOT1_SHADER_ID) ??
+                availableModes.find(s => s.id === FALLBACK_SLOT1_SHADER_ID);
+            if (bootShader) {
+                setMode(0, bootShader.id as RenderMode);
+                setStatus(
+                    bootShader.id === DEFAULT_SLOT1_SHADER_ID
+                        ? 'Started with Liquid (Interactive) — Original.'
+                        : 'Started with Liquid (Interactive).',
+                );
             } else {
                 setStatus('Ready. Select a shader from Slot 1 to get started.');
             }

@@ -19,7 +19,8 @@ interface WebGpuProbeFailureOverlayProps {
 }
 
 export function WebGpuProbeFailureOverlay({ probe, deviceLoss }: WebGpuProbeFailureOverlayProps) {
-  const [showLog, setShowLog] = useState(true);
+  // The raw attempt log is long: keep it collapsed on phones so the recovery actions stay on screen.
+  const [showLog, setShowLog] = useState(() => !window.matchMedia?.('(max-width: 640px)').matches);
   const [copied, setCopied] = useState(false);
 
   const copyJson = useCallback(async () => {
@@ -59,25 +60,22 @@ export function WebGpuProbeFailureOverlay({ probe, deviceLoss }: WebGpuProbeFail
         <h2 className="webgpu-probe-failure-overlay__title">{title}</h2>
         <p className="webgpu-probe-failure-overlay__summary">{summary}</p>
         {error && <p className="webgpu-probe-failure-overlay__error">{error}</p>}
-        {probe && !recovering && (
-          <dl className="webgpu-probe-failure-overlay__meta">
-            <dt>Failed stage</dt>
-            <dd>{probe.failedStage ?? 'unknown'}</dd>
-            <dt>User-Agent brands</dt>
-            <dd>{brands}</dd>
-            {probe.backend && (
-              <>
-                <dt>Backend</dt>
-                <dd>{probe.backend}</dd>
-              </>
-            )}
-          </dl>
+        {probe && !deviceLoss && (
+          <p className="webgpu-probe-failure-overlay__help" data-testid="webgpu-help">
+            What you can do: open this page in the latest Chrome or Edge, make sure hardware acceleration is
+            turned on in the browser settings, then reload.
+          </p>
         )}
         {!recovering && (deviceLoss?.onRetry || probe) && (
           <div className="webgpu-probe-failure-overlay__actions">
             {deviceLoss?.onRetry && (
               <button type="button" data-testid="webgpu-retry" onClick={deviceLoss.onRetry}>
                 Retry
+              </button>
+            )}
+            {probe && !deviceLoss && (
+              <button type="button" data-testid="webgpu-reload" onClick={() => window.location.reload()}>
+                Reload page
               </button>
             )}
             {probe && (
@@ -91,6 +89,20 @@ export function WebGpuProbeFailureOverlay({ probe, deviceLoss }: WebGpuProbeFail
               </>
             )}
           </div>
+        )}
+        {probe && !recovering && (
+          <dl className="webgpu-probe-failure-overlay__meta">
+            <dt>Failed stage</dt>
+            <dd>{probe.failedStage ?? 'unknown'}</dd>
+            <dt>User-Agent brands</dt>
+            <dd>{brands}</dd>
+            {probe.backend && (
+              <>
+                <dt>Backend</dt>
+                <dd>{probe.backend}</dd>
+              </>
+            )}
+          </dl>
         )}
         {probe && !recovering && showLog && (
           <pre className="webgpu-probe-failure-overlay__log">
