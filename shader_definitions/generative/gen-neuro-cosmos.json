@@ -14,7 +14,7 @@
     "procedural",
     "generative"
   ],
-  "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe. New behavior introduces activity-based pruning shadows and Hebbian strand reinforcement from temporal feedback.",
+  "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe. New behavior introduces activity-based pruning shadows and Hebbian strand reinforcement from temporal feedback. The web is now true axon strands joining neighbouring somas (not foam sheets), conduction hops node to node with an after-hyperpolarization undershoot, and firing somas light the haze with a soft inverse-square halo.",
   "workgroup_size": [
     16,
     16,

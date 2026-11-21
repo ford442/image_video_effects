@@ -4890,8 +4890,17 @@
       ]
     },
     "aurora-borealis-loom": {
-      "hash": "6337ac00f3fa8611",
-      "history": []
+      "hash": "2b1c802a41eecddd",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "2b1c802a41eecddd",
+          "prev_hash": "6337ac00f3fa8611",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
+        }
+      ]
     },
     "aurora-curtain": {
       "hash": "65f9603a68246cf0",
@@ -4993,8 +5002,17 @@
       ]
     },
     "cosmic-web": {
-      "hash": "2699a90ce839e2c1",
-      "history": []
+      "hash": "0ee008c09546bff2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "0ee008c09546bff2",
+          "prev_hash": "2699a90ce839e2c1",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
+        }
+      ]
     },
     "crystalline-fracture": {
       "hash": "8bc246cbcf7673bf",
@@ -5289,8 +5307,17 @@
       ]
     },
     "gen-alpha-aurora": {
-      "hash": "44653a5b5cb17bc6",
-      "history": []
+      "hash": "1e47e489cd3fa6a2",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "1e47e489cd3fa6a2",
+          "prev_hash": "44653a5b5cb17bc6",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
+        }
+      ]
     },
     "gen-aperiodic-monotile": {
       "hash": "4f397b881e2be188",
@@ -8727,8 +8754,17 @@
       ]
     },
     "gen-inverse-mandelbrot": {
-      "hash": "8c3d9bedccdc16ed",
-      "history": []
+      "hash": "429baf4789f18d9e",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "429baf4789f18d9e",
+          "prev_hash": "8c3d9bedccdc16ed",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
+        }
+      ]
     },
     "gen-iris-bloom-fractal": {
       "hash": "dd12de99cfa52960",
@@ -9979,7 +10015,7 @@
       ]
     },
     "gen-neuro-cosmos": {
-      "hash": "d6700305bbeb5307",
+      "hash": "59107ecd05978601",
       "history": [
         {
           "event": "upgraded",
@@ -9988,6 +10024,14 @@
           "prev_hash": "3f50fb4e001cdadc",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "59107ecd05978601",
+          "prev_hash": "d6700305bbeb5307",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
         }
       ]
     },
@@ -10668,8 +10712,17 @@
       ]
     },
     "gen-quantum-chrome-serpent-ouroboros": {
-      "hash": "b5bf2a3ed8ba15de",
-      "history": []
+      "hash": "8164b6a362499367",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "8164b6a362499367",
+          "prev_hash": "b5bf2a3ed8ba15de",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
+        }
+      ]
     },
     "gen-quantum-entangled-ferrofluid-engine": {
       "hash": "eacde14b54724516",
@@ -10883,8 +10936,17 @@
       ]
     },
     "gen-radiant-cyber-plasma-astro-griffin": {
-      "hash": "81a1490e8c0223b4",
-      "history": []
+      "hash": "aa0d16d3e76e88fa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "aa0d16d3e76e88fa",
+          "prev_hash": "81a1490e8c0223b4",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
+        }
+      ]
     },
     "gen-radiant-quantum-crystalline-forge": {
       "hash": "8a31e2050a1a3310",
@@ -11506,7 +11568,7 @@
       ]
     },
     "gen-symbiotic-bismuth-crystal-dragon-core": {
-      "hash": "8c078271664b05b2",
+      "hash": "a470c29e1b29a160",
       "history": [
         {
           "event": "upgraded",
@@ -11515,6 +11577,14 @@
           "prev_hash": "1457637c8ff23d4b",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "a470c29e1b29a160",
+          "prev_hash": "8c078271664b05b2",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
         }
       ]
     },
@@ -11549,8 +11619,17 @@
       "history": []
     },
     "gen-symbiotic-light-networks": {
-      "hash": "90593a463e421a81",
-      "history": []
+      "hash": "9285202f4e41e934",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "9285202f4e41e934",
+          "prev_hash": "90593a463e421a81",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
+        }
+      ]
     },
     "gen-symbiotic-plasma-reef-matrix": {
       "hash": "792bb2a7824acc5f",
@@ -12201,8 +12280,17 @@
       ]
     },
     "gen-kimi-nebula": {
-      "hash": "c2fdf01543c02d9d",
-      "history": []
+      "hash": "502eab3e82736d82",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T10:38:18.710Z",
+          "hash": "502eab3e82736d82",
+          "prev_hash": "c2fdf01543c02d9d",
+          "commit": "49395199",
+          "note": "2026-11-21 sonnet/batch-50 generative ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-50/"
+        }
+      ]
     },
     "gen_mandelbulb_3d": {
       "hash": "6282d33eb572f103",

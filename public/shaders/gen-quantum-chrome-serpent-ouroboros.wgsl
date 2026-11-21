@@ -1,31 +1,13 @@
 // ----------------------------------------------------------------
 // Quantum-Chrome Serpent Ouroboros
 // Category: generative
-// Upgraded: 2026-09-27
-// Ideas: quantum dispersion trails; audio chromatic reflection aberration
-// A packing: ACES display RGBA
+// Upgraded: 2026-09-27, 2026-11-21
+// Ideas: quantum dispersion trails; audio chromatic reflection aberration; ouroboros head-swell / tail-taper profile circulating the ring; shingled keeled scale plates (scale-density keyed); step-count AO in the plate grooves (12.2E)
+// A packing: raw linear pre-ACES col + alpha, read back as colour history (C); ACES on writeTexture only
+// Fix (2026-11-21): the coil twist reused the already overwritten pos.x for pos.z (a shear, not a rotation); the environment peaked at ~0.1 so the chrome reflected black (mean luma 0.07) - the same two cyan/purple bands are now bright, narrow neon strips.
 // ----------------------------------------------------------------
-// --- COPY PASTE THIS HEADER ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=Audio/ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-    zoom_params: vec4<f32>,  // x=Coil Tightness, y=Scale Density, z=Core Heat, w=Dispersion
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Coil Tightness, y=Scale Density, z=Core Heat, w=Dispersion
 
 const PI: f32 = 3.14159265359;
 
@@ -119,8 +101,10 @@ fn map(p: vec3<f32>, time: f32, audio: f32) -> vec2<f32> { // returns (distance,
     // Smooth magnetic twisting of space
     let twist_angle = sin(pos.y * 0.2 + time * 0.5) * u.zoom_params.x * 0.5;
     let xz_rot = rot(twist_angle);
-    pos.x = pos.x * xz_rot[0].x + pos.z * xz_rot[1].x;
-    pos.z = pos.x * xz_rot[0].y + pos.z * xz_rot[1].y;
+    let twx = pos.x * xz_rot[0].x + pos.z * xz_rot[1].x;
+    let twz = pos.x * xz_rot[0].y + pos.z * xz_rot[1].y;   // uses the ORIGINAL pos.x (HEAD reused the overwritten one: a shear)
+    pos.x = twx;
+    pos.z = twz;
 
     // Mouse interaction warps space
     let mx = (u.zoom_config.y * 2.0 - 1.0) * 2.0;
@@ -140,11 +124,46 @@ fn map(p: vec3<f32>, time: f32, audio: f32) -> vec2<f32> { // returns (distance,
     let scaleFreq = u.zoom_params.y * 10.0;
     let scaleVal = sin(theta * scaleFreq + time) * sin(phi * scaleFreq * 0.5);
 
+    // ── Idea 1: ouroboros profile. s = 0 at the head, running once around the ring; the tail tapers to a
+    // thin tip that meets the swollen head/neck (radius is continuous at the seam), and the whole profile
+    // circulates slowly - the snake chasing the tail it swallows. Pure r2 modulation.
+    let s = fract((theta - time * 0.12) / (2.0 * PI));
+    let tailTaper = mix(1.0, 0.55, smoothstep(0.5, 1.0, s));
+    let neck = mix(0.55, 1.0, smoothstep(0.0, 0.05, s));
+    let hz = (s - 0.07) / 0.05;
+    let hb = max(1.0 - hz * hz, 0.0);                    // polynomial bump (no exp): head swell over s = 0.02..0.12
+    let headBulge = 0.3 * hb * hb * smoothstep(0.0, 0.02, s);
+    r2 *= tailTaper * neck + headBulge;
+
     // Audio reactivity makes scales flare and ripple
     let audioBump = audio * 0.3 * (1.0 + sin(theta * 5.0 - time * 2.0));
     r2 += scaleVal * 0.05 + audioBump;
 
-    let d_torus = sdTorus(pos, vec2<f32>(r1, r2));
+    let d_coarse = sdTorus(pos, vec2<f32>(r1, r2));
+    // Cost bound: plates move the surface by < 0.04 and the KIFS term adds < 1 %, so far from the hide
+    // neither can change a march step - skip them until the ray is within 0.15 of the surface.
+    if (d_coarse > 0.15) {
+        return vec2<f32>(d_coarse, 1.0);
+    }
+
+    // ── Idea 2: shingled keeled plates on a brick-offset (theta, phi) lattice. Density rides the existing
+    // Scale Density slider (integer counts so the lattice closes around both angles); each plate rises from
+    // its free edge and drops softly onto the next row, with a keel down its centre. The sine-product
+    // above stays as the large-scale swell.
+    let nU = max(floor(scaleFreq * 8.0), 8.0);
+    let nV = 2.0 * max(floor(scaleFreq * 1.2), 3.0);
+    let vC = (phi / (2.0 * PI) + 0.5) * nV;
+    let row = floor(vC);
+    let uC = theta / (2.0 * PI) * nU + 0.5 * (row - 2.0 * floor(row * 0.5));
+    let fu = fract(uC);
+    let fv = fract(vC);
+    let arch = sin(PI * fv);
+    let edge = 0.68 + 0.2 * arch;                        // free edge bows out: rounded plate tips
+    let ramp = max(smoothstep(0.0, 0.8, fu) - smoothstep(edge, edge + 0.12, fu), 0.0);
+    let kz = (fv - 0.5) * 10.0;
+    let kk = max(1.0 - kz * kz * 0.25, 0.0);             // keel: polynomial bump, |fv - 0.5| < 0.2
+    let plate = ramp * (0.55 + 0.45 * arch + 0.35 * kk * kk);
+    let d_torus = d_coarse - (plate - 0.5) * 0.045;   // sdTorus(r2 + dr) = sdTorus(r2) - dr
 
     // Add micro-fractal detail to surface (KIFS)
     var q = pos;
@@ -178,6 +197,19 @@ fn calcNormal(p: vec3<f32>, time: f32, audio: f32) -> vec3<f32> {
     );
 }
 
+// ── Idea 3: step-count AO (12.2E). Two taps up the normal; where the plate grooves of Idea 2 trap the
+// surface, map() reads nearer than the tap height and the chrome's reflection/diffuse are occluded.
+fn grooveAO(p: vec3<f32>, n: vec3<f32>, time: f32, audio: f32) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 2; i++) {
+        let h = 0.02 + 0.07 * f32(i - 1);
+        occ += (h - map(p + n * h, time, audio).x) * sca;
+        sca *= 0.6;
+    }
+    return clamp(1.0 - 9.0 * occ, 0.0, 1.0);
+}
+
 // Raymarching function
 fn raymarch(ro: vec3<f32>, rd: vec3<f32>, time: f32, audio: f32) -> vec2<f32> { // returns (t, material_id)
     var t = 0.0;
@@ -203,8 +235,8 @@ fn getEnvMap(rd: vec3<f32>) -> vec3<f32> {
     let uv = vec2<f32>(atan2(nrd.z, nrd.x) / (2.0 * PI) + 0.5, nrd.y * 0.5 + 0.5);
     // Dark void with subtle cyan/purple glows
     var col = vec3<f32>(0.02, 0.02, 0.05);
-    col += vec3<f32>(0.0, 0.5, 1.0) * pow(max(0.0, sin(uv.x * 10.0 + uv.y * 5.0)), 4.0) * 0.1;
-    col += vec3<f32>(0.5, 0.0, 1.0) * pow(max(0.0, cos(uv.x * 7.0 - uv.y * 12.0)), 4.0) * 0.1;
+    col += vec3<f32>(0.0, 0.5, 1.0) * pow(max(0.0, sin(uv.x * 10.0 + uv.y * 5.0)), 10.0) * 1.2;
+    col += vec3<f32>(0.5, 0.0, 1.0) * pow(max(0.0, cos(uv.x * 7.0 - uv.y * 12.0)), 10.0) * 1.2;
     return col;
 }
 
@@ -271,7 +303,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
         // Fresnel reflection (Schlick)
         let f0 = vec3<f32>(0.8, 0.8, 0.9); // Silver base
-        let fresnel = f0 + (1.0 - f0) * pow(1.0 - ndotv, 5.0);
+        let fresnel = f0 + (1.0 - f0) * pow(clamp(1.0 - ndotv, 0.0, 1.0), 5.0);
+        let groove = grooveAO(p, n, time, audio);
 
         // Reflected ray
         let r = reflect(rd, n);
@@ -297,8 +330,8 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let plasmaColor = vec3<f32>(0.0, 1.0, 1.0) * leakGlow * fbm(p * 2.0 - vec3<f32>(time));
 
         // Combine lighting
-        let diffuse = vec3<f32>(0.1) * ndotl; // very dark diffuse for chrome
-        let hitCol = diffuse + envCol * fresnel + vec3<f32>(spec) + plasmaColor;
+        let diffuse = vec3<f32>(0.1) * ndotl * groove; // very dark diffuse for chrome
+        let hitCol = diffuse + envCol * fresnel * groove + vec3<f32>(spec) * mix(0.5, 1.0, groove) + plasmaColor;
 
         // Fog based on distance
         col = mix(hitCol, bgCol, 1.0 - exp(-0.02 * t * t));

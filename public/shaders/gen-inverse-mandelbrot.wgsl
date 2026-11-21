@@ -3,31 +3,13 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
-//  Upgraded: 2026-09-13
-//  Ideas: Pickover stalks on the color-space orbit; arg(final_z) bands
+//  Upgraded: 2026-09-13, 2026-11-21
+//  Ideas: Pickover stalks on the color-space orbit; arg(final_z) bands; exterior distance-estimate filament glow (|dz| promoted from escapeNormal); interior colour-space Lyapunov rings (mean ln|2z| multiplier contours)
 //  A packing: raw HDR display RGBA (ACES on writeTexture)
 //  Visual: z0 from RGB-like noise, c from position — fractal in color-space
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config:      vec4<f32>, // x=Time, y=ClickCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>, // x=unused, y=MouseX, z=MouseY, w=unused
-    zoom_params: vec4<f32>, // x=Iterations, y=ColorZoom, z=CmapRotate, w=BailoutRadius
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Iterations, y=ColorZoom, z=CmapRotate, w=BailoutRadius
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Complex multiplication
@@ -80,25 +62,31 @@ struct MandResult {
     orbit_min: f32, // minimum |z| during orbit (orbit trap)
     final_z:  vec2<f32>,
     stalk_min: f32, // Idea 1 — Pickover stalk on the color orbit
+    lyap: f32,      // Idea 4 — mean log2|z| along the orbit (log multiplier of the colour cycle)
 };
 
 fn inverseMandelbrot(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> MandResult {
     var z = z0;
     var orbitMin = 1e9;
     var stalkMin = 1e9;
+    var lyapSum = 0.0;
     var res: MandResult;
     res.escaped  = false;
     res.smooth_n = 0.0;
     res.orbit_min = 0.0;
     res.final_z  = z;
     res.stalk_min = 0.0;
+    res.lyap = 0.0;
 
     for (var n = 0; n < maxIter; n++) {
         // Standard Mandelbrot iteration: z → z² + c
         z = cmul(z, z) + c;
         let len2 = dot(z, z);
-        orbitMin = min(orbitMin, length(z));
+        let zl = length(z);
+        orbitMin = min(orbitMin, zl);
         stalkMin = min(stalkMin, min(abs(z.x), abs(z.y)));
+        // ── Idea 4 (interior Lyapunov rings): one log2 per iteration rides the |z| already computed above
+        lyapSum += log2(max(zl, 1e-4));
         if (len2 > bailout * bailout) {
             // Smooth coloring: n + 1 - log2(log2(|z|))
             let sn = f32(n) + 1.0 - log2(log2(max(sqrt(len2), 1.0001)));
@@ -107,12 +95,14 @@ fn inverseMandelbrot(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) ->
             res.orbit_min = orbitMin;
             res.final_z  = z;
             res.stalk_min = stalkMin;
+            res.lyap = lyapSum / f32(n + 1);
             return res;
         }
     }
     res.orbit_min = orbitMin;
     res.final_z   = z;
     res.stalk_min = stalkMin;
+    res.lyap = lyapSum / f32(max(maxIter, 1));
     return res;
 }
 
@@ -158,13 +148,16 @@ fn juliaColorProbe(z_in: vec2<f32>, c: vec2<f32>, iterations: i32, bailout: f32)
 // ─────────────────────────────────────────────────────────────────────────────
 fn dwellBand(smooth_n: f32, maxIter: f32, bandWidth: f32, t: f32) -> f32 {
     let band = fract(smooth_n / bandWidth + t * 0.02);
-    return smoothstep(0.4, 0.6, band) * smoothstep(0.6, 0.4, band) * 2.0;
+    // smoothstep(0.6, 0.4, band) had reversed edges (undefined for low >= high); 1 - s is the identical Hermite value
+    let s = smoothstep(0.4, 0.6, band);
+    return s * (1.0 - s) * 2.0;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  Escape-time normal for pseudo-3D shading
 // ─────────────────────────────────────────────────────────────────────────────
-fn escapeNormal(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> vec2<f32> {
+//  xy = shading direction (unchanged); z = |dz/dc| (Idea 1: promoted for the distance estimate)
+fn escapeNormal(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> vec3<f32> {
     var z = z0;
     var dz = vec2<f32>(1.0, 0.0); // derivative
     for (var n = 0; n < maxIter; n++) {
@@ -173,8 +166,8 @@ fn escapeNormal(c: vec2<f32>, z0: vec2<f32>, maxIter: i32, bailout: f32) -> vec2
         if (dot(z, z) > bailout * bailout) { break; }
     }
     let len = length(dz);
-    if (len < 1e-8) { return vec2<f32>(0.0, 1.0); }
-    return normalize(dz / len);
+    if (len < 1e-8) { return vec3<f32>(0.0, 1.0, len); }
+    return vec3<f32>(normalize(dz / len), len);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -279,7 +272,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     col = mix(col, hsv2rgb(juliaH, 0.9, 0.8), juliaT * 0.35);
 
     // ── Escape-time pseudo-3D shading ─────────────────────────────────────
-    let escN = escapeNormal(c, z0, maxIter, bailout);
+    let escN3 = escapeNormal(c, z0, maxIter, bailout);
+    let escN = escN3.xy;
     let lightDir = normalize(vec2<f32>(cos(t * 0.12), sin(t * 0.09)));
     let diffuse = dot(escN, lightDir) * 0.5 + 0.5;
     col = col * (0.6 + diffuse * 0.4);
@@ -300,6 +294,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let argBand = 0.5 + 0.5 * sin(argZ * 8.0 + cmapRot * 3.14159265);
         col *= 0.72 + argBand * 0.5;
         col += hsv2rgb(fract(cmapRot + argZ / 6.28318530718), 0.85, 1.0) * argBand * 0.12;
+    }
+
+    // ── Idea 1: exterior distance estimate -> filament glow. De = 0.5|z|ln|z|/|dz| is the c-plane distance to the
+    // set boundary (|dz| comes from escapeNormal's existing derivative loop). Divided by the pixel footprint it
+    // lights the sub-pixel hairlines that the 0.36 temporal mix below would otherwise average away.
+    if (result.escaped) {
+        let zl = max(length(result.final_z), 1.0001);
+        let de = 0.5 * zl * log(zl) / max(escN3.z, 1e-6);
+        let pxC = 2.5 / colorZoom / res.y;
+        let filament = exp(-de / (pxC * 2.0));
+        let hueF = fract(result.smooth_n / f32(maxIter) * 2.5 + cmapRot + tColor * 0.05 + 0.5);
+        col += hsv2rgb(hueF, 0.55, 1.0) * filament * 0.55;
+    }
+
+    // ── Idea 2: interior colour-space Lyapunov rings. result.lyap is mean log2|z| along the colour orbit; at the
+    // boundary of every hyperbolic component |multiplier| = 1, i.e. lyap = -1, falling toward -inf at the cycle
+    // centre. Its level curves are the nested rings of the bulbs (Douady-Hubbard coordinates); breathes with the
+    // bass-driven iteration count.
+    if (!result.escaped) {
+        let mult = clamp(result.lyap + 1.0, -4.0, 0.0);
+        let ring = 0.5 + 0.5 * cos(6.2831853 * mult * 2.0);
+        let ringHue = fract(cmapRot + 0.5 + mult * 0.15 + tColor * 0.03);
+        col = col * (0.70 + 0.55 * ring) + hsv2rgb(ringHue, 0.7, 1.0) * (1.0 - ring) * 0.10;
     }
 
     let prev = textureLoad(dataTextureC, pixel, 0);

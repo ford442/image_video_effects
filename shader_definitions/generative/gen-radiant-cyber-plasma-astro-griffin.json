@@ -2,7 +2,7 @@
   "id": "gen-radiant-cyber-plasma-astro-griffin",
   "name": "Radiant Cyber-Plasma Astro-Griffin",
   "url": "shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
-  "description": "A hyper-majestic, biomechanical celestial griffin woven from shattered chrono-prisms and glowing liquid-plasma. Upgraded with a golden eagle head and beak, material-ID driven palettes (plasma wings / prism body / golden head), per-feather and per-facet color variation, triangular chrono-prism tessellation seams, faceted normals with 3-point lighting, Blinn-Phong specular, Fresnel plasma rim, ACES filmic tonemapping and real depth output.",
+  "description": "A hyper-majestic, biomechanical celestial griffin woven from shattered chrono-prisms and glowing liquid-plasma. Upgraded with a golden eagle head and beak, material-ID driven palettes (plasma wings / prism body / golden head), per-feather and per-facet color variation, triangular chrono-prism tessellation seams, faceted normals with 3-point lighting, Blinn-Phong specular, Fresnel plasma rim, ACES filmic tonemapping and real depth output. Second pass: the wing is a finite fan of five slotted primaries per side seen from a front three-quarter camera, with a flexion wave down the wing, slots that open on the upstroke, a rachis and barb vane with plasma flowing along each shaft, and step-count ambient occlusion in the slots.",
   "category": "generative",
   "tags": [
     "griffin",

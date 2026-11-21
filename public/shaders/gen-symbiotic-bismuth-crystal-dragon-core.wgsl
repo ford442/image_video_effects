@@ -3,36 +3,25 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, raymarched, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
+//  Upgraded: 2026-09-27, 2026-11-21
 //  Ideas: ichor seep along the symbiotic crystal/sinew seam; peristaltic
 //         lub-dub heart-bolus travelling down the sinew artery; furnace
-//         underlight + heat haze from the artery through the labyrinth
+//         underlight + heat haze from the artery through the labyrinth;
+//         fold-count oxide terraces (fold count as material, 12.2E);
+//         Schlick conductor Fresnel silver rim on grazing terrace walls (12.2F)
 //  A packing: ACES display RGBA (alpha = surface coverage x fog
 //             transmission + core haze); stateless, no C read
 //  Fix: camera sat inside the infinite sinew cylinder (every ray hit at
 //       step 0 -> flat gold wash); artery is now capped at world z=-2.5
 //       and bores a lumen through the crystal. Audio was extraBuffer[0].
+//  Fix (2026-11-21): HEAD pasted Uniforms as config, zoom_params,
+//       zoom_config (engine order is config, zoom_config, zoom_params), so
+//       all four sliders read time/mouse and the mouse read sliders 2/3.
+//       Bindings + struct now come from _prelude.wgsl. Rays that ran out of
+//       steps without landing were shaded as hits (speckle); only a real
+//       landing counts now.
 // ═══════════════════════════════════════════════════════════════════
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time (seconds), .y = rippleCount (0-50 active ripples), .zw = resolution (width, height)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1..p4 (mapped from UI sliders)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1 canvas: y=0 top), .w = mouse_down (>0.5 = pressed)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = startTime (seconds), .w = padding (0)
-};
+#include "_prelude.wgsl"
 
 const MAX_STEPS = 100;
 const MAX_DIST = 100.0;
@@ -45,6 +34,7 @@ var<private> g_seam: f32;      // [IDEA 1] smin blend weight 4h(1-h): 1 on the c
 var<private> g_gap: f32;       // [IDEA 1] sinew-minus-crystal distance (folded units)
 var<private> g_bolus: f32;     // [IDEA 2] heart-bolus bump at this point of the artery
 var<private> g_sinew: f32;     // [IDEA 3] signed distance to the artery (world units)
+var<private> g_fold: f32;      // [IDEA 4] reflections (abs folds that flipped a sign) this point took in the KIFS loop
 
 fn rot(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -119,9 +109,13 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     bp = fract(bp/repeat + 0.5) * repeat - repeat/2.0;
 
     let iters = i32(complexity);
+    var folds = 0.0;
     for (var i = 0; i < 8; i++) {
         if (i >= iters) { break; }
 
+        // ── Idea 4: fold count as material (12.2E). Every abs() below reflects the point; how many
+        // reflections a terrace took is the oxide-film thickness proxy shade() reads via g_fold.
+        folds += dot(select(vec3<f32>(0.0), vec3<f32>(1.0), bp < vec3<f32>(0.0)), vec3<f32>(1.0));
         bp = abs(bp) - 0.5;
 
         let r1 = rot(t * 0.1 + f32(i) * 0.2);
@@ -169,6 +163,7 @@ fn map(p_in: vec3<f32>) -> vec2<f32> {
     g_gap = max(sinew_dist - crystal_dist, 0.0) / (zoom_level * breathe);
     g_bolus = bolus;
     g_sinew = sinew_dist;
+    g_fold = folds;
 
 
     // Combine
@@ -223,6 +218,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var ao = 1.0;
     var steps = 0.0;
     var haze = 0.0;
+    var landed = false;   // only a real landing (d < SURF_DIST) is a hit; running out of steps is a miss
 
     for (var i = 0; i < MAX_STEPS; i++) {
         let res_map = map(p);
@@ -234,6 +230,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         if (d < SURF_DIST) {
             ao = 1.0 - f32(i) / f32(MAX_STEPS);
+            landed = true;
             break;
         }
         if (t_dist > MAX_DIST) {
@@ -248,7 +245,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     var col = vec3<f32>(0.05, 0.05, 0.1); // Background
     var fog_amt = 1.0;
-    let hit = mat_id >= 0.0;
+    let hit = landed;
 
     if (hit) {
         let n = getNormal(p);
@@ -263,9 +260,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         if (hit_info.y < 0.5) {
             // Crystal (Bismuth)
             let iridescence_shift = u.zoom_params.w;
-            let iri = palette(ndotv * 2.0 + u.config.x * 0.1 + iridescence_shift);
+            // ── Idea 4: oxide terraces (fold count as material, 12.2E). Each terrace carries a different
+            // oxide-film thickness (= how many reflections it took); it offsets the iridescence phase,
+            // iridescence_shift stays the global phase.
+            let oxide = g_fold * 0.11;
+            let iri = palette(ndotv * 2.0 + u.config.x * 0.1 + iridescence_shift + oxide);
             let spec = pow(ndotv, 16.0);
             col = iri * (dif * 0.5 + 0.5) + spec * 0.5;
+
+            // ── Idea 5: conductor Fresnel rim (Schlick, 12.2F). Where the oxide film is worn through, bismuth
+            // is a bright silver metal: terrace walls seen at grazing angles reflect it (F -> 1), faces looking
+            // straight at the camera keep their oxide colour (F ~ 0.04).
+            let rim = pow(clamp(1.0 - ndotv, 0.0, 1.0), 9.0);
+            let F = 0.04 + 0.5 * rim;
+            let silver = mix(vec3<f32>(0.86, 0.9, 0.98), iri, 0.22) * (0.45 + 0.55 * dif) + spec * 0.8;
+            col = mix(col, silver, F);
 
             // [IDEA 1] Ichor seep: molten gold wicks out of the seam into the bismuth, fingering
             // along capillaries; the seam line itself glows, pumped by the heart-bolus.
