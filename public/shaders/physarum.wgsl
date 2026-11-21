@@ -16,6 +16,10 @@
 //          veins. The image is the food. Agent Radius (dead at HEAD) now sets vein width
 //          (trail blur). Numpy-gated: scripts/sim_models/physarum_rescue.py
 //  A packing: raw sim state (trail, mx, my, 0); |m| = agent mass, m/|m| = heading
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-21
+//  Ideas: leading-edge glint; food bite
 // ═══════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -82,6 +86,10 @@ fn transmittance(density: f32) -> f32 {
 // Agent deposit color with HDR emission
 fn agentEmissionColor(base_color: vec3<f32>, intensity: f32) -> vec3<f32> {
     return base_color * (0.5 + intensity * 2.0);
+}
+
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -210,9 +218,28 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     background = background / 8.0;
     let density = max(trailNew - background - 0.01, 0.0) * mix(8.0, 30.0, deposit_opacity);
     let cumulative_alpha = 1.0 - transmittance(density);
-    let color = mix(image.rgb, emission * (1.0 + trailNew), cumulative_alpha);
+    var color = mix(image.rgb, emission * (1.0 + trailNew), cumulative_alpha);
 
-    textureStore(writeTexture, coord, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.5)), max(image.a, cumulative_alpha)));
+    // ── Idea 1: leading-edge glint ─────────────────────────────────────
+    // Trail ahead minus trail behind, along the heading already stored.
+    // The mass update and the deposit stay as they are.
+    let headLen = max(length(mNew), 1e-4);
+    let heading = mNew / headLen;
+    let stepF = clamp(round(heading * 3.0), vec2<f32>(-4.0), vec2<f32>(4.0));
+    let stepPx = vec2<i32>(i32(stepF.x), i32(stepF.y));
+    let aheadT = state(coord + stepPx).x;
+    let behindT = state(coord - stepPx).x;
+    let front = smoothstep(0.0, 0.08, aheadT - behindT) * smoothstep(FLOOR, 0.25, massNew);
+    color += emission * front * (0.18 + deposit_opacity * 0.25);
+
+    // ── Idea 2: food bite ──────────────────────────────────────────────
+    // Dense veins on bright food dull that food. Deposit Opacity still
+    // owns how much of the vein covers the photo.
+    let eaten = clamp(density * signal, 0.0, 1.0);
+    let dull = vec3<f32>(dot(color, vec3<f32>(0.299, 0.587, 0.114))) * vec3<f32>(0.72, 0.78, 0.55);
+    color = mix(color, dull, eaten * 0.55);
+
+    textureStore(writeTexture, coord, vec4<f32>(acesToneMap(max(color, vec3<f32>(0.0))), max(image.a, cumulative_alpha)));
     let depth_in = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     textureStore(writeDepthTexture, coord, vec4<f32>(depth_in, 0.0, 0.0, 0.0));
 }

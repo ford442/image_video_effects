@@ -4,31 +4,13 @@
 //  Features: cellular, mouse-seeded, ripple-seeded, ridges, audio-reactive, upgraded-rgba
 //  Complexity: Medium
 //  Created: Phase B / Algorithmist
-//  Upgraded: 2026-09-11
-//  Ideas: slow tectonic lattice drift; treble-gated ridge sparkle bursts
-//  A packing: display RGBA (unchanged)
+//  Upgraded: 2026-09-11, 2026-11-21
+//  Ideas: slow tectonic lattice drift; treble-gated ridge sparkle bursts; feature gather; seed pits
+//  A packing: ACES display RGBA (C is not read)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=CellDensity, y=Jitter, z=RidgeStrength, w=PaletteShift
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=CellDensity, y=Jitter, z=RidgeStrength, w=PaletteShift
 
 const PI:  f32 = 3.14159265358979323846;
 const PHI: f32 = 1.61803398874989484820;
@@ -97,6 +79,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let drift = vec2<f32>(sin(time * 0.05 + uv.y * 1.7), cos(time * 0.04 - uv.x * 1.3)) * 0.6;
     p += drift;
 
+    // ── Idea 1: feature gather ─────────────────────────────────────────
+    // Pull the lattice toward photo edges. Ridge Strength stays the amount.
+    // A flat photo barely moves.
+    let gatherTexel = 3.0 / resolution;
+    let lumaW = vec3<f32>(0.299, 0.587, 0.114);
+    let l0 = dot(textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb, lumaW);
+    let lx = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(gatherTexel.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, lumaW);
+    let ly = dot(textureSampleLevel(readTexture, u_sampler, clamp(uv + vec2<f32>(0.0, gatherTexel.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb, lumaW);
+    p += vec2<f32>(lx - l0, ly - l0) * ridgeStrength * cellDensity * 0.08;
+
     let mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
     let dMouse = length((uv - mouse) * vec2<f32>(aspect, 1.0));
@@ -128,6 +120,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color = mix(cellSample, palette, 0.35);
     color = color * mix(0.7, 1.15, cellMask);
     color = color + ridge * ridgeStrength * mix(palette, vec3<f32>(1.0), 0.4) * 0.6;
+
+    // ── Idea 2: seed pits ──────────────────────────────────────────────
+    // The site is where F1 vanishes. A small darkening marks it.
+    let pit = exp(-v.F1 * v.F1 / 0.004);
+    color = color * (1.0 - min(pit * (0.18 + 0.22 * ridgeStrength), 0.55));
 
     // Treble ridge sparkle: bursty specular glints riding the cell ridges,
     // gated by the instantaneous treble band rather than the static

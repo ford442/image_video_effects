@@ -3,32 +3,13 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-04
-//  Ideas: 7-tap spectral dispersion (continuous rainbow fringes); astigmatic sagittal + tangential edge blur
+//  Upgraded: 2026-10-04, 2026-11-21
+//  Ideas: 7-tap spectral dispersion (continuous rainbow fringes); astigmatic sagittal + tangential edge blur; Cauchy spacing (§12.2F); zonal spherical aberration
 //  A packing: pre-tone-map lens colour RGBA (C is not read back); writeTexture is ACES
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ACES Tone Mapping
@@ -56,6 +37,17 @@ fn wavelengthToRGB(lambda: f32) -> vec3<f32> {
     let g = select(select(select(0.0, (645.0 - lambda) / 65.0, lambda < 645.0), 1.0, lambda < 580.0), (lambda - 440.0) / 50.0, lambda < 490.0);
     let b = select(select(0.0, (510.0 - lambda) / 20.0, lambda < 510.0), 1.0, lambda < 490.0);
     return clamp(vec3<f32>(r, select(g, 0.0, lambda < 440.0), b), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
+// ── Idea 1: Cauchy spacing (§12.2F) ────────────────────────────────────
+// n(λ) = 1 + B/λ². Mapped so 650 nm stays -1 and 420 nm stays +1.
+fn cauchySpread(lambdaNm: f32) -> f32 {
+    let lam = max(lambdaNm, 1.0) * 0.001;
+    let n = 1.0 + 0.0035 / max(lam * lam, 1e-5);
+    let nR = 1.0 + 0.0035 / (0.650 * 0.650);
+    let nV = 1.0 + 0.0035 / (0.420 * 0.420);
+    let t = clamp((n - nR) / max(nV - nR, 1e-5), 0.0, 1.0);
+    return mix(-1.0, 1.0, t);
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -103,7 +95,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var ndist = 1.0;
     if (dist < activeRadius) {
         ndist = dist / activeRadius;
-        lensCurve = 1.0 - (1.0 - ndist * ndist) * mag;
+        let nd2 = ndist * ndist;
+        lensCurve = 1.0 - (1.0 - nd2) * mag;
+        // ── Idea 2: zonal spherical aberration ───────────────────────
+        // Extra focus in the mid-zone. Zero at the center and at the rim,
+        // so the plate still joins. Magnification stays the amplitude.
+        lensCurve = max(lensCurve - mag * 0.35 * nd2 * (1.0 - nd2), 0.0);
         abbStrength = aberration * 0.05 * ndist * (1.0 + clickFront);
     }
     let edgeBand = smoothstep(activeRadius * 0.55, activeRadius, dist) * (1.0 - smoothstep(activeRadius, activeRadius + 0.02, dist));
@@ -125,7 +122,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let t = f32(i) / 6.0;
         let lambda = mix(650.0, 420.0, t);
         let w = wavelengthToRGB(lambda) + vec3<f32>(0.02);
-        let factor = lensCurve + abbStrength * mix(-1.0, 1.0, t);
+        let factor = lensCurve + abbStrength * cauchySpread(lambda);
         var tapUV = mouse + (uv - mouse) * factor;
         let phase = i % 3;
         tapUV = tapUV + select(select(-sagittalOffset, blurOffset, phase == 1), vec2<f32>(0.0), phase == 0);

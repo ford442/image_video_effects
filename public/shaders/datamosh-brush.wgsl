@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: DC hold; mosquito ring
+//  Upgraded: 2026-10-10, 2026-11-21
+//  Ideas: DC hold; mosquito ring; block DCT quantization (§12.2B); held motion vector
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -132,6 +132,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let dcUv = clamp((blockID + vec2<f32>(0.5)) * max(blockSize, 0.001), vec2<f32>(0.0), vec2<f32>(1.0));
       let dcHold = textureSampleLevel(readTexture, u_sampler, dcUv, 0.0).rgb;
       blendedColor = mix(blendedColor, dcHold, 0.35 + alphaGhost * 0.4);
+      // ── Idea 2: held motion vector ─────────────────────────────────
+      // The per-frame hash stays. A second sample uses a time key set by
+      // Decay Rate, so the vector holds and then pops.
+      let epoch = floor(time * (0.35 + decay * 2.4));
+      let heldOff = hash22(blockID + vec2<f32>(epoch, 1.7)) * 0.06;
+      let heldUV = clamp(uv + heldOff + smearOffset * 0.02, vec2<f32>(0.0), vec2<f32>(1.0));
+      let heldSample = textureSampleLevel(readTexture, u_sampler, heldUV, 0.0).rgb;
+      blendedColor = mix(blendedColor, heldSample, 0.42);
+      // ── Idea 1: block DCT quantization (§12.2B) ────────────────────
+      // Block Crush is the quantizer step, applied after the DC hold.
+      let quant = max(mix(1.0 / 40.0, 1.0 / 5.0, clamp(u.zoom_params.y, 0.0, 1.0)), 1e-4);
+      let qCol = clamp(blendedColor, vec3<f32>(0.0), vec3<f32>(1.0));
+      blendedColor = round(qCol / quant) * quant;
       blendedAlpha = glitchSample.a * 0.75 + 0.12;
     } else {
       blendedColor = prevColor;

@@ -1,30 +1,15 @@
-// Steamy Glass — Codex (g) condensation, droplets, and interactive clearing.
-// A/C packing: steam density, droplet mass, runoff, wipe memory.
-// B and extraBuffer are intentionally unused; C reads are exact and bounded.
-// Upgraded: 2026-09-21
-// Ideas: runoff rivulets (heavy drops release at sparse nucleation sites, run down, sweep a
-//        clear track; the runoff channel was never displayed); beaded wipe edge
+// ═══════════════════════════════════════════════════════════════════
+//  Steamy Glass
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-09-21, 2026-11-21
+//  Ideas: runoff rivulets; beaded wipe edge; low-pane linger; contact line
+//  A packing: raw sim (steam, droplets, runoff, wipe memory). ACES on writeTexture only.
+//  B and extraBuffer are intentionally unused; C reads are exact and bounded.
+// ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn aces(x: vec3<f32>) -> vec3<f32> {
   return clamp((x * (2.51 * x + 0.03)) /
@@ -70,7 +55,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bottom = stateAt(pixel + vec2<i32>(0, 1), dims);
   let average = (left + right + top + bottom) * 0.25;
   var steam = mix(state.r, average.r, 0.045);
-  steam += (fogTarget - steam) * returnRate * (1.0 + audio.y * 0.35);
+  // ── Idea 1: low-pane linger ────────────────────────────────────────
+  // The lower glass stays wet after the top has started to clear.
+  // Fade Speed stays the rate. y = 0 is the top of the pane.
+  let lowPane = smoothstep(0.2, 1.0, uv.y);
+  steam += (fogTarget - steam) * returnRate * (1.0 + audio.y * 0.35) * (0.55 + 0.9 * lowPane);
   var droplets = mix(state.g, average.g, 0.025);
   droplets += max(steam - 0.46, 0.0) * (0.004 + audio.z * 0.003);
   // Idea 1 — runoff rivulets. Drops grow at sparse, fixed nucleation sites until heavy, then
@@ -146,6 +135,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     (0.78 + audio.y * 0.12) + vec3<f32>(0.12, 0.05, 0.18) * audio.x;
   var rgb = mix(blurred.rgb, fogColor, 1.0 - transmittance);
   rgb = mix(rgb, clearSource.rgb, clamp(wipeMemory * 0.82, 0.0, 0.9));
+  // ── Idea 2: contact line ───────────────────────────────────────────
+  // The droplet gradient already refracts. Where it is steep and the
+  // drop is not a solid bead, the edge of the drop darkens.
+  let contact = smoothstep(0.004, 0.045, length(gradient)) * smoothstep(0.55, 0.08, droplets);
+  rgb *= 1.0 - contact * 0.32;
   let glint = pow(clamp(droplets, 0.0, 1.0), 1.6) *
     (0.35 + audio.z * 0.5);
   rgb += vec3<f32>(0.68, 0.9, 1.0) * glint * 0.25;

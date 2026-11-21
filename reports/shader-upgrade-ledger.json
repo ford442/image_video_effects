@@ -3347,7 +3347,7 @@
       ]
     },
     "physarum": {
-      "hash": "4fb47e78721cc035",
+      "hash": "27396e0f3ff8d3b8",
       "history": [
         {
           "event": "upgraded",
@@ -3356,11 +3356,19 @@
           "prev_hash": "0ab11c022969fdb6",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "27396e0f3ff8d3b8",
+          "prev_hash": "4fb47e78721cc035",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
         }
       ]
     },
     "plasma": {
-      "hash": "7316b578e6f06306",
+      "hash": "33a7dead373dd23c",
       "history": [
         {
           "event": "upgraded",
@@ -3369,6 +3377,14 @@
           "prev_hash": "55e6641df8187e8f",
           "commit": "bda9710d",
           "note": "2026-10-16 photo-plane ten (Grok 4.7) — docs/agents/swarm-outputs/cursor-2026-10-16-photo-plane-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "33a7dead373dd23c",
+          "prev_hash": "7316b578e6f06306",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
         }
       ]
     },
@@ -3843,8 +3859,17 @@
       ]
     },
     "voronoi": {
-      "hash": "3052f5382b09c496",
-      "history": []
+      "hash": "11c2ee342be54dfa",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "11c2ee342be54dfa",
+          "prev_hash": "3052f5382b09c496",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
+        }
+      ]
     },
     "vortex-prism": {
       "hash": "db7723bbf50aa4e7",
@@ -4713,7 +4738,7 @@
       ]
     },
     "tensor-flow-sculpt": {
-      "hash": "faa46c9bd07c2e4b",
+      "hash": "31e43053b4c988b7",
       "history": [
         {
           "event": "upgraded",
@@ -4722,6 +4747,14 @@
           "prev_hash": "406ba161e6e494ae",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "31e43053b4c988b7",
+          "prev_hash": "faa46c9bd07c2e4b",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
         }
       ]
     },
@@ -15896,7 +15929,7 @@
       ]
     },
     "chroma-lens": {
-      "hash": "c40376f29779e343",
+      "hash": "0a32887f692d9939",
       "history": [
         {
           "event": "upgraded",
@@ -15905,6 +15938,14 @@
           "prev_hash": "f26faed713d2a976",
           "commit": "1008b956",
           "note": "2026-10-04 lens-optics-eight (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-04-lens-optics-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "0a32887f692d9939",
+          "prev_hash": "c40376f29779e343",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
         }
       ]
     },
@@ -20722,7 +20763,7 @@
       ]
     },
     "datamosh-brush": {
-      "hash": "e7a312d4457664d6",
+      "hash": "71f5b2703cbea205",
       "history": [
         {
           "event": "upgraded",
@@ -20731,11 +20772,19 @@
           "prev_hash": "f46a1f3fd422ba4a",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "71f5b2703cbea205",
+          "prev_hash": "e7a312d4457664d6",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
         }
       ]
     },
     "digital-decay": {
-      "hash": "fe1f5dc6ef92c80a",
+      "hash": "f8a8b7e6b7568a10",
       "history": [
         {
           "event": "upgraded",
@@ -20744,6 +20793,14 @@
           "prev_hash": "2e0f509efc8cd0ea",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "f8a8b7e6b7568a10",
+          "prev_hash": "fe1f5dc6ef92c80a",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
         }
       ]
     },
@@ -21147,7 +21204,7 @@
       ]
     },
     "vhs-tracking": {
-      "hash": "276518d9b4cd406a",
+      "hash": "f038c73e9c16842c",
       "history": [
         {
           "event": "upgraded",
@@ -21156,6 +21213,14 @@
           "prev_hash": "8f5d6f45cae7cb13",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "f038c73e9c16842c",
+          "prev_hash": "276518d9b4cd406a",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
         }
       ]
     },
@@ -21988,8 +22053,17 @@
       ]
     },
     "steamy-glass": {
-      "hash": "9ed49648f414e451",
-      "history": []
+      "hash": "fa8e67bda56f9c4f",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T11:44:53.005Z",
+          "hash": "fa8e67bda56f9c4f",
+          "prev_hash": "9ed49648f414e451",
+          "commit": "ecd6a208",
+          "note": "2026-11-21 catalog nine (grok) — docs/agents/swarm-outputs/grok-2026-11-21-catalog-nine/BRIEFS.md"
+        }
+      ]
     },
     "wave-equation": {
       "hash": "d1a1c38736596173",

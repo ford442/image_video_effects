@@ -3,8 +3,8 @@
 //  Category: retro-glitch
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-10
-//  Ideas: block tear; stuck row
+//  Upgraded: 2026-10-10, 2026-11-21
+//  Ideas: block tear; stuck row; dropout bursts (§12.2B); pointer shear
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -110,6 +110,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (blockHash < depthCorrupt * 0.25) {
     glitchUV += (vec2<f32>(hash21(uv * 500.0 + time * 3.0), hash21(uv * 600.0)) - 0.5) / resolution * 18.0;
   }
+  // ── Idea 2: pointer shear ──────────────────────────────────────────
+  // The spring velocity is already integrated. A fast drag shears the
+  // rows inside the hotspot. No new spring.
+  if (hasSpring) {
+    glitchUV.x = glitchUV.x + clamp(extraBuffer[135], -0.35, 0.35) * mouseBurst * 0.08;
+  }
   glitchUV = clamp(glitchUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
   let aberrStr = depthCorrupt * 0.012 * select(1.0, 3.0, blockHash < depthCorrupt * 0.4);
@@ -135,6 +141,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Idea: stuckRow — a sparse line latches the ghost. Ghost decay owns the hold.
   let stuckRow = step(0.86, hash11(floor(f32(gid.y) / 4.0) * 0.17 + floor(time * 0.35)));
   outCol = mix(outCol, ghost, stuckRow * ghostDecay);
+  // ── Idea 1: dropout bursts (§12.2B) ────────────────────────────────
+  // A serial error starts on a sparse row and dies along the scan.
+  // Corruption Rate sets how often and how long the tail is.
+  let rowKey = floor(f32(gid.y) / 2.0);
+  let burstSeed = hash11(rowKey * 0.013 + floor(time * 2.5));
+  let burstOn = step(1.0 - effectiveCorruption * 0.07, burstSeed);
+  let tail = exp(-uv.x * mix(14.0, 3.5, effectiveCorruption));
+  let burstCol = select(vec3<f32>(0.04, 0.05, 0.06), vec3<f32>(0.86, 0.9, 0.95), hash11(rowKey + 4.2) > 0.5);
+  outCol = mix(outCol, burstCol, burstOn * tail * 0.9);
   if (corruptionRate < 0.01) { outCol = src.rgb; }
 
   outCol = acesToneMap(outCol * (0.95 + bass * 0.08 + mids * 0.04));
