@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Sentient Plasma-Silk Nebula Forge
 //  Category: generative
-//  Upgraded: 2026-10-10
-//  Ideas: magnetized silk braid knots; forge-shell ion bloom fronts
+//  Upgraded: 2026-10-10, 2026-11-21
+//  Ideas: magnetized silk braid knots; forge-shell ion bloom fronts; fold-count ply (§12.2E); SDF curvature sheen (§12.2E)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
@@ -53,10 +53,18 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     q = vec3<f32>(qxz.x, q.y, qxz.y);
 
     var d = 100.0;
+    var folds = 0.0;
     let density = u.zoom_params.x * 2.0 + 1.0;
 
     for (var i = 0; i < 4; i++) {
         let fi = f32(i);
+        // ── Idea 1: fold-count ply (§12.2E) ──────────────────────────
+        // The abs() below is already the silk fold. Count it; .y carries
+        // the ply and .x stays the distance.
+        let fx = select(0.0, 1.0, q.x < 0.0);
+        let fy = select(0.0, 1.0, q.y < 0.0);
+        let fz = select(0.0, 1.0, q.z < 0.0);
+        folds = folds + fx + fy + fz;
         q = abs(q) - vec3<f32>(0.5) * density;
         let qr = q.xy * rot2D(time * 0.15 + fi);
         q = vec3<f32>(qr, q.z);
@@ -74,7 +82,18 @@ fn map(p: vec3<f32>) -> vec2<f32> {
     let k = 0.5;
     let h = clamp(0.5 + 0.5 * (sphere - d) / k, 0.0, 1.0);
     let d_res = mix(sphere, d, h) - k * h * (1.0 - h);
-    return vec2<f32>(d_res, d_res);
+    return vec2<f32>(d_res, folds / 12.0);
+}
+
+// ── Idea 2: SDF curvature sheen (§12.2E) ────────────────────────────
+// Mean curvature of the distance the march already uses. Threads bend
+// harder than the forge shell, so the rim prefers the silk.
+fn curvatureAt(p: vec3<f32>, d0: f32) -> f32 {
+    let e = 0.012;
+    let s = map(p + vec3<f32>(e, 0.0, 0.0)).x + map(p - vec3<f32>(e, 0.0, 0.0)).x
+          + map(p + vec3<f32>(0.0, e, 0.0)).x + map(p - vec3<f32>(0.0, e, 0.0)).x
+          + map(p + vec3<f32>(0.0, 0.0, e)).x + map(p - vec3<f32>(0.0, 0.0, e)).x;
+    return (s - 6.0 * d0) / max(e * e, 1e-5);
 }
 
 fn get_normal(p: vec3<f32>) -> vec3<f32> {
@@ -113,11 +132,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     var hit = false;
     var steps: i32 = 0;
     var p = vec3<f32>(0.0);
+    var hitFolds = 0.0;
 
     for (var i = 0; i < 80; i++) {
         steps = i;
         p = ro + rd * t;
-        d = map(p).x;
+        let sd = map(p);
+        d = sd.x;
+        hitFolds = sd.y;
 
         // Add core glow
         glow += 0.05 / (0.05 + abs(d)) * u.zoom_params.z * (1.0 + audio_mod);
@@ -146,9 +168,14 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let ao = 1.0 - f32(steps) / 80.0;
 
         let pal_t = length(p) * 0.2 + f32(steps) * 0.01 + time * 0.1;
-        let objCol = palette(pal_t);
+        let basePal = palette(pal_t);
+        let ply = clamp(hitFolds, 0.0, 1.0);
+        let objCol = mix(basePal, basePal * vec3<f32>(0.70, 0.86, 1.06), ply * 0.7);
 
         col = objCol * diff * ao;
+        let kappa = curvatureAt(p, d);
+        let bend = smoothstep(6.0, 28.0, abs(kappa));
+        col = col + objCol * bend * 0.55;
     }
 
     col += vec3<f32>(1.0, 0.4, 0.8) * glow * 0.1; // hot pink glow

@@ -22,6 +22,44 @@
   "updated": true,
   "id": "gen-zeta-function-landscape",
   "url": "shaders/gen-zeta-function-landscape.wgsl",
+  "params": [
+    {
+      "id": "sigma_offset",
+      "name": "Sigma Offset",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.x"
+    },
+    {
+      "id": "t_range",
+      "name": "T Range",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.y"
+    },
+    {
+      "id": "height_scale",
+      "name": "Height Scale",
+      "default": 0.3,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.z"
+    },
+    {
+      "id": "term_precision",
+      "name": "Term Precision",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "mapping": "zoom_params.w"
+    }
+  ],
   "features": [
     "audio-reactive",
     "mouse-driven",

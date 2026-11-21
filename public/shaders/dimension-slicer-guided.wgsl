@@ -1,11 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
-//  dimension-slicer-guided
+//  Dimension Slicer Guided
 //  Category: advanced-hybrid
-//  Features: dimensional-slice, guided-filter, depth-aware, edge-preserving, mouse-driven
+//  Features: dimensional-slice, guided-filter, depth-aware, edge-preserving, mouse-driven, upgraded-rgba
 //  Complexity: Very High
+//  Upgraded: 2026-11-21
+//  Ideas: depth-snapped rift edge; aberration along the rift normal
+//  A packing: ACES display RGBA
 //  Chunks From: dimension-slicer, conv-guided-filter-depth
 //  Created: 2026-04-18
-//  By: Agent CB-15 — Visual Effects & Distortion Enhancer
 // ═══════════════════════════════════════════════════════════════════
 //  Dimensional rift slicer combined with depth-aware guided filtering.
 //  The slice uses edge-preserving filtering guided by depth, creating
@@ -14,31 +16,21 @@
 //  blur that perfectly follows depth discontinuities.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn rotate(v: vec2<f32>, angle: f32) -> vec2<f32> {
   let c = cos(angle);
   let s = sin(angle);
   return vec2<f32>(v.x * c - v.y * s, v.x * s + v.y * c);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 @compute @workgroup_size(16, 16, 1)
@@ -61,14 +53,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let mouseInfluence = u.zoom_params.w;
 
   let mouse = u.zoom_config.yz;
-  let isMouseDown = u.zoom_config.w > 0.5;
 
   // Coordinate relative to mouse
   var p = uv - mouse;
   p.x *= aspect;
   let pRot = rotate(p, angle);
   let dist = abs(pRot.x);
-  let inSlice = 1.0 - smoothstep(sliceWidth - 0.01, sliceWidth, dist);
+  // ── Idea 1: depth-snapped rift edge ──────────────────────────────
+  // The slab is still the rotated cut. Where the depth the guide
+  // already trusts changes fast, the lip steps out onto that silhouette.
+  // Flat depth leaves snap at zero, so the geometric cut is unchanged.
+  let px = 1.0 / dims;
+  let depthC = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  let depthDx = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r
+              - textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv - vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let depthDy = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv + vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r
+              - textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(uv - vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
+  let snap = smoothstep(0.015, 0.12, length(vec2<f32>(depthDx, depthDy))) * sliceWidth * 0.7;
+  let cutDist = max(dist - snap, 0.0);
+  let inSlice = 1.0 - smoothstep(sliceWidth - 0.01, sliceWidth, cutDist);
 
   // Mouse focus aperture for guided filter
   let mouseDist = length(uv - mouse);
@@ -90,13 +93,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   }
 
   var finalColor = vec3<f32>(0.0);
-  var finalAlpha = 1.0;
+  var confidence = 0.0;
+  let srcPx = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
+  let edge = smoothstep(sliceWidth - 0.02, sliceWidth, cutDist) * (1.0 - smoothstep(sliceWidth, sliceWidth + 0.01, cutDist));
 
   if (inSlice > 0.0) {
-    // Warp UVs inside slice
-    let zoom = 1.0 - distortion * 0.5 * cos(dist / sliceWidth * 3.14159);
-    let offset = (uv - mouse) * (1.0 / zoom - 1.0);
-    let warpedUV = uv + offset * inSlice;
+    // Warp UVs inside slice. cutDist equals dist wherever the snap is zero.
+    let zoom = 1.0 - distortion * 0.5 * cos(cutDist / max(sliceWidth, 1e-3) * 3.14159);
+    let offset = (uv - mouse) * (1.0 / max(zoom, 1e-3) - 1.0);
+    let warpedUV = clamp(uv + offset * inSlice, vec2<f32>(0.0), vec2<f32>(1.0));
 
     // ═══ GUIDED FILTER ON WARPED UV ═══
     let pixelSize = 1.0 / dims;
@@ -134,36 +139,40 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let guide = textureSampleLevel(readDepthTexture, non_filtering_sampler, warpedUV, 0.0).r + rippleDepth * 0.1;
     let filtered = a * guide + b;
 
-    // Chromatic aberration on filtered result
-    let r = textureSampleLevel(readTexture, u_sampler, warpedUV + vec2<f32>(aberration, 0.0) * inSlice, 0.0).r;
+    // ── Idea 2: aberration along the rift normal ─────────────────────
+    // The offset length is still Aberration. Its direction is the slab
+    // axis Angle already builds, not screen X.
+    let rift = vec2<f32>(cos(angle) / max(aspect, 1e-3), sin(angle));
+    let riftDir = rift / max(length(rift), 1e-4);
+    let aberrStep = riftDir * aberration * inSlice;
+    let r = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV + aberrStep, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let g = filtered.g;
-    let bChan = textureSampleLevel(readTexture, u_sampler, warpedUV - vec2<f32>(aberration, 0.0) * inSlice, 0.0).b;
+    let bChan = textureSampleLevel(readTexture, u_sampler, clamp(warpedUV - aberrStep, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
     finalColor = vec3<f32>(r, g, bChan);
 
     // Mix between guided result and original based on depth influence
     let original = textureSampleLevel(readTexture, u_sampler, warpedUV, 0.0).rgb;
     finalColor = mix(original, finalColor, depthInfluence);
 
-    // Glowing edge
-    let edge = smoothstep(sliceWidth - 0.02, sliceWidth, dist) * (1.0 - smoothstep(sliceWidth, sliceWidth + 0.01, dist));
+    // Glowing edge — follows the snapped lip
     finalColor += vec3<f32>(0.5, 0.8, 1.0) * edge * 2.0;
 
-    // Confidence alpha
-    let confidence = length(a) * depthInfluence;
-    finalAlpha = mix(0.8, 1.0, confidence);
+    confidence = length(a) * depthInfluence;
 
   } else {
-    finalColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
+    finalColor = srcPx.rgb;
   }
 
-  // Shadow outside slice
+  // Shadow outside slice, on the snapped lip
   if (inSlice < 1.0) {
-    let shadow = smoothstep(sliceWidth, sliceWidth + 0.1, dist);
+    let shadow = smoothstep(sliceWidth, sliceWidth + 0.1, cutDist);
     finalColor *= (0.5 + 0.5 * shadow);
   }
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, finalAlpha));
-
-  let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
-  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let display = aces(max(finalColor, vec3<f32>(0.0)));
+  let alpha = clamp(srcPx.a * mix(0.92, 1.0, inSlice) + clamp(confidence, 0.0, 1.0) * inSlice * 0.08 + edge * 0.25, 0.0, 1.0);
+  let outColor = vec4<f32>(display, alpha);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), outColor);
+  textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depthC, 0.0, 0.0, 0.0));
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), outColor);
 }
