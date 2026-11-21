@@ -43,7 +43,6 @@
     "anisotropic-kuwahara-filter": "eligible",
     "anisotropic-kuwahara-render": "eligible",
     "anisotropic-kuwahara-tensor": "eligible",
-    "chroma-lens": "eligible",
     "chromatographic-diffuse": "eligible",
     "chromatographic-interact": "eligible",
     "chromatographic-phase": "eligible",
@@ -56,9 +55,7 @@
     "interactive-origami-coupled": "eligible",
     "sim-fluid-feedback-field-pass2": "eligible",
     "sim-fluid-feedback-field-pass3": "eligible",
-    "steamy-glass": "eligible",
     "temporal-frequency-decomposition": "eligible",
-    "voronoi": "eligible",
     "voronoi-chaos": "eligible",
     "voronoi-faceted-glass": "eligible"
   }

@@ -3691,7 +3691,8 @@
     "features": [
       "mouse-driven",
       "audio-reactive",
-      "audio-driven"
+      "audio-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "simulation",
@@ -3739,7 +3740,7 @@
     "id": "plasma",
     "name": "Plasma Ball",
     "url": "shaders/plasma.wgsl",
-    "description": "",
+    "description": "Plasma orbs orbiting the pointer, with bowed arc filaments, a luma corona, and a decaying field afterglow.",
     "tags": [
       "procedural",
       "generative",

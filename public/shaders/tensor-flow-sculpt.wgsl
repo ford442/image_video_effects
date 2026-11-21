@@ -3,8 +3,8 @@
 //  Category: distortion
 //  Features: depth-aware, tensor-warp, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: 1) tensor streamlines (coherence-weighted LIC grain along depth contours) 2) dome/saddle sheen from sign of Gaussian curvature 3) clay creep (exact-C history drifts along the sculpt + downhill)
+//  Upgraded: 2026-10-05, 2026-11-21
+//  Ideas: tensor streamlines; dome/saddle sheen; clay creep; anisotropic yield; rake striations
 //  A packing: ACES display RGBA (C read back as display history, mixed post-ACES)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -198,7 +198,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     //  Animated with time so the "clay" appears to flow
     // ─────────────────────────────────────────────────────────────────────────
     let flowPhase = sin(time * animSpeed + depth * 10.0);
-    let geodesicDisp = principalDir * meanCurvature * sculptDepth * flowStr * flowPhase
+    // ── Idea 1: anisotropic yield ──────────────────────────────────────
+    // Coherent grain slides. Isotropic clay barely yields. Sculpt Depth
+    // stays the amplitude.
+    let coherence = clamp(anisotropy, 0.0, 1.0) * smoothstep(2e-6, 5e-5, eigen.z);
+    let geodesicDisp = principalDir * meanCurvature * sculptDepth * flowStr * flowPhase * (0.35 + 0.65 * coherence)
                      + perpDir * gaussCurvature * sculptDepth * 0.5 * cos(time * animSpeed * 0.7);
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -236,7 +240,6 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // along perpDir (the depth-contour tangent). Where the tensor is coherent,
     // the anchored detail layer is replaced by its streamline average, so the
     // clay's grain is combed along the depth contours. Flat depth → no change.
-    let coherence = clamp(anisotropy, 0.0, 1.0) * smoothstep(2e-6, 5e-5, eigen.z);
     if (coherence > 0.01) {
         let licStep = perpDir * texel * (1.0 + freqSep * 0.25);
         var lic = srcColor;
@@ -284,6 +287,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     } else {
         sculptedColor *= 1.0 - sheen * 0.4;
     }
+
+    // ── Idea 2: rake striations ────────────────────────────────────────
+    // Grooves parallel to the tool. The contour LIC combs color the other
+    // way; this only darkens the clay.
+    let across = dot((uv - 0.5) * dims, perpDir);
+    let along = dot((uv - 0.5) * dims, principalDir);
+    let rakeLine = smoothstep(0.72, 0.94, hash21(vec2<f32>(floor(across * 0.45), floor(along * 0.015))));
+    let rake = rakeLine * coherence * smoothstep(0.015, 0.09, abs(meanCurvature));
+    sculptedColor *= 1.0 - rake * 0.28;
 
     // ─────────────────────────────────────────────────────────────────────────
     //  Temporal persistence via feedback (C = last frame's ACES display RGBA)

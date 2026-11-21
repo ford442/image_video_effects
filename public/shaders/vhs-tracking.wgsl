@@ -3,10 +3,10 @@
 //  Category: retro-glitch
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-09-21
+//  Upgraded: 2026-09-21, 2026-11-21
 //  Ideas: head-switch skew (flagging); dropout-compensator line repeat;
-//         line-alternate chroma phase
-//  A packing: raw sim state — (row walk, dropout mask, chroma phase, head band)
+//         line-alternate chroma phase; Schmitt tracking lock (§12.2B); field interlace (§12.2B)
+//  A packing: raw row state (walk, tracking lock, chroma phase, head band)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -114,7 +114,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let rowState = textureLoad(dataTextureC, vec2<i32>(0, coord.y), 0);
   let prevWalk = (rowState.r * 2.0 - 1.0) * 0.02;
   let sigma = (0.00015 + u.zoom_params.x * 0.0012) * (1.0 + bass * 2.5);
-  let walk = clamp(0.8 * prevWalk + gaussian_noise(vec2<f32>(f32(coord.y), floor(time * 60.0))) * sigma, -0.02, 0.02);
+  let noise = gaussian_noise(vec2<f32>(f32(coord.y), floor(time * 60.0))) * sigma;
+  // ── Idea 1: Schmitt-trigger tracking lock (§12.2B) ─────────────────
+  // Once the row error crosses hi it holds and creeps home, ignoring new
+  // noise, until it falls under lo. The bit lives in the row state's
+  // second channel, which was written and never read.
+  let hi = 0.0012 + u.zoom_params.x * 0.0016;
+  let lo = hi * 0.45;
+  let absW = abs(prevWalk);
+  var lock = step(0.5, rowState.g);
+  lock = select(lock, 1.0, absW > hi);
+  lock = select(lock, 0.0, absW < lo);
+  let freeWalk = clamp(0.8 * prevWalk + noise, -0.02, 0.02);
+  let latched = clamp(prevWalk * 0.97, -0.02, 0.02);
+  let walk = select(freeWalk, latched, lock > 0.5);
   let capstan = 0.002 * sin(2.0 * PI * 0.1 * time + f32(coord.y) * 0.03);
   let mouseTracking = mouseDown * (uv.y - smoothMouse.y) * exp(-abs(uv.y - smoothMouse.y) * 18.0) * (0.02 + bass * 0.035) * select(1.0, 1.4, held);
 
@@ -131,19 +144,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let totalOffset = capstan + walk + mouseTracking + skew;
 
   let sampleUV = clamp_uv(uv + vec2<f32>(totalOffset, 0.0));
+  // ── Idea 2: field interlace (§12.2B) ───────────────────────────────
+  // Luma sits a fraction of a line off the chroma line, alternating by
+  // row and frame. Tracking Error sets how far. Chroma stays on sampleUV.
+  let field = f32((u32(coord.y) + u32(floor(time * 59.94))) & 1u);
+  let fieldShift = (field * 2.0 - 1.0) * texel.y * (0.45 + u.zoom_params.x * 1.6);
+  let lumaUV = clamp_uv(sampleUV + vec2<f32>(0.0, fieldShift));
   let source = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0);
+  let lumaSource = textureSampleLevel(readTexture, u_sampler, lumaUV, 0.0);
   let depth = textureLoad(readDepthTexture, coord, 0).r;
 
   let thetaAz = u.zoom_params.y * 0.1 * PI / 180.0;
   let azimuthLoss = clamp(1.0 - cos(thetaAz), 0.0, 1.0);
   let chromaRadius = (1.0 + azimuthLoss * 14.0 + bass * 3.0) * texel.x;
-  let lumaLeft = textureSampleLevel(readTexture, u_sampler, clamp_uv(sampleUV - vec2<f32>(texel.x, 0.0)), 0.0).rgb;
-  let lumaRight = textureSampleLevel(readTexture, u_sampler, clamp_uv(sampleUV + vec2<f32>(texel.x, 0.0)), 0.0).rgb;
+  let lumaLeft = textureSampleLevel(readTexture, u_sampler, clamp_uv(lumaUV - vec2<f32>(texel.x, 0.0)), 0.0).rgb;
+  let lumaRight = textureSampleLevel(readTexture, u_sampler, clamp_uv(lumaUV + vec2<f32>(texel.x, 0.0)), 0.0).rgb;
   let chromaLeft = textureSampleLevel(readTexture, u_sampler, clamp_uv(sampleUV - vec2<f32>(chromaRadius, 0.0)), 0.0).rgb;
   let chromaRight = textureSampleLevel(readTexture, u_sampler, clamp_uv(sampleUV + vec2<f32>(chromaRadius, 0.0)), 0.0).rgb;
 
   var yiq = rgb_to_yiq(source.rgb);
-  let lumaBlur = dot((lumaLeft + source.rgb + lumaRight) / 3.0, vec3<f32>(0.299, 0.587, 0.114));
+  yiq.x = dot(lumaSource.rgb, vec3<f32>(0.299, 0.587, 0.114));
+  let lumaBlur = dot((lumaLeft + lumaSource.rgb + lumaRight) / 3.0, vec3<f32>(0.299, 0.587, 0.114));
   let chromaBlur = rgb_to_yiq((chromaLeft + source.rgb + chromaRight) / 3.0);
   yiq.x = mix(yiq.x, lumaBlur, azimuthLoss * 0.9);
   let chromaMix = clamp(azimuthLoss * 1.8 + mids * 0.25, 0.0, 1.0);
@@ -199,6 +220,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = acesToneMap(color * (0.95 + mids * 0.05));
   let alpha = clamp(source.a * (0.88 + 0.12 * luma) + dropoutMask * 0.08 + rippleDrop * 0.06, 0.0, 1.0);
   textureStore(writeTexture, coord, vec4<f32>(clamp(color, vec3<f32>(0.0), vec3<f32>(1.0)), alpha));
-  textureStore(dataTextureA, coord, vec4<f32>((walk / 0.02) * 0.5 + 0.5, dropoutMask, phaseShift * 0.5 + 0.5, headBand));
+  textureStore(dataTextureA, coord, vec4<f32>((walk / 0.02) * 0.5 + 0.5, lock, phaseShift * 0.5 + 0.5, headBand));
   textureStore(writeDepthTexture, coord, vec4<f32>(clamp(depth * 0.9 + headBand * 0.08 + dropoutMask * 0.06, 0.0, 1.0), 0.0, 0.0, 0.0));
 }

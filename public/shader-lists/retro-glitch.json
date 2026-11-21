@@ -1970,7 +1970,7 @@
       "spring-cursor",
       "aces-tone-map"
     ],
-    "description": "VHS capstan jitter and azimuth loss with sprung cursor, held tracking pull, capped dropout ripples, exact C row walk state, ACES output.",
+    "description": "VHS capstan jitter and azimuth loss with sprung cursor, held tracking pull, a latched tracking error, luma a line off the chroma, capped dropout ripples, exact C row state, ACES output.",
     "params": [
       {
         "name": "Tracking Error",

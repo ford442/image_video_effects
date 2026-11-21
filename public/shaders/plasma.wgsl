@@ -3,9 +3,9 @@
 //  Category: artistic
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-16
-//  Ideas: arc filaments between orbs; luma corona on the photo
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-10-16, 2026-11-21
+//  Ideas: arc filaments between orbs; luma corona on the photo; bowed filaments; field afterglow
+//  A packing: ACES display RGB, decaying plasma-field envelope in A.a (writeTexture alpha is coverage)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -168,7 +168,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       let pa = (uv - a) * aspectVec;
       let ba = (b - a) * aspectVec;
       let along = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-5), 0.0, 1.0);
-      let strand = exp(-dot(pa - ba * along, pa - ba * along) / 0.00009);
+      // ── Idea 1: bowed filament ─────────────────────────────────────
+      // The arc leaves the straight segment and stays pinned at both orbs.
+      let baLen = max(length(ba), 1e-4);
+      let nrm = vec2<f32>(-ba.y, ba.x) / baLen;
+      let bow = sin(along * 3.14159265);
+      let kink = nrm * (fbm(vec2<f32>(along * 3.0 + f32(j), time * 0.35)) - 0.5) * 0.02 * bow * (0.45 + int_eval);
+      let strand = exp(-dot(pa - ba * along - kink, pa - ba * along - kink) / 0.00009);
       filament += strand;
       filamentColor += (orbCol[j] + orbCol[(j + 1u) % BALL_COUNT]) * 0.5 * strand;
   }
@@ -181,12 +187,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let coronaColor = plasmaColor / max(plasmaField, 0.001);
   finalColor += coronaColor * corona * (0.16 + audioHigh * 0.08) * int_eval;
 
+  // ── Idea 2: field afterglow ────────────────────────────────────────
+  // A.a is a decaying envelope of the field. Where the orb has left, and
+  // the previous pixel was brighter than the photo, that color lingers.
+  let prev = textureLoad(dataTextureC, vec2<i32>(global_id.xy), 0);
+  let prevField = clamp(prev.a, 0.0, 1.0);
+  let fieldNow = clamp(plasmaField, 0.0, 1.0);
+  let memory = max(fieldNow, prevField * 0.94);
+  let linger = max(memory - fieldNow, 0.0);
+  let prevL = dot(prev.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let photoL = dot(baseColor.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  let excess = clamp(prevL - photoL * 0.85, 0.0, 1.0);
+  finalColor += prev.rgb * linger * excess * 0.7 * int_eval;
+
   let coverage = clamp(plasmaField * 0.35 + filamentMask * 0.4, 0.0, 1.0);
   let alphaOut = clamp(baseColor.a * (1.0 - coverage * 0.35) + coverage, 0.0, 1.0);
   let display = aces(max(finalColor, vec3<f32>(0.0)));
   let pixel = vec2<i32>(global_id.xy);
   textureStore(writeTexture, pixel, vec4<f32>(display, alphaOut));
-  textureStore(dataTextureA, pixel, vec4<f32>(display, alphaOut));
+  textureStore(dataTextureA, pixel, vec4<f32>(display, memory));
 
   let sceneDepth = textureLoad(readDepthTexture, pixel, 0).r;
   let relief = clamp(plasmaField * 0.15 + filamentMask * 0.2, 0.0, 1.0);
