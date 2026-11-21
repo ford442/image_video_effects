@@ -2,7 +2,7 @@
   "id": "echo-trace",
   "name": "Temporal Velocity Echo",
   "url": "shaders/echo-trace.wgsl",
-  "description": "4D Kalman mouse estimator with covariance-driven Mahalanobis dashed trails, held brush tightening, capped click spark echoes, oil-slick psychedelic tint, exact-load C feedback, and ACES display. Kalman state lives in extraBuffer[133..141].",
+  "description": "4D Kalman mouse estimator with covariance-driven Mahalanobis dashed trails, held brush tightening, capped click spark echoes, oil-slick psychedelic tint, exact-load C feedback, and ACES display. Kalman state lives in dataTextureA texels (0..2,0); three Kalman lag ghosts, redshift-aged echo energy and a 2-sigma covariance outline ride the estimator.",
   "updated": true,
   "params": [
     {

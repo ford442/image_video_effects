@@ -1084,7 +1084,7 @@
     "id": "liquid-smear",
     "name": "Liquid Smear",
     "url": "shaders/liquid-smear.wgsl",
-    "description": "Spring-damped pigment drag follows the pointer's real velocity and bends along source-image contours. FFT-scaled anisotropic bleed gains a monotone local-extrema clamp, preserving fine fibres without feedback ringing or negative pigment.",
+    "description": "Spring-damped pigment drag follows the pointer's real velocity and bends along source-image contours. FFT-scaled anisotropic bleed gains a monotone local-extrema clamp, preserving fine fibres without feedback ringing or negative pigment. Pigment banks up ahead of the brush and thins in its wake (continuity of the drag field), a bristle rake leaves striations with bare lanes along the stroke, and fast flicks narrow the brush.",
     "params": [
       {
         "id": "strength",
