@@ -100,7 +100,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
       extraBuffer[134] = new_vel;
   }
   
-  workgroupBarrier();
+  // No barrier: it sat after an early return (non-uniform control flow) and
+  // cannot synchronise across workgroups anyway; reading one frame late is fine.
   let spring_val = extraBuffer[133];
   
   var ripple_acc = 0.0;
