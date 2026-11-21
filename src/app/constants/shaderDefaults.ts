@@ -1,3 +1,10 @@
+/**
+ * Boot default for Slot 1: the FROZEN original Liquid (Interactive), as live at
+ * go.1ink.us/pixelocity. `public/shaders/liquid-original.wgsl` is a do-not-upgrade
+ * reference — copy it to a new id for variations, and leave this as the default.
+ */
+export const DEFAULT_SLOT1_SHADER_ID = 'liquid-original';
+
 // --- Webcam Fun Shaders ---
 export const WEBCAM_FUN_SHADERS = [
     'liquid', 'liquid-chrome-ripple', 'liquid-rainbow', 'liquid-swirl',

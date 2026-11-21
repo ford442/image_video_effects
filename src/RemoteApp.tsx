@@ -5,6 +5,7 @@ import { SyncMessage, FullState, SYNC_CHANNEL_NAME, VideoRecord, UploadFilePaylo
 import { useLocalMediaUpload } from './hooks/useLocalMediaUpload';
 import { RemoteControlHeader } from './RemoteControlHeader';
 import { isRemoteChromeHidden, writeRemoteChromeParam } from './utils/remoteChrome';
+import { DEFAULT_SLOT1_SHADER_ID } from './app/constants/shaderDefaults';
 
 // Default State (matches App.tsx defaults roughly, but will be overwritten by sync)
 const DEFAULT_SLOT_PARAMS: SlotParams = {
@@ -15,7 +16,7 @@ const DEFAULT_SLOT_PARAMS: SlotParams = {
 const RemoteApp: React.FC = () => {
     // State
     const [connected, setConnected] = useState(false);
-    const [modes, setModes] = useState<RenderMode[]>(['liquid', 'none', 'none']);
+    const [modes, setModes] = useState<RenderMode[]>([DEFAULT_SLOT1_SHADER_ID as RenderMode, 'none', 'none']);
     const [activeSlot, setActiveSlot] = useState<number>(0);
     const [slotParams, setSlotParams] = useState<SlotParams[]>([
         { ...DEFAULT_SLOT_PARAMS },
