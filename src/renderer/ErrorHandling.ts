@@ -12,10 +12,12 @@ export interface RendererError {
 
 export type ErrorHandler = (error: RendererError) => void;
 
-// Default error handler that logs to console
-let globalErrorHandler: ErrorHandler = (error) => {
+/** Default handler: logs to the console. Handlers that surface UI should still call this. */
+export const consoleErrorHandler: ErrorHandler = (error) => {
   console.error(`[WebGPU Renderer] ${error.type}: ${error.message}`);
 };
+
+let globalErrorHandler: ErrorHandler = consoleErrorHandler;
 
 export function setRendererErrorHandler(handler: ErrorHandler) {
   globalErrorHandler = handler;
@@ -32,19 +34,26 @@ export function reportError(error: RendererError) {
 export function getBrowserWarning(): string | null {
   const ua = navigator.userAgent.toLowerCase();
 
-  // Safari check (all versions as of 2026)
+  // Safari / iOS: WebGPU shipped in Safari 26 and iOS 26, so this only fires on older versions.
   if (ua.includes('safari') && !ua.includes('chrome') && !ua.includes('chromium')) {
-    return 'Safari does not support WebGPU. Please use Chrome, Edge, or Firefox Nightly.';
+    return /iphone|ipad|ipod/.test(ua)
+      ? 'This iOS version does not support WebGPU. Update to iOS 26 or later, or use a desktop browser such as Chrome or Edge.'
+      : 'This version of Safari does not support WebGPU. Update to Safari 26 or later, or use Chrome or Edge.';
   }
 
-  // iOS check
+  // iOS (non-Safari browsers use the same engine)
   if (/iphone|ipad|ipod/.test(ua)) {
-    return 'WebGPU is not available on iOS. Please use a desktop browser.';
+    return 'This iOS version does not support WebGPU. Update to iOS 26 or later, or use a desktop browser such as Chrome or Edge.';
+  }
+
+  // Firefox only exposes WebGPU on some platforms and versions.
+  if (ua.includes('firefox')) {
+    return 'This version of Firefox does not have WebGPU available. Try the latest Chrome or Edge.';
   }
 
   // Older browser check
   if (!navigator.gpu) {
-    return 'Your browser does not support WebGPU. Please update to the latest Chrome, Edge, or Firefox.';
+    return 'Your browser does not support WebGPU. Please update to the latest Chrome or Edge.';
   }
 
   return null;

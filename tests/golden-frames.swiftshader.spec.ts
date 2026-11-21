@@ -132,7 +132,7 @@ async function boot(page: Page): Promise<void> {
   expect(probe.ok, `boot probe failed: ${probe.failedStage} ${probe.lastError}`).toBe(true);
   // The app's boot puts Liquid in slot 0 once the lists load; wait for it so it cannot land later.
   await page
-    .waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
+    .waitForFunction(() => /^liquid(-original)?$/.test((window as any).__pixelocity__.getSlotState(0)?.shaderId ?? ''), null, {
       timeout: 60_000,
       polling: 250,
     })

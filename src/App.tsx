@@ -46,6 +46,9 @@ import { useHdrToneMap } from './hooks/useHdrToneMap';
 import { useCanvasColor } from './hooks/useCanvasColor';
 import './styles/index.css';
 
+/** Status-bar text until the renderer is up (instead of a premature "Ready." over a black canvas). */
+const STARTING_STATUS = 'Starting renderer…';
+
 function MainApp() {
     const [activeTab, setActiveTab] = useState<'main' | 'live-studio'>('main');
     const [shaderCategory, setShaderCategory] = useState<ShaderCategory>('image');
@@ -61,7 +64,7 @@ function MainApp() {
     ]);
     const [autoChangeEnabled, setAutoChangeEnabled] = useState(false);
     const [autoChangeDelay, setAutoChangeDelay] = useState(10);
-    const [status, setStatus] = useState('Ready.');
+    const [status, setStatus] = useState(STARTING_STATUS);
     const [slotShaderStatus, setSlotShaderStatus] = useState<Array<'idle' | 'loading' | 'error'>>(['idle', 'idle', 'idle', 'idle', 'idle', 'idle']);
     const [imageManifest, setImageManifest] = useState<ImageRecord[]>([]);
     const [videoList, setVideoList] = useState<VideoRecord[]>([]);
@@ -521,6 +524,11 @@ function MainApp() {
     });
 
     useTestHarness({ rendererRef, rendererReady });
+
+    // Boot paths that set no status of their own (e.g. a ?mode= start) must not leave "Starting…" up.
+    useEffect(() => {
+        if (rendererReady) setStatus(prev => (prev === STARTING_STATUS ? 'Ready.' : prev));
+    }, [rendererReady]);
 
     useEffect(() => {
         if (!rendererReady) return;

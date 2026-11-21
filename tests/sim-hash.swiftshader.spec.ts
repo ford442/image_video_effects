@@ -77,7 +77,7 @@ async function boot(page: Page, mode: Mode): Promise<void> {
   // The app's boot puts its default shader (Liquid) in slot 0 once the shader lists load. Let that land
   // first: arriving mid-test it replaces the flagship, and the (cached) graph report would not notice.
   await page
-    .waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
+    .waitForFunction(() => /^liquid(-original)?$/.test((window as any).__pixelocity__.getSlotState(0)?.shaderId ?? ''), null, {
       timeout: 60_000,
       polling: 250,
     })

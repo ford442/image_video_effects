@@ -61,13 +61,15 @@
   },
   "bio_lenia_continuous": {
     "thumbnail_url": "thumbnails/bio_lenia_continuous.png",
-    "generated_at": "2026-06-14T06:41:21.704Z",
+    "generated_at": "2026-11-21T16:56:37.668Z",
     "params_snapshot": [
       0.3,
       0.4,
       0.2,
       0.3
-    ]
+    ],
+    "source_hash": "c756c1a29d5508f1",
+    "capture_host": "swiftshader"
   },
   "gen-bioluminescent-abyss": {
     "thumbnail_url": "thumbnails/gen-bioluminescent-abyss.png",
@@ -195,13 +197,15 @@
   },
   "emergent-calligraphic-weave": {
     "thumbnail_url": "thumbnails/emergent-calligraphic-weave.png",
-    "generated_at": "2026-06-14T06:41:25.233Z",
+    "generated_at": "2026-11-21T16:57:01.741Z",
     "params_snapshot": [
       0.5,
       0.6,
       0.5,
       0.3
-    ]
+    ],
+    "source_hash": "ad0041f600262765",
+    "capture_host": "swiftshader"
   },
   "fire_smoke_volumetric": {
     "thumbnail_url": "thumbnails/fire_smoke_volumetric.png",
@@ -625,13 +629,15 @@
   },
   "gen-cellular-automata-tapestry": {
     "thumbnail_url": "thumbnails/gen-cellular-automata-tapestry.png",
-    "generated_at": "2026-06-14T06:41:44.326Z",
+    "generated_at": "2026-11-21T16:57:14.698Z",
     "params_snapshot": [
       1,
       0.5,
       0.055,
       0.062
-    ]
+    ],
+    "source_hash": "a8ea2f24b3ee04f0",
+    "capture_host": "swiftshader"
   },
   "gen-chaos-game-ifs": {
     "thumbnail_url": "thumbnails/gen-chaos-game-ifs.png",
@@ -785,13 +791,15 @@
   },
   "gen-crystal-caverns": {
     "thumbnail_url": "thumbnails/gen-crystal-caverns.png",
-    "generated_at": "2026-06-14T06:41:50.397Z",
+    "generated_at": "2026-11-21T16:57:41.916Z",
     "params_snapshot": [
       0.25,
       0.5,
       0.4,
       0.5
-    ]
+    ],
+    "source_hash": "60b067d245fe9d02",
+    "capture_host": "swiftshader"
   },
   "gen-crystal-lattice-growth": {
     "thumbnail_url": "thumbnails/gen-crystal-lattice-growth.png",
@@ -923,13 +931,15 @@
   },
   "gen-dragon-curve": {
     "thumbnail_url": "thumbnails/gen-dragon-curve.png",
-    "generated_at": "2026-06-14T06:41:54.452Z",
+    "generated_at": "2026-11-21T17:03:45.928Z",
     "params_snapshot": [
       0.2,
       0.5,
       0.3,
       0.2
-    ]
+    ],
+    "source_hash": "1a3e51a5ec0927e4",
+    "capture_host": "swiftshader"
   },
   "gen-dynamic-tessellation-ornate-fractal-tiles": {
     "thumbnail_url": "thumbnails/gen-dynamic-tessellation-ornate-fractal-tiles.png",
@@ -1447,13 +1457,15 @@
   },
   "gen-lichen-reaction-diffusion": {
     "thumbnail_url": "thumbnails/gen-lichen-reaction-diffusion.png",
-    "generated_at": "2026-06-14T06:42:12.490Z",
+    "generated_at": "2026-11-21T17:04:18.361Z",
     "params_snapshot": [
       0.5,
-      0.2,
-      0.4,
-      0
-    ]
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "6e5709749eb03a6c",
+    "capture_host": "swiftshader"
   },
   "gen-lichtenberg-storm": {
     "thumbnail_url": "thumbnails/gen-lichtenberg-storm.png",
@@ -1999,13 +2011,15 @@
   },
   "gen-prismatic-aether-loom": {
     "thumbnail_url": "thumbnails/gen-prismatic-aether-loom.png",
-    "generated_at": "2026-06-14T06:42:33.893Z",
+    "generated_at": "2026-11-21T17:05:04.402Z",
     "params_snapshot": [
       10,
       3,
       0.5,
       1
-    ]
+    ],
+    "source_hash": "75831d629d986431",
+    "capture_host": "swiftshader"
   },
   "gen-prismatic-bismuth-lattice": {
     "thumbnail_url": "thumbnails/gen-prismatic-bismuth-lattice.png",
@@ -2187,13 +2201,15 @@
   },
   "gen-quantum-neural-lace": {
     "thumbnail_url": "thumbnails/gen-quantum-neural-lace.png",
-    "generated_at": "2026-06-14T06:42:43.060Z",
+    "generated_at": "2026-11-21T17:05:38.708Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.2,
       0.6
-    ]
+    ],
+    "source_hash": "186dc9e29b32abd6",
+    "capture_host": "swiftshader"
   },
   "gen-quantum-pollen": {
     "thumbnail_url": "thumbnails/gen-quantum-pollen.png",
@@ -2675,13 +2691,15 @@
   },
   "gen-xeno-mycelial-resonance-web": {
     "thumbnail_url": "thumbnails/gen-xeno-mycelial-resonance-web.png",
-    "generated_at": "2026-06-14T06:43:15.234Z",
+    "generated_at": "2026-11-21T17:08:09.203Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "fa540264e359626c",
+    "capture_host": "swiftshader"
   },
   "gen-zeta-function-landscape": {
     "thumbnail_url": "thumbnails/gen-zeta-function-landscape.png",
@@ -2839,13 +2857,15 @@
   },
   "molten-gold": {
     "thumbnail_url": "thumbnails/molten-gold.png",
-    "generated_at": "2026-06-14T06:43:27.988Z",
+    "generated_at": "2026-11-21T17:09:15.227Z",
     "params_snapshot": [
       0.5,
       0.5,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "318813bf4a889d61",
+    "capture_host": "swiftshader"
   },
   "morphogenic-resonance": {
     "thumbnail_url": "thumbnails/morphogenic-resonance.png",
@@ -2883,13 +2903,15 @@
   },
   "nebula-gyroid": {
     "thumbnail_url": "thumbnails/nebula-gyroid.png",
-    "generated_at": "2026-06-14T06:43:28.686Z",
+    "generated_at": "2026-11-21T17:09:27.808Z",
     "params_snapshot": [
       0.5,
       0.7,
       0.3,
       0.5
-    ]
+    ],
+    "source_hash": "368300a0b3fd1cd2",
+    "capture_host": "swiftshader"
   },
   "neon-fern-garden": {
     "thumbnail_url": "thumbnails/neon-fern-garden.png",
@@ -2987,13 +3009,15 @@
   },
   "retro_phosphor_dream": {
     "thumbnail_url": "thumbnails/retro_phosphor_dream.png",
-    "generated_at": "2026-06-14T06:43:30.836Z",
+    "generated_at": "2026-11-21T17:09:49.242Z",
     "params_snapshot": [
       0.3,
       0.3,
       0.4,
       0.2
-    ]
+    ],
+    "source_hash": "e9d113f78d19c5a0",
+    "capture_host": "swiftshader"
   },
   "sacred-geometry-torus": {
     "thumbnail_url": "thumbnails/sacred-geometry-torus.png",
@@ -3101,13 +3125,15 @@
   },
   "symbiotic-light-propagation-networks": {
     "thumbnail_url": "thumbnails/symbiotic-light-propagation-networks.png",
-    "generated_at": "2026-06-14T06:43:33.269Z",
+    "generated_at": "2026-11-21T17:10:00.496Z",
     "params_snapshot": [
       0.5,
       0.6,
       0.5,
       0.5
-    ]
+    ],
+    "source_hash": "851da8d6068c605b",
+    "capture_host": "swiftshader"
   },
   "topological-acoustic-knots": {
     "thumbnail_url": "thumbnails/topological-acoustic-knots.png",
@@ -15101,6 +15127,18 @@
       0.5
     ],
     "source_hash": "bc433b4600f07837",
+    "capture_host": "swiftshader"
+  },
+  "liquid-original": {
+    "thumbnail_url": "thumbnails/liquid-original.png",
+    "generated_at": "2026-11-21T16:45:53.020Z",
+    "params_snapshot": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "source_hash": "95cf2d927a1ffba1",
     "capture_host": "swiftshader"
   }
 }

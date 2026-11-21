@@ -48,7 +48,7 @@ async function boot(page: Page, mode: Mode): Promise<void> {
   // load; plasma set before that is overwritten, and Liquid over the cleared generative
   // input reads back dark (engine2-device-loss waits the same way).
   await page
-    .waitForFunction(() => (window as any).__pixelocity__.getSlotState(0)?.shaderId === 'liquid', null, {
+    .waitForFunction(() => /^liquid(-original)?$/.test((window as any).__pixelocity__.getSlotState(0)?.shaderId ?? ''), null, {
       timeout: 60_000,
       polling: 250,
     })

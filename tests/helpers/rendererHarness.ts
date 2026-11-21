@@ -299,7 +299,7 @@ export async function isGpuProbeOk(page: Page): Promise<boolean> {
  */
 export async function waitForBootDefaultShader(page: Page, timeoutMs = 60_000): Promise<void> {
   await page
-    .waitForFunction(() => (window as any).__pixelocity__?.getSlotState?.(0)?.shaderId === 'liquid', null, {
+    .waitForFunction(() => /^liquid(-original)?$/.test((window as any).__pixelocity__?.getSlotState?.(0)?.shaderId ?? ''), null, {
       timeout: timeoutMs,
       polling: 250,
     })

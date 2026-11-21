@@ -35,6 +35,25 @@ describe('WebGpuProbeFailureOverlay', () => {
     expect(screen.getByText(/Chromium\/120/)).toBeInTheDocument();
   });
 
+  it('tells the user what to do and offers a reload for a boot-probe failure', () => {
+    render(<WebGpuProbeFailureOverlay probe={fixture} />);
+    expect(screen.getByTestId('webgpu-help')).toHaveTextContent(/Chrome or Edge/);
+    expect(screen.getByTestId('webgpu-reload')).toBeInTheDocument();
+  });
+
+  it('keeps the attempt log collapsed on phones so the recovery actions stay on screen', () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({ matches: query.includes('max-width: 640px'), media: query })) as typeof window.matchMedia;
+    try {
+      render(<WebGpuProbeFailureOverlay probe={fixture} />);
+      expect(screen.getByTestId('webgpu-reload')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Show attempt log' })).toBeInTheDocument();
+      expect(screen.queryByText(/HighPerformance/)).toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+
   it('has no Retry button for a boot-probe failure', () => {
     render(<WebGpuProbeFailureOverlay probe={fixture} />);
     expect(screen.queryByTestId('webgpu-retry')).toBeNull();

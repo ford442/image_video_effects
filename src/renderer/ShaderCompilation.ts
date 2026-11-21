@@ -187,7 +187,12 @@ export async function compileShader(
       `[WebGPU] Shader "${id}" failed bind-group validation (${validation.errors.length} errors). ` +
         `Using fallback pass-through shader.`
     );
-    // Skip directly to fallback below
+    // Skip directly to fallback below — but tell the user: the slot will show an unchanged image.
+    reportError({
+      type: 'shader-compile',
+      message: `Shader "${id}" failed to compile. Using a pass-through instead (bind-group validation failed).`,
+      recoverable: true,
+    });
   }
 
   // Fail soft: a storage declaration the rewrite could not reach would make the pipeline

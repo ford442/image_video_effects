@@ -1,11 +1,11 @@
 .webgpu-probe-failure-overlay {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  z-index: 30; /* above the status bar (20) and error notice (25) */
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 1rem 1rem 2.25rem; /* bottom strip stays clear of the status bar drawn over the canvas */
   box-sizing: border-box;
   background: rgba(8, 10, 16, 0.92);
   color: #e8ecf4;
@@ -15,7 +15,7 @@
 
 .webgpu-probe-failure-overlay__card {
   width: min(640px, 100%);
-  max-height: 100%;
+  max-height: calc(100% - 1.5rem); /* leave the status-bar strip uncovered (the card scrolls inside) */
   overflow: auto;
   background: #141a24;
   border: 1px solid #2a3548;
@@ -101,4 +101,38 @@
   color: #b8c4d8;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.webgpu-probe-failure-overlay__help {
+  margin: 0 0 0.75rem;
+  line-height: 1.45;
+  color: #e8ecf4;
+}
+
+@media (max-width: 640px) {
+  .webgpu-probe-failure-overlay {
+    padding: 0.5rem 0.5rem 2.25rem;
+  }
+
+  .webgpu-probe-failure-overlay__card {
+    padding: 0.9rem 1rem;
+  }
+
+  .webgpu-probe-failure-overlay__title {
+    font-size: 1.1rem;
+  }
+
+  .webgpu-probe-failure-overlay__summary,
+  .webgpu-probe-failure-overlay__help {
+    font-size: 0.85rem;
+    line-height: 1.35;
+    margin-bottom: 0.5rem;
+  }
+
+  .webgpu-probe-failure-overlay__error {
+    font-size: 0.7rem;
+    line-height: 1.3;
+    padding: 0.4rem 0.6rem;
+    margin-bottom: 0.5rem;
+  }
 }

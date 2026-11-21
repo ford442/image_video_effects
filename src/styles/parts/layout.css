@@ -173,3 +173,100 @@ canvas {
     display: block;
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
 }
+
+/* Phones (≤ 640px): the 80px header and 380px sidebar assume a desktop. Let the header grow and
+   wrap, stack the canvas above the controls, and let the sidebar take the full width so no control
+   sits off-screen (Release 3/5 layout audit at 375×812). */
+@media (max-width: 640px) {
+    .header {
+        height: auto;
+        min-height: 56px;
+        padding: 6px 10px;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .logo-section {
+        gap: 8px;
+        max-width: 100%;
+    }
+
+    .logo-section > div:first-child {
+        height: 44px !important;
+    }
+
+    .logo-section .logo-img {
+        height: 56px !important;
+    }
+
+    .subtitle-text {
+        display: none;
+    }
+
+    .header-controls {
+        flex: 1 1 100%;
+        justify-content: flex-start;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    .header-controls > div[style] {
+        display: none; /* decorative 1px dividers */
+    }
+
+    .header-controls .toggle-sidebar-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .main-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 0;
+    }
+
+    .main-container.fullscreen {
+        height: auto;
+    }
+
+    .canvas-container {
+        order: -1;
+        flex: 0 0 auto;
+        width: 100%;
+        height: min(100vw, 45vh);
+    }
+
+    .main-container.fullscreen .canvas-container {
+        flex: 1 1 auto;
+        height: auto;
+    }
+
+    .sidebar {
+        width: 100%;
+        max-height: none;
+        flex: 1 1 0;
+        min-height: 0;
+        border-right: none;
+        border-top: 1px solid rgba(255, 215, 0, 0.15);
+    }
+
+    .sidebar.hidden {
+        flex: 0 0 0;
+        height: 0;
+        transform: none;
+    }
+}
+
+/* Respect the OS "reduce motion" setting: no looping pulses, spinners or slide transitions.
+   0.01ms (not 'none') keeps animationend / transitionend firing for code that waits on them. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

@@ -27,7 +27,7 @@
   /* Text Colors */
   --text-primary: #f0f0f5;
   --text-secondary: #a0a0b0;
-  --text-muted: #606070;
+  --text-muted: #8c8c9e; /* >= 4.5:1 on the dark glass panels (was #606070, ~2.9:1) */
   --text-gold: #FFD700;
   
   /* Status Colors */
