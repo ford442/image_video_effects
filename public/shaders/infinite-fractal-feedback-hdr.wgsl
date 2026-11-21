@@ -1,30 +1,14 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Infinite Fractal Feedback HDR
 //  Category: advanced-hybrid
-//  Features: fractal-feedback, HDR-bloom, accumulative-alpha, temporal
+//  Features: fractal-feedback, HDR-bloom, accumulative-alpha, temporal, audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: Very High
+//  Upgraded: 2026-11-21
+//  Ideas: fractal preimage feedback; energy-conserving bloom (§12.2F)
+//  A packing: clamped linear feedback RGB in A (C read as that color); ACES on writeTexture only
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51;
@@ -122,8 +106,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
     let sampleUV = focalPoint + vec2<f32>(cos(polar.y), sin(polar.y)) * polar.x;
     
-    // Exact textureLoad from dataTextureC
-    let prev = textureLoad(dataTextureC, coord, 0);
+    // ── Idea 1: fractal preimage feedback ─────────────────────────────
+    // The zoom already computed sampleUV. Pull last frame through that
+    // preimage so the kaleidoscope recurs, instead of fading this pixel.
+    let histMax = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
+    let histCoord = clamp(vec2<i32>(clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0)) * res), vec2<i32>(0), histMax);
+    let prev = textureLoad(dataTextureC, histCoord, 0);
 
     // Capped click fronts
     let rippleCount = min(u32(u.config.y), 50u);
@@ -156,20 +144,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Temporal feedback blend
     color = mix(color, prev.rgb, feedbackStrength * 0.95);
     
-    // HDR Bloom approximation & ACES
+    // ── Idea 2: energy-conserving bloom (§12.2F) ──────────────────────
+    // Highlight light is taken from the core and spread to four neighbors
+    // of the same fractal sample, so the bloom is not a second exposure.
     let lum = dot(color, vec3<f32>(0.299, 0.587, 0.114));
-    let bloom = color * smoothstep(0.8, 1.5, lum) * 0.5;
-    let hdrColor = color + bloom;
-    
-    let finalColor = toneMapACES(hdrColor);
+    var spreadL = 0.0;
+    let bloomR = 5.0 / res;
+    for (var k = 0; k < 4; k = k + 1) {
+        let a = f32(k) * 1.5707963 + 0.4;
+        let tapUV = clamp(sampleUV + vec2<f32>(cos(a), sin(a)) * bloomR, vec2<f32>(0.0), vec2<f32>(1.0));
+        let tap = textureSampleLevel(readTexture, u_sampler, tapUV, 0.0).rgb;
+        spreadL += max(dot(tap, vec3<f32>(0.299, 0.587, 0.114)) - 0.72, 0.0);
+    }
+    spreadL *= 0.25;
+    let core = smoothstep(0.75, 1.15, lum);
+    let hdrColor = color * (1.0 - core * 0.22) + color * spreadL * 0.55;
+    let stored = clamp(hdrColor, vec3<f32>(0.0), vec3<f32>(4.0));
+    let finalColor = toneMapACES(stored);
     
     // Semantic alpha
     let finalAlpha = clamp(lum * 1.5 + rippleIntensity, 0.0, 1.0);
     
     let outValue = vec4<f32>(finalColor, finalAlpha);
-
-    // Write ONLY to dataTextureA and writeTexture
-    textureStore(dataTextureA, coord, outValue);
+    textureStore(dataTextureA, coord, vec4<f32>(stored, finalAlpha));
     textureStore(writeTexture, coord, outValue);
     
     // Optional Depth write

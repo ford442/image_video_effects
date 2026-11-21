@@ -3,15 +3,11 @@
 //  Category: visual-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba, temporal,
 //            beam-raster, misconvergence, halation, degauss, ACES
-//  Ideas:    1. electron-beam raster — a visible beam sweep; freshly hit lines glow and
-//               fade through the C phosphor
-//            2. corner misconvergence + halation — R/B guns drift apart toward the corners,
-//               and bright areas bloom in the glass
-//            3. degauss purity rim — colour-purity blotches ring the clear zone, and a
-//               click "degausses" it with a decaying wobble
 //  Complexity: High
 //  Chunks From: crt-clear-zone, electron-beam, shadow-mask
-//  Upgraded: 2026-05-30
+//  Upgraded: 2026-05-30, 2026-11-21
+//  Ideas: electron-beam raster; corner misconvergence; glass halation; degauss purity rim; field interlace (§12.2B); H-sync recovery
+//  A packing: ACES display RGBA (C is the phosphor image)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -84,8 +80,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let in_bounds = crtUV.x >= 0.0 && crtUV.x <= 1.0 && crtUV.y >= 0.0 && crtUV.y <= 1.0;
   let clampedCrt = clamp(crtUV, vec2<f32>(0.0), vec2<f32>(1.0));
 
+  // ── Idea 4: field interlace (§12.2B) ──────────────────────────────
+  // Odd lines are a scanline late. The slot mask stays on the glass (clampedCrt);
+  // only the picture the beam is drawing shifts.
+  let field = f32((coords.y + i32(fract(time * 15.0) * 60.0)) & 1);
+  let interlace = (field - 0.5) * scanlineInt * (4.0 / max(resolution.y, 1.0));
+  // ── Idea 5: H-sync recovery ───────────────────────────────────────
+  // The oscillator locks a little late, so the left of each line bows and
+  // the error dies across the width. Aberration is the gun-error slider.
+  let syncBow = exp(-clampedCrt.x * 6.0) * sin(time * 2.2 + clampedCrt.y * 48.0) * aberration * 1.1;
+  let beamUV = clamp(clampedCrt + vec2<f32>(syncBow, interlace), vec2<f32>(0.0), vec2<f32>(1.0));
+
   let spread = 0.8 + depth * 1.5;
-  let blurred = gaussian_spread(clampedCrt, resolution, spread);
+  let blurred = gaussian_spread(beamUV, resolution, spread);
 
   // Idea 2a: corner misconvergence. The three guns converge at the centre and
   // drift apart toward the corners: R/B split widens with r², and the blue gun
@@ -94,9 +101,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let conv = 0.35 + dot(rc, rc) * 5.0;
   let rOff = vec2<f32>(aberration * (1.0 + distortion * 0.3), aberration * 0.2 * rc.y) * conv;
   let bOff = vec2<f32>(-aberration * (1.0 + distortion * 0.2), aberration * 0.5 * rc.y) * conv;
-  let crtR = blurred.r * 0.65 + textureSampleLevel(readTexture, u_sampler, clamp(clampedCrt + rOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r * 0.35;
+  let crtR = blurred.r * 0.65 + textureSampleLevel(readTexture, u_sampler, clamp(beamUV + rOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r * 0.35;
   let crtG = blurred.g;
-  let crtB = blurred.b * 0.65 + textureSampleLevel(readTexture, u_sampler, clamp(clampedCrt + bOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b * 0.35;
+  let crtB = blurred.b * 0.65 + textureSampleLevel(readTexture, u_sampler, clamp(beamUV + bOff, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b * 0.35;
   var crtColor = vec3<f32>(crtR, crtG, crtB);
 
   let mask = shadow_mask(clampedCrt, resolution);

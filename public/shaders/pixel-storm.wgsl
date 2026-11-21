@@ -2,33 +2,12 @@
 //  Pixel Storm
 //  Category: distortion
 //  Features: mouse-driven, distortion, audio-reactive, click-reactive, temporal-persistence, upgraded-rgba
-//  Upgraded: 2026-09-08
-//  Ideas: luma-weighted debris; exact-C advection for the trail
+//  Upgraded: 2026-09-08, 2026-11-21
+//  Ideas: luma-weighted debris; exact-C advection for the trail; pixel blocks; eye-wall jet
 //  A packing: ACES display RGBA
 // ---------------------------------------------------------------
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config:      vec4<f32>,       // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>,       // x=time, y=MouseX, z=MouseY, w=MouseDown
-  zoom_params: vec4<f32>,       // x=Strength, y=Chaos, z=Trail, w=Radius
-  ripples:     array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Strength, y=Chaos, z=Trail, w=Radius
 
 fn hash12(p: vec2<f32>) -> f32 {
 	var p3  = fract(vec3<f32>(p.xyx) * .1031);
@@ -145,6 +124,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         }
     }
 
+    // ── Idea 2: eye-wall jet ──────────────────────────────────────────
+    // A tangential ring at the wall of the eye, on top of the radial wind.
+    // The suck below still reverses the whole field, jet included.
+    let wallBand = exp(-abs(dist / max(radiusParam, 0.001) - 0.72) * 10.0);
+    let radialAspect = mouseDeltaAspect / max(dist, 0.0001);
+    let wallTangent = vec2<f32>(-radialAspect.y, radialAspect.x) / aspectVec;
+    wind += wallTangent * wallBand * strength * (0.65 + chaos * 0.8);
+
     // If mouse down, suck in? Or blow harder? Let's reverse direction (suck in black hole style)
     if (mouseDown > 0.5) {
         wind = -wind * 2.0;
@@ -156,10 +143,18 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     wind *= debris;
 
     let samplePos = clamp(uv - wind, vec2<f32>(0.0), vec2<f32>(1.0));
-    let fresh = textureSampleLevel(readTexture, u_sampler, samplePos, 0.0).rgb;
+    // ── Idea 1: pixel blocks ──────────────────────────────────────────
+    // Chaos sets the chunk size. A calm frame (no wind, or Chaos at 0) stays
+    // on the continuous sample so the photo is not pre-pixelated.
+    let blockPx = 1.0 + chaos * 6.0;
+    let blockUv = blockPx / resolution;
+    let snapped = (floor(samplePos / blockUv) + 0.5) * blockUv;
+    let storming = smoothstep(0.00005, 0.0015, length(wind));
+    let sampleBlocked = clamp(mix(samplePos, snapped, storming * smoothstep(0.0, 0.15, chaos)), vec2<f32>(0.0), vec2<f32>(1.0));
+    let fresh = textureSampleLevel(readTexture, u_sampler, sampleBlocked, 0.0).rgb;
 
     let maxC = vec2<i32>(max(i32(resolution.x) - 1, 0), max(i32(resolution.y) - 1, 0));
-    let histCoord = clamp(vec2<i32>(samplePos * resolution), vec2<i32>(0), maxC);
+    let histCoord = clamp(vec2<i32>(sampleBlocked * resolution), vec2<i32>(0), maxC);
     let history = textureLoad(dataTextureC, histCoord, 0).rgb;
 
     var outCol = mix(fresh, history, trail * 0.95);

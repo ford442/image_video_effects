@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-05
-//  Ideas: inverted counter-image inside the Einstein radius; photon ring at the shadow edge; dark-matter sub-halo microlensing caustics
+//  Upgraded: 2026-10-05, 2026-11-21
+//  Ideas: inverted counter-image inside the Einstein radius; photon ring at the shadow edge; dark-matter sub-halo microlensing caustics; point-mass magnification; Doppler limb
 //  A packing: raw lens fields (impact b, potential, ringGlow, |deflection|) — no C reader
 // ═══════════════════════════════════════════════════════════════════
 
@@ -122,8 +122,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // this region shows the inverted second image of what sits behind the hole.
     // The counter-image is demagnified, so it carries less flux: dim it gently
     // and the Einstein ring becomes a seam between two copies of the photo.
+    // ── Idea 4: point-mass magnification ──────────────────────────────
+    // μ = 1/|1−(θE/b)⁴|, clamped. Inside θE the existing counter-image dim wins.
     let inner = 1.0 - smoothstep(einsteinR * 0.92, einsteinR, b);
-    color = color * mix(1.0, 0.72, inner);
+    let bRatio = einsteinR / max(b, 1e-4);
+    let bSq = bRatio * bRatio;
+    let mu = 1.0 / max(abs(1.0 - bSq * bSq), 0.12);
+    let mag = clamp(mu, 0.35, 3.0);
+    color = color * mix(mag, min(mag, 0.72), inner);
 
     // Gravitational redshift: deeper in potential → warmer colour temperature
     let potential = rs / max(b, rs * 0.1);
@@ -140,7 +146,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Accretion disk arc: angular variation around ring (delta is already aspect space)
     let phi      = atan2(delta.y, delta.x);
     let diskMod  = 0.5 + 0.5 * cos(phi * 3.0 + time * 0.5 + bass * 2.0);
-    color += blackbody(16000.0) * ringGlow * diskMod * 0.6;
+    // ── Idea 5: Doppler limb ──────────────────────────────────────────
+    // The 3-lobe arc stays. One side, the approaching limb, leads.
+    let approaching = 0.5 + 0.5 * cos(phi + time * 0.35);
+    color += blackbody(16000.0) * ringGlow * diskMod * 0.6 * (0.55 + 0.9 * approaching);
 
     // Dark-matter / lensing halo beyond Einstein ring
     let halo    = darkParam * exp(-b * b / (haloR * haloR)) * 0.18;

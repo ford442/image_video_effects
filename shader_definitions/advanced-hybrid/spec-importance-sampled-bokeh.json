@@ -18,7 +18,8 @@
     "depth-aware",
     "audio-reactive",
     "click-reactive",
-    "HDR"
+    "HDR",
+    "upgraded-rgba"
   ],
   "params": [
     {

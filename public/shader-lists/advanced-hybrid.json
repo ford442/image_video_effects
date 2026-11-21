@@ -7265,7 +7265,10 @@
       "fractal-feedback",
       "HDR-bloom",
       "accumulative-alpha",
-      "temporal"
+      "temporal",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -9142,7 +9145,8 @@
       "depth-aware",
       "audio-reactive",
       "click-reactive",
-      "HDR"
+      "HDR",
+      "upgraded-rgba"
     ],
     "params": [
       {

@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════════
 //  spec-importance-sampled-bokeh
 //  Category: advanced-hybrid
-//  Features: importance-sampling, bokeh, HDR, depth-aware, mouse-driven, audio-reactive
+//  Features: importance-sampling, bokeh, HDR, depth-aware, mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
+//  Upgraded: 2026-11-21
+//  Ideas: cat's eye; Airy disc (§12.2F)
+//  A packing: linear bokeh RGB + importance alpha in A (C unread); ACES on writeTexture only
 //  Chunks From: chunk-library (hash22)
 //  Created: 2026-04-18
 //  By: Agent 3C — Spectral Computation Pioneer
@@ -13,31 +16,20 @@
 //  Uses golden angle spiral with importance weighting.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash22(p: vec2<f32>) -> vec2<f32> {
     var p3 = fract(vec3<f32>(p.xyx) * vec3<f32>(0.1031, 0.1030, 0.0973));
     p3 = p3 + dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
+}
+
+fn airyDisc(x: f32) -> f32 {
+    let xs = clamp(abs(x), 0.001, 6.5);
+    let x2 = xs * xs;
+    let j1 = xs * (0.5 - x2 * (0.0625 - x2 * (0.0026042 - x2 * 0.0000543)));
+    let v = 2.0 * j1 / xs;
+    return max(v * v, 0.0);
 }
 
 fn toneMapACES(x: vec3<f32>) -> vec3<f32> {
@@ -136,15 +128,27 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let angle = f32(i) * 2.39996322973 + (jitter.x - 0.5) * 0.08;
         let r = sqrt(f32(i) / f32(sampleCount)) * radius * mix(0.98, 1.02, jitter.y);
         let offset = vec2<f32>(cos(angle), sin(angle)) * r;
+        // ── Idea 1: cat's eye ─────────────────────────────────────────
+        // Off-axis the disk is squeezed along the field vector. Centre stays
+        // round. A wider Bokeh Radius clips more, as a real iris does.
+        let field = uv - vec2<f32>(0.5);
+        let fieldLen = length(field);
+        let fieldDir = field / max(fieldLen, 0.0001);
+        let squeeze = clamp(fieldLen * fieldLen * (1.4 + baseRadius * 12.0), 0.0, 0.7);
+        let eyeOffset = offset - fieldDir * dot(offset, fieldDir) * squeeze;
 
-        let sampleUV = uv + offset;
+        let sampleUV = uv + eyeOffset;
         // Clamp to avoid wrapping artifacts in bokeh
         let clampedUV = clamp(sampleUV, vec2<f32>(0.0), vec2<f32>(1.0));
         let sample = textureSampleLevel(readTexture, u_sampler, clampedUV, 0.0);
         let luma = dot(sample.rgb, vec3<f32>(0.299, 0.587, 0.114));
 
-        // Importance weight: bright pixels contribute more
-        let importance = pow(luma + 0.1, shapePower);
+        // Importance weight: bright pixels contribute more.
+        // ── Idea 2: Airy disc (§12.2F) ────────────────────────────────
+        // Bright taps take the diffraction profile of r/radius. Dim taps
+        // keep the flat disk. Highlight Shape is still the luma power.
+        let importance = pow(max(luma + 0.1, 0.001), shapePower)
+            * mix(1.0, airyDisc((r / max(radius, 0.0001)) * 5.2), smoothstep(0.4, 0.85, luma));
 
         // Chromatic aberration per sample based on radius
         let chromaShift = chromaAmount * r / max(radius, 0.0001);

@@ -1589,8 +1589,17 @@
       ]
     },
     "infinite-fractal-feedback-hdr": {
-      "hash": "08344f0484e566cd",
-      "history": []
+      "hash": "e63e6c5162ba4b5c",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "e63e6c5162ba4b5c",
+          "prev_hash": "08344f0484e566cd",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
+        }
+      ]
     },
     "ink-bleed-fluid": {
       "hash": "23aac22b485506d2",
@@ -1947,8 +1956,17 @@
       ]
     },
     "spec-importance-sampled-bokeh": {
-      "hash": "76836bc42fa36557",
-      "history": []
+      "hash": "500f36d4ceb24fa0",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "500f36d4ceb24fa0",
+          "prev_hash": "76836bc42fa36557",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
+        }
+      ]
     },
     "spec-iridescence-engine": {
       "hash": "4882c7f93f280a71",
@@ -4334,8 +4352,17 @@
       ]
     },
     "pixel-storm": {
-      "hash": "2a8d831fe3619ea2",
-      "history": []
+      "hash": "4709a1f71c138394",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "4709a1f71c138394",
+          "prev_hash": "2a8d831fe3619ea2",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
+        }
+      ]
     },
     "pixelate-blast": {
       "hash": "f40916860f7e11af",
@@ -8383,8 +8410,17 @@
       ]
     },
     "gen-hyperbolic-tessellation": {
-      "hash": "bd6358ff85be5409",
-      "history": []
+      "hash": "36d5b1586aa8c3e3",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "36d5b1586aa8c3e3",
+          "prev_hash": "bd6358ff85be5409",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
+        }
+      ]
     },
     "gen-hyperbolic-tree": {
       "hash": "e947b6127eeebc59",
@@ -8756,7 +8792,7 @@
       ]
     },
     "gen-klein-bottle-walk": {
-      "hash": "aa837493bf4e7f72",
+      "hash": "efea37ef5e5602cb",
       "history": [
         {
           "event": "upgraded",
@@ -8765,6 +8801,14 @@
           "prev_hash": "dbbc7cce2b7dfe94",
           "commit": "7090e0e2",
           "note": "2026-10-12 union of uncommitted October shader upgrade passes onto origin/main"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "efea37ef5e5602cb",
+          "prev_hash": "aa837493bf4e7f72",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
         }
       ]
     },
@@ -11428,8 +11472,17 @@
       ]
     },
     "gen-temporal-motion-smear": {
-      "hash": "2e575897d664dc0f",
-      "history": []
+      "hash": "94036ab64642a1a6",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "94036ab64642a1a6",
+          "prev_hash": "2e575897d664dc0f",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
+        }
+      ]
     },
     "gen-thermal-rainbow-topography": {
       "hash": "75227ac01c2a6e76",
@@ -16316,7 +16369,7 @@
       ]
     },
     "gravity-lens": {
-      "hash": "a13497e2c83450ae",
+      "hash": "82fb0dae552efdbb",
       "history": [
         {
           "event": "upgraded",
@@ -16325,6 +16378,14 @@
           "prev_hash": "f292c6072dee4f16",
           "commit": "485f3646",
           "note": "2026-10-05 force-field twelve (claude-opus-5-5) — agents/swarm-outputs/claude-2026-10-05-force-field-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "82fb0dae552efdbb",
+          "prev_hash": "a13497e2c83450ae",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
         }
       ]
     },
@@ -18459,8 +18520,17 @@
       ]
     },
     "solarize-warp": {
-      "hash": "baf6bdff5f6b5427",
-      "history": []
+      "hash": "7807a950260fee1d",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "7807a950260fee1d",
+          "prev_hash": "baf6bdff5f6b5427",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
+        }
+      ]
     },
     "sonar-pulse": {
       "hash": "d83beaf35c97df2c",
@@ -19893,8 +19963,17 @@
       ]
     },
     "pp-chromatic": {
-      "hash": "d169a6b39068dbc8",
-      "history": []
+      "hash": "54a02002ebc6b414",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "54a02002ebc6b414",
+          "prev_hash": "d169a6b39068dbc8",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
+        }
+      ]
     },
     "pp-sharpen": {
       "hash": "81f1a3040532c566",
@@ -21919,7 +21998,7 @@
       ]
     },
     "crt-clear-zone": {
-      "hash": "a001a97eb22fa01e",
+      "hash": "63026ba3e6175456",
       "history": [
         {
           "event": "upgraded",
@@ -21936,6 +22015,14 @@
           "prev_hash": "701027a95746dfa2",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-21T04:37:05.945Z",
+          "hash": "63026ba3e6175456",
+          "prev_hash": "a001a97eb22fa01e",
+          "commit": "2e876e2e",
+          "note": "2026-11-21 optical / geometry ten (Grok) — docs/agents/swarm-outputs/grok-2026-11-21-optical-geom-ten/NOTES.md"
         }
       ]
     },

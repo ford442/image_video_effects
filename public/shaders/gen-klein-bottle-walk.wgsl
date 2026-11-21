@@ -4,8 +4,8 @@
 //  Features: generative, audio-reactive, upgraded-rgba
 //  Complexity: High
 //  Created: 2026-05-23
-//  Upgraded: 2026-10-10
-//  Ideas: orientation-reversing glide seam; walker footprint trail from C; parametric latitude/longitude chart lines; derivative neck/handle pinch specular
+//  Upgraded: 2026-10-10, 2026-11-21
+//  Ideas: orientation-reversing glide seam; walker footprint trail from C; parametric latitude/longitude chart lines; derivative neck/handle pinch specular; sheet hue transport; Gaussian curvature tint
 //  A packing: ACES display RGBA (C read back as colour history)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -137,13 +137,36 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let innerHandle = 1.0 - smoothstep(0.72, 1.05, length(kb.xy));
     let pinch = (1.0 - smoothstep(0.32, 0.62, derivativeArea)) * innerHandle;
     let pinchSpecular = pow(max(dot(normal, halfDir), 0.0), 72.0) * pinch * lightGain;
+
+    // ── Idea 6: Gaussian curvature tint ───────────────────────────────
+    // Saddles cool, elliptic regions warm. The pinch specular above is unchanged.
+    let e2 = derivativeStep * 2.0;
+    let kbUU = kleinBottlePoint(walkU + e2, walkV, bottleRadius);
+    let kbVV = kleinBottlePoint(walkU, walkV + e2, bottleRadius);
+    let kbUV = kleinBottlePoint(walkU + derivativeStep, walkV + derivativeStep, bottleRadius);
+    let duu = kbUU - 2.0 * kb_u + kb;
+    let dvv = kbVV - 2.0 * kb_v + kb;
+    let duv = kbUV - kb_u - kb_v + kb;
+    let EE = max(dot(du, du), 1e-5);
+    let FF = dot(du, dv);
+    let GG = max(dot(dv, dv), 1e-5);
+    let LL = dot(duu, normal);
+    let MM = dot(duv, normal);
+    let NN = dot(dvv, normal);
+    let gaussK = (LL * NN - MM * MM) / max(EE * GG - FF * FF, 1e-5);
+    let gaussTint = clamp(gaussK * 6.0, -1.0, 1.0);
     
     // Audio-driven color
-    let hue = fract(kb.z * 0.3 + surfaceNoise * 0.4 + time * 0.02 + mids * 0.1);
+    // ── Idea 5: sheet hue transport ───────────────────────────────────
+    // Color Shift still sets saturation below. It also splits the two
+    // orientations by up to half a turn, so the crossed sheet reads as the other color.
+    let hue = fract(kb.z * 0.3 + surfaceNoise * 0.4 + time * 0.02 + mids * 0.1 + flipped * 0.5 * param4);
     let sat = mix(0.3, 0.85, param4 + treble * 0.2);
     let val = mix(0.2, 1.0, diffuse + surfaceNoise * 0.3 + bass * 0.2);
     
     var rgb = hue2rgb(hue) * sat + vec3<f32>(1.0 - sat) * val;
+    let curveColor = mix(vec3<f32>(0.25, 0.45, 0.85), vec3<f32>(0.95, 0.55, 0.25), gaussTint * 0.5 + 0.5);
+    rgb = mix(rgb, curveColor * val, abs(gaussTint) * 0.22);
     let chartColor = mix(vec3<f32>(0.08, 0.14, 0.22), hue2rgb(hue + 0.18), longitudeLine);
     rgb = mix(rgb, chartColor * (0.65 + diffuse * 0.45), chartLines * 0.52);
     let specColor = vec3<f32>(1.0, 0.9, 0.7) * specular * (1.0 + treble);
