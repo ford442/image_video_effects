@@ -5,33 +5,14 @@
 //  Complexity: High
 //  Chunks From: previous aurora work + improved spectral layering
 //  Created: 2026-05-23
-//  Upgraded: 2026-06-06, 2026-09-27
-//  Ideas: curtain rays along the curl; greener lower border on each band
+//  Upgraded: 2026-06-06, 2026-09-27, 2026-11-21
+//  Ideas: curtain rays along the curl; greener lower border on each band; emission-altitude layering (630 nm red crown above, N2 pink skirt below the hem, harder precipitation = more pink); Beer-Lambert horizon extinction (§12.2F, Young airmass, per-channel tau); flaming-aurora brightness packets climbing the rays
 //  A packing: pre-ACES display RGBA; ACES on writeTexture
 //  Updated: 2026-05-31
 //  By: Grok (visual flourish pass — richer color, motion, and atmospheric depth)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 // ═══ CHUNK: hash12 ═══
 fn hash12(p: vec2<f32>) -> f32 {
@@ -138,12 +119,6 @@ fn spectralColor(t: f32, temp: f32, audio: vec3<f32>) -> vec3<f32> {
   return col;
 }
 
-// ═══ CHUNK: bass envelope smoothing ═══
-fn bass_env(prev: f32, bass: f32, attack: f32, release: f32) -> f32 {
-  let k = select(release, attack, bass > prev);
-  return mix(prev, bass, k);
-}
-
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
   let b = 0.03;
@@ -175,20 +150,29 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let densityParam = mix(0.3, 1.0, u.zoom_params.z);
   let glowParam = mix(0.2, 1.2, u.zoom_params.w);
 
-  // Mouse: Y controls aurora altitude, X controls color temperature offset
+  // Mouse: Y controls aurora altitude, X controls color temperature offset.
+  // (Rescue) mouse.y = 0 is the TOP of the frame and uv.y grows downward, so an aurora that
+  // follows the pointer up needs a smaller baseAltitude: the HEAD sign moved it the wrong way.
   let mousePos = u.zoom_config.yz;
-  let altitudeShift = (0.5 - mousePos.y) * 0.4;
+  let altitudeShift = (mousePos.y - 0.5) * 0.4;
   let tempShift = mousePos.x * 0.2;
 
-  // Smooth bass for audio reactivity. extraBuffer[133] only, one writer.
-  var prevBass = extraBuffer[133];
-  let smoothBass = bass_env(prevBass, bass, 0.15, 0.02);
-  if (gid.x == 0u && gid.y == 0u) {
-    extraBuffer[133] = smoothBass;
-  }
+  // Bass drive. (Rescue) HEAD kept an attack/release envelope in extraBuffer[133], but the engine
+  // re-uploads extraBuffer[0..255] every frame, so that state always read 0 and the envelope
+  // collapsed to 0.15*bass (every audio term below ran at 15% strength). Use bass directly.
+  let smoothBass = bass;
 
   // Temporal feedback: read previous frame state
   let prevState = textureLoad(dataTextureC, coord, 0);
+
+  // ── Idea 2: Beer-Lambert horizon extinction (§12.2F) ──────────────────────────────
+  // Frame top = zenith, bottom ~ 83 deg. Young airmass X(z); light from a low curtain crosses
+  // several airmasses and the short wavelengths are removed first: T = exp(-tau_rgb * (X - 1)).
+  // Relative to the zenith so the top of the sky is unchanged; atmoFalloff (geometric) is kept.
+  let zenithAng = clamp(uv.y, 0.0, 1.0) * 1.45;
+  let cosZ = cos(zenithAng);
+  let airmass = 1.0 / (cosZ + 0.025 * exp(-11.0 * cosZ));
+  let skyT = exp(-vec3<f32>(0.10, 0.19, 0.38) * (airmass - 1.0));
 
   // ═══ AURORA BAND GENERATION ═══
   var accumulatedColor = vec3<f32>(0.0);
@@ -227,7 +211,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Idea: curtain rays — vertical striations, stronger on the curl's vertical component.
     let rayCol = abs(fract(uv.x * 46.0 + curl.x * 2.0) - 0.5);
     let rays = smoothstep(0.22, 0.02, rayCol);
-    let rayAmp = rays * (0.25 + abs(curl.y) * 1.6) * bandProfile;
+    // ── Idea 3: flaming-aurora packets ──────────────────────────────────────────────
+    // hn = signed position in band-widths (negative = up the ray). Each ray carries brightness
+    // packets that climb it (phase = k*hn + w*t), with its own phase/speed from the ray cell.
+    // Peaky packets (s^2), mean gain 1.0 (0.1..2.5) so the shipped ray strength is kept on average.
+    let hn = bandY / bandWidth;
+    let rayPh = hash12(vec2<f32>(floor(uv.x * 46.0 + curl.x * 2.0), f32(b) + 3.7));
+    let flameArg = 6.2831853 * rayPh + hn * 2.6 + time * (2.0 + 3.0 * rayPh) * (0.6 + bandSpeed);
+    let flameS = 0.5 + 0.5 * sin(flameArg);
+    let flame = 0.1 + 2.4 * flameS * flameS;
+    let rayAmp = rays * (0.25 + abs(curl.y) * 1.6) * bandProfile * flame;
 
     // FBM detail adds fine structure within bands
     let detailNoise = dwfbm3(
@@ -245,6 +238,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let hemArg = (bandY - bandWidth * 0.9) / max(bandWidth * 0.22, 0.001);
     let hem = exp(-(hemArg * hemArg));
     let hemCol = vec3<f32>(0.12, 0.92, 0.42) * hem * bandProfile * densityParam * (0.6 + smoothBass * 0.35);
+
+    // ── Idea 1: emission-altitude layering ──────────────────────────────────────────
+    // The green body/hem above is 557.7 nm O (~100-150 km). 630.0 nm O(1D) lives ~110 s, so it
+    // only survives HIGH up as a diffuse red crown (a lobe ~1.4 band-widths above the centre,
+    // riding the rays). N2 first-positive pink sits BELOW the hem and grows with the hardness
+    // of the precipitation (bass): harder electrons reach lower. Both are structured by the
+    // existing detail mask; atmoFalloff keeps them off the frame edges.
+    let upW = max(-hn, 0.0);
+    let crown = exp(-((upW - 1.4) * (upW - 1.4)) / 0.7) * smoothstep(0.3, 1.0, upW);
+    let crownCol = vec3<f32>(0.95, 0.16, 0.10) * crown * detailMask * (0.25 + 0.75 * rays * flame)
+                 * densityParam * 0.22 * (0.7 + smoothBass * 0.5);
+    let skirt = exp(-((hn - 1.7) * (hn - 1.7)) / 0.18);
+    let skirtCol = vec3<f32>(0.95, 0.22, 0.62) * skirt * mix(0.3, 1.0, detailMask)
+                 * densityParam * 0.28 * (0.12 + 0.88 * smoothBass);
+    let fringeCol = (crownCol + skirtCol) * exp(-abs(uv.y - 0.5) * 2.5);
 
     // Exponential falloff toward top and bottom of screen for atmospheric perspective
     let atmoFalloff = exp(-abs(uv.y - 0.5) * 2.5);
@@ -270,7 +278,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let bandDensity = clamp(bandIntensity, 0.0, 1.0);
     let bandAlpha = bandDensity * (0.4 + bandT * 0.3);
 
-    accumulatedColor = accumulatedColor + bandColor * bandDensity * glowParam + hemCol;
+    accumulatedColor = accumulatedColor + bandColor * bandDensity * glowParam + hemCol + fringeCol;
     accumulatedDensity = accumulatedDensity + bandDensity;
     accumulatedAlpha = accumulatedAlpha + bandAlpha;
   }
@@ -282,11 +290,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Add atmospheric glow based on total density
   let glowColor = spectralColor(0.5, colorTemp + tempShift, audio) * 0.3;
   accumulatedColor = accumulatedColor + glowColor * accumulatedDensity * accumulatedDensity * glowParam;
+  accumulatedColor = accumulatedColor * skyT;   // Idea 2: spectral extinction of everything above
 
   // Star field background (subtle)
   let starNoise = hash12(uv * 437.0 + vec2<f32>(13.37, 71.73));
   let starMask = step(0.997, starNoise) * (1.0 - accumulatedDensity * 0.8);
-  let starColor = vec3<f32>(0.8, 0.9, 1.0) * starMask * (0.5 + treble * 0.5);
+  let starColor = vec3<f32>(0.8, 0.9, 1.0) * skyT * starMask * (0.5 + treble * 0.5);   // Idea 2: horizon stars redden
   accumulatedColor = accumulatedColor + starColor;
 
   // Temporal feedback: blend with previous frame for smooth persistence
@@ -315,7 +324,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   // Chromatic aberration
   let caStr = 0.003 * (1.0 + bass) + depthVal * 0.001;
-  finalColor = vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5);
+  finalColor = max(vec3<f32>(finalColor.r + caStr, finalColor.g, finalColor.b - caStr * 0.5), vec3<f32>(0.0));   // (rescue) no negative blue on black
 
   textureStore(writeTexture, coord, vec4<f32>(finalColor, finalAlpha));
   textureStore(writeDepthTexture, coord, vec4<f32>(depthVal, 0.0, 0.0, 0.0));

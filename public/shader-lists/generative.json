@@ -263,7 +263,7 @@
     "name": "Aurora Borealis Loom",
     "category": "generative",
     "url": "shaders/aurora-borealis-loom.wgsl",
-    "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric. The cloth ends at a travelling fell line where the reed beats up each new pick (harder on bass); hand-spun slub yarn pools the aurora light; soft patches of the curtains pulse on their own 3-12 s periods.",
+    "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric. The cloth ends at a travelling fell line where the reed beats up each new pick (harder on bass); hand-spun slub yarn pools the aurora light; soft patches of the curtains pulse on their own 3-12 s periods; the cloth is a true plain weave (each thread passes over and under its crossings) and every curtain edge is a beaded selvedge. Curtains now loop around the frame forever and the HDR trail no longer washes the frame to grey.",
     "features": [
       "audio-reactive",
       "generative",
@@ -866,7 +866,7 @@
     "id": "cosmic-web",
     "name": "Cosmic Web Filament",
     "url": "shaders/cosmic-web.wgsl",
-    "description": "A multiscale cosmic filament network with dark voids, clustered galaxy nodes, a spring-smoothed gravity well, held-pointer accretion lanes, and click-launched gravitational fronts.",
+    "description": "A multiscale cosmic filament network with dark voids, clustered galaxy nodes at filament junctions, golden-angle galaxy groups aligned along their filament, a spring-smoothed gravity well, held-pointer accretion lanes, and click-launched gravitational fronts.",
     "tags": [
       "space",
       "procedural",
@@ -881,6 +881,7 @@
       "audio-reactive",
       "depth-aware",
       "aces-tone-map",
+      "upgraded-rgba",
       "chromatic-aberration",
       "alpha-layered",
       "click-reactive",
@@ -2660,7 +2661,7 @@
       "translucent",
       "curl-noise"
     ],
-    "description": "Procedural aurora borealis with rich spectral band blending, dynamic audio-reactive pulsing, and atmospheric depth. Enhanced color and motion for greater visual impact.",
+    "description": "Procedural aurora borealis with rich spectral band blending, dynamic audio-reactive pulsing, and atmospheric depth. Enhanced color and motion for greater visual impact. Emission-altitude layering puts a diffuse 630 nm red crown on the rays above the green body and an N2 pink skirt under the hem that deepens with bass; Beer-Lambert horizon extinction reddens and dims low bands and stars; flaming-aurora brightness packets climb the rays. The mouse now raises the aurora when it moves up.",
     "workgroup_size": [
       16,
       16,
@@ -17184,7 +17185,7 @@
       "audio",
       "music"
     ],
-    "description": "Instead of iterating coordinates, we iterate color-space vectors through the Mandelbrot map. Each pixel's RGB becomes a complex number that orbits and escapes, creating alien fractal color fields.",
+    "description": "Instead of iterating coordinates, we iterate color-space vectors through the Mandelbrot map. Each pixel's RGB becomes a complex number that orbits and escapes, creating alien fractal color fields. Second pass: a distance-estimate filament glow lights the sub-pixel hairs along the set boundary, and the interior gets colour-space Lyapunov rings, the nested contours of the orbit's multiplier around each bulb.",
     "workgroup_size": [
       16,
       16,
@@ -17687,7 +17688,7 @@
     "id": "gen-kimi-nebula",
     "name": "Kimi Nebula",
     "url": "shaders/gen_kimi_nebula.wgsl",
-    "description": "Cosmic nebula cloud swirls with ethereal gas formations, twinkling stars, and mouse-driven stellar winds.",
+    "description": "Cosmic nebula cloud swirls with ethereal gas formations, twinkling stars, and mouse-driven stellar winds. Stars are blackbody-coloured (reddened by dust) Airy discs, with diffraction spikes on the brightest.",
     "features": [
       "aces-tone-map",
       "audio-reactive",
@@ -21964,7 +21965,7 @@
       "procedural",
       "generative"
     ],
-    "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe. New behavior introduces activity-based pruning shadows and Hebbian strand reinforcement from temporal feedback.",
+    "description": "A mesmerizing 3D generative visualization of a structure that visually bridges the gap between a biological neural network and the cosmic web of the universe. New behavior introduces activity-based pruning shadows and Hebbian strand reinforcement from temporal feedback. The web is now true axon strands joining neighbouring somas (not foam sheets), conduction hops node to node with an after-hyperpolarization undershoot, and firing somas light the haze with a soft inverse-square halo.",
     "workgroup_size": [
       16,
       16,
@@ -24593,7 +24594,7 @@
     "tags": [
       "generative"
     ],
-    "description": "A hyper-dimensional, endlessly twisting serpentine ring forged of liquid-chrome and fractal dark matter that consumes its own geometric tail while weaving a tapestry of light across the void.",
+    "description": "A hyper-dimensional, endlessly twisting serpentine ring forged of liquid-chrome and fractal dark matter that consumes its own geometric tail while weaving a tapestry of light across the void. The ring now has a swollen head and a tail that tapers into it, overlapping keeled scale plates whose grooves occlude the chrome reflection, and neon strip lights for the chrome to reflect.",
     "workgroup_size": [
       16,
       16,
@@ -25711,7 +25712,7 @@
     "id": "gen-radiant-cyber-plasma-astro-griffin",
     "name": "Radiant Cyber-Plasma Astro-Griffin",
     "url": "shaders/gen-radiant-cyber-plasma-astro-griffin.wgsl",
-    "description": "A hyper-majestic, biomechanical celestial griffin woven from shattered chrono-prisms and glowing liquid-plasma. Upgraded with a golden eagle head and beak, material-ID driven palettes (plasma wings / prism body / golden head), per-feather and per-facet color variation, triangular chrono-prism tessellation seams, faceted normals with 3-point lighting, Blinn-Phong specular, Fresnel plasma rim, ACES filmic tonemapping and real depth output.",
+    "description": "A hyper-majestic, biomechanical celestial griffin woven from shattered chrono-prisms and glowing liquid-plasma. Upgraded with a golden eagle head and beak, material-ID driven palettes (plasma wings / prism body / golden head), per-feather and per-facet color variation, triangular chrono-prism tessellation seams, faceted normals with 3-point lighting, Blinn-Phong specular, Fresnel plasma rim, ACES filmic tonemapping and real depth output. Second pass: the wing is a finite fan of five slotted primaries per side seen from a front three-quarter camera, with a flexion wave down the wing, slots that open on the upstroke, a rachis and barb vane with plasma flowing along each shaft, and step-count ambient occlusion in the slots.",
     "category": "generative",
     "tags": [
       "griffin",
@@ -28387,7 +28388,7 @@
   },
   {
     "name": "Symbiotic Bismuth-Crystal Dragon-Core",
-    "description": "A hyper-intricate, continuously folding bismuth fractal labyrinth that breathes and pulses like a colossal, ancient techno-organic heart core.",
+    "description": "A hyper-intricate, continuously folding bismuth fractal labyrinth that breathes and pulses like a colossal, ancient techno-organic heart core. Each crystal terrace now carries its own oxide-film colour (by how many folds it took) with silver metal glinting on grazing step walls; the four sliders drive Zoom / Complexity / Breathing / Iridescence again.",
     "id": "gen-symbiotic-bismuth-crystal-dragon-core",
     "type": "generative",
     "category": "generative",
@@ -28632,7 +28633,7 @@
       "procedural",
       "music"
     ],
-    "description": "A network of light-conducting organic structures that grow, compete, and support each other while transporting and transforming light in complex ways. Audio influences light color, intensity, and transmission rules. Mouse seeds or prunes the network. Bioluminescent organic networks with complex internal light transport.",
+    "description": "A network of light-conducting organic structures that grow, compete, and support each other while transporting and transforming light in complex ways. Audio influences light color, intensity, and transmission rules. Mouse seeds or prunes the network. Bioluminescent organic networks with complex internal light transport. Light is fed from the thicker hub and streams toward the thinner end, leaking from the core into the halo as it travels.",
     "workgroup_size": [
       16,
       16,

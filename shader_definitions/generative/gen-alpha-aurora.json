@@ -9,7 +9,7 @@
     "translucent",
     "curl-noise"
   ],
-  "description": "Procedural aurora borealis with rich spectral band blending, dynamic audio-reactive pulsing, and atmospheric depth. Enhanced color and motion for greater visual impact.",
+  "description": "Procedural aurora borealis with rich spectral band blending, dynamic audio-reactive pulsing, and atmospheric depth. Enhanced color and motion for greater visual impact. Emission-altitude layering puts a diffuse 630 nm red crown on the rays above the green body and an N2 pink skirt under the hem that deepens with bass; Beer-Lambert horizon extinction reddens and dims low bands and stars; flaming-aurora brightness packets climb the rays. The mouse now raises the aurora when it moves up.",
   "workgroup_size": [
     16,
     16,

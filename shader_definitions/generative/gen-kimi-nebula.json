@@ -2,7 +2,7 @@
   "id": "gen-kimi-nebula",
   "name": "Kimi Nebula",
   "url": "shaders/gen_kimi_nebula.wgsl",
-  "description": "Cosmic nebula cloud swirls with ethereal gas formations, twinkling stars, and mouse-driven stellar winds.",
+  "description": "Cosmic nebula cloud swirls with ethereal gas formations, twinkling stars, and mouse-driven stellar winds. Stars are blackbody-coloured (reddened by dust) Airy discs, with diffraction spikes on the brightest.",
   "features": [
     "aces-tone-map",
     "audio-reactive",

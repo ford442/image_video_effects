@@ -21,7 +21,6 @@
     "description": "Shaders already on main that naga rejects. They predate this gate: scripts/wgsl_precommit_gate.py only ran naga on files changed against origin/main, and --full-tree skips naga entirely for speed, so these never had to pass. The list may only shrink (its length is the ratchet; there is no separate count to keep in step) — verify:naga-wasm fails both when an unlisted shader breaks and when a listed one starts passing without being removed here. `node scripts/verify-naga-wasm.mjs --all --fix` removes ids that now pass.",
     "discoveredAt": "2026-09-20",
     "ids": [
-      "cosmic-web",
       "optical-flow-advect",
       "optical-flow-grade"
     ]

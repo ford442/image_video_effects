@@ -3,35 +3,36 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: primary-feather slots; beak shear glint; flap ghost
+//  Upgraded: 2026-09-27, 2026-11-21
+//  Ideas: primary-feather slots; beak shear glint; flap ghost; flap flexion wave + upstroke slot opening (primaries supinate); rachis + barb vane with plasma flow along the shaft; step-count AO (§12.2E)
 //  A packing: ACES display RGBA
+//  Rescued 2026-11-21: wing was an unbounded fract() lattice (infinite slab floor) -> bounded 5-feather fan; uv.y was
+//    not flipped (upside-down); camera sat behind the griffin (beak glint unreachable) -> front-3/4 camera; pointer
+//    offset the creature by mouse*2 (off-centre at rest) with a 1/(d+0.1) twist that wrecked it when centred;
+//    tint / seam coordinates were world-space (swam when the pointer moved); ACES output was gamma-encoded a second time (washed out).
 // ═══════════════════════════════════════════════════════════════════
-// --- CANONICAL HEADER (bindings 0-12) ---
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-    config: vec4<f32>,       // x=Time, y=RippleCount, z=ResX, w=ResY
-    zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY (0-1, y=0 top), w=MouseDown
-    zoom_params: vec4<f32>,  // x=Warp Intensity, y=Wing Span, z=Fractal Depth, w=Plasma Glow
-    ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
+// zoom_params: x=Warp Intensity, y=Wing Span, z=Fractal Depth, w=Plasma Glow
 
 // --- UTILITIES ---
 const PI: f32 = 3.14159265359;
 const MAX_DIST: f32 = 20.0;
+
+// Rescue R3: front-three-quarter camera (the beak faces -z; HEAD's camera at +z saw only the rear).
+// Orthonormal basis precomputed for yaw 0.62, pitch 0.30, distance 4.2, target (0, 0.1, 0).
+const CAM_POS: vec3<f32>   = vec3<f32>(2.3314, 1.3412, -3.2656);
+const CAM_FWD: vec3<f32>   = vec3<f32>(-0.55508, -0.29552, 0.77753);
+const CAM_RIGHT: vec3<f32> = vec3<f32>(-0.81388, 0.0, -0.58104);
+const CAM_UP: vec3<f32>    = vec3<f32>(-0.17171, 0.95534, 0.24052);
+const CAM_DIST: f32 = 4.2;
+const POINTER_REACH: f32 = 3.0; // world units the creature travels as the pointer crosses the canvas
+
+// Rescue R1: finite fan of primaries (HEAD repeated the cell forever in x and z).
+const WING_K_LO: f32 = -1.0;    // innermost feather (|x| 0.5..1.0, abutting the body)
+const WING_K_HI: f32 = 3.0;     // outermost feather (|x| 2.5..3.0)
+
+// Creature offset set once per invocation in main() (pointer follow, screen-space).
+var<private> g_anomaly: vec3<f32>;
 
 fn rot2D(a: f32) -> mat2x2<f32> {
     let s = sin(a);
@@ -77,22 +78,62 @@ fn triGridEdge(p: vec2<f32>, scale: f32) -> f32 {
 
 // --- SDF FUNCTIONS ---
 
-// Wing feathers using domain repetition (returns distance + feather cell id)
-fn wingFeathers(p: vec3<f32>, span: f32) -> vec2<f32> {
-    var q = p;
-    let cellX = floor(q.x * 2.0);
-    let cellZ = floor(q.z * 2.0);
-    q.x = (fract(q.x * 2.0) - 0.5) / 2.0;
-    q.z = (fract(q.z * 2.0) - 0.5) / 2.0;
+// Wing feathers: a BOUNDED fan of primaries (returns distance + feather cell hash).
+// Rescue R1: HEAD used fract() repetition in x AND z, so the "wing" was an infinite slab floor.
+// `open` (0 closed .. 1 fully open, from the flap phase) drives Idea 1b: slots widen and each
+// primary supinates about its own long axis on the upstroke.
+fn wingFeathers(p: vec3<f32>, span: f32, open: f32) -> vec2<f32> {
+    let k = clamp(floor(p.x * 2.0), WING_K_LO, WING_K_HI);   // limited repetition keeps the SDF exact
+    let tipness = (k - WING_K_LO) / (WING_K_HI - WING_K_LO);
+    // swept wing: outer primaries trail behind the root ones (finite-wing rescue, not an idea)
+    var q = vec3<f32>(p.x - (k + 0.5) * 0.5, p.y, p.z - 0.8 * tipness);
+
+    // ── Idea 1b: upstroke supination — tip feathers twist most (rigid rotation, distance stays exact)
+    let ang = open * (0.12 + 0.28 * tipness);
+    q = vec3<f32>(rot2D(ang) * q.xy, q.z);
 
     let width = 0.1 + span * 0.1;
-    let spanLen = 0.5 + span * 0.5;
+    // primaries lengthen toward the tip (secondaries are shorter) — part of the finite-wing rescue (R1)
+    let spanLen = (0.5 + span * 0.5) * mix(0.9, 1.5, tipness);
 
     // Primary-feather slots: each cell stops short of its neighbor so a dark gap remains.
-    let slot = 0.74;
-    let d = abs(q) - vec3<f32>(width * slot, 0.02, spanLen * slot);
+    // 0.74 is the closed-wing value (HEAD); on the upstroke the slot opens to 0.56 (Idea 1b).
+    let slotW = mix(0.74, 0.56, open);
+    let slotL = 0.74;
+    let d = abs(q) - vec3<f32>(width * slotW, 0.02, spanLen * slotL);
     let dist = length(max(d, vec3<f32>(0.0))) + min(max(d.x, max(d.y, d.z)), 0.0);
-    return vec2<f32>(dist, hash21(vec2<f32>(cellX, cellZ)));
+    return vec2<f32>(dist, hash21(vec2<f32>(k, 1.0)));
+}
+
+// Upstroke openness from the root flap phase: tips rise when cos(t) > 0.
+fn upstrokeOpen(t: f32) -> f32 {
+    return smoothstep(-0.35, 0.65, cos(t));
+}
+
+// Creature space: the pointer drags the whole creature (HEAD behaviour) and twists space around the
+// anomaly. R4: pointer-follow is now centred at the default pointer; twist profile softened from
+// 1/(d+0.1) (5 rad at the creature centre, which wrecked the body once centred) to a finite swirl.
+fn anomalyWarp(p: vec3<f32>) -> vec3<f32> {
+    var p_warp = p - g_anomaly;
+    let warp_intensity = u.zoom_params.x;
+    let dist_to_anomaly = length(p_warp);
+    let twist_amount = warp_intensity * 0.6 / (dist_to_anomaly + 0.5);
+    let tmp_x = p_warp.x * cos(twist_amount) - p_warp.z * sin(twist_amount);
+    let tmp_z = p_warp.x * sin(twist_amount) + p_warp.z * cos(twist_amount);
+    p_warp.x = tmp_x;
+    p_warp.z = tmp_z;
+    return p_warp;
+}
+
+// Wing-local frame shared by map() and the shading pass (feather-local coords at the hit).
+// ── Idea 1a: flexion wave — the tip lags the root (phase delay grows with distance from the body axis).
+fn wingFrame(pw: vec3<f32>, t: f32) -> vec3<f32> {
+    var w = pw;
+    let reachX = abs(w.x);
+    let flap = sin(t - 0.45 * reachX) * 0.5;
+    w.y -= reachX * flap;
+    w.x = reachX - 1.0;
+    return w;
 }
 
 // Griffin core body
@@ -115,32 +156,15 @@ fn griffinHead(p: vec3<f32>) -> f32 {
 
 // Returns vec2(distance, materialId): 0=void, 1=wings, 2=body, 3=head
 fn map(p: vec3<f32>) -> vec3<f32> {
-    var p_warp = p;
-
-    // Mouse warp implementation
-    let mouse = u.zoom_config.yz;
-    let anomaly_pos = vec3<f32>(mouse.x * 2.0, mouse.y * 2.0, 0.0);
-    p_warp -= anomaly_pos;
-
-    let warp_intensity = u.zoom_params.x;
-    let dist_to_anomaly = length(p_warp);
-    let twist_amount = warp_intensity * (1.0 / (dist_to_anomaly + 0.1));
-
-    let tmp_x = p_warp.x * cos(twist_amount) - p_warp.z * sin(twist_amount);
-    let tmp_z = p_warp.x * sin(twist_amount) + p_warp.z * cos(twist_amount);
-    p_warp.x = tmp_x;
-    p_warp.z = tmp_z;
+    let p_warp = anomalyWarp(p);
 
     // Animated flight/flapping
     let t = u.config.x * 2.0;
 
-    // Wings
-    var wing_p = p_warp;
-    let flap = sin(t) * 0.5;
-    wing_p.y -= abs(wing_p.x) * flap;
-    wing_p.x = abs(wing_p.x) - 1.0;
+    // Wings (flexion wave lives in wingFrame; slot opening follows the root flap phase)
+    let wing_p = wingFrame(p_warp, t);
     let wing_span = u.zoom_params.y;
-    let wing = wingFeathers(wing_p, wing_span);
+    let wing = wingFeathers(wing_p, wing_span, upstrokeOpen(t));
 
     // Body + head
     var body_p = p_warp;
@@ -162,6 +186,20 @@ fn map(p: vec3<f32>) -> vec3<f32> {
 
     // Facet id of the dominant feather cell rides in .z
     return vec3<f32>(d, matId, wing.y);
+}
+
+// ── Idea 3: step-count ambient occlusion (§12.2E) on the surface already marched.
+// Five taps of the file's own map() along the normal; slots between primaries, the wing/body seam and the
+// head/neck crease read as depth.
+fn aoFive(p: vec3<f32>, n: vec3<f32>) -> f32 {
+    var occ = 0.0;
+    var sca = 1.0;
+    for (var i = 1; i <= 5; i = i + 1) {
+        let h = 0.01 + 0.12 * f32(i) / 5.0;
+        occ += (h - map(p + n * h).x) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - 3.0 * occ, 0.0, 1.0);
 }
 
 fn calcNormal(p: vec3<f32>) -> vec3<f32> {
@@ -213,11 +251,15 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let res = u.config.zw;
     if (pixel.x >= i32(res.x) || pixel.y >= i32(res.y)) { return; }
 
-    let uv = (vec2<f32>(id.xy) - 0.5 * res) / res.y;
+    // R2: y up (HEAD used y-down pixel rows for a y-up scene -> upside-down griffin)
+    let uv = vec2<f32>(f32(id.x) - 0.5 * res.x, 0.5 * res.y - f32(id.y)) / res.y;
     let time = u.config.x;
 
-    var ro = vec3<f32>(0.0, 0.0, 3.0);
-    let rd = normalize(vec3<f32>(uv, -1.0));
+    // R3: front-three-quarter camera; R4: pointer follow in screen space (pointer 0.5,0.5 = centred)
+    let mouse = u.zoom_config.yz;
+    g_anomaly = POINTER_REACH * (CAM_RIGHT * ((mouse.x - 0.5) * res.x / res.y) + CAM_UP * (0.5 - mouse.y));
+    let ro = CAM_POS;
+    let rd = normalize(CAM_RIGHT * uv.x + CAM_UP * uv.y + CAM_FWD);
 
     // Audio (contract: plasmaBuffer[0].xyz only)
     let mids = plasmaBuffer[0].y;
@@ -240,6 +282,20 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let matId = hit.y;
         matTag = matId;
 
+        // Creature-space + feather-local coordinates at the hit (R5: tints and seams used world p and
+        // swam across the creature when the pointer moved).
+        let pw = anomalyWarp(p);
+        let wl = wingFrame(pw, time * 2.0);
+        let fk = clamp(floor(wl.x * 2.0), WING_K_LO, WING_K_HI);
+        let fx = wl.x - (fk + 0.5) * 0.5;      // across the vane, 0 on the rachis
+        let fz = wl.z - 0.8 * (fk - WING_K_LO) / (WING_K_HI - WING_K_LO);   // along the feather (sweep removed), + toward the tip
+        let fHalfW = (0.1 + u.zoom_params.y * 0.1) * 0.74;
+        let vane = clamp(abs(fx) / max(fHalfW, 1e-3), 0.0, 1.0);
+        let wingMask = select(0.0, 1.0, matId == 1.0);
+
+        // ── Idea 3: step-count AO (§12.2E)
+        let ao = aoFive(p, n);
+
         // Faceted chrono-prism normal: quantize toward facet centers
         let facetN = normalize(floor(n * 6.0) + 0.5);
         let facetHash = hash33(facetN * 3.7).x;
@@ -253,25 +309,30 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let diffBack = clamp(dot(n, backL), 0.0, 1.0);
 
         // Material-ID driven palettes
-        var baseCol = mix(vec3<f32>(0.1, 0.2, 0.8), vec3<f32>(0.5, 0.1, 0.8), p.y + 0.5);
+        var baseCol = mix(vec3<f32>(0.1, 0.2, 0.8), vec3<f32>(0.5, 0.1, 0.8), pw.y + 0.5);
         baseCol = mix(baseCol, vec3<f32>(0.9, 0.75, 0.3), select(0.0, 1.0, matId == 3.0) * 0.7); // golden head
         baseCol *= 0.8 + facetHash * 0.4; // per-facet albedo variation
 
         // Plasma gold/magenta wingtips (per-feather cell tint)
-        let wingGlow = smoothstep(0.5, 1.5, abs(p.x)) * select(0.0, 1.0, matId == 1.0);
+        let wingGlow = smoothstep(0.5, 1.5, abs(pw.x)) * wingMask;
         let glowCol = mix(vec3<f32>(1.0, 0.8, 0.1), vec3<f32>(1.0, 0.2, 0.8), sin(time * 2.0 + hit.z * 6.28) * 0.5 + 0.5);
         baseCol = mix(baseCol, glowCol, wingGlow);
 
+        // ── Idea 2: barb vane — chevron barbs rake back from the rachis; vane albedo breathes with them.
+        let barbPhase = fz * 18.0 + abs(fx) * 10.0;
+        let barb = 0.5 + 0.5 * cos(6.2831853 * barbPhase);
+        baseCol *= mix(1.0, 0.72 + 0.4 * barb, wingMask);
+
         // Tri-tessellated chrono-prism inlay seams on the body/head
         let seamScale = 6.0 + fractal_depth * 14.0;
-        let seamD = triGridEdge(p.xy + p.z * 0.35, seamScale);
+        let seamD = triGridEdge(pw.xy + pw.z * 0.35, seamScale);
         let seam = (1.0 - smoothstep(0.0, 0.06, seamD)) * select(0.0, 1.0, matId >= 2.0);
         let seamCol = mix(vec3<f32>(0.2, 0.9, 1.0), vec3<f32>(1.0, 0.4, 0.9), facetHash);
 
         // Lighting accumulation
-        col += baseCol * diffKey * (0.5 + 0.5 * mids * plasma_glow_multiplier);
-        col += baseCol.zyx * diffFill * 0.25;
-        col += vec3<f32>(0.3, 0.6, 1.0) * diffBack * 0.2;
+        col += baseCol * diffKey * (0.5 + 0.5 * mids * plasma_glow_multiplier) * ao;
+        col += baseCol.zyx * diffFill * 0.25 * ao;
+        col += vec3<f32>(0.3, 0.6, 1.0) * diffBack * 0.2 * ao;
         col += seamCol * seam * plasma_glow_multiplier * (0.6 + treble * 0.6);
 
         // Blinn-Phong specular on prism facets
@@ -283,25 +344,35 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
         let rim = 1.0 - dot_nv;
         col += glowCol * pow(rim, 3.0) * plasma_glow_multiplier;
 
+        // ── Idea 2: plasma flows along each rachis root -> tip (bass lifts the pulse); rides the existing
+        // wingtip plasma tint and plasma_glow, no new colour.
+        let rachis = exp(-fx * fx * 3500.0);
+        let pulse = pow(max(sin(fz * 6.0 - time * 3.2 - hit.z * 6.2831853), 0.0), 6.0);
+        col += glowCol * (rachis * (0.22 + 1.5 * pulse) + 0.35 * pulse * (1.0 - vane) * barb)
+               * wingMask * plasma_glow_multiplier * (1.0 + plasmaBuffer[0].x * 0.8);
+
         // Beak shear glint: treble specular on the head, biased along the beak-forward normal.
         let beakForward = clamp(dot(n, vec3<f32>(0.0, -0.15, -1.0)), 0.0, 1.0);
         let beakGlint = spec * treble * beakForward * select(0.0, 1.0, matId == 3.0);
         col += vec3<f32>(1.0, 0.92, 0.62) * beakGlint;
 
         // Distance fog into the rift
-        col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.05 * t * t));
+        // (fog distance is measured from the creature, not the camera: HEAD's camera sat at 3, this one at CAM_DIST)
+        let tFog = max(t - (CAM_DIST - 3.0), 0.0);
+        col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.05 * tFog * tFog));
 
         depth = clamp(1.0 - t / MAX_DIST, 0.0, 1.0);
     } else {
         col = getBackgroundRift(rd, time);
     }
 
-    // ACES filmic tonemap + gamma
+    // ACES filmic tonemap (R6: HEAD also applied pow(col, 1/2.2) AFTER ACES — the fit is already display-referred,
+    // so that double-encoded and washed the creature to near-white; 426 of 429 ACES generative shaders omit it)
     col = acesToneMap(col * 1.2);
-    col = pow(col, vec3<f32>(1.0 / 2.2));
 
     // Flap ghost: previous display shifted along the flap axis, wings only.
-    let flapShift = i32(sin(time * 2.0) * 12.0);
+    // y is up now, so the shift sign flips to keep HEAD's relation (ghost trails opposite to the wing motion)
+    let flapShift = -i32(sin(time * 2.0) * 12.0);
     let maxPix = vec2<i32>(i32(res.x) - 1, i32(res.y) - 1);
     let ghost = textureLoad(dataTextureC, clamp(pixel + vec2<i32>(0, flapShift), vec2<i32>(0), maxPix), 0).rgb;
     let wingHit = select(0.0, 1.0, t > 0.0 && matTag == 1.0);
