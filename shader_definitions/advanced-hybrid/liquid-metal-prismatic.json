@@ -2,7 +2,7 @@
   "id": "liquid-metal-prismatic",
   "name": "Liquid Metal Prismatic",
   "url": "shaders/liquid-metal-prismatic.wgsl",
-  "description": "Flowing silver facets split the image into four persistent spectral bands, with moving shard seams, curvature ribbons, rotating light sweeps, and click refraction fronts.",
+  "description": "Flowing silver facets split the image into four persistent spectral bands, with moving shard seams, curvature ribbons, rotating light sweeps, and click refraction fronts. The four bands fan out by Cauchy dispersion (violet spreads far, red bunches near the axis) with fringes that widen on steep facets, and the rotating light bar is reflected through the facets so it bends and breaks like a chrome reflection.",
   "tags": [
     "prismatic",
     "dispersion",
@@ -20,6 +20,7 @@
     "HDR",
     "audio-reactive",
     "mouse-driven",
+    "upgraded-rgba",
     "temporal-state",
     "exact-feedback"
   ],

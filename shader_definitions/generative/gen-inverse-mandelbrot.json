@@ -13,7 +13,7 @@
     "audio",
     "music"
   ],
-  "description": "Instead of iterating coordinates, we iterate color-space vectors through the Mandelbrot map. Each pixel's RGB becomes a complex number that orbits and escapes, creating alien fractal color fields.",
+  "description": "Instead of iterating coordinates, we iterate color-space vectors through the Mandelbrot map. Each pixel's RGB becomes a complex number that orbits and escapes, creating alien fractal color fields. Second pass: a distance-estimate filament glow lights the sub-pixel hairs along the set boundary, and the interior gets colour-space Lyapunov rings, the nested contours of the orbit's multiplier around each bulb.",
   "workgroup_size": [
     16,
     16,

@@ -2,7 +2,7 @@
   "id": "heat-haze-volumetric",
   "name": "Heat Haze Volumetric",
   "url": "shaders/heat-haze-volumetric.wgsl",
-  "description": "Persistent buoyant heat and column density drive layered turbulent refraction, HDR glow, and interactive thermal shock fronts.",
+  "description": "Persistent buoyant heat and column density drive layered turbulent refraction, HDR glow, and interactive thermal shock fronts. Sunlit surfaces radiate heat that rises in Boussinesq plumes; the shimmer is coherent convected eddies, and refraction deepens with scene distance.",
   "tags": [
     "heat-diffusion",
     "volumetric-fog",

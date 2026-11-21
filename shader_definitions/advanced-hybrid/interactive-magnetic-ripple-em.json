@@ -2,18 +2,22 @@
   "id": "interactive-magnetic-ripple-em",
   "name": "Interactive Magnetic Ripple Em",
   "url": "shaders/interactive-magnetic-ripple-em.wgsl",
-  "description": "A damped Maxwell-like electric and magnetic field solver with held dipoles, traveling click waves, spectral emission, and iron-filings contours.",
+  "description": "A stable staggered (Yee-style) Maxwell electric and magnetic field solver: held and idle dipoles and traveling click waves refract through the photo (bright areas slow the wave), are absorbed at the frame edge, and show as spectral emission, an energy glow carried by the Poynting flux, and iron-filings contours.",
   "tags": [
     "mouse-driven",
     "field-simulation",
     "chromatic",
-    "ripple"
+    "ripple",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "features": [
     "mouse-driven",
     "field-simulation",
     "chromatic",
-    "ripple"
+    "ripple",
+    "audio-reactive",
+    "upgraded-rgba"
   ],
   "params": [
     {

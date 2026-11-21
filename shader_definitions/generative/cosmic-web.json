@@ -2,7 +2,7 @@
   "id": "cosmic-web",
   "name": "Cosmic Web Filament",
   "url": "shaders/cosmic-web.wgsl",
-  "description": "A multiscale cosmic filament network with dark voids, clustered galaxy nodes, a spring-smoothed gravity well, held-pointer accretion lanes, and click-launched gravitational fronts.",
+  "description": "A multiscale cosmic filament network with dark voids, clustered galaxy nodes at filament junctions, golden-angle galaxy groups aligned along their filament, a spring-smoothed gravity well, held-pointer accretion lanes, and click-launched gravitational fronts.",
   "tags": [
     "space",
     "procedural",
@@ -17,6 +17,7 @@
     "audio-reactive",
     "depth-aware",
     "aces-tone-map",
+    "upgraded-rgba",
     "chromatic-aberration",
     "alpha-layered",
     "click-reactive",

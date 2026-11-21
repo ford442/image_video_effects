@@ -68,7 +68,7 @@
     "id": "aerogel-smoke-hdr",
     "name": "Aerogel Smoke HDR",
     "url": "shaders/aerogel-smoke-hdr.wgsl",
-    "description": "Ethereal aerogel volumetric smoke with HDR bloom enhancement. Silica nanoparticle scattering combines with an HDR bloom kernel that amplifies overbright regions, creating luminous glow around dense scattering zones.",
+    "description": "Ethereal aerogel volumetric smoke with HDR bloom enhancement. Silica nanoparticle scattering combines with an HDR bloom kernel that amplifies overbright regions, creating luminous glow around dense scattering zones. Wavelength-dependent Rayleigh extinction reddens the light that passes through while the scattered haze stays blue; a drifting lamp behind the smoke gives the scatter a direction (forward Mie glare, Rayleigh lobe); the HDR bloom now moves energy out of the core instead of adding to it. Idles as a slow autopilot plume when the pointer is not held.",
     "tags": [
       "volumetric",
       "HDR",
@@ -82,7 +82,9 @@
       "HDR-bloom",
       "rayleigh-mie",
       "rgba-data-channel",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -569,7 +571,7 @@
     "id": "atmos-fog-volumetric",
     "name": "Atmospheric Fog Volumetric",
     "url": "shaders/atmos-fog-volumetric.wgsl",
-    "description": "Enhanced volumetric fog combining physical transmittance with interactive depth-layered alpha. Mouse clears fog locally, ripples create swirling disturbances, and height-based density mixes with Beer's Law for atmospheric realism.",
+    "description": "Enhanced volumetric fog combining physical transmittance with interactive depth-layered alpha. Mouse clears fog locally, ripples create swirling disturbances, and height-based density mixes with Beer's Law for atmospheric realism. Fog now integrates only up to the real scene depth (near objects stay clear, distant ones sink into the haze), forward-scatters toward a per-pixel sun direction (warm glare near the sun, cooler away from it), and thins exponentially with height along the view ray.",
     "tags": [
       "volumetric",
       "fog",
@@ -584,7 +586,9 @@
       "mouse-clear",
       "ripple-swirl",
       "beers-law",
-      "rgba-data-channel"
+      "rgba-data-channel",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -6541,7 +6545,7 @@
     "id": "heat-haze-volumetric",
     "name": "Heat Haze Volumetric",
     "url": "shaders/heat-haze-volumetric.wgsl",
-    "description": "Persistent buoyant heat and column density drive layered turbulent refraction, HDR glow, and interactive thermal shock fronts.",
+    "description": "Persistent buoyant heat and column density drive layered turbulent refraction, HDR glow, and interactive thermal shock fronts. Sunlit surfaces radiate heat that rises in Boussinesq plumes; the shimmer is coherent convected eddies, and refraction deepens with scene distance.",
     "tags": [
       "heat-diffusion",
       "volumetric-fog",
@@ -7437,18 +7441,22 @@
     "id": "interactive-magnetic-ripple-em",
     "name": "Interactive Magnetic Ripple Em",
     "url": "shaders/interactive-magnetic-ripple-em.wgsl",
-    "description": "A damped Maxwell-like electric and magnetic field solver with held dipoles, traveling click waves, spectral emission, and iron-filings contours.",
+    "description": "A stable staggered (Yee-style) Maxwell electric and magnetic field solver: held and idle dipoles and traveling click waves refract through the photo (bright areas slow the wave), are absorbed at the frame edge, and show as spectral emission, an energy glow carried by the Poynting flux, and iron-filings contours.",
     "tags": [
       "mouse-driven",
       "field-simulation",
       "chromatic",
-      "ripple"
+      "ripple",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "features": [
       "mouse-driven",
       "field-simulation",
       "chromatic",
-      "ripple"
+      "ripple",
+      "audio-reactive",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7720,7 +7728,7 @@
     "id": "liquid-jelly-fluid",
     "name": "Liquid Jelly Fluid",
     "url": "shaders/liquid-jelly-fluid.wgsl",
-    "description": "Vortical cyan, ultraviolet, and lime elastic dye with Kelvin–Helmholtz curls, pressure projection, vorticity confinement, and strong pointer stirring.",
+    "description": "Vortical cyan, ultraviolet, and lime elastic dye with Kelvin–Helmholtz curls, pressure projection, vorticity confinement, and strong pointer stirring. The photo is seen through the jelly (Beer–Lambert absorption plus a subsurface wrap on the dye thickness) with a wet Fresnel sheen on the density surface; velocity is magnitude-limited so a held pointer stays a swirl instead of pixel noise.",
     "tags": [
       "liquid-jelly",
       "fluid-simulation",
@@ -7729,7 +7737,8 @@
       "audio-reactive",
       "mouse-driven",
       "temporal-state",
-      "exact-feedback"
+      "exact-feedback",
+      "upgraded-rgba"
     ],
     "features": [
       "liquid-jelly",
@@ -7739,7 +7748,8 @@
       "audio-reactive",
       "mouse-driven",
       "temporal-state",
-      "exact-feedback"
+      "exact-feedback",
+      "upgraded-rgba"
     ],
     "params": [
       {
@@ -7862,7 +7872,7 @@
     "id": "liquid-metal-prismatic",
     "name": "Liquid Metal Prismatic",
     "url": "shaders/liquid-metal-prismatic.wgsl",
-    "description": "Flowing silver facets split the image into four persistent spectral bands, with moving shard seams, curvature ribbons, rotating light sweeps, and click refraction fronts.",
+    "description": "Flowing silver facets split the image into four persistent spectral bands, with moving shard seams, curvature ribbons, rotating light sweeps, and click refraction fronts. The four bands fan out by Cauchy dispersion (violet spreads far, red bunches near the axis) with fringes that widen on steep facets, and the rotating light bar is reflected through the facets so it bends and breaks like a chrome reflection.",
     "tags": [
       "prismatic",
       "dispersion",
@@ -7880,6 +7890,7 @@
       "HDR",
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "temporal-state",
       "exact-feedback"
     ],
@@ -7924,7 +7935,7 @@
     "id": "liquid-oil-iridescence",
     "name": "Liquid Oil Iridescence",
     "url": "shaders/liquid-oil-iridescence.wgsl",
-    "description": "Pearl-black film islands transport magenta, cyan, and lime interference contours through fast capillary streams with held-pointer thinning.",
+    "description": "Pearl-black film islands transport magenta, cyan, and lime interference contours through fast capillary streams with held-pointer thinning. Fringes de-phase by wavelength from order to order and wash toward pastel in thick film, carry the light of the reflected photo, and thick islands slide faster than thin film.",
     "tags": [
       "liquid-oil",
       "thin-film-interference",
@@ -7942,6 +7953,7 @@
       "spectral-render",
       "audio-reactive",
       "mouse-driven",
+      "upgraded-rgba",
       "temporal-state",
       "exact-feedback"
     ],

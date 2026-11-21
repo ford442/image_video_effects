@@ -2,6 +2,11 @@
 //  Category: generative
 //  Features: mouse-driven, organic, temporal, audio-reactive, depth-aware,
 //            aces-tone-map, chromatic-aberration, alpha-layered
+//  Complexity: High
+//  Upgraded: 2026-11-21
+//  Ideas: junction clusters where filaments swell into F3-F1 nodes; golden-angle galaxy groups (Vogel spiral, §12.2E) stretched along the local filament tangent
+//  A packing: pre-ACES HDR temporal colour + temporal alpha (read back as colour history); ACES on writeTexture only
+//  Rescues: compile errors (__finalRGB, redeclared rippleCount/aspect) and the stamped clock-ring/IQ-palette tail removed; node mask moved from void cores to Voronoi junctions
 //  Batch 17 upgrade:
 //   - void path routed through the SAME temporal feedback mix as filaments
 //     (no early-exit shimmer at filament edges)
@@ -9,27 +14,7 @@
 //     (large structure rides bass bins, fine structure rides treble bins)
 //   - critically-damped spring-damper gravity well (extraBuffer[133..136])
 
-// ── IMMUTABLE 13-BINDING CONTRACT ─────────────────────────────────
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,       // .x = time, .y = ripple_count, .zw = resolution (width, height)
-  zoom_config: vec4<f32>,  // .x = time, .yz = mouse_uv (0-1), .w = mouse_down (>0.5 = pressed)
-  zoom_params: vec4<f32>,  // .xyzw = user params p1…p4 (mapped from UI sliders)
-  ripples: array<vec4<f32>, 50>,  // .xy = ripple uv, .z = time_created, .w = strength
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -40,9 +25,12 @@ const FILAMENT_BIAS: f32 = 0.05;
 const VOID_CUTOFF: f32 = 0.03;
 const GALAXY_SCALE: f32 = 38.0;
 const GALAXY_THRESH: f32 = 0.55;
-const NODE_THRESHOLD: f32 = 0.35;
+const NODE_THRESHOLD: f32 = 0.22;   // junction width: F3 - F1 below this = a node (was an f1 core mask)
 const DECAY: f32 = 0.96;
 const FEEDBACK: f32 = 0.25;
+const JUNCTION_SWELL: f32 = 0.10;    // border reduction at a junction: filaments swell into clusters
+const GROUP_SATS: i32 = 4;           // satellite galaxies per host (golden-angle / Vogel layout)
+const GOLDEN_ANGLE: f32 = 2.39996323;
 
 // Filament octave stack (numerically tuned with FILAMENT_SHARP/BIAS above)
 const FILAMENT_OCTAVES: i32 = 3;
@@ -81,6 +69,47 @@ fn voronoi3(p: vec3<f32>) -> vec2<f32> {
         }
     }
     return vec2<f32>(sqrt(f1), sqrt(f2));
+}
+
+// Voronoi with F3 and the wall normal. Same 27-cell loop and the same F1/F2
+// caps as voronoi3 (so the base octave is unchanged); additionally keeps the
+// third-nearest distance (junction detector) and r2-r1, the direction between
+// the two nearest seeds, which is the wall normal -> filament tangent.
+struct VoroX {
+    f: vec3<f32>,   // (F1, F2, F3)
+    n: vec2<f32>,   // unit wall normal in the screen slice (xy of r2 - r1)
+};
+
+fn voronoi3x(p: vec3<f32>) -> VoroX {
+    let n = floor(p);
+    let f = fract(p);
+    var d1 = 1.0;
+    var d2 = 1.0;
+    var d3 = 3.0;
+    var r1 = vec3<f32>(1.0, 0.0, 0.0);
+    var r2 = vec3<f32>(0.0);
+    for (var k = -1; k <= 1; k = k + 1) {
+        for (var j = -1; j <= 1; j = j + 1) {
+            for (var i = -1; i <= 1; i = i + 1) {
+                let g = vec3<f32>(f32(i), f32(j), f32(k));
+                let o = hash3(n + g);
+                let r = g + o - f;
+                let d = dot(r, r);
+                let lt1 = d < d1;
+                let lt2 = d < d2;
+                let lt3 = d < d3;
+                d3 = select(select(d3, d, lt3), d2, lt2);
+                d2 = select(select(d2, d, lt2), d1, lt1);
+                r2 = select(select(r2, r, lt2), r1, lt1);
+                r1 = select(r1, r, lt1);
+                d1 = select(d1, d, lt1);
+            }
+        }
+    }
+    let nrm = (r2 - r1).xy;
+    let nl = length(nrm);
+    return VoroX(vec3<f32>(sqrt(d1), sqrt(d2), sqrt(d3)),
+                 select(vec2<f32>(1.0, 0.0), nrm / max(nl, 1e-4), nl > 1e-4));
 }
 
 // 3-octave FBM over 3D Voronoi (domain warp only — filament stack is below)
@@ -228,20 +257,32 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // structure follows the bass bins and fine structure follows treble bins.
     // Amplitudes halve per octave; OCTAVE_AMP_SUM renormalizes to [0,1].
     var density = 0.0;
-    var f1base = 0.0;
     var amp = 1.0;
     var po = p;
+    var vx = VoroX(vec3<f32>(1.0), vec2<f32>(1.0, 0.0));
+    var junction = 0.0;
     for (var o = 0; o < FILAMENT_OCTAVES; o = o + 1) {
-        let vo = voronoi3(po);
+        var vo = vec2<f32>(0.0);
+        var swell = 0.0;
+        if (o == 0) {
+            // base octave: also yields F3 and the wall normal (Ideas 1 and 2)
+            vx = voronoi3x(po);
+            vo = vx.f.xy;
+            // ── Idea 1: junction clusters (§12.1 tactic 3: F3 was free in the loop).
+            // F3 - F1 -> 0 where three walls meet = a cluster node. Mass funnels
+            // along filaments into it, so the filament band swells there.
+            junction = smoothstep(NODE_THRESHOLD, 0.0, vx.f.z - vx.f.x);
+            swell = junction * JUNCTION_SWELL;
+        } else {
+            vo = voronoi3(po);
+        }
         let binLevel = plasmaBuffer[(u32(o) % 8u) + 1u].x;
-        let od = filamentDensity(vo.y - vo.x, densityScale);
+        let od = filamentDensity(max(vo.y - vo.x - swell, 0.0), densityScale);
         density += amp * od * (OCTAVE_BIN_BASE + binLevel * OCTAVE_BIN_GAIN);
-        f1base = select(f1base, vo.x, o == 0);   // base octave drives nodes
         po = po * 2.0 + vec3<f32>(100.0);
         amp *= 0.5;
     }
     density = clamp(density / OCTAVE_AMP_SUM, 0.0, 1.0);
-    let f1 = f1base;
 
     let voidColor = vec3<f32>(0.05, 0.0, 0.1);
 
@@ -259,16 +300,44 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let isVoid = density < VOID_CUTOFF;
     color = select(color, voidColor, isVoid);
 
-    // Cluster nodes at Voronoi vertices (base octave F1)
-    let nodeMetric = smoothstep(NODE_THRESHOLD, 0.0, f1) * density;
+    // Cluster nodes at Voronoi junctions (base octave F3 - F1). Rescue: HEAD keyed
+    // this on F1 (the seed = the centre of a VOID cell, where density is lowest),
+    // so the node bloom was effectively dead (mean nodeMetric^2 ~ 0.001).
+    let nodeMetric = junction * density;
 
     // Galaxy point field along filaments
     let gCell = floor(uv * GALAXY_SCALE);
     let gRand = hash3(vec3<f32>(gCell, 1.0));
-    let gPos = (gCell + gRand.xy) / GALAXY_SCALE;
-    let gd = length((uv - gPos) * vec2<f32>(aspect, 1.0));
+    // group centre pulled into the cell interior so satellites are not clipped
+    // at the grid edge (host moves by <= 0.2 cell vs HEAD)
+    let gPos = (gCell + 0.2 + 0.6 * gRand.xy) / GALAXY_SCALE;
+    // uv is already aspect-corrected: HEAD multiplied by aspect a second time,
+    // squeezing every galaxy dot horizontally on a wide canvas (no-op at 1:1).
+    let gd = length(uv - gPos);
     let twinkle = 0.6 + 0.4 * sin(time * 3.0 + gRand.z * TAU);
-    let galaxy = smoothstep(0.006, 0.0, gd) * step(GALAXY_THRESH, gRand.z) * twinkle * density;
+    let gLive = step(GALAXY_THRESH, gRand.z) * twinkle * density;
+    var galaxy = smoothstep(0.006, 0.0, gd) * gLive;
+
+    // ── Idea 2: golden-angle galaxy groups aligned with their filament (§12.2E).
+    // Each host galaxy carries GROUP_SATS satellites on a Vogel spiral
+    // (theta = i * 2.39996, r = c * sqrt(i + 1/2)), stretched along the local
+    // filament tangent (perpendicular to the wall normal r2 - r1 from the
+    // base-octave Voronoi): galaxies live in groups, and groups align with the
+    // filament they sit in (tidal-tensor alignment).
+    let gTan = vec2<f32>(-vx.n.y, vx.n.x);
+    let gNrm = vx.n;
+    var sat = 0.0;
+    for (var gi = 0; gi < GROUP_SATS; gi = gi + 1) {
+        let fi = f32(gi) + 0.5;
+        let ga = fi * GOLDEN_ANGLE + gRand.z * TAU;
+        let gr = 0.0046 * sqrt(fi);
+        let off = vec2<f32>(cos(ga), sin(ga)) * gr;
+        let spos = gPos + gTan * (off.x * 1.35) + gNrm * (off.y * 0.6);
+        sat += smoothstep(0.0027, 0.0, length(uv - spos));
+    }
+    let gcf = fract(uv * GALAXY_SCALE);
+    let gWin = smoothstep(0.0, 0.12, min(gcf.x, 1.0 - gcf.x)) * smoothstep(0.0, 0.12, min(gcf.y, 1.0 - gcf.y));
+    galaxy = clamp(galaxy + sat * 0.65 * gWin * gLive, 0.0, 1.0);
     let gTint = mix(vec3<f32>(0.7, 0.85, 1.0), vec3<f32>(1.0, 0.9, 0.7), gRand.x);
 
     color += vec3<f32>(1.0, 0.85, 0.6) * (nodeMetric * nodeMetric) * (1.3 + treble * 0.5);
@@ -297,22 +366,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // dataTextureA carries pre-ACES HDR color (no clamp — feedback equilibrium)
     textureStore(dataTextureA, pixel, vec4<f32>(temporal, temporalAlpha));
-    
-    var clickFront = 0.0;
-    let rippleCount = min(u32(u.config.y), 50u);
-    let aspect = u.config.z / max(u.config.w, 1.0);
-    let screenUV = vec2<f32>(pixel) / vec2<f32>(u.config.z, u.config.w);
-    for (var i = 0u; i < rippleCount; i = i + 1u) {
-        let event = u.ripples[i];
-        let age = max(time - event.z, 0.0);
-        clickFront += exp(-age * 1.8) * exp(-abs(length((screenUV - event.xy) * vec2<f32>(aspect, 1.0)) - age * 0.38) * 58.0);
-    }
-    
-    let clockRings = sin(length(screenUV - vec2<f32>(0.5)) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
-
-    let __finalRGB = color + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
-    textureStore(writeTexture, pixel, vec4<f32>(__finalRGB, alpha));
+    // Rescue: HEAD ended here with `let __finalRGB` (illegal identifier), a second
+    // `let rippleCount` / `let aspect` in the same scope, a screen-wide concentric
+    // clockRings * IQ-cosine spectral overlay and a click front mis-timed against
+    // ripple.z. All removed: the display output is the ACES'd colour computed above.
+    textureStore(writeTexture, pixel, vec4<f32>(color, alpha));
     // Preserve the original void depth output (0.0) exactly
     textureStore(writeDepthTexture, pixel, vec4<f32>(clamp(select(density, 0.0, isVoid)
         + accretion * 0.12 + clickWave * 0.08, 0.0, 1.0), 0.0, 0.0, 0.0));

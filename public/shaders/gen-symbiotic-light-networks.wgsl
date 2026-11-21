@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-27
-//  Ideas: hub-thickened Physarum tubes; evanescent leakage halo; mycorrhizal colour exchange; luciferin afterglow (C)
+//  Upgraded: 2026-09-27, 2026-11-21
+//  Ideas: hub-thickened Physarum tubes; evanescent leakage halo; mycorrhizal colour exchange; luciferin afterglow (C); directed shuttle streaming (hub source -> leaf sink, flux ~ radius); leak-fed halo (energy-conserving bloom, §12.2F)
 //  A packing: raw afterglow memory (rgb, linear pre-ACES) + display alpha; ACES on writeTexture only
 //  Description: Network of light-conducting organic structures growing,
 //  competing and supporting each other while transporting and transforming
@@ -12,26 +12,7 @@
 //  Mouse seeds or prunes the network.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI: f32 = 3.14159265359;
 const TAU: f32 = 6.28318530718;
@@ -67,8 +48,9 @@ fn smoothNoise(p: vec2<f32>) -> f32 {
 
 // Physarum-like slime mold trace: network segment
 // returns (core, halo). halo = IDEA 2: evanescent leakage skirt around the tube.
+// hubA / hubB = smoothstep'd degree of the two end nodes (0 leaf .. 1 hub).
 fn networkSegment(uv: vec2<f32>, nodeA: vec2<f32>, nodeB: vec2<f32>,
-                  width: f32, t: f32, bass: f32) -> vec2<f32> {
+                  width: f32, t: f32, bass: f32, hubA: f32, hubB: f32) -> vec2<f32> {
     let ab = nodeB - nodeA;
     let len = length(ab);
     if (len < 0.001) { return vec2<f32>(0.0); }
@@ -78,16 +60,37 @@ fn networkSegment(uv: vec2<f32>, nodeA: vec2<f32>, nodeB: vec2<f32>,
     let closest = nodeA + dir * proj;
     let dist = length(uv - closest);
 
-    // Pulse: light travelling along the segment
-    let pulsePhase = proj / len - t * 0.5 * (1.0 + bass * 0.5);
+    // Early out: past 3 halo radii the Gaussian skirt is < 1.3e-4 and the core
+    // (support = width) is long gone, so skip the pulse/taper/leak work. A pixel is
+    // far from almost every tube, which pays for the two ideas below.
+    let hw = width * 3.5;
+    if (dist > hw * 3.0) { return vec2<f32>(0.0); }
+
+    let s = clamp(proj / len, 0.0, 1.0);
+
+    // ── Idea 1: directed shuttle streaming ──────────────────────────
+    // Light is fed from the larger hub (source) and runs out toward the smaller end
+    // (sink); equal-degree ends keep HEAD's A->B direction. Thick tubes carry
+    // flux ~ radius, so hub-hub tubes pulse faster (Physarum shuttle flow).
+    let srcIsA = hubA >= hubB;
+    let sFlow = select(1.0 - s, s, srcIsA);
+    let shuttle = 1.0 + 0.5 * (hubA + hubB);
+    let pulsePhase = sFlow - t * 0.5 * (1.0 + bass * 0.5) * shuttle;
     let pulse = 0.5 + 0.5 * sin(pulsePhase * TAU * 3.0);
 
+    // ── Idea 2: leak-fed halo (energy-conserving bloom, §12.2F) ─────
+    // The guide loses power along its length (T = exp(-mu*s), thick tubes leak
+    // less). What leaves the core reappears in the evanescent skirt: core *= 1-L,
+    // halo *= 1 + k*L with k = 1.29 from the composite weights (core 0.8 * w versus
+    // halo 0.10 * 6.2 w), so the sum is conserved to first order.
+    let mu = 1.6 / (1.0 + 1.5 * (hubA + hubB));
+    let leak = 0.5 * (1.0 - exp(-mu * sFlow));
+
     // Segment intensity: tapered + pulsing
-    let taper = sin(clamp(proj / len, 0.0, 1.0) * PI);
-    let core = smoothstep(width, 0.0, dist) * (0.5 + 0.5 * pulse) * taper;
-    // IDEA 2: light leaks out of the guide as a Gaussian skirt, carrying the same pulse
-    let hw = width * 3.5;
-    let halo = exp(-(dist * dist) / (hw * hw)) * (0.5 + 0.5 * pulse) * taper;
+    let taper = sin(s * PI);
+    let core = smoothstep(width, 0.0, dist) * (0.5 + 0.5 * pulse) * taper * (1.0 - leak);
+    // IDEA 2 (HEAD): light leaks out of the guide as a Gaussian skirt, carrying the same pulse
+    let halo = exp(-(dist * dist) / (hw * hw)) * (0.5 + 0.5 * pulse) * taper * (1.0 + 1.29 * leak);
     return vec2<f32>(core, halo);
 }
 
@@ -186,16 +189,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         pos1[i] = nodeSp1(f32(i), aspect, t, bass, mids);
         pos2[i] = nodeSp2(f32(i), aspect, t, bass, treble);
     }
+    // Degree = neighbours inside a radius. Distance is symmetric, so each pair is tested
+    // once and credited to both ends (identical counts, half the length() calls).
     for (var i = 0; i < numNodes; i++) {
-        var d1 = 0.0;
-        var d2 = 0.0;
-        for (var k = 0; k < numNodes; k++) {
-            if (k == i) { continue; }
-            if (length(pos1[i] - pos1[k]) < 0.25 * aspect) { d1 += 1.0; }
-            if (length(pos2[i] - pos2[k]) < 0.28 * aspect) { d2 += 1.0; }
+        for (var k = i + 1; k < numNodes; k++) {
+            let c1 = select(0.0, 1.0, length(pos1[i] - pos1[k]) < 0.25 * aspect);
+            let c2 = select(0.0, 1.0, length(pos2[i] - pos2[k]) < 0.28 * aspect);
+            deg1[i] += c1;
+            deg1[k] += c1;
+            deg2[i] += c2;
+            deg2[k] += c2;
         }
-        deg1[i] = d1;
-        deg2[i] = d2;
     }
 
     // Species 1: cool bioluminescent blue-green
@@ -224,7 +228,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let hubJ = smoothstep(1.0, 6.0, deg1[j]);
                 let segWidth = (0.004 + treble * 0.002) * (1.0 + 0.7 * (hubI + hubJ));
                 let strength = (1.0 - dist12 / maxDist) * age;
-                let seg = networkSegment(uvA, nodePos1M, nodePos2, segWidth, t, bass);
+                let seg = networkSegment(uvA, nodePos1M, nodePos2, segWidth, t, bass, hubI, hubJ);
                 network1 += seg.x * strength;
                 halo1 += seg.y * strength;
             }
@@ -252,7 +256,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let hubJ = smoothstep(1.0, 6.0, deg2[j]);
                 let segWidth = (0.003 + bass * 0.002) * (1.0 + 0.7 * (hubI + hubJ));
                 let strength = (1.0 - dist12 / maxDist) * age;
-                let seg = networkSegment(uvA, nodePos1, nodePos2, segWidth, t, treble);
+                let seg = networkSegment(uvA, nodePos1, nodePos2, segWidth, t, treble, hubI, hubJ);
                 network2 += seg.x * strength;
                 halo2 += seg.y * strength;
             }

@@ -3,7 +3,7 @@
   "name": "Aurora Borealis Loom",
   "category": "generative",
   "url": "shaders/aurora-borealis-loom.wgsl",
-  "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric. The cloth ends at a travelling fell line where the reed beats up each new pick (harder on bass); hand-spun slub yarn pools the aurora light; soft patches of the curtains pulse on their own 3-12 s periods.",
+  "description": "Aurora curtains woven like fabric on a celestial loom. Curtain conveyor scroll, vertical ion drift streaks, and advected HDR trails. Bass swells the weave, mids shift hue through the spectrum, treble adds bead-like ionization nodes. Mouse pulls the fabric. The cloth ends at a travelling fell line where the reed beats up each new pick (harder on bass); hand-spun slub yarn pools the aurora light; soft patches of the curtains pulse on their own 3-12 s periods; the cloth is a true plain weave (each thread passes over and under its crossings) and every curtain edge is a beaded selvedge. Curtains now loop around the frame forever and the HDR trail no longer washes the frame to grey.",
   "features": [
     "audio-reactive",
     "generative",

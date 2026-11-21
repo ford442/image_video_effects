@@ -2,7 +2,7 @@
   "id": "liquid-oil-iridescence",
   "name": "Liquid Oil Iridescence",
   "url": "shaders/liquid-oil-iridescence.wgsl",
-  "description": "Pearl-black film islands transport magenta, cyan, and lime interference contours through fast capillary streams with held-pointer thinning.",
+  "description": "Pearl-black film islands transport magenta, cyan, and lime interference contours through fast capillary streams with held-pointer thinning. Fringes de-phase by wavelength from order to order and wash toward pastel in thick film, carry the light of the reflected photo, and thick islands slide faster than thin film.",
   "tags": [
     "liquid-oil",
     "thin-film-interference",
@@ -20,6 +20,7 @@
     "spectral-render",
     "audio-reactive",
     "mouse-driven",
+    "upgraded-rgba",
     "temporal-state",
     "exact-feedback"
   ],

@@ -3,8 +3,9 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-14
-//  Ideas: saltatory conduction hopping between nodes of Ranvier on web strands; integrate-and-fire soma spiking with refractory afterglow per neuron; activity-dependent pruning where underused web strands dim into shadow gaps; Hebbian reinforcement from feedback where repeatedly active filaments thicken into persistent bright corridors
+//  Upgraded: 2026-09-14, 2026-11-21
+//  Ideas: saltatory conduction hopping between nodes of Ranvier on web strands; integrate-and-fire soma spiking with refractory afterglow per neuron; activity-dependent pruning where underused web strands dim into shadow gaps; Hebbian reinforcement from feedback where repeatedly active filaments thicken into persistent bright corridors; action-potential undershoot (after-hyperpolarization) trailing each node hop; soft inverse-square somatic halo from firing somas (§12.2F)
+//  Rescues: web = axon segments between neighbouring somas (HEAD drew F2-F1 foam membranes); saltatory hop now propagates node to node (HEAD's fract() erased the node index so all nodes blinked in unison, ramp-then-cut)
 //  A packing: ACES display RGBA in A
 // ═══════════════════════════════════════════════════════════════════
 
@@ -18,73 +19,109 @@ fn hash33(p: vec3<f32>) -> vec3<f32> {
     return fract((p3.xxy + p3.yxx) * p3.zyx);
 }
 
-// Voronoi Map - Returns vec3(F1, F2, CellHash)
-// But we mainly need F1 and F2 for the web structure.
-// F1 is distance to closest center (Neuron)
-// F2 is distance to second closest center (defines Voronoi edges)
-fn voronoiMap(p: vec3<f32>) -> vec3<f32> {
+// Voronoi seed search - the three nearest somas around p (8-cell block, below).
+// r1..r3 are (seed - p) vectors in lattice space, nearest first; h is the cell
+// hash of the nearest soma (stable per neuron, used for its firing phase);
+// h2/h3 are the hashes of the 2nd/3rd nearest (they key which axons exist).
+struct Seeds {
+    r1: vec3<f32>,
+    r2: vec3<f32>,
+    r3: vec3<f32>,
+    h: f32,
+    h2: f32,
+    h3: f32,
+};
+
+fn voronoiMap(p: vec3<f32>) -> Seeds {
     var n = floor(p);
     let f = fract(p);
 
-    var f1 = 1.0;
-    var f2 = 1.0;
+    var d1 = 8.0;
+    var d2 = 8.0;
+    var d3 = 8.0;
+    var r1 = vec3<f32>(0.0);
+    var r2 = vec3<f32>(0.0);
+    var r3 = vec3<f32>(0.0);
     var cell_id = vec3<f32>(0.0);
+    var c2 = 0.0;
+    var c3 = 0.0;
 
-    for (var k = -1; k <= 1; k++) {
-        for (var j = -1; j <= 1; j++) {
-            for (var i = -1; i <= 1; i++) {
-                let g = vec3<f32>(f32(i), f32(j), f32(k));
-                let o = hash33(n + g);
-                // Animate the points a bit
-                var time = u.config.x * 0.1;
-                let anim = 0.5 + 0.5 * sin(time + 6.2831 * o);
+    // 2x2x2 block of seed cells on p's side of its cell. With the soma jitter
+    // confined to [0.15, 0.85] of a cell the three nearest somas are in this block;
+    // HEAD's 27-cell search cost 3.4x more per march step, and the strand lattice
+    // needs ~10x more march steps than HEAD's foam (which stopped at the first wall).
+    let sg = select(vec3<f32>(-1.0), vec3<f32>(1.0), f >= vec3<f32>(0.5));
+    for (var k = 0; k <= 1; k++) {
+        for (var j = 0; j <= 1; j++) {
+            for (var i = 0; i <= 1; i++) {
+                let g = vec3<f32>(f32(i), f32(j), f32(k)) * sg;
+                let o = 0.15 + 0.7 * hash33(n + g);
 
                 let r = g + o - f;
                 let d = dot(r, r);
 
-                if (d < f1) {
-                    f2 = f1;
-                    f1 = d;
+                if (d < d1) {
+                    d3 = d2; r3 = r2; c3 = c2;
+                    d2 = d1; r2 = r1; c2 = cell_id.x;
+                    d1 = d; r1 = r;
                     cell_id = o; // Store hash of closest cell
-                } else if (d < f2) {
-                    f2 = d;
+                } else if (d < d2) {
+                    d3 = d2; r3 = r2; c3 = c2;
+                    d2 = d; r2 = r; c2 = o.x;
+                } else if (d < d3) {
+                    d3 = d; r3 = r; c3 = o.x;
                 }
             }
         }
     }
 
-    // Convert squared distances to Euclidean
-    return vec3<f32>(sqrt(f1), sqrt(f2), cell_id.x);
+    return Seeds(r1, r2, r3, cell_id.x, c2, c3);
+}
+
+// Distance from the sample point (origin) to the axon between two somas a, b,
+// both given as (seed - p) vectors. A neural net is sparse (a 3-D Delaunay graph
+// would link every soma to ~15 neighbours = a thicket), so an axon only exists
+// when it is short and its symmetric per-link hash survives; absent links are
+// pushed away by 0.2 rather than removed so marching steps stay conservative.
+fn axonDist(a: vec3<f32>, b: vec3<f32>, ha: f32, hb: f32) -> f32 {
+    let ab = b - a;
+    let t = clamp(-dot(a, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+    let dseg = length(a + ab * t);
+    let link = fract((ha + hb) * 91.3 + ha * hb * 37.7);
+    let present = (link < 0.5) && (length(ab) < 1.15);
+    return dseg + select(0.2, 0.0, present);
 }
 
 // Raymarching Map function
 // Returns distance to the "structure" but since this is volumetric,
 // we might treat it as density field or just SDF to closest element.
-// For a web, we want the space where F2 - F1 is small.
+// Somas sit at the Voronoi seeds; strands are the axons joining each soma to
+// its neighbours (segments from the nearest seed to the 2nd and 3rd nearest), so
+// f1 is the true distance along a strand away from the nearest soma.
 fn map(p: vec3<f32>) -> vec4<f32> {
     // Parameter: Network Density
     let scale = u.zoom_params.x * 2.0;
     let p_scaled = p * scale;
 
     let v = voronoiMap(p_scaled);
-    var f1 = v.x;
-    var f2 = v.y;
-    let cell_hash = v.z;
+    let f1 = length(v.r1);
+    let f2 = length(v.r2);
+    let cell_hash = v.h;
 
-    // Neurons are at f1 approx 0 (center of cell)
-    // Synapses (Web) are where f2 - f1 approx 0 (edges)
+    // Neurons are at f1 approx 0 (the seed); the web is the set of axons.
 
     // Thickness parameter controls how "thick" the web is
     let thickness = u.zoom_params.w * 0.2;
 
-    // Distance to web strand
-    // f2 - f1 is distance from Voronoi boundary
-    // We want to be "inside" the strand if f2 - f1 < thickness
-    // So SDF = (f2 - f1) - thickness
-    let d_web = (f2 - f1) - thickness;
+    // ── Rescue R1: strands are 1-D axon segments between neighbouring somas.
+    // HEAD used F2-F1 (the 2-D Voronoi bisector), i.e. foam membranes: the
+    // camera saw giant flat sheets and the somas floated disconnected inside
+    // cells. A 1-D strand needs a thicker radius than a 2-D sheet to be seen,
+    // so the radius multiplier is 1.5x (slider role unchanged).
+    let d_web = min(axonDist(v.r1, v.r2, v.h, v.h2), axonDist(v.r1, v.r3, v.h, v.h3)) - thickness * 1.5;
 
     // Distance to neuron (cell center)
-    // f1 is distance to center. Neuron radius ~ thickness * 2
+    // f1 is distance to center. Neuron radius ~ thickness * 3
     let neuron_radius = thickness * 3.0;
     let d_neuron = f1 - neuron_radius;
 
@@ -116,16 +153,24 @@ fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
 // Native idea 1: saltatory conduction. Myelinated strands only conduct at
 // the nodes of Ranvier, so the action potential hops node-to-node instead of
 // sliding smoothly. f1 parametrizes position along a strand away from the soma.
-// Returns (node flash, node mask).
-fn saltatoryConduction(f1: f32, time: f32, pulseSpeed: f32, cellHash: f32) -> vec2<f32> {
+// Returns (node flash, node mask, after-hyperpolarization undershoot).
+fn saltatoryConduction(f1: f32, time: f32, pulseSpeed: f32, cellHash: f32) -> vec3<f32> {
     let nodeFreq = 12.0;
     let nodeCoord = f1 * nodeFreq;
     let nodeMask = smoothstep(0.16, 0.0, abs(fract(nodeCoord) - 0.5));
-    // Node index advances in whole steps; each node fires, then decays while
-    // the depolarization jumps down the myelinated internode.
-    let wave = floor(nodeCoord) - time * pulseSpeed * 1.6 + cellHash * 5.0;
-    let flash = exp(-fract(wave) * 5.0);
-    return vec2<f32>(flash * nodeMask, nodeMask);
+    // Rescue: HEAD used fract(floor(nodeCoord) - time*speed + hash*5). fract()
+    // drops the integer node index, so every node of a soma's strands flashed in
+    // unison (no hop), and exp(-fract(wave)*5) rose slowly then cut to zero (the
+    // reverse of a spike). Each node now fires HOP of a period after the previous
+    // one (outward from the soma) and the flash is abrupt-then-decaying.
+    let HOP = 0.18;
+    let age = fract(time * pulseSpeed * 1.6 + cellHash * 5.0 - floor(nodeCoord) * HOP);
+    let flash = exp(-age * 5.0);
+    // ── Idea 1: action-potential undershoot (after-hyperpolarization). Behind the
+    // spike the membrane overshoots below rest and the node is refractory: a dim,
+    // cool trailing zone (age 0.3..0.9) that recovers before the node can fire again.
+    let ahp = smoothstep(0.3, 0.45, age) * (1.0 - smoothstep(0.6, 0.95, age));
+    return vec3<f32>(flash * nodeMask, nodeMask, ahp);
 }
 
 // Native idea 2: integrate-and-fire soma. Each neuron (cell hash) charges its
@@ -208,24 +253,43 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Volumetric march
     let glow_intensity = u.zoom_params.z * (1.0 + bass * 0.4);
-    for(var i=0; i<80; i++) {
+    // Firing threshold (bass / stimulation lower it) — hoisted so the march can
+    // read each soma's spike state for the somatic halo (Idea 2).
+    let threshold = clamp(0.93 - bass * 0.22 - evoked * 0.3, 0.45, 0.97);
+    let sceneScale = max(u.zoom_params.x * 2.0, 1e-3);
+    var halo = 0.0;
+    for(var i=0; i<48; i++) {
         var p = camPos + rd * t;
         let data = map(p);
         var d = data.x;
+        // Near-clip bubble: the camera sits inside an open lattice now, so a strand
+        // grazing the lens would fill the frame as a giant tube.
+        d = max(d, 0.45 - t);
+        let stepLen = clamp(d * 0.85, 0.02, 0.5);
 
         // Accumulate glow based on proximity to structure
         // The closer we are (smaller d), the more glow
-        // Intensity controlled by param Z
-        glow += (0.02 * glow_intensity) / (abs(d) + 0.05);
+        // Intensity controlled by param Z. Weighted by the step length: with strands
+        // (not foam) the ray crosses open space and takes many more, smaller steps.
+        glow += (0.02 * glow_intensity) * (stepLen * 4.0) / (abs(d) + 0.05);
 
-        if (d < 0.002) {
+        // ── Idea 2: soft inverse-square somatic halo (§12.2F). map() already hands
+        // back the nearest-soma distance and its cell hash every step; a soma that
+        // is firing (same integrate-and-fire state as the surface) lights the haze
+        // around it as I/(r^2 + r0^2) with a soft core r0 — an extracellular field
+        // you can see from across the volume, integrated along the ray (ds = step).
+        let somaR = data.z / sceneScale;
+        let iafM = integrateAndFire(data.y, u.config.x, threshold);
+        halo += (iafM.y + iafM.z * 0.8) * (0.022 * glow_intensity) * stepLen / (somaR * somaR + 0.012);
+
+        if (d < max(0.002, t * 0.7 / resolution.y)) {
             hit = true;
             hit_data = data;
             break;
         }
 
-        if (t > 20.0) { break; }
-        t += d * 0.8; // Step size
+        if (t > 9.0) { break; }
+        t += stepLen; // Step size
     }
 
     // Base colors
@@ -273,9 +337,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         let web = 1.0 - is_neuron;
         object_col += col_synapse * pulse_strength * web * mix(0.55, 1.0, salt.y);
         object_col += vec3<f32>(0.55, 1.0, 0.95) * salt.x * web * (0.6 + mids * 0.4 + evoked * 0.8);
+        // Idea 1 lands here: hyperpolarized trailing zone is dimmer and cooler.
+        object_col = mix(object_col, object_col * vec3<f32>(0.55, 0.62, 0.9), salt.z * web * (1.0 - salt.x) * 0.8);
 
         // Integrate-and-fire soma spiking (bass / stimulation lower threshold).
-        let threshold = clamp(0.93 - bass * 0.22 - evoked * 0.3, 0.45, 0.97);
         let iaf = integrateAndFire(hash, u.config.x, threshold);
         let somaCharge = is_neuron * iaf.x * 0.25;
         firing = is_neuron * (iaf.y + iaf.z * 0.8);
@@ -307,6 +372,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Glow color changes slightly based on view direction or time
     let glow_col = vec3<f32>(0.1, 0.2, 0.5) + vec3<f32>(0.1, 0.0, 0.2) * sin(u.config.x);
     col += glow * glow_col;
+    col += vec3<f32>(1.0, 0.82, 0.6) * halo;
     col += vec3<f32>(0.25, 0.2, 0.5) * evoked * 0.25 * (1.0 - surfaceCoverage);
     col = mix(col, max(col, prevFrame.rgb * 0.95), reinforce * 0.22);
 
@@ -317,7 +383,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     col = acesToneMap(col * (1.0 + bass * 0.12));
 
     // Alpha: surface coverage attenuated by fog, plus volumetric glow density.
-    let glowDensity = 1.0 - exp(-glow * 0.08);
+    let glowDensity = 1.0 - exp(-(glow + halo * 6.0) * 0.08);
     let alpha = clamp(max(surfaceCoverage * (1.0 - fog * 0.6), glowDensity * 0.8) + evoked * 0.1 + reinforce * 0.12, 0.0, 1.0);
     let finalColor = vec4<f32>(col, alpha);
 

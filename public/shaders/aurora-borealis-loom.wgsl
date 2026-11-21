@@ -3,34 +3,15 @@
 //  Category: generative
 //  Features: generative, audio-reactive, temporal, chromatic, mouse-driven, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-28
-//  Ideas: fell line + reed beat-up; slub yarn light pools; pulsating aurora patches
-//  A packing: ACES display RGBA (HEAD) — C read back as colour trails
+//  Upgraded: 2026-09-28, 2026-11-21
+//  Ideas: fell line + reed beat-up; slub yarn light pools; pulsating aurora patches; plain-weave over/under interlacement (the under thread is occluded at each crossing); selvedge hem on every curtain edge (doubled warp ends, picks turn back as beads, only on woven cloth)
+//  A packing: raw HDR RGB (pre-ACES, pre-CA) + semantic alpha, read back as the advected peak-hold trail; ACES on writeTexture only (HEAD stored post-ACES display RGBA and re-read it as HDR energy)
 // ═══════════════════════════════════════════════════════════════════
 //  Aurora curtains woven like fabric on a celestial loom. Bass swells the
 //  weave and drives the reed beat, mids shift hue, treble adds ion beads
 //  and streaks. Mouse pulls the fabric. Curtain Flow also advances the fell.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 const PI = 3.14159265;
 const TAU = 6.2831853;
@@ -65,8 +46,13 @@ fn fbm2(p: vec2<f32>, octaves: i32) -> f32 {
 }
 
 // Aurora curtain SDF
-fn auroraCurtain(uv: vec2<f32>, xPos: f32, width: f32, time: f32, speed: f32) -> f32 {
-  let dx = uv.x - xPos;
+// returns (curtain, selvedge ridge)
+fn auroraCurtain(uv: vec2<f32>, xPos: f32, width: f32, time: f32, speed: f32) -> vec2<f32> {
+  // (Rescue) period-1 distance in x. The conveyor adds an unbounded offset to uv.x while the
+  // curtains sit at fixed x in [0.15, 0.87], so at HEAD every curtain scrolled off the left edge
+  // after ~6 s and never came back. Wrapping the distance makes the cloth loop forever; it is
+  // identical to HEAD whenever |uv.x - xPos| < 0.5.
+  let dx = fract(uv.x - xPos + 0.5) - 0.5;
   // Curtain waves
   let wave1 = sin(uv.y * 4.0 + time * speed + xPos * 3.0) * 0.08;
   let wave2 = sin(uv.y * 7.0 - time * speed * 0.7 + xPos * 5.0) * 0.04;
@@ -75,7 +61,12 @@ fn auroraCurtain(uv: vec2<f32>, xPos: f32, width: f32, time: f32, speed: f32) ->
   let curtain = smoothstep(width, 0.0, abs(curtainEdge));
   // Vertical fade
   let vFade = smoothstep(0.0, 0.3, uv.y) * smoothstep(1.0, 0.7, uv.y);
-  return curtain * vFade;
+  // ── Idea 5: selvedge hem ──────────────────────────────────────────────────────────
+  // A cloth strip's edge is a self-finished selvedge: the outer warp ends are doubled and the
+  // weft turns back there. |curtainEdge| was already computed and thrown away; a thin ridge at
+  // 0.8 half-widths marks it (independent of the soft glow, which is only ~10% there).
+  let selvedge = smoothstep(width * 0.18, 0.0, abs(abs(curtainEdge) - width * 0.8));
+  return vec2<f32>(curtain * vFade, selvedge * vFade);
 }
 
 // Weft thread pattern
@@ -110,7 +101,7 @@ fn ionizationNodes(uv: vec2<f32>, time: f32, intensity: f32) -> f32 {
     let nx = fi / f32(nodeCount) + sin(time * 0.4 + fi * 2.1) * 0.08;
     let ny = 0.3 + sin(time * 0.3 + fi * 1.3) * 0.15 + fbm2(vec2<f32>(fi, time * 0.1), 2) * 0.1;
     let nPos = vec2<f32>(nx, ny);
-    let d = length(uv - nPos);
+    let d = length(vec2<f32>(fract(uv.x - nPos.x + 0.5) - 0.5, uv.y - nPos.y));   // (rescue) periodic in x
     let flash = step(0.7, sin(time * 3.0 + fi * 4.7) * 0.5 + 0.5) * intensity;
     nodes += exp(-d * d * 300.0) * flash;
   }
@@ -203,7 +194,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fs = f32(si);
     let lane = fract(hash21(vec2<f32>(fs, 2.1)) + warpT * curtainFlow * (0.4 + fs * 0.05));
     let streakX = lane;
-    ionStreaks += exp(-abs(uv.x - streakX) * 120.0) *
+    // (Rescue) x distance is periodic so the streaks keep crossing the scrolled frame.
+    ionStreaks += exp(-abs(fract(uv.x - streakX + 0.5) - 0.5) * 120.0) *
                     exp(-abs(uv.y - fract(warpT * 0.5 + fs * 0.17)) * 80.0) * treble * ionization;
   }
 
@@ -213,18 +205,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Multiple aurora curtains
   var curtains = 0.0;
   var curtainCol = vec3<f32>(0.0);
+  var selvedgeCol = vec3<f32>(0.0);
   let numCurtains = 5;
   for (var i: i32 = 0; i < numCurtains; i = i + 1) {
     let fi = f32(i);
     let xPos = 0.15 + fi * 0.18 + sin(time * curtainFlow + fi * 1.3) * 0.06;
     let width = (0.04 + fi * 0.005) * swell;
-    let c = auroraCurtain(uv, xPos, width, warpT, curtainFlow * 4.5 + 0.35);
+    let cs = auroraCurtain(uv, xPos, width, warpT, curtainFlow * 4.5 + 0.35);
+    let c = cs.x;
 
     // Mids shift hue through spectrum per curtain
     let hue = fract(fi * 0.15 + time * hueSpeed + mids * 0.2);
     let cCol = hueToRGB(hue);
     curtains += c;
     curtainCol += cCol * c;
+    selvedgeCol += mix(cCol, vec3<f32>(1.0), 0.35) * cs.y;   // Idea 5: selvedge ridge, hue of its curtain
   }
 
   // Normalize curtain color
@@ -258,8 +253,19 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let woven = smoothstep(0.8, 0.7, fellD);
   let fellDist = min(fellD, 1.0 - fellD);
 
-  let wovenWeave = max(max(weft * thinWeft, warp * 0.7 * thinWarp),
-                       max(weftSlub, warpSlub * 0.7));
+  // ── Idea 4: plain-weave interlacement ────────────────────────────────────────────
+  // HEAD's cloth was a lattice of lines (max of weft and warp). In a real plain weave each
+  // crossing cell has exactly one thread OVER and one UNDER, alternating like a checkerboard
+  // (row + column parity). A thread that passes under is hidden across the whole span of that
+  // cell and re-surfaces in the gaps, so each thread reads as alternating dashes. Same rows and
+  // columns as the slub lanes above; no new noise.
+  let overWeft = f32((i32(floor(uv.y * weaveDensity)) + i32(floor(uv.x * warpDensity))) & 1);
+  let underSpanX = smoothstep(0.5, 0.15, abs(fract(uv.x * warpDensity) - 0.5));   // dips at a column centre
+  let underSpanY = smoothstep(0.5, 0.15, abs(fract(uv.y * weaveDensity) - 0.5));  // dips at a row centre
+  let weftOcc = 1.0 - 0.8 * underSpanX * (1.0 - overWeft);   // weft under -> hidden by the warp
+  let warpOcc = 1.0 - 0.8 * underSpanY * overWeft;           // warp under -> hidden by the weft
+  let wovenWeave = max(max(weft * thinWeft * weftOcc, warp * 0.7 * thinWarp * warpOcc),
+                       max(weftSlub * weftOcc, warpSlub * 0.7 * warpOcc));
   let bareWarp = smoothstep(0.1, 0.0, abs(fract(uv.x * warpDensity) - 0.5)) * thinWarp;
   let bareWeave = max(bareWarp, warpSlub) * 0.7;
   let weave = mix(bareWeave, wovenWeave, woven);
@@ -275,6 +281,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let bandCol = mix(vec3<f32>(0.5, 0.82, 1.0), curtainCol, clamp(curtains * 2.0, 0.0, 1.0)) * 0.8
               + vec3<f32>(0.2);
   let reedGlow = bandCol * band * (0.12 + 0.55 * reedBeat) * (1.0 + 1.5 * bass);
+
+  // Idea 5 — selvedge: finished edge only exists on woven cloth (below the fell the weft is
+  // absent); the weft turning back shows as a bead at every pick.
+  let pickBead = 0.5 + 0.5 * smoothstep(0.35, 0.0, abs(fract(uv.y * weaveDensity) - 0.5));
+  let selvedgeLit = selvedgeCol * woven * pickBead * patchGain * 0.4;
 
   // Ionization nodes from treble
   let nodes = ionizationNodes(uv, time, treble * ionization);
@@ -292,6 +303,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   col += nodeCol;
   col += vec3<f32>(0.4, 0.85, 1.0) * ionStreaks * 0.6;
   col += reedGlow;                                         // Idea 1
+  col += selvedgeLit;                                      // Idea 5
 
   // Atmospheric noise
   let atmos = fbm2(uv * 4.0 + time * 0.05, 3) * 0.1;
@@ -302,7 +314,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let maxCoord = vec2<i32>(max(i32(res.x) - 1, 0), max(i32(res.y) - 1, 0));
   let histCoord = clamp(vec2<i32>(gid.xy) - vec2<i32>(flowDir * (3.0 + curtainFlow * 5.0)), vec2<i32>(0), maxCoord);
   let prev = textureLoad(dataTextureC, histCoord, 0).rgb;
-  var fbCol = clamp(col + prev * (0.85 + bass * 0.03), vec3<f32>(0.0), vec3<f32>(5.5));
+  // (Rescue) HEAD summed `col + prev*0.85` with `prev` = the previous frame's POST-ACES display
+  // colour and then ran ACES again inside the loop. ACES's toe slope is > 1 above x ~ 0.1, so the
+  // loop was bistable: frame 1 is a dark sky (mean luma 0.08) and by frame ~12 every pixel had
+  // ratcheted to a flat 0.74 grey. A now stores the raw HDR value and the trail is a peak-hold
+  // (`max`) with the same advection and the same 0.85 + 0.03*bass decay: static cloth converges
+  // to its own frame-1 look, moving light still leaves the advected tail.
+  var fbCol = clamp(max(col, prev * (0.85 + bass * 0.03)), vec3<f32>(0.0), vec3<f32>(5.5));
 
   // Semantic alpha: based on curtain intensity and weave presence
   let alpha = clamp(curtains * 0.8 * patchGain + weave * 0.3 + nodes * 0.5 + band * 0.3, 0.0, 1.0);
@@ -310,11 +328,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Depth: curtains in front, stars behind
   let depth = clamp(0.8 - curtains * 0.5 + weave * 0.1, 0.0, 1.0);
 
-  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
-  fbCol = vec3<f32>(fbCol.r + caStr, fbCol.g, fbCol.b - caStr * 0.5);
-
-  fbCol = acesToneMap(fbCol * 1.1);
-  textureStore(writeTexture, gid.xy, vec4<f32>(fbCol, alpha));
-  textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  // A = raw HDR trail (pre-CA, pre-ACES); ACES and the chromatic tint only on the displayed value.
   textureStore(dataTextureA, gid.xy, vec4<f32>(fbCol, alpha));
+
+  let caStr = 0.003 * (1.0 + bass) + depth * 0.001;
+  var disp = max(vec3<f32>(fbCol.r + caStr, fbCol.g, fbCol.b - caStr * 0.5), vec3<f32>(0.0));   // (rescue) never negative into ACES
+  disp = acesToneMap(disp * 1.1);
+  textureStore(writeTexture, gid.xy, vec4<f32>(disp, alpha));
+  textureStore(writeDepthTexture, gid.xy, vec4<f32>(depth, 0.0, 0.0, 0.0));
 }

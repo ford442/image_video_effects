@@ -3,7 +3,7 @@
   "name": "Rain",
   "category": "artistic",
   "url": "shaders/rain.wgsl",
-  "description": "Upgraded rain with gravity-accelerated streak physics, chromatic droplet lensing, HDR bloom on light sources, fog layers, and splash particles. Bass drives intensity, mouse creates wind gusts, depth controls droplet perspective.",
+  "description": "Upgraded rain with gravity-accelerated streak physics, chromatic droplet lensing, HDR bloom on light sources, fog layers, and splash particles. Bass drives intensity, mouse creates wind gusts, depth controls droplet perspective. 2026-11-21: drops fall downward at size-dependent terminal velocities with exposure-length tails, each streak refracts the photo through a water-cylinder lens (Snell), and the mist follows Beer-Lambert extinction on scene depth.",
   "features": [
     "mouse-driven",
     "audio-reactive",
