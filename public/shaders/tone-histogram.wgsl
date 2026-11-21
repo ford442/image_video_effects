@@ -3,31 +3,12 @@
 //  Category: post-processing
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09
-//  Ideas: mouse local metering window; per-channel shoulder
+//  Upgraded: 2026-09-09, 2026-11-21
+//  Ideas: mouse local metering window; per-channel shoulder; density-weighted grain (§12.2A); Wallis local-brightness pull with edge-aware coarse mean (§12.2A)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn acesTone(x: vec3<f32>) -> vec3<f32> {
   let a = 2.51;
@@ -68,13 +49,33 @@ fn localStats(uv: vec2<f32>, texel: vec2<f32>) -> vec2<f32> {
   return vec2<f32>(mean, sqrt(variance));
 }
 
+// ── Idea 4 helper: edge-aware coarse regional mean ──────────────────
+// The 3×3 window above measures texel-scale noise; adaptive equalisation needs the
+// REGIONAL brightness. Four bilinear taps at ±3.5 texels (each already a 2×2 average),
+// range-weighted so the mean never averages across a real edge (no halos).
+fn coarseMean(uv: vec2<f32>, texel: vec2<f32>, centerLuma: f32) -> f32 {
+  var sum = centerLuma;
+  var wsum = 1.0;
+  for (var k: i32 = 0; k < 4; k = k + 1) {
+    let o = vec2<f32>(f32(k & 1) * 2.0 - 1.0, f32(k >> 1) * 2.0 - 1.0) * 3.5 * texel;
+    let c = textureSampleLevel(readTexture, u_sampler, clamp(uv + o, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+    let l = dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
+    let d = (l - centerLuma) / 0.12;
+    let w = 1.0 / (1.0 + d * d);
+    sum = sum + l * w;
+    wsum = wsum + w;
+  }
+  return sum / wsum;
+}
+
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) { return; }
   let coord = vec2<i32>(global_id.xy);
 
-  let uv = vec2<f32>(global_id.xy) / resolution;
+  // Rescue: HEAD sampled at the texel corner (gid / res) — every tap was a half-texel-shifted 2×2 blend.
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
   let time = u.config.x;
   let texel = 1.0 / resolution;
   let bass = plasmaBuffer[0].x;
@@ -99,13 +100,21 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let stretchRef = mix(localMean, meterLuma, meterWeight);
 
   let targetStd = mix(0.12, 0.28, stretchAmount + bass * 0.12);
-  let adaptGain = select(targetStd / max(localStd, 0.01), 1.0, localStd < 0.001);
+  // Rescue: HEAD hard-switched gain 1.0 → ×2.5 at localStd = 0.001, so 8-bit gradient band edges
+  // (std ≥ 0.001) jumped straight to max gain while band interiors stayed at 1 (dashed banding, and
+  // flat skies got the MOST boost). Same gain, now eased in continuously as real structure appears.
+  let adaptGain = mix(1.0, targetStd / max(localStd, 0.01), smoothstep(0.002, 0.03, localStd));
   let adaptGainClamped = clamp(adaptGain, 0.5, 2.5);
 
   let luma = dot(src.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
   let chroma = src.rgb - vec3<f32>(luma);
 
-  var stretchedLuma = (luma - stretchRef) * adaptGainClamped + stretchRef;
+  // ── Idea 4: Wallis local-brightness pull (§12.2A) ────────────────────
+  // adaptGain is the std half of Wallis; this is the mean half: the target mean drifts
+  // toward mid-grey by how far the REGIONAL mean sits from it. Rides Stretch Amount (0 → HEAD).
+  let coarse = coarseMean(uv, texel, luma);
+  let stretchTarget = stretchRef + (0.5 - coarse) * 0.3 * stretchAmount;
+  var stretchedLuma = (luma - stretchRef) * adaptGainClamped + stretchTarget;
   stretchedLuma = clamp(stretchedLuma, 0.0, 1.0);
   let curvedLuma = filmCurve(stretchedLuma, toeStrength, shoulderStrength);
 
@@ -123,9 +132,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   var color = vec3<f32>(curvedLuma) + mix(chroma, dyeChroma, 0.55) * mix(0.8, 1.4, stretchAmount) + splitTone * 0.3;
 
+  // ── Idea 3: density-weighted grain (§12.2A) ──────────────────────────
+  // Real grain peaks in the midtones and vanishes in clear base / dense blacks:
+  // σ(L) = √(L(1−L)). The flat hash grain below is kept; only its amplitude follows density.
+  let density = sqrt(max(curvedLuma * (1.0 - curvedLuma), 0.0)) * 2.0;
   let g1 = grain(uv, time) * (1.0 + mids * 0.5);
   let g2 = grain(uv * 1.7 + 0.3, time * 0.7) * 0.5;
-  color = color + vec3<f32>(g1 + g2);
+  color = color + vec3<f32>(g1 + g2) * mix(0.25, 1.0, density);
 
   let mouseDown = u.zoom_config.w;
   let mouseDist = length(uv - mousePos);
@@ -133,9 +146,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   color = color * (1.0 + exposureZone * 0.4);
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
+  // Rescue: HEAD mixed the far pixels TOWARD the haze colour (the slider added haze).
+  // Koschmieder inversion removes it: I = J·t + A·(1−t)  ⇒  J = (I − A·h)/(1 − h), h = 1 − t.
   let haze = (1.0 - depth) * hazeRemoval * 0.3;
   let hazeColor = vec3<f32>(0.75, 0.78, 0.82);
-  color = mix(color, hazeColor, haze);
+  color = (color - hazeColor * haze) / max(1.0 - haze, 0.05);
 
   let finalColor = acesTone(max(color, vec3<f32>(0.0)));
   let tonalConfidence = smoothstep(0.0, 0.15, abs(curvedLuma - localMean) + localStd);

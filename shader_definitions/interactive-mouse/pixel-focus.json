@@ -2,7 +2,7 @@
   "id": "pixel-focus",
   "name": "Pixel Focus",
   "url": "shaders/pixel-focus.wgsl",
-  "description": "Applies a mosaic effect everywhere except for a clear focus area around the mouse. Audio-reactive density adds rhythmic pulse to pixelation.",
+  "description": "Applies a mosaic effect everywhere except for a clear focus area around the mouse. Audio-reactive density adds rhythmic pulse to pixelation. Mosaic cells keep their own luma but share chroma across 2x2 Bayer quads (CFA zipper), and the Aberration slider is Cauchy-dispersed lateral chromatic aberration radiating from the pointer (the lens axis).",
   "params": [
     {
       "id": "mosaicSize",

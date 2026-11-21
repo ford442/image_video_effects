@@ -2,7 +2,7 @@
   "id": "cyber-focus",
   "name": "Cyber Focus",
   "url": "shaders/cyber-focus.wgsl",
-  "description": "High-tech focus aperture with smooth scanner packets, stable block interference, chromatic defocus, and click-launched rings of clarity.",
+  "description": "High-tech focus aperture with smooth scanner packets, stable block interference, chromatic defocus, and click-launched rings of clarity. Outside the aperture the glitch blocks carry 8-px block-DCT quantization banding (bitrate starves with distance, scan packets act as keyframe refreshes) and the defocus pools highlights like real bokeh.",
   "params": [
     {
       "id": "radius",

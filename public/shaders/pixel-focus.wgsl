@@ -4,38 +4,29 @@
 //  Features: mouse-driven, audio-reactive, filter, pixelation, chromatic-aberration, upgraded-rgba
 //  Complexity: Medium
 //  Created: 2026-05-10
-//  Upgraded: 2026-06-28
+//  Upgraded: 2026-06-28, 2026-11-21
 //  Optimized: 2026-07-30 (Batch 17 — depth-aware focus, click pulses, spectral shimmer)
 //  By: Agent 1a - Alpha Channel Specialist
+//  Ideas: Cauchy dispersion about the lens axis (§12.2F) — the Aberration slider becomes radial, wavelength-ordered lateral CA centred on the pointer; CFA zipper (§12.2A) — each mosaic cell keeps its own luma while chroma is shared across its 2×2 Bayer quad
+//  A packing: display RGBA pass-through (no ACES: the in-focus pool must return the source pixel)
+//  Rescues: texel-centre uv + mosaic sampled at cell centres (HEAD sampled texel/cell corners → half-cell shift and a half-pixel blur in the "clear" pool)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
 
-struct Uniforms {
-  config: vec4<f32>,       // x=Time, y=ClickCount, z=ResX, w=ResY
-  zoom_config: vec4<f32>,  // x=ZoomTime, y=MouseX, z=MouseY, w=Generic2
-  zoom_params: vec4<f32>,  // x=Param1, y=Param2, z=Param3, w=Param4
-  ripples: array<vec4<f32>, 50>,
-};
+// n(λ) = 1 + B/λ² at 650/550/450 nm, relative to green → (<1, 1, >1).
+fn cauchyScale(B: f32) -> vec3<f32> {
+    let lam2 = vec3<f32>(0.650, 0.550, 0.450) * vec3<f32>(0.650, 0.550, 0.450);
+    let n = vec3<f32>(1.0) + vec3<f32>(B) / lam2;
+    return n / n.y;
+}
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(u.config.z) || global_id.y >= u32(u.config.w)) { return; }
 
     let resolution = u.config.zw;
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution; // texel centre (rescue)
     let aspect = resolution.x / max(resolution.y, 0.001);
     var mouse = u.zoom_config.yz;
     let mouseDown = u.zoom_config.w;
@@ -107,23 +98,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     density = density * (1.0 + spectralShimmer);
     density = density * mix(1.0, 0.85, depth * (1.0 - focus)); // far mosaic slightly coarser
     density = max(density, 1.0);
-    let pixelUV = floor(uv * density) / density;
+    let cellUV = (floor(uv * density) + 0.5) / density; // cell centre (rescue: HEAD sampled the corner)
 
     // Sample Clear and preserve input alpha
     let baseColor = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
     let colClear = baseColor.rgb;
 
-    // Sample Pixelated — branchless chromatic aberration
+    // ── Idea 2: CFA zipper (§12.2A) ─────────────────────────────────
+    // A mosaic cell is a sensor pixel. Like a Bayer sensor it keeps its own
+    // luma but shares chroma with its 2×2 quad, so fine edges alias into
+    // cell-scale colour fringes. Luma still comes from the cell (HEAD's
+    // detail); only chroma coarsens.
+    let lw = vec3<f32>(0.299, 0.587, 0.114);
+    let groupUV = (floor(uv * density * 0.5) * 2.0 + 1.0) / density;
+    let cellRGB = textureSampleLevel(readTexture, u_sampler, cellUV, 0.0).rgb;
+    var quadRGB = textureSampleLevel(readTexture, u_sampler, groupUV, 0.0).rgb;
+
+    // ── Idea 1: Cauchy dispersion about the lens axis (§12.2F) ──────
+    // The Aberration slider keeps its role and its 0.05 gate, but a lens'
+    // lateral CA is radial from the optical axis (the pointer = the focus
+    // pool's centre): zero on-axis, growing with field radius, and spaced by
+    // n(λ) = 1 + B/λ² so blue bends further than red. B = 0.0127 at slider
+    // max ≈ HEAD's ±0.01 uv shift at field radius ≈ 0.5.
     let useChromatic = step(0.05, chromatic);
-    let offset = chromatic * 0.01;
-    let plainSample = textureSampleLevel(readTexture, u_sampler, pixelUV, 0.0);
-    let rSample = textureSampleLevel(readTexture, u_sampler, clamp(pixelUV + vec2<f32>(offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let bSample = textureSampleLevel(readTexture, u_sampler, clamp(pixelUV - vec2<f32>(offset, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0);
-    let colPixel = vec3<f32>(
-        mix(plainSample.r, rSample.r, useChromatic),
-        plainSample.g,
-        mix(plainSample.b, bSample.b, useChromatic)
-    );
+    if (useChromatic > 0.5) {
+        let sc = cauchyScale(chromatic * 0.0127);
+        let rUV = clamp(mouseClamped + (groupUV - mouseClamped) * sc.x, vec2<f32>(0.0), vec2<f32>(1.0));
+        let bUV = clamp(mouseClamped + (groupUV - mouseClamped) * sc.z, vec2<f32>(0.0), vec2<f32>(1.0));
+        quadRGB = vec3<f32>(
+            textureSampleLevel(readTexture, u_sampler, rUV, 0.0).r,
+            quadRGB.g,
+            textureSampleLevel(readTexture, u_sampler, bUV, 0.0).b
+        );
+    }
+    // luma from the cell, chroma from the (dispersed) quad
+    let colPixel = max(quadRGB + vec3<f32>(dot(cellRGB, lw) - dot(quadRGB, lw)), vec3<f32>(0.0));
 
     var finalRGB = mix(colPixel, colClear, focus);
 

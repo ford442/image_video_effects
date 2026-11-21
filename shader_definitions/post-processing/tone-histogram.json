@@ -3,7 +3,7 @@
   "name": "Tone Histogram v2",
   "category": "post-processing",
   "url": "shaders/tone-histogram.wgsl",
-  "description": "Single-pass local adaptive histogram equalization with film-like tonal curves, split-tone shadows/highlights, grain texture, and depth-driven haze removal. Bass stretches histogram dynamically.",
+  "description": "Single-pass local adaptive histogram equalization with film-like tonal curves, split-tone shadows/highlights, grain texture, and depth-driven haze removal. Bass stretches histogram dynamically. Grain amplitude follows film density (midtone-peaked) and a Wallis local-brightness pull with an edge-aware regional mean settles dark/bright regions toward mid-grey as Stretch Amount rises; Haze Removal now removes far-field haze (airlight inversion) instead of adding it.",
   "features": [
     "audio-reactive",
     "mouse-driven",

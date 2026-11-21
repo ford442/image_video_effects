@@ -1,35 +1,32 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Cyber Focus
+//  Category: interactive-mouse
 //  Mouse-tracked focus aperture; everything outside it gets blocky glitch
 //  offset, chromatic aberration, and box blur scaled by distance.
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-21
+//  Ideas: block-DCT quantization (§12.2B) — 8-px macroblocks keep DC+3 AC luma coefficients and DC-only chroma, luma follows the codec while chroma is only lightly replaced so the aberration survives, Q grows with distance from the aperture, scan packets refresh it; luma-weighted defocus (bokeh pooling, energy-normalised)
+//  A packing: display RGBA pass-through (no ACES: the in-focus pool must return the source pixel)
+//  Rescues: texel-centre uv (HEAD sampled texel corners, so the "crisp" pool was a half-pixel blur)
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn hash21(p: vec2<f32>) -> f32 {
     let h = dot(p, vec2<f32>(127.1, 311.7));
     return fract(sin(h) * 43758.5453123);
 }
+
+// HEAD's 20×20 block-glitch gate, lifted out unchanged so the codec macroblock
+// can evaluate the same offset at its own block centre.
+fn glitchOffset(p: vec2<f32>, glitchIntensity: f32, time: f32, mids: f32, treble: f32, packet: f32) -> vec2<f32> {
+    let blockId = floor(p * 20.0);
+    let blockSeed = hash21(blockId);
+    let noise = 0.5 + 0.5 * sin(time * (4.0 + mids * 3.0) + blockSeed * 6.28318);
+    let direction = vec2<f32>(hash21(blockId), hash21(blockId + 1.0)) - 0.5;
+    return select(vec2<f32>(0.0), direction * (0.06 + packet * 0.06 + treble * 0.02), noise < glitchIntensity * 0.2);
+}
+
 
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
@@ -37,7 +34,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
         return;
     }
-    var uv = vec2<f32>(global_id.xy) / resolution;
+    var uv = (vec2<f32>(global_id.xy) + 0.5) / resolution; // texel centre (rescue)
     var mousePos = u.zoom_config.yz;
     let heldFocus = step(0.5, u.zoom_config.w);
     let aspectRatio = resolution.x / resolution.y;
@@ -86,17 +83,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Outside focus - process
 
         // 1. Glitch Offset (Blocky)
-        var offset = vec2<f32>(0.0);
-        if (glitchIntensity > 0.0) {
-            let blockSize = 20.0;
-            let blockId = floor(uv * blockSize);
-            let blockSeed = hash21(blockId);
-            let noise = 0.5 + 0.5 * sin(time * (4.0 + mids * 3.0) + blockSeed * 6.28318);
-            if (noise < glitchIntensity * 0.2) {
-                let direction = vec2<f32>(hash21(blockId), hash21(blockId + 1.0)) - 0.5;
-                offset = direction * (0.06 + scanPacket * 0.06 + treble * 0.02);
-            }
-        }
+        let offset = glitchOffset(uv, glitchIntensity, time, mids, treble, scanPacket);
 
         // 2. Chromatic Aberration + Blur
         // We will sample a few points and average them
@@ -118,10 +105,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                 let g = textureSampleLevel(readTexture, u_sampler, sampleUV, 0.0).g;
                 let b = textureSampleLevel(readTexture, u_sampler, clamp(sampleUV - vec2<f32>(aberration * focusMask, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).b;
 
-                r_acc += r;
-                g_acc += g;
-                b_acc += b;
-                weight_acc += 1.0;
+                // ── Idea 2: luma-weighted defocus (bokeh pooling) ──────────
+                // Real defocus is radiance-weighted: highlights dominate their
+                // neighbourhood. Weights are normalised below, so energy is
+                // moved, not added; the uniform box is the w = 1 limit.
+                let tapLuma = dot(vec3<f32>(r, g, b), vec3<f32>(0.299, 0.587, 0.114));
+                let w = 1.0 + 3.0 * smoothstep(0.55, 1.0, tapLuma) * focusMask;
+                r_acc += r * w;
+                g_acc += g * w;
+                b_acc += b * w;
+                weight_acc += w;
             }
         }
 
@@ -131,6 +124,62 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         // Defocused regions thin out — alpha falls off with the focus mask
         let defocusAlpha = original.a * (1.0 - focusMask * 0.35);
         finalColor = vec4<f32>(r_acc / weight_acc, g_acc / weight_acc, b_acc / weight_acc, defocusAlpha);
+
+        // ── Idea 1: block-DCT quantization (§12.2B) ─────────────────
+        // The glitch above is a corrupt block stream; a real one also bands
+        // *inside* its blocks. Each 8-px macroblock (scaled with resolution)
+        // keeps four luma coefficients (DC, H, V, diagonal — fitted to four
+        // quadrant taps) quantized q = round(x / Q) · Q with Q growing with
+        // frequency, and chroma at DC only (4:2:0-style block colour). Q rises
+        // with distance from the aperture (bitrate starves) and per block;
+        // scan packets are keyframe refreshes that drop Q along their band (the pixel's own offset and packet are reused, so no second glitch evaluation).
+        let codecGate = smoothstep(0.0, 0.3, glitchIntensity);
+        if (codecGate > 0.0) {
+            let blockPx = 8.0 * max(1.0, floor(resolution.y / 540.0));
+            let pxPos = vec2<f32>(global_id.xy);
+            let blk = floor(pxPos / blockPx);
+            let fb = (pxPos + 0.5) / blockPx - blk;
+            let bCentrePx = (blk + 0.5) * blockPx;
+            let bUV = bCentrePx / resolution;
+            let bMask = smoothstep(activeRadius, activeRadius + 0.1, length((bUV - mousePos) * vec2<f32>(aspectRatio, 1.0)));
+
+            let qo = blockPx * 0.25;
+            let tA = textureSampleLevel(readTexture, u_sampler, clamp((bCentrePx + vec2<f32>(-qo, -qo)) / resolution + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+            let tB = textureSampleLevel(readTexture, u_sampler, clamp((bCentrePx + vec2<f32>( qo, -qo)) / resolution + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+            let tC = textureSampleLevel(readTexture, u_sampler, clamp((bCentrePx + vec2<f32>(-qo,  qo)) / resolution + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+            let tD = textureSampleLevel(readTexture, u_sampler, clamp((bCentrePx + vec2<f32>( qo,  qo)) / resolution + offset, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+            let lw = vec3<f32>(0.299, 0.587, 0.114);
+            let yA = dot(tA, lw); let yB = dot(tB, lw); let yC = dot(tC, lw); let yD = dot(tD, lw);
+
+            let blockQ = mix(0.5, 2.5, hash21(blk + vec2<f32>(7.3, 1.7)));
+            let qDC = (0.015 + 0.12 * glitchIntensity * bMask) * blockQ * (1.0 - 0.85 * scanPacket);
+            let dcC = 0.25 * (yA + yB + yC + yD);
+            let acH = 0.25 * (yB + yD - yA - yC);
+            let acV = 0.25 * (yC + yD - yA - yB);
+            let acD = 0.25 * (yA + yD - yB - yC);
+            let qDCv = round(dcC / qDC) * qDC;
+            let qH = round(acH / (3.0 * qDC)) * 3.0 * qDC;
+            let qV = round(acV / (3.0 * qDC)) * 3.0 * qDC;
+            let qD = round(acD / (5.0 * qDC)) * 5.0 * qDC;
+            // cosine basis normalised to ±1 at the quadrant taps (f = 0.25 / 0.75):
+            // -cos(π f)·√2 = √2·sin(π t / 2), t = 2f − 1, as an odd polynomial.
+            let tx = 2.0 * fb.x - 1.0;
+            let ty = 2.0 * fb.y - 1.0;
+            let hx = 1.41421356 * tx * (1.5707963 - tx * tx * (0.6459641 - tx * tx * 0.0796926));
+            let hy = 1.41421356 * ty * (1.5707963 - ty * ty * (0.6459641 - ty * ty * 0.0796926));
+            let yRec = qDCv + qH * hx + qV * hy + qD * hx * hy;
+            let chromaMean = 0.25 * ((tA - yA) + (tB - yB) + (tC - yC) + (tD - yD));
+            let qC = 1.5 * qDC;
+            let chromaQ = round(chromaMean / qC) * qC;
+            // Luma follows the codec strongly, chroma only lightly: the R/B
+            // fringe above lives in chroma, so the existing aberration survives.
+            let blur = finalColor.rgb;
+            let yBlur = dot(blur, lw);
+            finalColor = vec4<f32>(
+                max(blur + codecGate * (0.6 * vec3<f32>(yRec - yBlur) + 0.3 * (chromaQ - (blur - yBlur))), vec3<f32>(0.0)),
+                finalColor.a
+            );
+        }
 
         finalColor = mix(original, finalColor, focusMask);
     }
