@@ -2359,7 +2359,7 @@
       1
     ],
     "supportsDepth": true,
-    "description": "Ink in water simulation with Navier-Stokes velocity field. Alpha = ink density/concentration. Multiple colors, chemical reactions.",
+    "description": "Halftone ink on paper: posterised colour, Sobel ink outlines and luma-sized dots with paper-fibre granulation, coffee-ring rims and wet-bleed edges. Ink wicks along the paper fibres from frame to frame (exact history read) and the dye runs ahead of the dark pigment. Alpha = ink coverage.",
     "tags": [
       "ink",
       "fluid",
@@ -2370,11 +2370,11 @@
     ],
     "features": [
       "rgba",
-      "fluid-sim",
-      "curl-noise",
-      "advection",
+      "halftone",
+      "ink-wicking",
+      "temporal-feedback",
       "alpha-density",
-      "mouse-spawn"
+      "mouse-driven"
     ],
     "params": [
       {

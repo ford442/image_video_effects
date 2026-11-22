@@ -2,7 +2,7 @@
   "id": "lenticular-holographic-shift",
   "name": "Lenticular Holographic Shift",
   "url": "shaders/lenticular-holographic-shift.wgsl",
-  "description": "Simulates a lenticular/holographic print that dramatically shifts perspective, color, and moiré interference as you move the mouse or as audio beats. Stunning on portraits and detailed imagery.",
+  "description": "Simulates a lenticular/holographic print that dramatically shifts perspective, color, and moiré interference as you move the mouse or as audio beats. Each lenticule magnifies its own slice and the neighbouring view ghosts in at the seams. Stunning on portraits and detailed imagery.",
   "tags": [
     "lenticular",
     "holographic",

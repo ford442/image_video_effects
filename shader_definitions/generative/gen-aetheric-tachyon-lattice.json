@@ -3,7 +3,7 @@
   "name": "Aetheric Tachyon Lattice",
   "url": "shaders/gen-aetheric-tachyon-lattice.wgsl",
   "category": "generative",
-  "description": "A high-energy, multidimensional lattice of glowing tachyon streams, oscillating and folding through a non-Euclidean void.",
+  "description": "A high-energy, multidimensional lattice of glowing tachyon streams, oscillating and folding through a non-Euclidean void. Tachyon packets run along each strut's own axis (mids set their brightness) inside a soft teal aura that treble lifts.",
   "features": [
     "lattice",
     "tachyon",

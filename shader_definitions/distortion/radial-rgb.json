@@ -2,7 +2,7 @@
   "id": "radial-rgb",
   "name": "Radial RGB",
   "url": "shaders/radial-rgb.wgsl",
-  "description": "Brown-model lens with radial chromatic aberration, tangential astigmatism smear and a cat's-eye vignette; hold to decentre the optical axis onto the pointer.",
+  "description": "Brown-model lens with radial chromatic aberration, Cauchy lateral colour (R/B magnify differently even with no distortion), tangential astigmatism smear, radial coma tails on highlights and a cat's-eye vignette; hold to decentre the optical axis onto the pointer.",
   "params": [
     {
       "id": "k1",

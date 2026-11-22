@@ -3,9 +3,9 @@
 //  Category: advanced-hybrid
 //  Features: kaleidoscope, morphological, erosion-dilation, mouse-driven, audio-reactive
 //  Complexity: Very High
-//  Upgraded: 2026-11-10
-//  Ideas: mirror-seam bevel along every reflecting edge; white top-hat detail re-injection
-//  A packing: display RGB + top-hat luma in alpha
+//  Upgraded: 2026-11-10, 2026-11-22
+//  Ideas: mirror-seam bevel along every reflecting edge; white top-hat detail re-injection; reflection loss per mirror bounce (fold-count material, §12.2E); Kramer-Bruckner toggle mapping from the tap luma extremes
+//  A packing: display RGB + top-hat luma in alpha (writeTexture); the same RGBA is stored to dataTextureA
 //  Chunks From: breathing-kaleidoscope, conv-morphological-erosion-dilation
 //  Created: 2026-04-18
 //  By: Agent CB-15 — Visual Effects & Distortion Enhancer
@@ -32,7 +32,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let pixelSize = 1.0 / resolution;
 
   let cycleSpeed = u.zoom_params.x;
-  let segments = max(1.0, u.zoom_params.y);
+  // Whole wedge count 3..12 (default 8). HEAD had max(1.0, slider) with the slider in 0..1, so
+  // segments was ALWAYS 1: no kaleidoscope, a dead slider. Integer so the fold closes at the atan2 cut.
+  let segments = round(mix(3.0, 12.0, u.zoom_params.y));
   let rotationSpeed = u.zoom_params.z;
   let maxRotationPercent = clamp(u.zoom_params.w, 0.0, 1.0);
 
@@ -59,15 +61,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     }
   }
 
-  // Breathing strength
-  let audioOverall = u.zoom_config.x;
-  let audioReactivity = 1.0 + audioOverall * 0.3;
-  let strength = ping_pong(time * cycleSpeed * audioReactivity);
+  // Breathing strength. HEAD read zoom_config.x as "audio" but that is TIME, and multiplied it into
+  // the phase: phase = speed*t*(1+0.3t), so the breath and the twist accelerated without bound.
+  // Audio is plasmaBuffer[0]: bass lifts the breath toward the kaleidoscope on the beat.
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
+  let treble = clamp(plasmaBuffer[0].z, 0.0, 1.0);
+  let strength = clamp(ping_pong(time * cycleSpeed) + bass * 0.35, 0.0, 1.0);
 
   // Kaleidoscope geometry
   let segmentAngle = 6.28318530718 / segments;
   let maxRotation = segmentAngle * maxRotationPercent;
-  let rotation = ping_pong(time * rotationSpeed * audioReactivity) * maxRotation;
+  let rotation = ping_pong(time * rotationSpeed) * maxRotation;
 
   let delta = (uv + mouseDisplacement) - center;
   let angle = atan2(delta.y, delta.x);
@@ -84,7 +88,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ═══ MORPHOLOGICAL OPERATION ON KALEIDO SAMPLE ═══
   // Per-segment erosion/dilation blend based on segment index
-  let segmentIndex = floor(normalizedAngle);
+  // Cell number taken mod N so both halves of the cell straddling the atan2 cut agree (odd N).
+  let segmentRaw = floor(normalizedAngle);
+  let segmentIndex = segmentRaw - segments * floor(segmentRaw / segments);
   let erosionDilationBlend = fract(segmentIndex * 0.618034) + strength * 0.3;
 
   let mouseDist = length(uv - mousePos);
@@ -130,7 +136,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Blend based on breathing cycle and segment
   let morphBlend = clamp(erosionDilationBlend, 0.0, 1.0);
-  let blendRGB = mix(erosion, dilation, morphBlend);
+  // ── Idea 2: Kramer-Bruckner toggle mapping ──────────────────────────
+  // centerLuma / minLuma / maxLuma were accumulated over every tap and never read. A toggle (shock)
+  // filter snaps each pixel to whichever extreme, erosion or dilation, is nearer in luma to the
+  // centre sample: flat regions keep the per-segment erosion/dilation blend, edges go crisp and
+  // faceted, the "living crystal" look. Mixed in at 0.4 so the segment blend stays the base. No new taps.
+  let nearerErosion = (centerLuma - minLuma) < (maxLuma - centerLuma);
+  let toggle = select(dilation, erosion, nearerErosion);
+  let blendRGB = mix(mix(erosion, dilation, morphBlend), toggle, 0.4);
   // ── Idea 2: white top-hat detail re-injection ───────────────────────
   // topHat = centre - erosion is the small bright structure the erosion
   // removed. It was only feeding alpha; here it is added back on the
@@ -138,6 +151,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // so eroded segments stay eroded and dilated ones keep their fine highlights.
   let detail = clamp(topHat, vec3<f32>(0.0), vec3<f32>(1.0)) * morphBlend * (0.2 + 0.3 * strength);
   var finalRGB = blendRGB + gradient * 0.3 + detail;
+
+  // ── Idea 1: reflection loss per mirror bounce (§12.2E fold count as material) ──
+  // A silvered mirror returns ~91-95 % and the glass tints it cool, so a cell seen after k bounces
+  // is dimmer and bluer. The cell index mod N gives the fold distance from the primary cell
+  // (min(k, N-k): shortest way round the tube). Scaled by the breath, so the plain photo (blend 0)
+  // is untouched and the loss arrives with the mirrors.
+  let folds = min(segmentIndex, segments - segmentIndex);
+  finalRGB = finalRGB * pow(vec3<f32>(0.91, 0.93, 0.955), vec3<f32>(folds * blend));
 
   // ── Idea 1: mirror-seam bevel ───────────────────────────────────────
   // A mirror tube shows a bright bevelled line wherever two reflecting
@@ -148,12 +169,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let seamAngle = min(mirroredAngle, 1.0 - mirroredAngle) * segmentAngle * 0.5;
   let seamPx = seamAngle * radius * resolution.y;
   let seam = exp(-seamPx * 0.7) * smoothstep(0.005, 0.04, radius) * blend;
-  finalRGB += (vec3<f32>(0.9, 0.95, 1.0) * 0.5 + centerSample.rgb * 0.5) * seam * 0.45;
+  finalRGB += (vec3<f32>(0.9, 0.95, 1.0) * 0.5 + centerSample.rgb * 0.5) * seam * 0.45 * (1.0 + treble * 1.2);
 
   let topHatLuma = dot(topHat, vec3<f32>(0.299, 0.587, 0.114));
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clampedUV, 0.0).r;
 
-  textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalRGB, topHatLuma));
+  let outRGBA = vec4<f32>(finalRGB, topHatLuma);
+  textureStore(writeTexture, vec2<i32>(global_id.xy), outRGBA);
+  // HEAD never wrote A although the header documents this packing; A = the same display RGBA.
+  textureStore(dataTextureA, vec2<i32>(global_id.xy), outRGBA);
   textureStore(writeDepthTexture, vec2<i32>(global_id.xy), vec4<f32>(depth, 0.0, 0.0, 0.0));
 }
