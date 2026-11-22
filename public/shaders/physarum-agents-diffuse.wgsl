@@ -1,10 +1,16 @@
-// ═══ PHYSARUM AGENTS — DIFFUSE (pixels) ═══════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Physarum Agents — Diffuse
+//  Category: simulation
+//  Features: temporal-persistence
+//  Complexity: Medium
+//  Upgraded: 2026-11-22
+//  Ideas: sheath anisotropy; fresh-front sparing
+//  A packing: raw trail (.r amount, .g last deposit time). No display write
+// ═══════════════════════════════════════════════════════════════════
 //  First node of the physarum-agents graph (Jones 2010 Lagrangian physarum on the sim ring).
-//  Reads last frame's trail field (dataC), writes the diffused field to dataA:
-//      T = blur3x3(T_prev) * keep        (wrapped: the agents live on a torus)
+//  Reads last frame's trail field (dataC), writes the diffused field to dataA.
 //  The planner copies dataA → dataC before the agent step, so the agents sense this field and
 //  deposit on top of it. CPU spec: scripts/sim_models/physarum_agents.py (`diffuse`).
-//  A/C packing: .r trail, .g time of the last deposit on the texel, .ba unused
 //  zoom_params: .w persistence → keep = mix(0.80, 0.985)
 //  Pheromone bloom: a click drops a fading bump of trail that the network reroutes toward.
 
@@ -44,24 +50,40 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       sum = sum + textureLoad(dataTextureC, wrapTexel(p + vec2<i32>(dx, dy), ri), 0).r;
     }
   }
+  let east = textureLoad(dataTextureC, wrapTexel(p + vec2<i32>(1, 0), ri), 0).r;
+  let west = textureLoad(dataTextureC, wrapTexel(p + vec2<i32>(-1, 0), ri), 0).r;
+  let north = textureLoad(dataTextureC, wrapTexel(p + vec2<i32>(0, 1), ri), 0).r;
+  let south = textureLoad(dataTextureC, wrapTexel(p + vec2<i32>(0, -1), ri), 0).r;
+  let gx = east - west;
+  let gy = north - south;
+  let g2 = gx * gx + gy * gy;
+  let axis = select(vec2<f32>(1.0, 0.0), vec2<f32>(gx, gy) / sqrt(max(g2, 1e-8)), g2 > 1e-6);
+  let alongW = max(abs(axis.x) + abs(axis.y), 1e-4);
+  let along = (east * abs(axis.x) + west * abs(axis.x) + north * abs(axis.y) + south * abs(axis.y)) / (2.0 * alongW);
+  // ── Idea 1: sheath anisotropy — blur along the trail, less across the tube
+  let blurred = mix(sum / 9.0, along, 0.45);
+  let here = textureLoad(dataTextureC, p, 0);
+  let time = u.config.x;
+  let age = max(time - here.g, 0.0);
+  let fresh = exp(-age * 3.0);
   let keep = mix(0.80, 0.985, u.zoom_params.w);
-  var trail = sum / 9.0 * keep;
+  // ── Idea 2: fresh-front sparing — a recent deposit decays less than an abandoned tube
+  let keepFront = mix(keep, min(keep + 0.03, 0.992), fresh);
+  var trail = blurred * keepFront;
 
   // Pheromone bloom: each recent click adds a soft bump for BLOOM_LIFE seconds.
   let res = vec2<f32>(ri);
   let uv = (vec2<f32>(p) + 0.5) / res;
   let aspect = res.x / max(res.y, 1.0);
-  let time = u.config.x;
   let nRipple = min(u32(u.config.y), 50u);
   for (var i = 0u; i < nRipple; i = i + 1u) {
     let rp = u.ripples[i];
-    let age = time - rp.z;
-    if (age >= 0.0 && age < BLOOM_LIFE) {
+    let bloomAge = time - rp.z;
+    if (bloomAge >= 0.0 && bloomAge < BLOOM_LIFE) {
       let d = (uv - rp.xy) * vec2<f32>(aspect, 1.0);
-      trail = trail + 0.25 * exp(-dot(d, d) / (0.035 * 0.035)) * (1.0 - age / BLOOM_LIFE);
+      trail = trail + 0.25 * exp(-dot(d, d) / (0.035 * 0.035)) * (1.0 - bloomAge / BLOOM_LIFE);
     }
   }
 
-  let here = textureLoad(dataTextureC, p, 0);
   textureStore(dataTextureA, p, vec4<f32>(min(trail, TRAIL_CAP), here.g, 0.0, 0.0));
 }

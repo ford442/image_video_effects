@@ -1,4 +1,12 @@
-// ═══ PHYSARUM AGENTS — STEP (sim ring, simState dispatch) ═════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Physarum Agents — Step
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, sim-ring
+//  Complexity: Medium
+//  Upgraded: 2026-11-22
+//  Ideas: crowded-tube avoidance; deposit satiation
+//  A packing: raw trail (.r amount, .g deposit time). No display write
+// ═══════════════════════════════════════════════════════════════════
 //  One invocation per agent (Jones 2010). Agents live in the @group(1) sim ring
 //  (src/contracts/bind_group1.json); there is no neighbour search, so no spatial hash.
 //  simState[i]: .xy position (px, torus), .z heading (rad), .w alive flag
@@ -112,6 +120,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let l = sense(a.xy, a.z + sa, so, res, ri, lure);
   let r = sense(a.xy, a.z - sa, so, res, ri, lure);
   let coin = select(-1.0, 1.0, rnd(&seed) < 0.5);
+  // ── Idea 1: crowded-tube avoidance — a saturated cell ahead forces the U-turn
+  let aheadPos = wrapPos(a.xy + vec2<f32>(cos(a.z), sin(a.z)) * so, res);
+  let aheadTrail = textureLoad(dataTextureC, texelOf(aheadPos, ri), 0).r;
+  let crowded = aheadTrail > TRAIL_CAP * 0.72;
   var turn = 0.0;
   if (f > l && f > r) {
     turn = 0.0;
@@ -122,6 +134,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   } else {
     turn = -ra;
   }
+  turn = select(turn, coin * ra, crowded);
   var h = a.z + turn + WANDER * (rnd(&seed) - 0.5);
   h = h - TAU * floor(h / TAU);
   let pos = wrapPos(a.xy + vec2<f32>(cos(h), sin(h)) * ss, res);
@@ -130,5 +143,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   // Deposit: every agent on this texel writes this exact value (see the header).
   let t = texelOf(pos, ri);
   let c = textureLoad(dataTextureC, t, 0);
-  textureStore(dataTextureA, t, vec4<f32>(min(c.r + dep, TRAIL_CAP), u.config.x, 0.0, 0.0));
+  // ── Idea 2: deposit satiation — a full texel takes less new trail. Same value for every agent on it.
+  let satiation = 1.0 / (1.0 + c.r * 0.35);
+  textureStore(dataTextureA, t, vec4<f32>(min(c.r + dep * satiation, TRAIL_CAP), u.config.x, 0.0, 0.0));
 }

@@ -1,26 +1,15 @@
-// ═══ CHROMATOGRAPHIC FLUID — DIFFUSE (Jacobi) ══════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  Chromatographic Fluid — Diffuse
+//  Category: simulation
+//  Features: multi-pass
+//  Complexity: Medium
+//  Upgraded: 2026-11-22
+//  Ideas: paper saturation; heat run
+//  A packing: raw dye.rgb + temperature. No display write
+// ═══════════════════════════════════════════════════════════════════
 //  Per-channel viscosity: R sticky, B runny. Repeat 2× under pass budget.
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 fn load(p: vec2<i32>, resI: vec2<i32>) -> vec4<f32> {
   return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), resI - vec2<i32>(1)), 0);
@@ -45,6 +34,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let e = load(pixel + vec2<i32>(1, 0), resI).rgb;
   let w = load(pixel + vec2<i32>(-1, 0), resI).rgb;
   let lap = (n + s + e + w) * 0.25 - c.rgb;
-  let dye = clamp(c.rgb + lap * vis, vec3<f32>(0.0), vec3<f32>(4.0));
+  // ── Idea 1: paper saturation — dense dye diffuses less
+  let mass = max(c.r + c.g + c.b, 0.0);
+  let sat = 1.0 / (1.0 + mass * 0.35);
+  // ── Idea 2: heat run — warm solvent (temperature already in .a) runs farther
+  let heat = 0.7 + 0.6 * clamp(c.a, 0.0, 1.0);
+  let dye = clamp(c.rgb + lap * vis * sat * heat, vec3<f32>(0.0), vec3<f32>(4.0));
   textureStore(dataTextureA, pixel, vec4<f32>(dye, c.a));
 }
