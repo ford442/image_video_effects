@@ -1,0 +1,26 @@
+# NOTES — fork E (temporal-rgb-ghost, chrono-luma-slit-scan)
+
+Harness: `agents/mr_hist.mjs` (engine-faithful ring: holds the shader's own presented output; head in extraBuffer[4]; audio + FFT in extraBuffer; [133..255] zeroed). Scratch: `.../scratchpad/e/` (g_head_*/g_new_*/s_head_*/s_new_* PNGs, x_* attribution variants).
+
+## temporal-rgb-ghost — 2 new ideas + 5 rescues (Upgraded bumped, `Ideas:` extended)
+- **KEEP VERBATIM (all kept):** 4 params + roles; R live + leading red; FBM displacement gated by motion; fractional G delay; B comet-tail integration; disagreement fringe (intent); trail falloff (the "vignette"); A = display RGBA; ring wrap at textureNumLayers.
+- **ADD 1 — highlight-weighted comet (tube comet-tailing):** `tapWeight` = 1+3·L² per tail tap (same taps, normalised by summed weight). `// ── Idea 1` in main.
+- **ADD 2 — held-pointer time focus:** `held`/`lens` (exp(−18 r²), aspect-corrected) collapses G/B ages toward 0 and fades displacement inside the lens. Idle = unchanged. `// ── Idea 2`. Measured: held vs free differs 0.051 (sum rgb) inside the lens, exactly 0.0 beyond r=0.5.
+- **RESCUES (default look changes: the photo comes back):** HEAD turned a static photo black with a saturated cyan blob at frame centre (meanL 0.105 vs source ≈0.31; 120 frames: worse). Ring = own output (BINDING_CONTRACT:141) → two compounding feedback errors, attributed with scratch variants: no-vignette ⇒ meanL 0.913 (white-out from G/B gain blend×boost≈1.0); no-boost ⇒ 0.066 (black from the whole-picture vignette re-read each frame); neither ⇒ 0.313. R1 vignette→`trailFalloff` weight on the ghost deviation only (also removes the reversed-edge `smoothstep(0.5, 0.5−s, d)`, indeterminate in WGSL); R2 luma boost→`liftCh` bounded lift, moving pixels only, soft ceiling; R3 tube-lag discharge `leak = clamp(1−0.96/boost, 0.12, 0.7)` ⇒ loop gain ≤ 0.96 for every slider value, so no ghost latches; R4 disagreement fringe compares luma of the two delayed frames (HEAD: histG.g vs histB.b = a static photo's own g−b chroma ⇒ whole frame 45% desaturated); R5 `mouse-driven` tag now true. Static photo after: meanL 0.308 at 40 and 120 frames (stable).
+- **Open call:** at default the comets are subtle (blend 0.8 × (1−leak 0.23)); `displace` 0.8 + `g_delay` 0.3 gives vivid cyan comets (g_new_vivid.png). Presets keep working; if a bolder default is wanted, raise `leak`'s floor or the lift coefficient.
+- **A packing:** display RGBA (unchanged). Alpha formula unchanged (`current.a*0.5 + ghostSpread*3 + …`): the canvas is `alphaMode:'opaque'` (src/contracts/canvas_configure.json) so alpha never dims the picture; it is a semantic channel only. Static photo now reads α≈0.5 (was ≈1 because the picture was destroyed). Left for the coordinator.
+- **Tags:** `upgraded-rgba` dropped from `Features:` and JSON (no ACES; boost is bounded ≤1, nothing emits HDR). `mouse-driven` kept (true). JSON `description` extended; `params` untouched.
+- **Diff vs HEAD:** 100% px differ (rescue). **Timing:** ≈0.97–0.99 (p25/paired-median, 120 cycles @128); mins noisy under load 13–30.
+- **Not done / not verifiable here:** real-GPU look; the 2-frame startup transient while the ring fills (inherent to every history shader).
+
+## chrono-luma-slit-scan — 2 new ideas, no picture-level rescue (Upgraded bumped)
+- **KEEP VERBATIM (all kept):** 4 params + roles; luma→age map; H/V runners; runner windows; raised-cosine shutter; slit-travel smear; isochrones; held-pointer spread narrowing; ripple warp; alpha formula; A = display RGBA.
+- **ADD 1 — runner wake (scan-beam persistence):** `dH`/`dV` = the runners' own phase (d≈0 at the beam, →1 just behind it); `wake = exp(−5(1−max(dH,dV)))`; `windowGate = max(bandGate, 0.6·wake·windowOpen)`. Verified numerically with a probe variant: runner peaks move +y (23→27 px over 0.05 s) and wake is ≈0.55 four pixels behind a peak vs ≈0.01 four pixels ahead (sawtooth trailing behind). Isochrones hide inside the wake (they already keyed on `windowGate`).
+- **ADD 2 — long-exposure integration:** deep ages (ageLuma ≥ ~1.5) average the frame at that age with one at ~0.6× it, weight `0.8·smoothstep(1.5,5,ageLuma)·(1−windowGate)` (windows stay crisp). One extra ring tap. (A 2-tap version cost ~1.4×; trimmed.)
+- **Ablation (mean abs diff when the idea is removed, 40 frames):** wake 0.019, integration 0.013 — each findable; ring feedback entangles them (HEAD-vs-NEW 72.8% px >2/255).
+- **Tags verified:** `click-reactive` TRUE (u.ripples loop). `fast-motion` UNEARNED (bulk commit 07a46977 "push fix" 2026-08-14; no fast-motion brief anywhere) → removed. `upgraded-rgba` UNEARNED (no ACES, passthrough composite) → removed. `mouse-driven` was missing but the held pointer changes the picture → added.
+- **Timing:** p25 1.06–1.18, paired-median 0.98–1.06 (120 cycles @128, load 13–30; min ratios 0.92–1.54 are noise). Coordinator: re-time on a quiet box.
+- **Rows:** no §12.2 rows used by either file. Schmitt/field-interlace deliberately unused (A.a semantic, C unread → no honest latch channel).
+
+## Gates (both files)
+precommit 2/2 · naga-wasm 2/2 · audit_dead_sliders PASS (all four sliders read in each) · audit_extrabuffer PASS (no writes; [4] read-only) · nan=0 across static/moving/audio/silence/held, ring depths 1/4/8.

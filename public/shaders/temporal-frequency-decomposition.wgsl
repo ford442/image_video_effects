@@ -3,8 +3,13 @@
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-08-02 (Algorithmist — swarm b26), 2026-09-21
-//  Ideas: Hann-windowed DFT; DFT phase -> glow hue
+//  Upgraded: 2026-08-02 (Algorithmist — swarm b26), 2026-09-21, 2026-11-22
+//  Ideas: Hann-windowed DFT; DFT phase -> glow hue; DC-detrended DFT
+//  A packing: display RGBA (A = writeTexture). The ring holds this shader's OUTPUTS, so the analysis sees its own glow.
+//  Rescue (2026-11-22): static pixels leaked into the response (DC is inside the Hann mainlobe at the default frequency, so a still
+//    bright background glowed and the lens lit it into a blob) — fixed by Idea 3; per-region FFT voices read plasmaBuffer[1..8], which the
+//    engine never writes — now read from the real FFT bins extraBuffer[5..132]; the lens's pow(e, 1 − 0.25·lens) made a self-sustaining
+//    glow ghost through the output-ring feedback — now a dead-zone sharpen; glow tone-mapped (ACES on the emitted term only).
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
@@ -18,15 +23,18 @@
 //  The result is overlaid on the current frame.
 //
 //  Interaction (the 'mouse-driven' tag is now honestly wired):
-//    - Sprung analysis lens: the raw cursor is the target of a
-//      critically-damped spring; inside the lens the frequency
-//      response is sharpened and the glow widened — a Fourier
-//      microscope that focuses wherever the pointer roams.
+//    - Analysis lens: the cursor is the target of a critically-damped
+//      spring whose state lives in extraBuffer[133..137]; the engine zeroes
+//      that range every frame, so in practice the lens tracks the cursor
+//      1:1. Inside the lens the frequency response is boosted ×1.8 and
+//      dead-zone sharpened and the glow widened — a Fourier microscope
+//      that follows the pointer.
 //    - Click tuning-fork pings: each click injects a decaying
 //      oscillation at the target frequency into the DFT accumulators,
 //      so clicks light up even in perfectly static scenes.
 //    - Per-region FFT voices: 8 vertical bands each ride their own
-//      spectrum bin, so the glow shimmers spatially with audio.
+//      slice of the engine FFT (extraBuffer[5..132]), so the glow
+//      shimmers spatially with audio.
 //
 //  zoom_params layout:
 //    x = target frequency (0→0.05 cycles/frame, 1→0.5, default 0.25→~0.18)
@@ -40,37 +48,25 @@
 //    [133..255] persistent shader state ONLY:
 //      [133]=lensPosX  [134]=lensPosY  [135]=lensVelX  [136]=lensVelY
 //      [137]=springInitialized
-//  NOTE: extraBuffer[0..2] are NOT bass/mid/treble. Audio lives in
-//  plasmaBuffer: [0] = global levels, [1..8] = per-voice FFT bins.
+//  NOTE: audio = plasmaBuffer[0].xyz (bass/mid/treble); per-band voices
+//  read the FFT bins extraBuffer[5..132] (read-only). plasmaBuffer[1..8]
+//  is never written by the engine.
 // ═══════════════════════════════════════════════════════════════════
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
+#include "_prelude.wgsl"
+// zoom_params: x=freq, y=glowBright, z=glowHue, w=baseBlend
 @group(0) @binding(13) var historyTexture: texture_2d_array<f32>;
-
-struct Uniforms {
-  config: vec4<f32>,      // x=time, y=rippleCount, z=resX, w=resY
-  zoom_config: vec4<f32>, // x=time, y=mouseX, z=mouseY, w=mouseDown
-  zoom_params: vec4<f32>, // x=freq, y=glowBright, z=glowHue, w=baseBlend
-  ripples: array<vec4<f32>, 50>,
-};
 
 const TAU: f32 = 6.28318530718;
 const MAX_FRAMES: u32 = 8u;  // current + up to 7 history layers
 const SPRING_DT: f32 = 0.0166667;  // fixed 60 Hz integration step
 const LENS_RADIUS: f32 = 0.35;     // aspect-corrected lens radius
 const PING_RADIUS: f32 = 0.2;      // aspect-corrected click ping radius
+
+// ACES filmic fit — applied to the EMITTED glow only (never the photo path); input is clamped ≥ 0 by the caller.
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  return clamp((x * (2.51 * x + 0.03)) / max(x * (2.43 * x + 0.59) + 0.14, vec3<f32>(0.001)), vec3<f32>(0.0), vec3<f32>(1.0));
+}
 
 // Simple hue→RGB conversion
 fn hue2rgb(h: f32) -> vec3<f32> {
@@ -147,20 +143,41 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // barely selects. A Hann window pushes the sidelobes to ~31 dB. It is
   // normalised by the window's own sum so a pure tone keeps HEAD's scale.
   // Real part (cosine weights) and imaginary part (sine weights).
+  // Idea 3 (DC-detrended) rides the SAME taps: meanAcc = Σw·x, cosAcc = Σw·cos, sinAcc = Σw·sin.
   let w0 = 0.5 - 0.5 * cos(TAU * 0.5 / fN);
   var realAcc = current.rgb * w0;   // cos(0) = 1
   var imagAcc = vec3<f32>(0.0);     // sin(0) = 0
   var sumW = w0;
+  var meanAcc = current.rgb * w0;
+  var cosAcc  = w0;
+  var sinAcc  = 0.0;
 
   for (var age: u32 = 1u; age < frames; age = age + 1u) {
     let layer = (historyHead + histDepth - age) % histDepth;
     let hist  = textureSampleLevel(historyTexture, u_sampler, uv, i32(layer), 0.0);
     let t     = f32(age);
     let w     = 0.5 - 0.5 * cos(TAU * (t + 0.5) / fN);
-    realAcc += hist.rgb * w * cos(TAU * freq * t);
-    imagAcc += hist.rgb * w * sin(TAU * freq * t);
+    let cw    = w * cos(TAU * freq * t);
+    let sw    = w * sin(TAU * freq * t);
+    realAcc += hist.rgb * cw;
+    imagAcc += hist.rgb * sw;
+    meanAcc += hist.rgb * w;
+    cosAcc  += cw;
+    sinAcc  += sw;
     sumW += w;
   }
+
+  // ── Idea 3: DC-detrended DFT ──────────────────────────────────────
+  // With only 8 samples the DC lobe of a Hann window is ±2 bins wide: a bright
+  // STILL pixel leaked 29 % of itself into the response at the default 0.16
+  // cycles/frame (90 % at the lowest setting), so a static background glowed
+  // and the lens lit it into a blob. On a 1-layer ring the 'DFT' was the picture.
+  // A real spectral estimate removes the window-weighted mean first:
+  //   X' = Σw·x·e^{-iωt} − μ·Σw·e^{-iωt},  μ = Σw·x / Σw.
+  // Static pixels now give exactly 0 at every frequency.
+  let meanC = meanAcc / max(sumW, 1e-4);
+  realAcc = realAcc - meanC * cosAcc;
+  imagAcc = imagAcc - meanC * sinAcc;
   // Pings were tuned against a /8 normalisation; keep their brightness.
   let pingScale = sumW / fN;
 
@@ -187,13 +204,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Scalar energy level for glow brightness
   let energy = (magnitude.r + magnitude.g + magnitude.b) / 3.0;
 
+
   // ── Lens focus: sharpen response, widen glow inside the lens ─────
   var energyFocused = energy * (1.0 + lensMask * 0.8);
-  energyFocused = pow(clamp(energyFocused, 0.0, 4.0), 1.0 - lensMask * 0.25);
+  // Rescue (2026-11-22): HEAD used pow(e, 1 − 0.25·lens). The ring holds this shader's own
+  // OUTPUT, and x^0.75 has unbounded small-signal gain, so a disc that crossed the lens left a
+  // self-sustaining glow ghost (a limit cycle) long after it had left the 8-frame window.
+  // The lens now sharpens with a dead-zone (weak responses halved, strong ones kept), which
+  // can never exceed the ×1.8 lens gain above, so the loop gain stays below 1.
+  energyFocused = clamp(energyFocused, 0.0, 4.0);
+  energyFocused = energyFocused * mix(1.0, smoothstep(0.04, 0.35, energyFocused), 0.5 * lensMask);
 
   // ── Per-region FFT voices: 8 vertical bands ride their own bins ──
   let band       = min(u32(uv.x * 8.0), 7u);
-  let voice      = plasmaBuffer[(band % 8u) + 1u].x * 0.4;
+  // Rescue: plasmaBuffer[1..8] is never written by the engine (voice was always 0).
+  // Each band now rides 4 taps of its own 16-bin slice of the real FFT (extraBuffer[5..132]).
+  let binBase    = 5u + band * 16u;
+  let voiceBins  = 0.25 * (clamp(extraBuffer[binBase], 0.0, 1.0) + clamp(extraBuffer[binBase + 5u], 0.0, 1.0)
+                         + clamp(extraBuffer[binBase + 10u], 0.0, 1.0) + clamp(extraBuffer[binBase + 15u], 0.0, 1.0));
+  let voice      = voiceBins * 0.4;
   let voiceBoost = 1.0 + bass * 0.6 + voice;   // band voice + global bass
 
   // ── Idea 2: DFT phase -> glow hue ─────────────────────────────────
@@ -206,7 +235,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let phase   = atan2(dot(imagAcc, lumaW), dot(realAcc, lumaW)) / TAU;   // -0.5..0.5
   let phaseHue = fract(glowHue + phase * 0.5 * smoothstep(0.01, 0.06, energy));
 
-  let glowColor = hue2rgb(phaseHue) * energyFocused * glowBright * voiceBoost;
+  // Emitted-light tone map (P-ACES b): only the glow is compressed, the photo path is untouched.
+  let glowColor = aces(max(hue2rgb(phaseHue) * energyFocused * glowBright * voiceBoost, vec3<f32>(0.0)));
 
   // Composite: base + glow
   let base   = current.rgb * baseBlend;
