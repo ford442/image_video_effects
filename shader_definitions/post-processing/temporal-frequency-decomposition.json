@@ -2,7 +2,7 @@
   "id": "temporal-frequency-decomposition",
   "name": "Temporal Frequency Decomposition",
   "url": "shaders/temporal-frequency-decomposition.wgsl",
-  "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content.",
+  "description": "Discrete temporal Fourier analysis across the 8-frame history ring. Static pixels cancel to near-zero; pixels flickering or oscillating near the target frequency glow brightly. Reveals hidden temporal rhythms in video content. The window-weighted mean is removed before the transform (DC-detrended), so still content never leaks into the glow; the cursor lens, click pings and the 8 per-region audio voices (real FFT bins) are kept.",
   "tags": [
     "temporal",
     "frequency",

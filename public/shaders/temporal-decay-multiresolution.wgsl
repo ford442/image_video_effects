@@ -1,10 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Decay Multiresolution
 //  Category: post-processing
-//  Features: mouse-driven, audio-reactive, temporal, history-ring, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, temporal, history-ring
 //  Complexity: High
-//  Upgraded: 2026-10-30 (prev 2026-10-04)
-//  Ideas: decay-shaped timescale kernels; time-inversion click rings; cross-scale cascade; stationary mute
+//  Upgraded: 2026-10-30 (prev 2026-10-04), 2026-11-22
+//  Ideas: decay-shaped timescale kernels; time-inversion click rings; cross-scale cascade; stationary mute; scale-coupled timescales (slower bands are spatially coarser); temporal band-pass glint (Eulerian-style onset overshoot)
 //  A packing: display RGB, A = ultra-slow luminance
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
@@ -13,11 +13,13 @@
 //  By: Copilot
 //
 //  Sibling of sim-decay-system-rgba. Maps the four output channels
-//  to four distinct temporal timescales pulled from the history ring:
-//    R = fast   (avg of ages 1–2): recent flickers and fast motion
-//    G = medium (avg of ages 4–5): medium-speed movement
-//    B = slow   (age 7):           slow drift and near-static regions
+//  to four distinct temporal timescales pulled from the history ring
+//  (exponentially weighted, overlapping windows — see Idea 1 below):
+//    R = fast   (ages 1–3): recent flickers and fast motion
+//    G = medium (ages 3–6): medium-speed movement
+//    B = slow   (ages 5–7): slow drift and near-static regions
 //    A = ultra  (avg of all 7):    scene-level accumulated luminance
+//  The ring holds this shader's own previous OUTPUTS (slotDispatch: blitReadTex = writeTex).
 //  Per-channel decay constants let each timescale fade independently.
 //  Stacks cleanly behind sim-decay-system-rgba in slot 0 → slot 1.
 //
@@ -28,7 +30,7 @@
 //    w = blend with original (0→full multiRes, 1→original, default 0.3)
 //
 //  extraBuffer layout:
-//    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead
+//    [0]=bass  [1]=mid  [2]=treble  [3]=reserved  [4]=historyHead  [5..132]=FFT bins
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -115,7 +117,11 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // Per-channel decay rates; bass lengthens the fast-decay trail on beats
   let regionBin = (u32(floor(uv.x * 4.0)) + u32(floor(uv.y * 4.0)) * 5u) % 8u + 1u;
-  let fftRegion = plasmaBuffer[regionBin].x;
+  // Rescue (2026-11-22): HEAD read plasmaBuffer[1..8], which the engine never uploads
+  // (only plasmaBuffer[0]), so this term was a permanent 0. The per-region band energy
+  // now comes from the real FFT bins: region 1..8 → one bin per 16-bin slice.
+  let fftBin = 5u + (regionBin - 1u) * 16u + 2u;
+  let fftRegion = select(0.0, clamp(extraBuffer[fftBin], 0.0, 1.0), fftBin < arrayLength(&extraBuffer));
   let decayFast   = clamp(0.82 + u.zoom_params.x * 0.15 + bass * 0.05 + fftRegion * 0.01, 0.0, 0.999);
   let decayMedium = clamp(0.88 + u.zoom_params.y * 0.10 + mids * 0.02 + fftRegion * 0.008, 0.0, 0.999);
   let decaySlow   = clamp(0.93 + u.zoom_params.z * 0.06 + treble * 0.006, 0.0, 0.999);
@@ -141,7 +147,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var ultraSum = vec4<f32>(0.0);
   let ultraCount = max(reach, 1u);
   for (var age: u32 = 1u; age <= ageCap; age = age + 1u) {
-    hs[age] = frameAt(historyUV, historyHead, histDepth, age, current);
+    // ── Idea 1: scale-coupled timescales ──────────────────────────
+    // A temporal pyramid's slower levels are also spatially coarser. Each ring age is
+    // read at a tap offset that grows with age (0 px for ages 1–2, 1.2 for 3–4, 2.4 for
+    // 5–7; golden-angle direction per age; scaled by the slow-decay slider so a longer
+    // memory is a coarser one). The medium/slow windows average their ages at different
+    // offsets, i.e. a 3–4 tap softening of the slow band at zero extra samples.
+    let tapR = select(select(0.0, 1.2, age >= 3u), 2.4, age >= 5u) * (0.6 + 0.8 * u.zoom_params.z);
+    let tapA = f32(age) * 2.39996323;
+    let tapUV = clamp(historyUV + vec2<f32>(cos(tapA), sin(tapA)) * tapR / res, vec2<f32>(0.0), vec2<f32>(1.0));
+    hs[age] = frameAt(tapUV, historyHead, histDepth, age, current);
     if (age <= ultraCount) { ultraSum += hs[age]; }
   }
   // 1-layer ring: no history at all, so every timescale is the live frame.
@@ -168,6 +183,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   if (fastW > 0.0) { fastK /= fastW; } else { fastK = oldest; }
   if (medW > 0.0) { medK /= medW; } else { medK = oldest; }
   if (slowW > 0.0) { slowK /= slowW; } else { slowK = oldest; }
+
+  // ── Idea 2: temporal band-pass glint ───────────────────────────
+  // fastK − slowK is the file's own band-pass (stationary mute below uses only its
+  // magnitude). Its positive part is what has just risen above the long-run baseline —
+  // an onset — and lifts the held colour a little, the way Eulerian video magnification
+  // adds an amplified band back. Positive part only, so the max-hold floor (out ≥ live
+  // frame) stands; capped at 0.2 and clamped below so the ring feedback stays bounded.
+  let bpL = dot(fastK.rgb - slowK.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  // Gate: only where consecutive ring frames really differ. Ages 1 and 2 are read at the
+  // same tap offset (Idea 1), so |hs[1] − hs[2]| is purely temporal; without it the slow
+  // band's spatial offset would read a static texture gradient as an "onset".
+  let act = select(0.0, smoothstep(0.01, 0.08, abs(dot(hs[1].rgb - hs[2].rgb, vec3<f32>(0.2126, 0.7152, 0.0722)))), ageCap >= 2u);
+  let glint = clamp(bpL, 0.0, 0.2) * 0.8 * act;
 
   // ── Idea 2: stationary mute ─────────────────────────────────────
   // Measured before the cascade, so "still" means the timescales already
@@ -201,7 +229,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // Alpha channel encodes ultra-slow luminance (useful for downstream slots)
   let a = stillL;
 
-  let multiRes = vec4<f32>(r, g, b, a);
+  let glinted = min(vec3<f32>(r, g, b) + vec3<f32>(glint), max(vec3<f32>(1.0), current.rgb));
+  let multiRes = vec4<f32>(glinted, a);
   let localOrigBlend = clamp(origBlend - mouseLens * 0.15 - clickEcho * 0.25, 0.0, 1.0);
   let output   = mix(multiRes, current, localOrigBlend);
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;

@@ -55,7 +55,6 @@
     "interactive-origami-coupled": "eligible",
     "sim-fluid-feedback-field-pass2": "eligible",
     "sim-fluid-feedback-field-pass3": "eligible",
-    "temporal-frequency-decomposition": "eligible",
     "voronoi-chaos": "eligible",
     "voronoi-faceted-glass": "eligible"
   }

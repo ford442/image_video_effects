@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Chrono Luma Slit Scan
 //  Category: post-processing
-//  Upgraded: 2026-10-04, 2026-11-15
-//  Ideas: isochrone contour lines at integer-age seams; scan-runner windows onto the oldest frame; slit-travel smear; raised-cosine shutter
+//  Upgraded: 2026-10-04, 2026-11-15, 2026-11-22
+//  Ideas: isochrone contour lines at integer-age seams; scan-runner windows onto the oldest frame; slit-travel smear; raised-cosine shutter; runner wake (scan-beam persistence); long-exposure integration
 //  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
@@ -70,7 +70,18 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let ageLuma = 1.0 + (1.0 - lumaAdjusted) * f32(maxAge - 1u);
   // Idea 2 — runner time-windows: inside the sweeping scan bands the age jumps to the
   // oldest frame the ring holds, so the runners scan old time across the picture.
-  let windowGate = smoothstep(0.3, 0.75, scanRunner) * step(1.5, f32(reach));
+  let windowOpen = step(1.5, f32(reach));
+  let bandGate = smoothstep(0.3, 0.75, scanRunner) * windowOpen;
+  // ── Idea 1: runner wake (scan-beam persistence) ─────────────────
+  // A scanning beam keeps a decaying trace behind it. Each runner's phase (the same phase that
+  // drives slitBandH / slitBandV) gives d = 0 at the beam and d -> 1 just behind it (the runners
+  // travel toward +y / +x); exp(-5 (1-d)) is a sharp leading edge on the side the runner has just
+  // passed and an exponential tail back toward the luma age. The window onto the oldest frame
+  // therefore drags a fading trail instead of a symmetric blip.
+  let dH = fract((uv.y * 48.0 - time * (14.0 + bass * 6.0) - 1.5707963) / 6.2831853);
+  let dV = fract((uv.x * 52.0 - time * (18.0 + treble * 8.0) - 1.5707963) / 6.2831853);
+  let wake = exp(-5.0 * (1.0 - max(dH, dV)));
+  let windowGate = max(bandGate, 0.6 * wake * windowOpen);
   let ageFlt  = mix(ageLuma, f32(max(reach, 1u)) - 0.001, windowGate);
   let age     = clamp(u32(ageFlt), 1u, max(reach, 1u));
   let ageFrac = fract(ageFlt);
@@ -99,7 +110,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // ── Idea 4: raised-cosine shutter ──────────────────────────────
   // The two frames overlap like a slit exposure. Isochrones below still key off raw ageFrac.
   let shutter = 0.5 - 0.5 * cos(clamp(ageFrac, 0.0, 1.0) * 3.14159265);
-  let slitColor = mix(frameA, frameB, shutter);
+  let slitShot = mix(frameA, frameB, shutter);
+  // ── Idea 2: long-exposure integration ───────────────────────────
+  // A slit exposes longer where the scene is darker, and a longer exposure integrates more of
+  // what happened. Where the chosen age is deep (>= ~2 frames) the colour becomes the mean of
+  // the frame at that age and a shallower one (about 0.6 of it), weighted by how deep the age
+  // is, so dark regions show the blur of the span instead of one frozen frame.
+  let ageM = max(1u, u32(f32(age) * 0.6));
+  let tapM = frameAt(sampleUV, historyHead, histDepth, ageM, current);
+  let expo = 0.8 * smoothstep(1.5, 5.0, ageLuma) * (1.0 - windowGate);
+  let slitColor = mix(slitShot, (slitShot + tapM) * 0.5, expo);
 
   // ── Idea 3: slit-travel smear ──────────────────────────────────
   // A horizontal band travels in y, a vertical band in x. Two taps along that travel, same age.
