@@ -7,7 +7,8 @@
     "multi-pass-3",
     "compute-shader",
     "post-processing",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "multipass": {
     "pass": 3,

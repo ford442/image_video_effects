@@ -6,7 +6,8 @@
   "features": [
     "multi-pass-1",
     "compute-shader",
-    "temporal"
+    "temporal",
+    "audio-reactive"
   ],
   "multipass": {
     "pass": 1,
