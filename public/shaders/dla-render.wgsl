@@ -1,30 +1,17 @@
-// ═══ DLA CRYSTALS — SEED + RENDER ═════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  DLA Crystals — Render
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Complexity: Medium
+//  Upgraded: 2026-11-22
+//  Ideas: tip glow; facet glint; growth rings
+//  A packing: raw sim (frozen, time, hue, facet angle). ACES on writeTexture only
+// ═══════════════════════════════════════════════════════════════════
 //  Reads the frozen field after the walker pass (dataA → dataC barrier),
 //  plants seeds (centre on ring re-arm, pointer, ripples), draws crystal +
 //  fading walker trails, and carries the field forward in dataA.
-//  A/C packing: .r frozen, .g freeze time (frozen) / last visit time (free),
-//               .b hue, .a branch id
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 struct SimParams {
   stateCount: u32,
@@ -39,6 +26,16 @@ fn hash21(p: vec2<f32>) -> f32 {
   var p3 = fract(vec3<f32>(p.x, p.y, p.x) * 0.1031);
   p3 = p3 + dot(p3, vec3<f32>(p3.y + 33.33, p3.z + 33.33, p3.x + 33.33));
   return fract((p3.x + p3.y) * p3.z);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+  let a = 2.51;
+  let b = 0.03;
+  let c = 2.43;
+  let d = 0.59;
+  let e = 0.14;
+  let y = max(x, vec3<f32>(0.0));
+  return clamp((y * (a * y + b)) / (y * (c * y + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hueToRgb(hue: f32, c: f32) -> vec3<f32> {
@@ -105,20 +102,36 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
 
   var col = src.rgb * 0.65;
+  var edge = 0.0;
+  var trail = 0.0;
   if (st.r > 0.5) {
     let rgb = hueToRgb(st.b + st.a * 0.2, 0.8);
     let glow = exp(-max(time - st.g, 0.0) * 0.4) * 0.4 + 0.6;
-    let edge = 1.0 - neighborFrozen(pixel, resI);
-    col = rgb * glow + vec3<f32>(edge * 0.35);
-    let sparkle = pow(hash21(uv * 1000.0 + vec2<f32>(time * 10.0)), 8.0) * (0.35 + treble * 0.25);
+    edge = 1.0 - neighborFrozen(pixel, resI);
+    col = rgb * glow;
+    // ── Idea 1: tip glow — exposed tips take a cool highlight; the interior stays the body
+    col = col + vec3<f32>(0.72, 0.88, 1.0) * edge * 0.55;
+    // ── Idea 2: facet glint — the growth angle the walker stored catches a fixed light
+    let facetAng = st.a * 6.2831853;
+    let glint = pow(max(cos(facetAng - 0.9), 0.0), 8.0);
+    col = col + vec3<f32>(1.0) * glint * (0.15 + edge * 0.45);
+    // ── Idea 3: growth rings — freeze age lays faint annuli, one shell per generation
+    let age = max(time - st.g, 0.0);
+    let rings = 0.5 + 0.5 * sin(age * 7.0);
+    col = col + rgb * rings * 0.12;
+    let sparkle = pow(max(hash21(uv * 1000.0 + vec2<f32>(time * 10.0)), 0.0), 8.0) * (0.35 + treble * 0.25);
     col += vec3<f32>(sparkle);
   } else if (st.g > 0.0) {
     // Walker trail: brightest where a walker just passed, fading over ~0.3 s.
-    let trail = exp(-max(time - st.g, 0.0) * 8.0);
+    trail = exp(-max(time - st.g, 0.0) * 8.0);
     col += hueToRgb(st.b, 0.6) * trail * 0.45;
   }
 
-  textureStore(writeTexture, pixel, vec4<f32>(clamp(col, vec3<f32>(0.0), vec3<f32>(1.5)), 1.0));
-  textureStore(writeDepthTexture, pixel, vec4<f32>(depth, 0.0, 0.0, 0.0));
+  let frozenA = step(0.5, st.r);
+  let alpha = clamp(src.a * 0.35 + frozenA * (0.55 + edge * 0.4) + trail * 0.5, 0.0, 1.0);
+  let display = aces(col);
+  textureStore(writeTexture, pixel, vec4<f32>(display, alpha));
+  let depthOut = clamp(mix(depth, 0.2 + edge * 0.45, frozenA), 0.0, 1.0);
+  textureStore(writeDepthTexture, pixel, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, pixel, st);
 }

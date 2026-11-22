@@ -2738,8 +2738,17 @@
       ]
     },
     "dla-crystals": {
-      "hash": "9a3efcbc76840f4c",
-      "history": []
+      "hash": "44cbb6cddb1eb615",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "44cbb6cddb1eb615",
+          "prev_hash": "9a3efcbc76840f4c",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
+        }
+      ]
     },
     "double-exposure-zoom": {
       "hash": "e18b517d21d8f033",
@@ -9053,7 +9062,7 @@
       ]
     },
     "gen-lichtenberg-storm": {
-      "hash": "2991565e3030f407",
+      "hash": "5a323ec51c361716",
       "history": [
         {
           "event": "upgraded",
@@ -9070,6 +9079,14 @@
           "prev_hash": "04533de375d0ebc4",
           "commit": "a0755fe9",
           "note": "2026-11-19 generative field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-19-gen-field-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "5a323ec51c361716",
+          "prev_hash": "2991565e3030f407",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
         }
       ]
     },
@@ -9289,7 +9306,7 @@
       ]
     },
     "gen-luminescent-chrono-fluid-astrolabe": {
-      "hash": "8e42c4bc0242f9df",
+      "hash": "9990c0e8c92084eb",
       "history": [
         {
           "event": "upgraded",
@@ -9306,6 +9323,14 @@
           "prev_hash": "95038db36f168d9f",
           "commit": "327946b4",
           "note": "2026-10-17 cursor batch-03 — docs/agents/swarm-outputs/cursor-2026-10-17-batch-03/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "9990c0e8c92084eb",
+          "prev_hash": "8e42c4bc0242f9df",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
         }
       ]
     },
@@ -10654,7 +10679,7 @@
       ]
     },
     "gen-prismatic-void-weaver-ouroboros": {
-      "hash": "6b55bb2d5f85df72",
+      "hash": "3906b5ec6e22ae8a",
       "history": [
         {
           "event": "upgraded",
@@ -10663,6 +10688,14 @@
           "prev_hash": "7632a9231804fa17",
           "commit": "a73847ae",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "3906b5ec6e22ae8a",
+          "prev_hash": "6b55bb2d5f85df72",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
         }
       ]
     },
@@ -11197,7 +11230,7 @@
       ]
     },
     "gen-sentient-cyber-chrono-void-serpent": {
-      "hash": "9a91b8b1adfb0c30",
+      "hash": "a5d9958ab4929f13",
       "history": [
         {
           "event": "upgraded",
@@ -11206,6 +11239,14 @@
           "prev_hash": "177d00eda3903b9f",
           "commit": "ccc1e95c",
           "note": "2026-10-18 opus/batch-05 (opus): 2 native ideas each + HEAD fixes; cards in agents/swarm-outputs/claude-2026-10-18-opus-batch-05"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "a5d9958ab4929f13",
+          "prev_hash": "9a91b8b1adfb0c30",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
         }
       ]
     },
@@ -11402,7 +11443,7 @@
       ]
     },
     "gen-sonoluminescent-chrono-geode-matrix": {
-      "hash": "b3ffce0779903947",
+      "hash": "2c623d73f057a823",
       "history": [
         {
           "event": "upgraded",
@@ -11419,6 +11460,14 @@
           "prev_hash": "ff7be263af71c41e",
           "commit": "0761b6b9",
           "note": "2026-11-18 sonnet/batch-40 second-pass generative ten (claude sonnet 5.5) — agents/swarm-outputs/claude-2026-11-18-sonnet-batch-40/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "2c623d73f057a823",
+          "prev_hash": "b3ffce0779903947",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
         }
       ]
     },
@@ -19526,7 +19575,7 @@
       ]
     },
     "matrix_digital_rain": {
-      "hash": "b45b7ba598575a39",
+      "hash": "350443d8148d3973",
       "history": [
         {
           "event": "upgraded",
@@ -19535,6 +19584,14 @@
           "prev_hash": "df82af9209ad48e7",
           "commit": "e85af502",
           "note": "2026-11-09 opus/batch-24 (Claude Opus) — agents/swarm-outputs/claude-2026-11-09-opus-batch-24"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "350443d8148d3973",
+          "prev_hash": "b45b7ba598575a39",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
         }
       ]
     },
@@ -23778,7 +23835,7 @@
       ]
     },
     "physarum-agents": {
-      "hash": "38befc20cdbebb2d",
+      "hash": "f182ff59a167edd7",
       "history": [
         {
           "event": "added",
@@ -23786,6 +23843,14 @@
           "hash": "38befc20cdbebb2d",
           "commit": "c636988f",
           "note": "2026-11-15 ecology-field ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-ecology-field-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "f182ff59a167edd7",
+          "prev_hash": "38befc20cdbebb2d",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
         }
       ]
     },
@@ -23810,6 +23875,18 @@
           "hash": "679b7b4541069afd",
           "commit": "7f6ce638",
           "note": "2026-11-15 sonnet/batch-38 liquid/fractal/galaxy/aurora/kaleido/neon ten (claude-sonnet-5-5) — agents/swarm-outputs/claude-2026-11-15-sonnet-batch-38/"
+        }
+      ]
+    },
+    "sph-fluid": {
+      "hash": "fe07ebf961e8d476",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-22T06:29:35.716Z",
+          "hash": "fe07ebf961e8d476",
+          "commit": "40449a36",
+          "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
         }
       ]
     }

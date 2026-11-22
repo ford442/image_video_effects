@@ -2,9 +2,9 @@
 // Sentient Cyber-Chrono Void-Serpent
 // Category: generative
 // Features: audio-reactive, mouse-driven, upgraded-rgba
-// Upgraded: 2026-10-18
-// Ideas: chrono echoes (translucent phase-lagged spine afterimages); scale-glint facets (per-hex tilted specular); rift isochrones (Julia trap contour strata); swallowed-shard bulge (a peristaltic prey swelling travels down the spine, scales part over it and the eaten chrono-glass glows through the stretched interskin); ecdysis peel front (a crinkled rolled-back skin lip travels the body, milky slough sleeve behind it, fresh iridescent skin ahead)
-// A packing: ACES display RGBA (post-tonemap col, luma alpha); no C read, no state
+// Upgraded: 2026-10-18, 2026-11-22
+// Ideas: chrono echoes (translucent phase-lagged spine afterimages); scale-glint facets (per-hex tilted specular); rift isochrones (Julia trap contour strata); swallowed-shard bulge (a peristaltic prey swelling travels down the spine, scales part over it and the eaten chrono-glass glows through the stretched interskin); ecdysis peel front (a crinkled rolled-back skin lip travels the body, milky slough sleeve behind it, fresh iridescent skin ahead); chrono phosphor; spectral node
+// A packing: ACES display RGBA. C is that display, read back
 // Earlier: 2026-08-03 (batch b31, algorithmist):
 //   - Bounds guard from u.config.zw; mouse handled as 0-1 (y=0 top), no flip/re-normalization
 //   - Full 3D SDF library; torus chrono-rings + octahedral chrono-glass shards (matID 3/4)
@@ -25,6 +25,16 @@ fn rot(a: f32) -> mat2x2<f32> {
 fn rotY(a: f32) -> mat3x3<f32> {
     let s = sin(a); let c = cos(a);
     return mat3x3<f32>(c, 0.0, s, 0.0, 1.0, 0.0, -s, 0.0, c);
+}
+
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    let y = max(x, vec3<f32>(0.0));
+    return clamp((y * (a * y + vec3<f32>(b))) / (y * (c * y + vec3<f32>(d)) + vec3<f32>(e)), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn hash21(p: vec2<f32>) -> f32 {
@@ -339,7 +349,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
             // Chrono-rings — spectral time-band emission
             let band = 0.5 + 0.5 * sin(p.z * 8.0 - t * 6.0);
             let ring_col = mix(vec3<f32>(0.1, 0.9, 1.0), vec3<f32>(1.0, 0.4, 0.9), band);
-            col = ring_col * (diff * 0.4 + 0.8) * (1.0 + bass) + fres * ring_col;
+            // ── Idea 2: spectral node — the time-band has a dark interference minimum at mid-band
+            let node = smoothstep(0.12, 0.0, abs(band - 0.5));
+            col = ring_col * (diff * 0.4 + 0.8) * (1.0 + bass) * (1.0 - 0.45 * node) + fres * ring_col;
 
         } else {
             // Chrono-glass shards — refractive prism fresnel
@@ -373,14 +385,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // [Idea 1] echo rim glow (added after fog so the afterimages stay luminous), scaled by Plasma Intensity
     col += (vec3<f32>(0.1, 0.8, 1.0) * echoA + vec3<f32>(1.0, 0.35, 0.9) * echoB) * 3.0 * u.zoom_params.y;
 
-    // ACES-ish tone map (the rift palette dips below 0; ACES needs >= 0)
-    col = max(col, vec3<f32>(0.0));
-    let a = 2.51;
-    let b = 0.03;
-    let c = 2.43;
-    let d = 0.59;
-    let e = 0.14;
-    col = clamp((col * (a * col + vec3<f32>(b))) / (col * (c * col + vec3<f32>(d)) + vec3<f32>(e)), vec3<f32>(0.0), vec3<f32>(1.0));
+    col = aces(col);
+    // ── Idea 1: chrono phosphor — last frame's display smears behind the body
+    let prev = textureLoad(dataTextureC, pixel, 0);
+    col = mix(col, prev.rgb, 0.18);
 
     // Real depth: normalized ray distance on hit
     let depth = select(0.0, clamp(1.0 - dO / maxDist, 0.0, 1.0), hit);

@@ -3,9 +3,9 @@
 //  Category: lighting-effects
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-11-09
-//  Ideas: per-layer glyph rain columns gating each zoom layer (head decodes the true image, trail falls off as green phosphor code); depth-parallax column speed (near layers rain faster); live chroma split + pointer vortex (HEAD read dead extraBuffer[0]/[10])
-//  A packing: ACES display RGBA
+//  Upgraded: 2026-11-09, 2026-11-22
+//  Ideas: per-layer glyph rain columns gating each zoom layer (head decodes the true image, trail falls off as green phosphor code); depth-parallax column speed (near layers rain faster); live chroma split + pointer vortex; phosphor afterimage; decode latch
+//  A packing: ACES display RGBA. C is that display, read back
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -231,17 +231,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     }
     let _e173 = accumulatedColor;
     let _e174 = totalWeight;
-    let baseColor = (_e173 / vec3(max(_e174, 0.0001)));
+    var baseColor = (_e173 / vec3(max(_e174, 0.0001)));
+    // ── Idea 2: decode latch — a bright head last frame holds more of the revealed color
+    let prevRain = textureLoad(dataTextureC, vec2<i32>(gid.xy), 0);
+    let latch = smoothstep(0.35, 0.8, prevRain.a);
+    baseColor = mix(baseColor, prevRain.rgb, latch * 0.25);
     let _e179 = accumulatedDepth;
     let _e180 = totalWeight;
     let baseDepth = (_e179 / max(_e180, 0.0001));
-    if (arrayLength((&extraBuffer)) > 0u) {
-        let _e192 = extraBuffer[0];
-        chroma = _e192;
-    } else {
-        chroma = 0.02;
-    }
-    // Rescue: extraBuffer[0] is scratch (0) -> chroma split was dead.
     chroma = 0.006 * (1.0 + bass * 1.5);
     let _e196 = uv;
     let _e197 = chroma;
@@ -280,7 +277,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let fog = exp(((-(baseDepth) * fogDensity_1) * 3.0));
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
     let outColor = mix(finalColor, fogColor, (1.0 - fog));
-    let lit = outColor + vec3<f32>(0.6, 1.0, 0.7) * rainGlow * (0.15 + mids * 0.2);
+    var lit = outColor + vec3<f32>(0.6, 1.0, 0.7) * rainGlow * (0.15 + mids * 0.2);
+    // ── Idea 1: phosphor afterimage — last frame's code tints the new columns green
+    lit = max(lit, prevRain.rgb * vec3<f32>(0.15, 0.85, 0.35) * 0.35);
     let display = acesFilm_mdr(max(lit, vec3<f32>(0.0)) * 1.2);
     let alpha = clamp(max(_e284 * 0.5, rainGlow * 0.6), 0.0, 1.0);   // alpha tracks glyph brightness
     textureStore(writeTexture, vec2<u32>(gid.xy), vec4<f32>(display, alpha));

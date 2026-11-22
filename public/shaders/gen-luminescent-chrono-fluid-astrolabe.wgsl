@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-10-17
-//  Ideas: limb graduations; geared mater; rete plate; ecliptic and sun bead; alidade sight-line; unequal-hour arcs; alidade shadow
+//  Upgraded: 2026-10-17, 2026-11-22
+//  Ideas: limb graduations; geared mater; rete plate; ecliptic and sun bead; alidade sight-line; unequal-hour arcs; alidade shadow; vernier ticks; magnitude classes
 //  A packing: ACES display RGBA (C read back as colour history, exact textureLoad)
 // ═══════════════════════════════════════════════════════════════════
 // Batch 36 (Optimizer) base kept: coarse->refined SDF (fluid noise culled
@@ -186,7 +186,10 @@ fn limbGraduation(pWorld: vec3<f32>, ringIdx: f32, ctx: SceneCtx) -> vec2<f32> {
     let face = smoothstep(-0.2, 0.5, (q.x + abs(q.y)) / max(length(q), 1e-4));
     let fineMark = 1.0 - smoothstep(0.25, 0.6, fromFine);
     let majorMark = 1.0 - smoothstep(0.6, 1.2, fromMajor);
-    return vec2<f32>(max(fineMark * 0.55, majorMark) * face, majorMark * face);
+    // ── Idea 1: vernier ticks — 1° marks, shorter than the 10° marks, on the same limb face
+    let fromVernier = abs(fract(deg + 0.5) - 0.5);
+    let vernier = (1.0 - smoothstep(0.08, 0.22, fromVernier)) * 0.28;
+    return vec2<f32>(max(max(fineMark * 0.55, majorMark), vernier) * face, majorMark * face);
 }
 
 fn hash2(c: vec2<f32>) -> f32 {
@@ -238,7 +241,9 @@ fn retePlate(uv: vec2<f32>, ctx: SceneCtx, time: f32, mids: f32) -> vec3<f32> {
     // Idea: alidade shadow. A soft dark band sits just off the rule, so the bar reads above the chart.
     let shadow = exp(-(signedPerp - 0.07) * (signedPerp - 0.07) * 70.0) * aliMask;
 
-    let star = step(0.9, h) * exp(-sd * sd * 60.0) * twinkle * (1.0 + 3.5 * flare);
+    // ── Idea 2: magnitude classes — the star hash scales brightness from faint to first magnitude
+    let mag = smoothstep(0.9, 0.99, h);
+    let star = step(0.9, h) * exp(-sd * sd * 60.0) * twinkle * (0.25 + 0.75 * mag) * (1.0 + 3.5 * flare);
 
     // Idea 4: ecliptic circle. Eccentric to the plate centre (obliquity offset),
     // twelve zodiac divisions along it, and a sun bead riding it with the clock.
@@ -297,14 +302,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         extraBuffer[137] = 1.0; extraBuffer[138] = time;
     }
 
-    // ---- Audio: plasma bands + guarded engine FFT bins 1-4 ----------------
+    // ---- Audio: plasma bands (mids + treble pump the core; no FFT-bin reads) --
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    var fftPulse = 0.0;
-    if (arrayLength(&extraBuffer) > 9u) {
-        fftPulse = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8] + extraBuffer[9]) * 0.25;
-    }
+    let fftPulse = clamp(mids * 0.5 + treble * 0.5, 0.0, 1.5);
 
     // ---- Live slider wiring (index order: Intensity / Speed / Scale / Mouse Influence)
     let intensity = mix(0.35, 1.7, clamp(u.zoom_params.x, 0.0, 1.0));   // emission + glow gain

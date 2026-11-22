@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  SPH Fluid — Density
+//  Category: simulation
+//  Features: sim-ring
+//  Complexity: High
+//  Upgraded: 2026-11-22
+//  Ideas: collision-core density; surface vorticity
+//  A packing: aux (-1, -1, density, vorticity). No display write
+// ═══════════════════════════════════════════════════════════════════
 // ═══ SPH FLUID — DENSITY (sim ring + spatial hash, simState dispatch) ═════
 //  Pass 1 of 3 of a weakly compressible SPH fluid (WCSPH, Becker & Teschner 2007). One invocation per
 //  particle; CPU spec: scripts/sim_models/sph_fluid.py (`step`, density pass), constants mirrored there.
@@ -139,6 +148,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let s = 1.0 - r2;
             rho = rho + POLY6 * s * s * s;
             let r = sqrt(r2);
+            // ── Idea 1: collision-core density — a narrow kernel on top of poly6 inside 0.35h
+            let core = max(1.0 - r / 0.35, 0.0);
+            rho = rho + 0.08 * POLY6 * core * core * core;
             if (r > 1e-5) {
               let g = SPIKY * (1.0 - r) * (1.0 - r) * d / r;
               let vij = q.zw * invH - vi;
@@ -150,5 +162,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       }
     }
   }
+  // ── Idea 2: surface vorticity — spin stays on the free surface, the compressed core keeps less
+  let shell = smoothstep(rho0 * 1.2, rho0 * 0.75, rho);
+  omega = omega * mix(0.35, 1.0, shell);
   simState[e + 1u] = vec4<f32>(-1.0, -1.0, rho, omega);
 }
