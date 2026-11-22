@@ -3,8 +3,8 @@
 //  Category: post-processing
 //  Features: multi-pass-2, histogram, auto-exposure, color-grade
 //  Complexity: Medium
-//  Upgraded: 2026-11-21
-//  Ideas: clip-limited CDF equalisation blend (CLAHE clip, §12.2A); percentile-anchored levels — extended-Reinhard white point at p95, post-curve p05..p95 contrast span pivoted on the tone-mapped mean and re-anchored to Target Luma as far as the exposure clamp can deliver, soft-rolled tails (§12.2A)
+//  Upgraded: 2026-11-21, 2026-11-22
+//  Ideas: clip-limited CDF equalisation blend (CLAHE clip, §12.2A); percentile-anchored levels — extended-Reinhard white point at p95, post-curve p05..p95 contrast span pivoted on the tone-mapped mean and re-anchored to Target Luma as far as the exposure clamp can deliver, soft-rolled tails (§12.2A); luma-held saturation and hue stage (the HSV stage no longer moves the brightness the equaliser set)
 //  A packing: raw stats field (exposure/3.5, meanLuma, peakBinNorm, saturation) — never ACES
 //  Rescue: the 256-bin histogram HEAD read from extraBuffer[1..258] was never written by
 //          anything (tone-histogram is single-pass since v2), so exposure pinned at 3.5 and
@@ -209,7 +209,17 @@ fn main(
     hsv.x = fract(hsv.x + shift);
   }
 
-  let outColor = hsv2rgb(hsv);
+  // ── Idea 3: luma-held saturation / hue stage (energy accounting) ─────
+  // HSV saturation and hue rotation run at constant V (= max channel), so Rec.709 luma moved
+  // AFTER the equaliser had set it (HEAD: Saturation 0 -> 1 swung mean luma 0.52 -> 0.45; hue
+  // mode shifted local luma by up to 0.23). Rescale the stage's output to the pre-stage
+  // luma so Saturation / Dynamic Hue Mode change colour only and Target Luma stays Target Luma.
+  // At Saturation == 1.0 and hue mode off the stage is an identity round-trip (HEAD).
+  let lumaPre = dot(color, lumaW);
+  let rgbHsv = hsv2rgb(hsv);
+  let lumaPost = dot(rgbHsv, lumaW);
+  let lumaHold = clamp((lumaPre + 0.004) / (lumaPost + 0.004), 0.5, 2.0);
+  let outColor = clamp(rgbHsv * lumaHold, vec3<f32>(0.0), vec3<f32>(1.0));
 
   if (inBounds) {
     // Alpha is the source coverage (HEAD hardcoded 1.0 and erased an upstream pass's alpha).

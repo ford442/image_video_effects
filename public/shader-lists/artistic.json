@@ -3468,7 +3468,7 @@
       1
     ],
     "supportsDepth": true,
-    "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field.",
+    "description": "5 depth layers with parallax displacement. Each layer has independent alpha for occlusion. Atmospheric perspective and depth of field. The cursor is the viewer's head: slices shear against it around the focus plane, and nearer slabs cast a contact shadow on farther ones.",
     "tags": [
       "parallax",
       "depth",
@@ -3485,7 +3485,8 @@
       "dof",
       "atmospheric",
       "audio-reactive",
-      "mouse-driven"
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "params": [
       {

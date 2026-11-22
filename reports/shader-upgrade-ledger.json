@@ -1809,7 +1809,7 @@
       "history": []
     },
     "multi-fractal-compositor": {
-      "hash": "e4ce2a6ca79fb57f",
+      "hash": "ca84fcbee4a16b28",
       "history": [
         {
           "event": "upgraded",
@@ -1818,6 +1818,14 @@
           "prev_hash": "3025e5f491d7ad4c",
           "commit": "00db5f72",
           "note": "2026-11-01 sonnet batch 15 fractal-set ten (claude) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-15/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "ca84fcbee4a16b28",
+          "prev_hash": "e4ce2a6ca79fb57f",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
@@ -1835,7 +1843,7 @@
       ]
     },
     "neural-raymarcher-gabor": {
-      "hash": "298847ff712cc5a6",
+      "hash": "28f018dbe48f0136",
       "history": [
         {
           "event": "upgraded",
@@ -1844,11 +1852,19 @@
           "prev_hash": "c40ae4d576dcb7b1",
           "commit": "0fd2d171",
           "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "28f018dbe48f0136",
+          "prev_hash": "298847ff712cc5a6",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
     "neural-raymarcher": {
-      "hash": "3d6c2b56f2a4471e",
+      "hash": "4d774c8efcdad154",
       "history": [
         {
           "event": "upgraded",
@@ -1857,6 +1873,14 @@
           "prev_hash": "0815db279be7f30b",
           "commit": "0fd2d171",
           "note": "2026-10-19 cyber-glitch-eight (Claude) — docs/agents/swarm-outputs/claude-2026-10-19-cyber-glitch-eight/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "4d774c8efcdad154",
+          "prev_hash": "3d6c2b56f2a4471e",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
@@ -3304,7 +3328,7 @@
       ]
     },
     "parallax_depth_layers": {
-      "hash": "922f3e87cefc87ee",
+      "hash": "bbdb7d3f7f71d086",
       "history": [
         {
           "event": "upgraded",
@@ -3313,6 +3337,14 @@
           "prev_hash": "55275d9861d759dc",
           "commit": "06f35ebe",
           "note": "2026-11-08 sonnet/batch-21 depth/parallax/tunnels/labyrinths ten (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-08-sonnet-batch-21"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "bbdb7d3f7f71d086",
+          "prev_hash": "922f3e87cefc87ee",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
@@ -11868,7 +11900,7 @@
       ]
     },
     "gen-velocity-bloom": {
-      "hash": "ee6693cc8f4f7819",
+      "hash": "b45c36d710c832d5",
       "history": [
         {
           "event": "upgraded",
@@ -11877,6 +11909,14 @@
           "prev_hash": "f39bd682649abb84",
           "commit": "d0efc8a3",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "b45c36d710c832d5",
+          "prev_hash": "ee6693cc8f4f7819",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
@@ -13755,7 +13795,7 @@
       ]
     },
     "hybrid-sdf-plasma": {
-      "hash": "8759508b5e9e97db",
+      "hash": "5a606ee86a108293",
       "history": [
         {
           "event": "upgraded",
@@ -13772,6 +13812,14 @@
           "prev_hash": "cf1fdb765427a595",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "5a606ee86a108293",
+          "prev_hash": "8759508b5e9e97db",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
@@ -19289,7 +19337,7 @@
       ]
     },
     "volumetric-depth-zoom": {
-      "hash": "a066ff970e7ef5d7",
+      "hash": "73e0470affa68d77",
       "history": [
         {
           "event": "upgraded",
@@ -19298,6 +19346,14 @@
           "prev_hash": "1db18de6b4e7fb18",
           "commit": "18f29dbd",
           "note": "2026-10-17 ferrofluid-volume ten (grok) — docs/agents/swarm-outputs/cursor-2026-10-17-ferrofluid-volume-ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "73e0470affa68d77",
+          "prev_hash": "a066ff970e7ef5d7",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
@@ -19323,7 +19379,7 @@
       ]
     },
     "volumetric-rainbow-clouds": {
-      "hash": "899a8affe54eb074",
+      "hash": "5eab12ae87df0737",
       "history": [
         {
           "event": "upgraded",
@@ -19332,6 +19388,14 @@
           "prev_hash": "6b674e43639a2776",
           "commit": "988623c9",
           "note": "2026-11-01 sonnet/batch-07 aurora/silk/cloud ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-01-sonnet-batch-07"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "5eab12ae87df0737",
+          "prev_hash": "899a8affe54eb074",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
@@ -20650,7 +20714,7 @@
       ]
     },
     "tone-histogram-apply": {
-      "hash": "a82c726cc5b4b3bc",
+      "hash": "8eb4855ab7984a05",
       "history": [
         {
           "event": "upgraded",
@@ -20659,11 +20723,19 @@
           "prev_hash": "2f39898330808070",
           "commit": "2e876e2e",
           "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "8eb4855ab7984a05",
+          "prev_hash": "a82c726cc5b4b3bc",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },
     "tone-histogram": {
-      "hash": "4a698b6f29c6020e",
+      "hash": "d0c2ee2dce8d08ed",
       "history": [
         {
           "event": "upgraded",
@@ -20672,6 +20744,14 @@
           "prev_hash": "a304eba77d0b3052",
           "commit": "2e876e2e",
           "note": "2026-11-21 sonnet/batch-48 tone/focus/CRT/datamosh/kaleido/guided-filter eleven (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-21-sonnet-batch-48/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:50:08.975Z",
+          "hash": "d0c2ee2dce8d08ed",
+          "prev_hash": "4a698b6f29c6020e",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-53 depth/raymarch/volumetric ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-53"
         }
       ]
     },

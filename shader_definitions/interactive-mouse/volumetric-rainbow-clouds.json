@@ -2,7 +2,7 @@
   "id": "volumetric-rainbow-clouds",
   "name": "Volumetric Rainbow Clouds (Pass 1)",
   "url": "shaders/volumetric-rainbow-clouds.wgsl",
-  "description": "Generates 3D noise clouds with normals, lighting, and depth-aware rainbow coloring for a volumetric prismatic effect.",
+  "description": "Generates 3D noise clouds with normals, lighting, and depth-aware rainbow coloring for a volumetric prismatic effect. The three cloud slabs shear past each other at their own speeds, and bass fires lightning flashes inside the cloud where it is dense.",
   "params": [
     {
       "id": "scale",
@@ -38,6 +38,7 @@
     "volumetric",
     "depth",
     "mouse-driven",
+    "audio-reactive",
     "upgraded-rgba"
   ],
   "tags": [

@@ -8200,7 +8200,7 @@
     "id": "multi-fractal-compositor",
     "name": "Multi-Fractal Compositor",
     "url": "shaders/multi-fractal-compositor.wgsl",
-    "description": "Layered zoom tunnel of the input image: five staggered octave layers form a self-similar Droste-style zoom that composites into the picture, with zoom-lens chroma fringing, flow-noise domain warp, depth edge glow and fog. (It is not a Mandelbrot, Julia or Newton blend, despite the name.)",
+    "description": "Layered zoom tunnel of the input image: five staggered octave layers form a self-similar Droste-style zoom that composites into the picture, each layer rolled by a constant angle per octave of its zoom (Droste spiral) and weighted into the composite by a ring that grows outward with its zoom phase, with zoom-lens chroma fringing, flow-noise domain warp, depth edge glow and fog. (It is not a Mandelbrot, Julia or Newton blend, despite the name.)",
     "features": [
       "advanced-hybrid",
       "randomization-safe",
@@ -8322,7 +8322,7 @@
     "id": "neural-raymarcher-gabor",
     "name": "Neural Raymarcher Gabor",
     "url": "shaders/neural-raymarcher-gabor.wgsl",
-    "description": "Raymarched neural network visualization with Gabor oriented texture detection. Gabor responses highlight connection directions and layer boundaries with psychedelic color mapping.",
+    "description": "Raymarched neural network visualization with Gabor oriented texture detection. Gabor responses highlight connection directions and layer boundaries with psychedelic color mapping. The Gabor bank is zero-mean (flat areas no longer light up), polarity-coloured (ridge vs step edge), and uniform-orientation texture is suppressed so orientation boundaries pop out. Bass splits the colour channels, mids spin the layers.",
     "features": [
       "advanced-hybrid",
       "neural-raymarching",
@@ -8330,7 +8330,8 @@
       "volumetric",
       "randomization-safe",
       "upgraded-rgba",
-      "mouse-driven"
+      "mouse-driven",
+      "audio-reactive"
     ],
     "params": [
       {
@@ -8387,7 +8388,7 @@
     "id": "neural-raymarcher",
     "name": "Neural Raymarcher",
     "url": "shaders/neural-raymarcher.wgsl",
-    "description": "Raymarched neural network with activation visualization. Glowing 3D structure with weights as connection thickness.",
+    "description": "Raymarched neural network with activation visualization. Glowing 3D structure with weights as connection thickness. The rim glow follows true depth edges, action-potential wavefronts open onto the deeper marched layer, and depth creases occlude. Audio (bass: chroma split, mids: vortex) comes from the live spectrum.",
     "features": [
       "advanced-hybrid",
       "sdf-raymarching",

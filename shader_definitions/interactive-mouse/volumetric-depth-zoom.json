@@ -2,7 +2,7 @@
   "id": "volumetric-depth-zoom",
   "name": "Volumetric Depth Zoom (Pass 1)",
   "url": "shaders/volumetric-depth-zoom.wgsl",
-  "description": "Raymarched volumetric zoom using multiple depth slices, DOF, parallax and edge specular lighting. Foreground and background slices drift at their own speeds, and a pale sheet marks the focal plane.",
+  "description": "Raymarched volumetric zoom using multiple depth slices, DOF, parallax and edge specular lighting. Foreground and background slices drift at their own speeds, and a pale sheet marks the focal plane and traces a thin contour where it cuts the scene. The edge specular glints only on the silhouette that faces the orbiting light, and bass pumps the light.",
   "params": [
     {
       "id": "fg_speed",
