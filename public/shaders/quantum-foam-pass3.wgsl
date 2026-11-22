@@ -6,8 +6,11 @@
 //  Chunks From: aurora-rift-pass2.wgsl (ACES tone mapping), gen-quantum-foam-alpha.wgsl (glow)
 //  Created: 2026-05-31
 //  By: Claude Sonnet 4.6 (swarm optimization pass)
-//  Upgraded: 2026-10-17
-//  Ideas: flow-smear glow along the emission gradient; Beer thickness veil
+//  Upgraded: 2026-11-22
+//  Ideas: gravitational redshift of the dense glow core; bass-swollen glow reach and gain
+//         (kept: flow-smear glow along the emission gradient; Beer thickness veil)
+//  Rescue: intensity was u.config.y (= ripple count): with no click this pass returned the plain
+//          photo, and N clicks multiplied vignette/haze/grade by N.
 //  A packing: color only — pass 2 owns the particle pack in A/B
 // ═══════════════════════════════════════════════════════════════════
 //  Pass graph: Pass 3 reads the particle data from dataTextureC (copy of
@@ -89,7 +92,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let uv = vec2<f32>(gid.xy) / dims;
     let coord = vec2<i32>(gid.xy);
     let resI = vec2<i32>(dims);
-    let globalIntensity = u.config.y;
+    // Idea 2 input: HEAD pass 3 had no audio at all.
+    let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
 
     // Particles from Pass 2 (graph copies dataB into C before this dispatch).
     let particleData = textureLoad(dataTextureC, coord, 0);
@@ -102,37 +106,39 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let flowSpeed = clamp(u.zoom_params.y, 0.0, 1.0);
     let diffusion = clamp(u.zoom_params.z, 0.0, 1.0);
 
-    if (globalIntensity < 0.01) {
-        textureStore(writeTexture, coord, src);
-        textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-        return;
-    }
-
     let pxR = textureLoad(dataTextureC, clamp(coord + vec2<i32>(1, 0), vec2<i32>(0), resI - vec2<i32>(1)), 0);
     let pxL = textureLoad(dataTextureC, clamp(coord - vec2<i32>(1, 0), vec2<i32>(0), resI - vec2<i32>(1)), 0);
     let pxU = textureLoad(dataTextureC, clamp(coord + vec2<i32>(0, 1), vec2<i32>(0), resI - vec2<i32>(1)), 0);
     let pxD = textureLoad(dataTextureC, clamp(coord - vec2<i32>(0, 1), vec2<i32>(0), resI - vec2<i32>(1)), 0);
     let flow = vec2<f32>(pxR.a - pxL.a, pxU.a - pxD.a);
     let flowDir = flow / max(length(flow), 0.001);
-    let glowColor = sampleGlow(coord, resI, emission, flowDir * (0.6 + flowSpeed * 1.8));
+    // ── Idea 2: bass-swollen glow ───────────────────────────────────────
+    // Bass widens the halo (larger kernel radius, longer flow smear) and lifts its gain.
+    let glowReach = 1.0 + bass * 0.8;
+    let glowColor = sampleGlow(coord, resI, emission + bass * 0.5, flowDir * (0.6 + flowSpeed * 1.8) * glowReach);
 
     // Idea 2 — Beer veil: transmitted color thins where the surrounding glow is dense.
     let thick = saturate(length(glowColor) * (0.8 + diffusion));
     let transmitted = particleColor * exp(-thick * (0.45 + diffusion * 0.9));
-    let withGlow = transmitted + glowColor * (0.45 + flowSpeed * 0.35) * emission;
+    // ── Idea 1: gravitational redshift ──────────────────────────────────
+    // Light climbing out of the densest glow loses energy: the core goes amber while the thin
+    // halo keeps its hue. coreHeat is the glow density (same accumulation the Beer veil uses).
+    let coreHeat = saturate(length(glowColor) * 3.5);
+    let redshift = vec3<f32>(1.0, 1.0 - 0.30 * coreHeat, 1.0 - 0.60 * coreHeat);
+    let withGlow = transmitted + glowColor * redshift * (0.45 + flowSpeed * 0.35) * (1.0 + bass * 0.5) * emission;
 
     // Depth-based atmospheric haze
     let haze = (1.0 - depth) * 0.1;
     let hazeColor = vec3<f32>(0.05, 0.02, 0.08); // Purple-tinted haze
-    let withHaze = mix(withGlow, hazeColor, haze * globalIntensity);
+    let withHaze = mix(withGlow, hazeColor, haze);
 
     // Apply vignette
-    let vignetteIntensity = 0.5 * globalIntensity;
+    let vignetteIntensity = 0.5;
     let withVignette = applyVignette(withHaze, uv, vignetteIntensity);
 
     // Color grading
-    let saturation = 1.0 + 0.2 * globalIntensity;
-    let contrast = 1.0 + 0.1 * globalIntensity;
+    let saturation = 1.2;
+    let contrast = 1.1;
     let graded = colorGrade(withVignette, saturation, contrast);
 
     // Tone mapping for HDR-like effect

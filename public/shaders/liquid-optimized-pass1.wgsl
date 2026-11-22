@@ -1,40 +1,19 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //  Liquid Optimized – Pass 1: Physics Simulation
 //  Category: liquid-effects
-//  Features: multi-pass-1, capillary waves, Laplace pressure, ripple propagation
-//  Upgraded: 2026-10-17
-//  Ideas: seiche beat on the ambient ripples; shore set-down from radiation stress
+//  Features: multi-pass-1, capillary waves, Laplace pressure, ripple propagation, audio-reactive, mouse-driven
+//  Upgraded: 2026-11-22
+//  Ideas: bass-forced basin slosh (first seiche mode); scale-selective viscous damping ν∇²v
+//  Rescue: restoring terms had the wrong sign (HEAD grew every mode to the clamp); exact C loads
 //  A packing: raw (h_prev, h_curr, velocity, age)
 //  Outputs: dataTextureA (h_prev, h_curr, velocity, age)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
 
-fn sampleHeight(uv: vec2<f32>) -> f32 {
-  return textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0).g;
-}
-
-fn sampleHeightClamped(uv: vec2<f32>, pixelSize: vec2<f32>) -> f32 {
-  let clampedUV = clamp(uv, vec2<f32>(0.0), vec2<f32>(1.0));
-  return sampleHeight(clampedUV);
-}
-
-fn laplacian(uv: vec2<f32>, pixelSize: vec2<f32>) -> f32 {
-  let center = sampleHeightClamped(uv, pixelSize);
-  let left   = sampleHeightClamped(uv - vec2<f32>(pixelSize.x, 0.0), pixelSize);
-  let right  = sampleHeightClamped(uv + vec2<f32>(pixelSize.x, 0.0), pixelSize);
-  let bottom = sampleHeightClamped(uv - vec2<f32>(0.0, pixelSize.y), pixelSize);
-  let top    = sampleHeightClamped(uv + vec2<f32>(0.0, pixelSize.y), pixelSize);
-  return (left + right + bottom + top - 4.0 * center);
-}
-
-fn biharmonic(uv: vec2<f32>, pixelSize: vec2<f32>) -> f32 {
-  let centerLap = laplacian(uv, pixelSize);
-  let leftLap   = laplacian(uv - vec2<f32>(pixelSize.x, 0.0), pixelSize);
-  let rightLap  = laplacian(uv + vec2<f32>(pixelSize.x, 0.0), pixelSize);
-  let bottomLap = laplacian(uv - vec2<f32>(0.0, pixelSize.y), pixelSize);
-  let topLap    = laplacian(uv + vec2<f32>(0.0, pixelSize.y), pixelSize);
-  return (leftLap + rightLap + bottomLap + topLap - 4.0 * centerLap);
+// Exact, clamped read of the previous frame's state (never a filtering sampler).
+fn loadC(p: vec2<i32>, hi: vec2<i32>) -> vec4<f32> {
+  return textureLoad(dataTextureC, clamp(p, vec2<i32>(0), hi), 0);
 }
 
 fn capillaryWaveSpeed(wavelength: f32, surfaceTension: f32, gravity: f32, density: f32) -> f32 {
@@ -56,13 +35,13 @@ fn meniscusEffect(uv: vec2<f32>, depth: f32, surfaceTension: f32) -> f32 {
 @compute @workgroup_size(16, 16, 1)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let resolution = u.config.zw;
-  let uv = vec2<f32>(global_id.xy) / resolution;
-  let currentTime = u.config.x;
-  let pixelSize = vec2<f32>(1.0) / resolution;
-
   if (global_id.x >= u32(resolution.x) || global_id.y >= u32(resolution.y)) {
     return;
   }
+  let pc = vec2<i32>(global_id.xy);
+  let hi = vec2<i32>(resolution) - vec2<i32>(1);
+  let uv = (vec2<f32>(global_id.xy) + 0.5) / resolution;
+  let currentTime = u.config.x;
 
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   let backgroundFactor = 1.0 - smoothstep(0.0, 0.1, depth);
@@ -74,19 +53,48 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let damping = (u.zoom_params.z * 0.15 + 0.02) * (1.0 + turbidity * 0.85);
   let density = 1.0;
   let dt = 0.016;
+  let bass = clamp(plasmaBuffer[0].x, 0.0, 1.0);
 
-  let persistentData = textureSampleLevel(dataTextureC, non_filtering_sampler, uv, 0.0);
-  let h_prev = persistentData.r;
+  // One 13-tap neighbourhood feeds the Laplacian and the biharmonic; the four velocity
+  // neighbours feed the viscous term.
+  let persistentData = loadC(pc, hi);
   let h_curr = persistentData.g;
   let velocity = persistentData.b;
   let age = persistentData.a;
+  let sL = loadC(pc + vec2<i32>(-1, 0), hi);
+  let sR = loadC(pc + vec2<i32>(1, 0), hi);
+  let sB = loadC(pc + vec2<i32>(0, -1), hi);
+  let sT = loadC(pc + vec2<i32>(0, 1), hi);
+  let hBL = loadC(pc + vec2<i32>(-1, -1), hi).g;
+  let hBR = loadC(pc + vec2<i32>(1, -1), hi).g;
+  let hTL = loadC(pc + vec2<i32>(-1, 1), hi).g;
+  let hTR = loadC(pc + vec2<i32>(1, 1), hi).g;
+  let hL2 = loadC(pc + vec2<i32>(-2, 0), hi).g;
+  let hR2 = loadC(pc + vec2<i32>(2, 0), hi).g;
+  let hB2 = loadC(pc + vec2<i32>(0, -2), hi).g;
+  let hT2 = loadC(pc + vec2<i32>(0, 2), hi).g;
+  let hSum4 = sL.g + sR.g + sB.g + sT.g;
+  let lapH = hSum4 - 4.0 * h_curr;
+  let biLapH = 20.0 * h_curr - 8.0 * hSum4 + 2.0 * (hBL + hBR + hTL + hTR) + (hL2 + hR2 + hB2 + hT2);
+
+  // Rescue: +c² ∇²h restores, −σ ∇⁴h stiffens. HEAD had both reversed, so every mode grew
+  // to the ±0.5 clamp. ω·dt stays below 1.2 at the largest slider values.
+  let c2 = gravityScale * 150.0;
+  let tensionK = surfaceTension * 40.0;
+
+  // ── Idea 2: scale-selective viscous damping ─────────────────────────
+  // Water loses wave energy at a rate ∝ ν k², so grid-scale chop dies long before the broad
+  // swell does. Damping sets ν and Turbidity thickens it; this is on top of the drag term.
+  let lapV = sL.b + sR.b + sB.b + sT.b - 4.0 * velocity;
+  let nu = (0.3 + 2.4 * u.zoom_params.z) * (1.0 + turbidity * 1.5);
+
+  // ── Idea 1: bass-forced slosh ───────────────────────────────────────
+  // The basin's first seiche mode is a half-cosine across its length. Bass pushes it (the
+  // same basin the seiche beat below breathes), so the whole surface tips and rolls back.
+  let slosh = bass * 0.12 * cos(3.14159265 * uv.x) * sin(1.9 * currentTime);
 
   let activeMask = f32(backgroundFactor > 0.01);
-  let lapH = laplacian(uv, pixelSize);
-  let biLapH = biharmonic(uv, pixelSize);
-  let capillaryAcceleration = (surfaceTension / density) * biLapH * 0.001;
-  let gravityAcceleration = -gravityScale * lapH * 0.1;
-  let acceleration = capillaryAcceleration + gravityAcceleration - damping * velocity;
+  let acceleration = c2 * lapH - tensionK * biLapH - damping * velocity + nu * lapV + slosh;
 
   var newVelocity = mix(velocity, velocity + acceleration * dt, activeMask);
   var newHeight = mix(h_curr, h_curr + newVelocity * dt, activeMask);
@@ -97,7 +105,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var sourceHeight = 0.0;
   var sourceVelocity = 0.0;
 
-  let rippleCount = u32(u.config.y);
+  let rippleCount = min(u32(u.config.y), 50u);
   for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
     let rippleData = u.ripples[i];
     let timeSinceClick = currentTime - rippleData.z;
@@ -135,13 +143,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let wave3 = sin((uv.x + uv.y) * ambientFreq * 0.5 + t * 1.3);
   let microRipple = (wave1 + wave2 + wave3) / 3.0;
   let microEnvelope = smoothstep(0.0, 0.3, backgroundFactor);
-  // Idea 1: seiche beat. The basin amplitude breathes instead of a fixed shimmer.
+  // Seiche beat. The basin amplitude breathes instead of a fixed shimmer.
   let seiche = 0.62 + 0.38 * sin(currentTime * 0.31);
   let ambientHeight = microRipple * 0.003 * microEnvelope * surfaceTension * ambientMask * seiche;
 
   newHeight += sourceHeight + ambientHeight;
   newVelocity += sourceVelocity;
-  // Idea 2: shore set-down. Radiation stress lowers the waterline on the depth contact band.
+  // Shore set-down. Radiation stress lowers the waterline on the depth contact band.
   let shore = smoothstep(0.0, 0.08, depth) * (1.0 - smoothstep(0.08, 0.22, depth));
   newHeight -= shore * newVelocity * newVelocity * (0.12 + turbidity * 0.05);
 

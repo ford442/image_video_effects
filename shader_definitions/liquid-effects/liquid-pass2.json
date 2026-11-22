@@ -13,7 +13,8 @@
   "features": [
     "multi-pass-2",
     "mouse-driven",
-    "upgraded-rgba"
+    "upgraded-rgba",
+    "audio-reactive"
   ],
   "multipass": {
     "pass": 2,

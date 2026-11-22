@@ -12,7 +12,8 @@
   ],
   "features": [
     "multi-pass-1",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "multipass": {
     "pass": 1,
