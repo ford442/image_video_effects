@@ -18233,6 +18233,40 @@
       "audio-reactive",
       "temporal",
       "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "branchJitter",
+        "name": "Branch Jitter",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "glowIntensity",
+        "name": "Glow Intensity",
+        "default": 0.6,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "stormFrequency",
+        "name": "Storm Frequency",
+        "default": 0.4,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "afterglowPersistence",
+        "name": "Afterglow Persistence",
+        "default": 0.7,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -18817,6 +18851,40 @@
       "mouse-driven",
       "audio-reactive",
       "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {
@@ -24341,6 +24409,40 @@
       "temporal-history-smoothing",
       "depth-output",
       "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "twistDensity",
+        "name": "Twist Density",
+        "default": 5,
+        "min": 1,
+        "max": 20,
+        "step": 0.5
+      },
+      {
+        "id": "plasmaGlow",
+        "name": "Plasma Glow",
+        "default": 0.8,
+        "min": 0.1,
+        "max": 2,
+        "step": 0.1
+      },
+      {
+        "id": "voidGravity",
+        "name": "Void Gravity",
+        "default": 1.5,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "audioReactivity",
+        "name": "Audio Reactivity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      }
     ]
   },
   {
@@ -26933,6 +27035,45 @@
       16,
       16,
       1
+    ],
+    "features": [
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
+    ],
+    "params": [
+      {
+        "id": "timeScale",
+        "name": "Time Scale",
+        "default": 1,
+        "min": 0,
+        "max": 5,
+        "step": 0.1
+      },
+      {
+        "id": "plasmaIntensity",
+        "name": "Plasma Intensity",
+        "default": 1,
+        "min": 0,
+        "max": 3,
+        "step": 0.1
+      },
+      {
+        "id": "voidDensity",
+        "name": "Void Density",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "id": "fractureDepth",
+        "name": "Fracture Depth",
+        "default": 2,
+        "min": 0,
+        "max": 10,
+        "step": 0.5
+      }
     ]
   },
   {
@@ -27761,6 +27902,40 @@
       "aces-tone-map",
       "semantic-alpha",
       "generated-depth"
+    ],
+    "params": [
+      {
+        "id": "intensity",
+        "name": "Intensity",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "speed",
+        "name": "Speed",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "scale",
+        "name": "Scale",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "id": "mouseInfluence",
+        "name": "Mouse Influence",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.01
+      }
     ]
   },
   {

@@ -1,3 +1,12 @@
+// ═══════════════════════════════════════════════════════════════════
+//  SPH Fluid — Force
+//  Category: simulation
+//  Features: mouse-driven, audio-reactive, sim-ring
+//  Complexity: High
+//  Upgraded: 2026-11-22
+//  Ideas: tensile correction; Weber spray stamp
+//  A packing: stamp (.r speed, .g vorticity, .b rho/rho0, .a coverage). No display write
+// ═══════════════════════════════════════════════════════════════════
 // ═══ SPH FLUID — FORCE + INTEGRATE (sim ring + spatial hash, simState dispatch) ═
 //  Pass 2 of 3 (WCSPH). One invocation per particle, reading the density pass's aux records through
 //  the simIndex snapshot (the planner re-snapshots after the density write) and the same hash (the
@@ -150,6 +159,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let g = select(vec2<f32>(0.0), SPIKY * (1.0 - r) * (1.0 - r) * rhat, r > 1e-5);
             let vij = q.zw * invH - vi;
             aP = aP - (prI + pressureTerm(rhoJ, rho0)) * g;
+            // ── Idea 1: tensile correction — short-range repulsion when kernels overlap (Monaghan)
+            let tensile = max(0.5 - r, 0.0);
+            aP = aP + rhat * tensile * tensile * 0.12;
             aV = aV + vij * (VISC_LAP * (1.0 - r) / rhoJ);
             aC = aC - (2.0 * rho0 / (rhoI + rhoJ)) * cohesion(r) * rhat;
             eta = eta + ((abs(qa.w) - abs(omI)) / rhoJ) * g;
@@ -238,7 +250,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let ri = vec2<i32>(res);
   let ip = vec2<i32>(floor(pos));
   let reach = clamp(i32(floor(0.25 * h)), 1, 2);
-  let stamp = vec4<f32>(clamp(length(v) / VMAX, 0.0, 1.0), clamp(0.5 + omI * 2.0, 0.0, 1.0), rhoI / rho0, 1.0);
+  // ── Idea 2: Weber spray — under-dense fast particles raise the foam channel. Velocity is unchanged.
+  let speedN = clamp(length(v) / VMAX, 0.0, 1.0);
+  let under = smoothstep(1.05, 0.65, rhoI / max(rho0, 1e-3));
+  let stamp = vec4<f32>(clamp(speedN * (1.0 + 0.65 * under), 0.0, 1.0), clamp(0.5 + omI * 2.0, 0.0, 1.0), rhoI / max(rho0, 1e-3), 1.0);
   for (var oy = -reach; oy <= reach; oy = oy + 1) {
     for (var ox = -reach; ox <= reach; ox = ox + 1) {
       textureStore(dataTextureA, clamp(ip + vec2<i32>(ox, oy), vec2<i32>(0), ri - vec2<i32>(1)), stamp);

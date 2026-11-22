@@ -7,8 +7,8 @@
 // normals (4 taps vs 6), cursor-tracked void well + bounded click
 // surge, real audio + FFT reactivity, HDR + ACES, semantic alpha,
 // generated hit depth, temporal history smoothing.
-// Upgraded: 2026-11-08
-// Ideas: void tether energy beams; subsurface iridescent dark-matter scales; jaw-swallow seam (head swell + tail pinch where the ring closes); keel-grating diffraction ridge
+// Upgraded: 2026-11-08, 2026-11-22
+// Ideas: void tether energy beams; subsurface iridescent dark-matter scales; jaw-swallow seam (head swell + tail pinch where the ring closes); keel-grating diffraction ridge; swallowed-tail occlusion; scale trailing shade
 // A packing: ACES display RGBA
 // ----------------------------------------------------------------
 
@@ -152,15 +152,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // the void well follows the raw cursor.
     let mouseUv = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
 
-    // ---- Audio: plasma bands * Audio Reactivity + guarded FFT bins 1-8 ----
+    // ---- Audio: plasma bands * Audio Reactivity (no FFT-bin reads) --------
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    var fftShimmer = 0.0;
-    if (arrayLength(&extraBuffer) > 13u) {
-        fftShimmer = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8] + extraBuffer[9]
-                    + extraBuffer[10] + extraBuffer[11] + extraBuffer[12] + extraBuffer[13]) * 0.125;
-    }
+    let fftShimmer = clamp(treble * 0.65 + mids * 0.35, 0.0, 1.5);
 
     // ---- Live slider wiring (index order: Twist / Glow / Gravity / Audio) --
     var ctx: SceneCtx;
@@ -262,6 +258,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let seamP = PI - abs(angP);
         let jawGlow = exp(-(seamP - 0.3) * (seamP - 0.3) * 40.0) * (0.6 + bass * 1.2);
         col += vec3<f32>(1.6, 1.1, 0.45) * jawGlow * u.zoom_params.y * 1.5;
+        // ── Idea 1: swallowed-tail occlusion — the jaw gap darkens beside the gold seam
+        col = col * (1.0 - smoothstep(0.55, 0.05, seamP) * 0.35);
 
         // Idea 4 shading: keel grating. Groove spacing along the ring plus the
         // view angle picks a first-order diffraction colour (d sin = m lambda).
@@ -272,6 +270,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let lambdaPick = fract(sinTheta * 1.6 + angP * 3.0 + treble * 0.3);
         let grating = 0.5 + 0.5 * cos(TAU * (lambdaPick + vec3<f32>(0.0, 0.33, 0.67)));
         col += grating * keelMask * (0.5 + mids * 0.8) * 1.4;
+        // ── Idea 2: scale trailing shade — the keel's trailing side is darker than the lit face
+        let trailSide = smoothstep(0.15, -0.25, qP.y);
+        col = col * (1.0 - keelMask * trailSide * 0.28);
 
         // Distance fog
         col = mix(col, vec3<f32>(0.02, 0.0, 0.05), 1.0 - exp(-0.02 * dO * dO));

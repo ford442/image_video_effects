@@ -1483,7 +1483,8 @@
       "physics",
       "sim-ring",
       "simulation",
-      "temporal-persistence"
+      "temporal-persistence",
+      "upgraded-rgba"
     ],
     "tags": [
       "audio",
