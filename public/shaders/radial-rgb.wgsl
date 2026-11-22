@@ -3,8 +3,8 @@
 //  Category: distortion
 //  Features: mouse-driven, chromatic-aberration, upgraded-rgba, audio-reactive
 //  Complexity: Medium
-//  Upgraded: 2026-09-08, 2026-11-09
-//  Ideas: radial chromatic (R/B at different k1); mustache k3 r^6 Brown term; held-pointer decentred optical axis; tangential astigmatism smear; cat's-eye mechanical vignette
+//  Upgraded: 2026-09-08, 2026-11-09, 2026-11-22
+//  Ideas: radial chromatic (R/B at different k1); mustache k3 r^6 Brown term; held-pointer decentred optical axis; tangential astigmatism smear; cat's-eye mechanical vignette; Cauchy lateral colour (§12.2F); radial coma tails
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -44,6 +44,14 @@ fn lensDistort(uv: vec2<f32>, center: vec2<f32>, k1: f32, k2: f32, k3: f32) -> v
   let r6 = r4 * r2;
   let dist = 1.0 + k1 * r2 + k2 * r4 + k3 * r6;
   return center + d * dist;
+}
+
+// Cauchy n(lambda) = A + B / lambda^2 (lambda in um) evaluated at 650 / 550 / 450 nm and
+// normalised to green: per-channel image magnification of an uncorrected glass element.
+fn cauchyScale(B: f32) -> vec3<f32> {
+  let lam = vec3<f32>(0.650, 0.550, 0.450);
+  let n = vec3<f32>(1.0) + vec3<f32>(B) / (lam * lam);
+  return n / n.y;
 }
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
@@ -114,6 +122,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var uvG = lensDistort(uv, center, k1, k2, k3);
   var uvR = lensDistort(uv, center, k1R, k2, k3);
   var uvB = lensDistort(uv, center, k1B, k2, k3);
+  // ── Idea 1: Cauchy lateral colour (§12.2F) ───────────────────────
+  // The k1-per-channel term above vanishes at k1 = 0 (the saved default: no RGB split at all).
+  // A real glass element also magnifies each wavelength differently with NO distortion: R, B
+  // scale about the optical axis by the Cauchy index ratio, G stays the reference. Strength
+  // rides the existing Dispersion slider; the same dispersion gate below fades it in.
+  let lat = cauchyScale(u.zoom_params.w * 0.06);
+  uvR = center + (uvR - center) * lat.x;
+  uvB = center + (uvB - center) * lat.z;
   uvG.y = (uvG.y - 0.5) / anamorphic + 0.5;
   uvR.y = (uvR.y - 0.5) / anamorphic + 0.5;
   uvB.y = (uvB.y - 0.5) / anamorphic + 0.5;
@@ -146,6 +162,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let spectralTint = wavelengthToRGB(wavelength);
   let tintStrength = tentAlpha(displacementMag * 8.0) * dispersion * 10.0;
   var color = mix(sampled, sampled * spectralTint, tintStrength);
+
+  // ── Idea 2: radial coma tails ───────────────────────────────────
+  // Off-axis point highlights are drawn by a real lens as comets, tail along the RADIAL
+  // direction (astigmatism above is the tangential partner). Two taps toward the axis,
+  // soft-knee on tap luma so only highlights trail, decaying weights, length and amount grow
+  // with field radius x Dispersion; bass lengthens it like it widens the astigmatism. The
+  // trail is taken from highlights only and not stacked on a pixel that is itself one.
+  let lumW = vec3<f32>(0.2126, 0.7152, 0.0722);
+  let fieldR = sqrt(fieldR2);
+  let radialDir = fieldVec / max(fieldR, 1e-4);
+  let comaLen = fieldR * dispersion * 0.4 * (1.0 + audio0.x * 0.5);
+  var coma = vec3<f32>(0.0);
+  for (var k = 1; k <= 2; k = k + 1) {
+    let kf = f32(k);
+    let tap = textureSampleLevel(readTexture, u_sampler, clamp(uvG - radialDir * comaLen * 1.5 * kf, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).rgb;
+    coma += tap * smoothstep(0.62, 1.0, dot(tap, lumW)) / (1.0 + 0.8 * kf * kf);
+  }
+  let comaAmt = clamp(dispersion * 28.0, 0.0, 1.0) * clamp(fieldR * 2.0, 0.0, 1.0)
+              * (1.0 - smoothstep(0.62, 1.0, dot(sampled, lumW)));
+  color = color + coma * comaAmt * 1.1;
 
   // Audio-reactive pulse from plasmaBuffer: bass drives brightness, treble adds sparkle
   let audio = plasmaBuffer[0];
@@ -192,5 +228,4 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   textureStore(writeTexture, global_id.xy, outColor);
   textureStore(writeDepthTexture, global_id.xy, vec4(depth, 0.0, 0.0, 0.0));
   textureStore(dataTextureA, global_id.xy, outColor);
-  textureStore(dataTextureB, global_id.xy, vec4(displacementMag, bass, depth, alpha));
 }

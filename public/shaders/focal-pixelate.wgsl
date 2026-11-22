@@ -1,17 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Focal Pixelate
 //  Category: interactive-mouse
-//  Features: mouse-driven, audio-reactive, domain-warp, depth-aware, hex-bokeh, anti-moiré, lod-bias, shared-memory-tiling, temporal-feedback, upgraded-rgba
+//  Features: mouse-driven, audio-reactive, domain-warp, depth-aware, hex-bokeh, anti-moiré, lod-bias, upgraded-rgba
 //  Complexity: Low
-//  Upgraded: 2026-10-31
-//  Ideas: pixel-aperture well; defocus circle of confusion
-//  A packing: raw metadata (mix, 1/blocks, bass, alpha); ACES on writeTexture only
+//  Upgraded: 2026-10-31, 2026-11-22
+//  Ideas: pixel-aperture well; defocus circle of confusion; CFA zipper (§12.2A); highlight-weighted defocus discs
+//  A packing: ACES display RGBA (same value as writeTexture; HEAD stored focus metadata nobody read)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
-
-// Tiling hint: reserve shared memory for a 18x18 tile so future cooperative
-// sampling passes can reuse texels across the workgroup boundary.
-var<workgroup> tile: array<array<vec4<f32>, 18>, 18>;
 
 const HEX_TAPS = array<vec2<f32>, 7>(
     vec2<f32>(0.0, 0.0), vec2<f32>(1.0, 0.0), vec2<f32>(0.5, 0.866),
@@ -30,9 +26,12 @@ fn fbm(p: vec2<f32>, oct: i32) -> f32 {
     for (var i = 0; i < oct; i++) { s += a * valueNoise(p * f); f *= 2.0; a *= 0.5; }
     return s;
 }
+// Returns a DISPLACEMENT in uv units (HEAD returned `p + strength*q`, an absolute position
+// that main() then added to uv -> the fringe sampled ~9*uv, clamped to the photo's edge).
+// 3-octave value-noise fbm has mean ~0.44, subtracted so the fringe is not biased diagonally.
 fn domainWarp(p: vec2<f32>, strength: f32, t: f32) -> vec2<f32> {
     let q = vec2<f32>(fbm(p + t * 0.1, 3), fbm(p + vec2<f32>(5.2, 1.3) - t * 0.08, 3));
-    return p + strength * q;
+    return strength * (q - vec2<f32>(0.44));
 }
 fn aces(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -57,8 +56,14 @@ fn sampleHexBokeh(uv: vec2<f32>, cellSize: f32, lod: f32) -> vec3<f32> {
     let scale = cellSize * 0.5;
     for (var i = 0; i < 7; i = i + 1) {
         let off = HEX_TAPS[i] * scale;
-        let w = select(0.85, 1.35, i == 0);
-        acc += textureSampleLevel(readTexture, u_sampler, clamp(uv + off, vec2<f32>(0.001), vec2<f32>(0.999)), lod).rgb * w;
+        let tap = textureSampleLevel(readTexture, u_sampler, clamp(uv + off, vec2<f32>(0.001), vec2<f32>(0.999)), lod).rgb;
+        // ── Idea 4: highlight-weighted defocus discs ────────────────────
+        // A real defocus kernel integrates light, so a bright tap outweighs a dark one and
+        // specular highlights open into aperture-shaped (hex) discs instead of a flat blur.
+        // Weights are normalised below (acc / wt): energy is moved, not added.
+        let hl = smoothstep(0.55, 1.0, dot(tap, vec3<f32>(0.2126, 0.7152, 0.0722)));
+        let w = select(0.85, 1.35, i == 0) * (1.0 + 3.0 * hl);
+        acc += tap * w;
         wt += w;
     }
     return acc / max(wt, 1.0e-4);
@@ -84,10 +89,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let invert = step(0.5, p4);
     let mix_factor = select(focus, 1.0 - focus, invert > 0.5);
 
-    // Early-exit optimization: when the pixel is fully in focus and not warped,
-    // we still need depth/alpha but can skip expensive block quantization.
-    let fully_focused = step(mix_factor, 0.02);
-
     // Block count from pixel size parameter, with audio-reactive contraction.
     let base_blocks = mix(500.0, 20.0, p1) * (1.0 - bass * 0.3);
     let blocks = max(mix(2000.0, base_blocks, mix_factor), 1.0);
@@ -95,7 +96,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Domain warp only affects the pixelated fringe; branchless mix suppresses it
     // in the focused center for a cleaner in-focus image.
     let warp = domainWarp(uv * 8.0, 0.02 * mix_factor * (1.0 + bass), u.config.x);
-    let sample_uv = clamp(floor((uv + warp * mix_factor) * blocks) / blocks + (0.5 / blocks), vec2<f32>(0.001), vec2<f32>(0.999));
+    let cell = floor((uv + warp * mix_factor) * blocks);
+    let sample_uv = clamp(cell / blocks + (0.5 / blocks), vec2<f32>(0.001), vec2<f32>(0.999));
 
     // Anti-moiré LOD bias: larger blocks get a fractional mip bias to smooth
     // high-frequency content; focused pixels stay at LOD 0.
@@ -109,7 +111,19 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // far this pixel already is from focus.
     let coc = mix(0.2, 2.6, mix_factor);
     let bokehColor = sampleHexBokeh(sample_uv, coc / blocks, lod);
-    let shown = mix(pointColor, bokehColor, mix_factor);
+    let shownBlur = mix(pointColor, bokehColor, mix_factor);
+
+    // ── Idea 3: CFA zipper (§12.2A) ─────────────────────────────────
+    // A pixelator that imitates a low-res sensor resolves luma per block but chroma only on
+    // the coarser 2x2 colour-filter mosaic: every pair of blocks shares one hue, so block
+    // edges show the Bayer "zipper" colour fringe. Fringe only (x mix_factor).
+    let lumW = vec3<f32>(0.2126, 0.7152, 0.0722);
+    let chromaUV = clamp((floor(cell * 0.5) * 2.0 + 1.0) / blocks, vec2<f32>(0.001), vec2<f32>(0.999));
+    let chromaTap = textureSampleLevel(readTexture, non_filtering_sampler, chromaUV, 0.0).rgb;
+    let shownL = dot(shownBlur, lumW);
+    let chromaCoarse = chromaTap - vec3<f32>(dot(chromaTap, lumW));
+    let chromaFine = shownBlur - vec3<f32>(shownL);
+    let shown = max(vec3<f32>(shownL) + mix(chromaFine, chromaCoarse, 0.7 * mix_factor), vec3<f32>(0.0));
 
     // ── Idea 1: pixel-aperture well ─────────────────────────────────
     // fract inside the block is the square pixel. Corners darken only
@@ -138,12 +152,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Depth-aware compositing: depth is nudged in the pixelated fringe.
     let depthOut = clamp(depth + mix_factor * 0.03, 0.0, 1.0);
 
-    // Temporal feedback: store focus metadata and a stable color history seed for
-    // downstream shaders that blend across frames.
-    let historyMix = select(0.0, 0.15, fully_focused > 0.5);
-
+    // A = ACES display RGBA (HEAD packed focus metadata that nothing reads; a downstream slot
+    // sampling C would have seen it as colour). B is not written: the host copies B->C first
+    // and A->C last, so a B written next to A is never observed.
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(tone + dither, alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(depthOut, 0.0, 0.0, 0.0));
-    textureStore(dataTextureA, global_id.xy, vec4<f32>(mix_factor, 1.0 / blocks, bass, alpha));
-    textureStore(dataTextureB, global_id.xy, vec4<f32>(historyMix, depthOut, treble * 0.1, fog));
+    textureStore(dataTextureA, global_id.xy, vec4<f32>(tone, alpha));
 }

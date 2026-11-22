@@ -2,7 +2,7 @@
   "id": "ink-dispersion-guided",
   "name": "Ink Dispersion Guided",
   "url": "shaders/ink-dispersion-guided.wgsl",
-  "description": "Depth-guided edge-preserving filter combined with ink-style halftone rendering. The guided filter smooths based on depth boundaries, then the result is rendered as ink dots with paper texture.",
+  "description": "Depth-guided edge-preserving filter combined with ink-style halftone rendering. The guided filter smooths based on depth boundaries, then the result is rendered as ink dots with paper texture. The dot pitch follows depth (near coarse, far fine) and depth discontinuities get a thin ink silhouette contour.",
   "features": [
     "advanced-hybrid",
     "depth-guided-filter",

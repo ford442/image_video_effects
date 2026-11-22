@@ -3035,7 +3035,7 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
-    "description": "Mouse-driven focal pixelation with FBM domain warp, depth-aware fog, IGN dither, and semantic alpha for slot-chain compositing.",
+    "description": "Mouse-driven focal pixelation: sharp focus disc, pixelated fringe with a Bayer-style 2x2 chroma zipper, highlight-weighted hex bokeh, FBM domain warp, depth-aware fog, IGN dither, and semantic alpha for slot-chain compositing.",
     "workgroup_size": [
       16,
       16,
@@ -5056,7 +5056,7 @@
     "name": "Knitted Fabric",
     "category": "interactive-mouse",
     "url": "shaders/knitted-fabric.wgsl",
-    "description": "Knitted wool with two-ply yarn and heather. Odd courses are purl, fibres lint into the gaps, and the pointer pulls stitches open onto the backing.",
+    "description": "Knitted wool with two-ply yarn and heather. Odd courses are purl, fibres lint into the gaps, and the pointer pulls stitches open onto the backing. Yarn is shaded as a round tube with a fibre sheen, and each loop casts a soft shadow onto the stitch behind it.",
     "params": [
       {
         "id": "scale",
@@ -6697,7 +6697,7 @@
       "audio-reactive",
       "upgraded-rgba"
     ],
-    "description": "The photo rides a Poincaré disk scrolled by a mouse Möbius transform. Horocycle gutters repeat radially, and Boundary Glow splits red and blue by a Cauchy scale.",
+    "description": "The photo rides a Poincaré disk scrolled by a mouse Möbius transform. Horocycle gutters repeat radially, and Boundary Glow splits red and blue by a Cauchy scale. Wedge mortar narrows to a hairline toward the rim (constant hyperbolic width), neighbouring tiles alternate in value and tint, and the bass drifts the view point.",
     "params": [
       {
         "id": "navigationSpeed",

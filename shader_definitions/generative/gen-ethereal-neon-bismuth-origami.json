@@ -5,15 +5,18 @@
   "type": "generative",
   "category": "generative",
   "workgroup_size": [16, 16, 1],
-  "description": "A hyper-dimensional realm where geometric crystal shards, reminiscent of bismuth hopper crystals, continuously fold and unfold like ethereal neon origami floating in a dark expanse.",
+  "description": "A hyper-dimensional realm where geometric crystal shards, reminiscent of bismuth hopper crystals, continuously fold and unfold like ethereal neon origami floating in a dark expanse. Each cube facet carries concentric hopper stair-steps, recesses between shards are occluded and thin-film oxide thins inside them; bass breathes the unfold and treble lifts the crease neon.",
   "features": [
     "Fractal Origami Folding",
     "Dynamic Unfolding",
     "Prismatic Neon Iridescence",
     "Volumetric Neon Core",
-    "Glass Refraction Illusion"
+    "Glass Refraction Illusion",
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
   ],
-  "tags": ["origami", "bismuth", "fractal", "iridescent", "neon", "crystal"],
+  "tags": ["origami", "bismuth", "fractal", "iridescent", "neon", "crystal", "audio-reactive"],
   "params": [
     {
       "id": "scale",

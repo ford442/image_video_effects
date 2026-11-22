@@ -13,6 +13,11 @@
 //            ones like a real 3D lenticular; (2) cylindrical lens ridge specular —
 //            a highlight line rides across every lenticule as the view rocks;
 //            (3) ACES on display RGB.
+//  Upgraded: 2026-11-22 — Rescue: the view spring lived in extraBuffer[133..134], which the
+//            host zeroes every frame, so mouse.x never steered the print (viewPos read 0);
+//            now stateless (viewPos = mouse.x).
+//  Ideas: depth parallax per lens; cylindrical lens ridge specular; click holo flashes; vertical view tilt; print grain; cylinder-lens magnification (each lenticule magnifies its own slice); adjacent-view crosstalk ghost (neighbour view bleeds in at the lenticule seam)
+//  A packing: display RGBA (ACES colour, semantic alpha); B = (strip, moire, viewAngle, semantic alpha)
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -47,23 +52,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     let mouse = u.zoom_config.yz;
 
-    // ── Critically-damped view spring ────────────────────────────────
-    // Persistent state in extraBuffer[133]=position, [134]=velocity
-    // ([0..4] reserved, [5..132] = engine FFT bins). Raw mouse.x is the
-    // spring target; the perspective shift rocks smoothly toward it like
-    // tilting a real lenticular print instead of snapping to the cursor.
-    let viewPos = extraBuffer[133];
-    let viewVel = extraBuffer[134];
-    if (global_id.x == 0u && global_id.y == 0u) {
-        let k = 10.0;                        // spring frequency (rad/s)
-        let dt = 0.016;                      // fixed step (~60 Hz frame)
-        let accel = k * k * (mouse.x - viewPos) - 2.0 * k * viewVel;
-        let vel = viewVel + accel * dt;
-        extraBuffer[134] = vel;
-        extraBuffer[133] = viewPos + vel * dt;
-    }
+    // ── View angle = raw mouse.x ─────────────────────────────────────
+    // The old critically-damped spring kept its position in extraBuffer[133..134],
+    // but the host re-uploads (zeroes) extraBuffer[133..255] every frame, so every
+    // invocation read viewPos = 0 and the pointer never rocked the print. Without
+    // persistent state there is nothing to smooth, so the pointer drives the view
+    // directly (same fix as knitted-fabric, 2026-10-27).
+    let viewPos = mouse.x;
 
-    // Slow sin(time * 0.3) drift stays additive AFTER the spring.
+    // Slow sin(time * 0.3) drift stays additive.
     let viewAngle = (viewPos - 0.5) * 1.6 + sin(time * 0.3) * 0.1;
 
     // Vertical view tilt — the previously-unused mouse.y rocks strip phase.
@@ -74,11 +71,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Lenticular slicing — vertical strips that shift with view (+ tilt)
     let strip = fract(uv.x * freq + viewAngle * shiftAmt * 1.8 + tiltPhase);
     let band = smoothstep(0.0, 0.18, strip) - smoothstep(0.82, 1.0, strip);
+    let lensX = strip * 2.0 - 1.0;   // -1..1 across this lenticule
+
+    // ── Idea 4: cylinder-lens magnification ──────────────────────────
+    // Each lenticule is a cylinder lens that magnifies the interlaced slice behind
+    // it: the sample is pulled toward the lenticule centre by a fraction of the
+    // pixel's offset from that centre (0 at the centre, largest at the seam), and
+    // snaps back at the next lenticule, so the print reads as vertical slivers, each
+    // locally magnified. Strength rides the Shift role (0 at Shift 0).
+    let lensDisp = vec2<f32>(-lensX * 0.22 * clamp(shiftAmt, 0.0, 1.0) / freq, 0.0);
 
     // Three color channels offset by view angle (holographic)
-    let rUV = uv + vec2<f32>(viewAngle * shiftAmt * 0.012, 0.0);
-    let gUV = uv + vec2<f32>(viewAngle * shiftAmt * 0.003, 0.0);
-    let bUV = uv + vec2<f32>(viewAngle * shiftAmt * -0.009, 0.0);
+    let rUV = uv + lensDisp + vec2<f32>(viewAngle * shiftAmt * 0.012, 0.0);
+    let gUV = uv + lensDisp + vec2<f32>(viewAngle * shiftAmt * 0.003, 0.0);
+    let bUV = uv + lensDisp + vec2<f32>(viewAngle * shiftAmt * -0.009, 0.0);
 
     let r = textureSampleLevel(readTexture, u_sampler, clamp(rUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
     let g = textureSampleLevel(readTexture, u_sampler, clamp(gUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).g;
@@ -91,9 +97,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let stripId = floor(uv.x * freq + viewAngle * shiftAmt * 1.8 + tiltPhase);
     let stripCenterUV = vec2<f32>((stripId + 0.5 - viewAngle * shiftAmt * 1.8 - tiltPhase) / freq, uv.y);
     let sceneDepth = textureSampleLevel(readDepthTexture, non_filtering_sampler, clamp(stripCenterUV, vec2<f32>(0.0), vec2<f32>(1.0)), 0.0).r;
-    let parallaxUV = clamp(uv + vec2<f32>(viewAngle * shiftAmt * (sceneDepth - 0.5) * 0.04, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let parallaxUV = clamp(uv + lensDisp + vec2<f32>(viewAngle * shiftAmt * (sceneDepth - 0.5) * 0.04, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
     let parallaxCol = textureSampleLevel(readTexture, u_sampler, parallaxUV, 0.0).rgb;
     col = mix(col, parallaxCol, 0.55 * band);
+
+    // ── Idea 5: adjacent-view crosstalk ghost ────────────────────────
+    // Interlaced columns spill past the lens focal width, so near a lenticule seam
+    // the neighbouring view bleeds in: a ghost of the picture displaced toward the
+    // neighbour (which side = the seam this pixel is closest to), further for near
+    // scene depth. Weighted by seam proximity and the Shift role.
+    let seamSide = select(-1.0, 1.0, lensX > 0.0);
+    let seam = smoothstep(0.45, 1.0, abs(lensX));
+    let ghostUV = clamp(uv + lensDisp + vec2<f32>(seamSide * (0.15 + 0.45 * sceneDepth) / freq, 0.0), vec2<f32>(0.0), vec2<f32>(1.0));
+    let ghostCol = textureSampleLevel(readTexture, u_sampler, ghostUV, 0.0).rgb;
+    col = mix(col, ghostCol, 0.5 * seam * clamp(shiftAmt, 0.0, 1.0));
 
     // Strong moiré interference when view + audio align
     let moire = sin(strip * 38.0 + viewAngle * 14.0 + time * beat * 4.0) * 0.5 + 0.5;
@@ -138,7 +155,6 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Idea 2: cylindrical lens ridge — normal across the strip, specular
     // peak slides with view angle.
-    let lensX = strip * 2.0 - 1.0;
     let lensN = normalize(vec3<f32>(lensX, 0.0, sqrt(max(1.0 - lensX * lensX, 0.0)) + 0.2));
     let viewDir = normalize(vec3<f32>(viewAngle * 0.8, tiltPhase, 1.0));
     let lensSpec = pow(max(dot(reflect(-viewDir, lensN), vec3<f32>(0.0, 0.0, 1.0)), 0.0), 48.0);
