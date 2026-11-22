@@ -8,10 +8,11 @@
 //  Upgraded: 2026-08-05 — Algorithmist b35 (Lucas-Kanade-style flow
 //            direction, motion-aligned anamorphic streaks, curl-noise
 //            advected trails, Gray-Scott-hint diffusion feedback, audio
-//            pump + guarded FFT shimmer, click pulse via extraBuffer
-//            spring, generated relief depth, bounds guard), 2026-11-19
-//  Ideas: Doppler streak fringe; cooling afterglow
-//  A packing: rgb = accumulated bloom trail, a = previous source luma
+//            pump + guarded FFT shimmer, click pulse, generated relief
+//            depth, bounds guard), 2026-11-19, 2026-11-22
+//  Ideas: Doppler streak fringe; cooling afterglow; signed-motion flare & wake (arriving light flares the feed, departing light leaves a longer trail); energy-conserving composite (the base gives up what the bloom spreads, 12.2F)
+//  A packing: rgb = accumulated bloom trail (raw HDR, never tone-mapped), a = previous source luma; ACES only on writeTexture
+//  Rescue 2026-11-22: the click pulse kept its energy in extraBuffer[133..134], which the engine zeroes every frame (held-only, no decay, racy single writer); it is now stateless, from u.ripples
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -22,6 +23,12 @@ const IDEA_2: f32 = 1.0;
 
 fn luma(c: vec3<f32>) -> f32 {
     return dot(c, vec3<f32>(0.299, 0.587, 0.114));
+}
+
+// Display tone map for the bloom light (the A trail stays raw HDR).
+fn aces(x: vec3<f32>) -> vec3<f32> {
+    let c = max(x, vec3<f32>(0.0));
+    return clamp((c * (2.51 * c + 0.03)) / (c * (2.43 * c + 0.59) + 0.14), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 // ── 2D value noise + curl (divergence-free flow field) ─────────────
@@ -55,15 +62,17 @@ fn curlNoise(p: vec2<f32>, t: f32) -> vec2<f32> {
 }
 
 // ── Velocity magnitude (original soul, kept) + flow direction ──────
-// Returns vec3(velocityMagnitude, flowDir.xy). Flow direction fuses the
+// Returns vec4(velocityMagnitude, flowDir.xy, signedLumaDelta). Flow direction fuses the
 // luminance-gradient normal (brightness-constancy motion cue) with the
 // ambient curl field so streaks are anisotropic even on still frames.
-fn velocityField(uv: vec2<f32>, pixel: vec2<f32>, coord: vec2<i32>, t: f32) -> vec3<f32> {
+fn velocityField(uv: vec2<f32>, pixel: vec2<f32>, coord: vec2<i32>, t: f32) -> vec4<f32> {
     let current = textureSampleLevel(readTexture, u_sampler, uv, 0.0).rgb;
     // ── Rescue 1: C.rgb is last frame's accumulated BLOOM, not the source, so
     // HEAD saw "motion" everywhere. Previous source luma now lives in C.a. ──
     let prevLuma = textureLoad(dataTextureC, coord, 0).a;
-    let lumaDiff = abs(luma(current) - prevLuma) * 1.7;
+    // Idea 3 source: the sign HEAD threw away with abs() (+ = light arriving, - = leaving).
+    let signedDelta = luma(current) - prevLuma;
+    let lumaDiff = abs(signedDelta) * 1.7;
 
     let right = textureSampleLevel(readTexture, u_sampler, uv + vec2<f32>(pixel.x, 0.0), 0.0).rgb;
     let left = textureSampleLevel(readTexture, u_sampler, uv - vec2<f32>(pixel.x, 0.0), 0.0).rgb;
@@ -82,7 +91,7 @@ fn velocityField(uv: vec2<f32>, pixel: vec2<f32>, coord: vec2<i32>, t: f32) -> v
     var flow = gradDir * 0.5 + curl * (0.4 + velocity * 0.6);
     let fl = length(flow);
     flow = select(flow / max(fl, 0.0001), vec2<f32>(1.0, 0.0), fl < 0.0001);
-    return vec3<f32>(velocity, flow);
+    return vec4<f32>(velocity, flow, signedDelta);
 }
 
 // ── Multi-octave bloom sampling (original structure, kept) ─────────
@@ -154,18 +163,26 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let pixel = 1.0 / resolution;
     let t = u.config.x;
 
-    // ── Click-pulse spring in persistent shader state [133..134] ────
     let nExtra = arrayLength(&extraBuffer);
-    if (global_id.x == 0u && global_id.y == 0u && nExtra > 135u) {
-        let down = u.zoom_config.w;
-        let prevDown = extraBuffer[134];
-        var energy = extraBuffer[133] * 0.93;
-        if (down > 0.5 && prevDown <= 0.5) { energy = 1.0; }
-        extraBuffer[133] = energy;
-        extraBuffer[134] = down;
+    let aspect = vec2<f32>(resolution.x / resolution.y, 1.0);
+
+    // ── Rescue: stateless click pulse. HEAD kept its energy in extraBuffer[133..134],
+    // which writeExtraBuffer zeroes every frame (held-only, never decayed, racy).
+    // Clicks already live in u.ripples (uv, absolute startTime): a finite burst at
+    // the click that decays like HEAD's 0.93/frame (~4.4/s), plus a soft held glow.
+    var pulseCol = 0.0;
+    let nRip = min(u32(max(u.config.y, 0.0)), 50u);
+    for (var ri: u32 = 0u; ri < nRip; ri++) {
+        let rp = u.ripples[ri];
+        let age = t - rp.z;
+        let live = select(0.0, 1.0, age >= 0.0 && age < 1.6);
+        let dR = length((uv - rp.xy) * aspect);
+        let e = live * exp(-age * 4.4);
+        pulseCol += e * exp(-dR * dR * 18.0);
     }
-    var clickPulse = 0.0;
-    if (nExtra > 134u) { clickPulse = extraBuffer[133]; }
+    let held = select(0.0, 0.35, u.zoom_config.w > 0.5);
+    let dM = length((uv - u.zoom_config.yz) * aspect);
+    pulseCol += held * exp(-dM * dM * 18.0);
 
     // ── Audio: plasma bands + guarded low FFT bins (1–8 range) ──────
     let bass = plasmaBuffer[0].x;
@@ -190,6 +207,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let vf = velocityField(uv, pixel, coord, t);
     let velocity = vf.x;
     let flowDir = vf.yz;
+    // ── Idea 3: signed-motion flare & wake ──────────────────────────────
+    // HEAD took abs() of the luma change. Its sign says which way the light went:
+    // arriving light (luma rising vs C.a) flares the bloom feed; departing light
+    // is not forgotten, the luma that left is deposited into the trail, so it
+    // decays/advects/diffuses with it. Zero on a perfectly still source, like
+    // HEAD's lumaDiff.
+    let arrive = smoothstep(0.02, 0.2, vf.w);
+    let departed = max(-vf.w, 0.0);
 
     let velocityMask = smoothstep(threshold, threshold + 0.2, velocity);
 
@@ -230,27 +255,33 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // velocityColor's cold end each frame: fresh bloom white, old trails blue.
     let cool = mix(vec3<f32>(1.0), vec3<f32>(0.9, 0.96, 1.05), IDEA_2);
     let decayedBloom = diffused * decay * cool;
-    let feed = max(finalBloom * bloomIntensity - vec3<f32>(threshold * 0.5), vec3<f32>(0.0));
+    let feed = max(finalBloom * bloomIntensity - vec3<f32>(threshold * 0.5), vec3<f32>(0.0)) * (1.0 + arrive) + tint * (departed * 1.4);
     let accumulatedBloom = max(feed, decayedBloom * 0.9);
 
     // ── Composite: base + bloom (original blend scheme, kept) ──────
-    let screenBlend = 1.0 - (1.0 - baseColor) * (1.0 - accumulatedBloom);
-    let addBlend = baseColor + accumulatedBloom * velocityMask;
+    // ── Idea 4: energy-conserving composite (12.2F) ──
+    // The scattered light came from the source: the base gives up a fraction of
+    // what the bloom carries before the blend, so glow does not double exposure.
+    let take = clamp(luma(accumulatedBloom) * 0.28, 0.0, 0.45);
+    let srcColor = baseColor * (1.0 - take);
+    // The photo is already display-referred; the glow is the HDR light. ACES maps the
+    // light into display range so the screen blend can no longer exceed 1 (HEAD clipped).
+    let glowDisp = aces(accumulatedBloom);
+    let screenBlend = 1.0 - (1.0 - srcColor) * (1.0 - glowDisp);
+    let addBlend = srcColor + glowDisp * velocityMask;
 
     var finalColor = mix(screenBlend, addBlend, velocityMask * 0.5);
     finalColor = finalColor * (1.0 + velocity * 0.3);
 
-    // Click pulse: finite, spatially local white-aether burst at cursor
-    if (clickPulse > 0.01) {
-        let dM = length((uv - u.zoom_config.yz) * vec2<f32>(resolution.x / resolution.y, 1.0));
-        finalColor += vec3<f32>(0.9, 0.95, 1.0) * exp(-dM * dM * 18.0) * clickPulse * 0.8;
-    }
+    // Click pulse: finite, spatially local white-aether burst at each click
+    // (stateless, from u.ripples; a soft glow follows the held cursor).
+    finalColor += vec3<f32>(0.9, 0.95, 1.0) * pulseCol * 0.8;
 
     // ── Outputs ─────────────────────────────────────────────────────
     textureStore(dataTextureA, coord, vec4<f32>(accumulatedBloom, baseLuma));
 
-    let alpha = clamp(mix(0.8, 1.0, velocityMask) + clickPulse * 0.1, 0.0, 1.0);
-    textureStore(writeTexture, coord, vec4<f32>(finalColor, alpha));
+    let alpha = clamp(mix(0.8, 1.0, velocityMask) + clamp(pulseCol, 0.0, 1.0) * 0.1, 0.0, 1.0);
+    textureStore(writeTexture, coord, vec4<f32>(clamp(finalColor, vec3<f32>(0.0), vec3<f32>(1.0)), alpha));
 
     // Generated relief depth: bloom mass rises toward the viewer
     let bloomLuma = luma(accumulatedBloom);

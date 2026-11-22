@@ -3,9 +3,10 @@
 //  Category: hybrid
 //  Features: mouse-driven
 //  Complexity: Medium
-//  Upgraded: 2026-11-01
-//  Ideas: 45-degree rotated anti-aliased halftone screen with dot gain; Sobel-hypot magnitude-weighted ink line; paper-tooth ink starvation
-//  A packing: display RGBA (alpha = ink coverage; A/C not used)
+//  Upgraded: 2026-11-01, 2026-11-22
+//  Ideas: 45-degree rotated anti-aliased halftone screen with dot gain; Sobel-hypot magnitude-weighted ink line; paper-tooth ink starvation; plate misregistration (the black key plate - outlines and dots - prints off the colour plate, scaled by screen coarseness); ink squash (dot rim denser than its core)
+//  A packing: display RGBA (alpha = ink coverage; A/C not used); no ACES (print output is display-referred, <= 1)
+//  Rescue 2026-11-22: posterize was floor(c*L)/L, which never reaches white (flat 0.97 -> 0.86 at L=7, Glow=0 -> {0,0.5}); now floor(c*L)/(L-1)
 // ═══════════════════════════════════════════════════════════════════
 #include "_prelude.wgsl"
 
@@ -40,6 +41,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     var color: vec3<f32>;
     var finalColor: vec3<f32>;
     var ink_alpha: f32 = 0.0;
+    var lumK: f32 = 0.0;
     var d: f32;
 
     let _e3 = u.config;
@@ -59,6 +61,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let levels = (floor((_e48 * 10.0)) + 2.0);
     let inkDensity = u.zoom_params.w;
     let pixelSize = (vec2(1.0) / resolution);
+    // ── Idea 4: plate misregistration ───────────────────────────────────
+    // The key plate (outline taps, dot lattice, dot luma) prints off the colour
+    // plate by a fixed press error that grows with the screen coarseness; the
+    // colour plate stays at uv. One press run: static, no strobing.
+    let regPx = vec2<f32>(0.32, -0.2) * dotSize;
+    let uvK = uv + regPx * pixelSize;
     loop {
         let _e69 = i;
         if (_e69 <= 1) {
@@ -77,10 +85,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
                     let _e77 = i;
                     let _e79 = j;
                     let offset = (vec2<f32>(f32(_e77), f32(_e79)) * pixelSize);
-                    let _e85 = uv;
+                    let _e85 = uvK;
                     let _e88 = textureSampleLevel(readTexture, u_sampler, (_e85 + offset), 0.0);
                     let s = _e88.xyz;
                     let _e90 = getLuma(s);
+                    if ((i == 0) && (j == 0)) {
+                        lumK = _e90;
+                    }
                     wx = 0.0;
                     wy = 0.0;
                     let _e95 = i;
@@ -139,20 +150,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let _e149 = uv;
     let _e151 = textureSampleLevel(readTexture, u_sampler, _e149, 0.0);
     color = _e151.xyz;
-    let _e154 = color;
-    let _e155 = getLuma(_e154);
     // ── Idea 1: 45-degree rotated screen, anti-aliased dots, dot gain ───
     // A real black-plate halftone screen sits at 45 degrees; ink spreads, so
     // shadow dots grow a little and edges are soft instead of stair-stepped.
-    let screenPos = vec2<f32>(global_id.xy) / vec2(dotSize);
+    let screenPos = (vec2<f32>(global_id.xy) + regPx) / vec2(dotSize);
     let gridPos = vec2<f32>(
         0.70710678 * (screenPos.x - screenPos.y),
         0.70710678 * (screenPos.x + screenPos.y));
     let gridCenter = (floor(gridPos) + vec2(0.5));
     let dist = length((gridPos - gridCenter));
     let _e169 = color;
-    color = (floor((_e169 * levels)) / vec3(levels));
-    let dotRadius = ((1.0 - _e155) * 0.7) * (1.0 + 0.15 * (1.0 - _e155));
+    // Rescue: HEAD divided by levels, so the top band was (L-1)/L and white was lost.
+    color = clamp(floor((_e169 * levels)) / vec3(levels - 1.0), vec3(0.0), vec3(1.0));
+    let lumKey = lumK;
+    let dotRadius = ((1.0 - lumKey) * 0.7) * (1.0 + 0.15 * (1.0 - lumKey));
     let dotAA = max(0.5 / dotSize, 0.02);
     // ── Idea 3: paper-tooth ink starvation (static fibre, no strobing) ──
     let tooth = hash12_(floor(vec2<f32>(global_id.xy) * 0.5) + vec2(37.0));
@@ -167,17 +178,20 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = mix(_e192, vec3<f32>(0.02, 0.02, 0.04), (lineWeight * starve * inkDensity));
     }
     if (dotCov > 0.0) {
-        let dot_coverage = smoothstep(0.0, 0.7, (1.0 - _e155));
-        let dot_alpha = ((dot_coverage * inkDensity) * 0.85) * dotCov;
+        let dot_coverage = smoothstep(0.0, 0.7, (1.0 - lumKey));
+        // ── Idea 5: ink squash. Pressure pushes ink to the dot's periphery: the
+        // rim prints denser than the core (doughnut dots on coarse screens). ──
+        let rim = smoothstep(dotRadius * 0.55, dotRadius + 0.001, dist);
+        let dot_alpha = min(((dot_coverage * inkDensity) * 0.85) * dotCov * (1.0 + 0.2 * rim), 1.0);
         let _e213 = finalColor;
         let _e214 = finalColor;
-        finalColor = mix(_e213, (_e214 * 0.7), (dotCov * 0.8));
+        finalColor = mix(_e213, (_e214 * (0.7 - 0.13 * rim)), (dotCov * 0.8));
         let _e220 = ink_alpha;
         ink_alpha = max(_e220, dot_alpha);
     }
     let _e222 = ink_alpha;
     if (_e222 < 0.01) {
-        ink_alpha = mix(0.15, 0.45, (_e155 * inkDensity));
+        ink_alpha = mix(0.15, 0.45, (lumKey * inkDensity));
     }
     let _e229 = uv;
     let _e236 = hash12_((((_e229 * time) * 0.001) + vec2(100.0)));

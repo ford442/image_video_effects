@@ -1,10 +1,12 @@
 // ═══════════════════════════════════════════════════════════════
 //  Volumetric Rainbow Clouds - PASS 1 of 2 with Scientific Alpha
 //  Category: generative
-//  Features: volumetric, depth-aware, mouse-driven, upgraded-rgba
-//  Upgraded: 2026-11-01
-//  Ideas: trilinear value-noise density; light-march self-shadow toward the mouse light (Beer-Lambert, 12.2F); Henyey-Greenstein silver lining on thin edges (12.2F); scattering-angle corona fringe (cloud iridescence)
+//  Features: volumetric, depth-aware, mouse-driven, audio-reactive, upgraded-rgba
+//  Upgraded: 2026-11-01, 2026-11-22
+//  Ideas: trilinear value-noise density; light-march self-shadow toward the mouse light (Beer-Lambert, 12.2F); Henyey-Greenstein silver lining on thin edges (12.2F); scattering-angle corona fringe (cloud iridescence); wind shear (each slab drifts at its own speed and heading); in-cloud lightning (bass-gated flash cell lights the cloud where it is dense)
 //  A packing: none (RGBA to writeTexture, depth out); ACES on display colour
+//  Rescue 2026-11-22: HEAD's view vector had no z component (viewPos.z = 0), so the specular term was exactly 0 everywhere
+//          and normalize(0) was undefined at the centre pixel; the camera now sits in front of the slab.
 //  Generates 3D noise clouds with volumetric density, lighting, and 
 //  depth-aware rainbow coloring for prismatic effects.
 //  
@@ -98,6 +100,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     //  Sample multiple depth layers and accumulate optical depth
     // ═══════════════════════════════════════════════════════════════
     
+    // ── Idea 6: in-cloud lightning. Bass over a gate fires a flash cell inside the cloud at a position hashed from
+    // the strike slot (2.5 strikes/s), decaying fast; it lights only where there is cloud (see the layer loop).
+    // No bass -> flash = 0 -> HEAD's picture.
+    let strikeClock = time * 2.5;
+    let strikeSlot = floor(strikeClock);
+    let strikePos = vec2<f32>(hash3d(vec3<f32>(strikeSlot, 1.7, 0.3)), hash3d(vec3<f32>(strikeSlot, 9.1, 4.2)));
+    let strikeD = (perspUV - strikePos) * vec2<f32>(dims.x / dims.y, 1.0);
+    let flash = smoothstep(0.25, 0.6, plasmaBuffer[0].x) * exp(-fract(strikeClock) * 7.0) * exp(-dot(strikeD, strikeD) * 10.0);
+
     // Light direction toward the mouse light (hoisted so each layer can march toward it)
     let lightPos = vec3<f32>(mousePos - vec2<f32>(0.5, 0.5), 1.0);
     let viewPos = vec3<f32>(perspUV - vec2<f32>(0.5, 0.5), 0.0);
@@ -112,7 +123,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let numLayers = 3;
     for (var layer: i32 = 0; layer < numLayers; layer = layer + 1) {
         let layerZ = f32(layer) * LAYER_THICKNESS + time * flowSpeed * 0.1;
-        let noisePos = vec3<f32>(perspUV * scale, layerZ);
+        // ── Idea 5: wind shear. Each slab slides at its own speed (0.06 / 0.14 / 0.26 noise-units/s) and a heading
+        // sheared 0.4 per layer (toward +x, so the pattern is sampled upwind), scaled by Flow Speed. HEAD only
+        // boiled the noise through z, so the slabs never slid past each other. Same position feeds the shadow march
+        // and normal taps below.
+        let windSpeed = 0.06 + 0.06 * f32(layer) + 0.02 * f32(layer * layer);
+        let windVec = vec2<f32>(1.0, 0.4 * f32(layer)) * windSpeed * flowSpeed * time;
+        let noisePos = vec3<f32>(perspUV * scale - windVec, layerZ);
         let noise = fbm3d(noisePos);
         
         // Layer density with falloff
@@ -139,6 +156,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
         // Accumulate in-scattered light
         accumulatedColor += transmittance * layerColor * lightShade * (1.0 - layerTransmittance);
+        // Idea 6: the flash lights this slab in proportion to its own opacity; cold white tinted 40 % by its hue.
+        accumulatedColor += transmittance * (1.0 - layerTransmittance) * mix(vec3<f32>(0.8, 0.88, 1.0), hsv2rgb(fract(hue), 0.9, 1.0), 0.4) * flash * 6.0;
         
         // Update transmittance
         transmittance *= layerTransmittance;
@@ -157,7 +176,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     // Lighting from mouse as light source
     let diffuse = max(dot(normal, lightDir), 0.0);
     let reflectDir = reflect(-lightDir, normal);
-    let viewDir = normalize(-viewPos);
+    // Rescue: HEAD used normalize(-viewPos) with viewPos.z = 0, so viewDir had no z and specular was 0 everywhere.
+    let viewDir = normalize(vec3<f32>(-viewPos.xy, 1.0));
     let specular = pow(max(dot(viewDir, reflectDir), 0.0), 32.0) * lightIntensity;
 
     // Rainbow color based on normal orientation and time

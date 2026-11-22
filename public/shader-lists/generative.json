@@ -29381,7 +29381,7 @@
       "audio",
       "music"
     ],
-    "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity. Upgraded 2026-08-05: Lucas-Kanade-style flow estimation with motion-aligned anamorphic streaks, curl-noise advected feedback trails, Gray-Scott-hint diffusion accumulation, audio pump with guarded FFT shimmer, click-pulse spring and generated relief depth",
+    "description": "Velocity-sensitive bloom effect that intensifies on motion, creating multi-octave glow with white core and colored aura based on velocity. Upgraded 2026-08-05: Lucas-Kanade-style flow estimation with motion-aligned anamorphic streaks, curl-noise advected feedback trails, Gray-Scott-hint diffusion accumulation, audio pump with guarded FFT shimmer, click-pulse spring and generated relief depth. Updated 2026-11-22: signed-motion flare & wake (arriving light flares the bloom feed, departing light leaves a longer trail), energy-conserving composite (the base gives up what the bloom spreads), ACES on the bloom light (no more hard-clipped whites), and a stateless click pulse from the ripple table (the old extraBuffer spring was zeroed every frame)",
     "workgroup_size": [
       16,
       16,
@@ -29401,7 +29401,10 @@
       "diffusion-feedback",
       "generated-depth",
       "doppler-streak-fringe",
-      "cooling-afterglow"
+      "cooling-afterglow",
+      "signed-motion-wake",
+      "energy-conserving-bloom",
+      "upgraded-rgba"
     ]
   },
   {

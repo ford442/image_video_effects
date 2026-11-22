@@ -3,8 +3,8 @@
 //  Category: post-processing
 //  Features: audio-reactive, mouse-driven, depth-aware, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-09-09, 2026-11-21
-//  Ideas: mouse local metering window; per-channel shoulder; density-weighted grain (§12.2A); Wallis local-brightness pull with edge-aware coarse mean (§12.2A)
+//  Upgraded: 2026-09-09, 2026-11-21, 2026-11-22
+//  Ideas: mouse local metering window; per-channel shoulder; density-weighted grain (§12.2A); Wallis local-brightness pull with edge-aware coarse mean (§12.2A); H&D exponential shoulder knee (§12.2A; Shoulder Strength now rolls highlights off and is live); chroma follows the tone curve (hue-preserving ratio)
 //  A packing: ACES display RGBA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -21,9 +21,16 @@ fn acesTone(x: vec3<f32>) -> vec3<f32> {
 
 fn filmCurve(x: f32, toe: f32, shoulder: f32) -> f32 {
   let t = toe * 0.3;
-  let s = shoulder * 0.3;
   let shadow = mix(x * (1.0 + t), x, smoothstep(0.0, 0.25, x));
-  let highlight = mix(shadow, 1.0 - (1.0 - shadow) * (1.0 - s), smoothstep(0.75, 1.0, shadow));
+  // ── Idea 5: H&D exponential shoulder knee (§12.2A) ───────────────────
+  // HEAD's shoulder LIFTED highlights toward 1 by <= 0.3*(1-x) and ACES flattened it
+  // (Shoulder Strength moved <= 2/255). A film shoulder ROLLS OFF: above the knee
+  // k = 1 - 0.5*Shoulder the signal follows k + (1-k)(1 - exp(-(x-k)/(1-k))), which is
+  // value- and slope-continuous at k. Shoulder 0 => k = 1 => identity (HEAD at 0).
+  let k = 1.0 - 0.5 * clamp(shoulder, 0.0, 1.1);
+  let room = max(1.0 - k, 1e-3);
+  let over = max(shadow - k, 0.0);
+  let highlight = shadow - over + room * (1.0 - exp(-over / room));
   return clamp(highlight, 0.0, 1.0);
 }
 
@@ -130,7 +137,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let highlightTint = vec3<f32>(0.10, 0.07, 0.03) * smoothstep(0.7, 1.0, curvedLuma);
   let splitTone = shadowTint + highlightTint;
 
-  var color = vec3<f32>(curvedLuma) + mix(chroma, dyeChroma, 0.55) * mix(0.8, 1.4, stretchAmount) + splitTone * 0.3;
+  // ── Idea 6: chroma follows the tone curve (hue-preserving ratio) ─────
+  // HEAD added the colour difference to the CURVED luma unchanged: a shadow lifted x2 kept its
+  // old (now relatively thin) colour, a highlight the shoulder pulled down kept its old
+  // (now relatively neon) colour. Scale the colour difference by the local tone gain
+  // curvedLuma/luma, bounded 0.6..1.8, weighted by Stretch Amount (0 => HEAD).
+  let toneGain = clamp((curvedLuma + 0.02) / (luma + 0.02), 0.6, 1.8);
+  let chromaFollow = mix(1.0, toneGain, 0.75 * stretchAmount);
+
+  var color = vec3<f32>(curvedLuma) + mix(chroma, dyeChroma, 0.55) * chromaFollow * mix(0.8, 1.4, stretchAmount) + splitTone * 0.3;
 
   // ── Idea 3: density-weighted grain (§12.2A) ──────────────────────────
   // Real grain peaks in the midtones and vanishes in clear base / dense blacks:

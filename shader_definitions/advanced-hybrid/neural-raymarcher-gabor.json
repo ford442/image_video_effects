@@ -2,7 +2,7 @@
   "id": "neural-raymarcher-gabor",
   "name": "Neural Raymarcher Gabor",
   "url": "shaders/neural-raymarcher-gabor.wgsl",
-  "description": "Raymarched neural network visualization with Gabor oriented texture detection. Gabor responses highlight connection directions and layer boundaries with psychedelic color mapping.",
+  "description": "Raymarched neural network visualization with Gabor oriented texture detection. Gabor responses highlight connection directions and layer boundaries with psychedelic color mapping. The Gabor bank is zero-mean (flat areas no longer light up), polarity-coloured (ridge vs step edge), and uniform-orientation texture is suppressed so orientation boundaries pop out. Bass splits the colour channels, mids spin the layers.",
   "features": [
     "advanced-hybrid",
     "neural-raymarching",
@@ -10,7 +10,8 @@
     "volumetric",
     "randomization-safe",
     "upgraded-rgba",
-    "mouse-driven"
+    "mouse-driven",
+    "audio-reactive"
   ],
   "params": [
     {

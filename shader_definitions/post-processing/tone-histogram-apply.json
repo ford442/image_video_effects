@@ -2,7 +2,7 @@
   "id": "tone-histogram-apply",
   "name": "Tone Histogram (Pass 2: Apply)",
   "url": "shaders/tone-histogram-apply.wgsl",
-  "description": "Auto-grade driven by the frame's own luma histogram, built in-pass (workgroup atomics over a whole-frame sample grid): auto-exposure to Target Luma, a clip-limited CDF equalisation blend (rides Contrast), percentile-anchored levels (Reinhard white point at p95, post-curve p05..p95 contrast span, soft-rolled tails), saturation, and a peak-bin hue shift in Dynamic Hue Mode. Works standalone or after tone-histogram.",
+  "description": "Auto-grade driven by the frame's own luma histogram, built in-pass (workgroup atomics over a whole-frame sample grid): auto-exposure to Target Luma, a clip-limited CDF equalisation blend (rides Contrast), percentile-anchored levels (Reinhard white point at p95, post-curve p05..p95 contrast span, soft-rolled tails), saturation, and a peak-bin hue shift in Dynamic Hue Mode. Works standalone or after tone-histogram. Saturation and Dynamic Hue Mode are luma-held, so they change colour only and the mean brightness stays at Target Luma.",
   "features": [
     "multi-pass-2",
     "histogram",

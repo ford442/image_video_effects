@@ -3,14 +3,18 @@
 //  Category: advanced-hybrid
 //  Features: layered-zoom, depth-aware, audio-reactive, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-11-01
-//  Ideas: staggered octave composite (the layer composite finally reaches the picture; Droste-style self-similar zoom, sin^2 birth/death windows); zoom dispersion (R/B taps at zoom*(1 -+ 0.018))
+//  Upgraded: 2026-11-01, 2026-11-22
+//  Ideas: staggered octave composite (the layer composite finally reaches the picture; Droste-style self-similar zoom, sin^2 birth/death windows); zoom dispersion (R/B taps at zoom*(1 -+ 0.018)); Droste spiral twist (rotation proportional to log2 of each layer's zoom: log-polar self-similarity); expanding annulus windows (each layer's composite weight is a ring that grows with its zoom phase)
 //  A packing: none - writes no A, reads no C. ACES display on writeTexture.
 //  Note: despite the name and JSON text this is a layered zoom tunnel of the input image, not a
 //  Mandelbrot/Julia/Newton blend; the identity is kept and the description now says so.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
+
+// Idea 3: Droste spiral. Rotation per octave of zoom (radians): a zoom plus a constant roll per scale factor
+// is the log-polar self-similarity of the Escher spiral.
+const DROSTE_TWIST: f32 = 0.30;
 
 fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
     let a = 2.51; let b = 0.03; let c = 2.43; let d = 0.59; let e = 0.14;
@@ -132,9 +136,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     var totalWeight: f32 = 0.0;
     var i: i32 = 0;
     var chroma: f32;
-    var ghostAcc: vec3<f32> = vec3(0.0);
-    var ghostWeight: f32 = 0.0;
     var ghostDensity: f32 = 0.0;
+    var ringAcc: vec3<f32> = vec3(0.0);
+    var ringWeight: f32 = 0.0;
 
     let _e4 = u.config.z;
     let _e8 = u.config.w;
@@ -184,7 +188,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let dist = length(toCenter);
             let _e93 = clickIntensity;
             let vortexStrength = ((_e93 * 0.3) / (dist + 0.1));
-            let spinAngle = ((vortexStrength * layerDepth_1) * (1.0 - layerDepth_1));
+            // Idea 3: log2(layerZoom) = layerPhase * 2.3219281, so the layer is also rolled by DROSTE_TWIST per octave.
+            let spinAngle = ((vortexStrength * layerDepth_1) * (1.0 - layerDepth_1)) + DROSTE_TWIST * 2.3219281 * layerPhase;
             let rotatedUV = (vec2<f32>(((cos(spinAngle) * toCenter.x) - (sin(spinAngle) * toCenter.y)), ((sin(spinAngle) * toCenter.x) + (cos(spinAngle) * toCenter.y))) + zoom_center);
             let _e126 = noise(((rotatedUV * 6.0) + vec2<f32>((time * 0.15), 0.0)));
             let _e132 = noise(((rotatedUV * 6.0) + vec2<f32>(0.0, (time * 0.15))));
@@ -207,8 +212,15 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
             let weight = (density * (1.0 + (sampleDepth * 0.5)));
             let _e162 = accumulatedColor;
             accumulatedColor = (_e162 + (sampleColor * weight));
-            ghostAcc = ghostAcc + vec3<f32>(tapR, sampleColor.y, tapB) * density * layerWindow;
-            ghostWeight = ghostWeight + density * layerWindow;
+            // Idea 4: expanding annulus window. The layer owns a soft ring (radius 0.06 -> 0.90 in height units,
+            // width 0.14, floor 0.05) that grows with its zoom phase, so the five octaves read as nested rings of one
+            // tunnel instead of five full-frame cross-fades. The ring weights both which layer's colour wins at a
+            // pixel (ringAcc/ringWeight) and how strongly the layered composite replaces the plain photo there.
+            let ringR = length(toCenter * vec2<f32>(resolution.x / resolution.y, 1.0));
+            let ringQ = (ringR - mix(0.06, 0.9, layerPhase)) / 0.14;
+            let ringW = 0.05 + 0.95 * exp(-ringQ * ringQ);
+            ringAcc = ringAcc + vec3<f32>(tapR, sampleColor.y, tapB) * density * layerWindow * ringW;
+            ringWeight = ringWeight + density * layerWindow * ringW;
             ghostDensity = ghostDensity + density;
             let _e165 = accumulatedDepth;
             accumulatedDepth = (_e165 + (sampleDepth * weight));
@@ -254,8 +266,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
     // 2026-11 Idea 1: the windowed layer composite (HEAD's baseColor, computed and never used) reaches the
     // picture, up to 55 %; the window average is ~0.5 for evenly staggered layers.
-    let ghostColor = ghostAcc / max(ghostWeight, 0.0001);
-    let ghostPresence = ghostWeight / max(ghostDensity, 0.0001);
+    let ghostColor = ringAcc / max(ringWeight, 0.0001);
+    // Idea 4: presence is the ring-weighted window mass. Mean clamp(presence*2) over t=1..6 at defaults: HEAD ~0.94
+    // (0.75..1.0, flat across the frame), here ~0.78 (0.63..0.92) with the rings carving the frame (stdL 0.14..0.29).
+    let ghostPresence = ringWeight / max(ghostDensity, 0.0001) * 2.2;
     let layered = mix(chromaticColor, ghostColor, 0.55 * clamp(ghostPresence * 2.0, 0.0, 1.0));
     let finalColor = (layered + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)));
     let fogDensity_1 = u.zoom_params.w;

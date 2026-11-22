@@ -2,10 +2,10 @@
 //  Parallax Layers RGBA
 //  Category: artistic
 //  Features: rgba, parallax, depth-layers, alpha-occlusion, dof, atmospheric, audio-reactive, mouse-driven
-//  Upgraded: 2026-06-28, 2026-11-08
+//  Upgraded: 2026-06-28, 2026-11-08, 2026-11-22
 //  By: Codex
-//  Ideas: slab occlusion with disocclusion fill (front-to-back over); seamless dolly crossfade (two zoom phases); rack-focus slice defocus (focus plane under the cursor); Beer-Lambert aerial perspective (§12.2F)
-//  A packing: display RGBA (A = writeTexture colour + volumetric alpha; C is not read)
+//  Ideas: slab occlusion with disocclusion fill (front-to-back over); seamless dolly crossfade (two zoom phases); rack-focus slice defocus (focus plane under the cursor); Beer-Lambert aerial perspective (§12.2F); multiplane head-parallax shear (pointer-driven, pivoted on the focus plane); head-lamp contact shadow (nearer slabs shade the farther slice radially away from the cursor)
+//  A packing: display RGBA (A = the presented, ACES-mapped writeTexture colour + volumetric alpha; C is not read, so A is only a mirror)
 //  Rescue: the layer stack never reached the output at HEAD (baseColor unused); chroma was bass-as-uv-offset; edge glow polarity was inverted.
 // ═══════════════════════════════════════════════════════════════════
 
@@ -103,6 +103,15 @@ fn reconstruct_normal(uv_1: vec2<f32>, depth: f32) -> vec3<f32> {
     return normalize(n);
 }
 
+fn acesToneMap(x: vec3<f32>) -> vec3<f32> {
+    let a = 2.51;
+    let b = 0.03;
+    let c = 2.43;
+    let d = 0.59;
+    let e = 0.14;
+    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), vec3<f32>(0.0), vec3<f32>(1.0));
+}
+
 fn schlickFresnel(cosTheta: f32, F0_: f32) -> f32 {
     return (F0_ + ((1.0 - F0_) * pow((1.0 - cosTheta), 5.0)));
 }
@@ -192,7 +201,14 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
                                   sin(spinAngle) * toCenter.x + cos(spinAngle) * toCenter.y) + zoom_center;
         let n1 = noise(rotatedUV * 6.0 + vec2<f32>(time * 0.15, 0.0));
         let n2 = noise(rotatedUV * 6.0 + vec2<f32>(0.0, time * 0.15));
-        let flowUV = rotatedUV + vec2<f32>(n1, n2) * 0.015 * layerDepth_1;
+        // ── Idea 5: multiplane head-parallax shear ─────────────────────
+        // The pointer is the viewer's head: slices slide against the cursor when nearer than the focus
+        // plane and with it when farther, so the slice under the cursor stays registered and the gaps the
+        // shear opens are filled by the slab-occlusion composite below. Added before the zoom divide, so
+        // the screen-space shift is the same at every dolly phase. Pointer at rest (0.5, 0.5) = no shear.
+        let head = zoom_center - vec2<f32>(0.5);
+        let shear = -head * 0.12 * (layerDepth_1 - focusDepth);
+        let flowUV = rotatedUV + vec2<f32>(n1, n2) * 0.015 * layerDepth_1 + shear;
 
         // ── Idea 2: seamless dolly crossfade ───────────────────────────
         // HEAD zoomed each slice 1x -> 5x with fract() and snapped back to 1x (a visible pop per
@@ -242,6 +258,16 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         let gY = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvD + vec2<f32>(0.0, ps.y / zf), 0.0).x;
         let sliceGrad = length(vec2<f32>(gX - gC, gY - gC));
 
+        // ── Idea 6: head-lamp contact shadow ───────────────────────────
+        // The cursor is the viewer's head (Idea 5) and carries the lamp: a pixel whose sampled depth is
+        // farther than the map one step TOWARD the cursor sits in the shadow of that nearer slab. The offset
+        // is divided by the slice zoom so the shadow stays ~4.6 px wide (at 256) at every dolly phase. One extra tap.
+        let toHead = zoom_center - uv;
+        let lampDir = toHead / max(length(toHead), 0.001);
+        let gO = textureSampleLevel(readDepthTexture, non_filtering_sampler, uvD + lampDir * (0.018 / zf), 0.0).x;
+        let contactShadow = smoothstep(0.05, 0.22, gC - gO);
+        sliceCol = sliceCol * (1.0 - 0.55 * contactShadow);
+
         // ── Idea 1: slab occlusion with disocclusion fill ──────────────
         // A slice covers a pixel strongly where the sampled scene depth belongs to its plane and
         // weakly elsewhere (floor 0.35 so a flat or missing depth map still shows every slice).
@@ -272,7 +298,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let sigma = fogDensity * 3.0 * vec3<f32>(1.25, 1.0, 0.75);
     let trans = exp(-baseDepth * sigma);
     let fogColor = vec3<f32>(0.02, 0.05, 0.1);
-    let outColor = max(finalColor * trans + fogColor * (vec3<f32>(1.0) - trans), vec3<f32>(0.0));
+    // Display ACES (clamped first: the catalog fit maps negatives to bright). The additive edge glow
+    // can exceed 1; A mirrors the presented colour.
+    let outColor = acesToneMap(max(finalColor * trans + fogColor * (vec3<f32>(1.0) - trans), vec3<f32>(0.0)));
 
     let viewDotNormal_1 = dot(vec3<f32>(0.0, 0.0, 1.0), reconstruct_normal(uv, baseDepth));
     // Alpha is semantic: slice coverage + atmosphere (HEAD passed a constant 0.5 as the depth).

@@ -2,12 +2,14 @@
   "id": "hybrid-sdf-plasma",
   "name": "Hybrid SDF Plasma Field",
   "url": "shaders/hybrid-sdf-plasma.wgsl",
-  "description": "Sobel ink outlines and a 45-degree halftone screen over a posterized photo, with paper-tooth ink and a pointer spotlight",
+  "description": "Sobel ink outlines and a 45-degree halftone screen over a posterized photo, with paper-tooth ink and a pointer spotlight. Updated 2026-11-22: the black key plate (outlines and dots) now prints slightly off the colour plate, dots get a denser ink rim, and posterize spans the full range so highlights reach paper white",
   "features": [
     "hybrid",
     "ink-edge",
     "halftone",
     "posterize",
+    "plate-misregistration",
+    "ink-squash",
     "mouse-driven",
     "randomization-safe"
   ],

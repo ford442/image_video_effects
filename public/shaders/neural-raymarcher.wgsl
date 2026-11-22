@@ -3,10 +3,17 @@
 //  Category: advanced-hybrid
 //  Features: audio-reactive, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-19
+//  Upgraded: 2026-10-19, 2026-11-22
 //  Ideas: marched in-scatter (the discarded layer-march colour lights the fog);
-//         action-potential wavefronts through the march's depth shells
+//         action-potential wavefronts through the march's depth shells;
+//         firing-shell portal (the wavefront shows the marched deeper layer);
+//         depth-crease occlusion (Step-count AO, §12.2E, along the depth-gradient direction)
 //  A packing: A unused (C never read)
+//  Rescue (2026-11-22): audio now comes from plasmaBuffer[0].xyz — HEAD used extraBuffer[0] (engine bass)
+//          raw as a UV offset (ghost images the size of the frame) and extraBuffer[10] (FFT bin 5) as a
+//          "click"; the edge glow was inverted (a +2*depth fill on every smooth-depth pixel, dark rims at
+//          depth steps) and measured against the marched depth instead of the local texel, which washed the
+//          whole picture out. It is now a rim from the true local depth gradient.
 // ═══════════════════════════════════════════════════════════════════
 
 #include "_prelude.wgsl"
@@ -148,12 +155,10 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e38 = u.zoom_config.z;
     let _e40 = resolution.y;
     mousePos = vec2<f32>((_e31 / _e33), (_e38 / _e40));
-    if (arrayLength((&extraBuffer)) > 10u) {
-        let _e52 = extraBuffer[10];
-        clickIntensity = _e52;
-    } else {
-        clickIntensity = 0.0;
-    }
+    // Rescue R1: audio = plasmaBuffer[0].xyz (bass/mids/treble). Mids stand in for the FFT-bin
+    // value HEAD fed to the vortex; silence = HEAD's silent picture (vortex 0, chroma 0).
+    let audio = plasmaBuffer[0].xyz;
+    clickIntensity = clamp(audio.y, 0.0, 1.0);
     loop {
         let _e64 = i;
         if (_e64 < 5) {
@@ -204,12 +209,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e179 = accumulatedDepth;
     let _e180 = totalWeight;
     let baseDepth = (_e179 / max(_e180, 0.0001));
-    if (arrayLength((&extraBuffer)) > 0u) {
-        let _e192 = extraBuffer[0];
-        chroma = _e192;
-    } else {
-        chroma = 0.02;
-    }
+    // Rescue R1: bass splits R/B by at most 0.02*depth of the frame (HEAD used the raw 0..1 bass).
+    chroma = 0.02 * clamp(audio.x, 0.0, 1.0);
     let _e196 = uv;
     let _e197 = chroma;
     let _e203 = textureSampleLevel(readTexture, u_sampler, (_e196 + vec2<f32>((_e197 * baseDepth), 0.0)), 0.0);
@@ -225,30 +226,49 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
     let _e225 = resolution.x;
     let _e229 = resolution.y;
     let ps = vec2<f32>((1.0 / _e225), (1.0 / _e229));
-    let _e234 = uv;
-    let _e240 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (_e234 + vec2<f32>(ps.x, 0.0)), 0.0);
-    let depthX = _e240.x;
-    let _e244 = uv;
-    let _e250 = textureSampleLevel(readDepthTexture, non_filtering_sampler, (_e244 + vec2<f32>(0.0, ps.y)), 0.0);
-    let depthY = _e250.x;
-    let depthGrad = length(vec2<f32>((depthX - baseDepth), (depthY - baseDepth)));
-    let edgeGlow = ((exp((-(depthGrad) * 30.0)) * baseDepth) * 2.0);
     let glowAmt = u.zoom_params.z;
+    // Rescue R2: the local depth gradient comes from the central differences reconstruct_normal
+    // already takes: n = normalize(-dx, -dy, 1)  =>  |(dx,dy)| = |n.xy| / n.z. (HEAD compared a
+    // neighbour against the *marched average* depth, so it was large almost everywhere.)
+    let nrm = reconstruct_normal(uv, baseDepth);
+    let depthGrad = length(nrm.xy) / max(nrm.z, 0.001);
+    // HEAD: exp(-grad*30)*depth*2 = a fill on smooth depth and dark rims at steps. Now a rim; the
+    // Glow slider scales it too (default 0.5 -> HEAD's x1 amplitude, never fully off).
+    let rim = smoothstep(0.01, 0.1, depthGrad);
+    let edgeGlow = rim * baseDepth * 2.0 * (0.5 + glowAmt);
     // ── Idea 2: action-potential wavefronts. Spikes travel through the march's
     // depth shells: sharp leading edge, exponential refractory tail, strongest
-    // where the depth steps. The FFT-bin vortex value pushes the front forward
+    // where the depth steps. The mids-driven vortex value pushes the front forward
     // as a bounded phase offset (scaling `time` by it would jump the phase).
     let firePhase = fract(baseDepth * 6.0 - time * 0.35 - clamp(clickIntensity, 0.0, 1.0) * 0.4);
     let spike = exp(-firePhase * 14.0) * smoothstep(1.0, 0.96, firePhase);
     let membrane = smoothstep(0.002, 0.03, depthGrad);
     let actionPotential = spike * (0.2 + 0.8 * membrane) * glowAmt * 1.2;
-    let finalColor = (chromaticColor + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)))
+    // ── Idea 3: firing-shell portal. Inside the action-potential front the picture is mixed toward
+    // baseColor, the colour the 5-shell march accumulated (the zoomed, deeper layer): each wavefront is
+    // a band that shows the layer it is firing through. Same firePhase/membrane as Idea 2 with a longer
+    // tail (exp(-5*phase)) so the band is wide enough to read.
+    let shellTail = exp(-firePhase * 5.0) * smoothstep(1.0, 0.96, firePhase);
+    let portal = clamp(shellTail * (0.2 + 0.8 * membrane) * glowAmt * 1.6, 0.0, 0.85);
+    let shellColor = mix(chromaticColor, baseColor, portal);
+    // ── Idea 4: depth-crease occlusion (Step-count AO, §12.2E). Depth here is the catalog's DPT
+    // convention (1 = near), so occluders are the *higher* texels. 3 taps at doubling radii
+    // (2.5 / 5 / 10 px) along the up-gradient direction, which is -n.xy; weights 1, 1/2, 1/4. The far
+    // side of a depth step darkens under the nearer surface; flat depth gives dir*r->0 gradient -> 0.
+    let dCentre = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).x;
+    let occDir = -nrm.xy / max(length(nrm.xy), 0.0001);
+    var occ = 0.0;
+    for (var k: i32 = 0; k < 3; k = k + 1) {
+        let rk = 2.5 * exp2(f32(k));
+        let dk = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv + occDir * (rk * ps), 0.0).x;
+        occ = occ + clamp(dk - dCentre, 0.0, 0.3) / exp2(f32(k));
+    }
+    let ao = 1.0 - clamp(occ * 2.0, 0.0, 1.0) * 0.6;
+    let finalColor = (shellColor * ao + vec3<f32>(edgeGlow, (edgeGlow * 0.8), (edgeGlow * 0.6)))
         + vec3<f32>(1.0, 0.8, 0.6) * actionPotential;
     let fogDensity_1 = u.zoom_params.w;
-    let _e273 = uv;
-    let _e274 = reconstruct_normal(_e273, baseDepth);
     let viewDir = vec3<f32>(0.0, 0.0, 1.0);
-    let viewDotNormal_1 = dot(viewDir, _e274);
+    let viewDotNormal_1 = dot(viewDir, nrm);
     let _e281 = totalWeight;
     let normalizedWeight = (_e281 / f32(5));
     let _e284 = calculateVolumetricAlpha(0.5, fogDensity_1, viewDotNormal_1, normalizedWeight);

@@ -2,7 +2,7 @@
   "id": "neural-raymarcher",
   "name": "Neural Raymarcher",
   "url": "shaders/neural-raymarcher.wgsl",
-  "description": "Raymarched neural network with activation visualization. Glowing 3D structure with weights as connection thickness.",
+  "description": "Raymarched neural network with activation visualization. Glowing 3D structure with weights as connection thickness. The rim glow follows true depth edges, action-potential wavefronts open onto the deeper marched layer, and depth creases occlude. Audio (bass: chroma split, mids: vortex) comes from the live spectrum.",
   "features": [
     "advanced-hybrid",
     "sdf-raymarching",
