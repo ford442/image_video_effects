@@ -25,6 +25,45 @@
     16,
     1
   ],
+  "features": [
+    "audio-reactive",
+    "mouse-driven",
+    "upgraded-rgba"
+  ],
+  "params": [
+    {
+      "id": "timeScale",
+      "name": "Time Scale",
+      "default": 1,
+      "min": 0,
+      "max": 5,
+      "step": 0.1
+    },
+    {
+      "id": "plasmaIntensity",
+      "name": "Plasma Intensity",
+      "default": 1,
+      "min": 0,
+      "max": 3,
+      "step": 0.1
+    },
+    {
+      "id": "voidDensity",
+      "name": "Void Density",
+      "default": 0.5,
+      "min": 0,
+      "max": 1,
+      "step": 0.05
+    },
+    {
+      "id": "fractureDepth",
+      "name": "Fracture Depth",
+      "default": 2,
+      "min": 0,
+      "max": 10,
+      "step": 0.5
+    }
+  ],
   "x-meta": {
     "upgrade": {
       "params": [

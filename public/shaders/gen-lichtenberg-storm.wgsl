@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: mouse-driven, audio-reactive, temporal, upgraded-rgba
 //  Complexity: High
-//  Upgraded: 2026-11-19
-//  Ideas: stepped-leader return stroke racing out along every branch; violet corona sheath around etched channels (exact C blur, treble flicker); stepped-leader dark gaps; bead lightning on cooling channels
+//  Upgraded: 2026-11-19, 2026-11-22
+//  Ideas: stepped-leader return stroke racing out along every branch; violet corona sheath around etched channels (exact C blur, treble flicker); stepped-leader dark gaps; bead lightning on cooling channels; carbonized track; streamer hairs
 //  A packing: raw sim state (A = afterglow energy, etched charge, shock ring, 1; not tone-mapped)
 //  Kept from Batch 36: spring-smoothed electrode (extraBuffer 133..138), etched-channel bias, click shockwave ring, OkLab + blackbody grade, FFT-split sparkle
 // ═══════════════════════════════════════════════════════════════════
@@ -167,13 +167,9 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let mouseSpeed = clamp(length(smVel) * 2.0, 0.0, 1.0);
   let press = step(0.5, mouseDown);
 
-  // ── Guarded FFT bands (engine bins 1-8 at extraBuffer[6..13], read-only) ──
-  var fftLo = 0.0;
-  var fftHi = 0.0;
-  if (sbLen > 13u) {
-    fftLo = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8]) * 0.3333;
-    fftHi = (extraBuffer[11] + extraBuffer[12] + extraBuffer[13]) * 0.3333;
-  }
+  // Audio sparkle comes from plasma bands. extraBuffer stays in 133–138.
+  let fftLo = bass;
+  let fftHi = treble;
 
   // ── Feedback history (non-filtering load of last frame's state) ──
   let prev = textureLoad(dataTextureC, px, 0);
@@ -270,6 +266,12 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
   let corona = clamp(haloSum * 0.25 * 1.7 - prevCharge * 0.9, 0.0, 1.0);
   let coronaFlicker = 0.75 + 0.25 * sin(t * 37.0 + h12(vec2<f32>(gid.xy) * 0.07) * 6.28) * (0.4 + treble);
   col += vec3<f32>(0.42, 0.22, 1.0) * corona * coronaFlicker * (0.5 + treble * 0.9) * glow * 0.55;
+  // ── Idea 1: carbonized track — etched charge blacks the dielectric under a channel the stroke has left
+  col = mix(col, col * 0.35, smoothstep(0.2, 0.7, prevCharge) * (1.0 - hot));
+  // ── Idea 2: streamer hairs — sparse specks on the corona, treble-gated
+  let hairSeed = fract(sin(dot(uv, vec2<f32>(180.0, 40.0))) * 43758.5453);
+  let hair = pow(max(hairSeed, 0.0), 18.0);
+  col += vec3<f32>(0.7, 0.75, 1.0) * hair * corona * treble * glow * 0.4;
 
   // ── Idea: bead lightning — hot knots on etched charge that the live stroke has left
   let beadN = pow(max(0.5 + 0.5 * sin(uv.x * 90.0 + uv.y * 70.0 - t * 2.0), 0.0), 12.0);

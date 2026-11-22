@@ -1,31 +1,18 @@
-// ═══ DLA CRYSTALS — WALKERS (sim ring, simState dispatch) ═════════════════
+// ═══════════════════════════════════════════════════════════════════
+//  DLA Crystals — Walkers
+//  Category: artistic
+//  Features: mouse-driven, audio-reactive, sim-ring
+//  Complexity: Medium
+//  Upgraded: 2026-11-22
+//  Ideas: tip screening; branch-angle facets; attraction reach
+//  A packing: raw sim (frozen, time, hue, facet angle). No display write
+// ═══════════════════════════════════════════════════════════════════
 //  One invocation per walker. Walkers live in the @group(1) sim ring
 //  (src/contracts/bind_group1.json), not in extraBuffer.
 //  simState[i]: .xy position (pixels), .z hue seed, .w alive flag
-//  A/C packing: .r frozen, .g freeze time (frozen) / last visit time (free),
-//               .b hue, .a branch id
 //  zoom_params: .x walker speed, .y attract, .z stickiness, .w branch angle
 
-@group(0) @binding(0) var u_sampler: sampler;
-@group(0) @binding(1) var readTexture: texture_2d<f32>;
-@group(0) @binding(2) var writeTexture: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(3) var<uniform> u: Uniforms;
-@group(0) @binding(4) var readDepthTexture: texture_2d<f32>;
-@group(0) @binding(5) var non_filtering_sampler: sampler;
-@group(0) @binding(6) var writeDepthTexture: texture_storage_2d<r32float, write>;
-@group(0) @binding(7) var dataTextureA: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(8) var dataTextureB: texture_storage_2d<rgba32float, write>;
-@group(0) @binding(9) var dataTextureC: texture_2d<f32>;
-@group(0) @binding(10) var<storage, read_write> extraBuffer: array<f32>;
-@group(0) @binding(11) var comparison_sampler: sampler_comparison;
-@group(0) @binding(12) var<storage, read> plasmaBuffer: array<vec4<f32>>;
-
-struct Uniforms {
-  config: vec4<f32>,
-  zoom_config: vec4<f32>,
-  zoom_params: vec4<f32>,
-  ripples: array<vec4<f32>, 50>,
-};
+#include "_prelude.wgsl"
 
 struct SimParams {
   stateCount: u32,
@@ -93,11 +80,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 
   var pos = w.xy;
   let steps = clamp(u32(walkerSpeed + 0.5), 1u, MAX_STEPS);
+  // ── Idea 3: attraction reach — faster walkers sense frozen crystal farther out
+  let reach = f32(clamp(i32(round(walkerSpeed * 2.0)), 2, 6));
+  var crystalPull = vec2<f32>(0.0);
+  for (var k = 0; k < 8; k = k + 1) {
+    let angK = f32(k) * TAU / 8.0;
+    let probe = vec2<i32>(pos + vec2<f32>(cos(angK), sin(angK)) * reach);
+    let sensed = load(probe, resI);
+    crystalPull = select(crystalPull, crystalPull + vec2<f32>(cos(angK), sin(angK)), sensed.r > 0.5);
+  }
   for (var s = 0u; s < steps; s = s + 1u) {
     let ang = rand(&seed) * TAU;
     let toTarget = goal - pos;
     let pull = select(vec2<f32>(0.0), normalize(toTarget), dot(toTarget, toTarget) > 1.0);
-    let dir = normalize(vec2<f32>(cos(ang), sin(ang)) + pull * attractStrength * 1.5 + vec2<f32>(1e-4));
+    let dir = normalize(vec2<f32>(cos(ang), sin(ang)) + pull * attractStrength * 1.5 + crystalPull * 0.35 + vec2<f32>(1e-4));
     let next = clamp(pos + dir, vec2<f32>(0.0), res - vec2<f32>(1.0));
     let p = vec2<i32>(next);
 
@@ -118,12 +114,21 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
       }
     }
 
-    if (hueCount > 0.0 && rand(&seed) < stickiness) {
-      // Freeze: this walker becomes crystal, then respawns elsewhere.
-      let hue = fract(hueSum / hueCount + (rand(&seed) - 0.5) * 0.06 + treble * 0.05 + attractStrength * 0.08);
-      textureStore(dataTextureA, p, vec4<f32>(1.0, time, hue, branchAngle * rand(&seed)));
-      simState[i] = spawn(&seed, res);
-      return;
+    if (hueCount > 0.0) {
+      // ── Idea 1: tip screening — a fjord (many frozen neighbors) sticks less than a tip
+      let tipGate = mix(1.0, 0.28, clamp(hueCount / 5.0, 0.0, 1.0));
+      // ── Idea 2: branch-angle facets — stick peaks on a 2-to-6-fold set of directions
+      let fold = 2.0 + clamp(branchAngle, 0.0, 1.0) * 4.0;
+      let growthAngle = atan2(dir.y, dir.x);
+      let facet = pow(max(abs(cos(growthAngle * fold)), 0.0), 4.0);
+      let stickGate = clamp(stickiness * tipGate * (0.35 + 0.65 * facet), 0.0, 1.0);
+      if (rand(&seed) < stickGate) {
+        // Freeze: this walker becomes crystal, then respawns elsewhere.
+        let hue = fract(hueSum / hueCount + (rand(&seed) - 0.5) * 0.06 + treble * 0.05 + attractStrength * 0.08);
+        textureStore(dataTextureA, p, vec4<f32>(1.0, time, hue, fract(growthAngle / TAU + 0.5)));
+        simState[i] = spawn(&seed, res);
+        return;
+      }
     }
   }
 

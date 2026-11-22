@@ -3,8 +3,8 @@
 //  Category: generative
 //  Features: audio-reactive, mouse-driven, upgraded-rgba, fast-motion
 //  Complexity: High
-//  Upgraded: 2026-09-27, 2026-11-18
-//  Ideas: shock-front crystal ignition; collapse-deposited agate strata; flash translucency through thin shard walls; cavitation pearl chains; piezoelectric twinning glints; Rayleigh-Plesset afterbounce (radius ring-down + secondary flashes); shock-heated ember afterglow cooling along a blackbody ramp (§12.2F)
+//  Upgraded: 2026-09-27, 2026-11-18, 2026-11-22
+//  Ideas: shock-front crystal ignition; collapse-deposited agate strata; flash translucency through thin shard walls; cavitation pearl chains; piezoelectric twinning glints; Rayleigh-Plesset afterbounce (radius ring-down + secondary flashes); shock-heated ember afterglow cooling along a blackbody ramp (§12.2F); acoustic nodes; recombination tail
 //  A packing: raw HDR history RGB (pre-ACES, clamped <= 5.0) + semantic alpha
 // ═══════════════════════════════════════════════════════════════════
 // Batch 38 (Algorithmist) FAST MOTION layer, kept:
@@ -166,14 +166,11 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     let time = u.config.x;
     let aspect = res.x / max(res.y, 1.0);
 
-    // ---- Audio: plasma bands + guarded engine FFT bins 1-4 ----------------
+    // ---- Audio: plasma bands (no FFT-bin reads) ---------------------------
     let bass = plasmaBuffer[0].x;
     let mids = plasmaBuffer[0].y;
     let treble = plasmaBuffer[0].z;
-    var fftPulse = 0.0;
-    if (arrayLength(&extraBuffer) > 9u) {
-        fftPulse = (extraBuffer[6] + extraBuffer[7] + extraBuffer[8] + extraBuffer[9]) * 0.25;
-    }
+    let fftPulse = clamp(mids * 0.5 + treble * 0.5, 0.0, 1.5);
 
     // ---- Bass kick (stateless) ------------------------------------------
     // Same value HEAD's writer thread produced with the per-frame-zeroed
@@ -352,6 +349,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
     // Background (deep space with fast faint dust streaks)
     let bgDust = vnoise3(vec3<f32>(suv * 6.0, animTime * 2.0));
     var bg = vec3<f32>(0.01, 0.02, 0.05) + vec3<f32>(0.02, 0.05, 0.09) * smoothstep(0.65, 0.95, bgDust) * (0.5 + treble);
+    // ── Idea 1: acoustic nodes — dark rings where the cavity mode cancels
+    let node = abs(sin(length(suv) * 18.0 - animTime * 4.0));
+    bg = bg * (0.82 + 0.18 * node);
     bg += vec3<f32>(0.05, 0.15, 0.3) * ctx.flash * 0.25; // flash lights the void
     col = mix(bg, col, min(1.0, plasma_acc + select(0.0, 1.0, hit)));
 
@@ -367,6 +367,9 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 
     let decay = 0.86 - 0.05 * clamp(u.zoom_params.w, 0.0, 1.0); // Mouse Influence lengthens streaks
     var history = prev.rgb * decay + col * (0.35 + 0.25 * ctx.flash);
+    // ── Idea 2: recombination tail — last frame's flash cools toward red once the collapse has passed
+    let prevL = dot(max(prev.rgb, vec3<f32>(0.0)), vec3<f32>(0.2126, 0.7152, 0.0722));
+    history = history + vec3<f32>(1.0, 0.35, 0.12) * prevL * (1.0 - ctx.flash) * 0.08;
     history = clamp(history, vec3<f32>(0.0), vec3<f32>(HDR_CLAMP)); // energy bound
 
     // ---- HDR -> ACES, semantic alpha, real generated depth ----------------
