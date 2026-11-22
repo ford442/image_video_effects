@@ -7,7 +7,7 @@
     "audio-reactive",
     "upgraded-rgba"
   ],
-  "description": "Mouse-driven focal pixelation with FBM domain warp, depth-aware fog, IGN dither, and semantic alpha for slot-chain compositing.",
+  "description": "Mouse-driven focal pixelation: sharp focus disc, pixelated fringe with a Bayer-style 2x2 chroma zipper, highlight-weighted hex bokeh, FBM domain warp, depth-aware fog, IGN dither, and semantic alpha for slot-chain compositing.",
   "workgroup_size": [16, 16, 1],
   "params": [
     {
@@ -54,5 +54,15 @@
   "tags": [
     "mouse-driven",
     "interactive"
-  ]
+  ],
+  "x-meta": {
+    "upgrade": {
+      "params": [
+        { "index": 0, "name": "Pixel Size", "default": 0.5, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 1, "name": "Focus Radius", "default": 0.3, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 2, "name": "Focus Softness", "default": 0.2, "min": 0, "max": 1, "step": 0.01 },
+        { "index": 3, "name": "Invert Focus", "default": 0, "min": 0, "max": 1, "step": 0.01 }
+      ]
+    }
+  }
 }

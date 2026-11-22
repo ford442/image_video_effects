@@ -6,8 +6,8 @@
 //  Chunks From: ink_dispersion_alpha (halftone dots, edge ink), conv-guided-filter-depth (guided filter, mouse aperture)
 //  Created: 2026-04-18
 //  By: Agent CB-6 — Alpha & Post-Process Enhancer
-//  Upgraded: 2026-11-01
-//  Ideas: edge-tangent halftone screen (45° grid turns to follow contours where the guided image has structure); guide-variance dot feathering (crisp dots at depth/image edges, wet blotted dots in smooth regions)
+//  Upgraded: 2026-11-01, 2026-11-22
+//  Ideas: edge-tangent halftone screen (45° grid turns to follow contours where the guided image has structure); guide-variance dot feathering (crisp dots at depth/image edges, wet blotted dots in smooth regions); perspective screen pitch (guide depth scales the halftone pitch: near coarse, far fine, strength = depth_influence); depth-silhouette ink contour (guide variance promoted to an ink outline at depth discontinuities)
 //  A packing: display RGBA (ink colour, ink coverage)
 // ═══════════════════════════════════════════════════════════════════
 //  Depth-Guided Ink Halftone
@@ -59,7 +59,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let epsilon = mix(epsilonBase * 3.0, epsilonBase * 0.1, mouseFactor);
 
     var rippleDepth = 0.0;
-    let rippleCount = u32(u.config.y);
+    let rippleCount = min(u32(u.config.y), 50u);
     for (var i: u32 = 0u; i < rippleCount; i = i + 1u) {
         let ripple = u.ripples[i];
         let rElapsed = time - ripple.z;
@@ -141,7 +141,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let cs = cos(ang);
     let sn = sin(ang);
     let pix = vec2<f32>(global_id.xy);
-    let gridPos = vec2<f32>(cs * pix.x + sn * pix.y, -sn * pix.x + cs * pix.y) / vec2<f32>(dotSize);
+    // ── Idea 3: perspective screen pitch ─────────────────────────────────
+    // The guide (depth) already steers the filter; it now also scales the screen pitch, the way
+    // a hand-cut halftone/engraving keeps near surfaces coarse and far ones fine (catalog depth:
+    // 1 = near). Strength rides the existing depth_influence role. Where depth is flat the pitch
+    // is constant; at a depth step the screen shifts phase, which the silhouette contour hides.
+    let pitchK = clamp(depthInfluence * 1.6, 0.0, 1.0);
+    let pitch = dotSize * mix(1.0, mix(0.7, 1.3, clamp(guide, 0.0, 1.0)), pitchK);
+    let gridPos = vec2<f32>(cs * pix.x + sn * pix.y, -sn * pix.x + cs * pix.y) / vec2<f32>(pitch);
     let gridCenter = floor(gridPos) + vec2<f32>(0.5);
     let dist = length(gridPos - gridCenter);
     let quantColor = floor(color * levels) / vec3<f32>(levels);
@@ -166,11 +173,22 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         finalColor = mix(finalColor, finalColor * 0.7, isDot * 0.8);
         ink_alpha = max(ink_alpha, dot_alpha);
     }
+    // ── Idea 4: depth-silhouette ink contour ───────────────────────────────
+    // varGuide (the guide's local variance, already computed for the filter and the dot
+    // feather) is large exactly where the window straddles a depth discontinuity. Promoted to a
+    // thin dark outline round near/far silhouettes, drawn over the screen like an engraver's
+    // contour. Flat depth -> no contour (same dormancy as the guided filter itself).
+    let silhouette = smoothstep(0.04, 0.10, sqrt(max(varGuide, 0.0)));
+    let silW = silhouette * (0.45 + 0.5 * inkDensity);
+    finalColor = mix(finalColor, vec3<f32>(0.02, 0.02, 0.04), silW);
+    ink_alpha = max(ink_alpha, silW * (inkDensity * 0.9 + 0.35));
     if (ink_alpha < 0.01) {
         ink_alpha = mix(0.15, 0.45, luma * inkDensity);
     }
 
-    let paper_tex = 0.95 + 0.05 * hash12_((uv * time) * 0.001 + vec2<f32>(100.0));
+    // paper tooth: HEAD hashed (uv * time * 0.001) - smooth blotches at t~1 s, flicker noise by
+    // t~200 s. Now a static per-pixel tooth (same +-2.5% amplitude).
+    let paper_tex = 0.95 + 0.05 * hash12_(vec2<f32>(global_id.xy) + vec2<f32>(100.0));
     ink_alpha = ink_alpha * paper_tex;
 
     if (mousePos.x >= 0.0) {
@@ -184,7 +202,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Depth-modulated dot size variation
     let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
     let depthBoost = 1.0 + depth * 0.3;
-    finalColor = finalColor * depthBoost;
+    finalColor = clamp(finalColor * depthBoost, vec3<f32>(0.0), vec3<f32>(1.0));
 
     textureStore(writeTexture, vec2<i32>(global_id.xy), vec4<f32>(finalColor, ink_alpha));
     textureStore(writeDepthTexture, global_id.xy, vec4<f32>(ink_alpha, 0.0, 0.0, ink_alpha));

@@ -2463,7 +2463,7 @@
     "name": "Aetheric Tachyon Lattice",
     "url": "shaders/gen-aetheric-tachyon-lattice.wgsl",
     "category": "generative",
-    "description": "A high-energy, multidimensional lattice of glowing tachyon streams, oscillating and folding through a non-Euclidean void.",
+    "description": "A high-energy, multidimensional lattice of glowing tachyon streams, oscillating and folding through a non-Euclidean void. Tachyon packets run along each strut's own axis (mids set their brightness) inside a soft teal aura that treble lifts.",
     "features": [
       "lattice",
       "tachyon",
@@ -11432,13 +11432,16 @@
       16,
       1
     ],
-    "description": "A hyper-dimensional realm where geometric crystal shards, reminiscent of bismuth hopper crystals, continuously fold and unfold like ethereal neon origami floating in a dark expanse.",
+    "description": "A hyper-dimensional realm where geometric crystal shards, reminiscent of bismuth hopper crystals, continuously fold and unfold like ethereal neon origami floating in a dark expanse. Each cube facet carries concentric hopper stair-steps, recesses between shards are occluded and thin-film oxide thins inside them; bass breathes the unfold and treble lifts the crease neon.",
     "features": [
       "Fractal Origami Folding",
       "Dynamic Unfolding",
       "Prismatic Neon Iridescence",
       "Volumetric Neon Core",
-      "Glass Refraction Illusion"
+      "Glass Refraction Illusion",
+      "audio-reactive",
+      "mouse-driven",
+      "upgraded-rgba"
     ],
     "tags": [
       "origami",
@@ -11446,7 +11449,8 @@
       "fractal",
       "iridescent",
       "neon",
-      "crystal"
+      "crystal",
+      "audio-reactive"
     ],
     "params": [
       {

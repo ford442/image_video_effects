@@ -3,7 +3,7 @@
   "name": "Knitted Fabric",
   "category": "interactive-mouse",
   "url": "shaders/knitted-fabric.wgsl",
-  "description": "Knitted wool with two-ply yarn and heather. Odd courses are purl, fibres lint into the gaps, and the pointer pulls stitches open onto the backing.",
+  "description": "Knitted wool with two-ply yarn and heather. Odd courses are purl, fibres lint into the gaps, and the pointer pulls stitches open onto the backing. Yarn is shaded as a round tube with a fibre sheen, and each loop casts a soft shadow onto the stitch behind it.",
   "params": [
     {
       "id": "scale",

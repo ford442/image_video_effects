@@ -309,7 +309,7 @@
       ]
     },
     "breathing-kaleidoscope-morph": {
-      "hash": "c66df090e588a4b9",
+      "hash": "085a85a44a5d0bd1",
       "history": [
         {
           "event": "upgraded",
@@ -318,6 +318,14 @@
           "prev_hash": "c971f6fbc6b83d8e",
           "commit": "798d840",
           "note": "2026-11-10 sonnet/batch-35 fibre/kaleidoscope/lens/glass (claude-sonnet) — agents/swarm-outputs/claude-2026-11-10-sonnet-batch-35"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "085a85a44a5d0bd1",
+          "prev_hash": "c66df090e588a4b9",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -1651,7 +1659,7 @@
       ]
     },
     "ink-dispersion-guided": {
-      "hash": "713a5838b782b1cf",
+      "hash": "8cd9bea37d122ad6",
       "history": [
         {
           "event": "upgraded",
@@ -1660,6 +1668,14 @@
           "prev_hash": "34880d1d8ab3cb86",
           "commit": "b12283b1",
           "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "8cd9bea37d122ad6",
+          "prev_hash": "713a5838b782b1cf",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -2989,7 +3005,7 @@
       ]
     },
     "ink_dispersion_alpha": {
-      "hash": "1445cbc363700e18",
+      "hash": "39c3b51a03488533",
       "history": [
         {
           "event": "upgraded",
@@ -2998,6 +3014,14 @@
           "prev_hash": "114fbe624d7dfa6c",
           "commit": "b12283b1",
           "note": "2026-11-01 sonnet/batch-06: chromatic/mold/oil/ink/watercolor/wax ten"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "39c3b51a03488533",
+          "prev_hash": "1445cbc363700e18",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -4638,7 +4662,7 @@
       ]
     },
     "radial-rgb": {
-      "hash": "ce985fd7a38b25f7",
+      "hash": "d17efb4828551c02",
       "history": [
         {
           "event": "upgraded",
@@ -4647,6 +4671,14 @@
           "prev_hash": "8a9fab9c725a7f6c",
           "commit": "c9497d58",
           "note": null
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "d17efb4828551c02",
+          "prev_hash": "ce985fd7a38b25f7",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -15006,7 +15038,7 @@
       ]
     },
     "lenticular-holographic-shift": {
-      "hash": "f2de89a5096a13d2",
+      "hash": "51540f683fbf28f4",
       "history": [
         {
           "event": "upgraded",
@@ -15015,6 +15047,14 @@
           "prev_hash": "963b0efd72f9893b",
           "commit": "80f45b0d",
           "note": "2026-10-31 ecosystem ten — docs/agents/swarm-outputs/grok-2026-10-31-ecosystem-ten/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "51540f683fbf28f4",
+          "prev_hash": "f2de89a5096a13d2",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -16657,7 +16697,7 @@
       "history": []
     },
     "focal-pixelate": {
-      "hash": "14a09d7bf5e39fda",
+      "hash": "8dc4d9b9c014d814",
       "history": [
         {
           "event": "upgraded",
@@ -16666,6 +16706,14 @@
           "prev_hash": "b27ca5af1a9fd9b4",
           "commit": "548cf23d",
           "note": "2026-10-31 mosaic grid twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-31-mosaic-grid-twelve/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "8dc4d9b9c014d814",
+          "prev_hash": "14a09d7bf5e39fda",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -17200,7 +17248,7 @@
       ]
     },
     "knitted-fabric": {
-      "hash": "cb7345f21a731aac",
+      "hash": "72756841f96c944b",
       "history": [
         {
           "event": "upgraded",
@@ -17217,6 +17265,14 @@
           "prev_hash": "6a0c3dea34149aef",
           "commit": "561dd256",
           "note": "2026-10-27 cursor/print-craft-twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-27-print-craft-twelve/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "72756841f96c944b",
+          "prev_hash": "cb7345f21a731aac",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -17706,7 +17762,7 @@
       ]
     },
     "mouse-hyperbolic-navigator": {
-      "hash": "188c4694317c42f3",
+      "hash": "ac7b65bfa69de93e",
       "history": [
         {
           "event": "upgraded",
@@ -17715,6 +17771,14 @@
           "prev_hash": "7593f63b1afdb920",
           "commit": "561dd256",
           "note": "2026-10-27 cursor/batch-15 polar, fractal, and perspective (grok) — docs/agents/swarm-outputs/grok-2026-10-27-batch-15/NOTES.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "ac7b65bfa69de93e",
+          "prev_hash": "188c4694317c42f3",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -23593,7 +23657,7 @@
       ]
     },
     "gen-aetheric-tachyon-lattice": {
-      "hash": "61dc72b12f0bfcfe",
+      "hash": "ac83b057d3f6fce8",
       "history": [
         {
           "event": "added",
@@ -23609,6 +23673,14 @@
           "prev_hash": "ba6022b936c47b00",
           "commit": "7f6ce638",
           "note": "2026-11-15 flow-lattice ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-flow-lattice-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "ac83b057d3f6fce8",
+          "prev_hash": "61dc72b12f0bfcfe",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     },
@@ -24031,6 +24103,18 @@
           "hash": "fe07ebf961e8d476",
           "commit": "40449a36",
           "note": "2026-11-22 cursor/batch-58 (grok) — docs/agents/swarm-outputs/grok-2026-11-22-batch-58/NOTES.md"
+        }
+      ]
+    },
+    "gen-ethereal-neon-bismuth-origami": {
+      "hash": "da71150ab75f2316",
+      "history": [
+        {
+          "event": "added",
+          "date": "2026-11-22T12:48:23.754Z",
+          "hash": "da71150ab75f2316",
+          "commit": "9b2eeba8",
+          "note": "2026-11-22 sonnet/batch-55 ink/fabric/lattice/optical-distortion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-55"
         }
       ]
     }

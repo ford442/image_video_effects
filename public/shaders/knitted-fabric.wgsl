@@ -3,8 +3,8 @@
 //  Category: interactive-mouse
 //  Features: mouse-driven, audio-reactive, depth-aware, upgraded-rgba
 //  Complexity: Medium
-//  Upgraded: 2026-10-27
-//  Ideas: strain-thinned yarn; two-ply twist; heather; purl rows; lint in the gaps
+//  Upgraded: 2026-10-27, 2026-11-22
+//  Ideas: strain-thinned yarn; two-ply twist; heather; purl rows; lint in the gaps; round-yarn tube shading + Fresnel-Schlick fibre sheen (§12.2F); loop-over-loop cast shadow
 //  A packing: ACES display RGBA; B keeps the documented material masks (yarn, pull/ridge, shimmer, alpha)
 // ═══════════════════════════════════════════════════════════════════
 
@@ -107,6 +107,27 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let twist = sin(local.x * 9.0 + across * 14.0 * select(-1.0, 1.0, onTop));
   let plyShade = mix(0.84, 1.07, smoothstep(-0.35, 0.35, twist));
 
+  // ── Idea 1: round yarn (§12.2F Fresnel–Schlick). The yarn is a lit tube, not a
+  // flat ribbon: `across` (already measured for the twist) over the yarn's visible
+  // half-width is the tube's cross-section coordinate. Half-Lambert from an
+  // upper-left key lights one flank and shades the other; the grazing flanks get a
+  // Schlick sheen. Only the shading is new — baseColor stays the albedo.
+  let tubeHalf = max(select(0.34, 0.38, onTop) * yarnWidth * 0.62, 0.04);
+  let tubeA = clamp(across / tubeHalf, -1.0, 1.0);
+  let tubeZ = sqrt(max(1.0 - tubeA * tubeA, 0.0));
+  let tubeKey = normalize(vec3<f32>(-0.35, -0.55, 0.75));
+  let tubeLit = clamp(dot(vec3<f32>(0.0, tubeA, tubeZ), tubeKey) * 0.5 + 0.5, 0.0, 1.0);
+  let tubeShade = mix(0.80, 1.16, tubeLit);
+  let sheen = (0.04 + 0.96 * pow(max(1.0 - tubeZ, 0.0), 5.0)) * smoothstep(0.05, 0.40, yarnMask);
+
+  // ── Idea 2: loop cast shadow. The over-lying loop throws a soft shadow down and
+  // right onto the under-yarn and the backing: the loop arc re-evaluated at the
+  // light-shifted stitch coordinate (wrapped to the stitch period so it carries over
+  // the cell seam), kept off the loop itself.
+  let shX = fract((local.x - 0.20 + 1.0) * 0.5) * 2.0 - 1.0;
+  let shY = local.y - 0.26;
+  let loopShadow = smoothstep(0.46 * yarnWidth, 0.06, abs(shY - (shX * shX * 0.80 - 0.18))) * (1.0 - topYarn);
+
   // Idea 3: heathered yarn. Each stitch is spun from slightly different
   // fibre, with an occasional pale fleck.
   let heatherSeed = vec3<f32>(hash12(cellId), hash12(cellId + vec2<f32>(17.3, 5.1)), hash12(cellId + vec2<f32>(41.7, 23.9)));
@@ -128,9 +149,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   finalColor = finalColor * mix(vec3<f32>(0.70), vec3<f32>(1.0), yarnMask);
   finalColor = mix(finalColor, baseColor * 0.45, gapMask * 0.45 * textureDepth);
   finalColor = finalColor * mix(1.0, plyShade, yarnMask);
+  finalColor = finalColor * mix(1.0, tubeShade, smoothstep(0.0, 0.5, yarnMask));  // Idea 1: tube shading
   finalColor = mix(finalColor, finalColor * 0.35, gapMask * strain * 0.8);
+  finalColor = finalColor * (1.0 - loopShadow * (0.12 + 0.28 * textureDepth));  // Idea 2: cast shadow
   finalColor = finalColor + vec3<f32>(fiberNoise) * 0.12;
   finalColor = finalColor + yarnTint * shimmer * (0.40 + 0.60 * textureDepth);
+  finalColor = finalColor + mix(vec3<f32>(1.0), baseColor, 0.6) * sheen * 0.24 * (0.5 + 0.5 * textureDepth);  // Idea 1: fibre sheen
   finalColor += vec3<f32>(0.35, 0.18, 0.08) * clickRidge * (0.15 + textureDepth * 0.25);
   // ── Idea: lint. Fibres stick out of the yarn into the gap.
   let lint = (1.0 - yarnMask) * smoothstep(0.62, 0.28, abs(local.y - loopArc));

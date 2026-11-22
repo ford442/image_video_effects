@@ -2,7 +2,7 @@
   "id": "breathing-kaleidoscope-morph",
   "name": "Breathing Kaleidoscope Morph",
   "url": "shaders/breathing-kaleidoscope-morph.wgsl",
-  "description": "Breathing Kaleidoscope Morph",
+  "description": "A photo that breathes between plain and a mirror-tube kaleidoscope centred on the pointer (3-12 wedges), each wedge eroded or dilated differently. Cells lose light and warmth with every mirror bounce, toggle mapping facets the edges, and the bass pushes the breath in.",
   "tags": [
     "kaleidoscope",
     "morphological",

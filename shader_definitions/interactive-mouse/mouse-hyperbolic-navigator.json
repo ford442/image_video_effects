@@ -7,7 +7,7 @@
     "audio-reactive",
     "upgraded-rgba"
   ],
-  "description": "The photo rides a Poincar\u00e9 disk scrolled by a mouse M\u00f6bius transform. Horocycle gutters repeat radially, and Boundary Glow splits red and blue by a Cauchy scale.",
+  "description": "The photo rides a Poincar\u00e9 disk scrolled by a mouse M\u00f6bius transform. Horocycle gutters repeat radially, and Boundary Glow splits red and blue by a Cauchy scale. Wedge mortar narrows to a hairline toward the rim (constant hyperbolic width), neighbouring tiles alternate in value and tint, and the bass drifts the view point.",
   "params": [
     {
       "id": "navigationSpeed",
