@@ -20240,7 +20240,7 @@
       ]
     },
     "audio-reactive-pyramid": {
-      "hash": "99d5823456a78285",
+      "hash": "b0a7bdbb651485df",
       "history": [
         {
           "event": "upgraded",
@@ -20257,11 +20257,19 @@
           "prev_hash": "d0d97f47766796f7",
           "commit": "80f45b0d",
           "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "b0a7bdbb651485df",
+          "prev_hash": "99d5823456a78285",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
         }
       ]
     },
     "audio-reactive-rgb-dispersion": {
-      "hash": "14e09f5d10a3412f",
+      "hash": "3f33cd86f9073a11",
       "history": [
         {
           "event": "upgraded",
@@ -20286,6 +20294,14 @@
           "prev_hash": "8ce5140e03df7071",
           "commit": "80f45b0d",
           "note": "2026-11-01 wave/audio twelve (grok) — docs/agents/swarm-outputs/grok-2026-11-01-wave-audio-twelve"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "3f33cd86f9073a11",
+          "prev_hash": "14e09f5d10a3412f",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
         }
       ]
     },
@@ -20303,7 +20319,7 @@
       ]
     },
     "chrono-luma-slit-scan": {
-      "hash": "62b16c3259a03282",
+      "hash": "8fe57a981de8c9fd",
       "history": [
         {
           "event": "upgraded",
@@ -20320,6 +20336,14 @@
           "prev_hash": "bd01c4366d63ce1c",
           "commit": "7f6ce638",
           "note": "2026-11-15 lens-echo ten (grok) — docs/agents/swarm-outputs/grok-2026-11-15-lens-echo-ten/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "8fe57a981de8c9fd",
+          "prev_hash": "62b16c3259a03282",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
         }
       ]
     },
@@ -20350,7 +20374,7 @@
       ]
     },
     "optical-flow-tracer": {
-      "hash": "54000e921d00dcac",
+      "hash": "cdae91ff760f0531",
       "history": [
         {
           "event": "upgraded",
@@ -20359,6 +20383,14 @@
           "prev_hash": "b13f10fdba163e3a",
           "commit": "673d780a",
           "note": "2026-11-20 sonnet/batch-46 gravitational/flow/dispersion ten (Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-20-sonnet-batch-46/"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "cdae91ff760f0531",
+          "prev_hash": "54000e921d00dcac",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
         }
       ]
     },
@@ -20504,11 +20536,20 @@
       ]
     },
     "spatio-temporal-3d-conv": {
-      "hash": "7fb0bf5c5acdeb77",
-      "history": []
+      "hash": "e40b4243de257b59",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "e40b4243de257b59",
+          "prev_hash": "7fb0bf5c5acdeb77",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
+        }
+      ]
     },
     "temporal-decay-multiresolution": {
-      "hash": "ddd8ea7d4335e6f3",
+      "hash": "3b1d3ae63abcfbb1",
       "history": [
         {
           "event": "upgraded",
@@ -20517,11 +20558,19 @@
           "prev_hash": "113742b24a3f0ab4",
           "commit": "b02289fb",
           "note": "2026-10-30 temporal echo twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-30-temporal-echo-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "3b1d3ae63abcfbb1",
+          "prev_hash": "ddd8ea7d4335e6f3",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
         }
       ]
     },
     "temporal-feedback-zoom-tracer": {
-      "hash": "0a03a1ad78031895",
+      "hash": "c06b3300542a8f1f",
       "history": [
         {
           "event": "upgraded",
@@ -20530,12 +20579,29 @@
           "prev_hash": "a420b53b096b9710",
           "commit": "b02289fb",
           "note": "2026-10-30 temporal echo twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-30-temporal-echo-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "c06b3300542a8f1f",
+          "prev_hash": "0a03a1ad78031895",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
         }
       ]
     },
     "temporal-frequency-decomposition": {
-      "hash": "547aaa9b4e04233c",
-      "history": []
+      "hash": "440ed6f160e2a9d5",
+      "history": [
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "440ed6f160e2a9d5",
+          "prev_hash": "547aaa9b4e04233c",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
+        }
+      ]
     },
     "temporal-halation-freeze": {
       "hash": "6087ff3f66a6ae91",
@@ -20551,7 +20617,7 @@
       ]
     },
     "temporal-layered-time-stamps": {
-      "hash": "892b58841e731566",
+      "hash": "c524569ff73ecbd1",
       "history": [
         {
           "event": "upgraded",
@@ -20560,6 +20626,14 @@
           "prev_hash": "7d3787ada1de19ab",
           "commit": "b02289fb",
           "note": "2026-10-30 temporal echo twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-30-temporal-echo-twelve/BRIEFS.md"
+        },
+        {
+          "event": "fixed",
+          "date": "2026-11-22T05:59:44.261Z",
+          "hash": "c524569ff73ecbd1",
+          "prev_hash": "892b58841e731566",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 rescue: onion-outline feedback loop (ring holds own output) -> clean-luma ring in A/C"
         }
       ]
     },
@@ -20606,7 +20680,7 @@
       ]
     },
     "temporal-rgb-ghost": {
-      "hash": "7775f5cd6a35000f",
+      "hash": "57dde9730b331077",
       "history": [
         {
           "event": "upgraded",
@@ -20615,6 +20689,14 @@
           "prev_hash": "c7ce4bf23fbb37af",
           "commit": "b02289fb",
           "note": "2026-10-30 temporal echo twelve (grok) — docs/agents/swarm-outputs/grok-2026-10-30-temporal-echo-twelve/BRIEFS.md"
+        },
+        {
+          "event": "upgraded",
+          "date": "2026-11-22T05:59:43.673Z",
+          "hash": "57dde9730b331077",
+          "prev_hash": "7775f5cd6a35000f",
+          "commit": "a3706adc",
+          "note": "2026-11-22 sonnet/batch-52 temporal + audio-reactive post-processing (Claude Sonnet 5.5) — agents/swarm-outputs/claude-2026-11-22-sonnet-batch-52/"
         }
       ]
     },

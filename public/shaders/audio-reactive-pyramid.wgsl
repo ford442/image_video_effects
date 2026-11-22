@@ -3,8 +3,8 @@
 //  Category: post-processing
 //  Features: audio-reactive, fft-bins, frequency-coupled, pyramid, depth-aware
 //  Complexity: Medium
-//  Upgraded: 2026-09-28, 2026-11-01
-//  Ideas: depth-routed bands (near takes the fine boost, far takes gentle coarse softening); per-band chroma split (coarse halos warm, fine edges cool); anisotropic fine gate; anti-halo envelope (§12.2A)
+//  Upgraded: 2026-09-28, 2026-11-01, 2026-11-22
+//  Ideas: depth-routed bands (near takes the fine boost, far takes gentle coarse softening); per-band chroma split (coarse halos warm, fine edges cool); anisotropic fine gate; anti-halo envelope (§12.2A); across-edge fine band (oriented DoG: dominant H/V response where the gate fires); pitch-slid pyramid scales (intra-band spectral centroid slides each band's blur step)
 //  A packing: display RGBA (enhanced photo, source alpha); C is not read back
 // ═══════════════════════════════════════════════════════════════════
 //  Created: 2026-05-23  By: copilot / P6 audio bridge
@@ -23,6 +23,11 @@
 //  2026-09-28 floor fix: every band also gets a small silence-floor
 //  gain (slider × 0.5), so at silence the default is a gentle detail
 //  enhancer instead of an exact pass-through. Audio adds on top.
+//
+//  2026-11-22: the bin walk also yields each band's intra-band centroid; it
+//  slides that band's blur step (±30 %, ×1 at silence / flat spectrum) so
+//  higher pitch inside a band means finer spatial detail. The fine level takes
+//  the dominant directional DoG on oriented structure (across the edge).
 //
 //  No ACES: this is a detail enhancer for photos; a filmic curve would
 //  regrade every image's tones, so `upgraded-rgba` is not claimed.
@@ -49,13 +54,30 @@ fn fftBin(idx: u32) -> f32 {
   return clamp(extraBuffer[slot], 0.0, 1.0);
 }
 
-fn avgBins(lo: u32, hi: u32) -> f32 {
-  if (hi < lo) { return 0.0; }
+// Mean bin magnitude of a band (.x, exactly HEAD's average) and its intra-band
+// spectral centroid (.y: 0 = lowest bin of the band, 1 = highest; 0.5 on silence).
+// One walk over the bins serves both (Idea 2026-11-22 B reads .y).
+fn bandStats(lo: u32, hi: u32) -> vec2<f32> {
+  if (hi < lo) { return vec2<f32>(0.0, 0.5); }
   var acc = 0.0;
+  var pos = 0.0;
+  let span = max(f32(hi - lo), 1.0);
   for (var b = lo; b <= hi; b++) {
-    acc += fftBin(b);
+    let m = fftBin(b);
+    acc += m;
+    pos += m * (f32(b - lo) / span);
   }
-  return acc / f32(hi - lo + 1u);
+  let centroid = select(0.5, clamp(pos / max(acc, 1e-4), 0.0, 1.0), acc > 1e-3);
+  return vec2<f32>(acc / f32(hi - lo + 1u), centroid);
+}
+
+// ── Idea 2026-11-22 B: pitch-slid pyramid scales ────────────────────────────
+// A band whose energy sits in its upper bins slides that level to a finer
+// spatial scale (and lower bins to a coarser one): step × (1 − 0.6·(c − 0.5)).
+// c = 0.5 (silence, or any spectrum symmetric about the band centre) → ×1 = HEAD's
+// 1 / 2 / 4 px steps. The telescoping reconstruction keeps zero gain = original.
+fn pitchScale(c: f32) -> f32 {
+  return 1.0 - 0.6 * (c - 0.5);
 }
 
 /// Separable 5-tap Gaussian blur (σ ≈ 1.0) at a given step size.
@@ -70,6 +92,8 @@ fn avgBins(lo: u32, hi: u32) -> f32 {
 struct BlurTap {
   color: vec4<f32>,
   aniso: f32,
+  h: vec4<f32>,   // horizontal 5-tap response (Idea 2026-11-22 A: kept, not thrown away)
+  v: vec4<f32>,   // vertical 5-tap response
 };
 
 fn gaussBlur(samp: texture_2d<f32>, uv: vec2<f32>, step: f32) -> BlurTap {
@@ -96,6 +120,8 @@ fn gaussBlur(samp: texture_2d<f32>, uv: vec2<f32>, step: f32) -> BlurTap {
   tap.color = (col + row) * 0.5;
   // Horizontal and vertical responses were averaged and the difference discarded.
   tap.aniso = abs(dot(col.rgb - row.rgb, vec3<f32>(0.2126, 0.7152, 0.0722)));
+  tap.h = col;
+  tap.v = row;
   return tap;
 }
 
@@ -131,9 +157,12 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   // ── Audio energy per pyramid band ────────────────────────────────
   // Bin ranges chosen to span bass/mid/treble thirds of 128 bins.
-  let bassEnergy   = avgBins(  0u,  12u);   // bins  0–12  (~0–1.4 kHz)
-  let midEnergy    = avgBins( 13u,  50u);   // bins 13–50  (~1.4–5.4 kHz)
-  let trebleEnergy = avgBins( 51u, 127u);   // bins 51–127 (~5.4–22 kHz)
+  let bassStat     = bandStats(  0u,  12u);   // bins  0–12  (~0–1.4 kHz)
+  let midStat      = bandStats( 13u,  50u);   // bins 13–50  (~1.4–5.4 kHz)
+  let trebleStat   = bandStats( 51u, 127u);   // bins 51–127 (~5.4–22 kHz)
+  let bassEnergy   = bassStat.x;
+  let midEnergy    = midStat.x;
+  let trebleEnergy = trebleStat.x;
 
   // Gain knobs from params (allow up to 4× amplification)
   let bassGain   = mix(0.0, 4.0, u.zoom_params.x) * bassEnergy;
@@ -146,12 +175,35 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // blur1: medium scale (2 pixel steps)
   // blur2: coarse scale (4 pixel steps)
   let original = textureSampleLevel(readTexture, u_sampler, uv, 0.0);
-  let blur0    = gaussBlur(readTexture, uv, 1.0);
-  let blur1    = gaussBlur(readTexture, uv, 2.0);
-  let blur2    = gaussBlur(readTexture, uv, 4.0);
+  // ── Idea 2026-11-22 B (pitch-slid scales): each band's intra-band centroid
+  // slides its step; fine ← treble, mid ← mid, coarse ← bass (×1 at silence / flat).
+  let blur0    = gaussBlur(readTexture, uv, 1.0 * pitchScale(trebleStat.y));
+  let blur1    = gaussBlur(readTexture, uv, 2.0 * pitchScale(midStat.y));
+  let blur2    = gaussBlur(readTexture, uv, 4.0 * pitchScale(bassStat.y));
+
+  // ── Anisotropic fine gate (shipped): |H − V| of the fine blur is high on
+  // oriented structure and low on noise. Hoisted above the fine level so
+  // Idea 2026-11-22 A can reuse it as its switch.
+  let edgeGate = smoothstep(0.008, 0.06, blur0.aniso);
+
+  // ── Idea 2026-11-22 A: across-edge fine band (oriented DoG) ─────────────
+  // The isotropic fine level is ½(h + v): on an axis-aligned edge one of them
+  // is ~0, so such edges got HALF the boost a blob or a diagonal gets. Where
+  // the gate says the neighbourhood is oriented, weight the two directional
+  // DoGs by their own energy (|·|²): the dominant one (across the edge) wins,
+  // the along-edge one (jaggies, noise) is not boosted. At |h| = |v| the
+  // weights are equal and this is exactly the isotropic level, so blobs,
+  // diagonals and flat areas keep HEAD's picture and the pick is continuous.
+  let fineH   = original - blur0.h;
+  let fineV   = original - blur0.v;
+  let lumH    = luma(fineH.rgb);   // signed — square it, never pow() a negative base
+  let lumV    = luma(fineV.rgb);
+  let wH      = lumH * lumH;
+  let wV      = lumV * lumV;
+  let fineDom = (fineH * wH + fineV * wV) / max(wH + wV, 1e-6);
 
   // Laplacian levels (Difference of Gaussians)
-  let levelFine   = original - blur0.color;   // fine detail
+  let levelFine   = mix(original - blur0.color, fineDom, edgeGate);   // fine detail
   let levelMid    = blur0.color - blur1.color;   // mid detail
   let levelCoarse = blur1.color - blur2.color;   // coarse detail
 
@@ -175,10 +227,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let gainCoarse = bassGain   + floorCoarse;
   let gainMid    = midGain    + floorMid;
-  // ── Idea: anisotropic fine gate
-  // |H − V| of the fine blur is high on edges and low on noise. The fine
-  // gain quiets isotropic regions; the treble slider still sets the ceiling.
-  let edgeGate = smoothstep(0.008, 0.06, blur0.aniso);
+  // ── Idea: anisotropic fine gate (gate computed above)
+  // The fine gain quiets isotropic regions; the treble slider still sets the ceiling.
   let gainFine   = (trebleGain + floorFine) * fineRoute * mix(0.4, 1.0, edgeGate);
 
   // Reconstruct with audio-driven amplitudes

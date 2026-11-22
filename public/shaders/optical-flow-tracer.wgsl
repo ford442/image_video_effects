@@ -2,10 +2,11 @@
 //  Optical Flow Tracer
 //  Category: post-processing
 //  Features: temporal, history-ring, audio-reactive,
-//             optical-flow, motion-vectors, upgraded-rgba
+//             optical-flow, motion-vectors
 //  Complexity: High
-//  Upgraded: 2026-09-21, 2026-11-20
-//  Ideas: Shi-Tomasi confidence; pyramidal (coarse-to-fine) Lucas-Kanade; Gaussian-weighted LK window (§12.1 tactic 1); temporal flow carry through C (§12.1 tactic 6)
+//  Upgraded: 2026-09-21, 2026-11-20, 2026-11-22
+//  Ideas: Shi-Tomasi confidence; pyramidal (coarse-to-fine) Lucas-Kanade; Gaussian-weighted LK window (§12.1 tactic 1); temporal flow carry through C (§12.1 tactic 6); comet-tail taper with a continuous Trail Age (§12.1 tactic 4)
+//  Rescue (2026-11-22): `upgraded-rgba` dropped (output is a passthrough photo composite and A is raw flow — no ACES by design)
 //  A packing: raw flow field — A.xy = flow*flowScale (px), A.z = |flow|*flowScale*20, A.w = 1; read back raw via exact textureLoad(C) (Idea 4). Not ACES'd.
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -129,7 +130,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
   let decay      = 0.92 + u.zoom_params.x * 0.07;              // 0.92–0.99
   let flowScale  = (0.05 + u.zoom_params.y * 0.95) * (1.0 + bass * 0.3);
-  let maxAge     = 1u + u32(u.zoom_params.z * 4.0);            // 1–5
+  let ageF       = 1.0 + u.zoom_params.z * 4.0;                // 1–5, continuous (Idea 5)
+  let maxAge     = u32(ceil(ageF));
   let blendAmt   = clamp(u.zoom_params.w * (1.0 - treble * 0.2), 0.0, 1.0);
 
   let historyHead = u32(extraBuffer[4]);
@@ -193,8 +195,13 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let layer = ringLayer(historyHead, age, histDepth);
     let frame = textureSampleLevel(historyTexture, u_sampler, warpedUV, layer, 0.0);
 
-    let t = f32(age) / f32(maxAge + 1u);
-    let w = pow(decay, f32(age));
+    // ── Idea 5: comet taper + continuous Trail Age (§12.1 tactic 4) ──────────────
+    // `t` was computed here and never read: the taper it implied is now real. The streak thins
+    // toward its tip instead of ending in a hard edge, and the last age enters with fractional
+    // weight so the Trail Age slider grows the tail smoothly instead of in five stairs
+    // (HEAD: maxAge = 1 + u32(z * 4), so z = 0.50 and z = 0.62 drew the same picture).
+    let t = f32(age) / (ageF + 1.0);
+    let w = pow(decay, f32(age)) * (1.0 - 0.6 * t) * clamp(ageF - f32(age) + 1.0, 0.0, 1.0);
     trail   += frame * w;
     totalW  += w;
   }

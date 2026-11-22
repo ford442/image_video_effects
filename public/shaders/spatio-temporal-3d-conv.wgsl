@@ -2,10 +2,12 @@
 //  Spatio-Temporal 3D Convolution
 //  Category: post-processing
 //  Features: temporal, history-ring, advanced-convolution, audio-reactive,
-//             upgraded-rgba, spatio-temporal
+//             spatio-temporal
 //  Complexity: High
-//  Upgraded: 2026-09-21
-//  Ideas: motion-adaptive temporal weights (NR mode); variance-driven NR strength
+//  Upgraded: 2026-09-21, 2026-11-22
+//  Ideas: motion-adaptive temporal weights (NR mode); variance-driven NR strength; linear-light shutter integration (motion-blur mode); noise-gated temporal coring (sharpen mode)
+//  A packing: display RGBA (A = writeTexture); the ring holds this shader's own outputs.
+//  Tag note (2026-11-22): 'upgraded-rgba' removed — passthrough photo filter, no ACES (it would regrade every image).
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a hardcoded 8
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
 //  Created: 2026-05-23
@@ -105,6 +107,7 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let histDepth = max(textureNumLayers(historyTexture), 1u);
   let depthUsed = min(tempDepth, histDepth - 1u);
   let isNR      = mode < 0.33;
+  let isMB      = mode >= 0.33 && mode < 0.67;
 
   // ── Current frame spatial ─────────────────────────────────────────────────
   let current = spatialConv3x3Current(uv, pixSz, spatSigma);
@@ -149,7 +152,14 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let similarity = exp(-delta * delta / (2.0 * 0.07 * 0.07));
     let adaptive   = select(1.0, similarity, isNR);
 
-    accumColor += spatialLayer * tw * adaptive;
+    // ── Idea 3: linear-light shutter integration (motion-blur mode) ──────────
+    // A shutter integrates PHOTONS, i.e. linear light, so a bright streak keeps
+    // its brightness; averaging gamma-encoded values dims every highlight trail.
+    // γ≈2 stand-in for sRGB↔linear (x², sqrt); weights, trail length unchanged,
+    // NR and sharpen paths keep their display-space maths.
+    let layerRGB = max(spatialLayer.rgb, vec3<f32>(0.0));
+    let accRGB   = select(spatialLayer.rgb, layerRGB * layerRGB, isMB);
+    accumColor += vec4<f32>(accRGB, spatialLayer.a) * tw * adaptive;
     accumW     += tw * adaptive;
 
     let l = dot(spatialLayer.rgb, lumaW);
@@ -160,7 +170,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // HEAD divided only when the weight was non-trivial and otherwise mixed
   // toward black; with similarity weights that can happen on real motion,
   // so fall back to the live frame.
-  if (accumW > 0.001) { accumColor = accumColor / accumW; } else { accumColor = current; }
+  let curRGBpos = max(current.rgb, vec3<f32>(0.0));
+  if (accumW > 0.001) { accumColor = accumColor / accumW; }
+  else { accumColor = vec4<f32>(select(current.rgb, curRGBpos * curRGBpos, isMB), current.a); }
 
   // ── Idea 2: variance-driven NR strength ───────────────────────────────────
   // A real video denoiser estimates the noise before removing it. The
@@ -177,12 +189,28 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     // Temporal noise reduction: blend current with temporal mean
     result = mix(current, accumColor, clamp(strength * nrGain, 0.0, 1.0));
   } else if (mode < 0.67) {
-    // Motion blur: blend current with accumulated trail
-    result = mix(current, accumColor, strength * 0.8);
+    // Motion blur: blend current with accumulated trail — in linear light (Idea 3).
+    // HEAD's mix() extrapolated past 1 when bass pushed strength·0.8 over 1 (negative live
+    // weight); in linear light that could go negative, so the blend is capped. Capped at
+    // 0.95, not 1: the ring holds this shader's OUTPUT, so a trail weight of exactly 1 lets no
+    // live frame in and an empty ring stays black forever (zero-C start-up deadlock).
+    let mbT = clamp(strength * 0.8, 0.0, 0.95);
+    let mbLin = mix(curRGBpos * curRGBpos, accumColor.rgb, mbT);
+    result = vec4<f32>(sqrt(max(mbLin, vec3<f32>(0.0))), mix(current.a, accumColor.a, mbT));
   } else {
     // Temporal sharpening: enhance residual (current - temporalMean)
     let residual = current - accumColor;
-    result = current + residual * strength * 2.0;
+    // ── Idea 4: noise-gated temporal coring (sharpen mode) ────────────────────
+    // A temporal unsharp mask boosts whatever the temporal mean cancels — and that
+    // is exactly sensor noise. Real temporal sharpeners core the residual below the
+    // noise floor. The floor is idea 2's noiseSigma (similar-frame luma spread, so a
+    // genuine transient, whose similar-frame set is tiny, keeps floor ≈ 0.004). Tuned on the
+    // VM harness: halves the noise a sensor adds to the boosted output (−51 %) while a clean
+    // moving scene keeps ~88 % of HEAD's transient boost (slow motion looks a little like noise).
+    let resRms  = length(residual.rgb) * 0.57735;
+    let nFloor  = noiseSigma + 0.004;
+    let coring  = smoothstep(nFloor, 2.0 * nFloor + 0.002, resRms);
+    result = current + residual * coring * strength * 2.0;
     result = clamp(result, vec4<f32>(0.0), vec4<f32>(1.0));
   }
 

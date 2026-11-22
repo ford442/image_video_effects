@@ -2,11 +2,12 @@
 //  Temporal Feedback Zoom Tracer
 //  Category: post-processing
 //  Features: mouse-driven, audio-reactive, temporal, history-ring,
-//            upgraded-rgba, fbm-trail-jitter, chromatic-trail-separation,
+//            fbm-trail-jitter, chromatic-trail-separation,
 //            mouse-driven-zoom-focus, noise-warp
 //  Complexity: Medium
-//  Upgraded: 2026-10-30 (prev 2026-10-04)
-//  Ideas: nested monitor bezels; recursion hue drift; field lag; feedback-camera falloff
+//  Upgraded: 2026-10-30 (prev 2026-10-04), 2026-11-22
+//  Ideas: nested monitor bezels; recursion hue drift; field lag; feedback-camera falloff; keystone camera tilt (projective warp); auto-exposure loop gain
+//  Rescue (2026-11-22): clock-ring / spectral phase no longer multiplies session time by audio (bounded phase offset instead); `upgraded-rgba` dropped (no ACES — passthrough photo composite, LDR emissions)
 //  A packing: display RGBA
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
@@ -135,7 +136,15 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     cosR * uvC.x - sinR * uvC.y,
     sinR * uvC.x + cosR * uvC.y,
   );
-  let warpedRaw = rotated / zoomFactor + focus + jitter;
+  // ── Idea 5: keystone camera tilt (projective warp) ───────────────
+  // A camera is never square to its monitor: the loop's warp is projective, so each pass
+  // magnifies one side of the frame more than the other and the tunnel leans and spirals
+  // instead of marching straight out. Hand-held sway (two incommensurate sines) plus the
+  // pointer's offset from centre (the pointer already aims this camera) set the lean.
+  let tiltAmp = 0.012 + zp.x * 0.03;
+  let tilt = tiltAmp * vec2<f32>(sin(time * 0.37), sin(time * 0.23 + 1.3)) + (mouse - vec2<f32>(0.5)) * 0.03;
+  let keystone = 1.0 + dot(rotated, tilt);
+  let warpedRaw = rotated / (zoomFactor * keystone) + focus + jitter;
   let warpedUV = clamp(warpedRaw, vec2<f32>(0.0), vec2<f32>(1.0));
   // Reads that leave the frame (rotation pushes corners out) fall to a dark surround
   // instead of HEAD's clamped edge smear.
@@ -173,6 +182,25 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let cosTheta = 1.0 / sqrt(1.0 + camR * camR * 4.0);
   let camFall = cosTheta * cosTheta * cosTheta * cosTheta;
   histWarp = histWarp * mix(1.0, camFall, 0.55);
+  // ── Idea 6: auto-exposure loop gain ─────────────────────────────
+  // The camera filming the monitor meters its own picture. Spot-meter the newest ring frame
+  // and the live frame at two points straddling the focus (where the camera is aimed) and
+  // scale the re-read history by sqrt(Lsrc / Lhist): negative feedback with a one-frame delay,
+  // so it settles without hunting, lifts the tunnel the per-pass falloff and persistence
+  // darken, tracks the source's own level (a dark video is not boosted past itself) and pumps
+  // when a bright object enters. The upper clamp keeps the loop gain at the focus
+  // (persistence x (1 - blend) x gain) under 0.93 (at high persistence the gain can only hold or dim), so the vanishing point can glow but never
+  // runs away. A 1-layer ring meters the live frame against itself (gain 1).
+  var meterHist = 0.0;
+  var meterSrc = 0.0;
+  for (var gi = 0; gi < 2; gi = gi + 1) {
+    let g = clamp(focus + (f32(gi) - 0.5) * vec2<f32>(0.3, -0.22), vec2<f32>(0.02), vec2<f32>(0.98));
+    meterHist = meterHist + rgbToLuma(frameAt(g, historyHead, histDepth, 1u, textureSampleLevel(readTexture, u_sampler, g, 0.0)).rgb);
+    meterSrc = meterSrc + rgbToLuma(textureSampleLevel(readTexture, u_sampler, g, 0.0).rgb);
+  }
+  let gainCap = clamp(0.93 / (persistence * (1.0 - blendAmt)), 1.0, 1.4);
+  let expoGain = clamp(sqrt((meterSrc + 0.04) / (meterHist + 0.04)), 0.9, gainCap);
+  histWarp = histWarp * expoGain;
 
   // Blend: weighted history + current
   var output = mix(histWarp * persistence, current.rgb, blendAmt);
@@ -202,8 +230,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
         clickFront += exp(-age * 1.8) * exp(-abs(length((uv - event.xy) * vec2<f32>(u.config.z/u.config.w, 1.0)) - age * 0.38) * 58.0);
     }
     
-    let clockRings = sin(length(uv - focus) * 95.0 - time * (5.0 + treble * 7.0));
-    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * (0.8 + mids));
+    // Rescue: audio sets a bounded phase OFFSET, not a rate. `time * (5 + treble * 7)` moves the phase by
+    // time * d(treble) radians, so after a minute every audio wobble re-scrambled the rings.
+    let clockRings = sin(length(uv - focus) * 95.0 - time * 5.0 - treble * 4.0);
+    let spectral = 0.5 + 0.5 * cos(vec3<f32>(0.0, 2.094, 4.188) + clockRings * 3.0 + time * 0.8 + mids * 2.0);
 
     let finalRGB = finalOut.rgb + spectral * (abs(clockRings) * 0.1 + clickFront * 0.25);
     textureStore(writeTexture, coord, vec4<f32>(finalRGB, finalOut.a));

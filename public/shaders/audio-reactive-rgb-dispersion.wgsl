@@ -5,8 +5,8 @@
 //  Complexity: Medium
 //  Created: 2026-05-23
 //  By: copilot / P6 audio bridge
-//  Upgraded: 2026-10-05, 2026-11-01
-//  Ideas: bandwidth rainbow (spectral spread → 5-tap wavelength smear); lateral vs transverse CA by band balance; Cauchy tap spacing (§12.2F); edge-weighted falloff
+//  Upgraded: 2026-10-05, 2026-11-01, 2026-11-22
+//  Ideas: bandwidth rainbow (spectral spread → 5-tap wavelength smear); lateral vs transverse CA by band balance; Cauchy tap spacing (§12.2F); edge-weighted falloff; highlight-gated blue defocus (longitudinal CA / purple fringing); r³ lateral CA profile (Brown–Conrady k₁, §12.2B)
 //  A packing: display RGBA (passthrough grade, no ACES)
 //
 //  Chromatic (RGB) dispersion whose offset magnitudes and direction are
@@ -17,6 +17,12 @@
 //
 //  Low centroid (bass-heavy music) → tight, warm dispersion (slight red push).
 //  High centroid (treble-heavy)    → wide, cool dispersion (strong cyan push).
+//
+//  2026-11-22: blue defocuses into the dark side of clipped highlights
+//  (purple fringing), and the radial (bass) CA follows a real lens's r³ growth.
+//  Rescue (2026-11-22): linear fringe / edge probe were uv-space offsets, so
+//  on a non-square canvas the fringe was anisotropic (16:9: vertical 0.56×
+//  horizontal); now px offsets are equal in every direction. Square: unchanged.
 //
 //  extraBuffer layout (relevant slots):
 //    [0]  bass,  [1] mid,  [2] treble
@@ -38,6 +44,10 @@ fn fftBin(idx: u32) -> f32 {
   let slot = idx + 5u;
   if (slot >= arrayLength(&extraBuffer)) { return 0.0; }
   return clamp(extraBuffer[slot], 0.0, 1.0);
+}
+
+fn luma(c: vec3<f32>) -> f32 {
+  return dot(c, vec3<f32>(0.2126, 0.7152, 0.0722));
 }
 
 struct Spectrum {
@@ -141,7 +151,9 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // prism split prefers edges. falloff = 0 stays uniform.
   let falloff     = u.zoom_params.z;
   let radialDist  = length(uv - centre) * 2.0;       // 0 at centre, 1 at edge midpoints, ~1.41 at corners
-  let foot = 1.5 / max(min(res.x, res.y), 1.0);
+  // Rescue (2026-11-22): the probe is 1.5 px along `dir` in screen space
+  // (HEAD used 1.5/min(res) in uv, which is anisotropic when res.x != res.y).
+  let foot = vec2<f32>(1.5) / max(res, vec2<f32>(1.0));
   let edgeA = textureSampleLevel(readTexture, u_sampler, clamp(uv + dir * foot, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
   let edgeB = textureSampleLevel(readTexture, u_sampler, clamp(uv - dir * foot, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
   let edge = clamp(abs(dot(edgeA - edgeB, vec3<f32>(0.2126, 0.7152, 0.0722))) * 4.0, 0.0, 1.0);
@@ -151,8 +163,17 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   // centroid direction (transverse); bass energy drives a radial, lens-like
   // lateral CA that grows from the frame centre. The two geometries mix by
   // band balance, so a kick drum blooms outward while hats slide sideways.
-  let axisLinear = dir * radialScale;
-  let axisRadial = (uv - centre) * 2.0;              // |.| = radialDist, points outward
+  // Rescue (2026-11-22): uv offsets scaled so the px fringe is the same in every
+  // direction (y scaled by W/H: = HEAD's horizontal size; (1,1) on square).
+  let aspect     = vec2<f32>(1.0, res.x / max(res.y, 1.0));
+  let axisLinear = dir * aspect * radialScale;
+  // ── Idea 2026-11-22 B: r³ lateral CA profile (Brown–Conrady k₁, §12.2B) ─
+  // Lateral CA is linear in field radius only to first order; a real lens adds
+  // an r³ term, so corners fringe far more than the centre. |axisRadial| =
+  // r·(0.35 + 0.65 r²): HEAD's value at r = 1 (edge midpoints), ~½ at r = 0.5,
+  // ~1.65× in the corners. Only the radial (bass) branch changes.
+  let radialVec  = (uv - centre) * 2.0;              // |.| = radialDist, points outward
+  let axisRadial = radialVec * (0.35 + 0.65 * dot(radialVec, radialVec));
   // Shaped so ordinary (bass-heavy, balance ~0.7-0.85) mixes stay mostly linear and
   // the angle slider keeps its grip; only a bass-dominated hit goes half radial.
   let radialMix  = smoothstep(0.6, 0.95, spec.balance) * 0.6;
@@ -172,6 +193,10 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let respW = mix(0.06, 0.32, bandwidth);
   var acc  = vec3<f32>(0.0);
   var wsum = vec3<f32>(0.0);
+  // Idea 2026-11-22 A (purple fringing): keep blue's own tap and the brightest
+  // tap in reach (the tap luma HEAD threw away).
+  var centreB = 0.0;
+  var hiLuma  = 0.0;
   // Undisplaced sample stays the blend anchor. Cauchy moves the interior
   // taps, so the green anchor is no longer "tap k == 2".
   let anchor = textureSampleLevel(readTexture, u_sampler, clamp(uv, vec2<f32>(0.001), vec2<f32>(0.999)), 0.0);
@@ -183,8 +208,34 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
     let resp   = channelResponse(lambda, respW);
     acc  += tap.rgb * resp;
     wsum += resp;
+    centreB = select(centreB, tap.b, k == 4);          // k = 4 is the blue end (λ = 1)
+    hiLuma  = max(hiLuma, luma(tap.rgb));
   }
-  let smeared = acc / max(wsum, vec3<f32>(1e-4));
+  var smeared = acc / max(wsum, vec3<f32>(1e-4));
+  // ── Idea 2026-11-22 A: highlight-gated blue defocus (longitudinal CA) ───
+  // Lateral CA (everything above) is only half of a lens's chromatic error: the
+  // blue focal plane also differs from green's, so a clipped highlight leaks a
+  // blue-violet halo onto the DARK side of its edge. The halo needs its own reach
+  // (the 5 taps only span ~1–3 px): 4 blue-only taps, symmetric about blue's own
+  // displaced position, at ±0.8 and ±1.8 × the tap span along the same axis.
+  // Gate = a bright tap (≥ 0.6..0.9 luma) in reach AND brighter than this pixel
+  // by 0.35..0.75 (dark side only). dispersion = 0 → span 0 → no halo (silence
+  // stays an exact pass-through); no highlight → identical to HEAD.
+  let spanS  = redAmt + blueAmt;
+  let blueC  = uv + axis * wavelengthOffset(1.0, redAmt, blueAmt);
+  var wideB  = centreB;
+  var wideW  = 1.0;
+  var reachL = hiLuma;
+  for (var j = 0; j < 4; j++) {
+    let m  = select(select(-1.8, -0.8, j == 1), select(0.8, 1.8, j == 3), j >= 2);
+    let wj = select(0.3, 0.7, j == 1 || j == 2);
+    let t  = textureSampleLevel(readTexture, u_sampler, clamp(blueC + axis * (spanS * m), vec2<f32>(0.001), vec2<f32>(0.999)), 0.0).rgb;
+    wideB  += t.b * wj;
+    wideW  += wj;
+    reachL  = max(reachL, luma(t));
+  }
+  let fringeGate = smoothstep(0.6, 0.9, reachL) * smoothstep(0.35, 0.75, reachL - luma(anchor.rgb));
+  smeared.b = mix(smeared.b, wideB / wideW, fringeGate);
 
   let dispersed = vec4<f32>(smeared, anchor.a);      // semantic alpha = input alpha
   let output    = mix(dispersed, anchor, u.zoom_params.w);

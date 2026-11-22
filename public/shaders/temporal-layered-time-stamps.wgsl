@@ -1,11 +1,17 @@
 // ═══════════════════════════════════════════════════════════════════
 //  Temporal Layered Time-Stamps
 //  Category: post-processing
-//  Features: mouse-driven, audio-reactive, upgraded-rgba
+//  Features: mouse-driven, audio-reactive
 //  Complexity: Medium
 //  Upgraded: 2026-10-30 (prev 2026-10-04)
 //  Ideas: true per-age spiral; onion-skin outlines; peg-bar shift; inter-stamp smear
-//  A packing: display RGBA
+//  A packing: clean-luma history ring — A = (luma(live frame), C.r, C.g, C.b), so next frame's
+//             C.rgba = the source luma at ages 1..4. The picture itself is NOT stored in A.
+//  Rescue (2026-11-22): the onion outlines were detected on the history ring, which holds this
+//             shader's own previous OUTPUTS — i.e. last frame's ink. Each frame re-detected the
+//             ink and re-inked it one pixel wider, so the outlines grew into full-frame noise
+//             within ~20 frames. They now come from the clean luma ring above (exact
+//             textureLoad of C); the four newest sheets are outlined.
 //  Floor: history ring wraps at textureNumLayers (8, 4 or 1), not a
 //         hardcoded 8 — see HISTORY RING DEPTH below
 //  Requires: binding 13 (historyTexture — up to 8-layer ring buffer)
@@ -110,7 +116,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   var onionAmt = 0.0;
   let mouse = clamp(u.zoom_config.yz, vec2<f32>(0.0), vec2<f32>(1.0));
   let aspect = res.x / max(res.y, 1.0);
-  let px = 1.5 / res;
+  let resI = vec2<i32>(res);
+  let cMax = resI - vec2<i32>(1);
 
   for (var age: u32 = 1u; age <= echoLayers; age = age + 1u) {
     // Per-layer spiral UV warp: older frames warp more
@@ -150,10 +157,16 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
 
     // Idea 2 — onion-skin outlines: each layer's luminance edges are inked in its own
     // hue, like an animator's onion skin, so past frames read as outlined time-stamps.
-    let lc = dot(frame.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let lx = dot(frameAt(clamp(pegUV + vec2<f32>(px.x, 0.0), vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, age, base).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let ly = dot(frameAt(clamp(pegUV + vec2<f32>(0.0, px.y), vec2<f32>(0.0), vec2<f32>(1.0)), historyHead, histDepth, age, base).rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
-    let edge = smoothstep(0.04, 0.18, length(vec2<f32>(lx - lc, ly - lc)));
+    // Rescue: edges are read from the CLEAN luma ring in C (age k = channel k-1, exact
+    // textureLoad at the sheet's own registered texel), never from the history ring, so
+    // the ink cannot be re-detected as an edge next frame. Gradient × 1.5 keeps HEAD's
+    // 1.5 px threshold scale on 1 px texel differences. Sheets 5+ keep tint/smear, no ink.
+    let pc = clamp(vec2<i32>(pegUV * res), vec2<i32>(0), cMax);
+    let ch = min(age, 4u) - 1u;
+    let lc = textureLoad(dataTextureC, pc, 0)[ch];
+    let lx = textureLoad(dataTextureC, min(pc + vec2<i32>(1, 0), cMax), 0)[ch];
+    let ly = textureLoad(dataTextureC, min(pc + vec2<i32>(0, 1), cMax), 0)[ch];
+    let edge = select(0.0, smoothstep(0.04, 0.18, length(vec2<f32>(lx - lc, ly - lc)) * 1.5), age <= 4u);
     onionRGB += tint.rgb * edge * weight;
     onionAmt += edge * weight;
     accumulated += smeared * tint * weight;
@@ -183,5 +196,8 @@ fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
   let depth = textureSampleLevel(readDepthTexture, non_filtering_sampler, uv, 0.0).r;
   textureStore(writeTexture, coord, output);
   textureStore(writeDepthTexture, coord, vec4<f32>(depth, 0.0, 0.0, 0.0));
-  textureStore(dataTextureA, coord, output);
+  // A = clean luma ring (see header): newest age first, shifted one slot per frame.
+  let cHere = textureLoad(dataTextureC, coord, 0);
+  let baseLuma = dot(base.rgb, vec3<f32>(0.2126, 0.7152, 0.0722));
+  textureStore(dataTextureA, coord, vec4<f32>(baseLuma, cHere.r, cHere.g, cHere.b));
 }
